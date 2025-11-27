@@ -10,5 +10,6 @@ namespace tst
 		ePermissionDenied,
 		eMemoryError,
 		eDeviceError,
+		eFailedToCreate,
 		eUnknown, };
 }

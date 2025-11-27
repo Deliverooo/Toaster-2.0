@@ -80,12 +80,12 @@ namespace tst
 		return x != val.x || y != val.y && z != val.z || w != val.w;
 	}
 
-	Vector4I::operator std::string() const
+	Vector4I::operator String() const
 	{
 		return {"[" + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + ", " + std::to_string(w) + "]"};
 	}
 
-	std::string Vector4I::to_string() const
+	String Vector4I::to_string() const
 	{
 		return {"[" + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + ", " + std::to_string(w) + "]"};
 	}

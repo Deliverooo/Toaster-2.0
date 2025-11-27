@@ -1,20 +1,10 @@
 #pragma once
 
 #include "core_defines.hpp"
-#include <limits>
-
+#include "core_typedefs.hpp"
 
 namespace tst
 {
-	template<typename T> concept real_c = std::is_floating_point_v<T>;
-
-	using Double = double;
-	using Float  = float;
-	using Int    = int;
-	using UInt   = unsigned int;
-	using Int64  = __int64;
-	using UInt64 = unsigned long long;
-
 
 	namespace math::constants
 	{

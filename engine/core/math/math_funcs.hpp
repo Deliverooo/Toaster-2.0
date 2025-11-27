@@ -1,239 +1,252 @@
 #pragma once
 
-#include "error_macros.hpp"
-#include <cmath>
+#include "core_typedefs.hpp"
+#include "core_defines.hpp"
+#include "math_constants.hpp"
 
-#include "math_types.hpp"
+#include <cmath>
 
 namespace tst::math
 {
-	_ALWAYS_INLINE_ double sin(double val)
+	_ALWAYS_INLINE_ float64 sin(float64 val)
 	{
 		return std::sin(val);
 	}
 
-	_ALWAYS_INLINE_ float sin(float val)
+	_ALWAYS_INLINE_ float32 sin(float32 val)
 	{
 		return std::sin(val);
 	}
 
-	_ALWAYS_INLINE_ double cos(double val)
+	_ALWAYS_INLINE_ float64 cos(float64 val)
 	{
 		return std::cos(val);
 	}
 
-	_ALWAYS_INLINE_ float cos(float val)
+	_ALWAYS_INLINE_ float32 cos(float32 val)
 	{
 		return std::cos(val);
 	}
 
-	_ALWAYS_INLINE_ double tan(double val)
+	_ALWAYS_INLINE_ float64 tan(float64 val)
 	{
 		return std::tan(val);
 	}
 
-	_ALWAYS_INLINE_ float tan(float val)
+	_ALWAYS_INLINE_ float32 tan(float32 val)
 	{
 		return std::tan(val);
 	}
 
-	_ALWAYS_INLINE_ double sinh(double val)
+	_ALWAYS_INLINE_ float64 sinh(float64 val)
 	{
 		return std::sinh(val);
 	}
 
-	_ALWAYS_INLINE_ float sinh(float val)
+	_ALWAYS_INLINE_ float32 sinh(float32 val)
 	{
 		return std::sinh(val);
 	}
 
-	_ALWAYS_INLINE_ double cosh(double val)
+	_ALWAYS_INLINE_ float64 cosh(float64 val)
 	{
 		return std::cosh(val);
 	}
 
-	_ALWAYS_INLINE_ float cosh(float val)
+	_ALWAYS_INLINE_ float32 cosh(float32 val)
 	{
 		return std::cosh(val);
 	}
 
-	_ALWAYS_INLINE_ double tanh(double val)
+	_ALWAYS_INLINE_ float64 tanh(float64 val)
 	{
 		return std::tanh(val);
 	}
 
-	_ALWAYS_INLINE_ float tanh(float val)
+	_ALWAYS_INLINE_ float32 tanh(float32 val)
 	{
 		return std::tanh(val);
 	}
 
-	_ALWAYS_INLINE_ double asin(double val)
+	_ALWAYS_INLINE_ float64 asin(float64 val)
 	{
 		return std::asin(val);
 	}
 
-	_ALWAYS_INLINE_ float asin(float val)
+	_ALWAYS_INLINE_ float32 asin(float32 val)
 	{
 		return std::asin(val);
 	}
 
-	_ALWAYS_INLINE_ double acos(double val)
+	_ALWAYS_INLINE_ float64 acos(float64 val)
 	{
 		return std::acos(val);
 	}
 
-	_ALWAYS_INLINE_ float acos(float val)
+	_ALWAYS_INLINE_ float32 acos(float32 val)
 	{
 		return std::acos(val);
 	}
 
-	_ALWAYS_INLINE_ double atan(double val)
+	_ALWAYS_INLINE_ float64 atan(float64 val)
 	{
 		return std::atan(val);
 	}
 
-	_ALWAYS_INLINE_ float atan(float val)
+	_ALWAYS_INLINE_ float32 atan(float32 val)
 	{
 		return std::atan(val);
 	}
 
-	_ALWAYS_INLINE_ double sqrt(double val)
+	_ALWAYS_INLINE_ float64 sqrt(float64 val)
 	{
 		return std::sqrt(val);
 	}
 
-	_ALWAYS_INLINE_ float sqrt(float val)
+	_ALWAYS_INLINE_ float32 sqrt(float32 val)
 	{
 		return std::sqrt(val);
 	}
 
-	_ALWAYS_INLINE_ double fmod(double val, double p_y)
+	_ALWAYS_INLINE_ float64 fmod(float64 val, float64 p_y)
 	{
 		return std::fmod(val, p_y);
 	}
 
-	_ALWAYS_INLINE_ float fmod(float val, float p_y)
+	_ALWAYS_INLINE_ float32 fmod(float32 val, float32 p_y)
 	{
 		return std::fmod(val, p_y);
 	}
 
-	_ALWAYS_INLINE_ double modf(double val, double *r_y)
+	_ALWAYS_INLINE_ float64 modf(float64 val, float64 *r_y)
 	{
 		return std::modf(val, r_y);
 	}
 
-	_ALWAYS_INLINE_ float modf(float val, float *r_y)
+	_ALWAYS_INLINE_ float32 modf(float32 val, float32 *r_y)
 	{
 		return std::modf(val, r_y);
 	}
 
-	_ALWAYS_INLINE_ double floor(double val)
+	_ALWAYS_INLINE_ float64 floor(float64 val)
 	{
 		return std::floor(val);
 	}
 
-	_ALWAYS_INLINE_ float floor(float val)
+	_ALWAYS_INLINE_ float32 floor(float32 val)
 	{
 		return std::floor(val);
 	}
 
-	_ALWAYS_INLINE_ double ceil(double val)
+	_ALWAYS_INLINE_ float64 ceil(float64 val)
 	{
 		return std::ceil(val);
 	}
 
-	_ALWAYS_INLINE_ float ceil(float val)
+	_ALWAYS_INLINE_ float32 ceil(float32 val)
 	{
 		return std::ceil(val);
 	}
 
-	_ALWAYS_INLINE_ double pow(double val, double p_y)
+	_ALWAYS_INLINE_ float64 pow(float64 val, float64 p_y)
 	{
 		return std::pow(val, p_y);
 	}
 
-	_ALWAYS_INLINE_ float pow(float val, float p_y)
+	_ALWAYS_INLINE_ float32 pow(float32 val, float32 p_y)
 	{
 		return std::pow(val, p_y);
 	}
 
-	_ALWAYS_INLINE_ double log(double val)
+	_ALWAYS_INLINE_ float64 log(float64 val)
 	{
 		return std::log(val);
 	}
 
-	_ALWAYS_INLINE_ float log(float val)
+	_ALWAYS_INLINE_ float32 log(float32 val)
 	{
 		return std::log(val);
 	}
 
-	_ALWAYS_INLINE_ double log2(double val)
+	_ALWAYS_INLINE_ float64 log2(float64 val)
 	{
 		return std::log2(val);
 	}
 
-	_ALWAYS_INLINE_ float log2(float val)
+	_ALWAYS_INLINE_ float32 log2(float32 val)
 	{
 		return std::log2(val);
 	}
 
-	_ALWAYS_INLINE_ double exp(double val)
+	_ALWAYS_INLINE_ float64 exp(float64 val)
 	{
 		return std::exp(val);
 	}
 
-	_ALWAYS_INLINE_ float exp(float val)
+	_ALWAYS_INLINE_ float32 exp(float32 val)
 	{
 		return std::exp(val);
 	}
 
-	_ALWAYS_INLINE_ double abs(double val)
+	_ALWAYS_INLINE_ float64 abs(float64 val)
 	{
 		return std::abs(val);
 	}
 
-	_ALWAYS_INLINE_ float abs(float val)
+	_ALWAYS_INLINE_ float32 abs(float32 val)
 	{
 		return std::abs(val);
 	}
 
-	_ALWAYS_INLINE_ double deg_to_rad(double val)
+	_ALWAYS_INLINE_ float64 deg_to_rad(float64 val)
 	{
-		return val * (constants::pi<float>() / 180.0);
+		return val * (constants::pi<float32>() / 180.0);
 	}
 
-	_ALWAYS_INLINE_ float deg_to_rad(float val)
+	_ALWAYS_INLINE_ float32 deg_to_rad(float32 val)
 	{
-		return val * (constants::pi<float>() / 180.0f);
+		return val * (constants::pi<float32>() / 180.0f);
 	}
 
-	_ALWAYS_INLINE_ double rad_to_deg(double val)
+	_ALWAYS_INLINE_ float64 rad_to_deg(float64 val)
 	{
-		return val * (180.0 / constants::pi<float>());
+		return val * (180.0 / constants::pi<float32>());
 	}
 
-	_ALWAYS_INLINE_ float rad_to_deg(float val)
+	_ALWAYS_INLINE_ float32 rad_to_deg(float32 val)
 	{
-		return val * (180.0f / constants::pi<float>());
+		return val * (180.0f / constants::pi<float32>());
 	}
 
-	_ALWAYS_INLINE_ double lerp(double from, double to, double weight)
+	_ALWAYS_INLINE_ float64 lerp(float64 from, float64 to, float64 weight)
 	{
 		return from + (to - from) * weight;
 	}
 
-	_ALWAYS_INLINE_ float lerp(float from, float to, float weight)
+	_ALWAYS_INLINE_ float32 lerp(float32 from, float32 to, float32 weight)
 	{
 		return from + (to - from) * weight;
 	}
 
-	_ALWAYS_INLINE_ double round(double val)
+	_ALWAYS_INLINE_ float64 round(float64 val)
 	{
 		return std::round(val);
 	}
 
-	_ALWAYS_INLINE_ float round(float val)
+	_ALWAYS_INLINE_ float32 round(float32 val)
 	{
 		return std::round(val);
+	}
+
+	template<typename T>
+	T min(T lhs, T rhs)
+	{
+		return std::min(lhs, rhs);
+	}
+
+	template<typename T>
+	T max(T lhs, T rhs)
+	{
+		return std::max(lhs, rhs);
 	}
 }

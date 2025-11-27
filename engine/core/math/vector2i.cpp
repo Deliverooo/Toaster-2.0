@@ -1,4 +1,6 @@
 #include "math/vector2i.hpp"
+
+#include "vector2.hpp"
 #include "math/math_funcs.hpp"
 
 namespace tst
@@ -72,28 +74,33 @@ namespace tst
 		return x != val.x || y != val.y;
 	}
 
-	Vector2I::operator std::string() const
+	Vector2I::operator String() const
 	{
 		return {"[" + std::to_string(x) + ", " + std::to_string(y) + "]"};
 	}
 
-	std::string Vector2I::to_string() const
+	String Vector2I::to_string() const
 	{
 		return {"[" + std::to_string(x) + ", " + std::to_string(y) + "]"};
 	}
 
-	Float Vector2I::length() const
+	float32 Vector2I::length() const
 	{
-		return math::sqrt(static_cast<float>(x * x + y * y));
+		return math::sqrt(static_cast<float32>(x * x + y * y));
 	}
 
-	Float Vector2I::dot(const Vector2I &v) const
+	float32 Vector2I::dot(const Vector2I &v) const
 	{
 		return x * v.x + y * v.y;
 	}
 
-	Float Vector2I::angle(const Vector2I &v) const
+	float32 Vector2I::angle(const Vector2I &v) const
 	{
 		return math::acos(dot(v));
+	}
+
+	Vector2I::operator Vector2() const
+	{
+		return Vector2{static_cast<float32>(x), static_cast<float32>(y)};
 	}
 }

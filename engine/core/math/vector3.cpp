@@ -32,12 +32,12 @@ namespace tst
 		return {x * val.x, y * val.y, z * val.z};
 	}
 
-	constexpr Vector3 Vector3::operator*(Float val) const
+	constexpr Vector3 Vector3::operator*(float32 val) const
 	{
 		return {x * val, y * val, z * val};
 	}
 
-	constexpr void Vector3::operator*=(Float val)
+	constexpr void Vector3::operator*=(float32 val)
 	{
 		x *= val;
 		y *= val;
@@ -49,12 +49,12 @@ namespace tst
 		return {x / val.x, y / val.y, z / val.z};
 	}
 
-	constexpr Vector3 Vector3::operator/(Float val) const
+	constexpr Vector3 Vector3::operator/(float32 val) const
 	{
 		return {x / val, y / val, z / val};
 	}
 
-	constexpr void Vector3::operator/=(Float val)
+	constexpr void Vector3::operator/=(float32 val)
 	{
 		x /= val;
 		y /= val;
@@ -76,12 +76,12 @@ namespace tst
 		return x != val.x || y != val.y || z != val.z;
 	}
 
-	Vector3::operator std::string() const
+	Vector3::operator String() const
 	{
 		return {"[" + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + "]"};
 	}
 
-	std::string Vector3::to_string() const
+	String Vector3::to_string() const
 	{
 		return {"[" + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(z) + "]"};
 	}
@@ -103,17 +103,17 @@ namespace tst
 		return {x / length(), y / length(), z / length()};
 	}
 
-	Float Vector3::length() const
+	float32 Vector3::length() const
 	{
 		return math::sqrt(x * x + y * y + z * z);
 	}
 
-	Float Vector3::dot(const Vector3 &v) const
+	float32 Vector3::dot(const Vector3 &v) const
 	{
 		return x * v.x + y * v.y + z * v.z;
 	}
 
-	Float Vector3::angle(const Vector3 &v) const
+	float32 Vector3::angle(const Vector3 &v) const
 	{
 		return math::acos(dot(v));
 	}

@@ -15,5 +15,4 @@
 #pragma once
 
 #include <cstdint>
-#undef min
-#undef max
+

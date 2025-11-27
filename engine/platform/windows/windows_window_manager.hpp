@@ -44,18 +44,33 @@ namespace tst
 	class WindowsWindowManager : public WindowManager
 	{
 	public:
-		WindowsWindowManager();
+		TST_NON_COPYABLE(WindowsWindowManager)
+
+		WindowsWindowManager(const String &render_api_str, EWindowMode mode, EVsyncMode vsync_mode, uint32 flags, const Vector2I *position, const Vector2I &resolution,
+							 int           screen, int64               parent_window, EError &return_error);
 		~WindowsWindowManager() override;
 
 		// std::vector<WindowID> getWindowList() const override;
 
-		WindowID createWindow(EWindowMode mode, const Rect2I &rect, EWindowFlags flags, EVsyncMode vsync_mode, WindowID parent_id) override;
-		void     destroyWindow(WindowID window) override;
-		void     showWindow(WindowID window) override;
-		void     hideWindow(WindowID window) override;
+		void destroyWindow(WindowID window) override;
+		void showWindow(WindowID window) override;
+		void hideWindow(WindowID window) override;
 
 		void setWindowEventCallback(WindowID window_id, const WindowEventCallback &callback) override;
 		void setInputEventCallback(WindowID window_id, const InputEventCallback &callback) override;
+
+		int getScreenCount() const override;
+		int getPrimaryScreen() const override;
+		int getKeyboardFocusScreen() const override;
+
+		Vector2I getScreenPosition(int p_screen = SCREEN_OF_MAIN_WINDOW) const override;
+		Size2I   getScreenSize(int p_screen = SCREEN_OF_MAIN_WINDOW) const override;
+		Rect2I   getScreenUsableRect(int p_screen = SCREEN_OF_MAIN_WINDOW) const override;
+		int      getScreenDPI(int p_screen = SCREEN_OF_MAIN_WINDOW) const override;
+		float    getScreenRefreshRate(int p_screen = SCREEN_OF_MAIN_WINDOW) const override;
+		// Color    getScreenPixel(const Vector2I &p_position) const override;
+		// Ref<Image> screen_get_image(int p_screen = SCREEN_OF_MAIN_WINDOW) const override;
+		// Ref<Image> screen_get_image_rect(const Rect2i &p_rect) const override;
 
 		void processEvents() override;
 		void swapBuffers() override;
@@ -71,6 +86,10 @@ namespace tst
 		// Vector2I getWindowSize(WindowID windowID);
 
 	private:
+		Vector2I _getScreensOrigin() const;
+
+		WindowID _createWindow(EWindowMode mode, EVsyncMode vsync_mode, uint32 flags, const Rect2I &rect, bool exclusive, HWND parent_hwnd);
+
 		void getWindowStyle(bool main_window, bool embed_child, bool initialized, bool fullscreen, bool borderless, bool resizable, bool no_min_btn, bool no_max_btn,
 							bool minimized, bool   maximized, bool   no_activate_focus, DWORD &out_style, DWORD &out_style_ex);
 

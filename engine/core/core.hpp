@@ -28,7 +28,7 @@
 
 #include "string/string.hpp"
 
-#include "math/math_types.hpp"
+#include "math/math_constants.hpp"
 #include "math/math_funcs.hpp"
 #include "math/rect.hpp"
 #include "math/vector2.hpp"
