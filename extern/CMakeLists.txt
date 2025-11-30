@@ -17,4 +17,6 @@ add_subdirectory(spdlog)
 
 add_subdirectory(fmt)
 
+add_subdirectory(nvrhi)
+
 message(STATUS "External dependencies configured")

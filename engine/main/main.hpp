@@ -1,15 +1,27 @@
 #pragma once
 
-#include "core/error.hpp"
+#include "core/core.hpp"
+#include "platform/window.hpp"
 
 namespace tst
 {
 	class Main
 	{
 	public:
-		static EError init();
-		static EError start();
-		static bool   loop();
-		static void   cleanup();
+		Main(std::vector<String> args);
+		~Main();
+
+		EError init();
+		bool   loop();
+
+		Window &getPrimaryWindow() { return *m_primaryWindow; }
+
+		static Main &getInstance() { return *s_instance; }
+
+	private:
+		std::unique_ptr<Window> m_primaryWindow;
+		float32                 m_deltaTime;
+
+		static inline Main *s_instance = nullptr;
 	};
 }

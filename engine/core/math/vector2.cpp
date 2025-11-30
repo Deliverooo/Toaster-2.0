@@ -1,82 +1,10 @@
 #include "math/vector2.hpp"
-#include "math/vector2I.hpp"
+#include "math/vector2i.hpp"
 #include "math/math_funcs.hpp"
 
 namespace tst
 {
-	constexpr Vector2 Vector2::operator+(Vector2 val) const
-	{
-		return {x + val.x, y + val.y};
-	}
 
-	constexpr void Vector2::operator+=(const Vector2 &val)
-	{
-		x += val.x;
-		y += val.y;
-	}
-
-	constexpr Vector2 Vector2::operator-(const Vector2 &val) const
-	{
-		return {x - val.x, y - val.y};
-	}
-
-	constexpr void Vector2::operator-=(const Vector2 &val)
-	{
-		x -= val.x;
-		y -= val.y;
-	}
-
-	constexpr Vector2 Vector2::operator*(const Vector2 &val) const
-	{
-		return {x * val.x, y * val.y};
-	}
-
-	constexpr Vector2 Vector2::operator*(float32 val) const
-	{
-		return {x * val, y * val};
-	}
-
-	constexpr void Vector2::operator*=(float32 val)
-	{
-		x *= val;
-		y *= val;
-	}
-
-	constexpr Vector2 Vector2::operator/(const Vector2 &val) const
-	{
-		return {x / val.x, y / val.y};
-	}
-
-	constexpr Vector2 Vector2::operator/(float32 val) const
-	{
-		return {x / val, y / val};
-	}
-
-	constexpr void Vector2::operator/=(float32 val)
-	{
-		x /= val;
-		y /= val;
-	}
-
-	constexpr Vector2 Vector2::operator-() const
-	{
-		return {-x, -y};
-	}
-
-	constexpr bool Vector2::operator==(const Vector2 &val) const
-	{
-		return x == val.x && y == val.y;
-	}
-
-	constexpr bool Vector2::operator!=(const Vector2 &val) const
-	{
-		return x != val.x || y != val.y;
-	}
-
-	Vector2::operator String() const
-	{
-		return {"[" + std::to_string(x) + ", " + std::to_string(y) + "]"};
-	}
 
 	String Vector2::to_string() const
 	{

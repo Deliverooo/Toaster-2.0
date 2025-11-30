@@ -24,7 +24,7 @@
 #include "error_macros.hpp"
 #include "error.hpp"
 
-
+#include "logging/log.hpp"
 
 #include "string/string.hpp"
 

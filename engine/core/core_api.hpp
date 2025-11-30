@@ -17,6 +17,7 @@
 // The Core API shared library export macro definitions
 
 #ifdef TST_PLATFORM_WINDOWS
+#ifdef TST_BUILD_SHARED_LIBS
 #ifdef TST_CORE_EXPORT
 #define TST_CORE_API __declspec(dllexport)
 #else
@@ -25,7 +26,6 @@
 #else
 #define TST_CORE_API
 #endif
-
-#include <cstdint>
-#undef min
-#undef max
+#else
+#define TST_CORE_API
+#endif

@@ -1,3 +1,17 @@
+/*
+*  	Copyright 2025 Orbo Stetson
+ *  	Licensed under the Apache License, Version 2.0 (the "License");
+ *  	you may not use this file except in compliance with the License.
+ *  	You may obtain a copy of the License at
+ *
+ *			http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    	Unless required by applicable law or agreed to in writing, software
+ *    	distributed under the License is distributed on an "AS IS" BASIS,
+ *    	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    	See the License for the specific language governing permissions and
+ *    	limitations under the License.
+ */
 #pragma once
 
 #include "string/string.hpp"
@@ -45,7 +59,7 @@ namespace tst
 		{
 		}
 
-		constexpr Vector2 operator+(Vector2 val) const;
+		constexpr Vector2 operator+(const Vector2 &val) const;
 		constexpr void    operator+=(const Vector2 &val);
 		constexpr Vector2 operator-(const Vector2 &val) const;
 		constexpr void    operator-=(const Vector2 &val);
@@ -67,7 +81,7 @@ namespace tst
 		constexpr bool operator==(const Vector2 &val) const;
 		constexpr bool operator!=(const Vector2 &val) const;
 
-		explicit                  operator String() const;
+		explicit             operator String() const;
 		[[nodiscard]] String to_string() const;
 
 		void                  normalize();
@@ -82,8 +96,82 @@ namespace tst
 		[[nodiscard]] Vector2 min(const Vector2 &v) const;
 		[[nodiscard]] Vector2 max(const Vector2 &v) const;
 
-		explicit operator Vector2I() const;
+		operator Vector2I() const;
 	};
+
+	constexpr Vector2 Vector2::operator+(const Vector2 &val) const
+	{
+		return {x + val.x, y + val.y};
+	}
+
+	constexpr void Vector2::operator+=(const Vector2 &val)
+	{
+		x += val.x;
+		y += val.y;
+	}
+
+	constexpr Vector2 Vector2::operator-(const Vector2 &val) const
+	{
+		return {x - val.x, y - val.y};
+	}
+
+	constexpr void Vector2::operator-=(const Vector2 &val)
+	{
+		x -= val.x;
+		y -= val.y;
+	}
+
+	constexpr Vector2 Vector2::operator*(const Vector2 &val) const
+	{
+		return {x * val.x, y * val.y};
+	}
+
+	constexpr Vector2 Vector2::operator*(float32 val) const
+	{
+		return {x * val, y * val};
+	}
+
+	constexpr void Vector2::operator*=(float32 val)
+	{
+		x *= val;
+		y *= val;
+	}
+
+	constexpr Vector2 Vector2::operator/(const Vector2 &val) const
+	{
+		return {x / val.x, y / val.y};
+	}
+
+	constexpr Vector2 Vector2::operator/(float32 val) const
+	{
+		return {x / val, y / val};
+	}
+
+	constexpr void Vector2::operator/=(float32 val)
+	{
+		x /= val;
+		y /= val;
+	}
+
+	constexpr Vector2 Vector2::operator-() const
+	{
+		return {-x, -y};
+	}
+
+	constexpr bool Vector2::operator==(const Vector2 &val) const
+	{
+		return x == val.x && y == val.y;
+	}
+
+	constexpr bool Vector2::operator!=(const Vector2 &val) const
+	{
+		return x != val.x || y != val.y;
+	}
+
+	inline Vector2::operator String() const
+	{
+		return {"[" + std::to_string(x) + ", " + std::to_string(y) + "]"};
+	}
 
 	using Size2 = Vector2;
 }

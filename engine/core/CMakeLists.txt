@@ -1,8 +1,6 @@
 # Collect sources and headers
 set(TST_CORE_SOURCES
 
-		core.cpp
-
 		# Toaster core math sources
 		math/vector2.cpp
 		math/vector2i.cpp
@@ -12,6 +10,12 @@ set(TST_CORE_SOURCES
 		math/vector4i.cpp
 
 		math/math_funcs.cpp
+
+		logging/log.cpp
+
+		misc/layer_stack.cpp
+
+		threading/thread.cpp
 )
 
 set(TST_CORE_HEADERS
@@ -30,17 +34,13 @@ set(TST_CORE_HEADERS
 		math/rect.hpp
 )
 
-if (TST_STATIC_LIBS)
-	add_library(ToasterCore STATIC)
-else ()
-	add_library(ToasterCore SHARED)
-	target_compile_definitions(ToasterCore PRIVATE TST_CORE_EXPORT)
-endif ()
+add_library(ToasterCore STATIC)
+
 
 target_sources(ToasterCore PRIVATE ${TST_CORE_SOURCES})
 target_include_directories(ToasterCore PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 
-target_link_libraries(ToasterCore PUBLIC fmt)
+target_link_libraries(ToasterCore PUBLIC fmt spdlog)
 
 toaster_set_target_properties(ToasterCore)
 toaster_set_warnings(ToasterCore)

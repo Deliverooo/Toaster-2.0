@@ -9,13 +9,13 @@ endif ()
 project(Toaster)
 find_package(Vulkan)
 
-if(Vulkan_FOUND)
+if (Vulkan_FOUND)
 	set(TST_ENABLE_VULKAN ON)
 	message(STATUS "Vulkan SDK found")
-else()
+else ()
 	set(TST_ENABLE_VULKAN OFF)
 	message(WARNING "Vulkan SDK not found - disabling Vulkan support")
-endif()
+endif ()
 
 
 # Set C++ standard
@@ -68,3 +68,25 @@ message(STATUS "OpenGL enabled: ${TST_ENABLE_OPENGL}")
 message(STATUS "Vulkan enabled: ${TST_ENABLE_VULKAN}")
 message(STATUS "Platform: ${CMAKE_SYSTEM_NAME}")
 message(STATUS "=====================================")
+
+# Toaster Editor
+add_executable(ToasterEditor)
+add_subdirectory(tools/editor)
+
+target_link_libraries(ToasterEditor PRIVATE
+		ToasterEngine)
+
+toaster_set_target_properties(ToasterEditor)
+toaster_set_warnings(ToasterEditor)
+
+
+# Sandbox
+add_executable(Sandbox)
+add_subdirectory(tools/sandbox)
+
+target_link_libraries(Sandbox PRIVATE
+		ToasterEngine)
+
+toaster_set_target_properties(Sandbox)
+toaster_set_warnings(Sandbox)
+

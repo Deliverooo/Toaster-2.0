@@ -14,10 +14,28 @@
  */
 #pragma once
 
-#include <cstdint>
-#undef min
-#undef max
+#include "core_api.hpp"
+#include "core_typedefs.hpp"
+#include "events/event.hpp"
 
-namespace tst::gpu
+namespace tst
 {
+	class TST_CORE_API ILayer
+	{
+	public:
+		ILayer()          = default;
+		virtual ~ILayer() = default;
+
+		virtual void onInit() = 0;
+
+		virtual void onDestroy() = 0;
+
+		virtual void onUpdate(float32 dt) = 0;
+
+		virtual void onEvent(Event &event) = 0;
+
+		virtual void onGUIRender() = 0;
+
+	protected:
+	};
 }

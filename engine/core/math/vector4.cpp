@@ -34,12 +34,12 @@ namespace tst
 		return {x * val.x, y * val.y, z * val.z, w * val.w};
 	}
 
-	constexpr Vector4 Vector4::operator*(Float val) const
+	constexpr Vector4 Vector4::operator*(float32 val) const
 	{
 		return {x * val, y * val, z * val, w * val};
 	}
 
-	constexpr void Vector4::operator*=(Float val)
+	constexpr void Vector4::operator*=(float32 val)
 	{
 		x *= val;
 		y *= val;
@@ -52,12 +52,12 @@ namespace tst
 		return {x / val.x, y / val.y, z / val.z, w / val.w};
 	}
 
-	constexpr Vector4 Vector4::operator/(Float val) const
+	constexpr Vector4 Vector4::operator/(float32 val) const
 	{
 		return {x / val, y / val, z / val, w / val};
 	}
 
-	constexpr void Vector4::operator/=(Float val)
+	constexpr void Vector4::operator/=(float32 val)
 	{
 		x /= val;
 		y /= val;
@@ -108,17 +108,17 @@ namespace tst
 		return {x / length(), y / length(), z / length(), w / length()};
 	}
 
-	Float Vector4::length() const
+	float32 Vector4::length() const
 	{
 		return math::sqrt(x * x + y * y + z * z + w * w);
 	}
 
-	Float Vector4::dot(const Vector4 &v) const
+	float32 Vector4::dot(const Vector4 &v) const
 	{
 		return x * v.x + y * v.y + z * v.z + w * v.w;
 	}
 
-	Float Vector4::angle(const Vector4 &v) const
+	float32 Vector4::angle(const Vector4 &v) const
 	{
 		return math::acos(dot(v));
 	}
