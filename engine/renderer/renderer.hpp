@@ -1,5 +1,6 @@
 #pragma once
 
+#include "renderer_config_info.hpp"
 #include "render_command_queue.hpp"
 #include "core/core.hpp"
 #include "platform/render_thread.hpp"
@@ -40,6 +41,9 @@ namespace tst
 		// Initialization
 		static EError init();
 		static void   terminate();
+
+		static void                      setConfigInfo(const RendererConfigInfo &configInfo);
+		static const RendererConfigInfo &getConfigInfo();
 
 	private:
 		static RenderCommandQueue &_getRenderCommandQueue();

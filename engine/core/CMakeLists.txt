@@ -16,6 +16,8 @@ set(TST_CORE_SOURCES
 		misc/layer_stack.cpp
 
 		threading/thread.cpp
+
+		memory/ref_ptr.cpp
 )
 
 set(TST_CORE_HEADERS

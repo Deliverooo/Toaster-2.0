@@ -1,5 +1,8 @@
 set(TST_GPU_SOURCES
 		"${CMAKE_CURRENT_SOURCE_DIR}/device_manager.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/command_buffer.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/vertex_buffer.cpp"
+		"${CMAKE_CURRENT_SOURCE_DIR}/index_buffer.cpp"
 )
 
 # Add platform-specific sources

@@ -11,6 +11,8 @@ namespace tst
 
 	static RendererData *s_data = nullptr;
 
+	static RendererConfigInfo s_rendererConfigInfo;
+
 	constexpr uint32           s_renderCommandQueueCount = 2;
 	RenderCommandQueue *       s_renderCommandQueue[s_renderCommandQueueCount];
 	static std::atomic<uint32> s_renderCommandQueueSubmissionIndex = 0;
@@ -88,5 +90,15 @@ namespace tst
 	RenderCommandQueue &Renderer::_getRenderCommandQueue()
 	{
 		return *s_renderCommandQueue[s_renderCommandQueueSubmissionIndex];
+	}
+
+	const RendererConfigInfo &Renderer::getConfigInfo()
+	{
+		return s_rendererConfigInfo;
+	}
+
+	void Renderer::setConfigInfo(const RendererConfigInfo &configInfo)
+	{
+		s_rendererConfigInfo = configInfo;
 	}
 }
