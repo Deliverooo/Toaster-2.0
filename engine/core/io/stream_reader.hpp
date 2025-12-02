@@ -9,20 +9,33 @@
 
 namespace tst
 {
+	// Essentially a wrapper for std::istream
+	// The specific implementations would be FileStreamReader...
 	class StreamReader
 	{
 	public:
-		virtual      ~StreamReader();
+		virtual ~StreamReader();
+
+		// Example from FileStreamReader: return m_stream.is_good()
+		// see std::ifstream::is_good()
 		virtual bool isStreamGood() const = 0;
 
+		// Returns the current position in the stream
 		virtual uint64 getCurrentStreamPos() const = 0;
-		virtual void   setCurrentStreamPos() = 0;
 
-		virtual bool readData(uint8 *dst, uint64 size) = 0; // Reads data from the current stream position into the destination buffer
+		// Sets the current position in the stream
+		virtual void setCurrentStreamPos() = 0;
 
+		// Reads data from the current stream position into the destination buffer
+		virtual bool readData(uint8 *dst, uint64 size) = 0;
+
+		// Reads from the current stream into the destination buffer up to thr specified size
 		void readBuffer(Buffer &dst_buffer, uint32 size = 0u);
+
+		// Reads from the current stream into the destination string
 		void readString(String &dst_string);
 
+		// reads from the current stream into the destination type by the size of that type
 		template<typename Type>
 		void readRaw(Type &dst_type)
 		{
@@ -30,12 +43,16 @@ namespace tst
 			TST_ASSERT(success);
 		}
 
+		// read the current stream into the destination object
+		// This requires that the object derives from the Serializable interface and implements the serialize
+		// and deserialize methods
 		template<typename Type> requires std::is_base_of_v<Serializable, Type>
 		void readObject(Type &obj)
 		{
 			obj.deserialize(this);
 		}
 
+		// reads from the current stream into the destination map
 		template<typename TKey, typename TValue>
 		void readMap(std::map<TKey, TValue> &map, uint32 size = 0)
 		{
@@ -65,6 +82,7 @@ namespace tst
 			}
 		}
 
+		// reads from the current stream into the destination unordered_map
 		template<typename TKey, typename TValue>
 		void readMap(std::unordered_map<TKey, TValue> &map, uint32 size = 0)
 		{
@@ -94,6 +112,9 @@ namespace tst
 			}
 		}
 
+		// reads from the current stream into the destination map
+		// as String is a known object that we can deserialize,
+		// we can partially specialize the template to explicitly read the key back as a String
 		template<typename TValue>
 		void readMap(std::map<String, TValue> &map, uint32 size = 0)
 		{
@@ -116,8 +137,9 @@ namespace tst
 			}
 		}
 
+		// reads from the current stream into the destination vector
 		template<typename Type>
-		void writeArray(std::vector<Type> &array, uint32 size = 0)
+		void readArray(std::vector<Type> &array, uint32 size = 0)
 		{
 			if (size == 0)
 				readRaw<uint32>(size);
@@ -138,8 +160,11 @@ namespace tst
 		}
 	};
 
+	// reads from the current stream into the destination vector
+	// as String is a known object that we can deserialize,
+	// we can partially specialize the template to explicitly read the indices back as Strings
 	template<>
-	inline void StreamReader::writeArray(std::vector<String> &array, uint32 size)
+	inline void StreamReader::readArray(std::vector<String> &array, uint32 size)
 	{
 		if (size == 0)
 			readRaw<uint32>(size);

@@ -9,17 +9,30 @@
 
 namespace tst
 {
+	// Essentially a wrapper for std::ostream#
+	// The specific implementations would be FileStreamWriter...
 	class StreamWriter
 	{
 	public:
 		virtual      ~StreamWriter();
+
+		// Example from FileStreamWriter: return m_stream.is_good()
+		// see std::ofstream::is_good()
 		virtual bool isStreamGood() const = 0;
 
+		// Returns the current position in the stream
 		virtual uint64 getCurrentStreamPos() const = 0;
+
+		// Sets the current position in the stream
 		virtual void   setCurrentStreamPos() = 0;
 
+		// Writes data from the buffer into current stream
 		virtual bool writeData(const uint8 *data, size_t size) = 0;
+
+		// Writes data from the buffer into current stream
+		// If write_size is true, the buffer's size will be written aswell
 		void         writeBuffer(Buffer buffer, bool write_size = true);
+
 		void         writeZero(uint64_t size);
 		void         writeString(const String &string);
 

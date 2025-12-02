@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../core/memory/buffer.hpp"
+#include "memory/buffer.hpp"
 #include "command_buffer.hpp"
 
 namespace tst::gpu

@@ -267,6 +267,7 @@ namespace tst::gpu
 					  VK_API_VERSION_MAJOR(app_info.apiVersion), VK_API_VERSION_MINOR(app_info.apiVersion), VK_API_VERSION_PATCH(app_info.apiVersion),
 					  VK_API_VERSION_MAJOR(minimum_vulkan_api_version), VK_API_VERSION_MINOR(minimum_vulkan_api_version),
 					  VK_API_VERSION_PATCH(minimum_vulkan_api_version));
+
 			return EError::eFailedToCreate;
 		}
 
@@ -276,6 +277,7 @@ namespace tst::gpu
 		{
 			return str.c_str();
 		});
+
 		std::vector<const char *> enabled_validation_layers;
 		enabled_validation_layers.reserve(m_enabledValidationLayers.size());
 		std::ranges::transform(m_enabledValidationLayers, std::back_inserter(enabled_validation_layers), [](const String &str)
