@@ -1,4 +1,0 @@
-set(TST_MAIN_SOURCES "")
-list(APPEND TST_MAIN_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
-
-target_sources(ToasterEngine PRIVATE ${TST_MAIN_SOURCES})

@@ -56,8 +56,7 @@ include(ToasterUtils)
 
 
 # Add subdirectories
-add_subdirectory(extern)
-add_subdirectory(engine)
+add_subdirectory(toaster)
 
 # Print configuration summary
 message(STATUS "=== Toaster Engine Configuration ===")
@@ -89,4 +88,3 @@ target_link_libraries(Sandbox PRIVATE
 
 toaster_set_target_properties(Sandbox)
 toaster_set_warnings(Sandbox)
-
