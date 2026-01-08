@@ -17,6 +17,14 @@ set(SRC
 		io/filesystem.cpp
 		io/filesystem.hpp
 
+		io/serializable.hpp
+
+		io/stream_reader.hpp
+		io/stream_writer.hpp
+
+		io/file_stream.cpp
+		io/file_stream.hpp
+
 		math/math_vector.cpp
 		math/math_vector.hpp
 		math/math_constants.hpp

@@ -1,5 +1,7 @@
 #include "filesystem.hpp"
 
+#include <fstream>
+
 namespace toaster::io::filesystem
 {
 	static int skipByteOrderMark(std::istream &p_in)

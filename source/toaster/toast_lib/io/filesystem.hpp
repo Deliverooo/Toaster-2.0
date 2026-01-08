@@ -1,10 +1,6 @@
 #pragma once
 
 #include <filesystem>
-#include <fstream>
-
-#include "system_types.h"
-#include "toast_assert.h"
 
 namespace toaster::io::filesystem
 {

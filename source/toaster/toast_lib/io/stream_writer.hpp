@@ -9,50 +9,47 @@
 
 namespace toaster::io
 {
-	// Essentially a wrapper for std::istream
-	// The specific implementations would be FileStreamReader...
-	class StreamReader
+	// Essentially a wrapper for std::ostream
+	// The specific implementations would be FileStreamWriter...
+	class StreamWriter
 	{
 	public:
-		virtual ~StreamReader() = default;
+		virtual ~StreamWriter() = default;
 
-		// Example from FileStreamReader: return m_stream.is_good()
-		// see std::ifstream::is_good()
+		// Example from FileStreamWriter: return m_stream.is_good()
+		// see std::ofstream::is_good()
 		[[nodiscard]] virtual bool isGood() const = 0;
-
 		// Returns the current position in the stream
 		[[nodiscard]] virtual uint64 getStreamPos() const = 0;
 		// Sets the current position in the stream
 		virtual void setStreamPos(uint64 p_stream_pos) = 0;
 
 		// Reads data from the current stream position into the destination buffer
-		virtual bool readData(uint8 *p_dst, uint64 p_size) = 0;
+		virtual bool writeData(const uint8 *p_data, uint64 p_size) = 0;
 
-		// reads from the current stream into the destination type by the size of that type
+		// writes to the current stream into the destination type by the size of that type
 		template<typename Type> requires std::is_trivial_v<Type>
-		void read(Type &p_out_type)
+		void writeRaw(const Type &p_type)
 		{
-			const bool success = readData(reinterpret_cast<uint8 *>(&p_out_type), sizeof(Type));
-			TST_ASSERT_MSG(success, "Failed to read type");
+			const bool success = writeData(reinterpret_cast<int8 *>(&p_type), sizeof(Type));
+			TST_ASSERT_MSG(success, "Failed to write type");
 		}
 
-		// read the current stream into the destination object
+		// writes to the current stream into the destination object
 		// This requires that the object derives from the Serializable interface and implements the serialize
 		// and deserialize methods
 		template<typename TObj> requires std::is_object_v<TObj> && std::derived_from<TObj, Serializable>
-		void readRaw(TObj &p_out_obj)
+		void writeRaw(TObj &p_obj)
 		{
-			p_out_obj.deserialize(this);
+			p_obj.serialize(this);
 		}
 
-		void readString(std::string &p_out_str)
+		void writeString(const std::string &p_str)
 		{
 			// For strings, the size is written before the char buffer so we know how far into the data to read
-			uint64 size;
-			readData(reinterpret_cast<uint8 *>(&size), sizeof(uint64));
-
-			p_out_str.resize(size);
-			readData(reinterpret_cast<uint8 *>(p_out_str.data()), sizeof(char) * size);
+			uint64 size = p_str.size();
+			writeData(reinterpret_cast<uint8 *>(&size), sizeof(uint64));
+			writeData(reinterpret_cast<const uint8 *>(p_str.data()), sizeof(char) * size);
 		}
 
 		operator bool() const noexcept { return isGood(); }

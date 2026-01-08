@@ -1,17 +1,19 @@
 #include "application.hpp"
 
 #include <set>
-#include <spirv_cross/spirv_glsl.hpp>
 #include <glm/gtx/transform.hpp>
 #include <nvrhi/utils.h>
+#include <spirv_cross/spirv_glsl.hpp>
 
 #include "io/filesystem.hpp"
+#include "io/file_stream.hpp"
 
 #include "input.hpp"
 #include "logging.hpp"
 #include "shader_compiler.hpp"
 
-#define SHADER_REFLECTION_TEST 1
+#define SHADER_REFLECTION_TEST 0
+#define FILE_STREAM_TEST 0
 
 namespace shaders::vulkan
 {
@@ -27,12 +29,6 @@ namespace toaster
 	Application::Application()
 		: m_camera(glm::vec3(0.0f, 2.0f, 5.0f))
 	{
-		io::filesystem::setWorkingDirectory("../../../source/toaster/toast_shaders/");
-
-		if (io::filesystem::exists("test.vert.glsl"))
-		{
-			LOG_WARN("Orbo!");
-		}
 		Window::initWindowingAPI();
 
 		m_window = new Window(1280, 720, "Toaster: v0.314");
@@ -50,6 +46,17 @@ namespace toaster
 		};
 
 		m_testShader = new gpu::Shader(gpu_context, shader_bytecode_map);
+
+		#if FILE_STREAM_TEST
+		{
+			io::FileStreamWriter writer{"orbo.bin"};
+			writer.writeString("Orbo is sigma!");
+		} std::string test_str;
+		{
+			io::FileStreamReader reader{"orbo.bin"};
+			reader.readString(test_str);
+		} LOG_TRACE("{}", test_str);
+		#endif
 	}
 
 	Application::~Application() noexcept
