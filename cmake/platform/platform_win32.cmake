@@ -5,12 +5,6 @@ if (NOT MSVC)
 	message(FATAL_ERROR "Compiler is unsupported")
 endif ()
 
-
-# Needed, otherwise system encoding causes utf-8 encoding to fail in some cases (C4819)
-#add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
-#add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
-
-
 # Needed for some MSVC installations, example warning:
 # `4099 : PDB {filename} was not found with {object/library}`.
 string(APPEND CMAKE_EXE_LINKER_FLAGS " /SAFESEH:NO /ignore:4099")

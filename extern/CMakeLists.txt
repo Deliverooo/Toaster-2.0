@@ -1,8 +1,3 @@
-if (WITH_VULKAN_BACKEND)
-	add_subdirectory(vulkan_memory_allocator)
-endif ()
-
-
 add_subdirectory(assimp)
 
 add_subdirectory(fmt)

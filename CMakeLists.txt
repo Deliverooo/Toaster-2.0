@@ -29,12 +29,12 @@ message(STATUS "DEBUG: WITH_VULKAN_BACKEND is set to: '${WITH_VULKAN_BACKEND}'")
 if (WITH_VULKAN_BACKEND)
 	find_package(Vulkan REQUIRED COMPONENTS glslangValidator shaderc_combined SPIRV-Tools)
 
-	if (NOT ${Vulkan_FOUND} OR NOT ${Vulkan_glslangValidator_FOUND})
-		message(FATAL_ERROR "Vulkan enabled as a graphics backend, but cannot be found!")
+	if (NOT ${Vulkan_FOUND} OR NOT ${Vulkan_glslangValidator_FOUND} OR NOT ${Vulkan_shaderc_combined_FOUND} OR NOT ${Vulkan_SPIRV-Tools_FOUND})
+		message(FATAL_ERROR "Vulkan enabled as a graphics backend, but cannot be found or cannot find required components!")
+		message(FATAL_ERROR "Try (re)installing the Vulkan SDK and checking that the shader components are selected")
 
 	else ()
-		message(NOTICE "Found Vulkan and glslandValidator! :)")
-
+		message(NOTICE "Found Vulkan :)")
 	endif ()
 
 endif ()
@@ -62,6 +62,7 @@ set(CXX_WARNINGS)
 set(PLATFORM_LINKLIBS "")
 
 
+# Ts is from Blender's CMakeLists.txt ->
 # ----------------------------------------------------------------------------
 # Main Platform Checks
 #
@@ -124,9 +125,6 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_C_FLAGS "${C_WARNINGS} ${CMAKE_C_FLAGS} ${PLATFORM_CFLAGS}")
 set(CMAKE_CXX_FLAGS "${CXX_WARNINGS} ${CMAKE_CXX_FLAGS} ${PLATFORM_CFLAGS}")
-
-add_compile_definitions(TST_RESOURCE_DIR="${CMAKE_SOURCE_DIR}/release/")
-
 
 add_subdirectory(extern)
 add_subdirectory(source)

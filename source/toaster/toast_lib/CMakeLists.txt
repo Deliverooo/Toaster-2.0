@@ -1,11 +1,3 @@
-set(INC
-		PUBLIC .
-)
-
-
-set(INC_SYS "")
-
-
 set(SRC
 
 		logging.cpp
@@ -35,18 +27,12 @@ set(SRC
 		toast_exception.hpp
 )
 
-set(LIB
-		PUBLIC fmt
-		PUBLIC glm
-)
-
-if (WIN32)
-	list(APPEND LIB dxgi)
-endif ()
-
 add_library(toast_lib STATIC)
+
 target_include_directories(toast_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(toast_lib ${LIB})
 target_sources(toast_lib PRIVATE ${SRC})
+
+target_link_libraries(toast_lib PUBLIC glm)
+target_link_libraries(toast_lib PUBLIC fmt::fmt)
 
 add_library(tst::toast_lib ALIAS toast_lib)
