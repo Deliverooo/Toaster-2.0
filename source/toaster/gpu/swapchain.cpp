@@ -103,6 +103,8 @@ namespace toaster::gpu
 		for (uint32 i = 0u; i < GPUContext::c_maxFramesInFlight; i++)
 		{
 			m_acquireSemaphores[i] = vk_device.createSemaphore(vk::SemaphoreCreateInfo{});
+			// Create fences in signaled state so we don't wait on first use
+			m_acquireFences[i] = vk_device.createFence(vk::FenceCreateInfo{vk::FenceCreateFlagBits::eSignaled});
 		}
 
 		m_presentSemaphores.resize(m_swapchainImages.size());
@@ -144,6 +146,15 @@ namespace toaster::gpu
 				semaphore = nullptr;
 			}
 		}
+
+		for (auto &fence: m_acquireFences)
+		{
+			if (fence)
+			{
+				vk_device.destroyFence(fence);
+				fence = nullptr;
+			}
+		}
 	}
 
 	void Swapchain::onResize(uint32 p_width, uint32 p_height)
@@ -166,6 +177,11 @@ namespace toaster::gpu
 	{
 		auto       nv_device = dynamic_cast<nvrhi::vulkan::IDevice *>(m_gpuContext->getNVRHIDevice());
 		vk::Device vk_device = m_gpuContext->getLogicalDevice();
+
+		// Wait for the fence to ensure the semaphore from a previous frame is no longer in use
+		auto &fence = m_acquireFences[m_acquireSemaphoreIndex];
+		(void)vk_device.waitForFences(1, &fence, vk::True, std::numeric_limits<uint64>::max());
+		vk_device.resetFences(1, &fence);
 
 		const auto &semaphore = m_acquireSemaphores[m_acquireSemaphoreIndex];
 
@@ -196,6 +212,8 @@ namespace toaster::gpu
 			}
 		}
 
+		// Store the index used for this frame so present() can signal the corresponding fence
+		m_currentAcquireFenceIndex = m_acquireSemaphoreIndex;
 		m_acquireSemaphoreIndex = (m_acquireSemaphoreIndex + 1) % m_acquireSemaphores.size();
 
 		if (result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR) // Suboptimal is considered a success
@@ -210,13 +228,18 @@ namespace toaster::gpu
 
 	void Swapchain::present()
 	{
-		auto nv_device = dynamic_cast<nvrhi::vulkan::IDevice *>(m_gpuContext->getNVRHIDevice());
+		auto       nv_device = dynamic_cast<nvrhi::vulkan::IDevice *>(m_gpuContext->getNVRHIDevice());
+		vk::Device vk_device = m_gpuContext->getLogicalDevice();
 
 		nv_device->queueSignalSemaphore(nvrhi::CommandQueue::Graphics, m_presentSemaphores[m_swapchainIndex], 0);
 
 		// NVRHI buffers the semaphores and signals them when something is submitted to a queue.
 		// Call 'executeCommandLists' with no command lists to actually signal the semaphore.
 		nv_device->executeCommandLists(nullptr, 0);
+
+		// Submit an empty command buffer with the fence to track when the acquire semaphore is consumed
+		vk::SubmitInfo submitInfo{};
+		m_gpuContext->getGraphicsQueue().submit(1, &submitInfo, m_acquireFences[m_currentAcquireFenceIndex]);
 
 		vk::PresentInfoKHR info{};
 		info.waitSemaphoreCount = 1;

@@ -1,13 +1,17 @@
 #include "application.hpp"
 
-#include <chrono>
 #include <set>
-#include <sstream>
+#include <spirv_cross/spirv_glsl.hpp>
 #include <glm/gtx/transform.hpp>
+#include <nvrhi/utils.h>
+
+#include "io/filesystem.hpp"
 
 #include "input.hpp"
 #include "logging.hpp"
-#include "nvrhi/utils.h"
+#include "shader_compiler.hpp"
+
+#define SHADER_REFLECTION_TEST 1
 
 namespace shaders::vulkan
 {
@@ -23,6 +27,12 @@ namespace toaster
 	Application::Application()
 		: m_camera(glm::vec3(0.0f, 2.0f, 5.0f))
 	{
+		io::filesystem::setWorkingDirectory("../../../source/toaster/toast_shaders/");
+
+		if (io::filesystem::exists("test.vert.glsl"))
+		{
+			LOG_WARN("Orbo!");
+		}
 		Window::initWindowingAPI();
 
 		m_window = new Window(1280, 720, "Toaster: v0.314");
@@ -34,10 +44,9 @@ namespace toaster
 
 		m_commandList = nv_device->createCommandList();
 
-
-		std::map<nvrhi::ShaderType, gpu::ShaderBytecode> shader_bytecode_map{
-			{nvrhi::ShaderType::Vertex, shaders::vulkan::g_vs_test},
-			{nvrhi::ShaderType::Pixel, shaders::vulkan::g_ps_test}
+		std::map<nvrhi::ShaderType, gpu::ShaderBlob> shader_bytecode_map{
+			{nvrhi::ShaderType::Vertex, {shaders::vulkan::g_vs_test}},
+			{nvrhi::ShaderType::Pixel, {shaders::vulkan::g_ps_test}}
 		};
 
 		m_testShader = new gpu::Shader(gpu_context, shader_bytecode_map);

@@ -13,7 +13,7 @@ namespace toaster::gpu
 	class Shader
 	{
 	public:
-		Shader(GPUContext *p_ctx, const std::map<nvrhi::ShaderType, ShaderBytecode> &p_shader_bytecode_map);
+		Shader(GPUContext *p_ctx, const std::map<nvrhi::ShaderType, ShaderBlob> &p_shader_bytecode_map);
 		~Shader();
 
 		nvrhi::ShaderHandle getHandle() const;
@@ -24,7 +24,7 @@ namespace toaster::gpu
 
 		std::map<nvrhi::ShaderType, nvrhi::ShaderHandle> m_shaderHandles;
 
-		std::map<nvrhi::ShaderType, ShaderBytecode> m_shaderBytecodeMap;
+		std::map<nvrhi::ShaderType, ShaderBlob> m_shaderBytecodeMap;
 
 		reflection::ReflectionData m_reflectionData;
 	};

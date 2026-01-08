@@ -60,5 +60,7 @@ namespace toaster::gpu::reflection
 		std::vector<reflection::DescriptorSet> descriptorSets;
 	};
 
-	void reflectShaderStage(nvrhi::ShaderType p_stage, ShaderBytecode p_shader_binary, ReflectionData &p_out_reflection_data);
+	void reflectShaderStage(nvrhi::ShaderType p_stage, ShaderBlob p_shader_binary, ReflectionData &p_out_reflection_data);
+	void reflectShaderStage(nvrhi::ShaderType p_stage, const std::vector<uint32> &p_shader_binary, ReflectionData &p_out_reflection_data);
+	void reflectShaderStage(nvrhi::ShaderType p_stage, const uint32 *p_blob_data, uint64 p_blob_size, ReflectionData &p_out_reflection_data);
 }

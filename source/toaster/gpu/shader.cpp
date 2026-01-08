@@ -6,7 +6,7 @@
 
 namespace toaster::gpu
 {
-	Shader::Shader(GPUContext *p_ctx, const std::map<nvrhi::ShaderType, ShaderBytecode> &p_shader_bytecode_map) : m_gpuContext(p_ctx)
+	Shader::Shader(GPUContext *p_ctx, const std::map<nvrhi::ShaderType, ShaderBlob> &p_shader_bytecode_map) : m_gpuContext(p_ctx)
 	{
 		m_shaderBytecodeMap = p_shader_bytecode_map;
 

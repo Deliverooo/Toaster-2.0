@@ -34,6 +34,7 @@ if (WITH_VULKAN_BACKEND)
 
 	else ()
 		message(NOTICE "Found Vulkan and glslandValidator! :)")
+
 	endif ()
 
 endif ()

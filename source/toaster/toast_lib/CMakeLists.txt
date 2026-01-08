@@ -14,6 +14,9 @@ set(SRC
 		toast_assert.cpp
 		toast_assert.h
 
+		io/filesystem.cpp
+		io/filesystem.hpp
+
 		math/math_vector.cpp
 		math/math_vector.hpp
 		math/math_constants.hpp

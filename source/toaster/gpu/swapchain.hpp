@@ -45,6 +45,7 @@ namespace toaster::gpu
 		uint32         m_height{0u};
 
 		std::array<vk::Semaphore, 3> m_acquireSemaphores;
+		std::array<vk::Fence, 3>     m_acquireFences;      // Fence per acquire semaphore to track when it can be reused
 		std::vector<vk::Semaphore>   m_presentSemaphores; // One per swapchain image
 		vk::Semaphore                m_acquiredSemaphore;
 
@@ -54,6 +55,7 @@ namespace toaster::gpu
 		vk::SwapchainKHR     m_swapchain;
 
 		uint32 m_acquireSemaphoreIndex{0u};
+		uint32 m_currentAcquireFenceIndex{0u}; // Index of the fence to signal after present
 
 		struct SwapchainImage
 		{

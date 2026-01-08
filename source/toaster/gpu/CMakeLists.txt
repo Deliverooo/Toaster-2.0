@@ -12,6 +12,9 @@ set(GPU_SRC
 		shader_reflection.cpp
 		shader_reflection.hpp
 
+		shader_compiler.cpp
+		shader_compiler.hpp
+
 		shader_common.hpp
 
 		swapchain.cpp
@@ -38,13 +41,28 @@ target_link_libraries(toast_gpu PUBLIC tst::toast_lib)
 target_link_libraries(toast_gpu PUBLIC glfw)
 target_link_libraries(toast_gpu PUBLIC stb)
 target_link_libraries(toast_gpu PUBLIC nvrhi)
-target_link_libraries(toast_gpu PRIVATE spirv-cross-core)
+#target_link_libraries(toast_gpu PUBLIC spirv-cross-core)
+#target_link_libraries(toast_gpu PUBLIC spirv-cross-glsl)
+#target_link_libraries(toast_gpu PUBLIC spirv-cross-reflect)
 
 if (${Vulkan_FOUND})
 	message(NOTICE "Found Vulkan and glslandValidator! :)")
 	target_link_libraries(toast_gpu PUBLIC Vulkan::Vulkan)
+	target_link_libraries(toast_gpu PUBLIC Vulkan::shaderc_combined)
 	target_link_libraries(toast_gpu PUBLIC nvrhi_vk)
 
+	target_include_directories(toast_gpu PUBLIC "$ENV{VULKAN_SDK}/Include")
+
+	target_link_libraries(toast_gpu PUBLIC
+			debug "$ENV{VULKAN_SDK}/Lib/spirv-cross-cored.lib"
+			optimized "$ENV{VULKAN_SDK}/Lib/spirv-cross-core.lib"
+
+			debug "$ENV{VULKAN_SDK}/Lib/spirv-cross-glsld.lib"
+			optimized "$ENV{VULKAN_SDK}/Lib/spirv-cross-glsl.lib"
+
+			debug "$ENV{VULKAN_SDK}/Lib/spirv-cross-reflectd.lib"
+			optimized "$ENV{VULKAN_SDK}/Lib/spirv-cross-reflect.lib"
+	)
 
 else ()
 	message(FATAL_ERROR "Vulkan enabled as a graphics backend, but cannot be found!")
