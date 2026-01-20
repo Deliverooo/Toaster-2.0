@@ -27,6 +27,7 @@ namespace toaster::gpu
 		std::vector<FramebufferAttachment> attachments;
 
 		// If true, all framebuffer relevant information will be gathered from the swapchain
+		// This essentially means that the framebuffer class will just become a wrapper for the swapchain's current framebuffer
 		bool deriveFromSwapchain{false};
 
 		// Sets the blend mode for all attachments
@@ -39,14 +40,20 @@ namespace toaster::gpu
 		Framebuffer(GPUContext *p_ctx, const FramebufferSpecInfo &p_spec_info, Swapchain *p_swapchain = nullptr);
 		~Framebuffer();
 
-		uint32 getWidth() const;
-		uint32 getHeight() const;
+		[[nodiscard]] uint32 getWidth() const;
+		[[nodiscard]] uint32 getHeight() const;
 
-		nvrhi::FramebufferHandle   getHandle() const;
-		const FramebufferSpecInfo &getSpecInfo() const;
+		[[nodiscard]] nvrhi::FramebufferHandle   getHandle() const;
+		[[nodiscard]] const FramebufferSpecInfo &getSpecInfo() const;
+
+		Swapchain *getSwapchain() const;
 
 	private:
-		GPUContext *m_gpuContext{nullptr};
+		GPUContext *m_ctx{nullptr};
+
+		// If deriveFromSwapchain is set to true in FramebufferSpecInfo, this acts as a reference to use when calling getHandle().
+		// It will then just retrieve and return the swapchain's current framebuffer.
+		Swapchain *m_swapchain{nullptr};
 
 		FramebufferSpecInfo m_specInfo;
 		uint32              m_width{0u};

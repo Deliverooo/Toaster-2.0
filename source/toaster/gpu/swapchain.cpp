@@ -100,7 +100,7 @@ namespace toaster::gpu
 
 		m_swapchainIndex = 0u;
 
-		for (uint32 i = 0u; i < GPUContext::c_maxFramesInFlight; i++)
+		for (uint32 i = 0u; i < c_maxFramesInFlight; i++)
 		{
 			m_acquireSemaphores[i] = vk_device.createSemaphore(vk::SemaphoreCreateInfo{});
 			// Create fences in signaled state so we don't wait on first use
@@ -251,7 +251,7 @@ namespace toaster::gpu
 		vk::Result res = m_gpuContext->getPresentQueue().presentKHR(&info);
 		TST_ASSERT(res == vk::Result::eSuccess || res == vk::Result::eErrorOutOfDateKHR);
 
-		while (m_framesInFlight.size() >= GPUContext::c_maxFramesInFlight)
+		while (m_framesInFlight.size() >= c_maxFramesInFlight)
 		{
 			auto query = m_framesInFlight.front();
 			m_framesInFlight.pop();

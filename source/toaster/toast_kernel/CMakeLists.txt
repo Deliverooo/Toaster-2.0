@@ -11,8 +11,12 @@ set(SRC
 		camera.cpp
 		camera.hpp
 
-		mesh.cpp
-		mesh.hpp
+
+		events/event.hpp
+		events/key_event.hpp
+		events/mouse_event.hpp
+		events/window_event.hpp
+
 )
 
 
@@ -23,7 +27,9 @@ target_include_directories(toast_kernel PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(toast_kernel PUBLIC tst::toast_lib)
 target_link_libraries(toast_kernel PUBLIC tst::toast_gpu)
-target_link_libraries(toast_kernel PRIVATE tst::toast_shaders)
+target_link_libraries(toast_kernel PUBLIC tst::toast_shaders)
+
+target_link_libraries(toast_kernel PUBLIC httplib)
 
 target_link_libraries(toast_kernel PUBLIC glfw)
 target_link_libraries(toast_kernel PUBLIC assimp::assimp)

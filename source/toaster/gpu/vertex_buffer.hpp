@@ -1,25 +1,24 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include "ptr.hpp"
+#include "system_types.h"
+#include "vertex_buffer_layout.hpp"
 
 namespace toaster::gpu
 {
-	class GPUContext;
-
 	class VertexBuffer
 	{
 	public:
-		VertexBuffer(GPUContext *p_ctx, void *p_data, vk::DeviceSize p_size_bytes);
-		~VertexBuffer();
+		static RefPtr<VertexBuffer> create(uint32 p_size);
+		static RefPtr<VertexBuffer> create(float *p_data, uint32 p_size);
+		virtual                     ~VertexBuffer() = default;
 
-		[[nodiscard]] const vk::Buffer *getBuffer() const { return &m_buffer; }
-		vk::DeviceSize                  getSize() const { return m_size; }
+		virtual void bind() = 0;
+		virtual void unbind() = 0;
 
-	private:
-		GPUContext *m_gpuContext;
+		virtual void setData(const void *p_data, uint32 p_size) = 0;
 
-		vk::DeviceSize   m_size{0u};
-		vk::Buffer       m_buffer{nullptr};
-		vk::DeviceMemory m_bufferMemory{nullptr};
+		virtual void                      setLayout(const VertexBufferLayout &p_layout) = 0;
+		virtual const VertexBufferLayout &getLayout() = 0;
 	};
 }

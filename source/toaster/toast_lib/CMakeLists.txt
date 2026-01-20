@@ -6,6 +6,8 @@ set(SRC
 		toast_assert.cpp
 		toast_assert.h
 
+		ptr.hpp
+
 		io/filesystem.cpp
 		io/filesystem.hpp
 
@@ -22,9 +24,6 @@ set(SRC
 		math/math_constants.hpp
 
 		util_defines.hpp
-
-		toast_exception.cpp
-		toast_exception.hpp
 )
 
 add_library(toast_lib STATIC)

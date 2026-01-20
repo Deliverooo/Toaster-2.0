@@ -20,10 +20,15 @@ project(Toaster)
 if (DEFINED WITH_VULKAN_BACKEND)
 	message(NOTICE "WARNING: WITH_VULKAN_BACKEND was already defined as: ${WITH_VULKAN_BACKEND}")
 endif ()
-option(WITH_VULKAN_BACKEND "Enable Vulkan as graphics backend" ON)
 
-mark_as_advanced(WITH_VULKAN_BACKEND)
+set(WITH_VULKAN_BACKEND 0)
+set(WITH_OPENGL_BACKEND 1)
+
+add_compile_definitions(USE_VULKAN_BACKEND=${WITH_VULKAN_BACKEND})
+add_compile_definitions(USE_OPENGL_BACKEND=${WITH_OPENGL_BACKEND})
+
 message(STATUS "DEBUG: WITH_VULKAN_BACKEND is set to: '${WITH_VULKAN_BACKEND}'")
+message(STATUS "DEBUG: WITH_OPENGL_BACKEND is set to: '${WITH_OPENGL_BACKEND}'")
 
 
 if (WITH_VULKAN_BACKEND)
@@ -37,18 +42,6 @@ if (WITH_VULKAN_BACKEND)
 		message(NOTICE "Found Vulkan :)")
 	endif ()
 
-endif ()
-
-
-# Dx11 / Dx12
-if (WIN32)
-	option(WITH_DX11_BACKEND "Enable Dx11 as graphics backend" OFF)
-	option(WITH_DX12_BACKEND "Enable Dx12 as graphics backend" OFF)
-	mark_as_advanced(WITH_DX11_BACKEND)
-	mark_as_advanced(WITH_DX12_BACKEND)
-else ()
-	set(WITH_DX11_BACKEND OFF)
-	set(WITH_DX12_BACKEND OFF)
 endif ()
 
 # C/C++ flags
@@ -129,4 +122,4 @@ set(CMAKE_CXX_FLAGS "${CXX_WARNINGS} ${CMAKE_CXX_FLAGS} ${PLATFORM_CFLAGS}")
 add_subdirectory(extern)
 add_subdirectory(source)
 
-add_subdirectory(source/launcher)
+add_subdirectory(client)

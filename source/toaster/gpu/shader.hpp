@@ -1,31 +1,33 @@
 #pragma once
 
-#include <map>
-#include <span>
-
+#include "ptr.hpp"
 #include "shader_common.hpp"
-#include "shader_reflection.hpp"
+
+#include <map>
+#include <string>
+
+#include <glm/glm.hpp>
 
 namespace toaster::gpu
 {
-	class GPUContext;
-
 	class Shader
 	{
 	public:
-		Shader(GPUContext *p_ctx, const std::map<nvrhi::ShaderType, ShaderBlob> &p_shader_bytecode_map);
-		~Shader();
+		static RefPtr<Shader> create(const std::string &p_name, const std::map<EShaderType, ShaderBlob> &p_shader_bytecode_map);
+		static RefPtr<Shader> create(const std::string &p_name, const std::map<EShaderType, const char *> &p_shader_source_map);
 
-		nvrhi::ShaderHandle getHandle() const;
-		nvrhi::ShaderHandle getHandle(nvrhi::ShaderType p_shader_stage) const;
+		virtual ~Shader() = default;
 
-	private:
-		GPUContext *m_gpuContext{nullptr};
+		virtual void bind() const = 0;
+		virtual void unbind() const = 0;
 
-		std::map<nvrhi::ShaderType, nvrhi::ShaderHandle> m_shaderHandles;
-
-		std::map<nvrhi::ShaderType, ShaderBlob> m_shaderBytecodeMap;
-
-		reflection::ReflectionData m_reflectionData;
+		virtual void setUniform(const std::string &p_name, float p_value) = 0;
+		virtual void setUniform(const std::string &p_name, int p_value) = 0;
+		virtual void setUniform(const std::string &p_name, uint32 p_value) = 0;
+		virtual void setUniform(const std::string &p_name, const glm::vec2 &p_value) = 0;
+		virtual void setUniform(const std::string &p_name, const glm::vec3 &p_value) = 0;
+		virtual void setUniform(const std::string &p_name, const glm::vec4 &p_value) = 0;
+		virtual void setUniform(const std::string &p_name, const glm::mat3 &p_value) = 0;
+		virtual void setUniform(const std::string &p_name, const glm::mat4 &p_value) = 0;
 	};
 }

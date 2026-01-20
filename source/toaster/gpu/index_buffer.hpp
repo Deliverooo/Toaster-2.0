@@ -1,25 +1,19 @@
 #pragma once
 
-#include <vulkan/vulkan.hpp>
+#include "ptr.hpp"
+#include "system_types.h"
 
 namespace toaster::gpu
 {
-	class GPUContext;
-
 	class IndexBuffer
 	{
 	public:
-		IndexBuffer(GPUContext *p_ctx, void *p_data, vk::DeviceSize p_size_bytes);
-		~IndexBuffer();
+		static RefPtr<IndexBuffer> create(uint32 *p_data, uint32 p_count);
+		virtual                    ~IndexBuffer() = default;
 
-		[[nodiscard]] const vk::Buffer *getBuffer() const { return &m_buffer; }
-		vk::DeviceSize                  getSize() const { return m_size; }
+		virtual void bind() = 0;
+		virtual void unbind() = 0;
 
-	private:
-		GPUContext *m_gpuContext;
-
-		vk::DeviceSize   m_size{0u};
-		vk::Buffer       m_buffer{nullptr};
-		vk::DeviceMemory m_bufferMemory{nullptr};
+		virtual uint32 getIndexCount() = 0;
 	};
 }
