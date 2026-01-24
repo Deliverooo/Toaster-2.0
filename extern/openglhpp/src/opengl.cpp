@@ -1292,9 +1292,9 @@ namespace gl
 		glCopyTextureSubImage3D(texture, level, x_offset, y_offset, z_offset, x, y, width, height);
 	}
 
-	void createTextures(Enum target, SizeI n, UInt *textures)
+	void createTextures(TextureType p_target, SizeI n, UInt *textures)
 	{
-		glCreateTextures(target, n, textures);
+		glCreateTextures(static_cast<Enum>(p_target), n, textures);
 	}
 
 	void deleteTextures(SizeI n, const UInt *textures)

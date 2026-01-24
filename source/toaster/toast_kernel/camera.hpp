@@ -52,7 +52,7 @@ namespace toaster
 		float m_yaw;
 		float m_pitch;
 
-		float m_movementSpeed{5.0f};
+		float m_movementSpeed{2.5f};
 		float m_mouseSensitivity{0.1f};
 		float m_fov{45.0f};
 		float m_nearPlane{0.1f};

@@ -3,6 +3,10 @@
 #include <iostream>
 #include <openglhpp/opengl.hpp>
 
+#include "application.hpp"
+#include "globals.hpp"
+#include "input.hpp"
+#include "events/mouse_event.hpp"
 #include "io/file_stream.hpp"
 
 namespace shaders::opengl
@@ -13,61 +17,20 @@ namespace shaders::opengl
 
 namespace toaster
 {
-	float vertices[] = {
-		0.5f,
-		0.5f,
-		0.0f,
-		1.0f,
-		1.0f,
-		1.0f,
-		0.5f,
-		-0.5f,
-		0.0f,
-		0.0f,
-		1.0f,
-		0.0f,
-		-0.5f,
-		-0.5f,
-		0.0f,
-		0.0f,
-		1.0f,
-		1.0f,
-		-0.5f,
-		0.5f,
-		0.0f,
-		1.0f,
-		1.0f,
-		1.0f,
-	};
-	unsigned int indices[] = {
-		// note that we start from 0!
-		0,
-		1,
-		3,
-		// first Triangle
-		1,
-		2,
-		3 // second Triangle
-	};
-
-	ClientLayer::ClientLayer(Application *p_app_parent) : IAppLayer(p_app_parent)
+	ClientLayer::ClientLayer(Application *p_app_parent) : IAppLayer(p_app_parent), m_lastX(static_cast<float32>(p_app_parent->getWindow().getWidth()) / 2.0f),
+														  m_lastY(static_cast<float32>(p_app_parent->getWindow().getHeight()) / 2.0f)
 	{
-		io::filesystem::setWorkingDirectory("../../../source/toaster/toast_shaders");
+		std::vector<gpu::Vertex> vertices = {
+			{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+			{{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+			{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+			{{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+		};
+		std::vector<uint32> indices = {0, 1, 3, 1, 2, 3};
 
-		auto vs_source = io::filesystem::readFile("triangle.vert.glsl");
-		auto ps_source = io::filesystem::readFile("triangle.pixel.glsl");
+		m_mesh = gpu::Mesh::create(vertices, indices);
 
-		std::map<gpu::EShaderType, const char *> shader_source_map = {{gpu::EShaderType::eVertex, vs_source.c_str()}, {gpu::EShaderType::ePixel, ps_source.c_str()}};
-		m_shader                                                   = gpu::Shader::create("Triangle", shader_source_map);
-
-		auto vertex_buffer = gpu::VertexBuffer::create(vertices, sizeof(vertices));
-		vertex_buffer->setLayout({{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat3, "a_Colour"}});
-
-		auto index_buffer = gpu::IndexBuffer::create(indices, 6);
-		m_vao             = gpu::VertexArray::create();
-		m_vao->addVertexBuffer(vertex_buffer);
-		m_vao->setIndexBuffer(index_buffer);
-		m_vao->unbind();
+		input::setCursorMode(input::ECursorMode::eDisabled);
 	}
 
 	ClientLayer::~ClientLayer()
@@ -87,15 +50,58 @@ namespace toaster
 		gl::clear(gl::ClearMaskBits::eColor | gl::ClearMaskBits::eDepth);
 		gl::clearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
-		m_shader->bind();
+		if (input::isKeyDown(input::EKeyCode::eW))
+			m_camera.processKeyboard(Camera::EMovement::eForward, p_dt);
+		if (input::isKeyDown(input::EKeyCode::eS))
+			m_camera.processKeyboard(Camera::EMovement::eBackward, p_dt);
+		if (input::isKeyDown(input::EKeyCode::eD))
+			m_camera.processKeyboard(Camera::EMovement::eRight, p_dt);
+		if (input::isKeyDown(input::EKeyCode::eA))
+			m_camera.processKeyboard(Camera::EMovement::eLeft, p_dt);
+		if (input::isKeyDown(input::EKeyCode::eLeftShift))
+			m_camera.processKeyboard(Camera::EMovement::eDown, p_dt);
+		if (input::isKeyDown(input::EKeyCode::eSpace))
+			m_camera.processKeyboard(Camera::EMovement::eUp, p_dt);
 
-		m_shader->setUniform("u_Tst", 0.5f);
-		m_vao->bind();
+		auto shader = gpu::Globals::defaultShader();
+		shader->bind();
 
-		gl::drawElements(gl::DrawMode::eTriangles, 6, gl::DataType::eUnsignedInt, nullptr);
+		shader->setUniform("u_View", m_camera.getViewMatrix());
+		shader->setUniform("u_Proj", m_camera.getProjectionMatrix(16.0f / 9.0f));
+
+		m_mesh->draw();
 	}
 
 	void ClientLayer::onEvent(Event &p_event)
 	{
+		static float32 lastX = 0.0f;
+		static float32 lastY = 0.0f;
+
+		EventDispatcher eventDispatcher(p_event);
+		eventDispatcher.dispatch<MouseMoveEvent>([&](MouseMoveEvent &e)
+		{
+			if (m_firstMouse)
+			{
+				lastX        = e.getMouseX();
+				lastY        = e.getMouseY();
+				m_firstMouse = false;
+			}
+
+			double mouseDx = e.getMouseX() - lastX;
+			double mouseDy = lastY - e.getMouseY();
+			lastX          = e.getMouseX();
+			lastY          = e.getMouseY();
+
+			m_camera.processMouseMovement(mouseDx, mouseDy);
+
+			return false;
+		});
+
+		eventDispatcher.dispatch<WindowResizedEvent>([&](WindowResizedEvent &e)
+		{
+			gl::viewport(0, 0, e.getWidth(), e.getHeight());
+
+			return true;
+		});
 	}
 }

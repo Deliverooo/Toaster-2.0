@@ -30,6 +30,8 @@ namespace toaster
 			}
 		});
 
+		gpu::Globals::init();
+
 		input::setCurrentWindowContext(m_window->getNativeWindow());
 	}
 
@@ -42,6 +44,8 @@ namespace toaster
 		}
 		m_layers.clear();
 
+		gpu::Globals::shutdown();
+
 		delete m_window;
 
 		Window::shutdownWindowingAPI();
@@ -52,8 +56,6 @@ namespace toaster
 		while (m_isRunning)
 		{
 			const auto startTime = static_cast<float32>(glfwGetTime());
-			const auto endTime   = static_cast<float32>(glfwGetTime());
-			m_deltaTime          = endTime - startTime;
 
 			m_window->processEvents();
 			m_window->beginFrame();
@@ -66,7 +68,15 @@ namespace toaster
 				}
 			}
 			m_window->endFrame();
+
+			const auto endTime = static_cast<float32>(glfwGetTime());
+			m_deltaTime        = endTime - startTime;
 		}
+	}
+
+	Window &Application::getWindow() noexcept
+	{
+		return *m_window;
 	}
 
 	bool Application::onWindowClose(WindowClosedEvent &e)

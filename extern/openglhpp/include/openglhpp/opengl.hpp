@@ -1032,7 +1032,7 @@ namespace gl
 
 	TST_API void copyTextureSubImage3D(UInt texture, Int level, Int x_offset, Int y_offset, Int z_offset, Int x, Int y, SizeI width, SizeI height);
 
-	TST_API void createTextures(Enum target, SizeI n, UInt *textures);
+	TST_API void createTextures(TextureType p_target, SizeI n, UInt *textures);
 
 	TST_API void deleteTextures(SizeI n, const UInt *textures);
 

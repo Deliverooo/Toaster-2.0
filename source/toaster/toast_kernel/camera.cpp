@@ -17,10 +17,7 @@ namespace toaster
 
 	glm::mat4 Camera::getProjectionMatrix(float aspectRatio) const
 	{
-		glm::mat4 proj = glm::perspective(glm::radians(m_fov), aspectRatio, m_nearPlane, m_farPlane);
-		// Flip Y for Vulkan coordinate system
-		proj[1][1] *= -1.0f;
-		return proj;
+		return glm::perspective(glm::radians(m_fov), aspectRatio, m_nearPlane, m_farPlane);;
 	}
 
 	void Camera::processKeyboard(EMovement direction, float deltaTime)

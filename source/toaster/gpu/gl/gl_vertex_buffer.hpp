@@ -10,7 +10,7 @@ namespace toaster::gpu
 	{
 	public:
 		explicit GLVertexBuffer(uint32 p_size);
-		GLVertexBuffer(const float *p_data, uint32 p_size);
+		GLVertexBuffer(const void *p_data, uint32 p_size);
 		~GLVertexBuffer() override;
 
 		void bind() override;

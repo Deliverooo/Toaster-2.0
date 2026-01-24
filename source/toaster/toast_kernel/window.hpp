@@ -40,6 +40,7 @@ namespace toaster
 
 		[[nodiscard]] uint32             getWidth() const;
 		[[nodiscard]] uint32             getHeight() const;
+		float32                          getAspect() const;
 		[[nodiscard]] const std::string &getTitle() const;
 
 		[[nodiscard]] gpu::GPUContext *getGPUContext() const;

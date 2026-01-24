@@ -10,7 +10,7 @@ namespace toaster::gpu
 	{
 	public:
 		static RefPtr<VertexBuffer> create(uint32 p_size);
-		static RefPtr<VertexBuffer> create(float *p_data, uint32 p_size);
+		static RefPtr<VertexBuffer> create(void *p_data, uint32 p_size);
 		virtual                     ~VertexBuffer() = default;
 
 		virtual void bind() = 0;

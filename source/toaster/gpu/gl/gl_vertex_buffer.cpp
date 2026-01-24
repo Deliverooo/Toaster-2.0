@@ -9,7 +9,7 @@ namespace toaster::gpu
 		gl::bufferData(gl::BufferType::eArray, p_size, nullptr, gl::BufferUsage::eDynamicDraw);
 	}
 
-	GLVertexBuffer::GLVertexBuffer(const float *p_data, uint32 p_size)
+	GLVertexBuffer::GLVertexBuffer(const void *p_data, uint32 p_size)
 	{
 		gl::createBuffers(1, &m_vbo);
 		gl::bindBuffer(gl::BufferType::eArray, m_vbo);

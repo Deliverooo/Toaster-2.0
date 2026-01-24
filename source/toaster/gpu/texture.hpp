@@ -9,10 +9,17 @@ namespace toaster::gpu
 	class Texture
 	{
 	public:
-		static RefPtr<Texture> create(const io::filesystem::Path &p_path);
-		virtual                ~Texture() = default;
+		virtual ~Texture() = default;
 
-		virtual void bind();
-		virtual void unbind();
+		virtual void bind(uint32 p_slot = 0) const = 0;
+
+		virtual uint32 getWidth() const = 0;
+		virtual uint32 getHeight() const = 0;
+	};
+
+	class Texture2D : public Texture
+	{
+	public:
+		static RefPtr<Texture2D> create(const io::filesystem::Path &p_path);
 	};
 }

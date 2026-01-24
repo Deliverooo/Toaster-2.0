@@ -7,17 +7,17 @@
 
 namespace toaster::gpu
 {
-	class GLTexture : Texture
+	class GLTexture2D : Texture2D
 	{
 	public:
-		GLTexture(const io::filesystem::Path &p_path);
-		~GLTexture() override;
+		GLTexture2D(const io::filesystem::Path &p_path);
+		~GLTexture2D() override;
 
-		void bind() override;
-		void unbind() override;
+		void bind(uint32 p_slot) const override;
 
 	private:
 		io::filesystem::Path m_path;
-		gl::UInt             m_textureId{0u};
+
+		gl::UInt m_textureId{0u};
 	};
 }

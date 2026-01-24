@@ -8,6 +8,9 @@ set(GPU_SRC
 		shader.cpp
 		shader.hpp
 
+		material.hpp
+		material.cpp
+
 		vertex_array.cpp
 		vertex_array.hpp
 
@@ -17,8 +20,14 @@ set(GPU_SRC
 		index_buffer.cpp
 		index_buffer.hpp
 
+		globals.cpp
+		globals.hpp
+
 		uniform_buffer.cpp
 		uniform_buffer.hpp
+
+		mesh.hpp
+		mesh.cpp
 )
 
 if (${WITH_OPENGL_BACKEND})
@@ -40,6 +49,9 @@ if (${WITH_OPENGL_BACKEND})
 
 			gl/gl_shader.cpp
 			gl/gl_shader.hpp
+
+			gl/gl_material.cpp
+			gl/gl_material.hpp
 	)
 endif ()
 

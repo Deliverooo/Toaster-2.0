@@ -235,6 +235,11 @@ namespace toaster
 		return m_callbackData.width;
 	}
 
+	float32 Window::getAspect() const
+	{
+		return static_cast<float32>(m_callbackData.height) / static_cast<float32>(m_callbackData.width);
+	}
+
 	uint32 Window::getHeight() const
 	{
 		return m_callbackData.height;

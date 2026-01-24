@@ -6,6 +6,7 @@
 
 #include <glm/glm.hpp>
 
+#include "globals.hpp"
 #include "input.hpp"
 #include "layer.hpp"
 #include "window.hpp"
@@ -21,6 +22,8 @@ namespace toaster
 		~Application() noexcept;
 
 		void run();
+
+		Window &getWindow() noexcept;
 
 	private:
 		bool onWindowClose(WindowClosedEvent &e);
