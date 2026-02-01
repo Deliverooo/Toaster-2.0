@@ -74,6 +74,11 @@ namespace toaster
 		}
 	}
 
+	void Application::close() noexcept
+	{
+		m_isRunning = false;
+	}
+
 	Window &Application::getWindow() noexcept
 	{
 		return *m_window;

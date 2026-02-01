@@ -6,6 +6,7 @@
 #include "application.hpp"
 #include "globals.hpp"
 #include "input.hpp"
+#include "events/key_event.hpp"
 #include "events/mouse_event.hpp"
 #include "io/file_stream.hpp"
 
@@ -103,5 +104,17 @@ namespace toaster
 
 			return true;
 		});
+
+		eventDispatcher.dispatch<KeyPressedEvent>([&](KeyPressedEvent &e)
+		{
+			if (e.getKeyCode() == input::EKeyCode::eEscape)
+			{
+				m_appParent->close();
+			}
+
+			return false;
+
+		});
+
 	}
 }

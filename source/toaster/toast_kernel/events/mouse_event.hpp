@@ -1,7 +1,7 @@
 #pragma once
 
 #include "event.hpp"
-#include "keycodes.hpp"
+#include "input.hpp"
 
 #include <string>
 
@@ -62,20 +62,20 @@ namespace toaster
 	public:
 		EVENT_CLASS_CATEGORY(EventCategory_Input | EventCategory_Mouse)
 
-		MouseButton getMouseButton() const { return m_mouseButton; }
+		input::EMouseButton getMouseButton() const { return m_mouseButton; }
 
 	protected:
-		explicit MouseButtonEvent(const MouseButton button) : m_mouseButton(button)
+		explicit MouseButtonEvent(const input::EMouseButton button) : m_mouseButton(button)
 		{
 		}
 
-		MouseButton m_mouseButton;
+		input::EMouseButton m_mouseButton;
 	};
 
 	class MouseButtonPressEvent final : public MouseButtonEvent
 	{
 	public:
-		explicit MouseButtonPressEvent(const MouseButton button) : MouseButtonEvent(button)
+		explicit MouseButtonPressEvent(const input::EMouseButton button) : MouseButtonEvent(button)
 		{
 		}
 
@@ -92,7 +92,7 @@ namespace toaster
 	class MouseButtonReleaseEvent final : public MouseButtonEvent
 	{
 	public:
-		explicit MouseButtonReleaseEvent(const MouseButton button) : MouseButtonEvent(button)
+		explicit MouseButtonReleaseEvent(const input::EMouseButton button) : MouseButtonEvent(button)
 		{
 		}
 
@@ -107,7 +107,7 @@ namespace toaster
 	class MouseButtonDownEvent final : public MouseButtonEvent
 	{
 	public:
-		explicit MouseButtonDownEvent(const MouseButton button)
+		explicit MouseButtonDownEvent(const input::EMouseButton button)
 			: MouseButtonEvent(button)
 		{
 		}

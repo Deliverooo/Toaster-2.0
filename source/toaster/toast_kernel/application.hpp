@@ -22,6 +22,7 @@ namespace toaster
 		~Application() noexcept;
 
 		void run();
+		void close() noexcept;
 
 		Window &getWindow() noexcept;
 

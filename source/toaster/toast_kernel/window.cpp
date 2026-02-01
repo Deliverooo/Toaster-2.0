@@ -96,19 +96,19 @@ namespace toaster
 			{
 				case GLFW_PRESS:
 				{
-					KeyPressedEvent event(static_cast<KeyCode>(key), 0);
+					KeyPressedEvent event(static_cast<input::EKeyCode>(key), 0);
 					data.eventCallback(event);
 					break;
 				}
 				case GLFW_RELEASE:
 				{
-					KeyReleasedEvent event(static_cast<KeyCode>(key));
+					KeyReleasedEvent event(static_cast<input::EKeyCode>(key));
 					data.eventCallback(event);
 					break;
 				}
 				case GLFW_REPEAT:
 				{
-					KeyPressedEvent event(static_cast<KeyCode>(key), 1);
+					KeyPressedEvent event(static_cast<input::EKeyCode>(key), 1);
 					data.eventCallback(event);
 					break;
 				}
@@ -121,7 +121,7 @@ namespace toaster
 		{
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
-			KeyTypedEvent event(static_cast<KeyCode>(codepoint));
+			KeyTypedEvent event(static_cast<input::EKeyCode>(codepoint));
 			data.eventCallback(event);
 		});
 
@@ -133,13 +133,13 @@ namespace toaster
 			{
 				case GLFW_PRESS:
 				{
-					MouseButtonPressEvent event(static_cast<MouseButton>(button));
+					MouseButtonPressEvent event(static_cast<input::EMouseButton>(button));
 					data.eventCallback(event);
 					break;
 				}
 				case GLFW_RELEASE:
 				{
-					MouseButtonReleaseEvent event(static_cast<MouseButton>(button));
+					MouseButtonReleaseEvent event(static_cast<input::EMouseButton>(button));
 					data.eventCallback(event);
 					break;
 				}
