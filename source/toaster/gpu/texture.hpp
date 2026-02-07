@@ -13,8 +13,8 @@ namespace toaster::gpu
 
 		virtual void bind(uint32 p_slot = 0) const = 0;
 
-		virtual uint32 getWidth() const = 0;
-		virtual uint32 getHeight() const = 0;
+		[[nodiscard]] virtual uint32 getWidth() const = 0;
+		[[nodiscard]] virtual uint32 getHeight() const = 0;
 	};
 
 	class Texture2D : public Texture

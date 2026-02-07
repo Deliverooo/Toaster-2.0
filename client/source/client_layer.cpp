@@ -6,6 +6,7 @@
 #include "application.hpp"
 #include "globals.hpp"
 #include "input.hpp"
+#include "renderer.hpp"
 #include "events/key_event.hpp"
 #include "events/mouse_event.hpp"
 #include "io/file_stream.hpp"
@@ -21,16 +22,6 @@ namespace toaster
 	ClientLayer::ClientLayer(Application *p_app_parent) : IAppLayer(p_app_parent), m_lastX(static_cast<float32>(p_app_parent->getWindow().getWidth()) / 2.0f),
 														  m_lastY(static_cast<float32>(p_app_parent->getWindow().getHeight()) / 2.0f)
 	{
-		std::vector<gpu::Vertex> vertices = {
-			{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-			{{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-			{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-			{{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-		};
-		std::vector<uint32> indices = {0, 1, 3, 1, 2, 3};
-
-		m_mesh = gpu::Mesh::create(vertices, indices);
-
 		input::setCursorMode(input::ECursorMode::eDisabled);
 	}
 
@@ -48,6 +39,8 @@ namespace toaster
 
 	void ClientLayer::onUpdate(float32 p_dt)
 	{
+		m_time += p_dt;
+
 		gl::clear(gl::ClearMaskBits::eColor | gl::ClearMaskBits::eDepth);
 		gl::clearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
@@ -64,13 +57,18 @@ namespace toaster
 		if (input::isKeyDown(input::EKeyCode::eSpace))
 			m_camera.processKeyboard(Camera::EMovement::eUp, p_dt);
 
-		auto shader = gpu::Globals::defaultShader();
+		auto shader = gpu::Globals::quadShader();
 		shader->bind();
 
 		shader->setUniform("u_View", m_camera.getViewMatrix());
 		shader->setUniform("u_Proj", m_camera.getProjectionMatrix(16.0f / 9.0f));
 
-		m_mesh->draw();
+		shader->setUniform("u_Time", m_time);
+		shader->setUniform("u_Resolution", {m_appParent->getWindow().getWidth(), m_appParent->getWindow().getHeight()});
+
+		Renderer::submitQuad(glm::vec3(0.0f, 0.0f, 0.0f));
+
+		Renderer::submitQuad(glm::vec3(0.0f, 1.0f, 1.0f));
 	}
 
 	void ClientLayer::onEvent(Event &p_event)
@@ -113,8 +111,6 @@ namespace toaster
 			}
 
 			return false;
-
 		});
-
 	}
 }

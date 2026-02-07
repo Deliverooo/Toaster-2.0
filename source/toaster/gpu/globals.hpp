@@ -2,6 +2,7 @@
 
 #include "material.hpp"
 #include "shader.hpp"
+#include "vertex_array.hpp"
 
 namespace toaster::gpu
 {
@@ -11,7 +12,9 @@ namespace toaster::gpu
 		static void init();
 		static void shutdown();
 
-		static RefPtr<Shader> defaultShader();
-		static RefPtr<Material> defaultMaterial();
+		static RefPtr<Shader> quadShader();
+
+		static RefPtr<VertexArray> quadVertexArray();
+
 	};
 }

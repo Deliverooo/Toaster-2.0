@@ -11,6 +11,8 @@ set(SRC
 		camera.cpp
 		camera.hpp
 
+		renderer.hpp
+		renderer.cpp
 
 		events/event.hpp
 		events/key_event.hpp

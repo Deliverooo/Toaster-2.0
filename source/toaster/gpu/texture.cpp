@@ -1,4 +1,3 @@
-#include "texture.hpp"
 #include "gl/gl_texture.hpp"
 
 namespace toaster::gpu

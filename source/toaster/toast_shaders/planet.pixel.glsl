@@ -1,21 +1,11 @@
 #version 450
 
-struct VertexIn
-{
-    vec3 fragPos;
-    vec2 texCoord;
-};
-
-layout(location = 0) in VertexIn v_in;
-
-layout(push_constant) uniform PushConstants
-{
-    float time;
-    vec2  res;
-    vec2  mouse;
-} pcs;
+layout (location = 0) in vec2 v_TexCoords;
 
 layout(location = 0) out vec4 o_fragColour;
+
+uniform float u_Time;
+uniform vec2 u_Resolution;
 
 #define PI  3.141592654
 #define TAU (2.0*PI)
@@ -316,7 +306,7 @@ vec3 getColor(vec3 ro, vec3 rd) {
 }
 
 vec3 getSample1(vec2 p, float time) {
-    float off = 0.5*pcs.time;
+    float off = 0.5*time;
 
     vec3 ro  = vec3(0.5, 1.0-0.25, -2.0 + off);
     vec3 la  = ro + vec3(0.0, -0.30, 2.0);
@@ -352,16 +342,15 @@ vec3 getSample2(vec2 p, float time) {
 
 }
 
-
 void main()
 {
 
-    vec2 q = gl_FragCoord.xy/pcs.res.xy;
+//    vec2 q = gl_FragCoord.xy/u_Resolution.xy;
+    vec2 q = v_TexCoords;
     vec2 p = -1.0 + 2.0*q;
-    p.x *= pcs.res.x/pcs.res.y;
+    p.x *= u_Resolution.x/u_Resolution.y;
 
-    vec3 col = getSample1(-p, pcs.time);
-
+    vec3 col = getSample1(p, u_Time);
 
     o_fragColour = vec4(col, 1.0f);
 }

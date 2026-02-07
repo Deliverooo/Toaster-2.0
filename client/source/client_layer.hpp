@@ -1,13 +1,10 @@
 #pragma once
 
-#include <mesh.hpp>
-
 #include "camera.hpp"
 #include "layer.hpp"
+#include "mesh.hpp"
 
 #include "shader.hpp"
-
-#include "mesh.hpp"
 
 #include "vertex_array.hpp"
 
@@ -25,12 +22,14 @@ namespace toaster
 		void onEvent(Event &p_event) override;
 
 	private:
-		RefPtr<gpu::Mesh> m_mesh;
+		RefPtr<gpu::Mesh> m_quad;
 
 		Camera m_camera;
 
 		float32 m_lastX;
 		float32 m_lastY;
 		bool    m_firstMouse{true};
+
+		float32 m_time{0.0f};
 	};
 }

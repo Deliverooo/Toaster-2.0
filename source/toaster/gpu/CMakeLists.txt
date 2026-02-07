@@ -11,6 +11,9 @@ set(GPU_SRC
 		material.hpp
 		material.cpp
 
+		texture.hpp
+		texture.cpp
+
 		vertex_array.cpp
 		vertex_array.hpp
 
@@ -50,6 +53,9 @@ if (${WITH_OPENGL_BACKEND})
 			gl/gl_shader.cpp
 			gl/gl_shader.hpp
 
+			gl/gl_texture.cpp
+			gl/gl_texture.hpp
+
 			gl/gl_material.cpp
 			gl/gl_material.hpp
 	)
@@ -70,6 +76,7 @@ target_sources(toast_gpu PRIVATE ${GPU_SRC})
 target_link_libraries(toast_gpu PUBLIC tst::toast_lib)
 target_link_libraries(toast_gpu PUBLIC glfw)
 target_link_libraries(toast_gpu PUBLIC stb)
+target_link_libraries(toast_gpu PUBLIC assimp::assimp)
 
 
 if (${WITH_OPENGL_BACKEND})

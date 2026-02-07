@@ -12,4 +12,10 @@ namespace toaster
 
 	template<typename Type>
 	using UniquePtr = std::unique_ptr<Type>;
+
+	template<typename Type, typename... TArgs>
+	RefPtr<Type> make_reference(TArgs &&... p_args)
+	{
+		return std::make_shared<Type>(std::forward<TArgs>(p_args)...);
+	}
 }
