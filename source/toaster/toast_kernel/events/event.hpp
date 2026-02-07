@@ -13,6 +13,7 @@ namespace toaster
 		None = 0,
 		WindowClose,
 		WindowMinimize,
+		WindowMaximize,
 		WindowResize,
 		WindowFocus,
 		WindowLostFocus,

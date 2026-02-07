@@ -4,10 +4,10 @@
 
 namespace toaster
 {
-	class WindowClosedEvent final : public Event
+	class WindowCloseEvent final : public Event
 	{
 	public:
-		WindowClosedEvent() = default;
+		WindowCloseEvent() = default;
 
 		EVENT_CLASS_CATEGORY(EventCategory_Application)
 		EVENT_CLASS_TYPE(WindowClose)
@@ -18,10 +18,10 @@ namespace toaster
 		}
 	};
 
-	class WindowResizedEvent final : public Event
+	class WindowResizeEvent final : public Event
 	{
 	public:
-		WindowResizedEvent(const uint32_t width, const uint32_t height) : m_width(width), m_height(height)
+		WindowResizeEvent(const uint32_t width, const uint32_t height) : m_width(width), m_height(height)
 		{
 		}
 
@@ -43,10 +43,10 @@ namespace toaster
 		uint32_t m_height;
 	};
 
-	class WindowMinimizedEvent final : public Event
+	class WindowMinimizeEvent final : public Event
 	{
 	public:
-		explicit WindowMinimizedEvent(const bool minimized) : m_minimized(minimized)
+		explicit WindowMinimizeEvent(const bool minimized) : m_minimized(minimized)
 		{
 		}
 
@@ -64,5 +64,28 @@ namespace toaster
 
 	private:
 		bool m_minimized;
+	};
+
+	class WindowMaximizeEvent final : public Event
+	{
+	public:
+		explicit WindowMaximizeEvent(const bool p_maximized) : m_maximized(p_maximized)
+		{
+		}
+
+		EVENT_CLASS_CATEGORY(EventCategory_Application)
+		EVENT_CLASS_TYPE(WindowMaximize)
+
+		[[nodiscard]] bool isMaximized() const { return m_maximized; }
+
+		[[nodiscard]] virtual std::string toStr() const override
+		{
+			std::ostringstream ss;
+			ss << "Window Minimized Event -> [" << m_maximized << "]";
+			return ss.str();
+		}
+
+	private:
+		bool m_maximized;
 	};
 }

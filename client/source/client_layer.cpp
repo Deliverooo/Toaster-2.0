@@ -1,7 +1,6 @@
 #include "client_layer.hpp"
 
 #include <iostream>
-#include <openglhpp/opengl.hpp>
 
 #include "application.hpp"
 #include "globals.hpp"
@@ -11,16 +10,10 @@
 #include "events/mouse_event.hpp"
 #include "io/file_stream.hpp"
 
-namespace shaders::opengl
-{
-	#include "triangle.vert.glsl.spv.gl.inl"
-	#include "triangle.pixel.glsl.spv.gl.inl"
-}
-
 namespace toaster
 {
-	ClientLayer::ClientLayer(Application *p_app_parent) : IAppLayer(p_app_parent), m_lastX(static_cast<float32>(p_app_parent->getWindow().getWidth()) / 2.0f),
-														  m_lastY(static_cast<float32>(p_app_parent->getWindow().getHeight()) / 2.0f)
+	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app), m_lastX(static_cast<float32>(p_app->getWindow().getWidth()) / 2.0f),
+												   m_lastY(static_cast<float32>(p_app->getWindow().getHeight()) / 2.0f)
 	{
 		input::setCursorMode(input::ECursorMode::eDisabled);
 	}
@@ -41,8 +34,8 @@ namespace toaster
 	{
 		m_time += p_dt;
 
-		gl::clear(gl::ClearMaskBits::eColor | gl::ClearMaskBits::eDepth);
-		gl::clearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		RenderCommand::clearColour({0.2f, 0.3f, 0.3f, 1.0f});
+		RenderCommand::clear();
 
 		if (input::isKeyDown(input::EKeyCode::eW))
 			m_camera.processKeyboard(Camera::EMovement::eForward, p_dt);
@@ -64,7 +57,7 @@ namespace toaster
 		shader->setUniform("u_Proj", m_camera.getProjectionMatrix(16.0f / 9.0f));
 
 		shader->setUniform("u_Time", m_time);
-		shader->setUniform("u_Resolution", {m_appParent->getWindow().getWidth(), m_appParent->getWindow().getHeight()});
+		shader->setUniform("u_Resolution", {getApp().getWindow().getWidth(), getApp().getWindow().getHeight()});
 
 		Renderer::submitQuad(glm::vec3(0.0f, 0.0f, 0.0f));
 
@@ -96,18 +89,30 @@ namespace toaster
 			return false;
 		});
 
-		eventDispatcher.dispatch<WindowResizedEvent>([&](WindowResizedEvent &e)
+		eventDispatcher.dispatch<WindowResizeEvent>([&](WindowResizeEvent &e)
 		{
-			gl::viewport(0, 0, e.getWidth(), e.getHeight());
+			RenderCommand::setViewport({0, 0, e.getWidth(), e.getHeight()});
 
-			return true;
+			return false;
 		});
 
-		eventDispatcher.dispatch<KeyPressedEvent>([&](KeyPressedEvent &e)
+		eventDispatcher.dispatch<KeyPressEvent>([&](KeyPressEvent &e)
 		{
+			if (e.getKeyCode() == input::EKeyCode::eI)
+			{
+				if (input::getCursorMode() == input::ECursorMode::eDisabled)
+				{
+					input::setCursorMode(input::ECursorMode::eNormal);
+				}
+				else
+				{
+					input::setCursorMode(input::ECursorMode::eDisabled);
+				}
+			}
+
 			if (e.getKeyCode() == input::EKeyCode::eEscape)
 			{
-				m_appParent->close();
+				getApp().close();
 			}
 
 			return false;

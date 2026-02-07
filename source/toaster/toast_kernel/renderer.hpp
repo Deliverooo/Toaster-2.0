@@ -1,12 +1,11 @@
 #pragma once
 
-#include "mesh.hpp"
-#include "shader.hpp"
+#include "render_command.hpp"
 
 namespace toaster
 {
 	// Static interface class
-	class Renderer
+	class Renderer final
 	{
 	public:
 		static void submitQuad(const glm::vec3 &p_positon);

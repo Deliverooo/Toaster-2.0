@@ -14,6 +14,9 @@ set(GPU_SRC
 		texture.hpp
 		texture.cpp
 
+		gpu_api.hpp
+		gpu_api.cpp
+
 		vertex_array.cpp
 		vertex_array.hpp
 
@@ -35,6 +38,10 @@ set(GPU_SRC
 
 if (${WITH_OPENGL_BACKEND})
 	list(APPEND GPU_SRC
+
+			gl/gl_gpu_api.hpp
+			gl/gl_gpu_api.cpp
+
 			gl/gl_gpu_context.hpp
 			gl/gl_gpu_context.cpp
 
@@ -76,8 +83,6 @@ target_sources(toast_gpu PRIVATE ${GPU_SRC})
 target_link_libraries(toast_gpu PUBLIC tst::toast_lib)
 target_link_libraries(toast_gpu PUBLIC glfw)
 target_link_libraries(toast_gpu PUBLIC stb)
-target_link_libraries(toast_gpu PUBLIC assimp::assimp)
-
 
 if (${WITH_OPENGL_BACKEND})
 	target_link_libraries(toast_gpu PUBLIC openglhpp)
@@ -97,9 +102,6 @@ if (${WITH_OPENGL_BACKEND})
 endif ()
 
 if (${WITH_VULKAN_BACKEND})
-
-	target_link_libraries(toast_gpu PUBLIC nvrhi)
-	target_link_libraries(toast_gpu PUBLIC nvrhi_vk)
 
 	target_link_libraries(toast_gpu PUBLIC Vulkan::Vulkan)
 	target_link_libraries(toast_gpu PUBLIC Vulkan::shaderc_combined)

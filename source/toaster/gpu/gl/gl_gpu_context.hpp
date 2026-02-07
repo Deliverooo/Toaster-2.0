@@ -4,11 +4,11 @@
 
 namespace toaster::gpu
 {
-	class GLGPUContext : public GPUContext
+	class GLGPUContext final : public GPUContext
 	{
 	public:
-		GLGPUContext(GLFWwindow *p_window);
-		~GLGPUContext() override;
+		explicit GLGPUContext(GLFWwindow *p_window);
+		~GLGPUContext() override = default;
 
 	private:
 		GLFWwindow *m_window{nullptr};

@@ -2,7 +2,6 @@
 
 #include "globals.hpp"
 
-#include <openglhpp/opengl.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
 namespace toaster
@@ -14,7 +13,6 @@ namespace toaster
 
 		gpu::Globals::quadShader()->setUniform("u_Model", model);
 
-		gpu::Globals::quadVertexArray()->bind();
-		gl::drawElements(gl::DrawMode::eTriangles, gpu::Globals::quadVertexArray()->getIndexBuffer()->getIndexCount(), gl::DataType::eUnsignedInt, nullptr);
+		RenderCommand::drawIndexed(gpu::Globals::quadVertexArray());
 	}
 }

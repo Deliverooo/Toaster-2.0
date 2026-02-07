@@ -20,10 +20,10 @@ namespace toaster
 		input::EKeyCode m_keyCode;
 	};
 
-	class KeyPressedEvent final : public KeyEvent
+	class KeyPressEvent final : public KeyEvent
 	{
 	public:
-		KeyPressedEvent(const input::EKeyCode keycode, const int repeatCount) : KeyEvent(keycode), m_repeatCount(repeatCount)
+		KeyPressEvent(const input::EKeyCode keycode, const int repeatCount) : KeyEvent(keycode), m_repeatCount(repeatCount)
 		{
 		}
 
@@ -42,10 +42,10 @@ namespace toaster
 		int m_repeatCount;
 	};
 
-	class KeyTypedEvent final : public KeyEvent
+	class KeyTypeEvent final : public KeyEvent
 	{
 	public:
-		explicit KeyTypedEvent(const input::EKeyCode keycode) : KeyEvent(keycode)
+		explicit KeyTypeEvent(const input::EKeyCode keycode) : KeyEvent(keycode)
 		{
 		}
 
@@ -59,10 +59,10 @@ namespace toaster
 		}
 	};
 
-	class KeyReleasedEvent final : public KeyEvent
+	class KeyReleaseEvent final : public KeyEvent
 	{
 	public:
-		explicit KeyReleasedEvent(const input::EKeyCode keycode) : KeyEvent(keycode)
+		explicit KeyReleaseEvent(const input::EKeyCode keycode) : KeyEvent(keycode)
 		{
 		}
 

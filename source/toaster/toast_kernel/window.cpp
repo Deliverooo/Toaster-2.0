@@ -74,7 +74,7 @@ namespace toaster
 		{
 			auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
-			WindowResizedEvent event(width, height);
+			WindowResizeEvent event(width, height);
 			data.eventCallback(event);
 			data.width  = width;
 			data.height = height;
@@ -84,7 +84,7 @@ namespace toaster
 		{
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
-			WindowClosedEvent event;
+			WindowCloseEvent event;
 			data.eventCallback(event);
 		});
 
@@ -96,19 +96,19 @@ namespace toaster
 			{
 				case GLFW_PRESS:
 				{
-					KeyPressedEvent event(static_cast<input::EKeyCode>(key), 0);
+					KeyPressEvent event(static_cast<input::EKeyCode>(key), 0);
 					data.eventCallback(event);
 					break;
 				}
 				case GLFW_RELEASE:
 				{
-					KeyReleasedEvent event(static_cast<input::EKeyCode>(key));
+					KeyReleaseEvent event(static_cast<input::EKeyCode>(key));
 					data.eventCallback(event);
 					break;
 				}
 				case GLFW_REPEAT:
 				{
-					KeyPressedEvent event(static_cast<input::EKeyCode>(key), 1);
+					KeyPressEvent event(static_cast<input::EKeyCode>(key), 1);
 					data.eventCallback(event);
 					break;
 				}
@@ -121,7 +121,7 @@ namespace toaster
 		{
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
-			KeyTypedEvent event(static_cast<input::EKeyCode>(codepoint));
+			KeyTypeEvent event(static_cast<input::EKeyCode>(codepoint));
 			data.eventCallback(event);
 		});
 
@@ -162,11 +162,19 @@ namespace toaster
 			data.eventCallback(event);
 		});
 
+		glfwSetWindowMaximizeCallback(m_window, [](GLFWwindow *window, int maximized)
+		{
+			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+
+			WindowMaximizeEvent event(static_cast<bool>(maximized));
+			data.eventCallback(event);
+		});
+
 		glfwSetWindowIconifyCallback(m_window, [](GLFWwindow *window, int iconified)
 		{
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
-			WindowMinimizedEvent event(static_cast<bool>(iconified));
+			WindowMinimizeEvent event(static_cast<bool>(iconified));
 			data.eventCallback(event);
 		});
 
@@ -223,6 +231,21 @@ namespace toaster
 	void Window::hideWindow()
 	{
 		glfwHideWindow(m_window);
+	}
+
+	void Window::maximize()
+	{
+		glfwMaximizeWindow(m_window);
+	}
+
+	void Window::minimize()
+	{
+		glfwIconifyWindow(m_window);
+	}
+
+	void Window::restore()
+	{
+		glfwRestoreWindow(m_window);
 	}
 
 	void Window::setEventCallback(const EventCallbackFn &p_callback)

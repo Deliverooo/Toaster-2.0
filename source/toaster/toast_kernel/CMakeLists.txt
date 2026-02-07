@@ -14,6 +14,9 @@ set(SRC
 		renderer.hpp
 		renderer.cpp
 
+		render_command.cpp
+		render_command.hpp
+
 		events/event.hpp
 		events/key_event.hpp
 		events/mouse_event.hpp
@@ -31,10 +34,7 @@ target_link_libraries(toast_kernel PUBLIC tst::toast_lib)
 target_link_libraries(toast_kernel PUBLIC tst::toast_gpu)
 target_link_libraries(toast_kernel PUBLIC tst::toast_shaders)
 
-target_link_libraries(toast_kernel PUBLIC httplib)
-
 target_link_libraries(toast_kernel PUBLIC glfw)
-target_link_libraries(toast_kernel PUBLIC assimp::assimp)
 
 target_link_libraries(toast_kernel PUBLIC ${PLATFORM_LINKLIBS})
 

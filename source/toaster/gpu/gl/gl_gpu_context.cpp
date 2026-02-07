@@ -25,8 +25,4 @@ namespace toaster::gpu
 
 		gl::debugMessageCallback(debugMessageCallback, nullptr);
 	}
-
-	GLGPUContext::~GLGPUContext()
-	{
-	}
 }

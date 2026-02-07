@@ -11,7 +11,7 @@ namespace toaster
 	class IAppLayer
 	{
 	public:
-		explicit IAppLayer(Application *p_app_parent) : m_appParent(p_app_parent)
+		explicit IAppLayer(Application *p_app) : m_appParent(p_app)
 		{
 		}
 
@@ -23,7 +23,9 @@ namespace toaster
 		virtual void onUpdate(float32 p_dt) = 0;
 		virtual void onEvent(Event &p_event) = 0;
 
-	protected:
+		virtual Application &getApp() { return *m_appParent; }
+
+	private:
 		Application *m_appParent{nullptr};
 	};
 }

@@ -6,7 +6,7 @@
 
 namespace toaster::gpu
 {
-	class GLIndexBuffer : public IndexBuffer
+	class GLIndexBuffer final : public IndexBuffer
 	{
 	public:
 		GLIndexBuffer(const uint32 *p_data, uint32 p_count);

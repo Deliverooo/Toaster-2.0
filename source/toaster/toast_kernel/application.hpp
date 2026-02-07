@@ -27,8 +27,8 @@ namespace toaster
 		Window &getWindow() noexcept;
 
 	private:
-		bool onWindowClose(WindowClosedEvent &e);
-		bool onWindowResize(WindowResizedEvent &e);
+		bool onWindowClose(WindowCloseEvent &e);
+		bool onWindowResize(WindowResizeEvent &e);
 
 		Window *m_window{nullptr};
 
@@ -37,8 +37,10 @@ namespace toaster
 
 	private:
 		float32 m_deltaTime{0.0f};
-		bool    m_minimized{false};
-		bool    m_isRunning{true};
+		float32 m_lastFrameTime{0.0f};
+
+		bool m_minimized{false};
+		bool m_isRunning{true};
 
 		friend class ViewportLayer;
 	};

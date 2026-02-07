@@ -36,6 +36,10 @@ namespace toaster
 		void showWindow();
 		void hideWindow();
 
+		void maximize();
+		void minimize();
+		void restore();
+
 		void setEventCallback(const EventCallbackFn &p_callback);
 
 		[[nodiscard]] uint32             getWidth() const;

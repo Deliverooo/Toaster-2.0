@@ -20,12 +20,12 @@ namespace toaster::gpu
 		static RefPtr<Mesh> create(const std::vector<MeshVertex> &p_vertices, const std::vector<uint32> &p_indices);
 		Mesh(const std::vector<MeshVertex> &p_vertices, const std::vector<uint32> &p_indices);
 
-		RefPtr<VertexBuffer> getVertexBuffer() const;
-		RefPtr<IndexBuffer>  getIndexBuffer() const;
-		RefPtr<VertexArray>  getVertexArray() const;
+		[[nodiscard]] RefPtr<VertexBuffer> getVertexBuffer() const;
+		[[nodiscard]] RefPtr<IndexBuffer>  getIndexBuffer() const;
+		[[nodiscard]] RefPtr<VertexArray>  getVertexArray() const;
 
-		const std::vector<MeshVertex> &getVertices() const;
-		const std::vector<uint32> &    getIndices() const;
+		[[nodiscard]] const std::vector<MeshVertex> &getVertices() const;
+		[[nodiscard]] const std::vector<uint32> &    getIndices() const;
 
 	private:
 		std::vector<MeshVertex> m_vertices;
@@ -33,6 +33,6 @@ namespace toaster::gpu
 
 		RefPtr<VertexBuffer> m_vertexBuffer;
 		RefPtr<IndexBuffer>  m_indexBuffer;
-		RefPtr<VertexArray> m_vertexArray;
+		RefPtr<VertexArray>  m_vertexArray;
 	};
 }

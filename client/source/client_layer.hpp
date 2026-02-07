@@ -13,7 +13,7 @@ namespace toaster
 	class ClientLayer : public IAppLayer
 	{
 	public:
-		ClientLayer(Application *p_app_parent);
+		ClientLayer(Application *p_app);
 		~ClientLayer();
 
 		void onInit() override;

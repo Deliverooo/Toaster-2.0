@@ -5,8 +5,9 @@
 
 #include "logging.hpp"
 
-#include <openglhpp/opengl.hpp>
 #include <GLFW/glfw3.h>
+
+#include "render_command.hpp"
 
 namespace toaster
 {
@@ -19,8 +20,8 @@ namespace toaster
 		m_window->setEventCallback([this](Event &e)
 		{
 			EventDispatcher dispatcher(e);
-			dispatcher.dispatch<WindowClosedEvent>([this](WindowClosedEvent &event) { return onWindowClose(event); });
-			dispatcher.dispatch<WindowResizedEvent>([this](WindowResizedEvent &event) { return onWindowResize(event); });
+			dispatcher.dispatch<WindowCloseEvent>([this](WindowCloseEvent &event) { return onWindowClose(event); });
+			dispatcher.dispatch<WindowResizeEvent>([this](WindowResizeEvent &event) { return onWindowResize(event); });
 
 			for (auto it = m_layers.rbegin(); it != m_layers.rend(); ++it)
 			{
@@ -31,6 +32,7 @@ namespace toaster
 		});
 
 		gpu::Globals::init();
+		RenderCommand::init();
 
 		input::setCurrentWindowContext(m_window->getNativeWindow());
 	}
@@ -56,6 +58,8 @@ namespace toaster
 		while (m_isRunning)
 		{
 			const auto startTime = static_cast<float32>(glfwGetTime());
+			m_deltaTime          = startTime - m_lastFrameTime;
+			m_lastFrameTime      = startTime;
 
 			m_window->processEvents();
 			m_window->beginFrame();
@@ -68,9 +72,6 @@ namespace toaster
 				}
 			}
 			m_window->endFrame();
-
-			const auto endTime = static_cast<float32>(glfwGetTime());
-			m_deltaTime        = endTime - startTime;
 		}
 	}
 
@@ -84,13 +85,13 @@ namespace toaster
 		return *m_window;
 	}
 
-	bool Application::onWindowClose(WindowClosedEvent &e)
+	bool Application::onWindowClose(WindowCloseEvent &e)
 	{
 		m_isRunning = false;
 		return true;
 	}
 
-	bool Application::onWindowResize(WindowResizedEvent &e)
+	bool Application::onWindowResize(WindowResizeEvent &e)
 	{
 		if (e.getWidth() == 0 || e.getHeight() == 0)
 		{
