@@ -1,7 +1,5 @@
 #include "client_layer.hpp"
 
-#include <iostream>
-
 #include "application.hpp"
 #include "globals.hpp"
 #include "input.hpp"
