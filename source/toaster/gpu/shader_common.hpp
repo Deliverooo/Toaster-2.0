@@ -1,9 +1,10 @@
+/*!
+ * @file shader_common.hpp
+ */
 #pragma once
 
 #include <span>
 #include <string>
-#include <unordered_map>
-#include <vector>
 #include "system_types.h"
 
 namespace toaster::gpu
@@ -59,38 +60,5 @@ namespace toaster::gpu
 		eVec4,
 		eMat3,
 		eMat4
-	};
-
-	struct ShaderUniform
-	{
-		std::string        name;
-		EShaderUniformType type;
-		uint32             size{0u};
-		uint32             offset{0u};
-	};
-
-	struct ShaderUniformBuffer
-	{
-		std::string                name;
-		uint32                     index;
-		uint32                     bindingPoint;
-		uint32                     size;
-		uint32                     id;
-		std::vector<ShaderUniform> uniforms;
-	};
-
-	struct ShaderConstantBuffer
-	{
-		std::string                                    name;
-		uint32                                         size{0u};
-		std::unordered_map<std::string, ShaderUniform> uniforms;
-	};
-
-	struct ShaderResourceDeclaration
-	{
-		std::string name;
-		uint32      set{0u};
-		uint32      binding{0u};
-		uint32      count{0u};
 	};
 }

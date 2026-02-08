@@ -1,3 +1,6 @@
+/*!
+ * @file gl_gpu_context.hpp
+ */
 #pragma once
 
 #include "gpu_context.hpp"

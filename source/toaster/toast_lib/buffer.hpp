@@ -1,3 +1,6 @@
+/*!
+ * @file buffer.hpp
+ */
 #pragma once
 
 #include <memory>

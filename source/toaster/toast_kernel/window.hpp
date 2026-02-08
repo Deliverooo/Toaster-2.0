@@ -1,12 +1,11 @@
+/*!
+* @file window.hpp
+ */
 #pragma once
 
 #include <string>
 
 #include "events/event.hpp"
-
-#if USE_VULKAN_BACKEND
-#include <vulkan/vulkan.hpp>
-#endif
 
 #include "system_types.h"
 
@@ -17,13 +16,32 @@ namespace toaster
 	namespace gpu
 	{
 		class GPUContext;
-		class Swapchain;
 	}
 
+	struct ScreenPos
+	{
+		float32 x, y;
+	};
+
+	/*!
+	 * @class Window
+	 *
+	 * @brief Represents the window of the application
+	 */
 	class Window
 	{
 	public:
+		/*!
+		 * @brief Initializes the windowing API (GLFW)
+		 *
+		 * @details Called once before window creation in the Application class
+		 */
 		static void initWindowingAPI();
+		/*!
+		 * @brief Shuts down the windowing API (GLFW)
+		 *
+ 		 * @details Called once after window destruction in the Application class
+ 		 */
 		static void shutdownWindowingAPI();
 
 		Window(uint32 p_width, uint32 p_height, const std::string &p_title);
@@ -44,21 +62,16 @@ namespace toaster
 
 		[[nodiscard]] uint32             getWidth() const;
 		[[nodiscard]] uint32             getHeight() const;
-		float32                          getAspect() const;
+		[[nodiscard]] float32            getAspect() const;
+		[[nodiscard]] ScreenPos          getCenter() const;
 		[[nodiscard]] const std::string &getTitle() const;
 
 		[[nodiscard]] gpu::GPUContext *getGPUContext() const;
-		#if USE_VULKAN_BACKEND
-		gpu::Swapchain *getSwapchain() const;
-		#endif
+
 		[[nodiscard]] GLFWwindow *getNativeWindow() const;
 
 	private:
 		gpu::GPUContext *m_gpuContext{nullptr};
-
-		#if USE_VULKAN_BACKEND
-		gpu::Swapchain *m_swapchain{nullptr}; vk::SurfaceKHR m_windowSurface{nullptr};
-		#endif
 
 		GLFWwindow *m_window{nullptr};
 

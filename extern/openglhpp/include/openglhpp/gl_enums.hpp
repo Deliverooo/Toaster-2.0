@@ -8,6 +8,7 @@
 
 namespace gl
 {
+	// Ts is from the Vulkan SDK, I just think that it would be useful to use it here aswell...
 	template<typename FlagBitsType>
 	struct FlagTraits
 	{

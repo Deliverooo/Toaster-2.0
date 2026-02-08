@@ -6,6 +6,36 @@
 
 namespace tsm
 {
+	// template<typename Type, unsigned int NDim>
+	// struct Vector;
+	//
+	// template<typename Type>
+	// struct Vector<Type, 2>
+	// {
+	// 	static constexpr unsigned int NDim = 2u;
+	//
+	// 	union
+	// 	{
+	// 		struct
+	// 		{
+	// 			Type x;
+	// 			Type y;
+	// 		};
+	//
+	// 		Type data[NDim];
+	// 	};
+	//
+	// 	Vector() = default;
+	//
+	// 	Vector(Type p_x, Type p_y) : x(p_x), y(p_y)
+	// 	{
+	// 	}
+	//
+	// 	Vector(Type p_s) : x(p_s), y(p_s)
+	// 	{
+	// 	}
+	// };
+
 	// TODO:
 
 	typedef bool                          bool1; //!< \brief boolean type with 1 component. (From GLM_GTX_compatibility extension)

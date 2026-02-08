@@ -2,12 +2,9 @@
 
 #include "gpu_context.hpp"
 
-#if USE_VULKAN_BACKEND
-#include "swapchain.hpp"
-#define GLFW_INCLUDE_VULKAN
-#endif
 #include <GLFW/glfw3.h>
 
+#include "logging.hpp"
 #include "toast_assert.h"
 
 #include "events/key_event.hpp"
@@ -45,13 +42,7 @@ namespace toaster
 
 	Window::Window(uint32 p_width, uint32 p_height, const std::string &p_title)
 	{
-		#if USE_VULKAN_BACKEND
-		// Tells GLFW not to create an OpenGL context.
-		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		#else
-
 		glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-		#endif
 
 		// Hides the window during creation, as to not have a blank white screen
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -65,10 +56,6 @@ namespace toaster
 		m_gpuContext = gpu::GPUContext::create(m_window);
 
 		glfwSetWindowUserPointer(m_window, &m_callbackData);
-
-		#if USE_VULKAN_BACKEND
-		m_swapchain = new gpu::Swapchain(m_gpuContext, m_windowSurface); m_swapchain->create(p_width, p_height);
-		#endif
 
 		glfwSetWindowSizeCallback(m_window, [](GLFWwindow *window, const int width, const int height)
 		{
@@ -183,10 +170,6 @@ namespace toaster
 
 	Window::~Window()
 	{
-		#if USE_VULKAN_BACKEND
-
-		m_swapchain->destroy(); delete m_swapchain; m_gpuContext->getInstance().destroySurfaceKHR(m_windowSurface);
-		#endif
 		delete m_gpuContext;
 
 		glfwDestroyWindow(m_window);
@@ -194,33 +177,16 @@ namespace toaster
 
 	void Window::beginFrame()
 	{
-		#if USE_VULKAN_BACKEND
-		m_swapchain->beginFrame();
-		#endif
 	}
 
 	void Window::processEvents()
 	{
 		glfwPollEvents();
-
-		#if USE_VULKAN_BACKEND
-		int width; int height; glfwGetWindowSize(m_window, &width, &height); if (m_callbackData.width != width || m_callbackData.height != height)
-		{
-			m_callbackData.width  = width;
-			m_callbackData.height = height;
-
-			m_swapchain->onResize(width, height);
-		}
-		#endif
 	}
 
 	void Window::endFrame()
 	{
-		#if USE_VULKAN_BACKEND
-		m_swapchain->present();
-		#else
 		glfwSwapBuffers(m_window);
-		#endif
 	}
 
 	void Window::showWindow()
@@ -263,6 +229,11 @@ namespace toaster
 		return static_cast<float32>(m_callbackData.height) / static_cast<float32>(m_callbackData.width);
 	}
 
+	ScreenPos Window::getCenter() const
+	{
+		return {static_cast<float32>(m_callbackData.width) / 2.0f, static_cast<float32>(m_callbackData.height) / 2.0f};
+	}
+
 	uint32 Window::getHeight() const
 	{
 		return m_callbackData.height;
@@ -278,15 +249,9 @@ namespace toaster
 		return m_gpuContext;
 	}
 
-	#if USE_VULKAN_BACKEND
-	gpu::Swapchain *Window::getSwapchain() const
-	{
-		return m_swapchain;
-	}
-	#endif
-
 	GLFWwindow *Window::getNativeWindow() const
 	{
 		return m_window;
 	}
+
 }

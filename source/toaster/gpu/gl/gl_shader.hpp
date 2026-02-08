@@ -1,5 +1,9 @@
+/*!
+ * @file gl_shader.hpp
+ */
 #pragma once
 
+#include <unordered_map>
 #include <openglhpp/opengl.hpp>
 
 #include "shader.hpp"

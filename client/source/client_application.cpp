@@ -5,7 +5,7 @@ namespace toaster
 {
 	ClientApplication::ClientApplication() : Application()
 	{
-		m_layers.push_back(new ClientLayer(this));
+		addLayer(new ClientLayer(this));
 	}
 
 	ClientApplication::~ClientApplication()

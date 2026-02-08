@@ -51,18 +51,9 @@ set(PLATFORM_CFLAGS)
 set(C_WARNINGS)
 set(CXX_WARNINGS)
 
-
 set(PLATFORM_LINKLIBS "")
 
-
 # Ts is from Blender's CMakeLists.txt ->
-# ----------------------------------------------------------------------------
-# Main Platform Checks
-#
-# - UNIX
-# - WIN32
-# - APPLE
-
 if (UNIX AND NOT APPLE)
 	include(platform_unix)
 elseif (WIN32)

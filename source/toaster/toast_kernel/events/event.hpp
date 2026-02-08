@@ -1,3 +1,6 @@
+/*!
+ * @file event.hpp
+ */
 #pragma once
 
 #include "util_defines.hpp"
@@ -47,7 +50,10 @@ namespace toaster
 
 	#define EVENT_CLASS_CATEGORY(category) virtual int getEventCategory() const override {return category;}
 
-	// an abstract class defining the outline of what an event should have
+	/*!
+	 * @class Event
+	 * @brief An abstract class defining the outline of what an event should have.
+	 */
 	class Event
 	{
 	public:

@@ -6,13 +6,15 @@
 
 namespace toaster
 {
+	void Renderer::submitGeometry(const RefPtr<gpu::VertexArray> &p_vertex_array, const RefPtr<gpu::Shader> &p_shader, const glm::mat4 &p_model_matrix)
+	{
+		p_shader->bind();
+		p_shader->setUniform("u_Model", p_model_matrix);
+		RenderCommand::drawIndexed(p_vertex_array);
+	}
+
 	void Renderer::submitQuad(const glm::vec3 &p_positon)
 	{
-		glm::mat4 model = glm::translate(glm::mat4{1.0f}, p_positon);
-		gpu::Globals::quadShader()->bind();
-
-		gpu::Globals::quadShader()->setUniform("u_Model", model);
-
-		RenderCommand::drawIndexed(gpu::Globals::quadVertexArray());
+		submitGeometry(gpu::Globals::quadVertexArray(), gpu::Globals::quadShader(), glm::translate(glm::mat4{1.0f}, p_positon));
 	}
 }

@@ -1,3 +1,6 @@
+/*!
+ * @file window_event.hpp
+ */
 #pragma once
 
 #include "event.hpp"

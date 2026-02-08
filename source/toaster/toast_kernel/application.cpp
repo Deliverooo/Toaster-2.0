@@ -1,13 +1,12 @@
 #include "application.hpp"
 
-#include "io/filesystem.hpp"
-#include "io/file_stream.hpp"
-
+#include "globals.hpp"
+#include "input.hpp"
 #include "logging.hpp"
+#include "render_command.hpp"
 
 #include <GLFW/glfw3.h>
 
-#include "render_command.hpp"
 
 namespace toaster
 {
@@ -39,10 +38,9 @@ namespace toaster
 
 	Application::~Application() noexcept
 	{
-		for (const IAppLayer *layer: m_layers)
+		for (IAppLayer *layer: m_layers)
 		{
-			delete layer;
-			layer = nullptr;
+			removeLayer(layer);
 		}
 		m_layers.clear();
 
@@ -80,7 +78,7 @@ namespace toaster
 		m_isRunning = false;
 	}
 
-	Window &Application::getWindow() noexcept
+	Window &Application::getWindow() const noexcept
 	{
 		return *m_window;
 	}
@@ -100,5 +98,19 @@ namespace toaster
 		}
 		m_minimized = false;
 		return false;
+	}
+
+	void Application::addLayer(IAppLayer *layer)
+	{
+		m_layers.push_back(layer);
+		layer->onInit();
+	}
+
+	void Application::removeLayer(IAppLayer *layer)
+	{
+		layer->onDestroy();
+		m_layers.erase(std::ranges::find(m_layers, layer));
+		delete layer;
+		layer = nullptr;
 	}
 }

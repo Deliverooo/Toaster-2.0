@@ -1,10 +1,11 @@
 #pragma once
 
-#include "camera.hpp"
 #include "layer.hpp"
 #include "mesh.hpp"
+#include "ortho_camera.hpp"
 
 #include "shader.hpp"
+#include "texture.hpp"
 
 #include "vertex_array.hpp"
 
@@ -14,7 +15,7 @@ namespace toaster
 	{
 	public:
 		ClientLayer(Application *p_app);
-		~ClientLayer();
+		~ClientLayer() override;
 
 		void onInit() override;
 		void onDestroy() override;
@@ -22,13 +23,9 @@ namespace toaster
 		void onEvent(Event &p_event) override;
 
 	private:
-		RefPtr<gpu::Mesh> m_quad;
+		RefPtr<gpu::Texture2D> m_texture;
 
-		Camera m_camera;
-
-		float32 m_lastX;
-		float32 m_lastY;
-		bool    m_firstMouse{true};
+		OrthoCamera m_camera;
 
 		float32 m_time{0.0f};
 	};

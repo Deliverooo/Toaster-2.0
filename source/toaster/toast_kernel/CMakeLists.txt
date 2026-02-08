@@ -8,11 +8,13 @@ set(SRC
 		window.cpp
 		window.hpp
 
-		camera.cpp
 		camera.hpp
 
 		renderer.hpp
 		renderer.cpp
+
+		ortho_camera.hpp
+		ortho_camera.cpp
 
 		render_command.cpp
 		render_command.hpp

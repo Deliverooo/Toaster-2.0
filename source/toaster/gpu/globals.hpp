@@ -1,12 +1,11 @@
 #pragma once
 
-#include "material.hpp"
 #include "shader.hpp"
 #include "vertex_array.hpp"
 
 namespace toaster::gpu
 {
-	class Globals
+	class Globals final
 	{
 	public:
 		static void init();
@@ -15,6 +14,5 @@ namespace toaster::gpu
 		static RefPtr<Shader> quadShader();
 
 		static RefPtr<VertexArray> quadVertexArray();
-
 	};
 }

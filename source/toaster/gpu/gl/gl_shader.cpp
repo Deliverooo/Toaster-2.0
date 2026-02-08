@@ -20,6 +20,7 @@ namespace toaster::gpu
 
 	GLShader::GLShader(std::string p_name, const std::map<EShaderType, ShaderBlob> &p_shader_bytecode_map) : m_name(std::move(p_name))
 	{
+		TST_ASSERT_MSG(false, "Until I somehow get SPIRV to work with GLSL (that being the syntactical differences), sadly this will not work :(");
 		m_programId = gl::createProgram();
 
 		std::vector<gl::UInt> shader_ids;
@@ -46,7 +47,7 @@ namespace toaster::gpu
 
 			gl::deleteProgram(m_programId);
 
-			for (auto id: shader_ids)
+			for (const auto id: shader_ids)
 			{
 				gl::deleteShader(id);
 			}
@@ -87,7 +88,7 @@ namespace toaster::gpu
 
 			gl::deleteProgram(m_programId);
 
-			for (auto id: shader_ids)
+			for (const auto id: shader_ids)
 			{
 				gl::deleteShader(id);
 			}

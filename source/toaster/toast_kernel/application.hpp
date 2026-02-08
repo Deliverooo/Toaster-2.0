@@ -1,13 +1,10 @@
+/*!
+ * @file application.hpp
+ */
 #pragma once
 
 #include <vector>
 
-#include "system_types.h"
-
-#include <glm/glm.hpp>
-
-#include "globals.hpp"
-#include "input.hpp"
 #include "layer.hpp"
 #include "window.hpp"
 
@@ -24,7 +21,7 @@ namespace toaster
 		void run();
 		void close() noexcept;
 
-		Window &getWindow() noexcept;
+		[[nodiscard]] Window &getWindow() const noexcept;
 
 	private:
 		bool onWindowClose(WindowCloseEvent &e);
@@ -32,8 +29,11 @@ namespace toaster
 
 		Window *m_window{nullptr};
 
-	protected:
 		std::vector<IAppLayer *> m_layers;
+
+	protected:
+		void addLayer(IAppLayer *layer);
+		void removeLayer(IAppLayer *layer);
 
 	private:
 		float32 m_deltaTime{0.0f};

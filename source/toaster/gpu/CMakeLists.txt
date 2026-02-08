@@ -29,9 +29,6 @@ set(GPU_SRC
 		globals.cpp
 		globals.hpp
 
-		uniform_buffer.cpp
-		uniform_buffer.hpp
-
 		mesh.hpp
 		mesh.cpp
 )
@@ -53,9 +50,6 @@ if (${WITH_OPENGL_BACKEND})
 
 			gl/gl_index_buffer.cpp
 			gl/gl_index_buffer.hpp
-
-			gl/gl_uniform_buffer.cpp
-			gl/gl_uniform_buffer.hpp
 
 			gl/gl_shader.cpp
 			gl/gl_shader.hpp

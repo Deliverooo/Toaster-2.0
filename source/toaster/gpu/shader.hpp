@@ -1,3 +1,6 @@
+/*!
+ * @file shader.hpp
+ */
 #pragma once
 
 #include "ptr.hpp"

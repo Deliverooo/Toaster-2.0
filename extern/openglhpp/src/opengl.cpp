@@ -2105,6 +2105,7 @@ namespace gl
 
 	void minSampleShading(Float value)
 	{
+		glMinSampleShading(value);
 	}
 
 	void programBinary(UInt program, ShaderBinaryFormat p_binary_format, const void *binary, SizeI length)
@@ -2346,10 +2347,12 @@ namespace gl
 
 	void uniform3ui(Int location, UInt v0, UInt v1, UInt v2)
 	{
+		glUniform3ui(location, v0, v1, v2);
 	}
 
 	void uniform4ui(Int location, UInt v0, UInt v1, UInt v2, UInt v3)
 	{
+		glUniform4ui(location, v0, v1, v2, v3);
 	}
 
 	void uniform1fv(Int location, SizeI count, const Float *p_value)
@@ -2469,6 +2472,7 @@ namespace gl
 
 	void uniformSubroutinesuiv(Enum shader_type, SizeI count, const UInt *indices)
 	{
+		glUniformSubroutinesuiv(shader_type, count, indices);
 	}
 
 	void useProgram(UInt program)
@@ -2478,10 +2482,12 @@ namespace gl
 
 	void useProgramStages(UInt pipeline, Bitfield stages, UInt program)
 	{
+		glUseProgramStages(pipeline, stages, program);
 	}
 
 	void validateProgram(UInt program)
 	{
+		glValidateProgram(program);
 	}
 	#pragma endregion
 

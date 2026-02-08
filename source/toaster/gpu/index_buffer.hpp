@@ -1,3 +1,6 @@
+/*!
+ * @file index_buffer.hpp
+ */
 #pragma once
 
 #include "ptr.hpp"

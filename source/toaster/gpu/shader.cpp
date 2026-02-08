@@ -1,3 +1,6 @@
+/*!
+ * @file shader.cpp
+ */
 #include "shader.hpp"
 
 #include "gl/gl_shader.hpp"

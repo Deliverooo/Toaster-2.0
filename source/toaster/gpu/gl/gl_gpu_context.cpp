@@ -1,9 +1,15 @@
+/*!
+ * @file gl_gpu_context.cpp
+ */
+
 #include "gl/gl_gpu_context.hpp"
 
-#include "openglhpp/opengl.hpp"
+#include <openglhpp/opengl.hpp>
+#include <openglhpp/gl_to_string.hpp>
+
 #include <GLFW/glfw3.h>
 
-#include "openglhpp/gl_to_string.hpp"
+#include "logging.hpp"
 
 namespace toaster::gpu
 {

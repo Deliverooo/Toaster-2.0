@@ -1,3 +1,7 @@
+/*!
+ * @file index_buffer.cpp
+ */
+
 #include "index_buffer.hpp"
 #include "gl/gl_index_buffer.hpp"
 
