@@ -12,6 +12,10 @@ namespace toaster
 {
 	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app), m_camera(-1.0f, 1.0f, -p_app->getWindow().getAspect(), p_app->getWindow().getAspect(), 0.1f, 100.0f)
 	{
+		io::filesystem::setWorkingDirectory("../../../"); // The main Toaster dir (where the resource folder is)
+
+		m_texture = gpu::Texture2D::create("resources/textures/Orbo_02.png");
+
 		input::setCursorMode(input::ECursorMode::eDisabled);
 	}
 
@@ -54,6 +58,8 @@ namespace toaster
 
 		shader->setUniform("u_Time", m_time);
 		shader->setUniform("u_Resolution", {getApp().getWindow().getWidth(), getApp().getWindow().getHeight()});
+
+		m_texture->bind();
 
 		for (uint32 i = 0u; i < 10; i++)
 		{

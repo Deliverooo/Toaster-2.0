@@ -13,11 +13,14 @@ namespace toaster::gpu
 
 		void bind(uint32 p_slot) const override;
 
-		uint32 getWidth() const override;
-		uint32 getHeight() const override;
+		[[nodiscard]] uint32 getWidth() const override;
+		[[nodiscard]] uint32 getHeight() const override;
 
 	private:
 		io::filesystem::Path m_path;
+
+		uint32 m_width{0u};
+		uint32 m_height{0u};
 
 		gl::UInt m_textureId{0u};
 	};

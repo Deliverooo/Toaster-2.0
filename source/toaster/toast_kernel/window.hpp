@@ -58,6 +58,8 @@ namespace toaster
 		void minimize();
 		void restore();
 
+		void fullscreen();
+
 		void setEventCallback(const EventCallbackFn &p_callback);
 
 		[[nodiscard]] uint32             getWidth() const;

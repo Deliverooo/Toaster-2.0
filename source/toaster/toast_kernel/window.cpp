@@ -214,6 +214,14 @@ namespace toaster
 		glfwRestoreWindow(m_window);
 	}
 
+	void Window::fullscreen()
+	{
+		GLFWmonitor *      monitor = glfwGetPrimaryMonitor();
+		const GLFWvidmode *mode    = glfwGetVideoMode(monitor);
+
+		glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+	}
+
 	void Window::setEventCallback(const EventCallbackFn &p_callback)
 	{
 		m_callbackData.eventCallback = p_callback;
@@ -253,5 +261,4 @@ namespace toaster
 	{
 		return m_window;
 	}
-
 }

@@ -12,6 +12,9 @@ namespace toaster::gpu
 		uint8 *data = stbi_load(p_path.string().c_str(), &width, &height, &num_channels, 0);
 		if (data)
 		{
+			m_width  = width;
+			m_height = height;
+
 			gl::bindTexture(gl::TextureType::e2D, m_textureId);
 
 			gl::texImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);

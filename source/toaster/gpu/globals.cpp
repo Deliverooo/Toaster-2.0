@@ -32,7 +32,7 @@ namespace toaster::gpu
 
 		s_globalData->g_quadShader = Shader::create("Quad", {
 														{EShaderType::eVertex, io::filesystem::readFile("quad.vert.glsl").c_str()},
-														{EShaderType::ePixel, io::filesystem::readFile("planet.pixel.glsl").c_str()}
+														{EShaderType::ePixel, io::filesystem::readFile("quad.pixel.glsl").c_str()}
 													});
 
 		{
