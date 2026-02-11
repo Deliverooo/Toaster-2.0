@@ -177,7 +177,7 @@ namespace gl
 
 	TST_API void namedFramebufferRenderbuffer(UInt framebuffer, Enum attachment, Enum renderbuffer_target, UInt renderbuffer);
 
-	TST_API void framebufferTexture(Enum target, Enum attachment,  UInt texture, Int level);
+	TST_API void framebufferTexture(Enum target, Enum attachment, UInt texture, Int level);
 
 	TST_API void framebufferTexture1D(Enum target, Enum attachment, Enum tex_target, UInt texture, Int level);
 
@@ -195,7 +195,7 @@ namespace gl
 
 	TST_API void genRenderbuffers(SizeI count, UInt *p_renderbuffers);
 
-	TST_API void generateMipmap(Enum target);
+	TST_API void generateMipmap(TextureType p_target);
 
 	TST_API void generateTextureMipmap(UInt texture);
 
@@ -1086,77 +1086,79 @@ namespace gl
 
 	TST_API Bool isTexture(UInt texture);
 
-	TST_API void texBuffer(Enum target, Enum internalFormat, UInt buffer);
+	TST_API void texBuffer(TextureType p_target, Enum internalFormat, UInt buffer);
 
 	TST_API void textureBuffer(UInt texture, Enum internalformat, UInt buffer);
 
-	TST_API void texBufferRange(Enum target, Enum internalFormat, UInt buffer, IntPtr offset, SizeIPtr size);
+	TST_API void texBufferRange(TextureType p_target, Enum internalFormat, UInt buffer, IntPtr offset, SizeIPtr size);
 
 	TST_API void textureBufferRange(UInt texture, Enum internalformat, UInt buffer, IntPtr offset, SizeI size);
 
-	TST_API void texImage1D(Enum target, Int level, Int internalFormat, SizeI width, Int border, Enum format, Enum type, const Void *data);
+	TST_API void texImage1D(TextureType p_target, Int level, Int internalFormat, SizeI width, Int border, Enum format, Enum type, const Void *data);
 
-	TST_API void texImage2D(Enum target, Int level, Int internalFormat, SizeI width, SizeI height, Int border, Enum format, Enum type, const Void *data);
+	TST_API void texImage2D(TextureType p_target, Int level, Format p_internal_format, SizeI width, SizeI height, Int border, Format p_format, DataType p_type,
+							const Void *data);
 
-	TST_API void texImage2DMultisample(Enum target, SizeI samples, Enum internalformat, SizeI width, SizeI height, Bool fixed_sample_locations);
+	TST_API void texImage2DMultisample(TextureType p_target, SizeI samples, Enum internalformat, SizeI width, SizeI height, Bool fixed_sample_locations);
 
-	TST_API void texImage3D(Enum target, Int level, Int internalFormat, SizeI width, SizeI height, SizeI depth, Int border, Enum format, Enum type, const Void *data);
+	TST_API void texImage3D(TextureType p_target, Int level, Int internalFormat, SizeI width, SizeI height, SizeI depth, Int border, Enum format, Enum type,
+							const Void *data);
 
-	TST_API void texImage3DMultisample(Enum target, SizeI samples, Enum internalformat, SizeI width, SizeI height, SizeI depth, Bool fixed_sample_locations);
+	TST_API void texImage3DMultisample(TextureType p_target, SizeI samples, Enum internalformat, SizeI width, SizeI height, SizeI depth, Bool fixed_sample_locations);
 
-	TST_API void texParameterf(Enum target, Enum pname, Float param);
+	TST_API void texParameterf(TextureType p_target, SamplerParameter p_sampler_parameter, Float param);
 
-	TST_API void texParameteri(Enum target, Enum pname, Int param);
+	TST_API void texParameteri(TextureType p_target, SamplerParameter p_sampler_parameter, Int param);
 
-	TST_API void textureParameterf(UInt texture, Enum pname, Float param);
+	TST_API void textureParameterf(UInt texture, SamplerParameter p_sampler_parameter, Float param);
 
-	TST_API void textureParameteri(UInt texture, Enum pname, Int param);
+	TST_API void textureParameteri(UInt texture, SamplerParameter p_sampler_parameter, Int param);
 
-	TST_API void texParameterFv(Enum target, Enum pname, const Float *params);
+	TST_API void texParameterFv(TextureType p_target, SamplerParameter p_sampler_parameter, const Float *params);
 
-	TST_API void texParameterIv(Enum target, Enum pname, const Int *params);
+	TST_API void texParameterIv(TextureType p_target, SamplerParameter p_sampler_parameter, const Int *params);
 
-	TST_API void texParameterIiv(Enum target, Enum pname, const Int *params);
+	TST_API void texParameterIiv(TextureType p_target, SamplerParameter p_sampler_parameter, const Int *params);
 
-	TST_API void texParameterIuiv(Enum target, Enum pname, const UInt *params);
+	TST_API void texParameterIuiv(TextureType p_target, SamplerParameter p_sampler_parameter, const UInt *params);
 
-	TST_API void textureParameterFv(UInt texture, Enum pname, const Float *param_texture);
+	TST_API void textureParameterFv(UInt texture, SamplerParameter p_sampler_parameter, const Float *param_texture);
 
-	TST_API void textureParameterIv(UInt texture, Enum pname, const Int *param);
+	TST_API void textureParameterIv(UInt texture, SamplerParameter p_sampler_parameter, const Int *param);
 
-	TST_API void textureParameterIiv(UInt texture, Enum pname, const Int *params);
+	TST_API void textureParameterIiv(UInt texture, SamplerParameter p_sampler_parameter, const Int *params);
 
-	TST_API void textureParameterIuiv(UInt texture, Enum pname, const UInt *params);
+	TST_API void textureParameterIuiv(UInt texture, SamplerParameter p_sampler_parameter, const UInt *params);
 
-	TST_API void texStorage1D(Enum target, SizeI levels, Enum internalformat, SizeI width);
+	TST_API void texStorage1D(TextureType p_target, SizeI levels, Enum internalformat, SizeI width);
 
 	TST_API void textureStorage1D(UInt texture, SizeI levels, Enum internalformat, SizeI width);
 
-	TST_API void texStorage2D(Enum target, SizeI levels, Enum internalformat, SizeI width, SizeI height);
+	TST_API void texStorage2D(TextureType p_target, SizeI levels, Enum internalformat, SizeI width, SizeI height);
 
 	TST_API void textureStorage2D(UInt texture, SizeI levels, Enum internalformat, SizeI width, SizeI height);
 
-	TST_API void texStorage2DMultisample(Enum target, SizeI samples, Enum internalformat, SizeI width, SizeI height, Bool fixed_sample_locations);
+	TST_API void texStorage2DMultisample(TextureType p_target, SizeI samples, Enum internalformat, SizeI width, SizeI height, Bool fixed_sample_locations);
 
 	TST_API void textureStorage2DMultisample(UInt texture, SizeI samples, Enum internalformat, SizeI width, SizeI height, Bool fixed_sample_locations);
 
-	TST_API void texStorage3D(Enum target, SizeI levels, Enum internalformat, SizeI width, SizeI height, SizeI depth);
+	TST_API void texStorage3D(TextureType p_target, SizeI levels, Enum internalformat, SizeI width, SizeI height, SizeI depth);
 
 	TST_API void textureStorage3D(UInt texture, SizeI levels, Enum internalformat, SizeI width, SizeI height, SizeI depth);
 
-	TST_API void texStorage3DMultisample(Enum target, SizeI samples, Enum internalformat, SizeI width, SizeI height, SizeI depth, Bool fixed_sample_locations);
+	TST_API void texStorage3DMultisample(TextureType p_target, SizeI samples, Enum internalformat, SizeI width, SizeI height, SizeI depth, Bool fixed_sample_locations);
 
 	TST_API void textureStorage3DMultisample(UInt texture, SizeI samples, Enum internalformat, SizeI width, SizeI height, SizeI depth, Bool fixed_sample_locations);
 
-	TST_API void texSubImage1D(Enum target, Int level, Int x_offset, SizeI width, Enum format, Enum type, const Void *pixels);
+	TST_API void texSubImage1D(TextureType p_target, Int level, Int x_offset, SizeI width, Enum format, Enum type, const Void *pixels);
 
 	TST_API void textureSubImage1D(UInt texture, Int level, Int x_offset, SizeI width, Enum format, Enum type, const void *pixels);
 
-	TST_API void texSubImage2D(Enum target, Int level, Int x_offset, Int y_offset, SizeI width, SizeI height, Enum format, Enum type, const Void *pixels);
+	TST_API void texSubImage2D(TextureType p_target, Int level, Int x_offset, Int y_offset, SizeI width, SizeI height, Enum format, Enum type, const Void *pixels);
 
 	TST_API void textureSubImage2D(UInt texture, Int level, Int x_offset, Int y_offset, SizeI width, SizeI height, Enum format, Enum type, const void *pixels);
 
-	TST_API void texSubImage3D(Enum        target, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Enum format, Enum type,
+	TST_API void texSubImage3D(TextureType p_target, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Enum format, Enum type,
 							   const Void *pixels);
 
 	TST_API void textureSubImage3D(UInt texture, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Enum format, Enum type,

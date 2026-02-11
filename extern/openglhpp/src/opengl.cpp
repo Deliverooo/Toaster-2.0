@@ -246,9 +246,9 @@ namespace gl
 		glGenRenderbuffers(count, p_renderbuffers);
 	}
 
-	void generateMipmap(Enum target)
+	void generateMipmap(TextureType p_target)
 	{
-		glGenerateMipmap(target);
+		glGenerateMipmap(static_cast<Enum>(p_target));
 	}
 
 	void generateTextureMipmap(UInt texture)
@@ -1420,7 +1420,7 @@ namespace gl
 		return glIsTexture(texture);
 	}
 
-	void texBuffer(Enum target, Enum internalFormat, UInt buffer)
+	void texBuffer(TextureType p_target, Enum internalFormat, UInt buffer)
 	{
 	}
 
@@ -1428,7 +1428,7 @@ namespace gl
 	{
 	}
 
-	void texBufferRange(Enum target, Enum internalFormat, UInt buffer, IntPtr offset, SizeIPtr size)
+	void texBufferRange(TextureType p_target, Enum internalFormat, UInt buffer, IntPtr offset, SizeIPtr size)
 	{
 	}
 
@@ -1436,81 +1436,84 @@ namespace gl
 	{
 	}
 
-	void texImage1D(Enum target, Int level, Int internalFormat, SizeI width, Int border, Enum format, Enum type, const Void *data)
+	void texImage1D(TextureType p_target, Int level, Int internalFormat, SizeI width, Int border, Enum format, Enum type, const Void *data)
 	{
 	}
 
-	void texImage2D(Enum target, Int level, Int internalFormat, SizeI width, SizeI height, Int border, Enum format, Enum type, const Void *data)
+	void texImage2D(TextureType p_target, Int level, Format p_internal_format, SizeI width, SizeI height, Int border, Format p_format, DataType p_type, const Void *data)
 	{
-		glTexImage2D(target, level, internalFormat, width, height, border, format, type, data);
+		glTexImage2D(static_cast<Enum>(p_target), level, static_cast<Int>(p_internal_format), width, height, border, static_cast<Enum>(p_format),
+					 static_cast<Enum>(p_type), data);
 	}
 
-	void texImage2DMultisample(Enum target, SizeI samples, Enum internalformat, SizeI width, SizeI height, Bool fixed_sample_locations)
-	{
-	}
-
-	void texImage3D(Enum target, Int level, Int internalFormat, SizeI width, SizeI height, SizeI depth, Int border, Enum format, Enum type, const Void *data)
-	{
-		glTexImage3D(target, level, internalFormat, width, height, depth, border, format, type, data);
-	}
-
-	void texImage3DMultisample(Enum target, SizeI samples, Enum internalformat, SizeI width, SizeI height, SizeI depth, Bool fixed_sample_locations)
+	void texImage2DMultisample(TextureType p_target, SizeI samples, Enum internalformat, SizeI width, SizeI height, Bool fixed_sample_locations)
 	{
 	}
 
-	void texParameterf(Enum target, Enum pname, Float param)
+	void texImage3D(TextureType p_target, Int level, Int internalFormat, SizeI width, SizeI height, SizeI depth, Int border, Enum format, Enum type, const Void *data)
+	{
+		glTexImage3D(static_cast<Enum>(p_target), level, internalFormat, width, height, depth, border, format, type, data);
+	}
+
+	void texImage3DMultisample(TextureType p_target, SizeI samples, Enum internalformat, SizeI width, SizeI height, SizeI depth, Bool fixed_sample_locations)
+	{
+		glTexImage3DMultisample(static_cast<Enum>(p_target), samples, internalformat, width, height, depth, fixed_sample_locations);
+	}
+
+	void texParameterf(TextureType p_target, SamplerParameter p_sampler_parameter, Float param)
+	{
+		glTexParameterf(static_cast<Enum>(p_target), static_cast<Enum>(p_sampler_parameter), param);
+	}
+
+	void texParameteri(TextureType p_target, SamplerParameter p_sampler_parameter, Int param)
+	{
+		glTexParameteri(static_cast<Enum>(p_target), static_cast<Enum>(p_sampler_parameter), param);
+	}
+
+	void textureParameterf(UInt texture, SamplerParameter p_sampler_parameter, Float param)
+	{
+		glTextureParameterf(texture, static_cast<Enum>(p_sampler_parameter), param);
+	}
+
+	void textureParameteri(UInt texture, SamplerParameter p_sampler_parameter, Int param)
+	{
+		glTextureParameteri(texture, static_cast<Enum>(p_sampler_parameter), param);
+	}
+
+	void texParameterFv(TextureType p_target, SamplerParameter p_sampler_parameter, const Float *params)
+	{
+		glTextureParameterfv(static_cast<Enum>(p_target), static_cast<Enum>(p_sampler_parameter), params);
+	}
+
+	void texParameterIv(TextureType p_target, SamplerParameter p_sampler_parameter, const Int *params)
 	{
 	}
 
-	void texParameteri(Enum target, Enum pname, Int param)
-	{
-		glTexParameteri(target, pname, param);
-	}
-
-	void textureParameterf(UInt texture, Enum pname, Float param)
-	{
-		glTextureParameterf(texture, pname, param);
-	}
-
-	void textureParameteri(UInt texture, Enum pname, Int param)
-	{
-		glTextureParameteri(texture, pname, param);
-	}
-
-	void texParameterFv(Enum target, Enum pname, const Float *params)
-	{
-		glTextureParameterfv(target, pname, params);
-	}
-
-	void texParameterIv(Enum target, Enum pname, const Int *params)
+	void texParameterIiv(TextureType p_target, SamplerParameter p_sampler_parameter, const Int *params)
 	{
 	}
 
-	void texParameterIiv(Enum target, Enum pname, const Int *params)
+	void texParameterIuiv(TextureType p_target, SamplerParameter p_sampler_parameter, const UInt *params)
 	{
 	}
 
-	void texParameterIuiv(Enum target, Enum pname, const UInt *params)
+	void textureParameterFv(UInt texture, SamplerParameter p_sampler_parameter, const Float *param_texture)
 	{
 	}
 
-	void textureParameterFv(UInt texture, Enum pname, const Float *param_texture)
+	void textureParameterIv(UInt texture, SamplerParameter p_sampler_parameter, const Int *param)
 	{
 	}
 
-	void textureParameterIv(UInt texture, Enum pname, const Int *param)
+	void textureParameterIiv(UInt texture, SamplerParameter p_sampler_parameter, const Int *params)
 	{
 	}
 
-	void textureParameterIiv(UInt texture, Enum pname, const Int *params)
+	void textureParameterIuiv(UInt texture, SamplerParameter p_sampler_parameter, const UInt *params)
 	{
 	}
 
-	void textureParameterIuiv(UInt texture, Enum pname, const UInt *params)
-	{
-	}
-
-	void texStorage1D(Enum target, SizeI levels, Enum internalformat, SizeI width)
+	void texStorage1D(TextureType p_target, SizeI levels, Enum internalformat, SizeI width)
 	{
 	}
 
@@ -1518,15 +1521,15 @@ namespace gl
 	{
 	}
 
-	void texStorage2D(Enum target, SizeI levels, Enum internalformat, SizeI width, SizeI height)
+	void texStorage2D(TextureType p_target, SizeI levels, Enum internalformat, SizeI width, SizeI height)
 	{
 	}
 
-	void textureStorage2D(UInt texture, SizeI levels, Enum internalformat, SizeI width, SizeI height)
+	void textureStorage2D(TextureType p_target, SizeI levels, Enum internalformat, SizeI width, SizeI height)
 	{
 	}
 
-	void texStorage2DMultisample(Enum target, SizeI samples, Enum internalformat, SizeI width, SizeI height, Bool fixed_sample_locations)
+	void texStorage2DMultisample(TextureType p_target, SizeI samples, Enum internalformat, SizeI width, SizeI height, Bool fixed_sample_locations)
 	{
 	}
 
@@ -1534,7 +1537,7 @@ namespace gl
 	{
 	}
 
-	void texStorage3D(Enum target, SizeI levels, Enum internalformat, SizeI width, SizeI height, SizeI depth)
+	void texStorage3D(TextureType p_target, SizeI levels, Enum internalformat, SizeI width, SizeI height, SizeI depth)
 	{
 	}
 
@@ -1542,7 +1545,7 @@ namespace gl
 	{
 	}
 
-	void texStorage3DMultisample(Enum target, SizeI samples, Enum internalformat, SizeI width, SizeI height, SizeI depth, Bool fixed_sample_locations)
+	void texStorage3DMultisample(TextureType p_target, SizeI samples, Enum internalformat, SizeI width, SizeI height, SizeI depth, Bool fixed_sample_locations)
 	{
 	}
 
@@ -1550,7 +1553,7 @@ namespace gl
 	{
 	}
 
-	void texSubImage1D(Enum target, Int level, Int x_offset, SizeI width, Enum format, Enum type, const Void *pixels)
+	void texSubImage1D(TextureType p_target, Int level, Int x_offset, SizeI width, Enum format, Enum type, const Void *pixels)
 	{
 	}
 
@@ -1558,7 +1561,7 @@ namespace gl
 	{
 	}
 
-	void texSubImage2D(Enum target, Int level, Int x_offset, Int y_offset, SizeI width, SizeI height, Enum format, Enum type, const Void *pixels)
+	void texSubImage2D(TextureType p_target, Int level, Int x_offset, Int y_offset, SizeI width, SizeI height, Enum format, Enum type, const Void *pixels)
 	{
 	}
 
@@ -1566,7 +1569,7 @@ namespace gl
 	{
 	}
 
-	void texSubImage3D(Enum        target, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Enum format, Enum type,
+	void texSubImage3D(TextureType p_target, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Enum format, Enum type,
 					   const Void *pixels)
 	{
 	}

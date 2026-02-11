@@ -20,7 +20,7 @@ namespace gl
 	{
 	public:
 		using BitsType = BitType;
-		using MaskType = typename std::underlying_type_t<BitType>;
+		using MaskType = std::underlying_type_t<BitType>;
 
 		// constructors
 		constexpr Flags() noexcept : m_mask(0)
@@ -154,25 +154,25 @@ namespace gl
 
 	// bitwise operators on BitType
 	template<typename BitType, std::enable_if_t<FlagTraits<BitType>::isBitmask, bool> = true>
-	inline constexpr Flags<BitType> operator&(BitType lhs, BitType rhs) noexcept
+	constexpr Flags<BitType> operator&(BitType lhs, BitType rhs) noexcept
 	{
 		return Flags<BitType>(lhs) & rhs;
 	}
 
 	template<typename BitType, std::enable_if_t<FlagTraits<BitType>::isBitmask, bool> = true>
-	inline constexpr Flags<BitType> operator|(BitType lhs, BitType rhs) noexcept
+	constexpr Flags<BitType> operator|(BitType lhs, BitType rhs) noexcept
 	{
 		return Flags<BitType>(lhs) | rhs;
 	}
 
 	template<typename BitType, std::enable_if_t<FlagTraits<BitType>::isBitmask, bool> = true>
-	inline constexpr Flags<BitType> operator^(BitType lhs, BitType rhs) noexcept
+	constexpr Flags<BitType> operator^(BitType lhs, BitType rhs) noexcept
 	{
 		return Flags<BitType>(lhs) ^ rhs;
 	}
 
 	template<typename BitType, std::enable_if_t<FlagTraits<BitType>::isBitmask, bool> = true>
-	inline constexpr Flags<BitType> operator~(BitType bit) noexcept
+	constexpr Flags<BitType> operator~(BitType bit) noexcept
 	{
 		return ~(Flags<BitType>(bit));
 	}
@@ -374,6 +374,115 @@ namespace gl
 		eInt_2_10_10_10_Rev          = GL_INT_2_10_10_10_REV,
 		eUnsignedInt_2_10_10_10_Rev  = GL_UNSIGNED_INT_2_10_10_10_REV,
 		eUnsignedInt_10F_11F_11F_Rev = GL_UNSIGNED_INT_10F_11F_11F_REV
+	};
+
+	enum class Format : Enum
+	{
+		/** Base Internal Formats */
+		eRed            = GL_RED,
+		eRG             = GL_RG,
+		eRGB            = GL_RGB,
+		eBGR            = GL_BGR,
+		eRGBA           = GL_RGBA,
+		eBGRA           = GL_BGRA,
+		eRedInteger     = GL_RED_INTEGER,
+		eRGInteger      = GL_RG_INTEGER,
+		eRGBInteger     = GL_RGB_INTEGER,
+		eBGRInteger     = GL_BGR_INTEGER,
+		eRGBAInteger    = GL_RGBA_INTEGER,
+		eBGRAInteger    = GL_BGRA_INTEGER,
+		eStencilIndex   = GL_STENCIL_INDEX,
+		eDepthComponent = GL_DEPTH_COMPONENT,
+		eDepthStencil   = GL_DEPTH_STENCIL,
+
+		/** Sized Internal Formats */
+		eR8           = GL_R8,
+		eR8Snorm      = GL_R8_SNORM,
+		eR16          = GL_R16,
+		eR16Snorm     = GL_R16_SNORM,
+		eRG8          = GL_RG8,
+		eRG8Snorm     = GL_RG8_SNORM,
+		eRG16         = GL_RG16,
+		eRG16Snorm    = GL_RG16_SNORM,
+		eR3G3B2       = GL_R3_G3_B2,
+		eRGB4         = GL_RGB4,
+		eRGB5         = GL_RGB5,
+		eRGB8         = GL_RGB8,
+		eRGB8Snorm    = GL_RGB8_SNORM,
+		eRGB10        = GL_RGB10,
+		eRGB12        = GL_RGB12,
+		eRGB16Snorm   = GL_RGB16_SNORM,
+		eRGBA2        = GL_RGBA2,
+		eRGBA4        = GL_RGBA4,
+		eRGB5A1       = GL_RGB5_A1,
+		eRGBA8        = GL_RGBA8,
+		eRGBA8Snorm   = GL_RGBA8_SNORM,
+		eRGB10A2      = GL_RGB10_A2,
+		eRGB10A2UI    = GL_RGB10_A2UI,
+		eRGBA12       = GL_RGBA12,
+		eRGBA16       = GL_RGBA16,
+		eSRGB8        = GL_SRGB8,
+		eSRGB8Alpha8  = GL_SRGB8_ALPHA8,
+		eR16F         = GL_R16F,
+		eRG16F        = GL_RG16F,
+		eRGB16F       = GL_RGB16F,
+		eRGBA16F      = GL_RGBA16F,
+		eR11FG11FB10F = GL_R11F_G11F_B10F,
+		eRGB9E5       = GL_RGB9_E5,
+		eR8I          = GL_R8I,
+		eR8UI         = GL_R8UI,
+		eR16I         = GL_R16I,
+		eR16UI        = GL_R16UI,
+		eR32I         = GL_R32I,
+		eR32UI        = GL_R32UI,
+		eRG8I         = GL_RG8I,
+		eRG8UI        = GL_RG8UI,
+		eRG16I        = GL_RG16I,
+		eRG16UI       = GL_RG16UI,
+		eRG32I        = GL_RG32I,
+		eRG32UI       = GL_RG32UI,
+		eRGB8I        = GL_RGB8I,
+		eRGB8UI       = GL_RGB8UI,
+		eRGB16I       = GL_RGB16I,
+		eRGB16UI      = GL_RGB16UI,
+		eRGB32I       = GL_RGB32I,
+		eRGB32UI      = GL_RGB32UI,
+		eRGBa8I       = GL_RGBA8I,
+		eRGBa8UI      = GL_RGBA8UI,
+		eRGBa16I      = GL_RGBA16I,
+		eRGBa16UI     = GL_RGBA16UI,
+		eRGBa32I      = GL_RGBA32I,
+		eRGBa32UI     = GL_RGBA32UI,
+
+		/** Compressed Formats */
+		eCompressedRed                  = GL_COMPRESSED_RED,
+		eCompressedRG                   = GL_COMPRESSED_RG,
+		eCompressedRGB                  = GL_COMPRESSED_RGB,
+		eCompressedRGBA                 = GL_COMPRESSED_RGBA,
+		eCompressedSRGB                 = GL_COMPRESSED_SRGB,
+		eCompressedSRGBAlpha            = GL_COMPRESSED_SRGB_ALPHA,
+		eCompressedRedRGTC1             = GL_COMPRESSED_RED_RGTC1,
+		eCompressedSignedRedRGTC1       = GL_COMPRESSED_SIGNED_RED_RGTC1,
+		eCompressedRGRGTC2              = GL_COMPRESSED_RG_RGTC2,
+		eCompressedSignedRGRGTC2        = GL_COMPRESSED_SIGNED_RG_RGTC2,
+		eCompressedRGBABPTCUnorm        = GL_COMPRESSED_RGBA_BPTC_UNORM,
+		eCompressedSRGBAlphaBPTCUnorm   = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM,
+		eCompressedRGBBPTCSignedFloat   = GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT,
+		eCompressedRGBBPTCUnsignedFloat = GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT
+	};
+
+	enum class SamplerParameter : Enum
+	{
+		eTextureWrapS       = GL_TEXTURE_WRAP_S,
+		eTextureWrapT       = GL_TEXTURE_WRAP_T,
+		eTextureWrapR       = GL_TEXTURE_WRAP_R,
+		eTextureMinFilter   = GL_TEXTURE_MIN_FILTER,
+		eTextureMagFilter   = GL_TEXTURE_MAG_FILTER,
+		eTextureMinLOD      = GL_TEXTURE_MIN_LOD,
+		eTextureMaxLOD      = GL_TEXTURE_MAX_LOD,
+		eTextureLODBias     = GL_TEXTURE_LOD_BIAS,
+		eTextureCompareMode = GL_TEXTURE_COMPARE_MODE,
+		eTextureCompareFunc = GL_TEXTURE_COMPARE_FUNC
 	};
 
 	enum class DrawMode : Enum

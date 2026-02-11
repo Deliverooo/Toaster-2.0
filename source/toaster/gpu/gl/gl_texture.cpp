@@ -17,14 +17,14 @@ namespace toaster::gpu
 
 			gl::bindTexture(gl::TextureType::e2D, m_textureId);
 
-			gl::texImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			gl::texImage2D(gl::TextureType::e2D, 0, gl::Format::eRGBA, width, height, 0, gl::Format::eRGBA, gl::DataType::eUnsignedByte, data);
 
-			gl::generateMipmap(GL_TEXTURE_2D);
+			gl::generateMipmap(gl::TextureType::e2D);
 
-			gl::texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			gl::texParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-			gl::texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			gl::texParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapS, GL_REPEAT);
+			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapT, GL_REPEAT);
+			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMinFilter, GL_LINEAR_MIPMAP_LINEAR);
+			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMagFilter, GL_LINEAR);
 		}
 
 		stbi_image_free(data);
