@@ -21,10 +21,10 @@ namespace toaster::gpu
 
 			gl::generateMipmap(gl::TextureType::e2D);
 
-			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapS, GL_REPEAT);
-			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapT, GL_REPEAT);
-			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMinFilter, GL_LINEAR_MIPMAP_LINEAR);
-			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMagFilter, GL_LINEAR);
+			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapS, glEnumVal(gl::TextureWrapping::eRepeat));
+			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapT, glEnumVal(gl::TextureWrapping::eRepeat));
+			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMinFilter, glEnumVal(gl::TextureFiltering::eLinearMipmapLinear));
+			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMagFilter, glEnumVal(gl::TextureFiltering::eLinear));
 		}
 
 		stbi_image_free(data);

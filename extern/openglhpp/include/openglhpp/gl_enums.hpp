@@ -1,13 +1,17 @@
 #pragma once
 
+#include "gl_types.hpp"
+
 #include <compare>
 #include <type_traits>
-
-#include "gl_types.hpp"
-#include "glad/glad.h"
+#include <glad/glad.h>
 
 namespace gl
 {
+	// Sadly, this has to be done due to CERTAIN functions (glTexParamaterx) not excepting one enum as a parameter
+	// and as I want to adhere to using enum classes, this will be what the user has to call to extract the enum value to pass to that function
+	#define glEnumVal(__enum) static_cast<std::underlying_type_t<decltype(__enum)>>(__enum)
+
 	// Ts is from the Vulkan SDK, I just think that it would be useful to use it here aswell...
 	template<typename FlagBitsType>
 	struct FlagTraits
@@ -473,16 +477,53 @@ namespace gl
 
 	enum class SamplerParameter : Enum
 	{
-		eTextureWrapS       = GL_TEXTURE_WRAP_S,
-		eTextureWrapT       = GL_TEXTURE_WRAP_T,
-		eTextureWrapR       = GL_TEXTURE_WRAP_R,
-		eTextureMinFilter   = GL_TEXTURE_MIN_FILTER,
-		eTextureMagFilter   = GL_TEXTURE_MAG_FILTER,
-		eTextureMinLOD      = GL_TEXTURE_MIN_LOD,
-		eTextureMaxLOD      = GL_TEXTURE_MAX_LOD,
-		eTextureLODBias     = GL_TEXTURE_LOD_BIAS,
-		eTextureCompareMode = GL_TEXTURE_COMPARE_MODE,
-		eTextureCompareFunc = GL_TEXTURE_COMPARE_FUNC
+		eDepthStencilTextureMode = GL_DEPTH_STENCIL_TEXTURE_MODE,
+		eTextureBaseLevel        = GL_TEXTURE_BASE_LEVEL,
+		eTextureCompareFunc      = GL_TEXTURE_COMPARE_FUNC,
+		eTextureCompareMode      = GL_TEXTURE_COMPARE_MODE,
+		eTextureLODBias          = GL_TEXTURE_LOD_BIAS,
+		eTextureMinFilter        = GL_TEXTURE_MIN_FILTER,
+		eTextureMagFilter        = GL_TEXTURE_MAG_FILTER,
+		eTextureMinLOD           = GL_TEXTURE_MIN_LOD,
+		eTextureMaxLOD           = GL_TEXTURE_MAX_LOD,
+		eTextureMaxLevel         = GL_TEXTURE_MAX_LEVEL,
+		eTextureSwizzleR         = GL_TEXTURE_SWIZZLE_R,
+		eTextureSwizzleG         = GL_TEXTURE_SWIZZLE_G,
+		eTextureSwizzleB         = GL_TEXTURE_SWIZZLE_B,
+		eTextureSwizzleA         = GL_TEXTURE_SWIZZLE_A,
+		eTextureWrapS            = GL_TEXTURE_WRAP_S,
+		eTextureWrapT            = GL_TEXTURE_WRAP_T,
+		eTextureWrapR            = GL_TEXTURE_WRAP_R
+	};
+
+	enum class TextureFiltering : Enum
+	{
+		//	Returns the value of the texture element that is nearest (in Manhattan distance) to the center of the pixel being textured.
+		eNearest = GL_NEAREST,
+		//	Returns the weighted average of the four texture elements that are closest to the center of the pixel being textured. These can include border texture elements, depending on the values of GL_TEXTURE_WRAP_S and GL_TEXTURE_WRAP_T, and on the exact mapping.
+		eLinear = GL_LINEAR,
+		//	Chooses the mipmap that most closely matches the size of the pixel being textured and uses the GL_NEAREST criterion (the texture element nearest to the center of the pixel) to produce a texture value.
+		eNearestMipmapNearest = GL_NEAREST_MIPMAP_NEAREST,
+		//	Chooses the mipmap that most closely matches the size of the pixel being textured and uses the GL_LINEAR criterion (a weighted average of the four texture elements that are closest to the center of the pixel) to produce a texture value.
+		eLinearMipmapNearest = GL_LINEAR_MIPMAP_NEAREST,
+		//	Chooses the two mipmaps that most closely match the size of the pixel being textured and uses the GL_NEAREST criterion (the texture element nearest to the center of the pixel) to produce a texture value from each mipmap. The final texture value is a weighted average of those two values.
+		eNearestMipmapLinear = GL_NEAREST_MIPMAP_LINEAR,
+		//	Chooses the two mipmaps that most closely match the size of the pixel being textured and uses the GL_LINEAR criterion (a weighted average of the four texture elements that are closest to the center of the pixel) to produce a texture value from each mipmap. The final texture value is a weighted average of those two values.
+		eLinearMipmapLinear = GL_LINEAR_MIPMAP_LINEAR,
+	};
+
+	enum class TextureWrapping : Enum
+	{
+		// the texture coordinate wraps around the texture. So a texture coordinate of -0.2 becomes the equivalent of 0.8.
+		eRepeat = GL_REPEAT,
+		// the texture coordinate wraps around like a mirror. -0.2 becomes 0.2, -1.2 becomes 0.8, etc.
+		eMirroredRepeat = GL_MIRRORED_REPEAT,
+		// the texture coordinate is clamped to the [0, 1] range.
+		eClampToEdge = GL_CLAMP_TO_EDGE,
+		// the texture coordinate is clamped to the [0, 1] range, but the edge texels are blended with a constant border color.
+		eClampToBorder = GL_CLAMP_TO_BORDER,
+		//  (requires OpenGL 4.4 or ARB_texture_mirror_clamp_to_edge): the texture coordinates are clamped to the [-1, 1] range, but the negative coordinates are mirrors of the positive. This effectively makes the texture twice as big through mirroring, but clamps to the edge beyond that.
+		eMirrorClampToEdge = GL_MIRROR_CLAMP_TO_EDGE,
 	};
 
 	enum class DrawMode : Enum
