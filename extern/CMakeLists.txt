@@ -1,5 +1,7 @@
 add_subdirectory(fmt)
 
+add_subdirectory(assimp)
+
 add_subdirectory(stb)
 
 add_compile_definitions(-DGLM_ENABLE_EXPERIMENTAL)

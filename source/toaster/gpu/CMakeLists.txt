@@ -25,12 +25,6 @@ set(GPU_SRC
 
 		index_buffer.cpp
 		index_buffer.hpp
-
-		globals.cpp
-		globals.hpp
-
-		mesh.hpp
-		mesh.cpp
 )
 
 if (${WITH_OPENGL_BACKEND})
@@ -56,9 +50,6 @@ if (${WITH_OPENGL_BACKEND})
 
 			gl/gl_texture.cpp
 			gl/gl_texture.hpp
-
-			gl/gl_material.cpp
-			gl/gl_material.hpp
 	)
 endif ()
 

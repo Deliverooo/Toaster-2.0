@@ -4,6 +4,12 @@
 
 namespace toaster::gpu
 {
+	GLGPUAPI::GLGPUAPI()
+	{
+		gl::enable(gl::Capability::eBlend);
+		gl::blendFunc(gl::BlendFunc::eSrcAlpha, gl::BlendFunc::eOneMinusSrcAlpha);
+	}
+
 	void GLGPUAPI::clearColour(const glm::vec4 &p_colour)
 	{
 		gl::clearColor(p_colour.r, p_colour.g, p_colour.b, p_colour.a);

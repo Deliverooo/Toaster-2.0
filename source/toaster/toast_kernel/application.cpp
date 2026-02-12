@@ -30,7 +30,7 @@ namespace toaster
 			}
 		});
 
-		gpu::Globals::init();
+		Globals::init();
 		RenderCommand::init();
 
 		input::setCurrentWindowContext(m_window->getNativeWindow());
@@ -44,7 +44,7 @@ namespace toaster
 		}
 		m_layers.clear();
 
-		gpu::Globals::shutdown();
+		Globals::shutdown();
 
 		delete m_window;
 

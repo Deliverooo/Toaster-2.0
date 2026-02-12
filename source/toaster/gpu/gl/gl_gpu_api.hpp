@@ -7,7 +7,7 @@ namespace toaster::gpu
 	class GLGPUAPI final : public GPUAPI
 	{
 	public:
-		GLGPUAPI() = default;
+		GLGPUAPI();
 
 		void clearColour(const glm::vec4 &p_colour) override;
 		void clear() override;

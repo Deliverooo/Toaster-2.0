@@ -526,6 +526,27 @@ namespace gl
 		eMirrorClampToEdge = GL_MIRROR_CLAMP_TO_EDGE,
 	};
 
+	enum class BlendFunc : Enum
+	{
+		eZero                  = GL_ZERO,
+		eOne                   = GL_ONE,
+		eSrcColor              = GL_SRC_COLOR,
+		eOneMinusSrcColor      = GL_ONE_MINUS_SRC_COLOR,
+		eDstColor              = GL_DST_COLOR,
+		eOneMinusDstColor      = GL_ONE_MINUS_DST_COLOR,
+		eSrcAlpha              = GL_SRC_ALPHA,
+		eOneMinusSrcAlpha      = GL_ONE_MINUS_SRC_ALPHA,
+		eDstAlpha              = GL_DST_ALPHA,
+		eOneMinusDstAlpha      = GL_ONE_MINUS_DST_ALPHA,
+		eConstantColor         = GL_CONSTANT_COLOR,
+		eOneMinusConstantColor = GL_ONE_MINUS_CONSTANT_COLOR,
+		eConstantAlpha         = GL_CONSTANT_ALPHA,
+		eOneMinusConstantAlpha = GL_ONE_MINUS_CONSTANT_ALPHA,
+		eSrcAlphaSaturate      = GL_SRC_ALPHA_SATURATE,
+		eSrc1Color             = GL_SRC1_COLOR,
+		eSrc1Alpha             = GL_SRC1_ALPHA
+	};
+
 	enum class DrawMode : Enum
 	{
 		ePoints                 = GL_POINTS,

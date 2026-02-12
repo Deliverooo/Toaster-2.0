@@ -355,20 +355,24 @@ namespace gl
 		glBindBufferBase(static_cast<Enum>(p_target), p_index, p_buffer);
 	}
 
-	void bindBufferRange(BufferType p_target, UInt p_index, UInt p_buffer, Int *p_offset, SizeI *p_size)
+	void bindBufferRange(BufferType p_target, UInt p_index, UInt p_buffer, IntPtr p_offset, SizeIPtr p_size)
 	{
+		glBindBufferRange(static_cast<Enum>(p_target), p_index, p_buffer, p_offset, p_size);
 	}
 
 	void bindBuffersBase(BufferType p_target, UInt first, SizeI count, const UInt *buffers)
 	{
+		glBindBuffersBase(static_cast<Enum>(p_target), first, count, buffers);
 	}
 
 	void bindBuffersRange(BufferType p_target, UInt first, SizeI count, const UInt *buffers, IntPtr *offsets, SizeIPtr *sizes)
 	{
+		glBindBuffersRange(static_cast<Enum>(p_target), first, count, buffers, offsets, sizes);
 	}
 
-	void bindVertexBuffer(UInt binding_index, UInt buffer, IntPtr offset, IntPtr stride)
+	void bindVertexBuffer(UInt binding_index, UInt buffer, IntPtr offset, SizeI stride)
 	{
+		glBindVertexBuffer(binding_index, buffer, offset, stride);
 	}
 
 	void vertexArrayVertexBuffer(UInt vao, UInt binding_index, UInt buffer, IntPtr offset, SizeI stride)
@@ -376,12 +380,14 @@ namespace gl
 		glVertexArrayVertexBuffer(vao, binding_index, buffer, offset, stride);
 	}
 
-	void bindVertexBuffers(UInt first, SizeI count, const UInt *buffers, const IntPtr *offsets, const SizeIPtr *strides)
+	void bindVertexBuffers(UInt first, SizeI count, const UInt *buffers, const IntPtr *offsets, const SizeI *strides)
 	{
+		glBindVertexBuffers(first, count, buffers, offsets, strides);
 	}
 
-	void vertexArrayVertexBuffers(UInt vao, UInt first, SizeI count, const UInt *buffers, const IntPtr *offsets, const SizeIPtr *strides)
+	void vertexArrayVertexBuffers(UInt vao, UInt first, SizeI count, const UInt *buffers, const IntPtr *offsets, const SizeI *strides)
 	{
+		glVertexArrayVertexBuffers(vao, first, count, buffers, offsets, strides);
 	}
 
 	void bufferData(BufferType p_target, SizeIPtr size, const Void *data, BufferUsage p_usage)
@@ -568,78 +574,97 @@ namespace gl
 
 	void getBufferParameterI64V(Enum target, Enum value, Int64 *data)
 	{
+		glGetBufferParameteri64v(target, value, data);
 	}
 
 	void getNamedBufferParameterIv(UInt buffer, Enum pname, Int *params)
 	{
+		glGetNamedBufferParameteriv(buffer, pname, params);
 	}
 
 	void getNamedBufferParameterI64V(UInt buffer, Enum pname, Int64 *params)
 	{
+		glGetNamedBufferParameteri64v(buffer, pname, params);
 	}
 
 	void getBufferPointerV(Enum target, Enum pname, Void **params)
 	{
+		glGetBufferPointerv(target, pname, params);
 	}
 
 	void getNamedBufferPointerV(UInt buffer, Enum pname, void **params)
 	{
+		glGetNamedBufferPointerv(buffer, pname, params);
 	}
 
 	void getBufferSubData(Enum target, IntPtr offset, SizeIPtr size, Void *data)
 	{
+		glGetBufferSubData(target, offset, size, data);
 	}
 
 	void getNamedBufferSubData(UInt buffer, IntPtr offset, SizeI size, void *data)
 	{
+		glGetNamedBufferSubData(buffer, offset, size, data);
 	}
 
 	void getVertexArrayIndexed64Iv(UInt vao, UInt index, Enum pname, Int64 *param)
 	{
+		glGetVertexArrayIndexed64iv(vao, index, pname, param);
 	}
 
 	void getVertexArrayIndexedIv(UInt vao, UInt index, Enum pname, Int *param)
 	{
+		glGetVertexArrayIndexediv(vao, index, pname, param);
 	}
 
 	void getVertexArrayIv(UInt vao, Enum pname, Int *param)
 	{
+		glGetVertexArrayiv(vao, pname, param);
 	}
 
 	void getVertexAttribDv(UInt index, Enum pname, Double *params)
 	{
+		glGetVertexAttribdv(index, pname, params);
 	}
 
 	void getVertexAttribFv(UInt index, Enum pname, Float *params)
 	{
+		glGetVertexAttribfv(index, pname, params);
 	}
 
 	void getVertexAttribIv(UInt index, Enum pname, Int *params)
 	{
+		glGetVertexAttribiv(index, pname, params);
 	}
 
 	void getVertexAttribIiv(UInt index, Enum pname, Int *params)
 	{
+		glGetVertexAttribIiv(index, pname, params);
 	}
 
 	void getVertexAttribIuiv(UInt index, Enum pname, UInt *params)
 	{
+		glGetVertexAttribIuiv(index, pname, params);
 	}
 
 	void getVertexAttribLdv(UInt index, Enum pname, Double *params)
 	{
+		glGetVertexAttribLdv(index, pname, params);
 	}
 
 	void getVertexAttribPointerV(UInt index, Enum pname, Void **pointer)
 	{
+		glGetVertexAttribPointerv(index, pname, pointer);
 	}
 
 	void invalidateBufferData(UInt buffer)
 	{
+		glInvalidateBufferData(buffer);
 	}
 
 	void invalidateBufferSubData(UInt buffer, IntPtr offset, SizeIPtr length)
 	{
+		glInvalidateBufferSubData(buffer, offset, length);
 	}
 
 	Bool isBuffer(UInt buffer)
@@ -679,30 +704,37 @@ namespace gl
 
 	void multiDrawElements(Enum mode, const SizeI *count, Enum type, const Void *const *indices, SizeI draw_count)
 	{
+		glMultiDrawElements(mode, count, type, indices, draw_count);
 	}
 
 	void multiDrawElementsBaseVertex(Enum mode, const SizeI *count, Enum type, const Void *const *indices, SizeI draw_count, const Int *base_vertex)
 	{
+		glMultiDrawElementsBaseVertex(mode, count, type, indices, draw_count, base_vertex);
 	}
 
 	void multiDrawElementsIndirect(Enum mode, Enum type, const void *indirect, SizeI draw_count, SizeI stride)
 	{
+		glMultiDrawElementsIndirect(mode, type, indirect, draw_count, stride);
 	}
 
 	void patchParameterI(Enum pname, Int value)
 	{
+		glPatchParameteri(pname, value);
 	}
 
 	void patchParameterFv(Enum pname, const Float *p_values)
 	{
+		glPatchParameterfv(pname, p_values);
 	}
 
 	void primitiveRestartIndex(UInt index)
 	{
+		glPrimitiveRestartIndex(index);
 	}
 
 	void provokingVertex(Enum provokeMode)
 	{
+		glProvokingVertex(provokeMode);
 	}
 
 	Bool unmapBuffer(Enum target)
@@ -1400,19 +1432,23 @@ namespace gl
 
 	void getTextureParameterIuiv(UInt texture, Enum pname, UInt *params)
 	{
+		glGetTextureParameterIuiv(texture, pname, params);
 	}
 
 	void getTextureSubImage(UInt  texture, Int   level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Enum format, Enum type,
 							SizeI bufSize, void *pixels)
 	{
+		glGetTextureSubImage(texture, level, x_offset, y_offset, z_offset, width, height, depth, format, type, bufSize, pixels);
 	}
 
 	void invalidateTexImage(UInt texture, Int level)
 	{
+		glInvalidateTexImage(texture, level);
 	}
 
 	void invalidateTexSubImage(UInt texture, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth)
 	{
+		glInvalidateTexSubImage(texture, level, x_offset, y_offset, z_offset, width, height, depth);
 	}
 
 	Bool isTexture(UInt texture)
@@ -1606,9 +1642,9 @@ namespace gl
 	{
 	}
 
-	void blendFunc(Enum s_factor, Enum d_factor)
+	void blendFunc(BlendFunc p_s_factor, BlendFunc p_d_factor)
 	{
-		glBlendFunc(s_factor, d_factor);
+		glBlendFunc(static_cast<Enum>(p_s_factor), static_cast<Enum>(p_d_factor));
 	}
 
 	void blendFuncI(UInt buffer, Enum s_factor, Enum d_factor)

@@ -16,6 +16,7 @@ namespace toaster
 
 		static void drawIndexed(const RefPtr<gpu::VertexArray> &p_vertex_array);
 
+
 	private:
 		// We only want the application to be the one initializing it
 		static void init();

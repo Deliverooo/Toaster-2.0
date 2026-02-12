@@ -16,6 +16,12 @@ namespace toaster
 
 		m_texture = gpu::Texture2D::create("resources/textures/Orbo_02.png");
 
+		auto quad_shader = Globals::shaderLibrary()->get("Quad");
+		quad_shader->bind();
+		quad_shader->setUniform("u_Texture", 0);
+
+		m_mesh = Mesh::importFromFile("C:\\Users\\Oliver\\OneDrive\\Desktop\\blender dev log\\Orbo\\Orbo Geometry.glb");
+
 		input::setCursorMode(input::ECursorMode::eDisabled);
 	}
 
@@ -47,17 +53,22 @@ namespace toaster
 		if (input::isKeyDown(input::EKeyCode::eS))
 			m_camera.setPosition(m_camera.getPosition() + glm::vec3{0.0f, -1.0f * p_dt, 0.0f});
 
+		if (input::isKeyDown(input::EKeyCode::eUp))
+			m_camera.setPosition(m_camera.getPosition() + glm::vec3{0.0f, 0.0f, 1.0f * p_dt});
+		if (input::isKeyDown(input::EKeyCode::eDown))
+			m_camera.setPosition(m_camera.getPosition() + glm::vec3{0.0f, 0.0f, -1.0f * p_dt});
+
 		if (input::isKeyDown(input::EKeyCode::eR))
 			m_camera.setRotation(m_camera.getRotation() + 1.0f * p_dt);
 
-		auto shader = gpu::Globals::quadShader();
-		shader->bind();
+		auto quad_shader = Globals::shaderLibrary()->get("Quad");
+		quad_shader->bind();
 
-		shader->setUniform("u_View", m_camera.getViewMatrix());
-		shader->setUniform("u_Proj", m_camera.getProjectionMatrix());
+		quad_shader->setUniform("u_View", m_camera.getViewMatrix());
+		quad_shader->setUniform("u_Proj", m_camera.getProjectionMatrix());
 
-		shader->setUniform("u_Time", m_time);
-		shader->setUniform("u_Resolution", {getApp().getWindow().getWidth(), getApp().getWindow().getHeight()});
+		quad_shader->setUniform("u_Time", m_time);
+		quad_shader->setUniform("u_Resolution", {getApp().getWindow().getWidth(), getApp().getWindow().getHeight()});
 
 		m_texture->bind();
 
@@ -65,10 +76,12 @@ namespace toaster
 		{
 			for (uint32 j = 0u; j < 10; j++)
 			{
-				Renderer::submitGeometry(gpu::Globals::quadVertexArray(), gpu::Globals::quadShader(),
+				Renderer::submitGeometry(Globals::quadVertexArray(), quad_shader,
 										 glm::translate(glm::mat4(1.0f), {j * 0.3f, i * 0.3f, -1.0f}) * glm::scale(glm::mat4(1.0f), glm::vec3{0.25f}));
 			}
 		}
+
+		Renderer::submitMesh(m_mesh, m_camera.getViewMatrix(), m_camera.getProjectionMatrix(), glm::mat4{1.0f});
 	}
 
 	void ClientLayer::onEvent(Event &p_event)

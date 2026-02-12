@@ -21,6 +21,7 @@ namespace gl
 	using UChar    = unsigned char;
 
 	using IntPtr   = __int64;
+	using UIntPtr  = unsigned __int64;
 	using SizeIPtr = __int64;
 
 	using DebugCallbackProc = void (__stdcall *)(Enum p_source, Enum p_type, UInt p_id, Enum p_severity, SizeI p_length, const Char *p_message, const void *p_user_param);

@@ -250,7 +250,7 @@ namespace gl
 	/**
 	 *
 	 **/
-	TST_API void bindBufferRange(BufferType p_target, UInt p_index, UInt p_buffer, Int *p_offset, SizeI *p_size);
+	TST_API void bindBufferRange(BufferType p_target, UInt p_index, UInt p_buffer, IntPtr p_offset, SizeIPtr p_size);
 
 	/**
 	 *
@@ -265,7 +265,7 @@ namespace gl
 	/**
 	 *
 	 **/
-	TST_API void bindVertexBuffer(UInt binding_index, UInt buffer, IntPtr offset, IntPtr stride);
+	TST_API void bindVertexBuffer(UInt binding_index, UInt buffer, IntPtr offset, SizeI stride);
 
 	/**
 	 *
@@ -275,12 +275,12 @@ namespace gl
 	/**
 	 *
 	 **/
-	TST_API void bindVertexBuffers(UInt first, SizeI count, const UInt *buffers, const IntPtr *offsets, const SizeIPtr *strides);
+	TST_API void bindVertexBuffers(UInt first, SizeI count, const UInt *buffers, const IntPtr *offsets, const SizeI *strides);
 
 	/**
 	 *
 	 **/
-	TST_API void vertexArrayVertexBuffers(UInt vao, UInt first, SizeI count, const UInt *buffers, const IntPtr *offsets, const SizeIPtr *strides);
+	TST_API void vertexArrayVertexBuffers(UInt vao, UInt first, SizeI count, const UInt *buffers, const IntPtr *offsets, const SizeI *strides);
 
 	/**
 	 * Creates a new data store for the buffer object currently bound to the target.
@@ -839,7 +839,7 @@ namespace gl
 
 	TST_API void blendEquationSeparateI(UInt buffer, Enum mode_RGB, Enum mode_alpha);
 
-	TST_API void blendFunc(Enum s_factor, Enum d_factor);
+	TST_API void blendFunc(BlendFunc p_s_factor, BlendFunc p_d_factor);
 
 	TST_API void blendFuncI(UInt buffer, Enum s_factor, Enum d_factor);
 

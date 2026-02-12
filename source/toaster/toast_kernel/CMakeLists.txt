@@ -13,6 +13,9 @@ set(SRC
 		renderer.hpp
 		renderer.cpp
 
+		mesh.cpp
+		mesh.hpp
+
 		ortho_camera.hpp
 		ortho_camera.cpp
 
@@ -24,6 +27,11 @@ set(SRC
 		events/mouse_event.hpp
 		events/window_event.hpp
 
+		globals.cpp
+		globals.hpp
+
+		shader_library.cpp
+		shader_library.hpp
 )
 
 
@@ -37,6 +45,8 @@ target_link_libraries(toast_kernel PUBLIC tst::toast_gpu)
 target_link_libraries(toast_kernel PUBLIC tst::toast_shaders)
 
 target_link_libraries(toast_kernel PUBLIC glfw)
+
+target_link_libraries(toast_kernel PRIVATE assimp::assimp)
 
 target_link_libraries(toast_kernel PUBLIC ${PLATFORM_LINKLIBS})
 

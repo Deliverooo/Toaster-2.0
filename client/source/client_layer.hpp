@@ -23,6 +23,8 @@ namespace toaster
 		void onEvent(Event &p_event) override;
 
 	private:
+
+		RefPtr<Mesh> m_mesh;
 		RefPtr<gpu::Texture2D> m_texture;
 
 		OrthoCamera m_camera;
