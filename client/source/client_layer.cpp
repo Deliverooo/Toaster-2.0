@@ -20,7 +20,7 @@ namespace toaster
 		quad_shader->bind();
 		quad_shader->setUniform("u_Texture", 0);
 
-		m_mesh = Mesh::importFromFile("C:\\Users\\Oliver\\OneDrive\\Desktop\\blender dev log\\Orbo\\Orbo Geometry.glb");
+		m_mesh = Mesh::importFromFile("resources/meshes/Orbo.fbx");
 
 		input::setCursorMode(input::ECursorMode::eDisabled);
 	}
@@ -81,7 +81,8 @@ namespace toaster
 			}
 		}
 
-		Renderer::submitMesh(m_mesh, m_camera.getViewMatrix(), m_camera.getProjectionMatrix(), glm::mat4{1.0f});
+		Renderer::submitMesh(m_mesh, m_camera.getViewMatrix(), m_camera.getProjectionMatrix(),
+							 glm::rotate(glm::scale(glm::mat4(1.0f), glm::vec3{10.0f}), glm::radians(-90.0f), glm::vec3{1.0f, 0.0f, 0.0f}));
 	}
 
 	void ClientLayer::onEvent(Event &p_event)

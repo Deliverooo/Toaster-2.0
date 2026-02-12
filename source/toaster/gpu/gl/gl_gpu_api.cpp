@@ -8,6 +8,9 @@ namespace toaster::gpu
 	{
 		gl::enable(gl::Capability::eBlend);
 		gl::blendFunc(gl::BlendFunc::eSrcAlpha, gl::BlendFunc::eOneMinusSrcAlpha);
+
+		gl::enable(gl::Capability::eDepthTest);
+		gl::enable(gl::Capability::eCullFace);
 	}
 
 	void GLGPUAPI::clearColour(const glm::vec4 &p_colour)
