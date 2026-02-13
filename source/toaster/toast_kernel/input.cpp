@@ -47,12 +47,12 @@ namespace toaster::input
 	{
 		float64 x, y;
 		glfwGetCursorPos(s_currentWindow, &x, &y);
-		return {static_cast<float>(x), static_cast<float>(y)};
+		return {static_cast<float32>(x), static_cast<float32>(y)};
 	}
 
 	void setCursorMode(ECursorMode p_mode)
 	{
-		glfwSetInputMode(s_currentWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL + static_cast<int>(p_mode));
+		glfwSetInputMode(s_currentWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL + static_cast<int32>(p_mode));
 	}
 
 	ECursorMode getCursorMode()

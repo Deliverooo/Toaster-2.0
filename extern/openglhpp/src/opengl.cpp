@@ -1675,9 +1675,9 @@ namespace gl
 	{
 	}
 
-	void cullFace(Enum mode)
+	void cullFace(CullMode p_cull_mode)
 	{
-		glCullFace(mode);
+		glCullFace(static_cast<Enum>(p_cull_mode));
 	}
 
 	void depthFunc(Enum func)
@@ -1726,8 +1726,9 @@ namespace gl
 	{
 	}
 
-	void frontFace(Enum mode)
+	void frontFace(FaceOrientation p_face_orientation)
 	{
+		glFrontFace(static_cast<Enum>(p_face_orientation));
 	}
 
 	void getBoolV(Enum param_name, Bool *data)

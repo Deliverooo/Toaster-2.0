@@ -9,9 +9,29 @@ namespace toaster::gpu
 	class VertexBuffer
 	{
 	public:
+		/*!
+		 * @brief Creates a vertex buffer with the specified size
+		 * @details if you are using a vertex struct e.g. MeshVertex, make sure to multiply the size of the vertices by the size of the struct.
+		 * @code
+		 * auto vb = gpu::VertexBuffer::Create(vertices.size() * sizeof(MeshVertex));
+		 * @endcode
+		 * @param p_size the number of vertices
+		 * @return a RefPtr to the vertex buffer
+		 */
 		static RefPtr<VertexBuffer> create(uint32 p_size);
+		/*!
+		 * @brief Creates a vertex buffer with the specified size and fills it with the provided data
+		 * @details if you are using a vertex struct e.g. MeshVertex, make sure to multiply the size of the vertices by the size of the struct.
+		 * @code
+		 * auto vb = gpu::VertexBuffer::Create(vertices.data(), vertices.size() * sizeof(MeshVertex));
+		 * @endcode
+		 * @param p_size the number of vertices
+		 * @param p_data the vertex data
+		 * @return a RefPtr to the vertex buffer
+		 */
 		static RefPtr<VertexBuffer> create(void *p_data, uint32 p_size);
-		virtual                     ~VertexBuffer() = default;
+
+		virtual ~VertexBuffer() = default;
 
 		virtual void bind() = 0;
 		virtual void unbind() = 0;

@@ -53,13 +53,11 @@ namespace toaster
 		if (input::isKeyDown(input::EKeyCode::eS))
 			m_camera.setPosition(m_camera.getPosition() + glm::vec3{0.0f, -1.0f * p_dt, 0.0f});
 
-		if (input::isKeyDown(input::EKeyCode::eUp))
-			m_camera.setPosition(m_camera.getPosition() + glm::vec3{0.0f, 0.0f, 1.0f * p_dt});
-		if (input::isKeyDown(input::EKeyCode::eDown))
-			m_camera.setPosition(m_camera.getPosition() + glm::vec3{0.0f, 0.0f, -1.0f * p_dt});
-
 		if (input::isKeyDown(input::EKeyCode::eR))
 			m_camera.setRotation(m_camera.getRotation() + 1.0f * p_dt);
+
+		if (input::isKeyDown(input::EKeyCode::eQ))
+			m_camera.setRotation(m_camera.getRotation() - 1.0f * p_dt);
 
 		auto quad_shader = Globals::shaderLibrary()->get("Quad");
 		quad_shader->bind();
@@ -67,22 +65,17 @@ namespace toaster
 		quad_shader->setUniform("u_View", m_camera.getViewMatrix());
 		quad_shader->setUniform("u_Proj", m_camera.getProjectionMatrix());
 
-		quad_shader->setUniform("u_Time", m_time);
-		quad_shader->setUniform("u_Resolution", {getApp().getWindow().getWidth(), getApp().getWindow().getHeight()});
-
 		m_texture->bind();
 
-		for (uint32 i = 0u; i < 10; i++)
+		for (uint32 i{0u}; i < 10; i++)
 		{
-			for (uint32 j = 0u; j < 10; j++)
+			for (uint32 j{0u}; j < 10; j++)
 			{
-				Renderer::submitGeometry(Globals::quadVertexArray(), quad_shader,
-										 glm::translate(glm::mat4(1.0f), {j * 0.3f, i * 0.3f, -1.0f}) * glm::scale(glm::mat4(1.0f), glm::vec3{0.25f}));
+				glm::mat4 transform = glm::translate(glm::mat4(1.0f), {static_cast<float32>(j) * 0.3f, static_cast<float32>(i) * 0.3f, -1.0f}) *
+									  glm::scale(glm::mat4(1.0f), glm::vec3{0.25f});
+				Renderer::submitGeometry(Globals::quadVertexArray(), quad_shader, transform);
 			}
 		}
-
-		Renderer::submitMesh(m_mesh, m_camera.getViewMatrix(), m_camera.getProjectionMatrix(),
-							 glm::rotate(glm::scale(glm::mat4(1.0f), glm::vec3{10.0f}), glm::radians(-90.0f), glm::vec3{1.0f, 0.0f, 0.0f}));
 	}
 
 	void ClientLayer::onEvent(Event &p_event)

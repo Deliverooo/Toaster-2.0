@@ -30,4 +30,9 @@ namespace toaster
 	{
 		s_gpuAPI->drawIndexed(p_vertex_array);
 	}
+
+	void RenderCommand::drawIndexedBaseVertex(const RefPtr<gpu::VertexArray> &p_vertex_array, uint32 p_index_count, uint32 p_base_index, uint32 p_base_vertex)
+	{
+		s_gpuAPI->drawIndexedBaseVertex(p_vertex_array, p_index_count, p_base_index, p_base_vertex);
+	}
 }

@@ -263,9 +263,15 @@ namespace gl
 	TST_API void bindBuffersRange(BufferType p_target, UInt first, SizeI count, const UInt *buffers, IntPtr *offsets, SizeIPtr *sizes);
 
 	/**
+	 * Binds a buffer object to a specific binding point for front-face vertex data.
+	 * This method sets up the connection between a vertex buffer object and a vertex array for rendering operations.
 	 *
-	 **/
-	TST_API void bindVertexBuffer(UInt binding_index, UInt buffer, IntPtr offset, SizeI stride);
+	 * @param binding_index The index of the binding point to which the buffer is bound.
+	 * @param buffer The handle of the buffer object to bind.
+	 * @param offset The offset in bytes from the start of the buffer object where vertex data begins.
+	 * @param stride The byte stride between consecutive elements in the buffer.
+	 */
+	TST_API void bindglFrontFaceVertexBuffer(UInt binding_index, UInt buffer, IntPtr offset, SizeI stride);
 
 	/**
 	 *
@@ -855,7 +861,7 @@ namespace gl
 
 	TST_API void colorMaskI(UInt index, Bool red, Bool green, Bool blue, Bool alpha);
 
-	TST_API void cullFace(Enum mode);
+	TST_API void cullFace(CullMode p_cull_mode);
 
 	TST_API void depthFunc(Enum func);
 
@@ -877,7 +883,7 @@ namespace gl
 
 	TST_API void enableI(Enum cap, UInt index);
 
-	TST_API void frontFace(Enum mode);
+	TST_API void frontFace(FaceOrientation p_face_orientation);
 
 	TST_API void getBoolV(Enum param_name, Bool *data);
 

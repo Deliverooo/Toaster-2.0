@@ -120,7 +120,7 @@ namespace toaster
 
 				for (uint32 j{0u}; j < ai_mesh->mNumVertices; ++j)
 				{
-					MeshVertex vertex;
+					MeshVertex vertex{};
 					vertex.position = {ai_mesh->mVertices[j].x, ai_mesh->mVertices[j].y, ai_mesh->mVertices[j].z};
 					vertex.normal   = {ai_mesh->mNormals[j].x, ai_mesh->mNormals[j].y, ai_mesh->mNormals[j].z};
 
@@ -216,7 +216,7 @@ namespace toaster
 				}
 				else
 				{
-					auto map = gpu::Texture2D::create("ts");
+					auto map = gpu::Texture2D::create("error");
 
 					material->setAlbedoMap(map);
 				}
@@ -267,6 +267,11 @@ namespace toaster
 	const std::vector<uint32> &Mesh::getIndices() const
 	{
 		return m_indices;
+	}
+
+	const std::vector<Submesh> &Mesh::getSubmeshes() const
+	{
+		return m_submeshes;
 	}
 
 	const RefPtr<gpu::Material> &Mesh::getMaterial(uint32 p_index) const

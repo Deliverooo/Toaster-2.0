@@ -563,6 +563,11 @@ namespace gl
 		ePatches                = GL_PATCHES
 	};
 
+	enum class CullMode : Enum
+	{
+		eFront = GL_FRONT, eBack = GL_BACK, eFrontAndBack = GL_FRONT_AND_BACK
+	};
+
 	/** See -> https://wikis.khronos.org/opengl/GLAPI/glEnable **/
 	enum class Capability : Enum
 	{
@@ -771,5 +776,10 @@ namespace gl
 		e2DMultisample = GL_TEXTURE_2D_MULTISAMPLE,
 		/** Combines 2D array and 2D multisample types. No mipmapping. **/
 		e2DMultisampleArray = GL_TEXTURE_2D_MULTISAMPLE_ARRAY
+	};
+
+	enum class FaceOrientation : Enum
+	{
+		eClockWise = GL_CW, eCounterClockWise = GL_CCW,
 	};
 }
