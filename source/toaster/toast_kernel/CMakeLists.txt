@@ -7,46 +7,22 @@ set(SRC
 
 		window.cpp
 		window.hpp
-
-		camera.hpp
-
-		renderer.hpp
-		renderer.cpp
-
-		mesh.cpp
-		mesh.hpp
-
-		ortho_camera.hpp
-		ortho_camera.cpp
-
-		render_command.cpp
-		render_command.hpp
-
-		events/event.hpp
-		events/key_event.hpp
-		events/mouse_event.hpp
-		events/window_event.hpp
-
-		globals.cpp
-		globals.hpp
-
-		shader_library.cpp
-		shader_library.hpp
 )
 
+list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+target_sources(Toaster PRIVATE ${SRC})
 
 add_library(toast_kernel STATIC)
 
 target_sources(toast_kernel PRIVATE ${SRC})
 target_include_directories(toast_kernel PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(toast_kernel PUBLIC tst::toast_lib)
-target_link_libraries(toast_kernel PUBLIC tst::toast_gpu)
-target_link_libraries(toast_kernel PUBLIC tst::toast_shaders)
+#target_link_libraries(toast_kernel PUBLIC tst::toast_lib)
+#target_link_libraries(toast_kernel PUBLIC tst::toast_gpu)
+#target_link_libraries(toast_kernel PUBLIC tst::toast_shaders)
 
-target_link_libraries(toast_kernel PUBLIC glfw)
-
-target_link_libraries(toast_kernel PRIVATE assimp::assimp)
+#target_link_libraries(toast_kernel PUBLIC glfw)
+#target_link_libraries(toast_kernel PRIVATE assimp::assimp)
 
 target_link_libraries(toast_kernel PUBLIC ${PLATFORM_LINKLIBS})
 

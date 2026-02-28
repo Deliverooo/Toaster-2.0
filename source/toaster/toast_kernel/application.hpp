@@ -8,7 +8,7 @@
 #include "layer.hpp"
 #include "window.hpp"
 
-#include "events/window_event.hpp"
+#include "toaster/toast_lib/events/window_event.hpp"
 
 namespace toaster
 {
@@ -24,8 +24,8 @@ namespace toaster
 		[[nodiscard]] Window &getWindow() const noexcept;
 
 	private:
-		bool onWindowClose(WindowCloseEvent &e);
-		bool onWindowResize(WindowResizeEvent &e);
+		bool onWindowCloseEvent(WindowCloseEvent &e);
+		bool onWindowResizeEvent(WindowResizeEvent &e);
 
 		Window *m_window{nullptr};
 

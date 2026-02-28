@@ -1,15 +1,15 @@
 #include "window.hpp"
 
-#include "gpu_context.hpp"
+#include "toaster/toast_gpu/gpu_context.hpp"
 
 #include <GLFW/glfw3.h>
 
-#include "logging.hpp"
-#include "toast_assert.h"
+#include "toaster/toast_lib/logging.hpp"
+#include "toaster/toast_lib/toast_assert.h"
 
-#include "events/key_event.hpp"
-#include "events/mouse_event.hpp"
-#include "events/window_event.hpp"
+#include "toaster/toast_lib/events/key_event.hpp"
+#include "toaster/toast_lib/events/mouse_event.hpp"
+#include "toaster/toast_lib/events/window_event.hpp"
 
 namespace toaster
 {

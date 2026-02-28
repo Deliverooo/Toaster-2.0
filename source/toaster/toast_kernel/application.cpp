@@ -1,12 +1,12 @@
 #include "application.hpp"
 
-#include "globals.hpp"
 #include "input.hpp"
-#include "logging.hpp"
-#include "render_command.hpp"
+#include "toaster/toast_lib/logging.hpp"
+#include "toaster/toast_render/globals.hpp"
+#include "toaster/toast_render/render_command.hpp"
 
+#include <algorithm>
 #include <GLFW/glfw3.h>
-
 
 namespace toaster
 {
@@ -19,15 +19,15 @@ namespace toaster
 		m_window->setEventCallback([this](Event &e)
 		{
 			EventDispatcher dispatcher(e);
-			dispatcher.dispatch<WindowCloseEvent>([this](WindowCloseEvent &event) { return onWindowClose(event); });
-			dispatcher.dispatch<WindowResizeEvent>([this](WindowResizeEvent &event) { return onWindowResize(event); });
+			dispatcher.dispatch<WindowCloseEvent>(TST_BIND_EVENT_FN(Application::onWindowCloseEvent));
+			dispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(Application::onWindowResizeEvent));
 
-			for (auto it = m_layers.rbegin(); it != m_layers.rend(); ++it)
+			std::ranges::for_each(m_layers.rbegin(), m_layers.rend(), [&](IAppLayer *layer)
 			{
 				if (e.isHandled())
-					break;
-				(*it)->onEvent(e);
-			}
+					return;
+				layer->onEvent(e);
+			});
 		});
 
 		Globals::init();
@@ -39,15 +39,12 @@ namespace toaster
 	Application::~Application() noexcept
 	{
 		for (IAppLayer *layer: m_layers)
-		{
 			removeLayer(layer);
-		}
 		m_layers.clear();
 
 		Globals::shutdown();
 
 		delete m_window;
-
 		Window::shutdownWindowingAPI();
 	}
 
@@ -83,13 +80,13 @@ namespace toaster
 		return *m_window;
 	}
 
-	bool Application::onWindowClose(WindowCloseEvent &e)
+	bool Application::onWindowCloseEvent(WindowCloseEvent &e)
 	{
 		m_isRunning = false;
 		return true;
 	}
 
-	bool Application::onWindowResize(WindowResizeEvent &e)
+	bool Application::onWindowResizeEvent(WindowResizeEvent &e)
 	{
 		if (e.getWidth() == 0 || e.getHeight() == 0)
 		{

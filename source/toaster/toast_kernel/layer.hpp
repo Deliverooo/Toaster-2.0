@@ -3,8 +3,8 @@
  */
 #pragma once
 
-#include "system_types.h"
-#include "events/event.hpp"
+#include "toaster/toast_lib/system_types.h"
+#include "toaster/toast_lib/events/event.hpp"
 
 namespace toaster
 {

@@ -24,14 +24,19 @@ set(SRC
 		math/math_constants.hpp
 
 		util_defines.hpp
+
+		input_codes.hpp
 )
 
-add_library(toast_lib STATIC)
+list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
+target_sources(Toaster PRIVATE ${SRC})
 
-target_include_directories(toast_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_sources(toast_lib PRIVATE ${SRC})
+#add_library(toast_lib STATIC)
 
-target_link_libraries(toast_lib PUBLIC glm)
-target_link_libraries(toast_lib PUBLIC fmt::fmt)
+#target_include_directories(toast_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+#target_sources(toast_lib PRIVATE ${SRC})
 
-add_library(tst::toast_lib ALIAS toast_lib)
+#target_link_libraries(toast_lib PUBLIC glm)
+#target_link_libraries(toast_lib PUBLIC fmt::fmt)
+
+#add_library(tst::toast_lib ALIAS toast_lib)

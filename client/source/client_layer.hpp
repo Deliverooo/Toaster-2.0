@@ -1,13 +1,15 @@
 #pragma once
 
-#include "layer.hpp"
-#include "mesh.hpp"
-#include "ortho_camera.hpp"
+#include "toaster/toast_kernel/layer.hpp"
+#include "toaster/toast_render/ortho_camera.hpp"
+#include "toaster/toast_render/renderer_2d.hpp"
 
-#include "shader.hpp"
-#include "texture.hpp"
+#include "toaster/toast_gpu/shader.hpp"
+#include "toaster/toast_gpu/texture.hpp"
 
-#include "vertex_array.hpp"
+#include "toaster/toast_lib/events/key_event.hpp"
+#include "toaster/toast_lib/events/mouse_event.hpp"
+#include "toaster/toast_lib/events/window_event.hpp"
 
 namespace toaster
 {
@@ -23,8 +25,12 @@ namespace toaster
 		void onEvent(Event &p_event) override;
 
 	private:
+		bool onKeyPressEvent(KeyPressEvent &e);
+		bool onMouseMoveEvent(MouseMoveEvent &e);
+		bool onWindowResizeEvent(WindowResizeEvent &e);
 
-		RefPtr<Mesh> m_mesh;
+		RefPtr<Renderer2D> m_renderer2d;
+
 		RefPtr<gpu::Texture2D> m_texture;
 
 		OrthoCamera m_camera;
