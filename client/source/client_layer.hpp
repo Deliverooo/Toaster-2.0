@@ -1,11 +1,11 @@
 #pragma once
 
 #include "toaster/toast_kernel/layer.hpp"
-#include "toaster/toast_render/ortho_camera.hpp"
 #include "toaster/toast_render/renderer_2d.hpp"
 
 #include "toaster/toast_gpu/shader.hpp"
 #include "toaster/toast_gpu/texture.hpp"
+#include "toaster/toast_kernel/ortho_camera_controller.hpp"
 
 #include "toaster/toast_lib/events/key_event.hpp"
 #include "toaster/toast_lib/events/mouse_event.hpp"
@@ -33,8 +33,7 @@ namespace toaster
 
 		RefPtr<gpu::Texture2D> m_texture;
 
-		OrthoCamera m_camera;
-
+		OrthoCameraController m_cameraController;
 		float32 m_time{0.0f};
 	};
 }

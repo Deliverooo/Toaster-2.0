@@ -45,11 +45,12 @@ namespace toaster
 
 	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)
 	{
+		auto quad_shader = Globals::shaderLibrary()->get("Quad");
+		quad_shader->bind();
+
 		tsm::float4x4 model_matrix = glm::translate(glm::scale(tsm::float4x4{1.0f}, {p_scale.x, p_scale.y, 1.0f}), p_position);
 
-		auto quad_shader = Globals::shaderLibrary()->get("Quad");
 		quad_shader->setUniform("u_Model", model_matrix);
-
 		quad_shader->setUniform("u_Colour", p_colour);
 
 		RenderCommand::drawIndexed(m_quadVertexArray);

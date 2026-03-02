@@ -24,15 +24,16 @@ namespace toaster
 	class WindowResizeEvent final : public Event
 	{
 	public:
-		WindowResizeEvent(const uint32_t width, const uint32_t height) : m_width(width), m_height(height)
+		WindowResizeEvent(const uint32 width, const uint32 height) : m_width(width), m_height(height)
 		{
 		}
 
 		EVENT_CLASS_CATEGORY(EventCategory_Application)
 		EVENT_CLASS_TYPE(WindowResize)
 
-		[[nodiscard]] uint32_t getWidth() const { return m_width; }
-		[[nodiscard]] uint32_t getHeight() const { return m_height; }
+		[[nodiscard]] uint32  getWidth() const { return m_width; }
+		[[nodiscard]] uint32  getHeight() const { return m_height; }
+		[[nodiscard]] float32 getAspectRatio() const { return static_cast<float>(m_width) / static_cast<float>(m_height); }
 
 		[[nodiscard]] virtual std::string toStr() const override
 		{
@@ -42,8 +43,8 @@ namespace toaster
 		}
 
 	private:
-		uint32_t m_width;
-		uint32_t m_height;
+		uint32 m_width;
+		uint32 m_height;
 	};
 
 	class WindowMinimizeEvent final : public Event

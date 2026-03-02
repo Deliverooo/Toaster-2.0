@@ -3,6 +3,7 @@
  */
 #pragma once
 
+#include "toaster/toast_lib/system_types.h"
 #include "toaster/toast_lib/util_defines.hpp"
 
 #include <functional>
@@ -78,7 +79,8 @@ namespace toaster
 		friend class EventDispatcher;
 	};
 
-	#define TST_BIND_EVENT_FN(fn) std::bind(&fn, this, std::placeholders::_1)
+	// std::bind is not good, so I use this instead
+	#define TST_BIND_EVENT_FN(fn) [this](auto &event) -> bool { return fn(event); }
 
 	template<typename T>
 	using EventFunc = std::function<bool(T &)>;

@@ -5,9 +5,8 @@
 
 namespace toaster
 {
-	OrthoCamera::OrthoCamera(float32 p_left, float32 p_right, float32 p_bottom, float32 p_top, float32 p_near, float32 p_far) : Camera(glm::ortho(p_left, p_right,
-																																				  p_bottom, p_top, p_near,
-																																				  p_far))
+	OrthoCamera::OrthoCamera(float32 p_left, float32 p_right, float32 p_bottom, float32 p_top, float32 p_near,
+							 float32 p_far) : m_projectionMatrix(glm::ortho(p_left, p_right, p_bottom, p_top, p_near, p_far))
 	{
 	}
 
@@ -38,8 +37,13 @@ namespace toaster
 		recalculateViewMatrix();
 	}
 
+	void OrthoCamera::setProjectionMatrix(float32 p_left, float32 p_right, float32 p_bottom, float32 p_top, float32 p_near, float32 p_far)
+	{
+		m_projectionMatrix = glm::ortho(p_left, p_right, p_bottom, p_top, p_near, p_far);
+	}
+
 	void OrthoCamera::recalculateViewMatrix()
 	{
-		m_viewMatrix = glm::inverse(glm::translate(glm::mat4{1.0f}, m_position) * glm::rotate(glm::mat4{1.0f}, m_rotation, glm::vec3{0.0f, 0.0f, 1.0f}));
+		m_viewMatrix = glm::inverse(glm::translate(glm::mat4{1.0f}, m_position) * glm::rotate(glm::mat4{1.0f}, glm::radians(m_rotation), glm::vec3{0.0f, 0.0f, 1.0f}));
 	}
 }

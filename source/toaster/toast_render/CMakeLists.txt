@@ -15,8 +15,6 @@ set(SRC
 		renderer_2d.cpp
 		renderer_2d.hpp
 
-		camera.hpp
-
 		shader_library.cpp
 		shader_library.hpp
 

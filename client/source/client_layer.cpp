@@ -8,7 +8,7 @@
 
 namespace toaster
 {
-	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app), m_camera(-1.0f, 1.0f, -p_app->getWindow().getAspect(), p_app->getWindow().getAspect(), 0.1f, 100.0f)
+	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app), m_cameraController(16.0f / 9.0f, true)
 	{
 		io::filesystem::setWorkingDirectory("../../../"); // The main Toaster dir (where the resource folder is)
 
@@ -44,9 +44,12 @@ namespace toaster
 		RenderCommand::clearColour({0.2f, 0.3f, 0.3f, 1.0f});
 		RenderCommand::clear();
 
-		m_renderer2d->begin(m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
+		m_cameraController.onUpdate(p_dt);
+
+		m_renderer2d->begin(m_cameraController.getCamera().getViewMatrix(), m_cameraController.getCamera().getProjectionMatrix());
 
 		m_renderer2d->submitQuad({0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f});
+		m_renderer2d->submitQuad({1.0f, 0.0f, -1.0f}, {1.0f, 1.0f}, {0.0f, 1.0f, 1.0f, 1.0f});
 
 		m_renderer2d->end();
 	}
@@ -57,6 +60,8 @@ namespace toaster
 		eventDispatcher.dispatch<MouseMoveEvent>(TST_BIND_EVENT_FN(ClientLayer::onMouseMoveEvent));
 		eventDispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(ClientLayer::onWindowResizeEvent));
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(ClientLayer::onKeyPressEvent));
+
+		m_cameraController.onEvent(p_event);
 	}
 
 	bool ClientLayer::onKeyPressEvent(KeyPressEvent &e)
