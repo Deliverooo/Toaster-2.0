@@ -2,62 +2,181 @@
 
 #include "globals.hpp"
 #include "render_command.hpp"
+// #include "toaster/toast_lib/logging.hpp"
 
 namespace toaster
 {
-	Renderer2D::Renderer2D()
+	Renderer2D::Renderer2D(const Renderer2DCreateInfo &p_create_info) : m_createInfo(p_create_info), m_maxVertices(p_create_info.maxQuads * 4u),
+																		m_maxIndices(p_create_info.maxQuads * 6u)
 	{
-		std::vector<QuadVertex> vertices = {
-			{{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f}},
-			{{0.5f, -0.5f, 0.0f}, {1.0f, 0.0f}},
-			{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f}},
-			{{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f}},
+		m_quadVertexBuffer = gpu::VertexBuffer::create(m_maxVertices * sizeof(QuadVertex));
+		const auto vbl     = gpu::VertexBufferLayout{
+			{gpu::EShaderDataType::eFloat4, "a_Position"},
+			{gpu::EShaderDataType::eFloat4, "a_Colour"},
+			{gpu::EShaderDataType::eFloat2, "a_TexCoord"},
+			{gpu::EShaderDataType::eFloat, "a_TexIndex"}
 		};
-		std::vector<uint32> indices = {0, 1, 3, 1, 2, 3};
-
-		m_quadVertexBuffer = gpu::VertexBuffer::create(vertices.data(), vertices.size() * sizeof(QuadVertex));
-		const auto vbl     = gpu::VertexBufferLayout{{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
 		m_quadVertexBuffer->setLayout(vbl);
 
-		m_quadIndexBuffer = gpu::IndexBuffer::create(indices.data(), indices.size());
+		m_quadVertexBase = new QuadVertex[m_maxVertices];
+
+		auto *quad_indices = new uint32[m_maxIndices];
+
+		uint32 offset{0u};
+		for (uint32 i{0u}; i < m_maxIndices; i += 6u)
+		{
+			quad_indices[i]     = offset;
+			quad_indices[i + 1] = offset + 1;
+			quad_indices[i + 2] = offset + 2;
+
+			quad_indices[i + 3] = offset + 2;
+			quad_indices[i + 4] = offset + 3;
+			quad_indices[i + 5] = offset;
+
+			offset += 4u;
+		}
+		m_quadIndexBuffer = gpu::IndexBuffer::create(quad_indices, m_maxIndices);
+		delete[] quad_indices;
 
 		m_quadVertexArray = gpu::VertexArray::create();
 		m_quadVertexArray->addVertexBuffer(m_quadVertexBuffer);
 		m_quadVertexArray->setIndexBuffer(m_quadIndexBuffer);
+
+		m_whiteTexture            = gpu::Texture2D::create(1, 1);
+		uint32 white_texture_data = 0xffffffff;
+		m_whiteTexture->setData(&white_texture_data, sizeof(uint32));
+
+		int samplers[c_maxTextureSlots];
+		for (int i{0}; i < c_maxTextureSlots; ++i)
+		{
+			samplers[i] = i;
+		}
+
+		const auto quad_shader = Globals::shaderLibrary()->get("Quad");
+		quad_shader->bind();
+		quad_shader->setUniform("u_Textures", samplers, c_maxTextureSlots);
+
+		m_textureSlots[0] = m_whiteTexture;
+
+		m_quadVertexPositions = {
+			tsm::float4{-0.5f, -0.5f, 0.0f, 1.0f},
+			tsm::float4{0.5f, -0.5f, 0.0f, 1.0f},
+			tsm::float4{0.5f, 0.5f, 0.0f, 1.0f},
+			tsm::float4{-0.5f, 0.5f, 0.0f, 1.0f}
+		};
+
+		m_quadVertexTexCoords = {tsm::float2{0.0f, 0.0f}, tsm::float2{1.0f, 0.0f}, tsm::float2{1.0f, 1.0f}, tsm::float2{0.0f, 1.0f}};
 	}
 
 	Renderer2D::~Renderer2D()
 	{
+		delete[] m_quadVertexBase;
 	}
 
 	void Renderer2D::begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix)
 	{
-		auto quad_shader = Globals::shaderLibrary()->get("Quad");
+		const auto quad_shader = Globals::shaderLibrary()->get("Quad");
 		quad_shader->bind();
 
 		quad_shader->setUniform("u_View", p_view_matrix);
 		quad_shader->setUniform("u_Proj", p_proj_matrix);
+
+		m_quadIndexCount   = 0u;
+		m_quadVertexPtr    = m_quadVertexBase;
+		m_textureSlotIndex = 1u;
 	}
 
 	void Renderer2D::end()
 	{
+		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
+		m_quadVertexBuffer->setData(m_quadVertexBase, size);
+
+		for (uint32 i{0u}; i < m_textureSlotIndex; ++i)
+		{
+			m_textureSlots[i]->bind(i);
+		}
+
+		RenderCommand::drawIndexed(m_quadVertexArray, m_quadIndexCount);
 	}
 
 	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)
 	{
-		auto quad_shader = Globals::shaderLibrary()->get("Quad");
-		quad_shader->bind();
+		if (m_quadIndexCount >= m_maxIndices)
+			_beginNewBatch();
 
-		tsm::float4x4 model_matrix = glm::translate(glm::scale(tsm::float4x4{1.0f}, {p_scale.x, p_scale.y, 1.0f}), p_position);
+		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f});
 
-		quad_shader->setUniform("u_Model", model_matrix);
-		quad_shader->setUniform("u_Colour", p_colour);
+		for (uint32 i{0u}; i < 4u; ++i)
+		{
+			m_quadVertexPtr->position = transform * m_quadVertexPositions[i];
+			m_quadVertexPtr->colour   = p_colour;
+			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
+			m_quadVertexPtr->texIndex = 0.0f;
+			m_quadVertexPtr++;
+		}
 
-		RenderCommand::drawIndexed(m_quadVertexArray);
+		m_quadIndexCount += 6u;
 	}
 
 	void Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)
 	{
 		submitQuad(tsm::float3{p_position.x, p_position.y, 0.0f}, p_scale, p_colour);
+	}
+
+	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::Texture2D> &p_texture, const tsm::float4 &p_tint_colour)
+	{
+		if (m_quadIndexCount >= m_maxIndices)
+			_beginNewBatch();
+
+		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f});
+
+		const auto texture_index = static_cast<float32>(_getTextureSlotIndex(p_texture));
+
+		for (uint32 i{0u}; i < 4u; ++i)
+		{
+			m_quadVertexPtr->position = transform * m_quadVertexPositions[i];
+			m_quadVertexPtr->colour   = p_tint_colour;
+			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
+			m_quadVertexPtr->texIndex = texture_index;
+			m_quadVertexPtr++;
+		}
+
+		m_quadIndexCount += 6u;
+	}
+
+	void Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::Texture2D> &p_texture, const tsm::float4 &p_tint_colour)
+	{
+		submitQuad(tsm::float3{p_position.x, p_position.y, 0.0f}, p_scale, p_texture, p_tint_colour);
+	}
+
+	void Renderer2D::_beginNewBatch()
+	{
+		end();
+
+		m_quadIndexCount   = 0u;
+		m_quadVertexPtr    = m_quadVertexBase;
+		m_textureSlotIndex = 1u;
+	}
+
+	uint32 Renderer2D::_getTextureSlotIndex(const RefPtr<gpu::Texture2D> &p_texture)
+	{
+		uint32 texture_index{0u};
+		for (uint32 i{1u}; i < m_textureSlotIndex; ++i)
+		{
+			if (*m_textureSlots[i] == *p_texture)
+			{
+				texture_index = i;
+				break;
+			}
+		}
+
+		if (texture_index == 0u)
+		{
+			texture_index                      = m_textureSlotIndex;
+			m_textureSlots[m_textureSlotIndex] = p_texture;
+			m_textureSlotIndex++;
+		}
+
+		return texture_index;
 	}
 }

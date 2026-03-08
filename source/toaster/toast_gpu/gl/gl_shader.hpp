@@ -30,6 +30,9 @@ namespace toaster::gpu
 		void setUniform(const std::string &p_name, const glm::vec4 &p_value) override;
 		void setUniform(const std::string &p_name, const glm::mat3 &p_value) override;
 		void setUniform(const std::string &p_name, const glm::mat4 &p_value) override;
+		void setUniform(const std::string &p_name, float32 *p_values, uint32 p_count) override;
+		void setUniform(const std::string &p_name, int32 *p_values, uint32 p_count) override;
+		void setUniform(const std::string &p_name, uint32 *p_values, uint32 p_count) override;
 
 	private:
 		std::string m_name;

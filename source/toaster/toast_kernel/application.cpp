@@ -65,6 +65,17 @@ namespace toaster
 				{
 					layer->onUpdate(m_deltaTime);
 				}
+
+				if (m_cbBeginUIRender)
+					m_cbBeginUIRender();
+
+				for (IAppLayer *layer: m_layers)
+				{
+					layer->onUIRender();
+				}
+
+				if (m_cbEndUIRender)
+					m_cbEndUIRender();
 			}
 			m_window->endFrame();
 		}
@@ -80,15 +91,15 @@ namespace toaster
 		return *m_window;
 	}
 
-	bool Application::onWindowCloseEvent(WindowCloseEvent &e)
+	bool Application::onWindowCloseEvent([[maybe_unused]] WindowCloseEvent &p_event)
 	{
 		m_isRunning = false;
 		return true;
 	}
 
-	bool Application::onWindowResizeEvent(WindowResizeEvent &e)
+	bool Application::onWindowResizeEvent(WindowResizeEvent &p_event)
 	{
-		if (e.getWidth() == 0 || e.getHeight() == 0)
+		if (p_event.getWidth() == 0 || p_event.getHeight() == 0)
 		{
 			m_minimized = true;
 			return false;
@@ -97,17 +108,26 @@ namespace toaster
 		return false;
 	}
 
-	void Application::addLayer(IAppLayer *layer)
+	void Application::addLayer(IAppLayer *p_layer)
 	{
-		m_layers.push_back(layer);
-		layer->onInit();
+		m_layers.push_back(p_layer);
+		p_layer->onInit();
 	}
 
-	void Application::removeLayer(IAppLayer *layer)
+	void Application::removeLayer(IAppLayer *p_layer)
 	{
-		layer->onDestroy();
-		m_layers.erase(std::ranges::find(m_layers, layer));
-		delete layer;
-		layer = nullptr;
+		p_layer->onDestroy();
+		m_layers.erase(std::ranges::find(m_layers, p_layer));
+		delete p_layer;
+	}
+
+	void Application::setBeginUIRenderCallback(const std::function<void()> &p_cb_begin_ui_render)
+	{
+		m_cbBeginUIRender = p_cb_begin_ui_render;
+	}
+
+	void Application::setEndUIRenderCallback(const std::function<void()> &p_cb_end_ui_render)
+	{
+		m_cbEndUIRender = p_cb_end_ui_render;
 	}
 }

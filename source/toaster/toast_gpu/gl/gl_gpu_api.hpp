@@ -17,7 +17,7 @@ namespace toaster::gpu
 
 		void setViewport(const glm::vec4 &p_viewport) override;
 
-		void drawIndexed(const RefPtr<VertexArray> &p_vertex_array) override;
+		void drawIndexed(const RefPtr<VertexArray> &p_vertex_array, uint32 p_index_count) override;
 		void drawIndexedBaseVertex(const RefPtr<VertexArray> &p_vertex_array, uint32 p_index_count, uint32 p_base_index, uint32 p_base_vertex) override;
 
 	};

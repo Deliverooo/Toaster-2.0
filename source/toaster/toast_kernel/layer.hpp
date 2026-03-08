@@ -33,6 +33,12 @@ namespace toaster
 	class IAppLayer
 	{
 	public:
+		template<typename TLayer> requires std::derived_from<TLayer, IAppLayer>
+		static TLayer *alloc(Application *p_app)
+		{
+			return new TLayer(p_app);
+		}
+
 		explicit IAppLayer(Application *p_app) : m_appParent(p_app)
 		{
 		}
@@ -44,6 +50,10 @@ namespace toaster
 
 		virtual void onUpdate(float32 p_dt) = 0;
 		virtual void onEvent(Event &p_event) = 0;
+
+		virtual void onUIRender()
+		{
+		}
 
 		virtual Application &getApp() { return *m_appParent; }
 

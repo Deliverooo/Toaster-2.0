@@ -1,5 +1,7 @@
 project(imgui)
 
+option(WITH_OPENGL "Build ImGui with OpenGL3 support" ON)
+option(WITH_GLFW "Build ImGui with OpenGL3 support" ON)
 
 set(IMGUI_SRC
         "imconfig.h"
@@ -14,22 +16,17 @@ set(IMGUI_SRC
 		"imstb_truetype.h"
 		"imgui_demo.cpp" )
 
-set(IMGUI_LIB "")
+add_library(imgui STATIC)
 
-if(WIN32)
-
-	list(APPEND IMGUI_SRC "backends/imgui_impl_win32.h" "backends/imgui_impl_win32.cpp")
+if(WITH_OPENGL)
+	list(APPEND IMGUI_SRC "backends/imgui_impl_opengl3.h" "backends/imgui_impl_opengl3.cpp")
+endif ()
+if(WITH_GLFW)
+	list(APPEND IMGUI_SRC "backends/imgui_impl_glfw.h" "backends/imgui_impl_glfw.cpp")
+	target_link_libraries(imgui PUBLIC glfw)
 endif ()
 
-if(WITH_DX11_BACKEND)
-
-	list(APPEND IMGUI_SRC "backends/imgui_impl_dx11.h" "backends/imgui_impl_dx11.cpp")
-	list(APPEND IMGUI_LIB d3d11 d3dcompiler dxgi)
-endif ()
-
-add_library(imgui)
 
 target_sources(imgui PRIVATE ${IMGUI_SRC})
 target_include_directories(imgui PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(imgui PRIVATE ${IMGUI_LIB})

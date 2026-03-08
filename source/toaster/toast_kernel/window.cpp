@@ -252,6 +252,12 @@ namespace toaster
 		return m_callbackData.title;
 	}
 
+	void Window::setTitle(const std::string &p_title)
+	{
+		m_callbackData.title = p_title;
+		glfwSetWindowTitle(m_window, p_title.c_str());
+	}
+
 	gpu::GPUContext *Window::getGPUContext() const
 	{
 		return m_gpuContext;

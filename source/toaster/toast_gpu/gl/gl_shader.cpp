@@ -188,4 +188,31 @@ namespace toaster::gpu
 		}
 		gl::uniformMatrix4fv(m_uniformLocations.at(p_name), 1, false, &p_value[0].x);
 	}
+
+	void GLShader::setUniform(const std::string &p_name, float32 *p_values, uint32 p_count)
+	{
+		if (!m_uniformLocations.contains(p_name))
+		{
+			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
+		}
+		gl::uniform1fv(m_uniformLocations.at(p_name), static_cast<gl::Int>(p_count), p_values);
+	}
+
+	void GLShader::setUniform(const std::string &p_name, int32 *p_values, uint32 p_count)
+	{
+		if (!m_uniformLocations.contains(p_name))
+		{
+			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
+		}
+		gl::uniform1iv(m_uniformLocations.at(p_name), static_cast<gl::Int>(p_count), p_values);
+	}
+
+	void GLShader::setUniform(const std::string &p_name, uint32 *p_values, uint32 p_count)
+	{
+		if (!m_uniformLocations.contains(p_name))
+		{
+			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
+		}
+		gl::uniform1uiv(m_uniformLocations.at(p_name), static_cast<gl::Int>(p_count), p_values);
+	}
 }

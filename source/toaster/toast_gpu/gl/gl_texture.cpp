@@ -4,6 +4,20 @@
 
 namespace toaster::gpu
 {
+	GLTexture2D::GLTexture2D(uint32 p_width, uint32 p_height) : m_width(p_width), m_height(p_height)
+	{
+		m_internalFormat = gl::Format::eRGBA8;
+		m_dataFormat     = gl::Format::eRGBA;
+
+		gl::createTextures(gl::TextureType::e2D, 1, &m_textureId);
+		gl::textureStorage2D(m_textureId, 1, m_internalFormat, static_cast<gl::Int>(m_width), static_cast<gl::Int>(m_height));
+
+		gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapS, glEnumVal(gl::TextureWrapping::eRepeat));
+		gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapT, glEnumVal(gl::TextureWrapping::eRepeat));
+		gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMinFilter, glEnumVal(gl::TextureFiltering::eLinear));
+		gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMagFilter, glEnumVal(gl::TextureFiltering::eNearest));
+	}
+
 	GLTexture2D::GLTexture2D(const io::filesystem::Path &p_path) : m_path(p_path)
 	{
 		gl::createTextures(gl::TextureType::e2D, 1, &m_textureId);
@@ -32,6 +46,9 @@ namespace toaster::gpu
 				data_format     = gl::Format::eRGB;
 			}
 
+			m_internalFormat = internal_format;
+			m_dataFormat     = data_format;
+
 			gl::texImage2D(gl::TextureType::e2D, 0, internal_format, width, height, 0, data_format, gl::DataType::eUnsignedByte, data);
 
 			gl::generateMipmap(gl::TextureType::e2D);
@@ -46,11 +63,14 @@ namespace toaster::gpu
 			m_width  = 1;
 			m_height = 1;
 
+			m_internalFormat = gl::Format::eRGBA;
+			m_dataFormat     = gl::Format::eRGBA;
+
 			gl::bindTexture(gl::TextureType::e2D, m_textureId);
 
 			constexpr uint32 fallback_data = 0xffff00ff; // magenta
 
-			gl::texImage2D(gl::TextureType::e2D, 0, gl::Format::eRGBA, 1, 1, 0, gl::Format::eRGBA, gl::DataType::eUnsignedByte, &fallback_data);
+			gl::texImage2D(gl::TextureType::e2D, 0, m_internalFormat, 1, 1, 0, m_dataFormat, gl::DataType::eUnsignedByte, &fallback_data);
 
 			gl::generateMipmap(gl::TextureType::e2D);
 
@@ -68,9 +88,20 @@ namespace toaster::gpu
 		gl::deleteTextures(1, &m_textureId);
 	}
 
-	void GLTexture2D::bind(uint32 p_slot) const
+	void GLTexture2D::setData(void *p_data, uint32 p_size)
 	{
 		gl::bindTexture(gl::TextureType::e2D, m_textureId);
+		gl::textureSubImage2D(m_textureId, 0, 0, 0, static_cast<gl::Int>(m_width), static_cast<gl::Int>(m_height), m_dataFormat, gl::DataType::eUnsignedByte, p_data);
+	}
+
+	void GLTexture2D::bind(uint32 p_slot) const
+	{
+		gl::bindTextureUnit(p_slot, m_textureId);
+	}
+
+	uint32 GLTexture2D::getID() const
+	{
+		return m_textureId;
 	}
 
 	uint32 GLTexture2D::getWidth() const
@@ -81,5 +112,10 @@ namespace toaster::gpu
 	uint32 GLTexture2D::getHeight() const
 	{
 		return 0;
+	}
+
+	bool GLTexture2D::operator==(const Texture &p_other) const
+	{
+		return m_textureId == p_other.getID();
 	}
 }

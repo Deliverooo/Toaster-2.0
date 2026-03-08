@@ -8,9 +8,7 @@ namespace toaster::gpu
 {
 	enum class CullMode
 	{
-		eFront,
-		eBack,
-		eFrontAndBack
+		eFront, eBack, eFrontAndBack
 	};
 
 	class GPUAPI
@@ -28,7 +26,7 @@ namespace toaster::gpu
 
 		virtual void setViewport(const glm::vec4 &p_viewport) = 0;
 
-		virtual void drawIndexed(const RefPtr<VertexArray> &p_vertex_array) = 0;
+		virtual void drawIndexed(const RefPtr<VertexArray> &p_vertex_array, uint32 p_index_count) = 0;
 		virtual void drawIndexedBaseVertex(const RefPtr<VertexArray> &p_vertex_array, uint32 p_index_count, uint32 p_base_index, uint32 p_base_vertex) = 0;
 	};
 }

@@ -53,10 +53,12 @@ namespace toaster::gpu
 		gl::viewport(static_cast<gl::Int>(p_viewport.x), static_cast<gl::Int>(p_viewport.y), static_cast<gl::Int>(p_viewport.z), static_cast<gl::Int>(p_viewport.w));
 	}
 
-	void GLGPUAPI::drawIndexed(const RefPtr<VertexArray> &p_vertex_array)
+	void GLGPUAPI::drawIndexed(const RefPtr<VertexArray> &p_vertex_array, uint32 p_index_count)
 	{
 		p_vertex_array->bind();
-		gl::drawElements(gl::DrawMode::eTriangles, static_cast<int32>(p_vertex_array->getIndexBuffer()->getIndexCount()), gl::DataType::eUnsignedInt, nullptr);
+		gl::drawElements(gl::DrawMode::eTriangles,
+						 (p_index_count == 0) ? static_cast<int32>(p_vertex_array->getIndexBuffer()->getIndexCount()) : static_cast<int32>(p_index_count),
+						 gl::DataType::eUnsignedInt, nullptr);
 	}
 
 	void GLGPUAPI::drawIndexedBaseVertex(const RefPtr<VertexArray> &p_vertex_array, uint32 p_index_count, uint32 p_base_index, uint32 p_base_vertex)

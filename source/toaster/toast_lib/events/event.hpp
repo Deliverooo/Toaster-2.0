@@ -80,7 +80,7 @@ namespace toaster
 	};
 
 	// std::bind is not good, so I use this instead
-	#define TST_BIND_EVENT_FN(fn) [this](auto &event) -> bool { return fn(event); }
+	#define TST_BIND_EVENT_FN(fn) [this](auto &event) mutable -> bool { return fn(event); }
 
 	template<typename T>
 	using EventFunc = std::function<bool(T &)>;

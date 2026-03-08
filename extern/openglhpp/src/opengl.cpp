@@ -1190,9 +1190,9 @@ namespace gl
 
 	#pragma region Textures
 
-	void activeTexture(Enum texture)
+	void activeTexture(TextureUnit p_texture_unit)
 	{
-		glActiveTexture(texture);
+		glActiveTexture(static_cast<Enum>(p_texture_unit));
 	}
 
 	void bindImageTexture(UInt unit, UInt texture, Int level, Bool layered, Int layer, Enum access, Enum format)
@@ -1210,9 +1210,9 @@ namespace gl
 		glBindTexture(static_cast<Enum>(p_target), texture);
 	}
 
-	void bindTextureUnit(UInt unit, UInt texture)
+	void bindTextureUnit(UInt p_texture_unit, UInt texture)
 	{
-		glBindTextureUnit(unit, texture);
+		glBindTextureUnit(p_texture_unit, texture);
 	}
 
 	void bindTextures(UInt first, SizeI count, const UInt *textures)
@@ -1557,12 +1557,14 @@ namespace gl
 	{
 	}
 
-	void texStorage2D(TextureType p_target, SizeI levels, Enum internalformat, SizeI width, SizeI height)
+	void texStorage2D(TextureType p_target, SizeI levels, Format p_internal_format, SizeI width, SizeI height)
 	{
+		glTexStorage2D(static_cast<Enum>(p_target), levels, static_cast<Enum>(p_internal_format), width, height);
 	}
 
-	void textureStorage2D(TextureType p_target, SizeI levels, Enum internalformat, SizeI width, SizeI height)
+	void textureStorage2D(UInt texture, SizeI levels, Format p_internal_format, SizeI width, SizeI height)
 	{
+		glTextureStorage2D(texture, levels, static_cast<Enum>(p_internal_format), width, height);
 	}
 
 	void texStorage2DMultisample(TextureType p_target, SizeI samples, Enum internalformat, SizeI width, SizeI height, Bool fixed_sample_locations)
@@ -1601,8 +1603,9 @@ namespace gl
 	{
 	}
 
-	void textureSubImage2D(UInt texture, Int level, Int x_offset, Int y_offset, SizeI width, SizeI height, Enum format, Enum type, const void *pixels)
+	void textureSubImage2D(UInt texture, Int level, Int x_offset, Int y_offset, SizeI width, SizeI height, Format p_format, DataType p_type, const void *pixels)
 	{
+		glTextureSubImage2D(texture, level, x_offset, y_offset, width, height, static_cast<Enum>(p_format), static_cast<Enum>(p_type), pixels);
 	}
 
 	void texSubImage3D(TextureType p_target, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Enum format, Enum type,
@@ -1903,14 +1906,17 @@ namespace gl
 
 	void bindAttribLocation(UInt program, UInt index, const Char *name)
 	{
+		glBindAttribLocation(program, index, name);
 	}
 
 	void bindFragDataLocation(UInt program, UInt colorNumber, const char *name)
 	{
+		glBindFragDataLocation(program, colorNumber, name);
 	}
 
 	void bindFragDataLocationIndexed(UInt program, UInt colorNumber, UInt index, const char *name)
 	{
+		glBindFragDataLocationIndexed(program, colorNumber, index, name);
 	}
 
 	void compileShader(UInt shader)
@@ -1960,38 +1966,47 @@ namespace gl
 
 	void getActiveSubroutineName(UInt program, Enum shader_type, UInt index, SizeI buffer_size, SizeI *length, Char *name)
 	{
+		glGetActiveSubroutineName(program, shader_type, index, buffer_size, length, name);
 	}
 
 	void getActiveSubroutineUniformiv(UInt program, Enum shadertype, UInt index, Enum pname, Int *values)
 	{
+		glGetActiveSubroutineUniformiv(program, shadertype, index, pname, values);
 	}
 
 	void getActiveSubroutineUniformName(UInt program, Enum shader_type, UInt index, SizeI buffer_size, SizeI *length, Char *name)
 	{
+		glGetActiveSubroutineUniformName(program, shader_type, index, buffer_size, length, name);
 	}
 
 	void getActiveUniform(UInt program, UInt index, SizeI bufSize, SizeI *length, Int *size, Enum *type, Char *name)
 	{
+		glGetActiveUniform(program, index, bufSize, length, size, type, name);
 	}
 
 	void getActiveUniformBlockiv(UInt program, UInt uniformBlockIndex, Enum pname, Int *params)
 	{
+		glGetActiveUniformBlockiv(program, uniformBlockIndex, pname, params);
 	}
 
 	void getActiveUniformBlockName(UInt program, UInt uniformBlockIndex, SizeI bufSize, SizeI *length, Char *uniformBlockName)
 	{
+		glGetActiveUniformBlockName(program, uniformBlockIndex, bufSize, length, uniformBlockName);
 	}
 
 	void getActiveUniformName(UInt program, UInt uniformIndex, SizeI bufSize, SizeI *length, Char *uniformName)
 	{
+		glGetActiveUniformName(program, uniformIndex, bufSize, length, uniformName);
 	}
 
 	void getActiveUniformsiv(UInt program, SizeI uniformCount, const UInt *uniformIndices, Enum pname, Int *params)
 	{
+		glGetActiveUniformsiv(program, uniformCount, uniformIndices, pname, params);
 	}
 
 	void getAttachedShaders(UInt program, SizeI maxCount, SizeI *count, UInt *shaders)
 	{
+		glGetAttachedShaders(program, maxCount, count, shaders);
 	}
 
 	Int getAttribLocation(UInt program, const Char *name)
@@ -2046,26 +2061,32 @@ namespace gl
 
 	void getProgramResourceName(UInt program, Enum programInterface, UInt index, SizeI bufSize, SizeI *length, char *name)
 	{
+		glGetProgramResourceName(program, programInterface, index, bufSize, length, name);
 	}
 
 	void getProgramStageiv(UInt program, Enum shader_type, Enum pname, Int *values)
 	{
+		glGetProgramStageiv(program, shader_type, pname, values);
 	}
 
 	void getShaderiv(UInt shader, Enum pname, Int *params)
 	{
+		glGetShaderiv(shader, pname, params);
 	}
 
 	void getShaderInfoLog(UInt shader, SizeI maxLength, SizeI *length, Char *infoLog)
 	{
+		glGetShaderInfoLog(shader, maxLength, length, infoLog);
 	}
 
 	void getShaderPrecisionFormat(Enum shaderType, Enum precisionType, Int *range, Int *precision)
 	{
+		glGetShaderPrecisionFormat(shaderType, precisionType, range, precision);
 	}
 
 	void getShaderSource(UInt shader, SizeI bufSize, SizeI *length, Char *source)
 	{
+		glGetShaderSource(shader, bufSize, length, source);
 	}
 
 	UInt getSubroutineIndex(UInt program, Enum shader_type, const Char *name)
@@ -2078,45 +2099,54 @@ namespace gl
 		return glGetSubroutineUniformLocation(program, shader_type, name);
 	}
 
-	void getUniformiv(UInt program, Int location, Float *params)
+	void getUniformfv(UInt program, Int location, Float *params)
 	{
+		glGetUniformfv(program, location, params);
 	}
 
 	void getUniformiv(UInt program, Int location, Int *params)
 	{
+		glGetUniformiv(program, location, params);
 	}
 
 	void getUniformuiv(UInt program, Int location, UInt *params)
 	{
+		glGetUniformuiv(program, location, params);
 	}
 
 	void getUniformdv(UInt program, Int location, Double *params)
 	{
+		glGetUniformdv(program, location, params);
 	}
 
 	void getnUniformfv(UInt program, Int location, SizeI bufSize, Float *params)
 	{
+		glGetnUniformfv(program, location, bufSize, params);
 	}
 
 	void getnUniformiv(UInt program, Int location, SizeI bufSize, Int *params)
 	{
+		glGetnUniformiv(program, location, bufSize, params);
 	}
 
 	void getnUniformuiv(UInt program, Int location, SizeI bufSize, UInt *params)
 	{
+		glGetnUniformuiv(program, location, bufSize, params);
 	}
 
 	void getnUniformdv(UInt program, Int location, SizeI bufSize, Double *params)
 	{
+		glGetnUniformdv(program, location, bufSize, params);
 	}
 
-	UInt getUniformBlockindex(UInt program, const Char *uniformBlockName)
+	UInt getUniformBlockIndex(UInt program, const Char *uniformBlockName)
 	{
 		return glGetUniformBlockIndex(program, uniformBlockName);
 	}
 
-	void getUniformindices(UInt program, SizeI uniformCount, const Char **uniformNames, UInt *uniformIndices)
+	void getUniformIndices(UInt program, SizeI uniformCount, const Char **uniformNames, UInt *uniformIndices)
 	{
+		glGetUniformIndices(program, uniformCount, uniformNames, uniformIndices);
 	}
 
 	Int getUniformLocation(UInt program, const Char *name)
@@ -2126,6 +2156,7 @@ namespace gl
 
 	void getUniformSubroutineuiv(Enum shader_type, Int location, UInt *values)
 	{
+		glGetUniformSubroutineuiv(shader_type, location, values);
 	}
 
 	Bool isProgram(UInt program)
@@ -2155,134 +2186,167 @@ namespace gl
 
 	void programParameteri(UInt program, Enum pname, Int value)
 	{
+		glProgramParameteri(program, pname, value);
 	}
 
 	void programUniform1f(UInt program, Int location, Float v0)
 	{
+		glProgramUniform1f(program, location, v0);
 	}
 
 	void programUniform2f(UInt program, Int location, Float v0, Float v1)
 	{
+		glProgramUniform2f(program, location, v0, v1);
 	}
 
 	void programUniform3f(UInt program, Int location, Float v0, Float v1, Float v2)
 	{
+		glProgramUniform3f(program, location, v0, v1, v2);
 	}
 
 	void programUniform4f(UInt program, Int location, Float v0, Float v1, Float v2, Float v3)
 	{
+		glProgramUniform4f(program, location, v0, v1, v2, v3);
 	}
 
 	void programUniform1i(UInt program, Int location, Int v0)
 	{
+		glProgramUniform1i(program, location, v0);
 	}
 
 	void programUniform2i(UInt program, Int location, Int v0, Int v1)
 	{
+		glProgramUniform2i(program, location, v0, v1);
 	}
 
 	void programUniform3i(UInt program, Int location, Int v0, Int v1, Int v2)
 	{
+		glProgramUniform3i(program, location, v0, v1, v2);
 	}
 
 	void programUniform4i(UInt program, Int location, Int v0, Int v1, Int v2, Int v3)
 	{
+		glProgramUniform4i(program, location, v0, v1, v2, v3);
 	}
 
 	void programUniform1ui(UInt program, Int location, UInt v0)
 	{
+		glProgramUniform1ui(program, location, v0);
 	}
 
 	void programUniform2ui(UInt program, Int location, UInt v0, UInt v1)
 	{
+		glProgramUniform2ui(program, location, v0, v1);
 	}
 
 	void programUniform3ui(UInt program, Int location, UInt v0, UInt v1, UInt v2)
 	{
+		glProgramUniform3ui(program, location, v0, v1, v2);
 	}
 
 	void programUniform4ui(UInt program, Int location, UInt v0, UInt v1, UInt v2, UInt v3)
 	{
+		glProgramUniform4ui(program, location, v0, v1, v2, v3);
 	}
 
 	void programUniform1fv(UInt program, Int location, SizeI count, const Float *p_value)
 	{
+		glProgramUniform1fv(program, location, count, p_value);
 	}
 
 	void programUniform2fv(UInt program, Int location, SizeI count, const Float *p_value)
 	{
+		glProgramUniform2fv(program, location, count, p_value);
 	}
 
 	void programUniform3fv(UInt program, Int location, SizeI count, const Float *p_value)
 	{
+		glProgramUniform3fv(program, location, count, p_value);
 	}
 
 	void programUniform4fv(UInt program, Int location, SizeI count, const Float *p_value)
 	{
+		glProgramUniform4fv(program, location, count, p_value);
 	}
 
 	void programUniform1iv(UInt program, Int location, SizeI count, const Int *value)
 	{
+		glProgramUniform1iv(program, location, count, value);
 	}
 
 	void programUniform2iv(UInt program, Int location, SizeI count, const Int *value)
 	{
+		glProgramUniform2iv(program, location, count, value);
 	}
 
 	void programUniform3iv(UInt program, Int location, SizeI count, const Int *value)
 	{
+		glProgramUniform3iv(program, location, count, value);
 	}
 
 	void programUniform4Iv(UInt program, Int location, SizeI count, const Int *value)
 	{
+		glProgramUniform4iv(program, location, count, value);
 	}
 
 	void programUniform1uiv(UInt program, Int location, SizeI count, const UInt *value)
 	{
+		glProgramUniform1uiv(program, location, count, value);
 	}
 
 	void programUniform2uiv(UInt program, Int location, SizeI count, const UInt *value)
 	{
+		glProgramUniform2uiv(program, location, count, value);
 	}
 
 	void programUniform3uiv(UInt program, Int location, SizeI count, const UInt *value)
 	{
+		glProgramUniform3uiv(program, location, count, value);
 	}
 
 	void programUniform4uiv(UInt program, Int location, SizeI count, const UInt *value)
 	{
+		glProgramUniform4uiv(program, location, count, value);
 	}
 
 	void programUniformMatrix2Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glProgramUniformMatrix2fv(program, location, count, transpose, p_value);
 	}
 
 	void programUniformMatrix3Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glProgramUniformMatrix3fv(program, location, count, transpose, p_value);
 	}
 
 	void programUniformMatrix4Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glProgramUniformMatrix4fv(program, location, count, transpose, p_value);
 	}
 
 	void programUniformMatrix2x3Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glProgramUniformMatrix2x3fv(program, location, count, transpose, p_value);
 	}
 
 	void programUniformMatrix3x2Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glProgramUniformMatrix3x2fv(program, location, count, transpose, p_value);
 	}
 
 	void programUniformMatrix2x4Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glProgramUniformMatrix2x4fv(program, location, count, transpose, p_value);
 	}
 
 	void programUniformMatrix4x2Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glProgramUniformMatrix4x2fv(program, location, count, transpose, p_value);
 	}
 
 	void programUniformMatrix3x4Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glProgramUniformMatrix3x4fv(program, location, count, transpose, p_value);
 	}
 
 	void programUniformMatrix4x3Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
@@ -2437,34 +2501,42 @@ namespace gl
 
 	void uniform1iv(Int location, SizeI count, const Int *value)
 	{
+		glUniform1iv(location, count, value);
 	}
 
 	void uniform2iv(Int location, SizeI count, const Int *value)
 	{
+		glUniform2iv(location, count, value);
 	}
 
 	void uniform3iv(Int location, SizeI count, const Int *value)
 	{
+		glUniform3iv(location, count, value);
 	}
 
 	void uniform4iv(Int location, SizeI count, const Int *value)
 	{
+		glUniform4iv(location, count, value);
 	}
 
 	void uniform1uiv(Int location, SizeI count, const UInt *value)
 	{
+		glUniform1uiv(location, count, value);
 	}
 
 	void uniform2uiv(Int location, SizeI count, const UInt *value)
 	{
+		glUniform2uiv(location, count, value);
 	}
 
 	void uniform3uiv(Int location, SizeI count, const UInt *value)
 	{
+		glUniform3uiv(location, count, value);
 	}
 
 	void uniform4uiv(Int location, SizeI count, const UInt *value)
 	{
+		glUniform4uiv(location, count, value);
 	}
 
 	void uniformMatrix2fv(Int location, SizeI count, Bool transpose, const Float *p_value)
@@ -2484,30 +2556,37 @@ namespace gl
 
 	void uniformMatrix2x3fv(Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glUniformMatrix2x3fv(location, count, transpose, p_value);
 	}
 
 	void uniformMatrix3x2fv(Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glUniformMatrix3x2fv(location, count, transpose, p_value);
 	}
 
 	void uniformMatrix2x4fv(Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glUniformMatrix2x4fv(location, count, transpose, p_value);
 	}
 
 	void uniformMatrix4x2fv(Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glUniformMatrix4x2fv(location, count, transpose, p_value);
 	}
 
 	void uniformMatrix3x4fv(Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glUniformMatrix3x4fv(location, count, transpose, p_value);
 	}
 
 	void uniformMatrix4x3fv(Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
+		glUniformMatrix4x3fv(location, count, transpose, p_value);
 	}
 
 	void uniformBlockBinding(UInt program, UInt uniformBlockIndex, UInt uniformBlockBinding)
 	{
+		glUniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding);
 	}
 
 	void uniformSubroutinesuiv(Enum shader_type, SizeI count, const UInt *indices)

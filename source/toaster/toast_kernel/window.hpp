@@ -67,6 +67,8 @@ namespace toaster
 		[[nodiscard]] ScreenPos          getCenter() const;
 		[[nodiscard]] const std::string &getTitle() const;
 
+		void setTitle(const std::string &p_title);
+
 		[[nodiscard]] gpu::GPUContext *getGPUContext() const;
 
 		[[nodiscard]] GLFWwindow *getNativeWindow() const;

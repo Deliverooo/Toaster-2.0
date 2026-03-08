@@ -11,6 +11,7 @@ namespace toaster::gpu
 	class IndexBuffer
 	{
 	public:
+		static RefPtr<IndexBuffer> create(uint32 p_count);
 		static RefPtr<IndexBuffer> create(uint32 *p_data, uint32 p_count);
 		virtual                    ~IndexBuffer() = default;
 

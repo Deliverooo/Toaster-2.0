@@ -778,6 +778,42 @@ namespace gl
 		e2DMultisampleArray = GL_TEXTURE_2D_MULTISAMPLE_ARRAY
 	};
 
+	enum class TextureUnit : Enum
+	{
+		e0  = GL_TEXTURE0,
+		e1  = GL_TEXTURE1,
+		e2  = GL_TEXTURE2,
+		e3  = GL_TEXTURE3,
+		e4  = GL_TEXTURE4,
+		e5  = GL_TEXTURE5,
+		e6  = GL_TEXTURE6,
+		e7  = GL_TEXTURE7,
+		e8  = GL_TEXTURE8,
+		e9  = GL_TEXTURE9,
+		e10 = GL_TEXTURE10,
+		e11 = GL_TEXTURE11,
+		e12 = GL_TEXTURE12,
+		e13 = GL_TEXTURE13,
+		e14 = GL_TEXTURE14,
+		e15 = GL_TEXTURE15,
+		e16 = GL_TEXTURE16,
+		e17 = GL_TEXTURE17,
+		e18 = GL_TEXTURE18,
+		e19 = GL_TEXTURE19,
+		e20 = GL_TEXTURE20,
+		e21 = GL_TEXTURE21,
+		e22 = GL_TEXTURE22,
+		e23 = GL_TEXTURE23,
+		e24 = GL_TEXTURE24,
+		e25 = GL_TEXTURE25,
+		e26 = GL_TEXTURE26,
+		e27 = GL_TEXTURE27,
+		e28 = GL_TEXTURE28,
+		e29 = GL_TEXTURE29,
+		e30 = GL_TEXTURE30,
+		e31 = GL_TEXTURE31
+	};
+
 	enum class FaceOrientation : Enum
 	{
 		eClockWise = GL_CW, eCounterClockWise = GL_CCW,
