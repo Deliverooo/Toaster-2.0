@@ -10,6 +10,7 @@
 // Missing features or Issues:
 //  [ ] Renderer: The renderer is suboptimal as we need to unindex our buffers and convert vertices manually.
 //  [ ] Platform: Missing gamepad support.
+//  [ ] Renderer: Multi-viewport support (multiple windows).
 
 // You can use unmodified imgui_impl_* files in your project. See examples/ folder for examples of using this.
 // Prefer including the entire imgui/ repository into your project (either as a copy or as a submodule), and only build the backends you need.
@@ -524,7 +525,7 @@ void ImGui_ImplAllegro5_SetDisplay(ALLEGRO_DISPLAY* display)
     if (bd->VertexDecl)
     {
         al_destroy_vertex_decl(bd->VertexDecl);
-        bd->VertexDecl = NULL;
+        bd->VertexDecl = nullptr;
     }
 
     if (bd->Display && !bd->VertexDecl)

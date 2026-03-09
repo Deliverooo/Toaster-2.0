@@ -8,6 +8,8 @@
 
 #include <imgui.h>
 
+#include "imgui_internal.h"
+
 namespace toaster
 {
 	EditorLayer::EditorLayer(Application *p_app) : IAppLayer(p_app), m_cameraController(16.0f / 9.0f, true)
@@ -17,8 +19,8 @@ namespace toaster
 	void EditorLayer::onInit()
 	{
 		io::filesystem::setWorkingDirectory("../../../"); // The main Toaster dir (where the resource folder is)
-		m_texture  = gpu::Texture2D::create("resources/textures/Orbo_02.png");
-		m_texture2 = gpu::Texture2D::create("resources/textures/0001.png");
+		m_texture   = gpu::Texture2D::create("resources/textures/Orbo_02.png");
+		m_peeberTex = gpu::Texture2D::create("resources/textures/teto.png");
 
 		Renderer2DCreateInfo renderer_2d_create_info;
 		renderer_2d_create_info.maxQuads = 1u;
@@ -41,7 +43,7 @@ namespace toaster
 		m_renderer2d->begin(m_cameraController.getCamera().getViewMatrix(), m_cameraController.getCamera().getProjectionMatrix());
 
 		m_renderer2d->submitQuad({2.0f, 0.0f, -0.1f}, {1.0f, 1.0f}, m_texture);
-		m_renderer2d->submitQuad({0.0f, 1.0f, -0.1f}, {1.0f, 1.0f}, m_texture2);
+		m_renderer2d->submitQuad({0.0f, 1.0f, -0.1f}, {1.0f, 1.0f}, m_peeberTex);
 		m_renderer2d->submitQuad({1.0f, 0.5f, -0.1f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f});
 
 		m_renderer2d->end();
@@ -59,9 +61,83 @@ namespace toaster
 
 	void EditorLayer::onUIRender()
 	{
-		ImGui::Begin("Orbo!!");
+		#pragma region Setup Dockspace
+		static bool               p_open          = true;
+		static bool               opt_fullscreen  = true;
+		static bool               opt_padding     = false;
+		static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
-		ImGui::End();
+		ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+		if (opt_fullscreen)
+		{
+			const ImGuiViewport *viewport = ImGui::GetMainViewport();
+			ImGui::SetNextWindowPos(viewport->WorkPos);
+			ImGui::SetNextWindowSize(viewport->WorkSize);
+			ImGui::SetNextWindowViewport(viewport->ID);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+			window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+			window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+		}
+		else
+		{
+			dockspace_flags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
+		}
+
+		if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
+			window_flags |= ImGuiWindowFlags_NoBackground;
+
+		if (!opt_padding)
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+
+		ImGui::Begin("DockSpace Demo", &p_open, window_flags);
+
+		if (!opt_padding)
+			ImGui::PopStyleVar();
+
+		if (opt_fullscreen)
+			ImGui::PopStyleVar(2);
+
+		// Submit the DockSpace
+		ImGuiIO &   io        = ImGui::GetIO();
+		ImGuiStyle &style     = ImGui::GetStyle();
+		style.WindowMinSize.x = 300.0f;
+		if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
+		{
+			ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+			ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+		}
+
+		style.WindowMinSize.x = 30.0f;
+		#pragma endregion
+
+		if (ImGui::BeginMenuBar())
+		{
+			if (ImGui::BeginMenu("File"))
+			{
+				if (ImGui::MenuItem("Quit", "Ctrl+Q"))
+					__super::getApp().close();
+
+				ImGui::Separator();
+				ImGui::EndMenu();
+			}
+			ImGui::EndMenuBar();
+		}
+
+		ImGui::Begin("Settings");
+		ImGui::Text("Something...");
+		ImGui::End(); // Settings
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
+		ImGui::Begin("Viewport");
+
+		ImGui::Image((ImTextureID) m_peeberTex->getID(), ImVec2(static_cast<float32>(m_peeberTex->getWidth()), static_cast<float32>(m_peeberTex->getHeight())),
+					 ImVec2(0, 1), ImVec2(1, 0));
+
+		ImGui::End(); // Viewport
+		ImGui::PopStyleVar();
+
+		ImGui::End(); // DockSpace Demo
 	}
 
 	bool EditorLayer::onKeyPressEvent(KeyPressEvent &p_event)

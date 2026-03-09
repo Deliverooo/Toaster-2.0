@@ -33,7 +33,7 @@ namespace toaster
 		RefPtr<Renderer2D> m_renderer2d;
 
 		RefPtr<gpu::Texture2D> m_texture;
-		RefPtr<gpu::Texture2D> m_texture2;
+		RefPtr<gpu::Texture2D> m_peeberTex;
 
 		OrthoCameraController m_cameraController;
 		float32 m_time{0.0f};

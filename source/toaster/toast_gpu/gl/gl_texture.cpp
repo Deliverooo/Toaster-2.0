@@ -26,6 +26,7 @@ namespace toaster::gpu
 
 		int32  width, height, num_channels;
 		uint8 *data = stbi_load(p_path.string().c_str(), &width, &height, &num_channels, 0);
+
 		if (data)
 		{
 			m_width  = width;
@@ -106,12 +107,12 @@ namespace toaster::gpu
 
 	uint32 GLTexture2D::getWidth() const
 	{
-		return 0;
+		return m_width;
 	}
 
 	uint32 GLTexture2D::getHeight() const
 	{
-		return 0;
+		return m_height;
 	}
 
 	bool GLTexture2D::operator==(const Texture &p_other) const
