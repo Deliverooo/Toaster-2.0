@@ -31,6 +31,11 @@ namespace toaster::gpu
 		gl::bindBuffer(gl::BufferType::eElementArray, 0);
 	}
 
+	uint32 GLIndexBuffer::getID() const
+	{
+		return m_ebo;
+	}
+
 	uint32 GLIndexBuffer::getIndexCount()
 	{
 		return m_indexCount;

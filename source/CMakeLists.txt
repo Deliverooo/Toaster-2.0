@@ -7,5 +7,6 @@ target_link_libraries(Toaster PUBLIC glfw)
 target_link_libraries(Toaster PUBLIC fmt::fmt)
 target_link_libraries(Toaster PUBLIC glm)
 target_link_libraries(Toaster PUBLIC stb)
+target_link_libraries(Toaster PUBLIC EnTT::EnTT)
 
 target_link_libraries(Toaster PRIVATE assimp::assimp)

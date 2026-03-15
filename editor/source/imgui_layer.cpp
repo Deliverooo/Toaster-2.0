@@ -1,4 +1,6 @@
 #include "imgui_layer.hpp"
+
+#include <filesystem>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 #include "toaster/toast_kernel/application.hpp"
@@ -22,6 +24,10 @@ namespace toaster
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
+		// io.Fonts->AddFontFromFileTTF("resources/fonts/Roboto/Roboto-Regular.ttf", 16.0f);
+		// io.Fonts->AddFontFromFileTTF("resources/fonts/JetBrainsMono-2.304/fonts/ttf/JetBrainsMono-Medium.ttf", 16.0f);
+		io.Fonts->AddFontFromFileTTF("resources/fonts/DejaVuSans/DejaVuSans.ttf", 16.0f);
+
 		ImGui_ImplGlfw_InitForOpenGL(getApp().getWindow().getNativeWindow(), true);
 		ImGui_ImplOpenGL3_Init("#version 460 core");
 	}
@@ -39,6 +45,12 @@ namespace toaster
 
 	void ImGuiLayer::onEvent(Event &p_event)
 	{
+		if (m_blockEvents)
+		{
+			ImGuiIO &io = ImGui::GetIO();
+			p_event.setHandled(p_event.isHandled() | (p_event.inCategory(EventCategory_Mouse) & io.WantCaptureMouse));
+			p_event.setHandled(p_event.isHandled() | (p_event.inCategory(EventCategory_Keyboard) & io.WantCaptureKeyboard));
+		}
 	}
 
 	void ImGuiLayer::begin()
@@ -62,5 +74,10 @@ namespace toaster
 			ImGui::RenderPlatformWindowsDefault();
 			glfwMakeContextCurrent(context);
 		}
+	}
+
+	void ImGuiLayer::setBlockEvents(bool p_block)
+	{
+		m_blockEvents = p_block;
 	}
 }

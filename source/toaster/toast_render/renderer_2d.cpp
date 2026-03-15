@@ -2,13 +2,14 @@
 
 #include "globals.hpp"
 #include "render_command.hpp"
-// #include "toaster/toast_lib/logging.hpp"
 
 namespace toaster
 {
 	Renderer2D::Renderer2D(const Renderer2DCreateInfo &p_create_info) : m_createInfo(p_create_info), m_maxVertices(p_create_info.maxQuads * 4u),
 																		m_maxIndices(p_create_info.maxQuads * 6u)
 	{
+		TST_ASSERT_MSG(m_createInfo.targetFramebuffer, "Target framebuffer cannot be nullptr!");
+
 		m_quadVertexBuffer = gpu::VertexBuffer::create(m_maxVertices * sizeof(QuadVertex));
 		const auto vbl     = gpu::VertexBufferLayout{
 			{gpu::EShaderDataType::eFloat4, "a_Position"},
@@ -96,45 +97,69 @@ namespace toaster
 			m_textureSlots[i]->bind(i);
 		}
 
+		m_createInfo.targetFramebuffer->bind();
 		RenderCommand::drawIndexed(m_quadVertexArray, m_quadIndexCount);
+		m_createInfo.targetFramebuffer->unbind();
 	}
 
 	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)
 	{
+		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f});
+		submitQuad(transform, p_colour);
+	}
+
+	void Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)
+	{
+		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, tsm::float3{p_position.x, p_position.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, {
+																																		p_scale.x,
+																																		p_scale.y,
+																																		1.0f
+																																	});
+		submitQuad(transform, p_colour);
+	}
+
+	void Renderer2D::submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour)
+	{
 		if (m_quadIndexCount >= m_maxIndices)
 			_beginNewBatch();
 
-		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f});
-
 		for (uint32 i{0u}; i < 4u; ++i)
 		{
-			m_quadVertexPtr->position = transform * m_quadVertexPositions[i];
+			m_quadVertexPtr->position = p_transform * m_quadVertexPositions[i];
 			m_quadVertexPtr->colour   = p_colour;
 			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
 			m_quadVertexPtr->texIndex = 0.0f;
 			m_quadVertexPtr++;
 		}
-
 		m_quadIndexCount += 6u;
-	}
-
-	void Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)
-	{
-		submitQuad(tsm::float3{p_position.x, p_position.y, 0.0f}, p_scale, p_colour);
 	}
 
 	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::Texture2D> &p_texture, const tsm::float4 &p_tint_colour)
 	{
+		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f});
+		submitQuad(transform, p_texture, p_tint_colour);
+	}
+
+	void Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::Texture2D> &p_texture, const tsm::float4 &p_tint_colour)
+	{
+		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, tsm::float3{p_position.x, p_position.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, {
+																																		p_scale.x,
+																																		p_scale.y,
+																																		1.0f
+																																	});
+		submitQuad(transform, p_texture, p_tint_colour);
+	}
+
+	void Renderer2D::submitQuad(const tsm::float4x4 &p_transform, const RefPtr<gpu::Texture2D> &p_texture, const tsm::float4 &p_tint_colour)
+	{
 		if (m_quadIndexCount >= m_maxIndices)
 			_beginNewBatch();
-
-		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f});
 
 		const auto texture_index = static_cast<float32>(_getTextureSlotIndex(p_texture));
 
 		for (uint32 i{0u}; i < 4u; ++i)
 		{
-			m_quadVertexPtr->position = transform * m_quadVertexPositions[i];
+			m_quadVertexPtr->position = p_transform * m_quadVertexPositions[i];
 			m_quadVertexPtr->colour   = p_tint_colour;
 			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
 			m_quadVertexPtr->texIndex = texture_index;
@@ -142,11 +167,6 @@ namespace toaster
 		}
 
 		m_quadIndexCount += 6u;
-	}
-
-	void Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::Texture2D> &p_texture, const tsm::float4 &p_tint_colour)
-	{
-		submitQuad(tsm::float3{p_position.x, p_position.y, 0.0f}, p_scale, p_texture, p_tint_colour);
 	}
 
 	void Renderer2D::_beginNewBatch()

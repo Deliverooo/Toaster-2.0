@@ -18,11 +18,13 @@ namespace toaster::gpu
 
 		void setData(const void *p_data, uint32 p_size) override;
 
+		[[nodiscard]] uint32 getID() const override;
+
 		void                      setLayout(const VertexBufferLayout &p_layout) override;
 		const VertexBufferLayout &getLayout() override;
 
 	private:
 		VertexBufferLayout m_layout;
-		gl::UInt           m_vbo{0u};
+		gl::ID             m_vbo{0u};
 	};
 }

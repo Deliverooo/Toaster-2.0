@@ -30,7 +30,7 @@ namespace toaster::gpu
 		uint32 m_width{0u};
 		uint32 m_height{0u};
 
-		gl::UInt m_textureId{0u};
+		gl::ID m_textureId{0u};
 
 		gl::Format m_dataFormat;
 		gl::Format m_internalFormat;

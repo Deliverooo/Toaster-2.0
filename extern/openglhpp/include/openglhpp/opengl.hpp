@@ -17,7 +17,7 @@ namespace gl
 	 *
 	 *
 	 */
-	TST_API void clear(ClearMaskFlags mask);
+	TST_API void clear(BufferMaskFlags mask);
 
 	/*!
 	 *
@@ -47,26 +47,26 @@ namespace gl
 	 *
 	 *
 	 */
-	TST_API void clearNamedFramebufferIv(UInt framebuffer, Enum buffer, Int draw_buffer, const Int *value);
+	TST_API void clearNamedFramebufferIv(UInt p_framebuffer, Enum buffer, Int draw_buffer, const Int *value);
 
 	/*!
 	 *
 	 *
 	 */
-	TST_API void clearNamedFramebufferuiv(UInt framebuffer, Enum buffer, Int draw_buffer, const UInt *value);
+	TST_API void clearNamedFramebufferuiv(UInt p_framebuffer, Enum buffer, Int draw_buffer, const UInt *value);
 
 	/*!
 	 *
 	 *
 	 */
-	TST_API void clearNamedFramebufferFv(UInt framebuffer, Enum buffer, Int draw_buffer, const Float *p_value);
+	TST_API void clearNamedFramebufferFv(UInt p_framebuffer, Enum buffer, Int draw_buffer, const Float *p_value);
 
 	/*!
 	 *
 	 *
 	 *
 	 */
-	TST_API void clearNamedFramebufferFi(UInt framebuffer, Enum buffer, Int draw_buffer, Float depth, Int stencil);
+	TST_API void clearNamedFramebufferFi(UInt p_framebuffer, Enum buffer, Int draw_buffer, Float depth, Int stencil);
 
 	/*!
 	 *
@@ -102,7 +102,7 @@ namespace gl
 	 *
 	 *
 	 */
-	TST_API void namedFramebufferDrawBuffer(UInt framebuffer, Enum buffer);
+	TST_API void namedFramebufferDrawBuffer(UInt p_framebuffer, Enum buffer);
 
 	/*!
 	 *
@@ -126,7 +126,7 @@ namespace gl
 	 *
 	 *
 	 */
-	TST_API void namedFramebufferReadBuffer(UInt framebuffer, Enum mode);
+	TST_API void namedFramebufferReadBuffer(UInt p_framebuffer, Enum mode);
 
 	/*!
 	 *
@@ -144,18 +144,19 @@ namespace gl
 
 	#pragma region Framebuffers
 
-	TST_API void bindFramebuffer(Enum target, UInt framebuffer);
+	TST_API void bindFramebuffer(FramebufferType p_target, UInt p_framebuffer);
 
-	TST_API void bindRenderbuffer(Enum target, UInt renderbuffer);
+	TST_API void bindRenderbuffer(FramebufferType p_target, UInt p_renderbuffer);
 
-	TST_API void blitFramebuffer(Int srcX0, Int srcY0, Int srcX1, Int srcY1, Int dstX0, Int dstY0, Int dstX1, Int dstY1, Bitfield mask, Enum filter);
+	TST_API void blitFramebuffer(Int              srcX0, Int srcY0, Int srcX1, Int srcY1, Int dstX0, Int dstY0, Int dstX1, Int dstY1, BufferMaskFlags p_mask,
+								 TextureFiltering p_filter);
 
-	TST_API void blitNamedFramebuffer(UInt read_framebuffer, UInt draw_framebuffer, Int srcX0, Int srcY0, Int srcX1, Int srcY1, Int dstX0, Int dstY0, Int dstX1,
-									  Int  dstY1, Bitfield        mask, Enum            filter);
+	TST_API void blitNamedFramebuffer(UInt read_framebuffer, UInt draw_framebuffer, Int    srcX0, Int srcY0, Int srcX1, Int srcY1, Int dstX0, Int dstY0, Int dstX1,
+									  Int  dstY1, BufferMaskFlags p_mask, TextureFiltering p_filter);
 
-	TST_API Enum checkFramebufferStatus(Enum target);
+	TST_API FramebufferStatus checkFramebufferStatus(FramebufferType p_target);
 
-	TST_API Enum checkNamedFramebufferStatus(UInt framebuffer, Enum target);
+	TST_API FramebufferStatus checkNamedFramebufferStatus(UInt p_framebuffer, FramebufferType p_target);
 
 	TST_API void createFramebuffers(SizeI count, UInt *p_buffers);
 
@@ -167,29 +168,29 @@ namespace gl
 
 	TST_API void drawBuffers(SizeI count, const Enum *p_buffers);
 
-	TST_API void namedFramebufferDrawBuffers(UInt framebuffer, SizeI count, const Enum *p_buffers);
+	TST_API void namedFramebufferDrawBuffers(UInt p_framebuffer, SizeI p_count, const Enum *p_buffers);
 
-	TST_API void framebufferParameteri(Enum target, Enum pname, Int param);
+	TST_API void framebufferParameteri(FramebufferType p_target, FramebufferParameter p_framebuffer_parameter, Int p_param);
 
-	TST_API void namedFramebufferParameteri(UInt framebuffer, Enum pname, Int param);
+	TST_API void namedFramebufferParameteri(UInt p_framebuffer, FramebufferParameter p_framebuffer_parameter, Int p_param);
 
-	TST_API void framebufferRenderbuffer(Enum target, Enum attachment, Enum renderbuffer_target, UInt renderbuffer);
+	TST_API void framebufferRenderbuffer(FramebufferType p_target, FramebufferAttachment p_attachment, RenderbufferType p_renderbuffer_target, UInt p_renderbuffer);
 
-	TST_API void namedFramebufferRenderbuffer(UInt framebuffer, Enum attachment, Enum renderbuffer_target, UInt renderbuffer);
+	TST_API void namedFramebufferRenderbuffer(UInt p_framebuffer, FramebufferAttachment p_attachment, RenderbufferType p_renderbuffer_target, UInt p_renderbuffer);
 
-	TST_API void framebufferTexture(Enum target, Enum attachment, UInt texture, Int level);
+	TST_API void framebufferTexture(FramebufferType p_target, FramebufferAttachment p_attachment, UInt texture, Int level);
 
-	TST_API void framebufferTexture1D(Enum target, Enum attachment, Enum tex_target, UInt texture, Int level);
+	TST_API void framebufferTexture1D(FramebufferType p_target, FramebufferAttachment p_attachment, TextureType p_tex_target, UInt texture, Int level);
 
-	TST_API void framebufferTexture2D(Enum target, Enum attachment, Enum tex_target, UInt texture, Int level);
+	TST_API void framebufferTexture2D(FramebufferType p_target, FramebufferAttachment p_attachment, TextureType p_tex_target, UInt texture, Int level);
 
-	TST_API void framebufferTexture3D(Enum target, Enum attachment, Enum tex_target, UInt texture, Int level, Int layer);
+	TST_API void framebufferTexture3D(FramebufferType p_target, FramebufferAttachment p_attachment, TextureType p_tex_target, UInt texture, Int level, Int layer);
 
-	TST_API void namedFramebufferTexture(UInt framebuffer, Enum attachment, UInt texture, Int level);
+	TST_API void namedFramebufferTexture(UInt p_framebuffer, FramebufferAttachment p_attachment, UInt texture, Int level);
 
-	TST_API void framebufferTextureLayer(Enum target, Enum attachment, UInt texture, Int level, Int layer);
+	TST_API void framebufferTextureLayer(Enum target, FramebufferAttachment p_attachment, UInt texture, Int level, Int layer);
 
-	TST_API void namedFramebufferTextureLayer(UInt framebuffer, Enum attachment, UInt texture, Int level, Int layer);
+	TST_API void namedFramebufferTextureLayer(UInt p_framebuffer, FramebufferAttachment p_attachment, UInt texture, Int level, Int layer);
 
 	TST_API void genFramebuffers(SizeI count, UInt *p_buffers);
 
@@ -201,35 +202,35 @@ namespace gl
 
 	TST_API void getFramebufferAttachmentParameterIv(Enum target, Enum attachment, Enum pname, Int *params);
 
-	TST_API void getNamedFramebufferAttachmentParameterIv(UInt framebuffer, Enum attachment, Enum pname, Int *params);
+	TST_API void getNamedFramebufferAttachmentParameterIv(UInt p_framebuffer, Enum attachment, Enum pname, Int *params);
 
 	TST_API void getFramebufferParameterIv(Enum target, Enum pname, Int *params);
 
-	TST_API void getNamedFramebufferParameterIv(UInt framebuffer, Enum pname, Int *params);
+	TST_API void getNamedFramebufferParameterIv(UInt p_framebuffer, Enum pname, Int *params);
 
 	TST_API void getRenderbufferParameterIv(Enum target, Enum pname, Int *params);
 
-	TST_API void getNamedRenderbufferParameterIv(UInt renderbuffer, Enum pname, Int *params);
+	TST_API void getNamedRenderbufferParameterIv(UInt p_renderbuffer, Enum pname, Int *params);
 
 	TST_API void invalidateFramebuffer(Enum target, SizeI num_attachments, const Enum *attachments);
 
-	TST_API void invalidateNamedFramebufferData(UInt framebuffer, SizeI num_attachments, const Enum *attachments);
+	TST_API void invalidateNamedFramebufferData(UInt p_framebuffer, SizeI num_attachments, const Enum *attachments);
 
 	TST_API void invalidateSubFramebuffer(Enum target, SizeI num_attachments, const Enum *attachments, Int x, Int y, Int width, Int height);
 
-	TST_API void invalidateNamedFramebufferSubData(UInt framebuffer, SizeI num_attachments, const Enum *attachments, Int x, Int y, Int width, Int height);
+	TST_API void invalidateNamedFramebufferSubData(UInt p_framebuffer, SizeI num_attachments, const Enum *attachments, Int x, Int y, Int width, Int height);
 
-	TST_API bool isFramebuffer(UInt framebuffer);
+	TST_API bool isFramebuffer(UInt p_framebuffer);
 
-	TST_API bool isRenderbuffer(UInt renderbuffer);
+	TST_API bool isRenderbuffer(UInt p_renderbuffer);
 
 	TST_API void renderbufferStorage(Enum target, Format p_internal_format, SizeI width, SizeI height);
 
-	TST_API void namedRenderbufferStorage(UInt renderbuffer, Format p_internal_format, SizeI width, SizeI height);
+	TST_API void namedRenderbufferStorage(UInt p_renderbuffer, Format p_internal_format, SizeI width, SizeI height);
 
 	TST_API void renderbufferStorageMultisample(Enum target, SizeI samples, Format p_internal_format, SizeI width, SizeI height);
 
-	TST_API void namedRenderbufferStorageMultisample(UInt renderbuffer, SizeI samples, Format p_internal_format, SizeI width, SizeI height);
+	TST_API void namedRenderbufferStorageMultisample(UInt p_renderbuffer, SizeI samples, Format p_internal_format, SizeI width, SizeI height);
 
 	TST_API void sampleMaskI(UInt index, Bitfield mask);
 
@@ -803,17 +804,17 @@ namespace gl
 	 **/
 	TST_API void vertexAttribDivisor(UInt index, UInt divisor);
 
-	TST_API void vertexAttribFormat(UInt attrib_index, Int size, Enum type, Bool normalized, UInt relative_offset);
+	TST_API void vertexAttribFormat(UInt attrib_index, Int size, DataType p_type, Bool normalized, UInt relative_offset);
 
-	TST_API void vertexAttribIFormat(UInt attrib_index, Int size, Enum type, UInt relative_offset);
+	TST_API void vertexAttribIFormat(UInt attrib_index, Int size, DataType p_type, UInt relative_offset);
 
-	TST_API void vertexAttribLFormat(UInt attrib_index, Int size, Enum type, UInt relative_offset);
+	TST_API void vertexAttribLFormat(UInt attrib_index, Int size, DataType p_type, UInt relative_offset);
 
-	TST_API void vertexArrayAttribFormat(UInt vao, UInt attrib_index, Int size, Enum type, Bool normalized, UInt relative_offset);
+	TST_API void vertexArrayAttribFormat(UInt vao, UInt attrib_index, Int size, DataType p_type, Bool normalized, UInt relative_offset);
 
-	TST_API void vertexArrayAttribIFormat(UInt vao, UInt attrib_index, Int size, Enum type, UInt relative_offset);
+	TST_API void vertexArrayAttribIFormat(UInt vao, UInt attrib_index, Int size, DataType p_type, UInt relative_offset);
 
-	TST_API void vertexArrayAttribLFormat(UInt vao, UInt attrib_index, Int size, Enum type, UInt relative_offset);
+	TST_API void vertexArrayAttribLFormat(UInt vao, UInt attrib_index, Int size, DataType p_type, UInt relative_offset);
 
 	TST_API void vertexAttribPointer(UInt index, Int size, DataType p_type, Bool normalized, SizeI stride, const Void *pointer);
 
@@ -1000,8 +1001,8 @@ namespace gl
 
 	TST_API void clearTexImage(UInt texture, Int level, Format p_format, DataType p_type, const void *data);
 
-	TST_API void clearTexSubImage(UInt texture, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Format p_format, DataType p_type,
-								  const void *data);
+	TST_API void clearTexSubImage(UInt     texture, Int        level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Format p_format,
+								  DataType p_type, const void *data);
 
 	TST_API void compressedTexImage1D(TextureType p_target, Int level, Format p_internal_format, SizeI width, Int border, SizeI imageSize, const Void *data);
 
@@ -1021,8 +1022,8 @@ namespace gl
 	TST_API void compressedTextureSubImage2D(UInt        texture, Int level, Int x_offset, Int y_offset, SizeI width, SizeI height, Format p_format, SizeI imageSize,
 											 const void *data);
 
-	TST_API void compressedTexSubImage3D(TextureType p_target, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Format p_format,
-										 SizeI       imageSize, const Void *data);
+	TST_API void compressedTexSubImage3D(TextureType p_target, Int   level, Int             x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth,
+										 Format      p_format, SizeI imageSize, const Void *data);
 
 	TST_API void compressedTextureSubImage3D(UInt  texture, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Format p_format,
 											 SizeI imageSize, const void *data);
@@ -1175,8 +1176,8 @@ namespace gl
 
 	TST_API void textureSubImage2D(UInt texture, Int level, Int x_offset, Int y_offset, SizeI width, SizeI height, Format p_format, DataType p_type, const void *pixels);
 
-	TST_API void texSubImage3D(TextureType p_target, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Format p_format, DataType p_type,
-							   const Void *pixels);
+	TST_API void texSubImage3D(TextureType p_target, Int       level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Format p_format,
+							   DataType    p_type, const Void *pixels);
 
 	TST_API void textureSubImage3D(UInt     texture, Int        level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Format p_format,
 								   DataType p_type, const void *pixels);
@@ -1202,7 +1203,7 @@ namespace gl
 
 	TST_API UInt createShader(ShaderStage p_shader_stage);
 
-	TST_API UInt createShaderProgramV(Enum type, SizeI count, const char **strings);
+	TST_API UInt createShaderProgramV(ShaderStage p_shader_stage, SizeI count, const char **strings);
 
 	TST_API void deleteProgram(UInt program);
 
@@ -1352,23 +1353,23 @@ namespace gl
 
 	TST_API void programUniform4uiv(UInt program, Int location, SizeI count, const UInt *value);
 
-	TST_API void programUniformMatrix2Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
+	TST_API void programUniformMatrix2fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
 
-	TST_API void programUniformMatrix3Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
+	TST_API void programUniformMatrix3fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
 
-	TST_API void programUniformMatrix4Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
+	TST_API void programUniformMatrix4fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
 
-	TST_API void programUniformMatrix2x3Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
+	TST_API void programUniformMatrix2x3fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
 
-	TST_API void programUniformMatrix3x2Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
+	TST_API void programUniformMatrix3x2fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
 
-	TST_API void programUniformMatrix2x4Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
+	TST_API void programUniformMatrix2x4fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
 
-	TST_API void programUniformMatrix4x2Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
+	TST_API void programUniformMatrix4x2fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
 
-	TST_API void programUniformMatrix3x4Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
+	TST_API void programUniformMatrix3x4fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
 
-	TST_API void programUniformMatrix4x3Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
+	TST_API void programUniformMatrix4x3fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value);
 
 	TST_API void releaseShaderCompiler();
 

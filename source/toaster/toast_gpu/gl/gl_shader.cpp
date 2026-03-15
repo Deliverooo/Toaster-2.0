@@ -123,7 +123,7 @@ namespace toaster::gpu
 		{
 			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
 		}
-		gl::uniform1f(m_uniformLocations.at(p_name), p_value);
+		gl::programUniform1f(m_programId, m_uniformLocations.at(p_name), p_value);
 	}
 
 	void GLShader::setUniform(const std::string &p_name, int p_value)
@@ -132,7 +132,7 @@ namespace toaster::gpu
 		{
 			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
 		}
-		gl::uniform1i(m_uniformLocations.at(p_name), p_value);
+		gl::programUniform1i(m_programId, m_uniformLocations.at(p_name), p_value);
 	}
 
 	void GLShader::setUniform(const std::string &p_name, uint32 p_value)
@@ -141,7 +141,7 @@ namespace toaster::gpu
 		{
 			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
 		}
-		gl::uniform1ui(m_uniformLocations.at(p_name), p_value);
+		gl::programUniform1ui(m_programId, m_uniformLocations.at(p_name), p_value);
 	}
 
 	void GLShader::setUniform(const std::string &p_name, const glm::vec2 &p_value)
@@ -150,7 +150,7 @@ namespace toaster::gpu
 		{
 			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
 		}
-		gl::uniform2f(m_uniformLocations.at(p_name), p_value.x, p_value.y);
+		gl::programUniform2f(m_programId, m_uniformLocations.at(p_name), p_value.x, p_value.y);
 	}
 
 	void GLShader::setUniform(const std::string &p_name, const glm::vec3 &p_value)
@@ -159,7 +159,7 @@ namespace toaster::gpu
 		{
 			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
 		}
-		gl::uniform3f(m_uniformLocations.at(p_name), p_value.x, p_value.y, p_value.z);
+		gl::programUniform3f(m_programId, m_uniformLocations.at(p_name), p_value.x, p_value.y, p_value.z);
 	}
 
 	void GLShader::setUniform(const std::string &p_name, const glm::vec4 &p_value)
@@ -168,7 +168,7 @@ namespace toaster::gpu
 		{
 			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
 		}
-		gl::uniform4f(m_uniformLocations.at(p_name), p_value.x, p_value.y, p_value.z, p_value.w);
+		gl::programUniform4f(m_programId, m_uniformLocations.at(p_name), p_value.x, p_value.y, p_value.z, p_value.w);
 	}
 
 	void GLShader::setUniform(const std::string &p_name, const glm::mat3 &p_value)
@@ -177,7 +177,7 @@ namespace toaster::gpu
 		{
 			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
 		}
-		gl::uniformMatrix3fv(m_uniformLocations.at(p_name), 1, false, &p_value[0].x);
+		gl::programUniformMatrix3fv(m_programId, m_uniformLocations.at(p_name), 1, false, &p_value[0].x);
 	}
 
 	void GLShader::setUniform(const std::string &p_name, const glm::mat4 &p_value)
@@ -186,7 +186,7 @@ namespace toaster::gpu
 		{
 			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
 		}
-		gl::uniformMatrix4fv(m_uniformLocations.at(p_name), 1, false, &p_value[0].x);
+		gl::programUniformMatrix4fv(m_programId, m_uniformLocations.at(p_name), 1, false, &p_value[0].x);
 	}
 
 	void GLShader::setUniform(const std::string &p_name, float32 *p_values, uint32 p_count)
@@ -195,7 +195,7 @@ namespace toaster::gpu
 		{
 			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
 		}
-		gl::uniform1fv(m_uniformLocations.at(p_name), static_cast<gl::Int>(p_count), p_values);
+		gl::programUniform1fv(m_programId, m_uniformLocations.at(p_name), static_cast<gl::Int>(p_count), p_values);
 	}
 
 	void GLShader::setUniform(const std::string &p_name, int32 *p_values, uint32 p_count)
@@ -204,7 +204,7 @@ namespace toaster::gpu
 		{
 			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
 		}
-		gl::uniform1iv(m_uniformLocations.at(p_name), static_cast<gl::Int>(p_count), p_values);
+		gl::programUniform1iv(m_programId, m_uniformLocations.at(p_name), static_cast<gl::Int>(p_count), p_values);
 	}
 
 	void GLShader::setUniform(const std::string &p_name, uint32 *p_values, uint32 p_count)
@@ -213,6 +213,6 @@ namespace toaster::gpu
 		{
 			m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str());
 		}
-		gl::uniform1uiv(m_uniformLocations.at(p_name), static_cast<gl::Int>(p_count), p_values);
+		gl::programUniform1uiv(m_programId, m_uniformLocations.at(p_name), static_cast<gl::Int>(p_count), p_values);
 	}
 }

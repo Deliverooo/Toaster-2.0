@@ -9,7 +9,9 @@ namespace toaster
 		EditorApplication();
 		~EditorApplication();
 
-	private:
+		void setBlockUIEvents(bool p_block_ui_events);
 
+	private:
+		class ImGuiLayer *m_imGuiLayer{nullptr};
 	};
 }

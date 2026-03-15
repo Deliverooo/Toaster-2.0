@@ -5,15 +5,13 @@ namespace toaster::gpu
 	GLVertexBuffer::GLVertexBuffer(uint32 p_size)
 	{
 		gl::createBuffers(1, &m_vbo);
-		gl::bindBuffer(gl::BufferType::eArray, m_vbo);
-		gl::bufferData(gl::BufferType::eArray, p_size, nullptr, gl::BufferUsage::eDynamicDraw);
+		gl::namedBufferData(m_vbo, p_size, nullptr, gl::BufferUsage::eDynamicDraw);
 	}
 
 	GLVertexBuffer::GLVertexBuffer(const void *p_data, uint32 p_size)
 	{
 		gl::createBuffers(1, &m_vbo);
-		gl::bindBuffer(gl::BufferType::eArray, m_vbo);
-		gl::bufferData(gl::BufferType::eArray, p_size, p_data, gl::BufferUsage::eStaticDraw);
+		gl::namedBufferData(m_vbo, p_size, p_data, gl::BufferUsage::eStaticDraw);
 	}
 
 	GLVertexBuffer::~GLVertexBuffer()
@@ -33,8 +31,12 @@ namespace toaster::gpu
 
 	void GLVertexBuffer::setData(const void *p_data, uint32 p_size)
 	{
-		gl::bindBuffer(gl::BufferType::eArray, m_vbo);
-		gl::bufferSubData(gl::BufferType::eArray, 0, p_size, p_data);
+		gl::namedBufferSubData(m_vbo, 0, p_size, p_data);
+	}
+
+	uint32 GLVertexBuffer::getID() const
+	{
+		return m_vbo;
 	}
 
 	const VertexBufferLayout &GLVertexBuffer::getLayout()

@@ -26,7 +26,6 @@ namespace toaster::gpu
 	GLVertexArray::GLVertexArray()
 	{
 		gl::createVertexArrays(1, &m_vao);
-		gl::bindVertexArray(m_vao);
 	}
 
 	GLVertexArray::~GLVertexArray()
@@ -48,13 +47,18 @@ namespace toaster::gpu
 	{
 		TST_ASSERT_MSG(!p_vertex_buffer->getLayout().getElements().empty(), "Vertex Buffer has no layout!");
 
-		gl::bindVertexArray(m_vao);
+		uint32_t    vboHandle = p_vertex_buffer->getID();
+		const auto &vbl       = p_vertex_buffer->getLayout();
 
-		p_vertex_buffer->bind();
+		uint32_t bindingIndex = m_vertexBuffers.size();
 
-		const auto &vbl = p_vertex_buffer->getLayout();
+		gl::vertexArrayVertexBuffer(m_vao, bindingIndex, vboHandle, 0, static_cast<gl::SizeI>(vbl.getStride()));
+
 		for (const auto &elem: vbl)
 		{
+			// Enable the attribute location on this specific VAO
+			gl::enableVertexArrayAttrib(m_vao, m_vboIndex);
+
 			switch (elem.type)
 			{
 				case EShaderDataType::eFloat:
@@ -62,9 +66,9 @@ namespace toaster::gpu
 				case EShaderDataType::eFloat3:
 				case EShaderDataType::eFloat4:
 				{
-					gl::enableVertexAttribArray(m_vboIndex);
-					gl::vertexAttribPointer(m_vboIndex, static_cast<gl::Int>(elem.getComponentCount()), getComponentType(elem.type), elem.normalized,
-											static_cast<gl::SizeI>(vbl.getStride()), (reinterpret_cast<const void *>(elem.offset)));
+					gl::vertexArrayAttribFormat(m_vao, m_vboIndex, static_cast<gl::Int>(elem.getComponentCount()), getComponentType(elem.type), elem.normalized,
+												elem.offset);
+					gl::vertexArrayAttribBinding(m_vao, m_vboIndex, bindingIndex);
 					m_vboIndex++;
 					break;
 				}
@@ -75,9 +79,9 @@ namespace toaster::gpu
 				case EShaderDataType::eInt3:
 				case EShaderDataType::eInt4:
 				{
-					gl::enableVertexAttribArray(m_vboIndex);
-					gl::vertexAttribIPointer(m_vboIndex, static_cast<gl::Int>(elem.getComponentCount()), getComponentType(elem.type),
-											 static_cast<gl::SizeI>(vbl.getStride()), reinterpret_cast<const void *>(elem.offset));
+					gl::vertexArrayAttribIFormat(m_vao, m_vboIndex, static_cast<gl::Int>(elem.getComponentCount()), getComponentType(elem.type), elem.offset);
+
+					gl::vertexArrayAttribBinding(m_vao, m_vboIndex, bindingIndex);
 					m_vboIndex++;
 					break;
 				}
@@ -85,12 +89,15 @@ namespace toaster::gpu
 				case EShaderDataType::eMat4:
 				{
 					const uint8 count = elem.getComponentCount();
-					for (uint8 i = 0u; i < count; i++)
+					for (uint8 i{0u}; i < count; ++i)
 					{
-						gl::enableVertexAttribArray(m_vboIndex);
-						gl::vertexAttribPointer(m_vboIndex, count, getComponentType(elem.type), elem.normalized, static_cast<gl::SizeI>(vbl.getStride()),
-												reinterpret_cast<const void *>(elem.offset + sizeof(float) * count * i));
-						gl::vertexAttribDivisor(m_vboIndex, 1);
+						gl::enableVertexArrayAttrib(m_vao, m_vboIndex);
+						gl::vertexArrayAttribFormat(m_vao, m_vboIndex, count, getComponentType(elem.type), elem.normalized,
+													static_cast<gl::UInt>(elem.offset + sizeof(float) * count * i));
+
+						gl::vertexArrayAttribBinding(m_vao, m_vboIndex, bindingIndex);
+						gl::vertexArrayBindingDivisor(m_vao, bindingIndex, 1);
+
 						m_vboIndex++;
 					}
 					break;
@@ -103,8 +110,7 @@ namespace toaster::gpu
 
 	void GLVertexArray::setIndexBuffer(const RefPtr<IndexBuffer> &p_index_buffer)
 	{
-		gl::bindVertexArray(m_vao);
-		p_index_buffer->bind();
+		gl::vertexArrayElementBuffer(m_vao, p_index_buffer->getID());
 		m_indexBuffer = p_index_buffer;
 	}
 

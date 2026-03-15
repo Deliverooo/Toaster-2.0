@@ -52,6 +52,12 @@ namespace toaster
 		eventDispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(OrthoCameraController::onWindowResizeEvent));
 	}
 
+	void OrthoCameraController::onResize(float32 p_width, float32 p_height)
+	{
+		m_aspectRatio = p_width / p_height;
+		m_camera.setProjectionMatrix(-m_aspectRatio * m_zoom, m_aspectRatio * m_zoom, -m_zoom, m_zoom, 0.1f, 10.0f);
+	}
+
 	const OrthoCamera &OrthoCameraController::getCamera() const
 	{
 		return m_camera;
@@ -68,9 +74,7 @@ namespace toaster
 
 	bool OrthoCameraController::onWindowResizeEvent(WindowResizeEvent &e)
 	{
-		m_aspectRatio = e.getAspectRatio();
-		m_camera.setProjectionMatrix(-m_aspectRatio * m_zoom, m_aspectRatio * m_zoom, -m_zoom, m_zoom, 0.1f, 10.0f);
-
+		onResize(static_cast<float32>(e.getWidth()), static_cast<float32>(e.getHeight()));
 		return false;
 	}
 }

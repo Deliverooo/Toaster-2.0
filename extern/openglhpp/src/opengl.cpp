@@ -11,7 +11,7 @@ namespace gl
 
 	#pragma region Rendering
 
-	void clear(ClearMaskFlags mask)
+	void clear(BufferMaskFlags mask)
 	{
 		glClear(mask);
 	}
@@ -36,24 +36,24 @@ namespace gl
 		glClearBufferfi(buffer, draw_buffer, depth, stencil);
 	}
 
-	void clearNamedFramebufferIv(UInt framebuffer, Enum buffer, Int draw_buffer, const Int *value)
+	void clearNamedFramebufferIv(UInt p_framebuffer, Enum buffer, Int draw_buffer, const Int *value)
 	{
-		glClearNamedFramebufferiv(framebuffer, buffer, draw_buffer, value);
+		glClearNamedFramebufferiv(p_framebuffer, buffer, draw_buffer, value);
 	}
 
-	void clearNamedFramebufferuiv(UInt framebuffer, Enum buffer, Int draw_buffer, const UInt *value)
+	void clearNamedFramebufferuiv(UInt p_framebuffer, Enum buffer, Int draw_buffer, const UInt *value)
 	{
-		glClearNamedFramebufferuiv(framebuffer, buffer, draw_buffer, value);
+		glClearNamedFramebufferuiv(p_framebuffer, buffer, draw_buffer, value);
 	}
 
-	void clearNamedFramebufferFv(UInt framebuffer, Enum buffer, Int draw_buffer, const Float *p_value)
+	void clearNamedFramebufferFv(UInt p_framebuffer, Enum buffer, Int draw_buffer, const Float *p_value)
 	{
-		glClearNamedFramebufferfv(framebuffer, buffer, draw_buffer, p_value);
+		glClearNamedFramebufferfv(p_framebuffer, buffer, draw_buffer, p_value);
 	}
 
-	void clearNamedFramebufferFi(UInt framebuffer, Enum buffer, Int draw_buffer, Float depth, Int stencil)
+	void clearNamedFramebufferFi(UInt p_framebuffer, Enum buffer, Int draw_buffer, Float depth, Int stencil)
 	{
-		glClearNamedFramebufferfi(framebuffer, buffer, draw_buffer, depth, stencil);
+		glClearNamedFramebufferfi(p_framebuffer, buffer, draw_buffer, depth, stencil);
 	}
 
 	void clearColor(Float red, Float green, Float blue, Float alpha)
@@ -81,9 +81,9 @@ namespace gl
 		glDrawBuffer(colour_buffer);
 	}
 
-	void namedFramebufferDrawBuffer(UInt framebuffer, Enum buffer)
+	void namedFramebufferDrawBuffer(UInt p_framebuffer, Enum buffer)
 	{
-		glNamedFramebufferDrawBuffer(framebuffer, buffer);
+		glNamedFramebufferDrawBuffer(p_framebuffer, buffer);
 	}
 
 	void finish()
@@ -101,9 +101,9 @@ namespace gl
 		glReadBuffer(mode);
 	}
 
-	void namedFramebufferReadBuffer(UInt framebuffer, Enum mode)
+	void namedFramebufferReadBuffer(UInt p_framebuffer, Enum mode)
 	{
-		glNamedFramebufferReadBuffer(framebuffer, mode);
+		glNamedFramebufferReadBuffer(p_framebuffer, mode);
 	}
 
 	void readPixels(Int x, Int y, Int width, Int height, Enum format, Enum type, Void *data)
@@ -120,35 +120,35 @@ namespace gl
 
 	#pragma region Framebuffers
 
-	void bindFramebuffer(Enum target, UInt framebuffer)
+	void bindFramebuffer(FramebufferType p_target, UInt p_framebuffer)
 	{
-		glBindFramebuffer(target, framebuffer);
+		glBindFramebuffer(static_cast<Enum>(p_target), p_framebuffer);
 	}
 
-	void bindRenderbuffer(Enum target, UInt renderbuffer)
+	void bindRenderbuffer(FramebufferType p_target, UInt p_renderbuffer)
 	{
-		glBindRenderbuffer(target, renderbuffer);
+		glBindRenderbuffer(static_cast<Enum>(p_target), p_renderbuffer);
 	}
 
-	void blitFramebuffer(Int srcX0, Int srcY0, Int srcX1, Int srcY1, Int dstX0, Int dstY0, Int dstX1, Int dstY1, Bitfield mask, Enum filter)
+	void blitFramebuffer(Int srcX0, Int srcY0, Int srcX1, Int srcY1, Int dstX0, Int dstY0, Int dstX1, Int dstY1, BufferMaskFlags p_mask, TextureFiltering p_filter)
 	{
-		glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+		glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, p_mask, static_cast<Enum>(p_filter));
 	}
 
-	void blitNamedFramebuffer(UInt     read_framebuffer, UInt draw_framebuffer, Int srcX0, Int srcY0, Int srcX1, Int srcY1, Int dstX0, Int dstY0, Int dstX1, Int dstY1,
-							  Bitfield mask, Enum             filter)
+	void blitNamedFramebuffer(UInt read_framebuffer, UInt draw_framebuffer, Int srcX0, Int srcY0, Int srcX1, Int srcY1, Int dstX0, Int dstY0, Int dstX1, Int dstY1,
+							  BufferMaskFlags p_mask, TextureFiltering p_filter)
 	{
-		glBlitNamedFramebuffer(read_framebuffer, draw_framebuffer, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
+		glBlitNamedFramebuffer(read_framebuffer, draw_framebuffer, srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, p_mask, static_cast<Enum>(p_filter));
 	}
 
-	Enum checkFramebufferStatus(Enum target)
+	FramebufferStatus checkFramebufferStatus(FramebufferType p_target)
 	{
-		return glCheckFramebufferStatus(target);
+		return static_cast<FramebufferStatus>(glCheckFramebufferStatus(static_cast<Enum>(p_target)));
 	}
 
-	Enum checkNamedFramebufferStatus(UInt framebuffer, Enum target)
+	FramebufferStatus checkNamedFramebufferStatus(UInt p_framebuffer, FramebufferType p_target)
 	{
-		return glCheckNamedFramebufferStatus(framebuffer, target);
+		return static_cast<FramebufferStatus>(glCheckNamedFramebufferStatus(p_framebuffer, static_cast<Enum>(p_target)));
 	}
 
 	void createFramebuffers(SizeI count, UInt *p_buffers)
@@ -176,64 +176,64 @@ namespace gl
 		glDrawBuffers(count, p_buffers);
 	}
 
-	void namedFramebufferDrawBuffers(UInt framebuffer, SizeI count, const Enum *p_buffers)
+	void namedFramebufferDrawBuffers(UInt p_framebuffer, SizeI p_count, const Enum *p_buffers)
 	{
-		glNamedFramebufferDrawBuffers(framebuffer, count, p_buffers);
+		glNamedFramebufferDrawBuffers(p_framebuffer, p_count, p_buffers);
 	}
 
-	void framebufferParameteri(Enum target, Enum pname, Int param)
+	void framebufferParameteri(FramebufferType p_target, FramebufferParameter p_framebuffer_parameter, Int p_param)
 	{
-		glFramebufferParameteri(target, pname, param);
+		glFramebufferParameteri(static_cast<Enum>(p_target), static_cast<Enum>(p_framebuffer_parameter), p_param);
 	}
 
-	void namedFramebufferParameteri(UInt framebuffer, Enum pname, Int param)
+	void namedFramebufferParameteri(UInt p_framebuffer, FramebufferParameter p_framebuffer_parameter, Int p_param)
 	{
-		glNamedFramebufferParameteri(framebuffer, pname, param);
+		glNamedFramebufferParameteri(p_framebuffer, static_cast<Enum>(p_framebuffer_parameter), p_param);
 	}
 
-	void framebufferRenderbuffer(Enum target, Enum attachment, Enum renderbuffer_target, UInt renderbuffer)
+	void framebufferRenderbuffer(FramebufferType p_target, FramebufferAttachment p_attachment, RenderbufferType p_renderbuffer_target, UInt p_renderbuffer)
 	{
-		glFramebufferRenderbuffer(target, attachment, renderbuffer_target, renderbuffer);
+		glFramebufferRenderbuffer(static_cast<Enum>(p_target), static_cast<Enum>(p_attachment), static_cast<Enum>(p_renderbuffer_target), p_renderbuffer);
 	}
 
-	void namedFramebufferRenderbuffer(UInt framebuffer, Enum attachment, Enum renderbuffer_target, UInt renderbuffer)
+	void namedFramebufferRenderbuffer(UInt p_framebuffer, FramebufferAttachment p_attachment, RenderbufferType p_renderbuffer_target, UInt p_renderbuffer)
 	{
-		glNamedFramebufferRenderbuffer(framebuffer, attachment, renderbuffer_target, renderbuffer);
+		glNamedFramebufferRenderbuffer(p_framebuffer, static_cast<Enum>(p_attachment), static_cast<Enum>(p_renderbuffer_target), p_renderbuffer);
 	}
 
-	void framebufferTexture(Enum target, Enum attachment, UInt texture, Int level)
+	void framebufferTexture(FramebufferType p_target, FramebufferAttachment p_attachment, UInt texture, Int level)
 	{
-		glFramebufferTexture(target, attachment, texture, level);
+		glFramebufferTexture(static_cast<Enum>(p_target), static_cast<Enum>(p_attachment), texture, level);
 	}
 
-	void framebufferTexture1D(Enum target, Enum attachment, Enum tex_target, UInt texture, Int level)
+	void framebufferTexture1D(FramebufferType p_target, FramebufferAttachment p_attachment, TextureType p_tex_target, UInt texture, Int level)
 	{
-		glFramebufferTexture1D(target, attachment, tex_target, texture, level);
+		glFramebufferTexture1D(static_cast<Enum>(p_target), static_cast<Enum>(p_attachment), static_cast<Enum>(p_tex_target), texture, level);
 	}
 
-	void framebufferTexture2D(Enum target, Enum attachment, Enum tex_target, UInt texture, Int level)
+	void framebufferTexture2D(FramebufferType p_target, FramebufferAttachment p_attachment, TextureType p_tex_target, UInt texture, Int level)
 	{
-		glFramebufferTexture2D(target, attachment, tex_target, texture, level);
+		glFramebufferTexture2D(static_cast<Enum>(p_target), static_cast<Enum>(p_attachment), static_cast<Enum>(p_tex_target), texture, level);
 	}
 
-	void framebufferTexture3D(Enum target, Enum attachment, Enum tex_target, UInt texture, Int level, Int layer)
+	void framebufferTexture3D(FramebufferType p_target, FramebufferAttachment p_attachment, TextureType p_tex_target, UInt texture, Int level, Int layer)
 	{
-		glFramebufferTexture3D(target, attachment, tex_target, texture, level, layer);
+		glFramebufferTexture3D(static_cast<Enum>(p_target), static_cast<Enum>(p_attachment), static_cast<Enum>(p_tex_target), texture, level, layer);
 	}
 
-	void namedFramebufferTexture(UInt framebuffer, Enum attachment, UInt texture, Int level)
+	void namedFramebufferTexture(UInt p_framebuffer, FramebufferAttachment p_attachment, UInt texture, Int level)
 	{
-		glNamedFramebufferTexture(framebuffer, attachment, texture, level);
+		glNamedFramebufferTexture(p_framebuffer, static_cast<Enum>(p_attachment), texture, level);
 	}
 
-	void framebufferTextureLayer(Enum target, Enum attachment, UInt texture, Int level, Int layer)
+	void framebufferTextureLayer(Enum target, FramebufferAttachment p_attachment, UInt texture, Int level, Int layer)
 	{
-		glFramebufferTextureLayer(target, attachment, texture, level, layer);
+		glFramebufferTextureLayer(target, static_cast<Enum>(p_attachment), texture, level, layer);
 	}
 
-	void namedFramebufferTextureLayer(UInt framebuffer, Enum attachment, UInt texture, Int level, Int layer)
+	void namedFramebufferTextureLayer(UInt p_framebuffer, FramebufferAttachment p_attachment, UInt texture, Int level, Int layer)
 	{
-		glNamedFramebufferTextureLayer(framebuffer, attachment, texture, level, layer);
+		glNamedFramebufferTextureLayer(p_framebuffer, static_cast<Enum>(p_attachment), texture, level, layer);
 	}
 
 	void genFramebuffers(SizeI count, UInt *p_buffers)
@@ -261,9 +261,9 @@ namespace gl
 		glGetFramebufferAttachmentParameteriv(target, attachment, pname, params);
 	}
 
-	void getNamedFramebufferAttachmentParameterIv(UInt framebuffer, Enum attachment, Enum pname, Int *params)
+	void getNamedFramebufferAttachmentParameterIv(UInt p_framebuffer, Enum attachment, Enum pname, Int *params)
 	{
-		glGetNamedFramebufferAttachmentParameteriv(framebuffer, attachment, pname, params);
+		glGetNamedFramebufferAttachmentParameteriv(p_framebuffer, attachment, pname, params);
 	}
 
 	void getFramebufferParameterIv(Enum target, Enum pname, Int *params)
@@ -271,9 +271,9 @@ namespace gl
 		glGetFramebufferParameteriv(target, pname, params);
 	}
 
-	void getNamedFramebufferParameterIv(UInt framebuffer, Enum pname, Int *params)
+	void getNamedFramebufferParameterIv(UInt p_framebuffer, Enum pname, Int *params)
 	{
-		glGetNamedFramebufferParameteriv(framebuffer, pname, params);
+		glGetNamedFramebufferParameteriv(p_framebuffer, pname, params);
 	}
 
 	void getRenderbufferParameterIv(Enum target, Enum pname, Int *params)
@@ -281,9 +281,9 @@ namespace gl
 		glGetRenderbufferParameteriv(target, pname, params);
 	}
 
-	void getNamedRenderbufferParameterIv(UInt renderbuffer, Enum pname, Int *params)
+	void getNamedRenderbufferParameterIv(UInt p_renderbuffer, Enum pname, Int *params)
 	{
-		glGetNamedRenderbufferParameteriv(renderbuffer, pname, params);
+		glGetNamedRenderbufferParameteriv(p_renderbuffer, pname, params);
 	}
 
 	void invalidateFramebuffer(Enum target, SizeI num_attachments, const Enum *attachments)
@@ -291,9 +291,9 @@ namespace gl
 		glInvalidateFramebuffer(target, num_attachments, attachments);
 	}
 
-	void invalidateNamedFramebufferData(UInt framebuffer, SizeI num_attachments, const Enum *attachments)
+	void invalidateNamedFramebufferData(UInt p_framebuffer, SizeI num_attachments, const Enum *attachments)
 	{
-		glInvalidateNamedFramebufferData(framebuffer, num_attachments, attachments);
+		glInvalidateNamedFramebufferData(p_framebuffer, num_attachments, attachments);
 	}
 
 	void invalidateSubFramebuffer(Enum target, SizeI num_attachments, const Enum *attachments, Int x, Int y, Int width, Int height)
@@ -301,19 +301,19 @@ namespace gl
 		glInvalidateSubFramebuffer(target, num_attachments, attachments, x, y, width, height);
 	}
 
-	void invalidateNamedFramebufferSubData(UInt framebuffer, SizeI num_attachments, const Enum *attachments, Int x, Int y, Int width, Int height)
+	void invalidateNamedFramebufferSubData(UInt p_framebuffer, SizeI num_attachments, const Enum *attachments, Int x, Int y, Int width, Int height)
 	{
-		glInvalidateNamedFramebufferSubData(framebuffer, num_attachments, attachments, x, y, width, height);
+		glInvalidateNamedFramebufferSubData(p_framebuffer, num_attachments, attachments, x, y, width, height);
 	}
 
-	bool isFramebuffer(UInt framebuffer)
+	bool isFramebuffer(UInt p_framebuffer)
 	{
-		return glIsFramebuffer(framebuffer);
+		return glIsFramebuffer(p_framebuffer);
 	}
 
-	bool isRenderbuffer(UInt renderbuffer)
+	bool isRenderbuffer(UInt p_renderbuffer)
 	{
-		return glIsRenderbuffer(renderbuffer);
+		return glIsRenderbuffer(p_renderbuffer);
 	}
 
 	void renderbufferStorage(Enum target, Enum internalformat, SizeI width, SizeI height)
@@ -321,9 +321,9 @@ namespace gl
 		glRenderbufferStorage(target, internalformat, width, height);
 	}
 
-	void namedRenderbufferStorage(UInt renderbuffer, Enum internalformat, SizeI width, SizeI height)
+	void namedRenderbufferStorage(UInt p_renderbuffer, Enum internalformat, SizeI width, SizeI height)
 	{
-		glNamedRenderbufferStorage(renderbuffer, internalformat, width, height);
+		glNamedRenderbufferStorage(p_renderbuffer, internalformat, width, height);
 	}
 
 	void renderbufferStorageMultisample(Enum target, SizeI samples, Enum internalformat, SizeI width, SizeI height)
@@ -331,9 +331,9 @@ namespace gl
 		glRenderbufferStorageMultisample(target, samples, internalformat, width, height);
 	}
 
-	void namedRenderbufferStorageMultisample(UInt renderbuffer, SizeI samples, Enum internalformat, SizeI width, SizeI height)
+	void namedRenderbufferStorageMultisample(UInt p_renderbuffer, SizeI samples, Enum internalformat, SizeI width, SizeI height)
 	{
-		glNamedRenderbufferStorageMultisample(renderbuffer, samples, internalformat, width, height);
+		glNamedRenderbufferStorageMultisample(p_renderbuffer, samples, internalformat, width, height);
 	}
 
 	void sampleMaskI(UInt index, Bitfield mask)
@@ -1107,34 +1107,34 @@ namespace gl
 		glVertexAttribDivisor(index, divisor);
 	}
 
-	void vertexAttribFormat(UInt attrib_index, Int size, Enum type, Bool normalized, UInt relative_offset)
+	void vertexAttribFormat(UInt attrib_index, Int size, DataType p_type, Bool normalized, UInt relative_offset)
 	{
-		glVertexAttribFormat(attrib_index, size, type, normalized, relative_offset);
+		glVertexAttribFormat(attrib_index, size, static_cast<Enum>(p_type), normalized, relative_offset);
 	}
 
-	void vertexAttribIFormat(UInt attrib_index, Int size, Enum type, UInt relative_offset)
+	void vertexAttribIFormat(UInt attrib_index, Int size, DataType p_type, UInt relative_offset)
 	{
-		glVertexAttribIFormat(attrib_index, size, type, relative_offset);
+		glVertexAttribIFormat(attrib_index, size, static_cast<Enum>(p_type), relative_offset);
 	}
 
-	void vertexAttribLFormat(UInt attrib_index, Int size, Enum type, UInt relative_offset)
+	void vertexAttribLFormat(UInt attrib_index, Int size, DataType p_type, UInt relative_offset)
 	{
-		glVertexAttribLFormat(attrib_index, size, type, relative_offset);
+		glVertexAttribLFormat(attrib_index, size, static_cast<Enum>(p_type), relative_offset);
 	}
 
-	void vertexArrayAttribFormat(UInt vao, UInt attrib_index, Int size, Enum type, Bool normalized, UInt relative_offset)
+	void vertexArrayAttribFormat(UInt vao, UInt attrib_index, Int size, DataType p_type, Bool normalized, UInt relative_offset)
 	{
-		glVertexArrayAttribFormat(vao, attrib_index, size, type, normalized, relative_offset);
+		glVertexArrayAttribFormat(vao, attrib_index, size, static_cast<Enum>(p_type), normalized, relative_offset);
 	}
 
-	void vertexArrayAttribIFormat(UInt vao, UInt attrib_index, Int size, Enum type, UInt relative_offset)
+	void vertexArrayAttribIFormat(UInt vao, UInt attrib_index, Int size, DataType p_type, UInt relative_offset)
 	{
-		glVertexArrayAttribIFormat(vao, attrib_index, size, type, relative_offset);
+		glVertexArrayAttribIFormat(vao, attrib_index, size, static_cast<Enum>(p_type), relative_offset);
 	}
 
-	void vertexArrayAttribLFormat(UInt vao, UInt attrib_index, Int size, Enum type, UInt relative_offset)
+	void vertexArrayAttribLFormat(UInt vao, UInt attrib_index, Int size, DataType p_type, UInt relative_offset)
 	{
-		glVertexArrayAttribLFormat(vao, attrib_index, size, type, relative_offset);
+		glVertexArrayAttribLFormat(vao, attrib_index, size, static_cast<Enum>(p_type), relative_offset);
 	}
 
 	void vertexAttribPointer(UInt index, Int size, DataType p_type, Bool normalized, SizeI stride, const Void *pointer)
@@ -1360,9 +1360,9 @@ namespace gl
 		glGetCompressedTextureSubImage(texture, level, x_offset, y_offset, z_offset, width, height, depth, bufSize, pixels);
 	}
 
-	void getTexImage(Enum target, Int level, Enum format, Enum type, Void *pixels)
+	void getTexImage(TextureType p_target, Int level, Format p_format, DataType p_type, Void *pixels)
 	{
-		glGetTexImage(target, level, format, type, pixels);
+		glGetTexImage(static_cast<Enum>(p_target), level, static_cast<Enum>(p_format), static_cast<Enum>(p_type), pixels);
 	}
 
 	void getnTexImage(Enum target, Int level, Enum format, Enum type, SizeI bufSize, void *pixels)
@@ -1370,9 +1370,9 @@ namespace gl
 		glGetnTexImage(target, level, format, type, bufSize, pixels);
 	}
 
-	void getTextureImage(UInt texture, Int level, Enum format, Enum type, SizeI bufSize, void *pixels)
+	void getTextureImage(UInt texture, Int level, Format p_format, DataType p_type, SizeI bufSize, void *pixels)
 	{
-		glGetTextureImage(texture, level, format, type, bufSize, pixels);
+		glGetTextureImage(texture, level, static_cast<Enum>(p_format), static_cast<Enum>(p_type), bufSize, pixels);
 	}
 
 	void getTexLevelParameterFv(Enum target, Int level, Enum pname, Float *params)
@@ -1934,9 +1934,9 @@ namespace gl
 		return glCreateShader(static_cast<Enum>(p_shader_stage));
 	}
 
-	UInt createShaderProgramV(Enum type, SizeI count, const char **strings)
+	UInt createShaderProgramV(ShaderStage p_shader_stage, SizeI count, const char **strings)
 	{
-		return glCreateShaderProgramv(type, count, strings);
+		return glCreateShaderProgramv(static_cast<Enum>(p_shader_stage), count, strings);
 	}
 
 	void deleteProgram(UInt program)
@@ -2309,47 +2309,47 @@ namespace gl
 		glProgramUniform4uiv(program, location, count, value);
 	}
 
-	void programUniformMatrix2Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
+	void programUniformMatrix2fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
 		glProgramUniformMatrix2fv(program, location, count, transpose, p_value);
 	}
 
-	void programUniformMatrix3Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
+	void programUniformMatrix3fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
 		glProgramUniformMatrix3fv(program, location, count, transpose, p_value);
 	}
 
-	void programUniformMatrix4Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
+	void programUniformMatrix4fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
 		glProgramUniformMatrix4fv(program, location, count, transpose, p_value);
 	}
 
-	void programUniformMatrix2x3Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
+	void programUniformMatrix2x3fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
 		glProgramUniformMatrix2x3fv(program, location, count, transpose, p_value);
 	}
 
-	void programUniformMatrix3x2Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
+	void programUniformMatrix3x2fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
 		glProgramUniformMatrix3x2fv(program, location, count, transpose, p_value);
 	}
 
-	void programUniformMatrix2x4Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
+	void programUniformMatrix2x4fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
 		glProgramUniformMatrix2x4fv(program, location, count, transpose, p_value);
 	}
 
-	void programUniformMatrix4x2Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
+	void programUniformMatrix4x2fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
 		glProgramUniformMatrix4x2fv(program, location, count, transpose, p_value);
 	}
 
-	void programUniformMatrix3x4Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
+	void programUniformMatrix3x4fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
 		glProgramUniformMatrix3x4fv(program, location, count, transpose, p_value);
 	}
 
-	void programUniformMatrix4x3Fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
+	void programUniformMatrix4x3fv(UInt program, Int location, SizeI count, Bool transpose, const Float *p_value)
 	{
 		glProgramUniformMatrix4x3fv(program, location, count, transpose, p_value);
 	}

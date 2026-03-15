@@ -10,7 +10,6 @@ namespace toaster::gpu
 		gl::blendFunc(gl::BlendFunc::eSrcAlpha, gl::BlendFunc::eOneMinusSrcAlpha);
 
 		gl::enable(gl::Capability::eDepthTest);
-		// gl::enable(gl::Capability::eCullFace);
 	}
 
 	void GLGPUAPI::clearColour(const glm::vec4 &p_colour)
@@ -20,7 +19,7 @@ namespace toaster::gpu
 
 	void GLGPUAPI::clear()
 	{
-		gl::clear(gl::ClearMaskBits::eColor | gl::ClearMaskBits::eDepth | gl::ClearMaskBits::eStencil);
+		gl::clear(gl::BufferMaskBits::eColor | gl::BufferMaskBits::eDepth | gl::BufferMaskBits::eStencil);
 	}
 
 	void GLGPUAPI::setEnableFaceCulling(bool p_enable)

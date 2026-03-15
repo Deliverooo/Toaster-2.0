@@ -12,10 +12,10 @@ namespace toaster::gpu
 		gl::createTextures(gl::TextureType::e2D, 1, &m_textureId);
 		gl::textureStorage2D(m_textureId, 1, m_internalFormat, static_cast<gl::Int>(m_width), static_cast<gl::Int>(m_height));
 
-		gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapS, glEnumVal(gl::TextureWrapping::eRepeat));
-		gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapT, glEnumVal(gl::TextureWrapping::eRepeat));
-		gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMinFilter, glEnumVal(gl::TextureFiltering::eLinear));
-		gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMagFilter, glEnumVal(gl::TextureFiltering::eNearest));
+		gl::textureParameteri(m_textureId, gl::SamplerParameter::eTextureWrapS, glEnumVal(gl::TextureWrapping::eRepeat));
+		gl::textureParameteri(m_textureId, gl::SamplerParameter::eTextureWrapT, glEnumVal(gl::TextureWrapping::eRepeat));
+		gl::textureParameteri(m_textureId, gl::SamplerParameter::eTextureMinFilter, glEnumVal(gl::TextureFiltering::eLinear));
+		gl::textureParameteri(m_textureId, gl::SamplerParameter::eTextureMagFilter, glEnumVal(gl::TextureFiltering::eNearest));
 	}
 
 	GLTexture2D::GLTexture2D(const io::filesystem::Path &p_path) : m_path(p_path)
@@ -31,8 +31,6 @@ namespace toaster::gpu
 		{
 			m_width  = width;
 			m_height = height;
-
-			gl::bindTexture(gl::TextureType::e2D, m_textureId);
 
 			gl::Format internal_format = gl::Format::eRGBA8;
 			gl::Format data_format     = gl::Format::eRGBA;
@@ -50,14 +48,15 @@ namespace toaster::gpu
 			m_internalFormat = internal_format;
 			m_dataFormat     = data_format;
 
-			gl::texImage2D(gl::TextureType::e2D, 0, internal_format, width, height, 0, data_format, gl::DataType::eUnsignedByte, data);
+			gl::textureStorage2D(m_textureId, 1, m_internalFormat, width, height);
+			gl::textureSubImage2D(m_textureId, 0, 0, 0, width, height, m_dataFormat, gl::DataType::eUnsignedByte, data);
 
-			gl::generateMipmap(gl::TextureType::e2D);
+			gl::generateTextureMipmap(m_textureId);
 
-			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapS, glEnumVal(gl::TextureWrapping::eRepeat));
-			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapT, glEnumVal(gl::TextureWrapping::eRepeat));
-			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMinFilter, glEnumVal(gl::TextureFiltering::eLinearMipmapLinear));
-			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMagFilter, glEnumVal(gl::TextureFiltering::eLinear));
+			gl::textureParameteri(m_textureId, gl::SamplerParameter::eTextureWrapS, glEnumVal(gl::TextureWrapping::eRepeat));
+			gl::textureParameteri(m_textureId, gl::SamplerParameter::eTextureWrapT, glEnumVal(gl::TextureWrapping::eRepeat));
+			gl::textureParameteri(m_textureId, gl::SamplerParameter::eTextureMinFilter, glEnumVal(gl::TextureFiltering::eLinearMipmapLinear));
+			gl::textureParameteri(m_textureId, gl::SamplerParameter::eTextureMagFilter, glEnumVal(gl::TextureFiltering::eLinear));
 		}
 		else
 		{
@@ -67,18 +66,17 @@ namespace toaster::gpu
 			m_internalFormat = gl::Format::eRGBA;
 			m_dataFormat     = gl::Format::eRGBA;
 
-			gl::bindTexture(gl::TextureType::e2D, m_textureId);
-
 			constexpr uint32 fallback_data = 0xffff00ff; // magenta
 
-			gl::texImage2D(gl::TextureType::e2D, 0, m_internalFormat, 1, 1, 0, m_dataFormat, gl::DataType::eUnsignedByte, &fallback_data);
+			gl::textureStorage2D(m_textureId, 1, m_internalFormat, 1, 1);
+			gl::textureSubImage2D(m_textureId, 0, 0, 0, 1, 1, m_dataFormat, gl::DataType::eUnsignedByte, &fallback_data);
 
-			gl::generateMipmap(gl::TextureType::e2D);
+			gl::generateTextureMipmap(m_textureId);
 
-			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapS, glEnumVal(gl::TextureWrapping::eRepeat));
-			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureWrapT, glEnumVal(gl::TextureWrapping::eRepeat));
-			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMinFilter, glEnumVal(gl::TextureFiltering::eLinearMipmapLinear));
-			gl::texParameteri(gl::TextureType::e2D, gl::SamplerParameter::eTextureMagFilter, glEnumVal(gl::TextureFiltering::eLinear));
+			gl::textureParameteri(m_textureId, gl::SamplerParameter::eTextureWrapS, glEnumVal(gl::TextureWrapping::eRepeat));
+			gl::textureParameteri(m_textureId, gl::SamplerParameter::eTextureWrapT, glEnumVal(gl::TextureWrapping::eRepeat));
+			gl::textureParameteri(m_textureId, gl::SamplerParameter::eTextureMinFilter, glEnumVal(gl::TextureFiltering::eLinearMipmapLinear));
+			gl::textureParameteri(m_textureId, gl::SamplerParameter::eTextureMagFilter, glEnumVal(gl::TextureFiltering::eLinear));
 		}
 
 		stbi_image_free(data);
@@ -91,7 +89,6 @@ namespace toaster::gpu
 
 	void GLTexture2D::setData(void *p_data, uint32 p_size)
 	{
-		gl::bindTexture(gl::TextureType::e2D, m_textureId);
 		gl::textureSubImage2D(m_textureId, 0, 0, 0, static_cast<gl::Int>(m_width), static_cast<gl::Int>(m_height), m_dataFormat, gl::DataType::eUnsignedByte, p_data);
 	}
 

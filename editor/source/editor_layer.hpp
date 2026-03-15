@@ -1,5 +1,6 @@
 #pragma once
 
+#include "toaster/toast_gpu/framebuffer.hpp"
 #include "toaster/toast_kernel/layer.hpp"
 #include "toaster/toast_render/renderer_2d.hpp"
 
@@ -10,6 +11,9 @@
 #include "toaster/toast_lib/events/key_event.hpp"
 #include "toaster/toast_lib/events/mouse_event.hpp"
 #include "toaster/toast_lib/events/window_event.hpp"
+
+#include "toaster/toast_scene/entity.hpp"
+#include "toaster/toast_scene/scene.hpp"
 
 namespace toaster
 {
@@ -30,12 +34,23 @@ namespace toaster
 		bool onMouseMoveEvent(MouseMoveEvent &p_event);
 		bool onWindowResizeEvent(WindowResizeEvent &p_event);
 
+		RefPtr<Scene> m_scene;
+
 		RefPtr<Renderer2D> m_renderer2d;
 
-		RefPtr<gpu::Texture2D> m_texture;
-		RefPtr<gpu::Texture2D> m_peeberTex;
+		RefPtr<gpu::Texture2D>   m_texture;
+		RefPtr<gpu::Texture2D>   m_peeberTex;
+		RefPtr<gpu::Framebuffer> m_framebuffer;
+
+		glm::vec2 m_viewportSize{0.0f, 0.0f};
+
+		bool m_viewportFocused{false};
+		bool m_viewportHovered{false};
 
 		OrthoCameraController m_cameraController;
-		float32 m_time{0.0f};
+		float32               m_time{0.0f};
+
+		glm::vec4 m_colour{1.0f};
+
 	};
 }

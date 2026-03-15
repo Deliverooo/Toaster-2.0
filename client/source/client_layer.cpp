@@ -41,7 +41,7 @@ namespace toaster
 		m_renderer2d->begin(m_cameraController.getCamera().getViewMatrix(), m_cameraController.getCamera().getProjectionMatrix());
 
 
-		m_renderer2d->submitQuad({2.0f, 0.0f, -0.1f}, {1.0f, 1.0f}, m_texture);
+		// m_renderer2d->submitQuad({2.0f, 0.0f, -0.1f}, {1.0f, 1.0f}, m_texture);
 		m_renderer2d->submitQuad({0.0f, 1.0f, -0.1f}, {1.0f, 1.0f}, m_texture2);
 		m_renderer2d->submitQuad({1.0f, 0.5f, -0.1f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f});
 

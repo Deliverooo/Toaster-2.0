@@ -21,6 +21,9 @@ namespace toaster
 		void begin();
 		void end();
 
+		void setBlockEvents(bool p_block);
+
 	private:
+		bool m_blockEvents{false};
 	};
 }

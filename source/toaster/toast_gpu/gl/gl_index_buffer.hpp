@@ -16,10 +16,12 @@ namespace toaster::gpu
 		void bind() override;
 		void unbind() override;
 
+		[[nodiscard]] uint32 getID() const override;
+
 		uint32 getIndexCount() override;
 
 	private:
-		gl::UInt m_ebo{0u};
-		uint32   m_indexCount{0u};
+		gl::ID m_ebo{0u};
+		uint32 m_indexCount{0u};
 	};
 }

@@ -36,9 +36,9 @@ namespace toaster::gpu
 
 	private:
 		std::string m_name;
-
-		gl::UInt m_programId{0u};
+		gl::ID m_programId{0u};
 
 		std::unordered_map<std::string, gl::Int> m_uniformLocations;
+
 	};
 }

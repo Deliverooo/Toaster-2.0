@@ -18,6 +18,8 @@ namespace toaster::gpu
 		virtual void bind() = 0;
 		virtual void unbind() = 0;
 
+		[[nodiscard]] virtual uint32 getID() const = 0;
+
 		virtual uint32 getIndexCount() = 0;
 	};
 }

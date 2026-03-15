@@ -1,5 +1,6 @@
 #pragma once
 
+#include "toaster/toast_gpu/framebuffer.hpp"
 #include "toaster/toast_gpu/texture.hpp"
 #include "toaster/toast_gpu/vertex_array.hpp"
 
@@ -12,6 +13,8 @@ namespace toaster
 	struct Renderer2DCreateInfo
 	{
 		uint32 maxQuads{10000u};
+
+		RefPtr<gpu::Framebuffer> targetFramebuffer{nullptr};
 	};
 
 	class Renderer2D
@@ -25,16 +28,19 @@ namespace toaster
 
 		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
 		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
+		void submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour);
 
 		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::Texture2D> &p_texture,
 						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f});
 		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::Texture2D> &p_texture,
 						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f});
+		void submitQuad(const tsm::float4x4 &p_transform, const RefPtr<gpu::Texture2D> &p_texture,
+						const tsm::float4 &  p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f});
 
 		// TODO: Target framebuffer
 		// void setTargetFramebuffer(const RefPtr<gpu::Framebuffer> &p_target_framebuffer);
 	private:
-		void _beginNewBatch();
+		void   _beginNewBatch();
 		uint32 _getTextureSlotIndex(const RefPtr<gpu::Texture2D> &p_texture);
 
 		Renderer2DCreateInfo m_createInfo;

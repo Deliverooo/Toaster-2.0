@@ -182,18 +182,18 @@ namespace gl
 	}
 
 	// Source -> Windows SDK's <gl/GL.h>
-	enum class ClearMaskBits : Bitfield
+	enum class BufferMaskBits : Bitfield
 	{
 		eColor = 0x00004000, eDepth = 0x00000100, eStencil = 0x00000400
 	};
 
-	using ClearMaskFlags = Flags<ClearMaskBits>;
+	using BufferMaskFlags = Flags<BufferMaskBits>;
 
 	template<>
-	struct FlagTraits<ClearMaskBits>
+	struct FlagTraits<BufferMaskBits>
 	{
-		static constexpr bool           isBitmask = true;
-		static constexpr ClearMaskFlags allFlags  = ClearMaskBits::eColor | ClearMaskBits::eDepth | ClearMaskBits::eStencil;
+		static constexpr bool            isBitmask = true;
+		static constexpr BufferMaskFlags allFlags  = BufferMaskBits::eColor | BufferMaskBits::eDepth | BufferMaskBits::eStencil;
 	};
 
 	/** If the parameters of a function call do not match the set of parameters allowed by OpenGL,
@@ -364,20 +364,34 @@ namespace gl
 
 	enum class DataType : Enum
 	{
-		eHalfFloat                   = GL_HALF_FLOAT,
-		eFloat                       = GL_FLOAT,
-		eDouble                      = GL_DOUBLE,
-		eFixed                       = GL_FIXED,
-		eByte                        = GL_BYTE,
-		eUnsignedByte                = GL_UNSIGNED_BYTE,
-		eShort                       = GL_SHORT,
-		eUnsignedShort               = GL_UNSIGNED_SHORT,
-		eInt                         = GL_INT,
-		eBool                        = GL_BOOL,
-		eUnsignedInt                 = GL_UNSIGNED_INT,
-		eInt_2_10_10_10_Rev          = GL_INT_2_10_10_10_REV,
-		eUnsignedInt_2_10_10_10_Rev  = GL_UNSIGNED_INT_2_10_10_10_REV,
-		eUnsignedInt_10F_11F_11F_Rev = GL_UNSIGNED_INT_10F_11F_11F_REV
+		eHalfFloat                     = GL_HALF_FLOAT,
+		eFloat                         = GL_FLOAT,
+		eFloat_32_UnsignedInt_24_8_REV = GL_FLOAT_32_UNSIGNED_INT_24_8_REV,
+		eDouble                        = GL_DOUBLE,
+		eFixed                         = GL_FIXED,
+		eByte                          = GL_BYTE,
+		eUnsignedByte                  = GL_UNSIGNED_BYTE,
+		eUnsignedByte_3_3_2            = GL_UNSIGNED_BYTE_3_3_2,
+		eUnsignedByte_2_3_3_REV        = GL_UNSIGNED_BYTE_2_3_3_REV,
+		eShort                         = GL_SHORT,
+		eUnsignedShort                 = GL_UNSIGNED_SHORT,
+		eUnsignedShort_5_6_5           = GL_UNSIGNED_SHORT_5_6_5,
+		eUnsignedShort_5_6_5_REV       = GL_UNSIGNED_SHORT_5_6_5_REV,
+		eUnsignedShort_4_4_4_4         = GL_UNSIGNED_SHORT_4_4_4_4,
+		eUnsignedShort_4_4_4_4_REV     = GL_UNSIGNED_SHORT_4_4_4_4_REV,
+		eUnsignedShort_5_5_5_1         = GL_UNSIGNED_SHORT_5_5_5_1,
+		eUnsignedShort_1_5_5_5_REV     = GL_UNSIGNED_SHORT_1_5_5_5_REV,
+		eInt                           = GL_INT,
+		eInt_2_10_10_10_Rev            = GL_INT_2_10_10_10_REV,
+		eBool                          = GL_BOOL,
+		eUnsignedInt                   = GL_UNSIGNED_INT,
+		eUnsignedInt_8_8_8_8           = GL_UNSIGNED_INT_8_8_8_8,
+		eUnsignedInt_8_8_8_8_REV       = GL_UNSIGNED_INT_8_8_8_8_REV,
+		eUnsignedInt_10_10_10_2        = GL_UNSIGNED_INT_10_10_10_2,
+		eUnsignedInt_2_10_10_10_REV    = GL_UNSIGNED_INT_2_10_10_10_REV,
+		eUnsignedInt_24_8              = GL_UNSIGNED_INT_24_8,
+		eUnsignedInt_10F_11F_11F_REV   = GL_UNSIGNED_INT_10F_11F_11F_REV,
+		eUnsignedInt_5_9_9_9_REV       = GL_UNSIGNED_INT_5_9_9_9_REV
 	};
 
 	enum class Format : Enum
@@ -472,7 +486,17 @@ namespace gl
 		eCompressedRGBABPTCUnorm        = GL_COMPRESSED_RGBA_BPTC_UNORM,
 		eCompressedSRGBAlphaBPTCUnorm   = GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM,
 		eCompressedRGBBPTCSignedFloat   = GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT,
-		eCompressedRGBBPTCUnsignedFloat = GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT
+		eCompressedRGBBPTCUnsignedFloat = GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT,
+
+		/** Depth Formats */
+		eDepthComponent16  = GL_DEPTH_COMPONENT16,
+		eDepthComponent24  = GL_DEPTH_COMPONENT24,
+		eDepthComponent32  = GL_DEPTH_COMPONENT32,
+		eDepthComponent32F = GL_DEPTH_COMPONENT32F,
+
+		/** Depth Stencil Formats */
+		eDepth24Stencil8  = GL_DEPTH24_STENCIL8,
+		eDepth32FStencil8 = GL_DEPTH32F_STENCIL8
 	};
 
 	enum class SamplerParameter : Enum
@@ -817,5 +841,79 @@ namespace gl
 	enum class FaceOrientation : Enum
 	{
 		eClockWise = GL_CW, eCounterClockWise = GL_CCW,
+	};
+
+	enum class FramebufferType : Enum
+	{
+		eFramebuffer = GL_FRAMEBUFFER, eDrawFramebuffer = GL_DRAW_FRAMEBUFFER, eReadFramebuffer = GL_READ_FRAMEBUFFER
+	};
+
+	/** Read the docs!!! -> https://wikis.khronos.org/opengl/GLAPI/glFramebufferParameter */
+	enum class FramebufferParameter : Enum
+	{
+		eDefaultWidth                = GL_FRAMEBUFFER_DEFAULT_WIDTH,
+		eDefaultHeight               = GL_FRAMEBUFFER_DEFAULT_HEIGHT,
+		eDefaultLayers               = GL_FRAMEBUFFER_DEFAULT_LAYERS,
+		eDefaultSamples              = GL_FRAMEBUFFER_DEFAULT_SAMPLES,
+		eDefaultFixedSampleLocations = GL_FRAMEBUFFER_DEFAULT_FIXED_SAMPLE_LOCATIONS
+	};
+
+	enum class FramebufferAttachment : Enum
+	{
+		eColor0       = GL_COLOR_ATTACHMENT0,
+		eColor1       = GL_COLOR_ATTACHMENT1,
+		eColor2       = GL_COLOR_ATTACHMENT2,
+		eColor3       = GL_COLOR_ATTACHMENT3,
+		eColor4       = GL_COLOR_ATTACHMENT4,
+		eColor5       = GL_COLOR_ATTACHMENT5,
+		eColor6       = GL_COLOR_ATTACHMENT6,
+		eColor7       = GL_COLOR_ATTACHMENT7,
+		eColor8       = GL_COLOR_ATTACHMENT8,
+		eColor9       = GL_COLOR_ATTACHMENT9,
+		eColor10      = GL_COLOR_ATTACHMENT10,
+		eColor11      = GL_COLOR_ATTACHMENT11,
+		eColor12      = GL_COLOR_ATTACHMENT12,
+		eColor13      = GL_COLOR_ATTACHMENT13,
+		eColor14      = GL_COLOR_ATTACHMENT14,
+		eColor15      = GL_COLOR_ATTACHMENT15,
+		eColor16      = GL_COLOR_ATTACHMENT16,
+		eColor17      = GL_COLOR_ATTACHMENT17,
+		eColor18      = GL_COLOR_ATTACHMENT18,
+		eColor19      = GL_COLOR_ATTACHMENT19,
+		eColor20      = GL_COLOR_ATTACHMENT20,
+		eColor21      = GL_COLOR_ATTACHMENT21,
+		eColor22      = GL_COLOR_ATTACHMENT22,
+		eColor23      = GL_COLOR_ATTACHMENT23,
+		eColor24      = GL_COLOR_ATTACHMENT24,
+		eColor25      = GL_COLOR_ATTACHMENT25,
+		eColor26      = GL_COLOR_ATTACHMENT26,
+		eColor27      = GL_COLOR_ATTACHMENT27,
+		eColor28      = GL_COLOR_ATTACHMENT28,
+		eColor29      = GL_COLOR_ATTACHMENT29,
+		eColor30      = GL_COLOR_ATTACHMENT30,
+		eColor31      = GL_COLOR_ATTACHMENT31,
+		eDepth        = GL_DEPTH_ATTACHMENT,
+		eStencil      = GL_STENCIL_ATTACHMENT,
+		eDepthStencil = GL_DEPTH_STENCIL_ATTACHMENT
+	};
+
+	/** Read the docs!!! -> https://wikis.khronos.org/opengl/GLAPI/glCheckFramebufferStatus */
+	enum class FramebufferStatus : Enum
+	{
+		eComplete                    = GL_FRAMEBUFFER_COMPLETE,
+		eUndefined                   = GL_FRAMEBUFFER_UNDEFINED,
+		eIncompleteAttachment        = GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT,
+		eIncompleteMissingAttachment = GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT,
+		eIncompleteDrawBuffer        = GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER,
+		eIncompleteReadBuffer        = GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER,
+		eUnsupported                 = GL_FRAMEBUFFER_UNSUPPORTED,
+		eIncompleteMultisample       = GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE,
+		eIncompleteLayerTargets      = GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS
+	};
+
+	// Yes, that's it...
+	enum class RenderbufferType : Enum
+	{
+		eRenderbuffer = GL_RENDERBUFFER
 	};
 }

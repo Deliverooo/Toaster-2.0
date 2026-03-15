@@ -11,6 +11,9 @@ set(GPU_SRC
 		texture.hpp
 		texture.cpp
 
+		framebuffer.cpp
+		framebuffer.hpp
+
 		gpu_api.hpp
 		gpu_api.cpp
 
@@ -32,6 +35,9 @@ if (${WITH_OPENGL_BACKEND})
 
 			gl/gl_gpu_context.hpp
 			gl/gl_gpu_context.cpp
+
+			gl/gl_framebuffer.cpp
+			gl/gl_framebuffer.hpp
 
 			gl/gl_vertex_array.cpp
 			gl/gl_vertex_array.hpp

@@ -25,7 +25,7 @@ namespace toaster::gpu
 		std::vector<RefPtr<VertexBuffer> > m_vertexBuffers;
 		RefPtr<IndexBuffer>                m_indexBuffer;
 
-		gl::UInt m_vao{0u};
-		uint32   m_vboIndex{0u};
+		gl::ID m_vao{0u};
+		uint32 m_vboIndex{0u};
 	};
 }

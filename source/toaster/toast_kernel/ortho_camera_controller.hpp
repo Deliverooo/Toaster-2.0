@@ -15,6 +15,8 @@ namespace toaster
 		void onUpdate(float32 p_dt);
 		void onEvent(Event &p_event);
 
+		void onResize(float32 p_width, float32 p_height);
+
 		[[nodiscard]] const OrthoCamera &getCamera() const;
 
 	private:
