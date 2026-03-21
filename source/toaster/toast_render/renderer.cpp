@@ -8,7 +8,7 @@
 
 namespace toaster
 {
-	void Renderer::submitGeometry(const RefPtr<gpu::VertexArray> &p_vertex_array, const RefPtr<gpu::Shader> &p_shader, const glm::mat4 &p_model_matrix)
+	void Renderer::submitGeometry(const RefPtr<gpu::IVertexArray> &p_vertex_array, const RefPtr<gpu::IShader> &p_shader, const glm::mat4 &p_model_matrix)
 	{
 		p_shader->bind();
 		p_shader->setUniform("u_Model", p_model_matrix);

@@ -6,7 +6,7 @@
 
 namespace toaster::gpu
 {
-	class GLTexture2D : public Texture2D
+	class GLTexture2D : public ITexture2D
 	{
 	public:
 		GLTexture2D(uint32 p_width, uint32 p_height);
@@ -22,7 +22,7 @@ namespace toaster::gpu
 		[[nodiscard]] uint32 getWidth() const override;
 		[[nodiscard]] uint32 getHeight() const override;
 
-		bool operator==(const Texture &p_other) const override;
+		bool operator==(const ITexture &p_other) const override;
 
 	private:
 		io::filesystem::Path m_path;

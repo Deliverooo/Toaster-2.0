@@ -15,8 +15,8 @@ namespace toaster
 	void ClientLayer::onInit()
 	{
 		io::filesystem::setWorkingDirectory("../../../"); // The main Toaster dir (where the resource folder is)
-		m_texture  = gpu::Texture2D::create("resources/textures/Orbo_02.png");
-		m_texture2 = gpu::Texture2D::create("resources/textures/0001.png");
+		m_texture  = gpu::ITexture2D::create("resources/textures/Orbo_02.png");
+		m_texture2 = gpu::ITexture2D::create("resources/textures/0001.png");
 
 		Renderer2DCreateInfo renderer_2d_create_info;
 		renderer_2d_create_info.maxQuads = 10000u;

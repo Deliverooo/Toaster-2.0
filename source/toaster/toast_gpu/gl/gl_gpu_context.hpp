@@ -7,7 +7,7 @@
 
 namespace toaster::gpu
 {
-	class GLGPUContext final : public GPUContext
+	class GLGPUContext final : public IGPUContext
 	{
 	public:
 		explicit GLGPUContext(GLFWwindow *p_window);

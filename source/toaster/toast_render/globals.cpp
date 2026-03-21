@@ -10,9 +10,9 @@ namespace toaster
 
 		struct
 		{
-			RefPtr<gpu::VertexBuffer> vertexBuffer;
-			RefPtr<gpu::IndexBuffer>  indexBuffer;
-			RefPtr<gpu::VertexArray>  vertexArray;
+			RefPtr<gpu::IVertexBuffer> vertexBuffer;
+			RefPtr<gpu::IIndexBuffer>  indexBuffer;
+			RefPtr<gpu::IVertexArray>  vertexArray;
 		} g_quad;
 	};
 
@@ -28,19 +28,19 @@ namespace toaster
 	{
 		s_globalData = new GlobalData{};
 
-		io::filesystem::setWorkingDirectory("../../../source/toaster/toast_shaders");
+		const io::filesystem::Path shader_dir = "../source/toaster/toast_shaders/";
 
 		s_globalData->g_shaderLibrary = make_reference<ShaderLibrary>();
 
-		const auto quad_shader = gpu::Shader::create("Quad", {
-														 {gpu::EShaderType::eVertex, io::filesystem::readFile("quad.vert.glsl").c_str()},
-														 {gpu::EShaderType::ePixel, io::filesystem::readFile("quad.pixel.glsl").c_str()}
+		const auto quad_shader = gpu::IShader::create("Quad", {
+														 {gpu::EShaderType::eVertex, io::filesystem::readFile(shader_dir / "quad.vert.glsl").c_str()},
+														 {gpu::EShaderType::ePixel, io::filesystem::readFile(shader_dir / "quad.pixel.glsl").c_str()}
 													 });
 		s_globalData->g_shaderLibrary->add("Quad", quad_shader);
 
-		auto mesh_shader = gpu::Shader::create("Mesh", {
-												   {gpu::EShaderType::eVertex, io::filesystem::readFile("mesh.vert.glsl").c_str()},
-												   {gpu::EShaderType::ePixel, io::filesystem::readFile("mesh.pixel.glsl").c_str()}
+		auto mesh_shader = gpu::IShader::create("Mesh", {
+												   {gpu::EShaderType::eVertex, io::filesystem::readFile(shader_dir / "mesh.vert.glsl").c_str()},
+												   {gpu::EShaderType::ePixel, io::filesystem::readFile(shader_dir / "mesh.pixel.glsl").c_str()}
 											   });
 		s_globalData->g_shaderLibrary->add("Mesh", mesh_shader);
 
@@ -53,13 +53,13 @@ namespace toaster
 			};
 			std::vector<uint32> indices = {0, 1, 3, 1, 2, 3};
 
-			s_globalData->g_quad.vertexBuffer = gpu::VertexBuffer::create(vertices.data(), vertices.size() * sizeof(QuadVertex));
+			s_globalData->g_quad.vertexBuffer = gpu::IVertexBuffer::create(vertices.data(), vertices.size() * sizeof(QuadVertex));
 			const auto vbl                    = gpu::VertexBufferLayout{{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
 			s_globalData->g_quad.vertexBuffer->setLayout(vbl);
 
-			s_globalData->g_quad.indexBuffer = gpu::IndexBuffer::create(indices.data(), indices.size());
+			s_globalData->g_quad.indexBuffer = gpu::IIndexBuffer::create(indices.data(), indices.size());
 
-			s_globalData->g_quad.vertexArray = gpu::VertexArray::create();
+			s_globalData->g_quad.vertexArray = gpu::IVertexArray::create();
 			s_globalData->g_quad.vertexArray->addVertexBuffer(s_globalData->g_quad.vertexBuffer);
 			s_globalData->g_quad.vertexArray->setIndexBuffer(s_globalData->g_quad.indexBuffer);
 		}
@@ -75,7 +75,7 @@ namespace toaster
 		delete s_globalData;
 	}
 
-	RefPtr<gpu::VertexArray> Globals::quadVertexArray()
+	RefPtr<gpu::IVertexArray> Globals::quadVertexArray()
 	{
 		return s_globalData->g_quad.vertexArray;
 	}

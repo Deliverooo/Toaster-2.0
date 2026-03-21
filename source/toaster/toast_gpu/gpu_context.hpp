@@ -7,10 +7,10 @@ struct GLFWwindow;
 
 namespace toaster::gpu
 {
-	class GPUContext
+	class IGPUContext
 	{
 	public:
-		static GPUContext *create(GLFWwindow *p_window);
-		virtual            ~GPUContext() = default;
+		static IGPUContext *create(GLFWwindow *p_window);
+		virtual            ~IGPUContext() = default;
 	};
 }

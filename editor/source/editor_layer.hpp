@@ -1,5 +1,6 @@
 #pragma once
 
+#include "panels/scene_hierarchy_panel.hpp"
 #include "toaster/toast_gpu/framebuffer.hpp"
 #include "toaster/toast_kernel/layer.hpp"
 #include "toaster/toast_render/renderer_2d.hpp"
@@ -36,11 +37,13 @@ namespace toaster
 
 		RefPtr<Scene> m_scene;
 
+		RefPtr<SceneHierarchyPanel> m_sceneHierarchyPanel;
+
 		RefPtr<Renderer2D> m_renderer2d;
 
-		RefPtr<gpu::Texture2D>   m_texture;
-		RefPtr<gpu::Texture2D>   m_peeberTex;
-		RefPtr<gpu::Framebuffer> m_framebuffer;
+		RefPtr<gpu::ITexture2D>   m_texture;
+		RefPtr<gpu::ITexture2D>   m_peeberTex;
+		RefPtr<gpu::IFramebuffer> m_framebuffer;
 
 		glm::vec2 m_viewportSize{0.0f, 0.0f};
 
@@ -51,6 +54,8 @@ namespace toaster
 		float32               m_time{0.0f};
 
 		glm::vec4 m_colour{1.0f};
+
+		Entity m_cameraEntity;
 
 	};
 }

@@ -14,7 +14,7 @@ namespace toaster
 {
 	namespace gpu
 	{
-		class GPUContext;
+		class IGPUContext;
 	}
 
 	struct ScreenPos
@@ -69,12 +69,12 @@ namespace toaster
 
 		void setTitle(const std::string &p_title);
 
-		[[nodiscard]] gpu::GPUContext *getGPUContext() const;
+		[[nodiscard]] gpu::IGPUContext *getGPUContext() const;
 
 		[[nodiscard]] GLFWwindow *getNativeWindow() const;
 
 	private:
-		gpu::GPUContext *m_gpuContext{nullptr};
+		gpu::IGPUContext *m_gpuContext{nullptr};
 
 		GLFWwindow *m_window{nullptr};
 

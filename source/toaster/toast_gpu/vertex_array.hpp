@@ -5,19 +5,19 @@
 
 namespace toaster::gpu
 {
-	class VertexArray
+	class IVertexArray
 	{
 	public:
-		static RefPtr<VertexArray> create();
-		virtual                    ~VertexArray() = default;
+		static RefPtr<IVertexArray> create();
+		virtual                    ~IVertexArray() = default;
 
 		virtual void bind() = 0;
 		virtual void unbind() = 0;
 
-		virtual void addVertexBuffer(const RefPtr<VertexBuffer> &p_vertex_buffer) = 0;
-		virtual void setIndexBuffer(const RefPtr<IndexBuffer> &p_index_buffer) = 0;
+		virtual void addVertexBuffer(const RefPtr<IVertexBuffer> &p_vertex_buffer) = 0;
+		virtual void setIndexBuffer(const RefPtr<IIndexBuffer> &p_index_buffer) = 0;
 
-		[[nodiscard]] virtual const std::vector<RefPtr<VertexBuffer> > &getVertexBuffers() const = 0;
-		[[nodiscard]] virtual const RefPtr<IndexBuffer> &               getIndexBuffer() const = 0;
+		[[nodiscard]] virtual const std::vector<RefPtr<IVertexBuffer> > &getVertexBuffers() const = 0;
+		[[nodiscard]] virtual const RefPtr<IIndexBuffer> &               getIndexBuffer() const = 0;
 	};
 }

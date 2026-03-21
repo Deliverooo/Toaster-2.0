@@ -6,7 +6,7 @@
 
 namespace toaster::gpu
 {
-	class GLVertexArray : public VertexArray
+	class GLVertexArray : public IVertexArray
 	{
 	public:
 		GLVertexArray();
@@ -15,15 +15,15 @@ namespace toaster::gpu
 		void bind() override;
 		void unbind() override;
 
-		void addVertexBuffer(const RefPtr<VertexBuffer> &p_vertex_buffer) override;
-		void setIndexBuffer(const RefPtr<IndexBuffer> &p_index_buffer) override;
+		void addVertexBuffer(const RefPtr<IVertexBuffer> &p_vertex_buffer) override;
+		void setIndexBuffer(const RefPtr<IIndexBuffer> &p_index_buffer) override;
 
-		[[nodiscard]] const std::vector<RefPtr<VertexBuffer> > &getVertexBuffers() const override;
-		[[nodiscard]] const RefPtr<IndexBuffer> &               getIndexBuffer() const override;
+		[[nodiscard]] const std::vector<RefPtr<IVertexBuffer> > &getVertexBuffers() const override;
+		[[nodiscard]] const RefPtr<IIndexBuffer> &               getIndexBuffer() const override;
 
 	private:
-		std::vector<RefPtr<VertexBuffer> > m_vertexBuffers;
-		RefPtr<IndexBuffer>                m_indexBuffer;
+		std::vector<RefPtr<IVertexBuffer> > m_vertexBuffers;
+		RefPtr<IIndexBuffer>                m_indexBuffer;
 
 		gl::ID m_vao{0u};
 		uint32 m_vboIndex{0u};

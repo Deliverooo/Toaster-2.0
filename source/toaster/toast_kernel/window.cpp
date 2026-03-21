@@ -53,7 +53,7 @@ namespace toaster
 
 		m_window = glfwCreateWindow(static_cast<int32>(p_width), static_cast<int32>(p_height), p_title.c_str(), nullptr, nullptr);
 
-		m_gpuContext = gpu::GPUContext::create(m_window);
+		m_gpuContext = gpu::IGPUContext::create(m_window);
 
 		glfwSetWindowUserPointer(m_window, &m_callbackData);
 
@@ -258,7 +258,7 @@ namespace toaster
 		glfwSetWindowTitle(m_window, p_title.c_str());
 	}
 
-	gpu::GPUContext *Window::getGPUContext() const
+	gpu::IGPUContext *Window::getGPUContext() const
 	{
 		return m_gpuContext;
 	}

@@ -3,7 +3,7 @@
 
 namespace toaster::gpu
 {
-	RefPtr<VertexArray> VertexArray::create()
+	RefPtr<IVertexArray> IVertexArray::create()
 	{
 		return std::make_shared<GLVertexArray>();
 	}

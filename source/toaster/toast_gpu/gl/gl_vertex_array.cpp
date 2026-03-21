@@ -43,7 +43,7 @@ namespace toaster::gpu
 		gl::bindVertexArray(0);
 	}
 
-	void GLVertexArray::addVertexBuffer(const RefPtr<VertexBuffer> &p_vertex_buffer)
+	void GLVertexArray::addVertexBuffer(const RefPtr<IVertexBuffer> &p_vertex_buffer)
 	{
 		TST_ASSERT_MSG(!p_vertex_buffer->getLayout().getElements().empty(), "Vertex Buffer has no layout!");
 
@@ -108,18 +108,18 @@ namespace toaster::gpu
 		m_vertexBuffers.push_back(p_vertex_buffer);
 	}
 
-	void GLVertexArray::setIndexBuffer(const RefPtr<IndexBuffer> &p_index_buffer)
+	void GLVertexArray::setIndexBuffer(const RefPtr<IIndexBuffer> &p_index_buffer)
 	{
 		gl::vertexArrayElementBuffer(m_vao, p_index_buffer->getID());
 		m_indexBuffer = p_index_buffer;
 	}
 
-	const std::vector<RefPtr<VertexBuffer> > &GLVertexArray::getVertexBuffers() const
+	const std::vector<RefPtr<IVertexBuffer> > &GLVertexArray::getVertexBuffers() const
 	{
 		return m_vertexBuffers;
 	}
 
-	const RefPtr<IndexBuffer> &GLVertexArray::getIndexBuffer() const
+	const RefPtr<IIndexBuffer> &GLVertexArray::getIndexBuffer() const
 	{
 		return m_indexBuffer;
 	}

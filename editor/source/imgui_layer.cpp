@@ -25,8 +25,8 @@ namespace toaster
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
 		// io.Fonts->AddFontFromFileTTF("resources/fonts/Roboto/Roboto-Regular.ttf", 16.0f);
-		// io.Fonts->AddFontFromFileTTF("resources/fonts/JetBrainsMono-2.304/fonts/ttf/JetBrainsMono-Medium.ttf", 16.0f);
-		io.Fonts->AddFontFromFileTTF("resources/fonts/DejaVuSans/DejaVuSans.ttf", 16.0f);
+		io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\UDDigiKyokashoN-R.ttc", 16.0f, nullptr, io.Fonts->GetGlyphRangesChineseFull());
+		// io.Fonts->AddFontFromFileTTF("resources/fonts/DejaVuSans/DejaVuSans.ttf", 16.0f, nullptr, io.Fonts->GetGlyphRangesChineseFull());
 
 		ImGui_ImplGlfw_InitForOpenGL(getApp().getWindow().getNativeWindow(), true);
 		ImGui_ImplOpenGL3_Init("#version 460 core");

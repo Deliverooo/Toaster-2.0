@@ -6,7 +6,7 @@
 
 namespace toaster::gpu
 {
-	class GLVertexBuffer : public VertexBuffer
+	class GLVertexBuffer : public IVertexBuffer
 	{
 	public:
 		explicit GLVertexBuffer(uint32 p_size);

@@ -53,9 +53,9 @@ namespace toaster
 
 		static RefPtr<Mesh> importFromFile(const io::filesystem::Path &p_path);
 
-		[[nodiscard]] RefPtr<gpu::VertexBuffer> getVertexBuffer() const;
-		[[nodiscard]] RefPtr<gpu::IndexBuffer>  getIndexBuffer() const;
-		[[nodiscard]] RefPtr<gpu::VertexArray>  getVertexArray() const;
+		[[nodiscard]] RefPtr<gpu::IVertexBuffer> getVertexBuffer() const;
+		[[nodiscard]] RefPtr<gpu::IIndexBuffer>  getIndexBuffer() const;
+		[[nodiscard]] RefPtr<gpu::IVertexArray>  getVertexArray() const;
 
 		[[nodiscard]] const std::vector<MeshVertex> &getVertices() const;
 		[[nodiscard]] const std::vector<uint32> &    getIndices() const;
@@ -77,8 +77,8 @@ namespace toaster
 		std::vector<MeshVertex> m_vertices;
 		std::vector<uint32>     m_indices;
 
-		RefPtr<gpu::VertexBuffer> m_vertexBuffer;
-		RefPtr<gpu::IndexBuffer>  m_indexBuffer;
-		RefPtr<gpu::VertexArray>  m_vertexArray;
+		RefPtr<gpu::IVertexBuffer> m_vertexBuffer;
+		RefPtr<gpu::IIndexBuffer>  m_indexBuffer;
+		RefPtr<gpu::IVertexArray>  m_vertexArray;
 	};
 }

@@ -5,7 +5,7 @@
 
 namespace toaster::gpu
 {
-	class GLFramebuffer : public Framebuffer
+	class GLFramebuffer : public IFramebuffer
 	{
 	public:
 		GLFramebuffer(const FramebufferCreateInfo &p_framebuffer_create_info);

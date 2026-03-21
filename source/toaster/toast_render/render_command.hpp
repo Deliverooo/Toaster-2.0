@@ -14,8 +14,8 @@ namespace toaster
 
 		static void setViewport(const glm::vec4 &p_viewport);
 
-		static void drawIndexed(const RefPtr<gpu::VertexArray> &p_vertex_array, uint32 p_index_count = 0);
-		static void drawIndexedBaseVertex(const RefPtr<gpu::VertexArray> &p_vertex_array, uint32 p_index_count, uint32 p_base_index, uint32 p_base_vertex);
+		static void drawIndexed(const RefPtr<gpu::IVertexArray> &p_vertex_array, uint32 p_index_count = 0);
+		static void drawIndexedBaseVertex(const RefPtr<gpu::IVertexArray> &p_vertex_array, uint32 p_index_count, uint32 p_base_index, uint32 p_base_vertex);
 
 	private:
 		// We only want the application to be the one initializing it

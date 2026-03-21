@@ -12,7 +12,7 @@ namespace toaster::gpu
 {
 	gl::ShaderStage getShaderStage(EShaderType p_stage);
 
-	class GLShader : public Shader
+	class GLShader : public IShader
 	{
 	public:
 		GLShader(std::string p_name, const std::map<EShaderType, ShaderBlob> &p_shader_bytecode_map);

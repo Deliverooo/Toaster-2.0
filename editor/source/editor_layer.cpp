@@ -6,14 +6,18 @@
 #include "toaster/toast_render/globals.hpp"
 #include "toaster/toast_render/renderer.hpp"
 
+#include "toaster/toast_scene/components.hpp"
+
 #include "editor_application.hpp"
 
 #include <imgui.h>
+
+#include "toaster/toast_lib/logging.hpp"
 namespace ig = ImGui;
 
 namespace toaster
 {
-	EditorLayer::EditorLayer(Application *p_app) : IAppLayer(p_app), m_cameraController(16.0f / 9.0f, true)
+	EditorLayer::EditorLayer(Application *p_app) : IAppLayer(p_app), m_cameraController(1920.0f / 1080.0f, true)
 	{
 	}
 
@@ -21,26 +25,54 @@ namespace toaster
 	{
 		m_scene = make_reference<Scene>();
 
-		m_texture   = gpu::Texture2D::create("resources/textures/Orbo_02.png");
-		m_peeberTex = gpu::Texture2D::create("resources/textures/peeber.png");
+		m_sceneHierarchyPanel = make_reference<SceneHierarchyPanel>(m_scene);
+
+		m_texture   = gpu::ITexture2D::create("resources/textures/Orbo_02.png");
+		m_peeberTex = gpu::ITexture2D::create("resources/textures/peeber.png");
 
 		gpu::FramebufferCreateInfo framebuffer_create_info{};
 		framebuffer_create_info.width  = 1920;
 		framebuffer_create_info.height = 1080;
-		m_framebuffer                  = gpu::Framebuffer::create(framebuffer_create_info);
+		m_framebuffer                  = gpu::IFramebuffer::create(framebuffer_create_info);
 
 		Renderer2DCreateInfo renderer_2d_create_info;
-		renderer_2d_create_info.maxQuads          = 1u;
-		renderer_2d_create_info.targetFramebuffer = m_framebuffer;
-		m_renderer2d                              = make_reference<Renderer2D>(renderer_2d_create_info);
+		renderer_2d_create_info.maxQuads = 1u;
+		m_renderer2d                     = make_reference<Renderer2D>(renderer_2d_create_info);
 
-		Entity entity = m_scene->createEntity();
+		{
+			Entity entity = m_scene->createEntity();
 
-		auto &tc     = entity.getComponent<TransformComponent>();
-		tc.transform = glm::translate(glm::mat4{1.0f}, glm::vec3(0.0f, 0.0f, -0.1f));
-		auto &src    = entity.addComponent<SpriteRendererComponent>();
-		src.colour   = glm::vec4{1.0f, 1.0f, 1.0f, 1.0f};
-		src.texture  = m_peeberTex;
+			auto &tc                = entity.getComponent<TransformComponent>();
+			tc.transform            = glm::translate(glm::scale(glm::mat4{1.0f}, {1.0f, 1.0f, 1.0f}), {0.0f, 0.0f, -0.1f});
+			auto &[colour, texture] = entity.addComponent<SpriteRendererComponent>();
+			colour                  = {1.0f, 1.0f, 1.0f, 1.0f};
+			texture                 = m_texture;
+		}
+
+		{
+			m_cameraEntity = m_scene->createEntity(u8"オルボ　ステトソン");
+			auto &cc       = m_cameraEntity.addComponent<CameraComponent>();
+
+			class TestScript : public ScriptableEntity
+			{
+			public:
+				void onCreate() override
+				{
+				}
+
+				void onUpdate(float32 p_dt) override
+				{
+				}
+
+				void onDestroy() override
+				{
+				}
+
+			private:
+			};
+
+			m_cameraEntity.addComponent<NativeScriptComponent>().bind<TestScript>();
+		}
 	}
 
 	void EditorLayer::onDestroy()
@@ -51,6 +83,15 @@ namespace toaster
 	{
 		m_time += p_dt;
 
+		if (const auto &[width, height] = m_framebuffer->getCreateInfo();
+			m_viewportSize.x > 0.0f && m_viewportSize.y > 0.0f && (static_cast<float32>(width) != m_viewportSize.x || static_cast<float32>(height) != m_viewportSize.y))
+		{
+			m_framebuffer->resize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
+			m_cameraController.onResize(m_viewportSize.x, m_viewportSize.y);
+			m_scene->setViewportSize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
+			RenderCommand::setViewport({0.0f, 0.0f, m_viewportSize});
+		}
+
 		if (m_viewportFocused)
 			m_cameraController.onUpdate(p_dt);
 
@@ -58,14 +99,10 @@ namespace toaster
 		RenderCommand::clearColour({0.2f, 0.3f, 0.3f, 1.0f});
 		RenderCommand::clear();
 
-		m_renderer2d->begin(m_cameraController.getCamera().getViewMatrix(), m_cameraController.getCamera().getProjectionMatrix());
-		m_scene->onUpdate(m_renderer2d, p_dt);
+		m_scene->onUpdate(p_dt);
+		m_scene->onRender(m_renderer2d, p_dt);
 
-		m_renderer2d->submitQuad({2.0f, 0.0f, -0.1f}, {1.0f, 1.0f}, m_peeberTex);
-		m_renderer2d->submitQuad({0.0f, 1.0f, -0.1f}, {1.0f, 1.0f}, m_peeberTex);
-		m_renderer2d->submitQuad({1.0f, 0.5f, -0.1f}, {1.0f, 1.0f}, m_colour);
-
-		m_renderer2d->end();
+		m_framebuffer->unbind();
 	}
 
 	void EditorLayer::onEvent(Event &p_event)
@@ -145,11 +182,12 @@ namespace toaster
 
 		ig::Begin("Settings");
 
-		ig::Text("Orbo");
-
-		ig::ColorEdit4("Col", &m_colour.x);
+		auto &camera = m_cameraEntity.getComponent<CameraComponent>().camera;
+		ig::DragFloat3("Camera Transform", &m_cameraEntity.getComponent<TransformComponent>().transform[3].x);
 
 		ig::End(); // Settings
+
+		m_sceneHierarchyPanel->onUIRender();
 
 		ig::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
 		ig::Begin("Viewport");
@@ -158,18 +196,10 @@ namespace toaster
 		m_viewportHovered = ig::IsWindowHovered();
 		((EditorApplication &) __super::getApp()).setBlockUIEvents(!m_viewportFocused || !m_viewportHovered);
 
-		auto size = ig::GetContentRegionAvail();
-		if (m_viewportSize != *reinterpret_cast<glm::vec2 *>(&size))
-		{
-			m_viewportSize = {size.x, size.y};
-			m_framebuffer->resize(static_cast<uint32>(size.x), static_cast<uint32>(size.y));
+		auto size      = ig::GetContentRegionAvail();
+		m_viewportSize = {size.x, size.y};
 
-			RenderCommand::setViewport({0, 0, m_viewportSize});
-
-			m_cameraController.onResize(m_viewportSize.x, m_viewportSize.y);
-		}
-
-		ig::Image(m_framebuffer->getColourAttachmentID(), ImVec2(m_viewportSize.x, m_viewportSize.y), ImVec2(0, 1), ImVec2(1, 0));
+		ig::Image(m_framebuffer->getColourAttachmentID(), size, ImVec2(0, 1), ImVec2(1, 0));
 
 		ig::End();         // Viewport
 		ig::PopStyleVar(); // ImGuiStyleVar_WindowPadding

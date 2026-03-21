@@ -6,12 +6,12 @@
 
 namespace toaster
 {
-	RefPtr<Material> Material::create(const RefPtr<gpu::Shader> &p_shader, const std::string &p_name)
+	RefPtr<Material> Material::create(const RefPtr<gpu::IShader> &p_shader, const std::string &p_name)
 	{
 		return make_reference<Material>(p_shader, p_name);
 	}
 
-	Material::Material(const RefPtr<gpu::Shader> &p_shader, std::string p_name) : m_name(std::move(p_name))
+	Material::Material(const RefPtr<gpu::IShader> &p_shader, std::string p_name) : m_name(std::move(p_name))
 	{
 		TST_ASSERT_MSG(p_shader != nullptr, "Material shader cannot be null");
 		m_shader = p_shader;
@@ -57,12 +57,12 @@ namespace toaster
 		m_opacity = p_opacity;
 	}
 
-	RefPtr<gpu::Texture2D> Material::getAlbedoMap()
+	RefPtr<gpu::ITexture2D> Material::getAlbedoMap()
 	{
 		return m_albedoMap;
 	}
 
-	void Material::setAlbedoMap(const RefPtr<gpu::Texture2D> &p_albedo_map)
+	void Material::setAlbedoMap(const RefPtr<gpu::ITexture2D> &p_albedo_map)
 	{
 		m_albedoMap = p_albedo_map;
 	}
@@ -72,12 +72,12 @@ namespace toaster
 		m_albedoMap = nullptr;
 	}
 
-	RefPtr<gpu::Texture2D> Material::getNormalMap()
+	RefPtr<gpu::ITexture2D> Material::getNormalMap()
 	{
 		return m_normalMap;
 	}
 
-	void Material::setNormalMap(const RefPtr<gpu::Texture2D> &p_normal_map)
+	void Material::setNormalMap(const RefPtr<gpu::ITexture2D> &p_normal_map)
 	{
 		m_normalMap = p_normal_map;
 	}
@@ -97,12 +97,12 @@ namespace toaster
 		m_useNormalMap = p_use;
 	}
 
-	RefPtr<gpu::Texture2D> Material::getMetalnessMap()
+	RefPtr<gpu::ITexture2D> Material::getMetalnessMap()
 	{
 		return m_metalnessMap;
 	}
 
-	void Material::setMetalnessMap(const RefPtr<gpu::Texture2D> &p_metalness_map)
+	void Material::setMetalnessMap(const RefPtr<gpu::ITexture2D> &p_metalness_map)
 	{
 		m_metalnessMap = p_metalness_map;
 	}
@@ -112,12 +112,12 @@ namespace toaster
 		m_metalnessMap = nullptr;
 	}
 
-	RefPtr<gpu::Texture2D> Material::getRoughnessMap()
+	RefPtr<gpu::ITexture2D> Material::getRoughnessMap()
 	{
 		return m_roughnessMap;
 	}
 
-	void Material::setRoughnessMap(const RefPtr<gpu::Texture2D> &p_roughness_map)
+	void Material::setRoughnessMap(const RefPtr<gpu::ITexture2D> &p_roughness_map)
 	{
 		m_roughnessMap = p_roughness_map;
 	}

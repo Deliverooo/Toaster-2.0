@@ -52,7 +52,7 @@ namespace toaster
 
 	Mesh::Mesh(const std::vector<MeshVertex> &p_vertices, const std::vector<uint32> &p_indices) : m_vertices(p_vertices), m_indices(p_indices)
 	{
-		m_vertexBuffer = gpu::VertexBuffer::create(m_vertices.data(), m_vertices.size() * sizeof(MeshVertex));
+		m_vertexBuffer = gpu::IVertexBuffer::create(m_vertices.data(), m_vertices.size() * sizeof(MeshVertex));
 		const auto vbl = gpu::VertexBufferLayout{
 			{gpu::EShaderDataType::eFloat3, "a_Position"},
 			{gpu::EShaderDataType::eFloat3, "a_Normal"},
@@ -62,9 +62,9 @@ namespace toaster
 		};
 		m_vertexBuffer->setLayout(vbl);
 
-		m_indexBuffer = gpu::IndexBuffer::create(m_indices.data(), m_indices.size());
+		m_indexBuffer = gpu::IIndexBuffer::create(m_indices.data(), m_indices.size());
 
-		m_vertexArray = gpu::VertexArray::create();
+		m_vertexArray = gpu::IVertexArray::create();
 		m_vertexArray->addVertexBuffer(m_vertexBuffer);
 		m_vertexArray->setIndexBuffer(m_indexBuffer);
 	}
@@ -209,14 +209,14 @@ namespace toaster
 					}
 					LOG_TRACE("\tAlbedo map path = {}{}", texture_path.string(), std::filesystem::exists(texture_path) ? "" : " --> NOT FOUND");
 
-					auto albedo_map = gpu::Texture2D::create(texture_path);
+					auto albedo_map = gpu::ITexture2D::create(texture_path);
 
 					material->setAlbedoMap(albedo_map);
 					material->setAlbedoColour(glm::vec3{1.0f});
 				}
 				else
 				{
-					auto map = gpu::Texture2D::create("error");
+					auto map = gpu::ITexture2D::create("error");
 
 					material->setAlbedoMap(map);
 				}
@@ -225,7 +225,7 @@ namespace toaster
 			}
 		}
 
-		mesh->m_vertexBuffer = gpu::VertexBuffer::create(mesh->m_vertices.data(), mesh->m_vertices.size() * sizeof(MeshVertex));
+		mesh->m_vertexBuffer = gpu::IVertexBuffer::create(mesh->m_vertices.data(), mesh->m_vertices.size() * sizeof(MeshVertex));
 		const auto vbl       = gpu::VertexBufferLayout{
 			{gpu::EShaderDataType::eFloat3, "a_Position"},
 			{gpu::EShaderDataType::eFloat3, "a_Normal"},
@@ -235,26 +235,26 @@ namespace toaster
 		};
 		mesh->m_vertexBuffer->setLayout(vbl);
 
-		mesh->m_indexBuffer = gpu::IndexBuffer::create(mesh->m_indices.data(), mesh->m_indices.size());
+		mesh->m_indexBuffer = gpu::IIndexBuffer::create(mesh->m_indices.data(), mesh->m_indices.size());
 
-		mesh->m_vertexArray = gpu::VertexArray::create();
+		mesh->m_vertexArray = gpu::IVertexArray::create();
 		mesh->m_vertexArray->addVertexBuffer(mesh->m_vertexBuffer);
 		mesh->m_vertexArray->setIndexBuffer(mesh->m_indexBuffer);
 
 		return mesh;
 	}
 
-	RefPtr<gpu::VertexBuffer> Mesh::getVertexBuffer() const
+	RefPtr<gpu::IVertexBuffer> Mesh::getVertexBuffer() const
 	{
 		return m_vertexBuffer;
 	}
 
-	RefPtr<gpu::IndexBuffer> Mesh::getIndexBuffer() const
+	RefPtr<gpu::IIndexBuffer> Mesh::getIndexBuffer() const
 	{
 		return m_indexBuffer;
 	}
 
-	RefPtr<gpu::VertexArray> Mesh::getVertexArray() const
+	RefPtr<gpu::IVertexArray> Mesh::getVertexArray() const
 	{
 		return m_vertexArray;
 	}

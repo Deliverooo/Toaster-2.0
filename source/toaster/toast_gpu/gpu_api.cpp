@@ -4,7 +4,7 @@
 
 namespace toaster::gpu
 {
-	std::unique_ptr<GPUAPI> GPUAPI::create()
+	std::unique_ptr<IGPUAPI> IGPUAPI::create()
 	{
 		return std::make_unique<GLGPUAPI>();
 	}

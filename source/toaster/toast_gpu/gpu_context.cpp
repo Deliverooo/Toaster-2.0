@@ -12,7 +12,7 @@
 
 namespace toaster::gpu
 {
-	GPUContext *GPUContext::create(GLFWwindow *p_window)
+	IGPUContext *IGPUContext::create(GLFWwindow *p_window)
 	{
 		return new GLGPUContext(p_window);
 	}

@@ -4,7 +4,7 @@
 
 namespace toaster
 {
-	void ShaderLibrary::add(const std::string &p_name, const RefPtr<gpu::Shader> &p_shader)
+	void ShaderLibrary::add(const std::string &p_name, const RefPtr<gpu::IShader> &p_shader)
 	{
 		if (!m_shaders.contains(p_name))
 		{
@@ -16,7 +16,7 @@ namespace toaster
 		}
 	}
 
-	RefPtr<gpu::Shader> ShaderLibrary::get(const std::string &p_name) const
+	RefPtr<gpu::IShader> ShaderLibrary::get(const std::string &p_name) const
 	{
 		if (m_shaders.contains(p_name))
 		{

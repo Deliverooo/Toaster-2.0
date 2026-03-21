@@ -8,6 +8,8 @@ set(SRC
 
 		ptr.hpp
 
+		camera.hpp
+
 		io/filesystem.cpp
 		io/filesystem.hpp
 

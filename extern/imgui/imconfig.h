@@ -13,6 +13,7 @@
 //-----------------------------------------------------------------------------
 
 #pragma once
+#include "imgui.h"
 
 //---- Define assertion handler. Defaults to calling assert().
 // - If your macro uses multiple statements, make sure is enclosed in a 'do { .. } while (0)' block so it can be used as a single statement.
@@ -145,3 +146,9 @@ namespace ImGui
     void MyFunction(const char* name, MyMatrix44* mtx);
 }
 */
+
+namespace ImGui
+{
+}
+
+#define IMGUI_USE_WCHAR32

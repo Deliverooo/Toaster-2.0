@@ -13,11 +13,11 @@ namespace toaster::gpu
 		uint32 height;
 	};
 
-	class Framebuffer
+	class IFramebuffer
 	{
 	public:
-		static RefPtr<Framebuffer> create(const FramebufferCreateInfo &p_framebuffer_create_info);
-		virtual                    ~Framebuffer() = default;
+		static RefPtr<IFramebuffer> create(const FramebufferCreateInfo &p_framebuffer_create_info);
+		virtual                    ~IFramebuffer() = default;
 
 		virtual void bind() const = 0;
 		virtual void unbind() const = 0;

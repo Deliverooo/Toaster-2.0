@@ -89,6 +89,8 @@ namespace toaster
 				m_scene->m_registry.remove<Type>(m_handle);
 		}
 
+		operator bool() const { return (m_handle != entt::null) && m_scene && m_scene->m_registry.valid(m_handle); }
+
 	private:
 		entt::entity m_handle{entt::null};
 		Scene *      m_scene{nullptr};

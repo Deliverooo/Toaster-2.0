@@ -112,7 +112,7 @@ namespace toaster::gpu
 		return m_height;
 	}
 
-	bool GLTexture2D::operator==(const Texture &p_other) const
+	bool GLTexture2D::operator==(const ITexture &p_other) const
 	{
 		return m_textureId == p_other.getID();
 	}

@@ -34,15 +34,15 @@ namespace toaster::gpu
 		}
 	}
 
-	void GLGPUAPI::setFaceCullMode(CullMode p_cull_mode)
+	void GLGPUAPI::setFaceCullMode(ECullMode p_cull_mode)
 	{
 		switch (p_cull_mode)
 		{
-			case CullMode::eFront: gl::cullFace(gl::CullMode::eFront);
+			case ECullMode::eFront: gl::cullFace(gl::CullMode::eFront);
 				break;
-			case CullMode::eBack: gl::cullFace(gl::CullMode::eBack);
+			case ECullMode::eBack: gl::cullFace(gl::CullMode::eBack);
 				break;
-			case CullMode::eFrontAndBack: gl::cullFace(gl::CullMode::eFrontAndBack);
+			case ECullMode::eFrontAndBack: gl::cullFace(gl::CullMode::eFrontAndBack);
 				break;
 		}
 	}
@@ -52,7 +52,7 @@ namespace toaster::gpu
 		gl::viewport(static_cast<gl::Int>(p_viewport.x), static_cast<gl::Int>(p_viewport.y), static_cast<gl::Int>(p_viewport.z), static_cast<gl::Int>(p_viewport.w));
 	}
 
-	void GLGPUAPI::drawIndexed(const RefPtr<VertexArray> &p_vertex_array, uint32 p_index_count)
+	void GLGPUAPI::drawIndexed(const RefPtr<IVertexArray> &p_vertex_array, uint32 p_index_count)
 	{
 		p_vertex_array->bind();
 		gl::drawElements(gl::DrawMode::eTriangles,
@@ -60,7 +60,7 @@ namespace toaster::gpu
 						 gl::DataType::eUnsignedInt, nullptr);
 	}
 
-	void GLGPUAPI::drawIndexedBaseVertex(const RefPtr<VertexArray> &p_vertex_array, uint32 p_index_count, uint32 p_base_index, uint32 p_base_vertex)
+	void GLGPUAPI::drawIndexedBaseVertex(const RefPtr<IVertexArray> &p_vertex_array, uint32 p_index_count, uint32 p_base_index, uint32 p_base_vertex)
 	{
 		p_vertex_array->bind();
 		gl::drawElementsBaseVertex(gl::DrawMode::eTriangles, static_cast<int32>(p_vertex_array->getIndexBuffer()->getIndexCount()), gl::DataType::eUnsignedInt,

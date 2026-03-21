@@ -15,13 +15,13 @@
 
 namespace toaster::gpu
 {
-	class Shader
+	class IShader
 	{
 	public:
-		static RefPtr<Shader> create(const std::string &p_name, const std::map<EShaderType, ShaderBlob> &p_shader_bytecode_map);
-		static RefPtr<Shader> create(const std::string &p_name, const std::map<EShaderType, const char *> &p_shader_source_map);
+		static RefPtr<IShader> create(const std::string &p_name, const std::map<EShaderType, ShaderBlob> &p_shader_bytecode_map);
+		static RefPtr<IShader> create(const std::string &p_name, const std::map<EShaderType, const char *> &p_shader_source_map);
 
-		virtual ~Shader() = default;
+		virtual ~IShader() = default;
 
 		virtual void bind() const = 0;
 		virtual void unbind() const = 0;

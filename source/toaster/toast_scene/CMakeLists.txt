@@ -5,6 +5,11 @@ set(SRC
 		components.hpp
 
 		entity.hpp
+
+		scene_camera.hpp
+		scene_camera.cpp
+
+		scriptable_entity.hpp
 )
 
 list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")

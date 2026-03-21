@@ -7,7 +7,7 @@
 
 namespace toaster::gpu
 {
-	class VertexBuffer
+	class IVertexBuffer
 	{
 	public:
 		/*!
@@ -19,7 +19,7 @@ namespace toaster::gpu
 		 * @param p_size the number of vertices
 		 * @return a RefPtr to the vertex buffer
 		 */
-		static RefPtr<VertexBuffer> create(uint32 p_size);
+		static RefPtr<IVertexBuffer> create(uint32 p_size);
 		/*!
 		 * @brief Creates a vertex buffer with the specified size and fills it with the provided data
 		 * @details if you are using a vertex struct e.g. MeshVertex, make sure to multiply the size of the vertices by the size of the struct.
@@ -30,9 +30,9 @@ namespace toaster::gpu
 		 * @param p_data the vertex data
 		 * @return a RefPtr to the vertex buffer
 		 */
-		static RefPtr<VertexBuffer> create(void *p_data, uint32 p_size);
+		static RefPtr<IVertexBuffer> create(void *p_data, uint32 p_size);
 
-		virtual ~VertexBuffer() = default;
+		virtual ~IVertexBuffer() = default;
 
 		virtual void bind() = 0;
 		virtual void unbind() = 0;

@@ -1,11 +1,11 @@
 #pragma once
 
-#include <string>
-#include <glm/glm.hpp>
+#include "toaster/toast_lib/string.hpp"
+
 #include <utility>
 
-#include "toaster/toast_lib/ptr.hpp"
-#include "toaster/toast_lib/system_types.h"
+#include "scene_camera.hpp"
+#include "scriptable_entity.hpp"
 
 #include "toaster/toast_gpu/texture.hpp"
 
@@ -18,11 +18,11 @@ namespace toaster
 		TagComponent()  = default;
 		~TagComponent() = default;
 
-		TagComponent(std::wstring p_tag) : tag(std::move(p_tag))
+		TagComponent(U8String p_tag) : tag(std::move(p_tag))
 		{
 		}
 
-		std::wstring tag;
+		U8String tag;
 	};
 
 	DEFINE_COMPONENT(TransformComponent)
@@ -39,7 +39,44 @@ namespace toaster
 
 	DEFINE_COMPONENT(SpriteRendererComponent)
 	{
-		glm::vec4              colour{1.0f};
-		RefPtr<gpu::Texture2D> texture{nullptr};
+		glm::vec4               colour{1.0f};
+		RefPtr<gpu::ITexture2D> texture{nullptr};
+	};
+
+	DEFINE_COMPONENT(CameraComponent)
+	{
+		CameraComponent()  = default;
+		~CameraComponent() = default;
+
+		enum class EProjectionType
+		{
+			ePerspective, eOrthographic
+		};
+
+		SceneCamera     camera;
+		EProjectionType projectionType{EProjectionType::eOrthographic};
+		bool            primary{true};
+	};
+
+	DEFINE_COMPONENT(NativeScriptComponent)
+	{
+		ScriptableEntity *instance{nullptr};
+
+		using InstantiateFn = ScriptableEntity *(*)();
+		InstantiateFn instantiateFn{nullptr};
+
+		using DestroyFn = void(*)(NativeScriptComponent *);
+		DestroyFn destroyFn{nullptr};
+
+		template<c_ScriptableEntity Type>
+		void bind()
+		{
+			instantiateFn = []() -> ScriptableEntity * { return static_cast<ScriptableEntity *>(new Type()); };
+			destroyFn     = [](NativeScriptComponent *p_ncs) -> void
+			{
+				delete p_ncs->instance;
+				p_ncs->instance = nullptr;
+			};
+		}
 	};
 }
