@@ -90,6 +90,9 @@ namespace toaster
 		}
 
 		operator bool() const { return (m_handle != entt::null) && m_scene && m_scene->m_registry.valid(m_handle); }
+		operator uint32() const { return static_cast<uint32>(m_handle); }
+
+		bool operator==(Entity p_entity) const { return m_handle == p_entity.m_handle; }
 
 	private:
 		entt::entity m_handle{entt::null};

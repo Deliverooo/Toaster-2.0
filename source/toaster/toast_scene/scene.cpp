@@ -31,8 +31,8 @@ namespace toaster
 
 	void Scene::onRender(const RefPtr<Renderer2D> &p_renderer_2d, float32 p_dt)
 	{
-		Camera *   main_camera{nullptr};
-		glm::mat4 *camera_transform{nullptr};
+		Camera *  main_camera{nullptr};
+		glm::mat4 camera_transform{1.0f};
 		{
 			auto view = m_registry.view<TransformComponent, CameraComponent>();
 			for (auto entity: view)
@@ -41,7 +41,7 @@ namespace toaster
 				if (camera.primary)
 				{
 					main_camera      = &camera.camera;
-					camera_transform = &transform.transform;
+					camera_transform = transform.getTransform();
 					break;
 				}
 			}
@@ -49,7 +49,7 @@ namespace toaster
 
 		if (main_camera)
 		{
-			p_renderer_2d->begin(*main_camera, *camera_transform);
+			p_renderer_2d->begin(*main_camera, camera_transform);
 
 			auto group = m_registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
 			for (auto entity: group)
@@ -57,9 +57,9 @@ namespace toaster
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
 				if (sprite.texture)
-					p_renderer_2d->submitQuad(transform.transform, sprite.texture, sprite.colour);
+					p_renderer_2d->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor);
 				else
-					p_renderer_2d->submitQuad(transform.transform, sprite.colour);
+					p_renderer_2d->submitQuad(transform.getTransform(), sprite.colour);
 			}
 
 			p_renderer_2d->end();

@@ -10,7 +10,7 @@
 
 #include "editor_application.hpp"
 
-#include <imgui.h>
+#include "ui/ui_utils.hpp"
 
 #include "toaster/toast_lib/logging.hpp"
 namespace ig = ImGui;
@@ -42,11 +42,13 @@ namespace toaster
 		{
 			Entity entity = m_scene->createEntity();
 
-			auto &tc                = entity.getComponent<TransformComponent>();
-			tc.transform            = glm::translate(glm::scale(glm::mat4{1.0f}, {1.0f, 1.0f, 1.0f}), {0.0f, 0.0f, -0.1f});
-			auto &[colour, texture] = entity.addComponent<SpriteRendererComponent>();
-			colour                  = {1.0f, 1.0f, 1.0f, 1.0f};
-			texture                 = m_texture;
+			auto &tc                    = entity.getComponent<TransformComponent>();
+			tc.translation              = {0.0f, 0.0f, -0.1f};
+			tc.scale                    = {1.0f, 1.0f, 1.0f};
+			auto &[colour, texture, tf] = entity.addComponent<SpriteRendererComponent>();
+			colour                      = {1.0f, 1.0f, 1.0f, 1.0f};
+			texture                     = m_texture;
+			tf                          = 1.0f;
 		}
 
 		{
@@ -62,6 +64,15 @@ namespace toaster
 
 				void onUpdate(float32 p_dt) override
 				{
+					auto &transform = getComponent<TransformComponent>();
+					if (input::isKeyDown(input::EKeyCode::eUp))
+						transform.rotation.x += p_dt;
+					if (input::isKeyDown(input::EKeyCode::eDown))
+						transform.rotation.x -= p_dt;
+					if (input::isKeyDown(input::EKeyCode::eLeft))
+						transform.rotation.y += p_dt;
+					if (input::isKeyDown(input::EKeyCode::eRight))
+						transform.rotation.y -= p_dt;
 				}
 
 				void onDestroy() override
@@ -183,26 +194,28 @@ namespace toaster
 		ig::Begin("Settings");
 
 		auto &camera = m_cameraEntity.getComponent<CameraComponent>().camera;
-		ig::DragFloat3("Camera Transform", &m_cameraEntity.getComponent<TransformComponent>().transform[3].x);
+		ig::DragFloat3("Camera Transform", &m_cameraEntity.getComponent<TransformComponent>().translation.x);
 
 		ig::End(); // Settings
 
 		m_sceneHierarchyPanel->onUIRender();
 
-		ig::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-		ig::Begin("Viewport");
+		{
+			ui::ScopedStyle window_padding{ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f)};
 
-		m_viewportFocused = ig::IsWindowFocused();
-		m_viewportHovered = ig::IsWindowHovered();
-		((EditorApplication &) __super::getApp()).setBlockUIEvents(!m_viewportFocused || !m_viewportHovered);
+			ig::Begin("Viewport");
 
-		auto size      = ig::GetContentRegionAvail();
-		m_viewportSize = {size.x, size.y};
+			m_viewportFocused = ig::IsWindowFocused();
+			m_viewportHovered = ig::IsWindowHovered();
+			((EditorApplication &) __super::getApp()).setBlockUIEvents(!m_viewportFocused || !m_viewportHovered);
 
-		ig::Image(m_framebuffer->getColourAttachmentID(), size, ImVec2(0, 1), ImVec2(1, 0));
+			auto size      = ig::GetContentRegionAvail();
+			m_viewportSize = {size.x, size.y};
 
-		ig::End();         // Viewport
-		ig::PopStyleVar(); // ImGuiStyleVar_WindowPadding
+			ig::Image(m_framebuffer->getColourAttachmentID(), size, ImVec2(0, 1), ImVec2(1, 0));
+
+			ig::End(); // Viewport
+		}
 
 		ig::End(); // DockSpace Demo
 	}

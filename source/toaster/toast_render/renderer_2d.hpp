@@ -30,12 +30,12 @@ namespace toaster
 		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
 		void submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour);
 
-		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::ITexture2D> &p_texture,
-						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f});
-		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::ITexture2D> &p_texture,
-						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f});
-		void submitQuad(const tsm::float4x4 &p_transform, const RefPtr<gpu::ITexture2D> &p_texture,
-						const tsm::float4 &  p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f});
+		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &                              p_scale, const RefPtr<gpu::ITexture2D> &p_texture,
+						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f);
+		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &                              p_scale, const RefPtr<gpu::ITexture2D> &p_texture,
+						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f);
+		void submitQuad(const tsm::float4x4 &p_transform, const RefPtr<gpu::ITexture2D> &                 p_texture,
+						const tsm::float4 &  p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f);
 
 	private:
 		void   _beginNewBatch();
@@ -51,6 +51,7 @@ namespace toaster
 			tsm::float4 colour;
 			tsm::float2 texCoord;
 			float32     texIndex;
+			float32     tilingFactor;
 		};
 
 		RefPtr<gpu::IVertexArray>  m_quadVertexArray;

@@ -20,20 +20,14 @@ using uint64 = uint64_t;
 using float32 = float;
 using float64 = double;
 
+using char8  = char8_t;
+using char16 = char16_t;
+using char32 = char32_t;
+
 #else
 #include <stddef.h> // (C++) std::nullptr_t
 #include <stdint.h> // _t typedefs
 
-typedef int8_t  int8;
-typedef int16_t int16;
-typedef int32_t int32;
-typedef int64_t int64;
-
-typedef uint8_t  uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-typedef uint64_t uint64;
-
-typedef float float32;
-typedef double float64;
+typedef int8_t int8;typedef int16_t int16;typedef int32_t  int32;typedef int64_t int64;typedef uint8_t uint8;typedef uint16_t uint16;typedef uint32_t uint32;typedef
+uint64_t       uint64;typedef float float32;typedef double float64;
 #endif

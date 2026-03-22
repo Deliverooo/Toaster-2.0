@@ -16,6 +16,11 @@ namespace toaster
 		void onUIRender();
 
 	private:
+		void _drawEntityNode(Entity p_entity);
+		void _drawComponents(Entity p_entity);
+
 		RefPtr<Scene> m_scene;
+
+		Entity m_selectedEntity;
 	};
 }

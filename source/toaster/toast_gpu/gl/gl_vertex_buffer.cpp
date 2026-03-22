@@ -44,6 +44,11 @@ namespace toaster::gpu
 		return m_layout;
 	}
 
+	const VertexBufferLayout &GLVertexBuffer::getLayout() const
+	{
+		return m_layout;
+	}
+
 	void GLVertexBuffer::setLayout(const VertexBufferLayout &p_layout)
 	{
 		m_layout = p_layout;

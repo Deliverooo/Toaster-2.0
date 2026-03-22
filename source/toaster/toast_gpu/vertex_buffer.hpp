@@ -38,9 +38,11 @@ namespace toaster::gpu
 		virtual void unbind() = 0;
 
 		virtual void setData(const void *p_data, uint32 p_size) = 0;
+		virtual void setLayout(const VertexBufferLayout &p_layout) = 0;
 
-		[[nodiscard]] virtual uint32      getID() const = 0;
-		virtual void                      setLayout(const VertexBufferLayout &p_layout) = 0;
-		virtual const VertexBufferLayout &getLayout() = 0;
+		[[nodiscard]] virtual uint32 getID() const = 0;
+
+		virtual const VertexBufferLayout &              getLayout() = 0;
+		[[nodiscard]] virtual const VertexBufferLayout &getLayout() const = 0;
 	};
 }

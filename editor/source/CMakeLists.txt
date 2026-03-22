@@ -9,6 +9,9 @@ set(SRC
 
 		panels/scene_hierarchy_panel.cpp
 		panels/scene_hierarchy_panel.hpp
+
+		ui/ui_utils.cpp
+		ui/ui_utils.hpp
 )
 
 add_executable(toaster_editor ${SRC})

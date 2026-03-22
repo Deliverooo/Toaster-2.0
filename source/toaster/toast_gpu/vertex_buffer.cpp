@@ -5,11 +5,11 @@ namespace toaster::gpu
 {
 	RefPtr<IVertexBuffer> IVertexBuffer::create(uint32 p_size)
 	{
-		return std::make_shared<GLVertexBuffer>(p_size);
+		return make_reference<GLVertexBuffer>(p_size);
 	}
 
 	RefPtr<IVertexBuffer> IVertexBuffer::create(void *p_data, uint32 p_size)
 	{
-		return std::make_shared<GLVertexBuffer>(p_data, p_size);
+		return make_reference<GLVertexBuffer>(p_data, p_size);
 	}
 }

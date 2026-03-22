@@ -10,3 +10,4 @@ target_link_libraries(Toaster PUBLIC stb)
 target_link_libraries(Toaster PUBLIC EnTT::EnTT)
 
 target_link_libraries(Toaster PRIVATE assimp::assimp)
+target_link_libraries(Toaster PRIVATE nfd)

@@ -17,11 +17,12 @@ namespace toaster::gpu
 		void unbind() override;
 
 		void setData(const void *p_data, uint32 p_size) override;
+		void setLayout(const VertexBufferLayout &p_layout) override;
 
 		[[nodiscard]] uint32 getID() const override;
 
-		void                      setLayout(const VertexBufferLayout &p_layout) override;
-		const VertexBufferLayout &getLayout() override;
+		const VertexBufferLayout &              getLayout() override;
+		[[nodiscard]] const VertexBufferLayout &getLayout() const override;
 
 	private:
 		VertexBufferLayout m_layout;

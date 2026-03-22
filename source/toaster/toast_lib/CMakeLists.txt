@@ -28,6 +28,9 @@ set(SRC
 		util_defines.hpp
 
 		input_codes.hpp
+
+		os/file_dialog.cpp
+		os/file_dialog.hpp
 )
 
 list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")

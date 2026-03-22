@@ -9,11 +9,11 @@ namespace toaster::gpu
 {
 	RefPtr<IIndexBuffer> IIndexBuffer::create(uint32 p_count)
 	{
-		return std::make_shared<GLIndexBuffer>(p_count);
+		return make_reference<GLIndexBuffer>(p_count);
 	}
 
 	RefPtr<IIndexBuffer> IIndexBuffer::create(uint32 *p_data, uint32 p_count)
 	{
-		return std::make_shared<GLIndexBuffer>(p_data, p_count);
+		return make_reference<GLIndexBuffer>(p_data, p_count);
 	}
 }

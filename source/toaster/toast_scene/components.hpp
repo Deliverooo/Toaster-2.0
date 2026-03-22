@@ -6,6 +6,7 @@
 
 #include "scene_camera.hpp"
 #include "scriptable_entity.hpp"
+#include "glm/gtx/quaternion.hpp"
 
 #include "toaster/toast_gpu/texture.hpp"
 
@@ -30,17 +31,25 @@ namespace toaster
 		TransformComponent()  = default;
 		~TransformComponent() = default;
 
-		TransformComponent(const glm::mat4 &p_transform) : transform(p_transform)
+		TransformComponent(const glm::vec3 &p_translation) : translation(p_translation)
 		{
 		}
 
-		glm::mat4 transform{1.0f};
+		[[nodiscard]] glm::mat4 getTransform() const
+		{
+			return glm::translate(glm::mat4{1.0f}, translation) * glm::toMat4(glm::quat{rotation}) * glm::scale(glm::mat4{1.0f}, scale);
+		}
+
+		glm::vec3 translation{0.0f};
+		glm::vec3 rotation{0.0f};
+		glm::vec3 scale{1.0f};
 	};
 
 	DEFINE_COMPONENT(SpriteRendererComponent)
 	{
 		glm::vec4               colour{1.0f};
 		RefPtr<gpu::ITexture2D> texture{nullptr};
+		float32                 tilingFactor{1.0f};
 	};
 
 	DEFINE_COMPONENT(CameraComponent)
@@ -53,9 +62,9 @@ namespace toaster
 			ePerspective, eOrthographic
 		};
 
-		SceneCamera     camera;
-		EProjectionType projectionType{EProjectionType::eOrthographic};
-		bool            primary{true};
+		SceneCamera                  camera;
+		SceneCamera::EProjectionType projectionType{SceneCamera::EProjectionType::eOrthographic};
+		bool                         primary{true};
 	};
 
 	DEFINE_COMPONENT(NativeScriptComponent)

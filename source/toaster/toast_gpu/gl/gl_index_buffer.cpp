@@ -36,7 +36,7 @@ namespace toaster::gpu
 		return m_ebo;
 	}
 
-	uint32 GLIndexBuffer::getIndexCount()
+	uint32 GLIndexBuffer::getIndexCount() const
 	{
 		return m_indexCount;
 	}
