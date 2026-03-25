@@ -95,7 +95,8 @@ namespace toaster
 		m_time += p_dt;
 
 		if (const auto &[width, height] = m_framebuffer->getCreateInfo();
-			m_viewportSize.x > 0.0f && m_viewportSize.y > 0.0f && (static_cast<float32>(width) != m_viewportSize.x || static_cast<float32>(height) != m_viewportSize.y))
+			m_viewportSize.x > 0.0f && m_viewportSize.y > 0.0f &&
+			(static_cast<float32>(width) != m_viewportSize.x || static_cast<float32>(height) != m_viewportSize.y))
 		{
 			m_framebuffer->resize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
 			m_cameraController.onResize(m_viewportSize.x, m_viewportSize.y);
@@ -192,9 +193,6 @@ namespace toaster
 		}
 
 		ig::Begin("Settings");
-
-		auto &camera = m_cameraEntity.getComponent<CameraComponent>().camera;
-		ig::DragFloat3("Camera Transform", &m_cameraEntity.getComponent<TransformComponent>().translation.x);
 
 		ig::End(); // Settings
 

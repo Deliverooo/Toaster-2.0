@@ -20,7 +20,9 @@ namespace toaster
 		Type &addComponent(TArgs &&... args)
 		{
 			TST_ASSERT_MSG(!hasComponent<Type>(), "Entity already has component!");
-			return m_scene->m_registry.emplace<Type>(m_handle, std::forward<TArgs>(args)...);
+			Type &comp = m_scene->m_registry.emplace<Type>(m_handle, std::forward<TArgs>(args)...);
+			m_scene->onComponentAdded<Type>(*this, comp);
+			return comp;
 		}
 
 		template<typename Type>
@@ -91,6 +93,7 @@ namespace toaster
 
 		operator bool() const { return (m_handle != entt::null) && m_scene && m_scene->m_registry.valid(m_handle); }
 		operator uint32() const { return static_cast<uint32>(m_handle); }
+		operator entt::entity() const { return m_handle; }
 
 		bool operator==(Entity p_entity) const { return m_handle == p_entity.m_handle; }
 

@@ -6,23 +6,40 @@
 #include "toaster/toast_lib/os/file_dialog.hpp"
 
 #include "../ui/ui_utils.hpp"
+#include "../ui/ui_widgets.hpp"
 
 namespace toaster
 {
 	static void drawVec3Ctrl(const std::string &p_label, glm::vec3 *p_vec, const glm::vec3 &p_reset = glm::vec3{1.0f}, float p_column_width = 100.0f,
 							 const char *       p_vec1_label                                        = "X", const char *p_vec2_label = "Y", const char *p_vec3_label = "Z")
 	{
-		const std::string s_vec1_str_id = std::string("##") + p_vec1_label;
-		const std::string s_vec2_str_id = std::string("##") + p_vec2_label;
-		const std::string s_vec3_str_id = std::string("##") + p_vec3_label;
+		const std::string vec1_str_id = std::string("##") + p_vec1_label;
+		const std::string vec2_str_id = std::string("##") + p_vec2_label;
+		const std::string vec3_str_id = std::string("##") + p_vec3_label;
+
+		ImGuiIO &io        = ig::GetIO();
+		auto     bold_font = io.Fonts->Fonts[1];
 
 		ig::PushID(p_label.c_str());
-		ig::Columns(2);
-		ig::SetColumnWidth(0, p_column_width);
-		ig::Text("%s", p_label.c_str());
-		ig::NextColumn();
 
-		ig::PushMultiItemsWidths(3, ig::CalcItemWidth());
+		{
+			ui::ScopedStyle rounding{ImGuiStyleVar_FrameRounding, 2.5f};
+
+			ui::dragFloatWithReset(p_label + " " + p_vec1_label, &p_vec->x, vec1_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.x);
+		}
+		{
+			ui::ScopedStyle rounding{ImGuiStyleVar_FrameRounding, 2.5f};
+
+			ui::dragFloatWithReset(p_vec2_label, &p_vec->y, vec2_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.y);
+		}
+		{
+			ui::ScopedStyle rounding{ImGuiStyleVar_FrameRounding, 2.5f};
+
+			ui::dragFloatWithReset(p_vec3_label, &p_vec->z, vec3_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.z);
+		}
+
+		#if 0
+		ig::Columns(2); ig::SetColumnWidth(0, p_column_width); ig::Text("%s", p_label.c_str()); ig::NextColumn(); ig::PushMultiItemsWidths(3, ig::CalcItemWidth());
 		{
 			ui::ScopedStyle item_spacing{ImGuiStyleVar_ItemSpacing, ImVec2{2, 0}};
 			ui::ScopedStyle frame_rounding{ImGuiStyleVar_FrameRounding, 0.5f};
@@ -39,11 +56,12 @@ namespace toaster
 				ui::ScopedColour button_active_colour{ImGuiCol_Button, ImColor{0.7f, 0.1f, 0.1f, 1.0f}};
 
 				{
+					ui::ScopedFont  bf{bold_font};
 					ui::ScopedStyle rounding{ImGuiStyleVar_FrameRounding, 2.5f};
 					if (ig::Button(p_vec1_label, button_size)) { p_vec->x = p_reset.x; }
 				}
 				ig::SameLine();
-				ig::DragFloat(s_vec1_str_id.c_str(), &p_vec->x, 0.1f);
+				ig::DragFloat(vec1_str_id.c_str(), &p_vec->x, 0.1f);
 				ig::PopItemWidth();
 				ig::SameLine();
 			}
@@ -54,11 +72,12 @@ namespace toaster
 				ui::ScopedColour button_active_colour{ImGuiCol_Button, ImColor{0.1f, 0.7f, 0.1f, 1.0f}};
 
 				{
+					ui::ScopedFont  bf{bold_font};
 					ui::ScopedStyle rounding{ImGuiStyleVar_FrameRounding, 2.5f};
 					if (ig::Button(p_vec2_label, button_size)) { p_vec->y = p_reset.y; }
 				}
 				ig::SameLine();
-				ig::DragFloat(s_vec2_str_id.c_str(), &p_vec->y, 0.1f);
+				ig::DragFloat(vec2_str_id.c_str(), &p_vec->y, 0.1f);
 				ig::PopItemWidth();
 				ig::SameLine();
 			}
@@ -69,17 +88,71 @@ namespace toaster
 				ui::ScopedColour button_active_colour{ImGuiCol_Button, ImColor{0.1f, 0.1f, 0.7f, 1.0f}};
 
 				{
+					ui::ScopedFont  bf{bold_font};
 					ui::ScopedStyle rounding{ImGuiStyleVar_FrameRounding, 2.5f};
 					if (ig::Button(p_vec3_label, button_size)) { p_vec->z = p_reset.z; }
 				}
 				ig::SameLine();
-				ig::DragFloat(s_vec3_str_id.c_str(), &p_vec->z, 0.1f);
+				ig::DragFloat(vec3_str_id.c_str(), &p_vec->z, 0.1f);
 				ig::PopItemWidth();
 			}
-		}
-		ig::Columns(1);
+		} ig::Columns(1);
 
+		#endif
 		ImGui::PopID();
+	}
+
+	template<typename Type, typename UIFunc>
+	static void drawComponent(const String &p_name, Entity p_entity, UIFunc p_func)
+	{
+		ig::PushID(typeid(Type).hash_code());
+
+		if (p_entity.hasComponent<Type>())
+		{
+			auto &comp = p_entity.getComponent<Type>();
+
+			ImVec2 content_region = ImGui::GetContentRegionAvail();
+			ig::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{4, 4});
+
+			float line_height = ig::GetFrameHeight();
+
+			float button_width = line_height;
+			ig::Separator();
+
+			ImVec2 prev_cursor_pos = ig::GetCursorPos();
+			bool   open            = ig::TreeNodeEx(typeid(Type).name(),
+													ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_Framed |
+													ImGuiTreeNodeFlags_FramePadding,
+													p_name.c_str());
+			ig::PopStyleVar();
+			// ig::SetCursorPos({content_region.x - button_width, prev_cursor_pos.y});
+			ig::SameLine(content_region.x - line_height);
+			ig::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.5f);
+			if (ig::Button("+", ImVec2{button_width, button_width}))
+				ig::OpenPopup("Component_Settings");
+			ig::PopStyleVar();
+
+			bool remove_component{false};
+			if (ig::BeginPopup("Component_Settings"))
+			{
+				if (ig::MenuItem("Remove Component"))
+					remove_component = true;
+
+				if (ig::MenuItem("Reset"))
+					comp.reset();
+
+				ig::EndPopup();
+			}
+			if (open)
+			{
+				p_func(comp);
+
+				ig::TreePop();
+			}
+			if (remove_component)
+				p_entity.removeComponent<Type>();
+		}
+		ig::PopID();
 	}
 
 	SceneHierarchyPanel::SceneHierarchyPanel(const RefPtr<Scene> &p_scene) : m_scene(p_scene)
@@ -110,6 +183,15 @@ namespace toaster
 		if (ig::IsMouseDown(ImGuiMouseButton_Left) && ig::IsWindowHovered())
 			m_selectedEntity = {};
 
+		if (ig::BeginPopupContextWindow(nullptr, ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
+		{
+			if (ig::MenuItem("Add Entity"))
+			{
+				m_scene->createEntity();
+			}
+			ig::EndPopup();
+		}
+
 		ig::End();
 
 		ig::Begin("Properties");
@@ -126,17 +208,33 @@ namespace toaster
 	{
 		auto &tag_comp = p_entity.getComponent<TagComponent>();
 
-		ImGuiTreeNodeFlags flags = (m_selectedEntity == p_entity) ? ImGuiTreeNodeFlags_Selected : 0 | ImGuiTreeNodeFlags_OpenOnArrow;
-		bool               open  = ig::TreeNodeEx(reinterpret_cast<void *>(static_cast<uint64>(static_cast<uint32>(p_entity))), flags, "%s", tag_comp.tag.c_str());
+		ImGuiTreeNodeFlags flags = ((m_selectedEntity == p_entity) ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow |
+								   ImGuiTreeNodeFlags_SpanAvailWidth;
+		bool open = ig::TreeNodeEx(reinterpret_cast<void *>(static_cast<uint64>(static_cast<uint32>(p_entity))), flags, "%s", tag_comp.tag.c_str());
 
 		if (ig::IsItemClicked())
 		{
 			m_selectedEntity = p_entity;
 		}
 
+		bool delete_entity{false};
+		if (ig::BeginPopupContextItem())
+		{
+			if (ig::MenuItem("Delete Entity"))
+				delete_entity = true;
+			ig::EndPopup();
+		}
+
 		if (open)
 		{
 			ig::TreePop();
+		}
+
+		if (delete_entity)
+		{
+			m_scene->destroyEntity(p_entity);
+			if (p_entity == m_selectedEntity)
+				m_selectedEntity = {};
 		}
 	}
 
@@ -148,108 +246,122 @@ namespace toaster
 			char8 buffer[256]{};
 			std::memcpy(buffer, tag_comp.tag.c_str(), tag_comp.tag.size());
 
-			if (ig::InputText("Tag", reinterpret_cast<char *>(buffer), sizeof(buffer)))
+			if (ig::InputText("##Tag", reinterpret_cast<char *>(buffer), sizeof(buffer)))
 			{
 				tag_comp.tag = U8String{buffer};
 			}
 		}
+		ig::SameLine();
+
+		ImVec2 size = {ig::GetContentRegionAvail().x, ig::GetFrameHeight()};
+
+		if (ig::Button("Add Component", size))
+			ig::OpenPopup("Add_Component");
+
+		if (ig::BeginPopup("Add_Component"))
 		{
-			if (ig::TreeNodeEx(typeid(TransformComponent).name(), ImGuiTreeNodeFlags_DefaultOpen, "Transform"))
+			if (ig::MenuItem("Sprite Renderer"))
 			{
-				auto &trans_comp = p_entity.getComponent<TransformComponent>();
-
-				drawVec3Ctrl("Position", &trans_comp.translation, glm::vec3{0.0f}, 75.0f);
-				drawVec3Ctrl("Rotation", &trans_comp.rotation, glm::vec3{0.0f}, 75.0f);
-				drawVec3Ctrl("Scale", &trans_comp.scale, glm::vec3{1.0f}, 75.0f);
-
-				ig::TreePop();
+				m_selectedEntity.addComponent<SpriteRendererComponent>();
+				ig::CloseCurrentPopup();
 			}
+
+			if (ig::MenuItem("Camera"))
+			{
+				m_selectedEntity.addComponent<CameraComponent>();
+				ig::CloseCurrentPopup();
+			}
+
+			ig::EndPopup();
 		}
 
-		if (p_entity.hasComponent<CameraComponent>())
+		drawComponent<TransformComponent>("Transform", p_entity, [](TransformComponent &p_comp)
 		{
-			auto &camera_comp = p_entity.getComponent<CameraComponent>();
-			auto &camera      = camera_comp.camera;
+			drawVec3Ctrl("Position", &p_comp.translation, glm::vec3{0.0f}, 75.0f);
+			ig::Separator();
+			drawVec3Ctrl("Rotation", &p_comp.rotation, glm::vec3{0.0f}, 75.0f);
+			ig::Separator();
+			drawVec3Ctrl("Scale", &p_comp.scale, glm::vec3{1.0f}, 75.0f);
+			ig::Separator();
+		});
 
-			if (ig::TreeNodeEx(typeid(CameraComponent).name(), ImGuiTreeNodeFlags_DefaultOpen, "Camera"))
+		drawComponent<CameraComponent>("Camera", p_entity, [](CameraComponent &p_comp)
+		{
+			auto &camera = p_comp.camera;
+
+			const char *s_projection_type_names[] = {"Perspective", "Orthographic"};
+
+			const char *current_projection_type = s_projection_type_names[static_cast<int32>(camera.getProjectionType())];
+			if (ui::beginCombo("Projection Type", current_projection_type))
 			{
-				const char *s_projection_type_names[] = {"Perspective", "Orthographic"};
-
-				const char *current_projection_type = s_projection_type_names[static_cast<int32>(camera.getProjectionType())];
-				if (ig::BeginCombo("Projection Type", current_projection_type))
+				for (uint32 i{0u}; i < 2; ++i)
 				{
-					for (uint32 i{0u}; i < 2; ++i)
+					bool selected = current_projection_type == s_projection_type_names[i];
+					if (ig::Selectable(s_projection_type_names[i], selected))
 					{
-						bool selected = current_projection_type == s_projection_type_names[i];
-						if (ig::Selectable(s_projection_type_names[i], selected))
-						{
-							current_projection_type = s_projection_type_names[i];
-							camera.setProjectionType(static_cast<SceneCamera::EProjectionType>(i));
-						}
-						if (selected)
-							ig::SetItemDefaultFocus();
+						current_projection_type = s_projection_type_names[i];
+						camera.setProjectionType(static_cast<SceneCamera::EProjectionType>(i));
 					}
-					ig::EndCombo();
+					if (selected)
+						ig::SetItemDefaultFocus();
 				}
-
-				if (camera.getProjectionType() == SceneCamera::EProjectionType::ePerspective)
-				{
-					float fov = glm::degrees(camera.getPerspectiveFov());
-					if (ig::DragFloat("Fov", &fov, 0.1f))
-						camera.setPerspectiveFov(glm::radians(fov));
-
-					float z_near = camera.getPerspectiveNearClip();
-					if (ig::DragFloat("ZNear", &z_near, 0.1f))
-						camera.setPerspectiveNearClip(z_near);
-
-					float z_far = camera.getPerspectiveFarClip();
-					if (ig::DragFloat("ZFar", &z_far, 0.1f))
-						camera.setPerspectiveFarClip(z_far);
-				}
-				if (camera.getProjectionType() == SceneCamera::EProjectionType::eOrthographic)
-				{
-					float size = camera.getOrthoSize();
-					if (ig::DragFloat("Size", &size, 0.1f))
-						camera.setOrthoSize(size);
-
-					float z_near = camera.getOrthoNearClip();
-					if (ig::DragFloat("ZNear", &z_near, 0.1f))
-						camera.setOrthoNearClip(z_near);
-
-					float z_far = camera.getOrthoFarClip();
-					if (ig::DragFloat("ZFar", &z_far, 0.1f))
-						camera.setOrthoFarClip(z_far);
-				}
-
-				ig::Checkbox("Primary", &camera_comp.primary);
-				ig::SetItemTooltip("If true, the camera will be used as the main camera to view the scene from.");
-
-				ig::TreePop();
+				ui::endCombo();
 			}
-		}
+			ig::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.5);
 
-		if (p_entity.hasComponent<SpriteRendererComponent>())
-		{
-			auto &sprite_comp = p_entity.getComponent<SpriteRendererComponent>();
-
-			if (ig::TreeNodeEx(typeid(SpriteRendererComponent).name(), ImGuiTreeNodeFlags_DefaultOpen, "Sprite Renderer"))
+			if (camera.getProjectionType() == SceneCamera::EProjectionType::ePerspective)
 			{
-				ig::ColorEdit4("Colour", &sprite_comp.colour.x);
+				float fov = glm::degrees(camera.getPerspectiveFov());
+				if (ui::dragFloat("Fov", &fov, "##Fov", 0.1f))
+					camera.setPerspectiveFov(glm::radians(fov));
 
-				ig::DragFloat("Tiling Factor", &sprite_comp.tilingFactor, 0.1f);
+				float z_near = camera.getPerspectiveNearClip();
+				if (ui::dragFloat("ZNear", &z_near, "##ZNear", 0.1f))
+					camera.setPerspectiveNearClip(z_near);
 
-				if (ig::Button("File"))
-				{
-					auto path = os::openFileDialog({{"Image", "png,jpg,jpeg"}});
-					if (io::filesystem::exists(path))
-					{
-						LOG_INFO("{}", path.string());
-						sprite_comp.texture = gpu::ITexture2D::create(path);
-					}
-				}
-
-				ig::TreePop();
+				float z_far = camera.getPerspectiveFarClip();
+				if (ui::dragFloat("ZFar", &z_far, "##ZFar", 0.1f))
+					camera.setPerspectiveFarClip(z_far);
 			}
-		}
+			if (camera.getProjectionType() == SceneCamera::EProjectionType::eOrthographic)
+			{
+				float size = camera.getOrthoSize();
+				if (ui::dragFloat("Size", &size, "##Size", 0.1f))
+					camera.setOrthoSize(size);
+
+				float z_near = camera.getOrthoNearClip();
+				if (ui::dragFloat("ZNear", &z_near, "##ZNear", 0.1f))
+					camera.setOrthoNearClip(z_near);
+
+				float z_far = camera.getOrthoFarClip();
+				if (ui::dragFloat("ZFar", &z_far, "##ZFar", 0.1f))
+					camera.setOrthoFarClip(z_far);
+			}
+
+			ui::checkbox("Primary", &p_comp.primary);
+			ig::PopStyleVar();
+
+			ig::SetItemTooltip("If true, the camera will be used as the main camera to view the scene from.");
+		});
+
+		drawComponent<SpriteRendererComponent>("Sprite Renderer", p_entity, [](SpriteRendererComponent &p_comp)
+		{
+			ui::colourEdit4("Colour", &p_comp.colour.x);
+
+			ig::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.5);
+			ui::dragFloat("Tiling Factor", &p_comp.tilingFactor, "##Tiling_Factor", 0.1f);
+			ig::PopStyleVar();
+
+			// ig::SetNextItemWidth(ig::GetContentRegionAvail().x);
+			if (ig::Button("File", ImVec2{ig::GetContentRegionAvail().x, 0}))
+			{
+				auto path = os::openFileDialog({{"Image", "png,jpg,jpeg"}});
+				if (io::filesystem::exists(path))
+				{
+					LOG_INFO("{}", path.string());
+					p_comp.texture = gpu::ITexture2D::create(path);
+				}
+			}
+		});
 	}
 }

@@ -85,9 +85,18 @@ namespace toaster
 
 		entity.addComponent<TransformComponent>();
 
-		entity.addComponent<TagComponent>(p_name.empty() ? u8"ヌル　エンチチ" : p_name);
+		const bool name_empty = p_name.empty();
+		entity.addComponent<TagComponent>(name_empty ? u8"ヌル　エンチチ (" + to_u8string(m_newEntityTagCount) + u8")" : p_name);
+
+		if (name_empty)
+			++m_newEntityTagCount; // E.g. "New Entity (1)"
 
 		return entity;
+	}
+
+	void Scene::destroyEntity(Entity p_entity)
+	{
+		m_registry.destroy(p_entity);
 	}
 
 	Entity Scene::getMainCameraEntity()
@@ -111,4 +120,35 @@ namespace toaster
 	{
 		return m_registry;
 	}
+
+	template<typename Type>
+	void Scene::onComponentAdded([[maybe_unused]] Entity p_entity, [[maybe_unused]] Type &p_component)
+	{
+		TST_ASSERT(false);
+	}
+
+	#define ON_COMPONENT_ADDED(__type)	template<>\
+										void Scene::onComponentAdded<__type>([[maybe_unused]] Entity p_entity, __type &p_component)
+
+	ON_COMPONENT_ADDED(TagComponent)
+	{
+	}
+
+	ON_COMPONENT_ADDED(TransformComponent)
+	{
+	}
+
+	ON_COMPONENT_ADDED(SpriteRendererComponent)
+	{
+	}
+
+	ON_COMPONENT_ADDED(CameraComponent)
+	{
+		p_component.camera.setViewportSize(m_viewportWidth, m_viewportHeight);
+	}
+
+	ON_COMPONENT_ADDED(NativeScriptComponent)
+	{
+	}
+	#undef ON_COMPONENT_ADDED
 }

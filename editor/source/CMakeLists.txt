@@ -12,6 +12,11 @@ set(SRC
 
 		ui/ui_utils.cpp
 		ui/ui_utils.hpp
+
+		ui/ui_widgets.cpp
+		ui/ui_widgets.hpp
+
+		ui/colours.hpp
 )
 
 add_executable(toaster_editor ${SRC})
