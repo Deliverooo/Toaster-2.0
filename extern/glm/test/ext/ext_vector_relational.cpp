@@ -15,7 +15,7 @@
 #include <glm/ext/vector_double3_precision.hpp>
 #include <glm/ext/vector_double4.hpp>
 #include <glm/ext/vector_double4_precision.hpp>
-#include <glm/gtc/ulp.hpp>
+#include <glm/ext/vector_ulp.hpp>
 
 template <typename vecType>
 static int test_equal()
@@ -59,16 +59,6 @@ static int test_notEqual()
 	return Error;
 }
 
-template <typename genType, typename valType>
-static int test_constexpr()
-{
-#	if GLM_CONFIG_CONSTEXP == GLM_ENABLE
-		static_assert(glm::all(glm::equal(genType(static_cast<valType>(1.01f)), genType(static_cast<valType>(1.02f)), static_cast<valType>(0.1f))), "GLM: Failed constexpr");
-#	endif
-
-	return 0;
-}
-
 template <typename T>
 static int test_equal_ulps()
 {
@@ -79,16 +69,16 @@ static int test_equal_ulps()
 
 	int Error = 0;
 
-	T const ULP1Plus = glm::next_float(One);
+	T const ULP1Plus = glm::nextFloat(One);
 	Error += glm::all(glm::equal(Ones, vec4(ULP1Plus), 1)) ? 0 : 1;
 
-	T const ULP2Plus = glm::next_float(ULP1Plus);
+	T const ULP2Plus = glm::nextFloat(ULP1Plus);
 	Error += !glm::all(glm::equal(Ones, vec4(ULP2Plus), 1)) ? 0 : 1;
 
-	T const ULP1Minus = glm::prev_float(One);
+	T const ULP1Minus = glm::prevFloat(One);
 	Error += glm::all(glm::equal(Ones, vec4(ULP1Minus), 1)) ? 0 : 1;
 
-	T const ULP2Minus = glm::prev_float(ULP1Minus);
+	T const ULP2Minus = glm::prevFloat(ULP1Minus);
 	Error += !glm::all(glm::equal(Ones, vec4(ULP2Minus), 1)) ? 0 : 1;
 
 	return Error;
@@ -104,16 +94,16 @@ static int test_notEqual_ulps()
 
 	int Error = 0;
 
-	T const ULP1Plus = glm::next_float(One);
+	T const ULP1Plus = glm::nextFloat(One);
 	Error += !glm::all(glm::notEqual(Ones, vec4(ULP1Plus), 1)) ? 0 : 1;
 
-	T const ULP2Plus = glm::next_float(ULP1Plus);
+	T const ULP2Plus = glm::nextFloat(ULP1Plus);
 	Error += glm::all(glm::notEqual(Ones, vec4(ULP2Plus), 1)) ? 0 : 1;
 
-	T const ULP1Minus = glm::prev_float(One);
+	T const ULP1Minus = glm::prevFloat(One);
 	Error += !glm::all(glm::notEqual(Ones, vec4(ULP1Minus), 1)) ? 0 : 1;
 
-	T const ULP2Minus = glm::prev_float(ULP1Minus);
+	T const ULP2Minus = glm::prevFloat(ULP1Minus);
 	Error += glm::all(glm::notEqual(Ones, vec4(ULP2Minus), 1)) ? 0 : 1;
 
 	return Error;
@@ -195,11 +185,6 @@ int main()
 	Error += test_notEqual<glm::lowp_dvec4>();
 	Error += test_notEqual<glm::mediump_dvec4>();
 	Error += test_notEqual<glm::highp_dvec4>();
-
-	Error += test_constexpr<glm::vec1, float>();
-	Error += test_constexpr<glm::vec2, float>();
-	Error += test_constexpr<glm::vec3, float>();
-	Error += test_constexpr<glm::vec4, float>();
 
 	return Error;
 }

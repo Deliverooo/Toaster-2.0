@@ -2,292 +2,265 @@
 cmake_minimum_required(VERSION 3.6...3.14 FATAL_ERROR)
 cmake_policy(VERSION 3.6...3.14)
 
-set(GLM_VERSION "0.9.9")
-project(glm VERSION ${GLM_VERSION} LANGUAGES CXX)
+file(READ "glm/detail/setup.hpp" GLM_SETUP_FILE)
+string(REGEX MATCH "#define[ ]+GLM_VERSION_MAJOR[ ]+([0-9]+)" _ ${GLM_SETUP_FILE})
+set(GLM_VERSION_MAJOR "${CMAKE_MATCH_1}")
+string(REGEX MATCH "#define[ ]+GLM_VERSION_MINOR[ ]+([0-9]+)" _ ${GLM_SETUP_FILE})
+set(GLM_VERSION_MINOR "${CMAKE_MATCH_1}")
+string(REGEX MATCH "#define[ ]+GLM_VERSION_PATCH[ ]+([0-9]+)" _ ${GLM_SETUP_FILE})
+set(GLM_VERSION_PATCH "${CMAKE_MATCH_1}")
+string(REGEX MATCH "#define[ ]+GLM_VERSION_REVISION[ ]+([0-9]+)" _ ${GLM_SETUP_FILE})
+set(GLM_VERSION_REVISION "${CMAKE_MATCH_1}")
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set(GLM_VERSION ${GLM_VERSION_MAJOR}.${GLM_VERSION_MINOR}.${GLM_VERSION_PATCH})
+project(glm VERSION ${GLM_VERSION} LANGUAGES CXX)
+message(STATUS "GLM: Version " ${GLM_VERSION})
+
+set(GLM_IS_MASTER_PROJECT OFF)
+if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
+	set(GLM_IS_MASTER_PROJECT ON)
+endif()
+
+option(GLM_BUILD_LIBRARY "Build dynamic/static library" ON)
+option(GLM_BUILD_TESTS "Build the test programs" OFF)
+option(GLM_BUILD_INSTALL "Generate the install target" ${GLM_IS_MASTER_PROJECT})
 
 include(GNUInstallDirs)
-include(CMakePackageConfigHelpers)
 
-enable_testing()
-
-option(GLM_QUIET "No CMake Message" OFF)
-option(GLM_TEST_ENABLE_CXX_98 "Enable C++ 98" OFF)
-option(GLM_TEST_ENABLE_CXX_11 "Enable C++ 11" OFF)
-option(GLM_TEST_ENABLE_CXX_14 "Enable C++ 14" OFF)
-option(GLM_TEST_ENABLE_CXX_17 "Enable C++ 17" OFF)
-option(GLM_TEST_ENABLE_CXX_20 "Enable C++ 20" OFF)
+option(GLM_ENABLE_CXX_17 "Enable C++ 17" OFF)
+option(GLM_ENABLE_CXX_20 "Enable C++ 20" OFF)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
-if (GLM_TEST_ENABLE_CXX_20)
+if(GLM_ENABLE_CXX_20)
 	set(CMAKE_CXX_STANDARD 20)
-	add_definitions(-DGLM_FORCE_CXX2A)
-	if (NOT GLM_QUIET)
+	add_definitions(-DGLM_FORCE_CXX20)
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		message(STATUS "GLM: Disable -Wc++98-compat warnings")
+		add_compile_options(-Wno-c++98-compat)
+		add_compile_options(-Wno-c++98-compat-pedantic)
+		add_compile_options(-Wno-switch-default)
+	endif()
+	if(NOT GLM_QUIET)
 		message(STATUS "GLM: Build with C++20 features")
-	endif ()
+	endif()
 
-elseif (GLM_TEST_ENABLE_CXX_17)
+elseif(GLM_ENABLE_CXX_17)
 	set(CMAKE_CXX_STANDARD 17)
 	add_definitions(-DGLM_FORCE_CXX17)
-	if (NOT GLM_QUIET)
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		message(STATUS "GLM: Disable -Wc++98-compat warnings")
+		add_compile_options(-Wno-c++98-compat)
+		add_compile_options(-Wno-c++98-compat-pedantic)
+		add_compile_options(-Wno-switch-default)
+	endif()
+	if(NOT GLM_QUIET)
 		message(STATUS "GLM: Build with C++17 features")
-	endif ()
+	endif()
 
-elseif (GLM_TEST_ENABLE_CXX_14)
-	set(CMAKE_CXX_STANDARD 14)
-	add_definitions(-DGLM_FORCE_CXX14)
-	if (NOT GLM_QUIET)
-		message(STATUS "GLM: Build with C++14 features")
-	endif ()
+else()
+	set(CMAKE_CXX_STANDARD 17)
+	if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+		message(STATUS "GLM: Disable -Wc++98-compat warnings")
+		add_compile_options(-Wno-c++98-compat)
+		add_compile_options(-Wno-c++98-compat-pedantic)
+		add_compile_options(-Wno-switch-default)
+	endif()
+	if(NOT GLM_QUIET)
+		message(STATUS "GLM: Build with C++ features auto detection")
+	endif()
 
-elseif (GLM_TEST_ENABLE_CXX_11)
-	set(CMAKE_CXX_STANDARD 11)
-	add_definitions(-DGLM_FORCE_CXX11)
-	if (NOT GLM_QUIET)
-		message(STATUS "GLM: Build with C++11 features")
-	endif ()
+endif()
 
-elseif (GLM_TEST_ENABLE_CXX_98)
-	set(CMAKE_CXX_STANDARD 98)
-	add_definitions(-DGLM_FORCE_CXX98)
-	if (NOT GLM_QUIET)
-		message(STATUS "GLM: Build with C++98 features")
-	endif ()
-endif ()
+option(GLM_ENABLE_LANG_EXTENSIONS "Enable language extensions" OFF)
+option(GLM_DISABLE_AUTO_DETECTION "Disable platform, compiler, arch and C++ language detection" OFF)
 
-option(GLM_TEST_ENABLE_LANG_EXTENSIONS "Enable language extensions" OFF)
-
-option(GLM_DISABLE_AUTO_DETECTION "Enable language extensions" OFF)
-
-if (GLM_DISABLE_AUTO_DETECTION)
+if(GLM_DISABLE_AUTO_DETECTION)
 	add_definitions(-DGLM_FORCE_PLATFORM_UNKNOWN -DGLM_FORCE_COMPILER_UNKNOWN -DGLM_FORCE_ARCH_UNKNOWN -DGLM_FORCE_CXX_UNKNOWN)
-endif ()
+endif()
 
-if (GLM_TEST_ENABLE_LANG_EXTENSIONS)
+if(GLM_ENABLE_LANG_EXTENSIONS)
 	set(CMAKE_CXX_EXTENSIONS ON)
-	if ((CMAKE_CXX_COMPILER_ID MATCHES "Clang") OR (CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
+	if((CMAKE_CXX_COMPILER_ID MATCHES "Clang") OR (CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
 		add_compile_options(-fms-extensions)
-	endif ()
+	endif()
 	message(STATUS "GLM: Build with C++ language extensions")
-else ()
+else()
 	set(CMAKE_CXX_EXTENSIONS OFF)
-	if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+	if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		add_compile_options(/Za)
-		if (MSVC15)
+		if(MSVC15)
 			add_compile_options(/permissive-)
-		endif ()
-	endif ()
-endif ()
+		endif()
+	endif()
+endif()
 
-option(GLM_TEST_ENABLE_FAST_MATH "Enable fast math optimizations" OFF)
-if (GLM_TEST_ENABLE_FAST_MATH)
-	if (NOT GLM_QUIET)
+option(GLM_ENABLE_FAST_MATH "Enable fast math optimizations" OFF)
+if(GLM_ENABLE_FAST_MATH)
+	if(NOT GLM_QUIET)
 		message(STATUS "GLM: Build with fast math optimizations")
-	endif ()
+	endif()
 
-	if ((CMAKE_CXX_COMPILER_ID MATCHES "Clang") OR (CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
+	if((CMAKE_CXX_COMPILER_ID MATCHES "Clang") OR (CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
 		add_compile_options(-ffast-math)
 
-	elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		add_compile_options(/fp:fast)
-	endif ()
-else ()
-	if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+	endif()
+else()
+	if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		add_compile_options(/fp:precise)
-	endif ()
-endif ()
+	endif()
+endif()
 
-option(GLM_TEST_ENABLE "Build unit tests" ON)
-option(GLM_TEST_ENABLE_SIMD_SSE2 "Enable SSE2 optimizations" OFF)
-option(GLM_TEST_ENABLE_SIMD_SSE3 "Enable SSE3 optimizations" OFF)
-option(GLM_TEST_ENABLE_SIMD_SSSE3 "Enable SSSE3 optimizations" OFF)
-option(GLM_TEST_ENABLE_SIMD_SSE4_1 "Enable SSE 4.1 optimizations" OFF)
-option(GLM_TEST_ENABLE_SIMD_SSE4_2 "Enable SSE 4.2 optimizations" OFF)
-option(GLM_TEST_ENABLE_SIMD_AVX "Enable AVX optimizations" OFF)
-option(GLM_TEST_ENABLE_SIMD_AVX2 "Enable AVX2 optimizations" OFF)
-option(GLM_TEST_FORCE_PURE "Force 'pure' instructions" OFF)
+option(GLM_ENABLE_SIMD_SSE2 "Enable SSE2 optimizations" OFF)
+option(GLM_ENABLE_SIMD_SSE3 "Enable SSE3 optimizations" OFF)
+option(GLM_ENABLE_SIMD_SSSE3 "Enable SSSE3 optimizations" OFF)
+option(GLM_ENABLE_SIMD_SSE4_1 "Enable SSE 4.1 optimizations" OFF)
+option(GLM_ENABLE_SIMD_SSE4_2 "Enable SSE 4.2 optimizations" OFF)
+option(GLM_ENABLE_SIMD_AVX "Enable AVX optimizations" OFF)
+option(GLM_ENABLE_SIMD_AVX2 "Enable AVX2 optimizations" OFF)
+option(GLM_ENABLE_SIMD_NEON "Enable ARM NEON optimizations" OFF)
+option(GLM_FORCE_PURE "Force 'pure' instructions" OFF)
 
-if (GLM_TEST_FORCE_PURE)
+if(GLM_FORCE_PURE)
 	add_definitions(-DGLM_FORCE_PURE)
 
-	if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-		add_compile_options(-mfpmath=387)
-	endif ()
+#	if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+#		add_compile_options(-mfpmath=387)
+#	endif()
 	message(STATUS "GLM: No SIMD instruction set")
 
-elseif (GLM_TEST_ENABLE_SIMD_AVX2)
-	add_definitions(-DGLM_FORCE_PURE)
+elseif(GLM_ENABLE_SIMD_AVX2)
+	add_definitions(-DGLM_FORCE_INTRINSICS)
 
-	if ((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
+	if((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
 		add_compile_options(-mavx2)
-	elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
 		add_compile_options(/QxAVX2)
-	elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		add_compile_options(/arch:AVX2)
-	endif ()
+	endif()
 	message(STATUS "GLM: AVX2 instruction set")
 
-elseif (GLM_TEST_ENABLE_SIMD_AVX)
+elseif(GLM_ENABLE_SIMD_AVX)
 	add_definitions(-DGLM_FORCE_INTRINSICS)
 
-	if ((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
+	if((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
 		add_compile_options(-mavx)
-	elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
 		add_compile_options(/QxAVX)
-	elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		add_compile_options(/arch:AVX)
-	endif ()
+	endif()
 	message(STATUS "GLM: AVX instruction set")
 
-elseif (GLM_TEST_ENABLE_SIMD_SSE4_2)
+elseif(GLM_ENABLE_SIMD_SSE4_2)
 	add_definitions(-DGLM_FORCE_INTRINSICS)
 
-	if ((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
+	if((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
 		add_compile_options(-msse4.2)
-	elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
 		add_compile_options(/QxSSE4.2)
-	elseif ((CMAKE_CXX_COMPILER_ID MATCHES "MSVC") AND NOT CMAKE_CL_64)
-		add_compile_options(/arch:SSE2) # VC doesn't support SSE4.2
-	endif ()
+	elseif((CMAKE_CXX_COMPILER_ID MATCHES "MSVC") AND NOT CMAKE_CL_64)
+		add_compile_options(/arch:SSE4.2)
+	endif()
 	message(STATUS "GLM: SSE4.2 instruction set")
 
-elseif (GLM_TEST_ENABLE_SIMD_SSE4_1)
+elseif(GLM_ENABLE_SIMD_SSE4_1)
 	add_definitions(-DGLM_FORCE_INTRINSICS)
 
-	if ((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
+	if((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
 		add_compile_options(-msse4.1)
-	elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
 		add_compile_options(/QxSSE4.1)
-	elseif ((CMAKE_CXX_COMPILER_ID MATCHES "MSVC") AND NOT CMAKE_CL_64)
+	elseif((CMAKE_CXX_COMPILER_ID MATCHES "MSVC") AND NOT CMAKE_CL_64)
 		add_compile_options(/arch:SSE2) # VC doesn't support SSE4.1
-	endif ()
+	endif()
 	message(STATUS "GLM: SSE4.1 instruction set")
 
-elseif (GLM_TEST_ENABLE_SIMD_SSSE3)
+elseif(GLM_ENABLE_SIMD_SSSE3)
 	add_definitions(-DGLM_FORCE_INTRINSICS)
 
-	if ((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
+	if((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
 		add_compile_options(-mssse3)
-	elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
 		add_compile_options(/QxSSSE3)
-	elseif ((CMAKE_CXX_COMPILER_ID MATCHES "MSVC") AND NOT CMAKE_CL_64)
+	elseif((CMAKE_CXX_COMPILER_ID MATCHES "MSVC") AND NOT CMAKE_CL_64)
 		add_compile_options(/arch:SSE2) # VC doesn't support SSSE3
-	endif ()
+	endif()
 	message(STATUS "GLM: SSSE3 instruction set")
 
-elseif (GLM_TEST_ENABLE_SIMD_SSE3)
+elseif(GLM_ENABLE_SIMD_SSE3)
 	add_definitions(-DGLM_FORCE_INTRINSICS)
 
-	if ((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
+	if((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
 		add_compile_options(-msse3)
-	elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
 		add_compile_options(/QxSSE3)
-	elseif ((CMAKE_CXX_COMPILER_ID MATCHES "MSVC") AND NOT CMAKE_CL_64)
+	elseif((CMAKE_CXX_COMPILER_ID MATCHES "MSVC") AND NOT CMAKE_CL_64)
 		add_compile_options(/arch:SSE2) # VC doesn't support SSE3
-	endif ()
+	endif()
 	message(STATUS "GLM: SSE3 instruction set")
 
-elseif (GLM_TEST_ENABLE_SIMD_SSE2)
+elseif(GLM_ENABLE_SIMD_SSE2)
 	add_definitions(-DGLM_FORCE_INTRINSICS)
 
-	if ((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
+	if((CMAKE_CXX_COMPILER_ID MATCHES "GNU") OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
 		add_compile_options(-msse2)
-	elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
+	elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
 		add_compile_options(/QxSSE2)
-	elseif ((CMAKE_CXX_COMPILER_ID MATCHES "MSVC") AND NOT CMAKE_CL_64)
+	elseif((CMAKE_CXX_COMPILER_ID MATCHES "MSVC") AND NOT CMAKE_CL_64)
 		add_compile_options(/arch:SSE2)
-	endif ()
+	endif()
 	message(STATUS "GLM: SSE2 instruction set")
-endif ()
+elseif(GLM_ENABLE_SIMD_NEON)
+	add_definitions(-DGLM_FORCE_INTRINSICS)
 
-# Compiler and default options
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	if (NOT GLM_QUIET)
-		message("GLM: Clang - ${CMAKE_CXX_COMPILER_ID} compiler")
-	endif ()
-
-	add_compile_options(-Werror -Weverything)
-	add_compile_options(-Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-c++11-long-long -Wno-padded -Wno-gnu-anonymous-struct -Wno-nested-anon-types)
-	add_compile_options(-Wno-undefined-reinterpret-cast -Wno-sign-conversion -Wno-unused-variable -Wno-missing-prototypes -Wno-unreachable-code -Wno-missing-variable-declarations -Wno-sign-compare -Wno-global-constructors -Wno-unused-macros -Wno-format-nonliteral)
-
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-	if (NOT GLM_QUIET)
-		message("GLM: GCC - ${CMAKE_CXX_COMPILER_ID} compiler")
-	endif ()
-
-	add_compile_options(-O2)
-	add_compile_options(-Wno-long-long)
-
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-	if (NOT GLM_QUIET)
-		message("GLM: Intel - ${CMAKE_CXX_COMPILER_ID} compiler")
-	endif ()
-
-elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-	if (NOT GLM_QUIET)
-		message("GLM: Visual C++ - ${CMAKE_CXX_COMPILER_ID} compiler")
-	endif ()
-
-	add_compile_options(/W4 /WX)
-	add_compile_options(/wd4309 /wd4324 /wd4389 /wd4127 /wd4267 /wd4146 /wd4201 /wd4464 /wd4514 /wd4701 /wd4820 /wd4365)
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-endif ()
-
-include_directories("${PROJECT_SOURCE_DIR}")
+	message(STATUS "GLM: ARM NEON instruction set")
+endif()
 
 add_subdirectory(glm)
-add_subdirectory(test)
 
-set(GLM_INSTALL_CONFIGDIR "${CMAKE_INSTALL_LIBDIR}/cmake/glm")
-install(DIRECTORY glm DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+if (GLM_BUILD_TESTS)
+	include(CTest)
+	add_subdirectory(test)
+endif()
 
-write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/glmConfigVersion.cmake" VERSION ${GLM_VERSION} COMPATIBILITY AnyNewerVersion)
+if (GLM_BUILD_INSTALL)
+	include(CPack)
 
-# build tree package config
-configure_file(cmake/glmBuildConfig.cmake.in glmConfig.cmake @ONLY)
-
-# install tree package config
-configure_package_config_file(
-		cmake/glmConfig.cmake.in
-		${GLM_INSTALL_CONFIGDIR}/glmConfig.cmake
-		INSTALL_DESTINATION ${GLM_INSTALL_CONFIGDIR}
-		PATH_VARS CMAKE_INSTALL_INCLUDEDIR
-		NO_CHECK_REQUIRED_COMPONENTS_MACRO)
-
-install(FILES
-		"${CMAKE_CURRENT_BINARY_DIR}/${GLM_INSTALL_CONFIGDIR}/glmConfig.cmake"
+	install(TARGETS glm-header-only glm EXPORT glm)
+	install(
+		DIRECTORY glm
+		DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+		PATTERN "CMakeLists.txt" EXCLUDE
+	)
+	install(
+		EXPORT glm
+		NAMESPACE glm::
+		DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/glm"
+		FILE glmConfig.cmake
+	)
+	include(CMakePackageConfigHelpers)
+	write_basic_package_version_file(
 		"${CMAKE_CURRENT_BINARY_DIR}/glmConfigVersion.cmake"
-		DESTINATION ${GLM_INSTALL_CONFIGDIR})
+		COMPATIBILITY AnyNewerVersion
+	)
+	install(
+		FILES "${CMAKE_CURRENT_BINARY_DIR}/glmConfigVersion.cmake"
+		DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/glm"
+	)
 
-add_library(glm INTERFACE)
-target_include_directories(glm INTERFACE
-		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-install(TARGETS glm EXPORT glmTargets)
-
-export(EXPORT glmTargets FILE "${CMAKE_CURRENT_BINARY_DIR}/glmTargets.cmake")
-
-install(EXPORT glmTargets FILE glmTargets.cmake DESTINATION ${GLM_INSTALL_CONFIGDIR})
-
-# build pkg-config file
-configure_file("./cmake/glm.pc.in" "glm.pc" @ONLY)
-
-# install pkg-config file
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/glm.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
-
-export(PACKAGE glm)
-
-if (NOT TARGET uninstall)
 	configure_file(
-			${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in
-			${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
-			IMMEDIATE @ONLY)
+		"${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+		"${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+		IMMEDIATE @ONLY
+	)
 
-	add_custom_target(uninstall
-			COMMAND ${CMAKE_COMMAND} -P
-			${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
-endif ()
+	add_custom_target(
+		uninstall
+		"${CMAKE_COMMAND}" -P
+		"${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+	)
+endif()

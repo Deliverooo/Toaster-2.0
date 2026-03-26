@@ -1,11 +1,11 @@
 #pragma once
 
-#include "toaster/toast_gpu/framebuffer.hpp"
-#include "toaster/toast_gpu/texture.hpp"
-#include "toaster/toast_gpu/vertex_array.hpp"
+#include "toast_gpu/framebuffer.hpp"
+#include "toast_gpu/texture.hpp"
+#include "toast_gpu/vertex_array.hpp"
 
-#include "toaster/toast_lib/camera.hpp"
-#include "toaster/toast_lib/math/math_vector.hpp"
+#include "toast_lib/camera.hpp"
+#include "toast_lib/math/math_vector.hpp"
 
 #include <array>
 

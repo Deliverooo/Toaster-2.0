@@ -9,12 +9,12 @@
 
 #include <GLFW/glfw3.h>
 
-#include "toaster/toast_lib/logging.hpp"
+#include "toast_lib/logging.hpp"
 
 namespace toaster::gpu
 {
-	static void __stdcall debugMessageCallback(gl::Enum    p_source, gl::Enum p_type, gl::UInt p_id, gl::Enum p_severity, gl::SizeI p_length, const gl::Char *p_message,
-											   const void *p_user_param)
+	static void __stdcall debugMessageCallback(gl::Enum                   p_source, gl::Enum        p_type, [[maybe_unused]] gl::UInt       p_id, gl::Enum p_severity,
+											   [[maybe_unused]] gl::SizeI p_length, const gl::Char *p_message, [[maybe_unused]] const void *p_user_param)
 	{
 		switch (static_cast<gl::DebugSeverity>(p_severity))
 		{

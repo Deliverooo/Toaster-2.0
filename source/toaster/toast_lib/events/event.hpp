@@ -3,8 +3,8 @@
  */
 #pragma once
 
-#include "toaster/toast_lib/system_types.h"
-#include "toaster/toast_lib/util_defines.hpp"
+#include "../system_types.h"
+#include "../util_defines.hpp"
 
 #include <functional>
 #include <sstream>

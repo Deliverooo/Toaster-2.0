@@ -8,34 +8,28 @@ namespace toaster
 	class RefPtr
 	{
 	public:
-		RefPtr(std::nullptr_t) : m_ptr(nullptr), m_refCount(new int(1))
+		RefPtr(std::nullptr_t) : m_ptr(nullptr), m_refCount(nullptr)
 		{
 		}
 
-		RefPtr(Type *p_ptr = nullptr) : m_ptr(p_ptr), m_refCount(new int(1))
+		RefPtr(Type *p_ptr = nullptr) : m_ptr(p_ptr), m_refCount(p_ptr ? new std::atomic_int32_t(1) : nullptr)
 		{
 		}
 
-		RefPtr(const RefPtr &p_other)
+		RefPtr(const RefPtr &p_other) : m_ptr(p_other.m_ptr), m_refCount(p_other.m_refCount)
 		{
-			m_ptr      = p_other.m_ptr;
-			m_refCount = p_other.m_refCount;
-			++(*m_refCount);
-		}
-
-		template<typename TOther>
-		RefPtr(const RefPtr<TOther> &p_other)
-		{
-			m_ptr      = static_cast<Type *>(p_other.m_ptr);
-			m_refCount = p_other.m_refCount;
-			++(*m_refCount);
+			_incRef();
 		}
 
 		template<typename TOther>
-		RefPtr(RefPtr<TOther> &&p_other)
+		RefPtr(const RefPtr<TOther> &p_other) : m_ptr(p_other.m_ptr), m_refCount(p_other.m_refCount)
 		{
-			m_ptr              = static_cast<Type *>(p_other.m_ptr);
-			m_refCount         = p_other.m_refCount;
+			_incRef();
+		}
+
+		template<typename TOther>
+		RefPtr(RefPtr<TOther> &&p_other) : m_ptr(p_other.m_ptr), m_refCount(p_other.m_refCount)
+		{
 			p_other.m_ptr      = nullptr;
 			p_other.m_refCount = nullptr;
 		}
@@ -56,7 +50,7 @@ namespace toaster
 				_release();
 				m_ptr      = p_other.m_ptr;
 				m_refCount = p_other.m_refCount;
-				++(*m_refCount);
+				_incRef();
 			}
 			return *this;
 		}
@@ -69,7 +63,7 @@ namespace toaster
 				_release();
 				m_ptr      = p_other.m_ptr;
 				m_refCount = p_other.m_refCount;
-				++(*m_refCount);
+				_incRef();
 			}
 			return *this;
 		}
@@ -80,8 +74,10 @@ namespace toaster
 			if (this != &p_other)
 			{
 				_release();
-				m_ptr         = p_other.m_ptr;
-				p_other.m_ptr = nullptr;
+				m_ptr              = p_other.m_ptr;
+				m_refCount         = p_other.m_refCount;
+				p_other.m_ptr      = nullptr;
+				p_other.m_refCount = nullptr;
 			}
 			return *this;
 		}
@@ -97,8 +93,11 @@ namespace toaster
 
 		void reset(Type *p_ptr = nullptr)
 		{
+			if (m_ptr == p_ptr)
+				return;
 			_release();
-			m_ptr = p_ptr;
+			m_ptr      = p_ptr;
+			m_refCount = p_ptr ? new std::atomic_int32_t(1) : nullptr;
 		}
 
 		template<typename TOther>
@@ -121,21 +120,28 @@ namespace toaster
 		operator bool() const { return m_ptr != nullptr; }
 
 	private:
+		void _incRef()
+		{
+			if (m_refCount)
+				++(*m_refCount);
+		}
+
 		void _release()
 		{
-			if (m_ptr)
+			if (m_refCount)
 			{
-				--(*m_refCount);
-				if (*m_refCount == 0)
+				if (--(*m_refCount) == 0)
 				{
 					delete m_ptr;
 					delete m_refCount;
 				}
+				m_ptr      = nullptr;
+				m_refCount = nullptr;
 			}
 		}
 
-		mutable Type *m_ptr{nullptr};
-		mutable int * m_refCount{nullptr};
+		mutable Type *               m_ptr{nullptr};
+		mutable std::atomic_int32_t *m_refCount{nullptr};
 
 		template<typename TOther>
 		friend class RefPtr;

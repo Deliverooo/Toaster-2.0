@@ -2,9 +2,9 @@
 
 #include <string>
 
-#include "toaster/toast_lib/ptr.hpp"
-#include "toaster/toast_lib/system_types.h"
-#include "toaster/toast_lib/toast_assert.h"
+#include "../ptr.hpp"
+#include "../system_types.h"
+#include "../toast_assert.h"
 
 #include "serializable.hpp"
 

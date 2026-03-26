@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <openglhpp/opengl.hpp>
 
-#include "toaster/toast_gpu/shader.hpp"
+#include "../shader.hpp"
 
 namespace toaster::gpu
 {

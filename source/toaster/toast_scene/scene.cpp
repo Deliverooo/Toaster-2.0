@@ -2,7 +2,7 @@
 #include "entity.hpp"
 #include "components.hpp"
 
-#include "toaster/toast_lib/logging.hpp"
+#include "toast_lib/logging.hpp"
 
 namespace toaster
 {
@@ -132,23 +132,32 @@ namespace toaster
 
 	ON_COMPONENT_ADDED(TagComponent)
 	{
+		(void) p_entity;
+		(void) p_component;
 	}
 
 	ON_COMPONENT_ADDED(TransformComponent)
 	{
+		(void) p_entity;
+		(void) p_component;
 	}
 
 	ON_COMPONENT_ADDED(SpriteRendererComponent)
 	{
+		(void) p_entity;
+		(void) p_component;
 	}
 
 	ON_COMPONENT_ADDED(CameraComponent)
 	{
+		(void) p_entity;
 		p_component.camera.setViewportSize(m_viewportWidth, m_viewportHeight);
 	}
 
 	ON_COMPONENT_ADDED(NativeScriptComponent)
 	{
+		(void) p_entity;
+		(void) p_component;
 	}
 	#undef ON_COMPONENT_ADDED
 }

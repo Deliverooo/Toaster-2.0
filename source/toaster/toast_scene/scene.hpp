@@ -2,8 +2,8 @@
 
 #include <entt/entt.hpp>
 
-#include "toaster/toast_lib/string.hpp"
-#include "toaster/toast_render/renderer_2d.hpp"
+#include "toast_lib/string.hpp"
+#include "toast_render/renderer_2d.hpp"
 
 namespace toaster
 {

@@ -19,38 +19,6 @@
 #endif
 
 namespace glm{
-namespace detail
-{
-#	if GLM_HAS_EXTENDED_INTEGER_TYPE
-		typedef std::int8_t			int8;
-		typedef std::int16_t		int16;
-		typedef std::int32_t		int32;
-#	else
-		typedef char				int8;
-		typedef short				int16;
-		typedef int					int32;
-#endif//
-
-	template<>
-	struct is_int<int8>
-	{
-		enum test {value = ~0};
-	};
-
-	template<>
-	struct is_int<int16>
-	{
-		enum test {value = ~0};
-	};
-
-	template<>
-	struct is_int<int64>
-	{
-		enum test {value = ~0};
-	};
-}//namespace detail
-
-
 	/// @addtogroup ext_scalar_int_sized
 	/// @{
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "toaster/toast_gpu/gpu_api.hpp"
+#include "../gpu_api.hpp"
 
 namespace toaster::gpu
 {

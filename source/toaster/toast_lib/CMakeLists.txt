@@ -1,5 +1,4 @@
 set(SRC
-
 		logging.cpp
 		logging.hpp
 
@@ -33,15 +32,13 @@ set(SRC
 		os/file_dialog.hpp
 )
 
-list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
-target_sources(Toaster PRIVATE ${SRC})
+add_library(toast_lib STATIC) # less problematic...
 
-#add_library(toast_lib STATIC)
+target_include_directories(toast_lib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
+target_sources(toast_lib PRIVATE ${SRC})
 
-#target_include_directories(toast_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-#target_sources(toast_lib PRIVATE ${SRC})
+target_link_libraries(toast_lib PUBLIC glm::glm-header-only)
+target_link_libraries(toast_lib PUBLIC fmt::fmt)
+target_link_libraries(toast_lib PRIVATE nfd)
 
-#target_link_libraries(toast_lib PUBLIC glm)
-#target_link_libraries(toast_lib PUBLIC fmt::fmt)
-
-#add_library(tst::toast_lib ALIAS toast_lib)
+add_library(tst::toast_lib ALIAS toast_lib)

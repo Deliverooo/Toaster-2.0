@@ -1,14 +1,12 @@
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/constants.hpp>
 #include <glm/ext/scalar_relational.hpp>
 #include <glm/ext/vector_relational.hpp>
 #include <glm/glm.hpp>
 
-#if GLM_HAS_RANGE_FOR
-
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/range.hpp>
 
-int test_vec()
+static int test_vec()
 {
 	int Error = 0;
 
@@ -36,7 +34,7 @@ int test_vec()
 	return Error;
 }
 
-int test_mat()
+static int test_mat()
 {
 	int Error = 0;
 
@@ -73,11 +71,3 @@ int main()
 	return Error;
 }
 
-#else
-
-int main()
-{
-	return 0;
-}
-
-#endif//GLM_HAS_RANGE_FOR

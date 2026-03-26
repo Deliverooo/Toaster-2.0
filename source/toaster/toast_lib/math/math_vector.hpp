@@ -2,8 +2,6 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtx/compatibility.hpp>
-// #include <glm/gtc/type_ptr.hpp>
-
 namespace tsm
 {
 	// template<typename Type, unsigned int NDim>

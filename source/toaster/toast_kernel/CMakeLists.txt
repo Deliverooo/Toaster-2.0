@@ -15,18 +15,11 @@ set(SRC
 list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
 target_sources(Toaster PRIVATE ${SRC})
 
-add_library(toast_kernel STATIC)
-
-target_sources(toast_kernel PRIVATE ${SRC})
-target_include_directories(toast_kernel PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-
-#target_link_libraries(toast_kernel PUBLIC tst::toast_lib)
-#target_link_libraries(toast_kernel PUBLIC tst::toast_gpu)
-#target_link_libraries(toast_kernel PUBLIC tst::toast_shaders)
-
-#target_link_libraries(toast_kernel PUBLIC glfw)
-#target_link_libraries(toast_kernel PRIVATE assimp::assimp)
-
-target_link_libraries(toast_kernel PUBLIC ${PLATFORM_LINKLIBS})
-
-add_library(tst::toast_kernel ALIAS toast_kernel)
+#add_library(toast_kernel STATIC)
+#
+#target_sources(toast_kernel PRIVATE ${SRC})
+#target_include_directories(toast_kernel PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+#
+#target_link_libraries(toast_kernel PUBLIC ${PLATFORM_LINKLIBS})
+#
+#add_library(tst::toast_kernel ALIAS toast_kernel)

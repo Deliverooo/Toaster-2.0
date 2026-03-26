@@ -1,6 +1,6 @@
 #include "scene_camera.hpp"
 
-#include "toaster/toast_lib/toast_assert.h"
+#include "toast_lib/toast_assert.h"
 
 namespace toaster
 {

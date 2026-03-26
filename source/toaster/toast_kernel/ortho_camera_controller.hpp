@@ -1,9 +1,9 @@
 #pragma once
 
-#include "toaster/toast_lib/events/key_event.hpp"
-#include "toaster/toast_lib/events/mouse_event.hpp"
-#include "toaster/toast_lib/events/window_event.hpp"
-#include "toaster/toast_render/ortho_camera.hpp"
+#include "toast_lib/events/key_event.hpp"
+#include "toast_lib/events/mouse_event.hpp"
+#include "toast_lib/events/window_event.hpp"
+#include "toast_render/ortho_camera.hpp"
 
 namespace toaster
 {

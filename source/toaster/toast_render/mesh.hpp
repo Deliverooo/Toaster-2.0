@@ -4,8 +4,8 @@
 #include <glm/glm.hpp>
 
 #include "material.hpp"
-#include "toaster/toast_lib/system_types.h"
-#include "toaster/toast_gpu/vertex_array.hpp"
+#include "toast_lib/system_types.h"
+#include "toast_gpu/vertex_array.hpp"
 
 namespace toaster
 {

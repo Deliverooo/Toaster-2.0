@@ -1,7 +1,7 @@
 #pragma once
 
-#include "toaster/toast_gpu/vertex_array.hpp"
-#include "toaster/toast_render/shader_library.hpp"
+#include "toast_gpu/vertex_array.hpp"
+#include "toast_render/shader_library.hpp"
 
 namespace toaster
 {

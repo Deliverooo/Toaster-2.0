@@ -27,4 +27,6 @@ namespace gl
 	using DebugCallbackProc = void (__stdcall *)(Enum p_source, Enum p_type, UInt p_id, Enum p_severity, SizeI p_length, const Char *p_message, const void *p_user_param);
 
 	using ID = UInt; // Useful for gl objects (Framebuffers, vaos, vbos...)
+
+	using CString = const char *;
 }

@@ -4,8 +4,8 @@
 #include <utility>
 #include <vector>
 
-#include "toaster/toast_lib/system_types.h"
-#include "toaster/toast_lib/toast_assert.h"
+#include "toast_lib/system_types.h"
+#include "toast_lib/toast_assert.h"
 
 namespace toaster::gpu
 {

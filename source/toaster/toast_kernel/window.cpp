@@ -1,15 +1,22 @@
 #include "window.hpp"
 
-#include "toaster/toast_gpu/gpu_context.hpp"
+#include "toast_gpu/gpu_context.hpp"
 
 #include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <dwmapi.h>
+#include <GLFW/glfw3native.h>
 
-#include "toaster/toast_lib/logging.hpp"
-#include "toaster/toast_lib/toast_assert.h"
+#ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+#endif
 
-#include "toaster/toast_lib/events/key_event.hpp"
-#include "toaster/toast_lib/events/mouse_event.hpp"
-#include "toaster/toast_lib/events/window_event.hpp"
+#include "toast_lib/logging.hpp"
+#include "toast_lib/toast_assert.h"
+
+#include "toast_lib/events/key_event.hpp"
+#include "toast_lib/events/mouse_event.hpp"
+#include "toast_lib/events/window_event.hpp"
 
 namespace toaster
 {
@@ -54,6 +61,9 @@ namespace toaster
 		m_window = glfwCreateWindow(static_cast<int32>(p_width), static_cast<int32>(p_height), p_title.c_str(), nullptr, nullptr);
 
 		m_gpuContext = gpu::IGPUContext::create(m_window);
+
+		BOOL useDarkMode = TRUE;
+		DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
 
 		glfwSetWindowUserPointer(m_window, &m_callbackData);
 

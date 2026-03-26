@@ -1,9 +1,9 @@
 #include "file_dialog.hpp"
 
-#include "toaster/toast_lib/toast_assert.h"
-#include <nfd.hpp>
+#include "../logging.hpp"
+#include "../toast_assert.h"
 
-#include "toaster/toast_lib/logging.hpp"
+#include <nfd.hpp>
 
 namespace toaster::os
 {
@@ -20,11 +20,14 @@ namespace toaster::os
 				return "";
 			case NFD_ERROR:
 			{
-				LOG_FATAL("NFD-Extended threw an error: {}", NFD::GetError());
+				auto error = NFD::GetError();
+				LOG_FATAL("NFD-Extended threw an error: {}", error);
 				TST_ASSERT(false);
 				return "";
 			}
 		}
+		TST_ASSERT(false);
+		return "";
 	}
 
 	io::filesystem::Path openFolderDialog(const char *p_initial_folder)
@@ -40,11 +43,14 @@ namespace toaster::os
 				return "";
 			case NFD_ERROR:
 			{
-				LOG_FATAL("NFD-Extended threw an error: {}", NFD::GetError());
+				auto error = NFD::GetError();
+				LOG_FATAL("NFD-Extended threw an error: {}", error);
 				TST_ASSERT(false);
 				return "";
 			}
 		}
+		TST_ASSERT(false);
+		return "";
 	}
 
 	io::filesystem::Path saveFileDialog(const std::initializer_list<FileDialogFilterItem> p_in_filters)
@@ -60,10 +66,13 @@ namespace toaster::os
 				return "";
 			case NFD_ERROR:
 			{
-				LOG_FATAL("NFD-Extended threw an error: {}", NFD::GetError());
+				auto error = NFD::GetError();
+				LOG_FATAL("NFD-Extended threw an error: {}", error);
 				TST_ASSERT(false);
 				return "";
 			}
 		}
+		TST_ASSERT(false);
+		return "";
 	}
 }

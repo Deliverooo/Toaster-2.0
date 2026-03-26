@@ -63,24 +63,21 @@ if (${WITH_VULKAN_BACKEND})
 	)
 endif ()
 
-list(TRANSFORM GPU_SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
-target_sources(Toaster PRIVATE ${GPU_SRC})
+add_library(toast_gpu STATIC)
 
-#add_library(toast_gpu STATIC)
+target_include_directories(toast_gpu PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/..")
+target_sources(toast_gpu PRIVATE ${GPU_SRC})
 
-#target_include_directories(toast_gpu PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-#target_sources(toast_gpu PRIVATE ${GPU_SRC})
-
-#target_link_libraries(toast_gpu PUBLIC tst::toast_lib)
-#target_link_libraries(toast_gpu PUBLIC glfw)
-#target_link_libraries(toast_gpu PUBLIC stb)
+target_link_libraries(toast_gpu PUBLIC tst::toast_lib)
+target_link_libraries(toast_gpu PUBLIC glfw)
+target_link_libraries(toast_gpu PUBLIC stb)
 
 if (${WITH_OPENGL_BACKEND})
-	target_link_libraries(Toaster PUBLIC openglhpp)
+	target_link_libraries(toast_gpu PUBLIC openglhpp)
 
-	target_include_directories(Toaster PUBLIC "$ENV{VULKAN_SDK}/Include")
+	target_include_directories(toast_gpu PUBLIC "$ENV{VULKAN_SDK}/Include")
 
-	target_link_libraries(Toaster PUBLIC
+	target_link_libraries(toast_gpu PUBLIC
 			debug "$ENV{VULKAN_SDK}/Lib/spirv-cross-cored.lib"
 			optimized "$ENV{VULKAN_SDK}/Lib/spirv-cross-core.lib"
 
@@ -93,12 +90,12 @@ if (${WITH_OPENGL_BACKEND})
 endif ()
 
 if (${WITH_VULKAN_BACKEND})
-	target_link_libraries(Toaster PUBLIC Vulkan::Vulkan)
-	target_link_libraries(Toaster PUBLIC Vulkan::shaderc_combined)
+	target_link_libraries(toast_gpu PUBLIC Vulkan::Vulkan)
+	target_link_libraries(toast_gpu PUBLIC Vulkan::shaderc_combined)
 
-	target_include_directories(Toaster PUBLIC "$ENV{VULKAN_SDK}/Include")
+	target_include_directories(toast_gpu PUBLIC "$ENV{VULKAN_SDK}/Include")
 
-	target_link_libraries(Toaster PUBLIC
+	target_link_libraries(toast_gpu PUBLIC
 			debug "$ENV{VULKAN_SDK}/Lib/spirv-cross-cored.lib"
 			optimized "$ENV{VULKAN_SDK}/Lib/spirv-cross-core.lib"
 
@@ -110,4 +107,4 @@ if (${WITH_VULKAN_BACKEND})
 	)
 endif ()
 
-#add_library(tst::toast_gpu ALIAS toast_gpu)
+add_library(tst::toast_gpu ALIAS toast_gpu)

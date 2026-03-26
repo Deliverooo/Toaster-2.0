@@ -10,7 +10,7 @@
 
 namespace toaster
 {
-	static void drawVec3Ctrl(const std::string &p_label, glm::vec3 *p_vec, const glm::vec3 &p_reset = glm::vec3{1.0f}, float p_column_width = 100.0f,
+	static void drawVec3Ctrl(const std::string &p_label, glm::vec3 *p_vec, const glm::vec3 &p_reset = glm::vec3{1.0f},
 							 const char *       p_vec1_label                                        = "X", const char *p_vec2_label = "Y", const char *p_vec3_label = "Z")
 	{
 		const std::string vec1_str_id = std::string("##") + p_vec1_label;
@@ -22,83 +22,12 @@ namespace toaster
 
 		ig::PushID(p_label.c_str());
 
-		{
-			ui::ScopedStyle rounding{ImGuiStyleVar_FrameRounding, 2.5f};
+		ig::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.5f);
+		ui::dragFloatWithReset(p_label + " " + p_vec1_label, &p_vec->x, vec1_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.x);
+		ui::dragFloatWithReset(p_vec2_label, &p_vec->y, vec2_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.y);
+		ui::dragFloatWithReset(p_vec3_label, &p_vec->z, vec3_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.z);
+		ig::PopStyleVar();
 
-			ui::dragFloatWithReset(p_label + " " + p_vec1_label, &p_vec->x, vec1_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.x);
-		}
-		{
-			ui::ScopedStyle rounding{ImGuiStyleVar_FrameRounding, 2.5f};
-
-			ui::dragFloatWithReset(p_vec2_label, &p_vec->y, vec2_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.y);
-		}
-		{
-			ui::ScopedStyle rounding{ImGuiStyleVar_FrameRounding, 2.5f};
-
-			ui::dragFloatWithReset(p_vec3_label, &p_vec->z, vec3_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.z);
-		}
-
-		#if 0
-		ig::Columns(2); ig::SetColumnWidth(0, p_column_width); ig::Text("%s", p_label.c_str()); ig::NextColumn(); ig::PushMultiItemsWidths(3, ig::CalcItemWidth());
-		{
-			ui::ScopedStyle item_spacing{ImGuiStyleVar_ItemSpacing, ImVec2{2, 0}};
-			ui::ScopedStyle frame_rounding{ImGuiStyleVar_FrameRounding, 0.5f};
-
-			static ImVec4 s_text_colour = {1.0f, 1.0f, 1.0f, 1.0f};
-
-			const float line_height = ig::GetFrameHeightWithSpacing();
-			const auto  button_size = ImVec2{line_height, line_height};
-
-			{
-				ui::ScopedColour text_colour{ImGuiCol_Text, s_text_colour};
-				ui::ScopedColour button_colour{ImGuiCol_Button, ImColor{0.7f, 0.1f, 0.1f, 1.0f}};
-				ui::ScopedColour button_hover_colour{ImGuiCol_Button, ImColor{0.9f, 0.2f, 0.2f, 1.0f}};
-				ui::ScopedColour button_active_colour{ImGuiCol_Button, ImColor{0.7f, 0.1f, 0.1f, 1.0f}};
-
-				{
-					ui::ScopedFont  bf{bold_font};
-					ui::ScopedStyle rounding{ImGuiStyleVar_FrameRounding, 2.5f};
-					if (ig::Button(p_vec1_label, button_size)) { p_vec->x = p_reset.x; }
-				}
-				ig::SameLine();
-				ig::DragFloat(vec1_str_id.c_str(), &p_vec->x, 0.1f);
-				ig::PopItemWidth();
-				ig::SameLine();
-			}
-			{
-				ui::ScopedColour text_colour{ImGuiCol_Text, s_text_colour};
-				ui::ScopedColour button_colour{ImGuiCol_Button, ImColor{0.1f, 0.7f, 0.1f, 1.0f}};
-				ui::ScopedColour button_hover_colour{ImGuiCol_Button, ImColor{0.2f, 0.9f, 0.2f, 1.0f}};
-				ui::ScopedColour button_active_colour{ImGuiCol_Button, ImColor{0.1f, 0.7f, 0.1f, 1.0f}};
-
-				{
-					ui::ScopedFont  bf{bold_font};
-					ui::ScopedStyle rounding{ImGuiStyleVar_FrameRounding, 2.5f};
-					if (ig::Button(p_vec2_label, button_size)) { p_vec->y = p_reset.y; }
-				}
-				ig::SameLine();
-				ig::DragFloat(vec2_str_id.c_str(), &p_vec->y, 0.1f);
-				ig::PopItemWidth();
-				ig::SameLine();
-			}
-			{
-				ui::ScopedColour text_colour{ImGuiCol_Text, s_text_colour};
-				ui::ScopedColour button_colour{ImGuiCol_Button, ImColor{0.1f, 0.1f, 0.7f, 1.0f}};
-				ui::ScopedColour button_hover_colour{ImGuiCol_Button, ImColor{0.2f, 0.2f, 0.9f, 1.0f}};
-				ui::ScopedColour button_active_colour{ImGuiCol_Button, ImColor{0.1f, 0.1f, 0.7f, 1.0f}};
-
-				{
-					ui::ScopedFont  bf{bold_font};
-					ui::ScopedStyle rounding{ImGuiStyleVar_FrameRounding, 2.5f};
-					if (ig::Button(p_vec3_label, button_size)) { p_vec->z = p_reset.z; }
-				}
-				ig::SameLine();
-				ig::DragFloat(vec3_str_id.c_str(), &p_vec->z, 0.1f);
-				ig::PopItemWidth();
-			}
-		} ig::Columns(1);
-
-		#endif
 		ImGui::PopID();
 	}
 
@@ -277,11 +206,11 @@ namespace toaster
 
 		drawComponent<TransformComponent>("Transform", p_entity, [](TransformComponent &p_comp)
 		{
-			drawVec3Ctrl("Position", &p_comp.translation, glm::vec3{0.0f}, 75.0f);
+			drawVec3Ctrl("Position", &p_comp.translation, glm::vec3{0.0f});
 			ig::Separator();
-			drawVec3Ctrl("Rotation", &p_comp.rotation, glm::vec3{0.0f}, 75.0f);
+			drawVec3Ctrl("Rotation", &p_comp.rotation, glm::vec3{0.0f});
 			ig::Separator();
-			drawVec3Ctrl("Scale", &p_comp.scale, glm::vec3{1.0f}, 75.0f);
+			drawVec3Ctrl("Scale", &p_comp.scale, glm::vec3{1.0f});
 			ig::Separator();
 		});
 

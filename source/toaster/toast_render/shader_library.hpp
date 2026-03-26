@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 
-#include "toaster/toast_gpu/shader.hpp"
+#include "toast_gpu/shader.hpp"
 
 namespace toaster
 {

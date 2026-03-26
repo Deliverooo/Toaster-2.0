@@ -2,6 +2,9 @@
 
 #include <stb/stb_image.h>
 
+#include "toast_lib/logging.hpp"
+#include "toast_lib/toast_assert.h"
+
 namespace toaster::gpu
 {
 	GLTexture2D::GLTexture2D(uint32 p_width, uint32 p_height) : m_width(p_width), m_height(p_height)
@@ -43,6 +46,10 @@ namespace toaster::gpu
 			{
 				internal_format = gl::Format::eRGB8;
 				data_format     = gl::Format::eRGB;
+			}
+			else
+			{
+				TST_ASSERT_MSG(false, "What kind of image is that?!");
 			}
 
 			m_internalFormat = internal_format;

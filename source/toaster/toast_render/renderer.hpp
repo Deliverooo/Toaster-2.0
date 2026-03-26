@@ -1,7 +1,7 @@
 #pragma once
 
 #include "render_command.hpp"
-#include "toaster/toast_gpu/shader.hpp"
+#include "toast_gpu/shader.hpp"
 
 #include "mesh.hpp"
 

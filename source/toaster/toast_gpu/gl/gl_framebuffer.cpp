@@ -1,7 +1,7 @@
 #include "gl_framebuffer.hpp"
 
-#include "toaster/toast_lib/logging.hpp"
-#include "toaster/toast_lib/toast_assert.h"
+#include "toast_lib/logging.hpp"
+#include "toast_lib/toast_assert.h"
 
 #include "stb/stb_image_write.h"
 

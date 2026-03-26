@@ -2,7 +2,7 @@
 
 #include <openglhpp/opengl.hpp>
 
-#include "toaster/toast_gpu/vertex_array.hpp"
+#include "../vertex_array.hpp"
 
 namespace toaster::gpu
 {

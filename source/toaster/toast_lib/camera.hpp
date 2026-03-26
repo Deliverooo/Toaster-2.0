@@ -1,7 +1,7 @@
 #pragma once
 
+#include "system_types.h"
 #include "math/math_vector.hpp"
-#include "toaster/toast_lib/system_types.h"
 
 namespace toaster
 {

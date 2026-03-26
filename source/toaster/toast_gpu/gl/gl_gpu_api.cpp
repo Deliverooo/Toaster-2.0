@@ -56,14 +56,17 @@ namespace toaster::gpu
 	{
 		p_vertex_array->bind();
 		gl::drawElements(gl::DrawMode::eTriangles,
-						 (p_index_count == 0) ? static_cast<int32>(p_vertex_array->getIndexBuffer()->getIndexCount()) : static_cast<int32>(p_index_count),
+						 (p_index_count == 0) ? static_cast<gl::SizeI>(p_vertex_array->getIndexBuffer()->getIndexCount()) : static_cast<gl::SizeI>(p_index_count),
 						 gl::DataType::eUnsignedInt, nullptr);
 	}
 
 	void GLGPUAPI::drawIndexedBaseVertex(const RefPtr<IVertexArray> &p_vertex_array, uint32 p_index_count, uint32 p_base_index, uint32 p_base_vertex)
 	{
 		p_vertex_array->bind();
-		gl::drawElementsBaseVertex(gl::DrawMode::eTriangles, static_cast<int32>(p_vertex_array->getIndexBuffer()->getIndexCount()), gl::DataType::eUnsignedInt,
-								   reinterpret_cast<gl::Void *>(p_base_index * sizeof(uint32)), static_cast<gl::Int>(p_base_vertex));
+		gl::drawElementsBaseVertex(gl::DrawMode::eTriangles,
+								   (p_index_count == 0)
+									   ? static_cast<gl::SizeI>(p_vertex_array->getIndexBuffer()->getIndexCount())
+									   : static_cast<gl::SizeI>(p_index_count), gl::DataType::eUnsignedInt, reinterpret_cast<gl::Void *>(p_base_index * sizeof(uint32)),
+								   static_cast<gl::Int>(p_base_vertex));
 	}
 }

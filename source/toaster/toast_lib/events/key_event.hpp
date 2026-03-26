@@ -1,7 +1,7 @@
 #pragma once
 
 #include "event.hpp"
-#include "toaster/toast_lib/input_codes.hpp"
+#include "../input_codes.hpp"
 
 namespace toaster
 {

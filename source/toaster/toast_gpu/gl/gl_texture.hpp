@@ -2,7 +2,7 @@
 
 #include <openglhpp/opengl.hpp>
 
-#include "toaster/toast_gpu/texture.hpp"
+#include "../texture.hpp"
 
 namespace toaster::gpu
 {

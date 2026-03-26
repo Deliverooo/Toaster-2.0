@@ -1,7 +1,7 @@
 #pragma once
 
 #include <openglhpp/opengl.hpp>
-#include "toaster/toast_gpu/framebuffer.hpp"
+#include "../framebuffer.hpp"
 
 namespace toaster::gpu
 {

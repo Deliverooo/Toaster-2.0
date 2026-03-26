@@ -2,8 +2,8 @@
 
 #include <utility>
 
-#include "toaster/toast_lib/input_codes.hpp"
-#include "toaster/toast_lib/system_types.h"
+#include "toast_lib/input_codes.hpp"
+#include "toast_lib/system_types.h"
 
 struct GLFWwindow;
 

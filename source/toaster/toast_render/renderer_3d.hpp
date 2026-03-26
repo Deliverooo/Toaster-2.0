@@ -1,9 +1,9 @@
 #pragma once
 
-#include "toaster/toast_gpu/texture.hpp"
-#include "toaster/toast_gpu/vertex_array.hpp"
+#include "toast_gpu/texture.hpp"
+#include "toast_gpu/vertex_array.hpp"
 
-#include "toaster/toast_lib/math/math_vector.hpp"
+#include "toast_lib/math/math_vector.hpp"
 
 #include <array>
 

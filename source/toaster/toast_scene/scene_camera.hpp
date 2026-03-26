@@ -1,6 +1,6 @@
 #pragma once
 
-#include "toaster/toast_lib/camera.hpp"
+#include "toast_lib/camera.hpp"
 
 namespace toaster
 {

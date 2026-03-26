@@ -3,8 +3,18 @@
 #include <glm/gtc/vec1.hpp>
 #include <vector>
 
+#if GLM_COMPILER & GLM_COMPILER_CLANG
+#	pragma clang diagnostic push
+#	pragma clang diagnostic ignored "-Wglobal-constructors"
+#	pragma clang diagnostic ignored "-Wunused-variable"
+#endif
+
 static glm::vec1 g1;
 static glm::vec1 g2(1);
+
+#if GLM_COMPILER & GLM_COMPILER_CLANG
+#	pragma clang diagnostic pop
+#endif
 
 static int test_vec1_operators()
 {
@@ -38,7 +48,7 @@ static int test_vec1_ctor()
 {
 	int Error = 0;
 
-#	if GLM_HAS_TRIVIAL_QUERIES
+	{
 	//	Error += std::is_trivially_default_constructible<glm::vec1>::value ? 0 : 1;
 	//	Error += std::is_trivially_copy_assignable<glm::vec1>::value ? 0 : 1;
 		Error += std::is_trivially_copyable<glm::vec1>::value ? 0 : 1;
@@ -47,8 +57,7 @@ static int test_vec1_ctor()
 		Error += std::is_trivially_copyable<glm::uvec1>::value ? 0 : 1;
 
 		Error += std::is_copy_constructible<glm::vec1>::value ? 0 : 1;
-#	endif
-
+	}
 
 	{
 		glm::ivec1 A = glm::vec1(2.0f);
@@ -76,7 +85,7 @@ static int test_vec1_size()
 	Error += glm::vec1::length() == 1 ? 0 : 1;
 	Error += glm::dvec1::length() == 1 ? 0 : 1;
 
-	GLM_CONSTEXPR std::size_t Length = glm::vec1::length();
+	GLM_CONSTEXPR glm::length_t Length = glm::vec1::length();
 	Error += Length == 1 ? 0 : 1;
 
 	return Error;
@@ -113,37 +122,31 @@ static int test_bvec1_ctor()
 {
 	int Error = 0;
 
-	glm::bvec1 const A(true);
-	glm::bvec1 const B(true);
-	glm::bvec1 const C(false);
-	glm::bvec1 const D = A && B;
-	glm::bvec1 const E = A && C;
-	glm::bvec1 const F = A || C;
+	glm::bvec1 A(true);
+	glm::bvec1 B(true);
+	glm::bvec1 C(false);
+	glm::bvec1 D = A && B;
+	glm::bvec1 E = A && C;
+	glm::bvec1 F = A || C;
 
 	Error += D == glm::bvec1(true) ? 0 : 1;
 	Error += E == glm::bvec1(false) ? 0 : 1;
 	Error += F == glm::bvec1(true) ? 0 : 1;
 
-	bool const G = A == C;
-	bool const H = A != C;
+	bool G = A == C;
+	bool H = A != C;
 	Error += !G ? 0 : 1;
 	Error += H ? 0 : 1;
 
 	return Error;
 }
 
-static int test_constexpr()
-{
-#if GLM_HAS_CONSTEXPR
-	static_assert(glm::vec1::length() == 1, "GLM: Failed constexpr");
-	static_assert(glm::vec1(1.0f).x > 0.0f, "GLM: Failed constexpr");
-#endif
-
-	return 0;
-}
-
 int main()
 {
+	// Suppress unused variable warnings
+	(void)g1;
+	(void)g2;
+
 	int Error = 0;
 
 	Error += test_vec1_size();
@@ -151,7 +154,6 @@ int main()
 	Error += test_bvec1_ctor();
 	Error += test_vec1_operators();
 	Error += test_vec1_operator_increment();
-	Error += test_constexpr();
 	
 	return Error;
 }

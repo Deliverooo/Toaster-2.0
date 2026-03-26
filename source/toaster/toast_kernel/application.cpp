@@ -1,9 +1,9 @@
 #include "application.hpp"
 
 #include "input.hpp"
-#include "toaster/toast_lib/logging.hpp"
-#include "toaster/toast_render/globals.hpp"
-#include "toaster/toast_render/render_command.hpp"
+#include "toast_lib/logging.hpp"
+#include "toast_render/globals.hpp"
+#include "toast_render/render_command.hpp"
 
 #include <algorithm>
 #include <GLFW/glfw3.h>

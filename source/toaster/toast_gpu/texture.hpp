@@ -1,8 +1,8 @@
 #pragma once
 
-#include "toaster/toast_lib/ptr.hpp"
-#include "toaster/toast_lib/system_types.h"
-#include "toaster/toast_lib/io/filesystem.hpp"
+#include "toast_lib/ptr.hpp"
+#include "toast_lib/system_types.h"
+#include "toast_lib/io/filesystem.hpp"
 
 namespace toaster::gpu
 {

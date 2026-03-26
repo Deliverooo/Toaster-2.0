@@ -2,7 +2,7 @@
 
 #include <openglhpp/opengl.hpp>
 
-#include "toaster/toast_gpu/index_buffer.hpp"
+#include "../index_buffer.hpp"
 
 namespace toaster::gpu
 {

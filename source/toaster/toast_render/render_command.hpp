@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 
-#include "toaster/toast_gpu/vertex_array.hpp"
+#include "toast_gpu/vertex_array.hpp"
 
 namespace toaster
 {

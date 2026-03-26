@@ -3,7 +3,7 @@
  */
 #pragma once
 
-#include "toaster/toast_lib/system_types.h"
+#include "toast_lib/system_types.h"
 
 #include <glm/gtc/quaternion.hpp>
 

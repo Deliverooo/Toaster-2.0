@@ -3,8 +3,8 @@
  */
 #pragma once
 
-#include "toaster/toast_lib/ptr.hpp"
-#include "toaster/toast_lib/system_types.h"
+#include "toast_lib/ptr.hpp"
+#include "toast_lib/system_types.h"
 
 namespace toaster::gpu
 {

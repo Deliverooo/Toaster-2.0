@@ -2,7 +2,7 @@
 
 #include <utility>
 
-#include "toaster/toast_lib/toast_assert.h"
+#include "toast_lib/toast_assert.h"
 
 namespace toaster
 {

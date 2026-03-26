@@ -163,7 +163,7 @@ namespace bitfieldReverse
 	template<glm::length_t L, typename T, glm::qualifier Q>
 	GLM_FUNC_QUALIFIER glm::vec<L, T, Q> bitfieldReverseLoop(glm::vec<L, T, Q> const& v)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_integer, "'bitfieldReverse' only accept integer values");
+		static_assert(std::numeric_limits<T>::is_integer, "'bitfieldReverse' only accept integer values");
 
 		glm::vec<L, T, Q> Result(0);
 		T const BitSize = static_cast<T>(sizeof(T) * 8);
@@ -223,6 +223,11 @@ namespace bitfieldReverse
 		}
 	};
 
+#		if GLM_COMPILER & GLM_COMPILER_VC
+#			pragma warning(push)
+#			pragma warning(disable : 4309)
+#		endif
+
 	template<glm::length_t L, typename T, glm::qualifier Q>
 	GLM_FUNC_QUALIFIER glm::vec<L, T, Q> bitfieldReverseOps(glm::vec<L, T, Q> const& v)
 	{
@@ -236,11 +241,20 @@ namespace bitfieldReverse
 		return x;
 	}
 
+#		if GLM_COMPILER & GLM_COMPILER_VC
+#			pragma warning(pop)
+#		endif
+
 	template<typename genType>
 	GLM_FUNC_QUALIFIER genType bitfieldReverseOps(genType x)
 	{
 		return bitfieldReverseOps(glm::vec<1, genType, glm::defaultp>(x)).x;
 	}
+
+#if GLM_COMPILER & GLM_COMPILER_CLANG
+#	pragma clang diagnostic push
+#	pragma clang diagnostic ignored "-Wpadded"
+#endif
 
 	template<typename genType>
 	struct type
@@ -249,6 +263,10 @@ namespace bitfieldReverse
 		genType		Return;
 		result		Result;
 	};
+
+#if GLM_COMPILER & GLM_COMPILER_CLANG
+#	pragma clang diagnostic pop
+#endif
 
 	typedef type<glm::uint> typeU32;
 
@@ -549,7 +567,7 @@ namespace findMSB
 		template<typename genIUType>
 		static int findMSB_intrinsic(genIUType Value)
 		{
-			GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
+			static_assert(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
 
 			if(Value == 0)
 				return -1;
@@ -560,23 +578,23 @@ namespace findMSB
 		}
 #	endif//GLM_HAS_BITSCAN_WINDOWS
 
-#	if GLM_ARCH & GLM_ARCH_AVX && GLM_COMPILER & GLM_COMPILER_VC
+#	if ((GLM_ARCH & GLM_ARCH_AVX_BIT) && (GLM_COMPILER & GLM_COMPILER_VC))
 		template<typename genIUType>
 		static int findMSB_avx(genIUType Value)
 		{
-			GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
+			static_assert(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
 
 			if(Value == 0)
 				return -1;
 
 			return int(_tzcnt_u32(Value));
 		}
-#	endif//GLM_ARCH & GLM_ARCH_AVX && GLM_PLATFORM & GLM_PLATFORM_WINDOWS
+#	endif//((GLM_ARCH & GLM_ARCH_AVX_BIT) && (GLM_PLATFORM & GLM_PLATFORM_WINDOWS))
 
 	template<typename genIUType>
 	static int findMSB_095(genIUType Value)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
+		static_assert(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
 		
 		if(Value == genIUType(0) || Value == genIUType(-1))
 			return -1;
@@ -600,7 +618,7 @@ namespace findMSB
 	template<typename genIUType>
 	static int findMSB_nlz1(genIUType x)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
+		static_assert(std::numeric_limits<genIUType>::is_integer, "'findMSB' only accept integer values");
 
 		if (x == 0)
 			return -1;
@@ -738,7 +756,7 @@ namespace findMSB
 
 		std::clock_t Timestamps6 = std::clock();
 
-#		if GLM_ARCH & GLM_ARCH_AVX && GLM_COMPILER & GLM_COMPILER_VC
+#		if ((GLM_ARCH & GLM_ARCH_AVX_BIT) && (GLM_COMPILER & GLM_COMPILER_VC))
 			for(std::size_t k = 0; k < Count; ++k)
 			for(std::size_t i = 0; i < sizeof(Data) / sizeof(type<int, int>); ++i)
 			{
@@ -747,7 +765,7 @@ namespace findMSB
 			}
 
 			std::clock_t Timestamps7 = std::clock();
-#		endif
+#		endif//((GLM_ARCH & GLM_ARCH_AVX_BIT) && (GLM_COMPILER & GLM_COMPILER_VC))
 
 		std::printf("glm::findMSB: %d clocks\n", static_cast<int>(Timestamps1 - Timestamps0));
 		std::printf("findMSB - nlz1: %d clocks\n", static_cast<int>(Timestamps2 - Timestamps1));
@@ -759,9 +777,9 @@ namespace findMSB
 #		endif//GLM_HAS_BITSCAN_WINDOWS
 		std::printf("findMSB - pop: %d clocks\n", static_cast<int>(Timestamps6 - Timestamps5));
 
-#		if GLM_ARCH & GLM_ARCH_AVX && GLM_COMPILER & GLM_COMPILER_VC
+#		if ((GLM_ARCH & GLM_ARCH_AVX_BIT) && (GLM_COMPILER & GLM_COMPILER_VC))
 			std::printf("findMSB - avx tzcnt: %d clocks\n", static_cast<int>(Timestamps7 - Timestamps6));
-#		endif//GLM_ARCH & GLM_ARCH_AVX && GLM_PLATFORM & GLM_PLATFORM_WINDOWS
+#		endif//((GLM_ARCH & GLM_ARCH_AVX_BIT) && (GLM_COMPILER & GLM_COMPILER_VC))
 
 		return Error;
 	}
@@ -952,7 +970,7 @@ namespace findLSB
 		template<typename genIUType>
 		static int findLSB_intrinsic(genIUType Value)
 		{
-			GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findLSB' only accept integer values");
+			static_assert(std::numeric_limits<genIUType>::is_integer, "'findLSB' only accept integer values");
 
 			if(Value == 0)
 				return -1;
@@ -966,7 +984,7 @@ namespace findLSB
 	template<typename genIUType>
 	static int findLSB_095(genIUType Value)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<genIUType>::is_integer, "'findLSB' only accept integer values");
+		static_assert(std::numeric_limits<genIUType>::is_integer, "'findLSB' only accept integer values");
 		if(Value == 0)
 			return -1;
 
@@ -1181,7 +1199,7 @@ namespace usubBorrow
 			glm::uint Result = glm::usubBorrow(x, y, Borrow);
 
 			Error += Borrow == 1 ? 0 : 1;
-			Error += Result == 1 ? 0 : 1;
+			Error += Result == glm::uint(x-y) ? 0 : 1;
 		}
 
 		{
@@ -1191,7 +1209,7 @@ namespace usubBorrow
 			glm::uvec1 Result(glm::usubBorrow(x, y, Borrow));
 
 			Error += glm::all(glm::equal(Borrow, glm::uvec1(1))) ? 0 : 1;
-			Error += glm::all(glm::equal(Result, glm::uvec1(1))) ? 0 : 1;
+			Error += glm::all(glm::equal(Result, glm::uvec1(x-y))) ? 0 : 1;
 		}
 
 		{
@@ -1201,7 +1219,7 @@ namespace usubBorrow
 			glm::uvec2 Result(glm::usubBorrow(x, y, Borrow));
 
 			Error += glm::all(glm::equal(Borrow, glm::uvec2(1))) ? 0 : 1;
-			Error += glm::all(glm::equal(Result, glm::uvec2(1))) ? 0 : 1;
+			Error += glm::all(glm::equal(Result, glm::uvec2(x-y))) ? 0 : 1;
 		}
 
 		{
@@ -1211,7 +1229,7 @@ namespace usubBorrow
 			glm::uvec3 Result(glm::usubBorrow(x, y, Borrow));
 
 			Error += glm::all(glm::equal(Borrow, glm::uvec3(1))) ? 0 : 1;
-			Error += glm::all(glm::equal(Result, glm::uvec3(1))) ? 0 : 1;
+			Error += glm::all(glm::equal(Result, glm::uvec3(x-y))) ? 0 : 1;
 		}
 
 		{
@@ -1221,7 +1239,7 @@ namespace usubBorrow
 			glm::uvec4 Result(glm::usubBorrow(x, y, Borrow));
 
 			Error += glm::all(glm::equal(Borrow, glm::uvec4(1))) ? 0 : 1;
-			Error += glm::all(glm::equal(Result, glm::uvec4(1))) ? 0 : 1;
+			Error += glm::all(glm::equal(Result, glm::uvec4(x-y))) ? 0 : 1;
 		}
 
 		return Error;
@@ -1379,7 +1397,7 @@ namespace bitCount
 	template<typename T>
 	inline int bitCount_if(T v)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_integer, "'bitCount' only accept integer values");
+		static_assert(std::numeric_limits<T>::is_integer, "'bitCount' only accept integer values");
 
 		int Count(0);
 		for(T i = 0, n = static_cast<T>(sizeof(T) * 8); i < n; ++i)
@@ -1393,7 +1411,7 @@ namespace bitCount
 	template<typename T>
 	inline int bitCount_vec(T v)
 	{
-		GLM_STATIC_ASSERT(std::numeric_limits<T>::is_integer, "'bitCount' only accept integer values");
+		static_assert(std::numeric_limits<T>::is_integer, "'bitCount' only accept integer values");
 
 		int Count(0);
 		for(T i = 0, n = static_cast<T>(sizeof(T) * 8); i < n; ++i)
@@ -1423,18 +1441,27 @@ namespace bitCount
 		}
 	};
 
+#		if GLM_COMPILER & GLM_COMPILER_VC
+#			pragma warning(push)
+#			pragma warning(disable : 4309)
+#		endif
+
 	template<glm::length_t L, typename T, glm::qualifier Q>
 	static glm::vec<L, int, Q> bitCount_bitfield(glm::vec<L, T, Q> const& v)
 	{
-		glm::vec<L, typename glm::detail::make_unsigned<T>::type, Q> x(*reinterpret_cast<glm::vec<L, typename glm::detail::make_unsigned<T>::type, Q> const *>(&v));
-		x = compute_bitfieldBitCountStep<sizeof(T) * 8 >=  2>::call(x, static_cast<typename glm::detail::make_unsigned<T>::type>(0x5555555555555555ull), static_cast<typename glm::detail::make_unsigned<T>::type>( 1));
-		x = compute_bitfieldBitCountStep<sizeof(T) * 8 >=  4>::call(x, static_cast<typename glm::detail::make_unsigned<T>::type>(0x3333333333333333ull), static_cast<typename glm::detail::make_unsigned<T>::type>( 2));
-		x = compute_bitfieldBitCountStep<sizeof(T) * 8 >=  8>::call(x, static_cast<typename glm::detail::make_unsigned<T>::type>(0x0F0F0F0F0F0F0F0Full), static_cast<typename glm::detail::make_unsigned<T>::type>( 4));
-		x = compute_bitfieldBitCountStep<sizeof(T) * 8 >= 16>::call(x, static_cast<typename glm::detail::make_unsigned<T>::type>(0x00FF00FF00FF00FFull), static_cast<typename glm::detail::make_unsigned<T>::type>( 8));
-		x = compute_bitfieldBitCountStep<sizeof(T) * 8 >= 32>::call(x, static_cast<typename glm::detail::make_unsigned<T>::type>(0x0000FFFF0000FFFFull), static_cast<typename glm::detail::make_unsigned<T>::type>(16));
-		x = compute_bitfieldBitCountStep<sizeof(T) * 8 >= 64>::call(x, static_cast<typename glm::detail::make_unsigned<T>::type>(0x00000000FFFFFFFFull), static_cast<typename glm::detail::make_unsigned<T>::type>(32));
+		glm::vec<L, typename std::make_unsigned<T>::type, Q> x(v);
+		x = compute_bitfieldBitCountStep<sizeof(T) * 8 >=  2>::call(x, static_cast<typename std::make_unsigned<T>::type>(0x5555555555555555ull), static_cast<typename std::make_unsigned<T>::type>( 1));
+		x = compute_bitfieldBitCountStep<sizeof(T) * 8 >=  4>::call(x, static_cast<typename std::make_unsigned<T>::type>(0x3333333333333333ull), static_cast<typename std::make_unsigned<T>::type>( 2));
+		x = compute_bitfieldBitCountStep<sizeof(T) * 8 >=  8>::call(x, static_cast<typename std::make_unsigned<T>::type>(0x0F0F0F0F0F0F0F0Full), static_cast<typename std::make_unsigned<T>::type>( 4));
+		x = compute_bitfieldBitCountStep<sizeof(T) * 8 >= 16>::call(x, static_cast<typename std::make_unsigned<T>::type>(0x00FF00FF00FF00FFull), static_cast<typename std::make_unsigned<T>::type>( 8));
+		x = compute_bitfieldBitCountStep<sizeof(T) * 8 >= 32>::call(x, static_cast<typename std::make_unsigned<T>::type>(0x0000FFFF0000FFFFull), static_cast<typename std::make_unsigned<T>::type>(16));
+		x = compute_bitfieldBitCountStep<sizeof(T) * 8 >= 64>::call(x, static_cast<typename std::make_unsigned<T>::type>(0x00000000FFFFFFFFull), static_cast<typename std::make_unsigned<T>::type>(32));
 		return glm::vec<L, int, Q>(x);
 	}
+
+#		if GLM_COMPILER & GLM_COMPILER_VC
+#			pragma warning(pop)
+#		endif
 
 	template<typename genType>
 	static int bitCount_bitfield(genType x)
@@ -1510,15 +1537,19 @@ namespace bitCount
 		for(std::size_t i = 0, n = sizeof(DataI32) / sizeof(type<int>); i < n; ++i)
 		{
 			int ResultA = glm::bitCount(DataI32[i].Value);
-			int ResultB = bitCount_if(DataI32[i].Value);
-			int ResultC = bitCount_vec(DataI32[i].Value);
-			int ResultE = bitCount_bitfield(DataI32[i].Value);
-
 			Error += DataI32[i].Return == ResultA ? 0 : 1;
-			Error += DataI32[i].Return == ResultB ? 0 : 1;
-			Error += DataI32[i].Return == ResultC ? 0 : 1;
-			Error += DataI32[i].Return == ResultE ? 0 : 1;
+			assert(!Error);
 
+			int ResultB = bitCount_if(DataI32[i].Value);
+			Error += DataI32[i].Return == ResultB ? 0 : 1;
+			assert(!Error);
+
+			int ResultC = bitCount_vec(DataI32[i].Value);
+			Error += DataI32[i].Return == ResultC ? 0 : 1;
+			assert(!Error);
+
+			int ResultE = bitCount_bitfield(DataI32[i].Value);
+			Error += DataI32[i].Return == ResultE ? 0 : 1;
 			assert(!Error);
 		}
 

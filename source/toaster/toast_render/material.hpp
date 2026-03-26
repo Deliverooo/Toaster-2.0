@@ -1,7 +1,7 @@
 #pragma once
 
-#include "toaster/toast_gpu/shader.hpp"
-#include "toaster/toast_gpu/texture.hpp"
+#include "toast_gpu/shader.hpp"
+#include "toast_gpu/texture.hpp"
 
 namespace toaster
 {

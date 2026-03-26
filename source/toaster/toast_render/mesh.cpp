@@ -4,7 +4,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
-#include "toaster/toast_lib/logging.hpp"
+#include "toast_lib/logging.hpp"
 
 #include "globals.hpp"
 

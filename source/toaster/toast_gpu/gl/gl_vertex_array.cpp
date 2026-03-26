@@ -1,6 +1,6 @@
 #include "gl_vertex_array.hpp"
 
-#include "toaster/toast_lib/toast_assert.h"
+#include "toast_lib/toast_assert.h"
 
 namespace toaster::gpu
 {

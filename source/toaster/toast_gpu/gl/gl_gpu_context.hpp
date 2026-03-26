@@ -3,7 +3,7 @@
  */
 #pragma once
 
-#include "toaster/toast_gpu/gpu_context.hpp"
+#include "../gpu_context.hpp"
 
 namespace toaster::gpu
 {

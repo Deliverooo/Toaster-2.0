@@ -8,7 +8,7 @@
 #include "layer.hpp"
 #include "window.hpp"
 
-#include "toaster/toast_lib/events/window_event.hpp"
+#include "toast_lib/events/window_event.hpp"
 
 namespace toaster
 {

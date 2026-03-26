@@ -1,9 +1,9 @@
 #pragma once
 
-#include "toaster/toast_lib/ptr.hpp"
-#include "toaster/toast_lib/system_types.h"
+#include "toast_lib/ptr.hpp"
+#include "toast_lib/system_types.h"
 
-#include "toaster/toast_lib/io/filesystem.hpp"
+#include "toast_lib/io/filesystem.hpp"
 
 namespace toaster::gpu
 {
@@ -24,7 +24,7 @@ namespace toaster::gpu
 
 		virtual void resize(uint32 p_width, uint32 p_height) = 0;
 
-		virtual void saveImageToFile(const io::filesystem::Path& p_path) const
+		virtual void saveImageToFile([[maybe_unused]]const io::filesystem::Path& p_path) const
 		{
 		}
 

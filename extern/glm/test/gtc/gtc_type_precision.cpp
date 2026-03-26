@@ -7,6 +7,141 @@
 #	include <omp.h>
 #endif
 
+static_assert(sizeof(glm::lowp_u8vec1) == 1, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::mediump_u8vec1) == 1, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::highp_u8vec1) == 1, "uint8 size isn't 1 byte on this platform");
+
+static_assert(sizeof(glm::lowp_u16vec1) == 2, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::mediump_u16vec1) == 2, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::highp_u16vec1) == 2, "uint16 size isn't 2 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u32vec1) == 4, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::mediump_u32vec1) == 4, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::highp_u32vec1) == 4, "uint32 size isn't 4 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u64vec1) == 8, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::mediump_u64vec1) == 8, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::highp_u64vec1) == 8, "uint64 size isn't 8 bytes on this platform");
+
+
+static_assert(sizeof(glm::lowp_u8vec2) == 2, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::mediump_u8vec2) == 2, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::highp_u8vec2) == 2, "uint8 size isn't 1 byte on this platform");
+
+static_assert(sizeof(glm::lowp_u16vec2) == 4, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::mediump_u16vec2) == 4, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::highp_u16vec2) == 4, "uint16 size isn't 2 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u32vec2) == 8, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::mediump_u32vec2) == 8, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::highp_u32vec2) == 8, "uint32 size isn't 4 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u64vec2) == 16, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::mediump_u64vec2) == 16, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::highp_u64vec2) == 16, "uint64 size isn't 8 bytes on this platform");
+
+
+static_assert(sizeof(glm::lowp_u8vec3) == 3, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::mediump_u8vec3) == 3, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::highp_u8vec3) == 3, "uint8 size isn't 1 byte on this platform");
+
+static_assert(sizeof(glm::lowp_u16vec3) == 6, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::mediump_u16vec3) == 6, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::highp_u16vec3) == 6, "uint16 size isn't 2 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u32vec3) == 12, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::mediump_u32vec3) == 12, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::highp_u32vec3) == 12, "uint32 size isn't 4 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u64vec3) == 24, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::mediump_u64vec3) == 24, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::highp_u64vec3) == 24, "uint64 size isn't 8 bytes on this platform");
+
+
+static_assert(sizeof(glm::lowp_u8vec4) == 4, "int8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::mediump_u8vec4) == 4, "int8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::highp_u8vec4) == 4, "int8 size isn't 1 byte on this platform");
+
+static_assert(sizeof(glm::lowp_u16vec4) == 8, "int16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::mediump_u16vec4) == 8, "int16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::highp_u16vec4) == 8, "int16 size isn't 2 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u32vec4) == 16, "int32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::mediump_u32vec4) == 16, "int32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::highp_u32vec4) == 16, "int32 size isn't 4 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u64vec4) == 32, "int64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::mediump_u64vec4) == 32, "int64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::highp_u64vec4) == 32, "int64 size isn't 8 bytes on this platform");
+
+
+static_assert(sizeof(glm::lowp_u8vec1) == 1, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::mediump_u8vec1) == 1, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::highp_u8vec1) == 1, "uint8 size isn't 1 byte on this platform");
+
+static_assert(sizeof(glm::lowp_u16vec1) == 2, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::mediump_u16vec1) == 2, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::highp_u16vec1) == 2, "uint16 size isn't 2 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u32vec1) == 4, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::mediump_u32vec1) == 4, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::highp_u32vec1) == 4, "uint32 size isn't 4 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u64vec1) == 8, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::mediump_u64vec1) == 8, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::highp_u64vec1) == 8, "uint64 size isn't 8 bytes on this platform");
+
+
+static_assert(sizeof(glm::lowp_u8vec2) == 2, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::mediump_u8vec2) == 2, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::highp_u8vec2) == 2, "uint8 size isn't 1 byte on this platform");
+
+static_assert(sizeof(glm::lowp_u16vec2) == 4, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::mediump_u16vec2) == 4, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::highp_u16vec2) == 4, "uint16 size isn't 2 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u32vec2) == 8, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::mediump_u32vec2) == 8, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::highp_u32vec2) == 8, "uint32 size isn't 4 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u64vec2) == 16, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::mediump_u64vec2) == 16, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::highp_u64vec2) == 16, "uint64 size isn't 8 bytes on this platform");
+
+
+static_assert(sizeof(glm::lowp_u8vec3) == 3, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::mediump_u8vec3) == 3, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::highp_u8vec3) == 3, "uint8 size isn't 1 byte on this platform");
+
+static_assert(sizeof(glm::lowp_u16vec3) == 6, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::mediump_u16vec3) == 6, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::highp_u16vec3) == 6, "uint16 size isn't 2 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u32vec3) == 12, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::mediump_u32vec3) == 12, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::highp_u32vec3) == 12, "uint32 size isn't 4 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u64vec3) == 24, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::mediump_u64vec3) == 24, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::highp_u64vec3) == 24, "uint64 size isn't 8 bytes on this platform");
+
+
+static_assert(sizeof(glm::lowp_u8vec4) == 4, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::mediump_u8vec4) == 4, "uint8 size isn't 1 byte on this platform");
+static_assert(sizeof(glm::highp_u8vec4) == 4, "uint8 size isn't 1 byte on this platform");
+
+static_assert(sizeof(glm::lowp_u16vec4) == 8, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::mediump_u16vec4) == 8, "uint16 size isn't 2 bytes on this platform");
+static_assert(sizeof(glm::highp_u16vec4) == 8, "uint16 size isn't 2 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u32vec4) == 16, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::mediump_u32vec4) == 16, "uint32 size isn't 4 bytes on this platform");
+static_assert(sizeof(glm::highp_u32vec4) == 16, "uint32 size isn't 4 bytes on this platform");
+
+static_assert(sizeof(glm::lowp_u64vec4) == 32, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::mediump_u64vec4) == 32, "uint64 size isn't 8 bytes on this platform");
+static_assert(sizeof(glm::highp_u64vec4) == 32, "uint64 size isn't 8 bytes on this platform");
+
 static int test_scalar_size()
 {
 	int Error = 0;
@@ -838,13 +973,16 @@ static int test_fvec_conversion()
 
 	{
 		glm::highp_vec4 a = glm::vec4(1, 2, 3, 4);
+		Error += glm::all(glm::equal(a, glm::vec4(1, 2, 3, 4), glm::epsilon<float>())) ? 0 : 1;
+
 		glm::mediump_vec4 b = glm::vec4(1, 2, 3, 4);
 		glm::lowp_vec4 c = b;
 		glm::mediump_vec4 d = c;
+		Error += glm::all(glm::equal(b, d, glm::epsilon<float>())) ? 0 : 1;
+
 		glm::lowp_ivec4 e = glm::ivec4(d);
 		glm::lowp_ivec3 f = glm::ivec3(e);
-
-		Error += glm::all(glm::equal(b, d, glm::epsilon<float>())) ? 0 : 1;
+		Error += glm::all(glm::equal(f, glm::lowp_ivec3(1, 2, 3))) ? 0 : 1;
 	}
 
 	return Error;

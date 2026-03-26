@@ -1608,18 +1608,19 @@ namespace gl
 		glTextureSubImage2D(texture, level, x_offset, y_offset, width, height, static_cast<Enum>(p_format), static_cast<Enum>(p_type), pixels);
 	}
 
-	void texSubImage3D(TextureType p_target, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Enum format, Enum type,
-					   const Void *pixels)
+	void texSubImage3D(TextureType p_target, Int       level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Format p_format,
+					   DataType    p_type, const Void *pixels)
 	{
 	}
 
-	void textureSubImage3D(UInt        texture, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Enum format, Enum type,
+	void textureSubImage3D(UInt texture, Int level, Int x_offset, Int y_offset, Int z_offset, SizeI width, SizeI height, SizeI depth, Format p_format, DataType p_type,
 						   const void *pixels)
 	{
 	}
 
-	void textureView(UInt texture, Enum target, UInt origin_texture, Enum internalformat, UInt min_level, UInt num_levels, UInt min_layer, UInt num_layers)
+	void textureView(UInt p_texture, TextureType p_target, UInt p_origin_texture, Format p_internal_format, UInt p_min_level, UInt p_num_levels, UInt p_min_layer, UInt num_layers)
 	{
+		glTextureView(p_texture, static_cast<Enum>(p_target), p_origin_texture, static_cast<Enum>(p_internal_format), p_min_level, p_num_levels, p_min_layer, num_layers);
 	}
 	#pragma endregion
 

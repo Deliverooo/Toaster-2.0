@@ -4,7 +4,7 @@
 
 #include <glm/ext/matrix_transform.hpp>
 
-#include "toaster/toast_lib/logging.hpp"
+#include "toast_lib/logging.hpp"
 
 namespace toaster
 {

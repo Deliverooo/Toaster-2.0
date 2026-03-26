@@ -5,7 +5,7 @@
 
 #include <span>
 #include <string>
-#include "toaster/toast_lib/system_types.h"
+#include "toast_lib/system_types.h"
 
 namespace toaster::gpu
 {

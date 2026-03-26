@@ -1,7 +1,7 @@
 #pragma once
 
-#include "toaster/toast_lib/system_types.h"
-#include "toaster/toast_lib/io/filesystem.hpp"
+#include "../system_types.h"
+#include "../io/filesystem.hpp"
 
 namespace toaster::os
 {

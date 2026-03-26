@@ -1,6 +1,6 @@
 #pragma once
 
-#include "toaster/toast_lib/string.hpp"
+#include "toast_lib/string.hpp"
 
 #include <utility>
 
@@ -8,7 +8,7 @@
 #include "scriptable_entity.hpp"
 #include "glm/gtx/quaternion.hpp"
 
-#include "toaster/toast_gpu/texture.hpp"
+#include "toast_gpu/texture.hpp"
 
 #define DEFINE_COMPONENT(__name) struct __name
 
