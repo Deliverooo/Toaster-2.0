@@ -17,7 +17,7 @@ target_compile_definitions(glm PUBLIC GLM_ENABLE_EXPERIMENTAL)
 target_compile_definitions(glm-header-only INTERFACE GLM_ENABLE_EXPERIMENTAL)
 
 if (${WITH_OPENGL_BACKEND})
-	add_subdirectory(openglhpp)
+	add_subdirectory(opengl-hpp)
 endif ()
 
 add_subdirectory(imgui)

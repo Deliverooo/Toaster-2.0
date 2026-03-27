@@ -19,11 +19,11 @@ namespace toaster
 		TagComponent()  = default;
 		~TagComponent() = default;
 
-		TagComponent(U8String p_tag) : tag(std::move(p_tag))
+		TagComponent(String p_tag) : tag(std::move(p_tag))
 		{
 		}
 
-		U8String tag;
+		String tag;
 	};
 
 	DEFINE_COMPONENT(TransformComponent)

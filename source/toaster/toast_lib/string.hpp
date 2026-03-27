@@ -4,59 +4,44 @@
 
 namespace toaster
 {
+	using CString = const char *;
+
 	using String    = std::string;
 	using WString   = std::wstring;
 	using U8String  = std::u8string;
 	using U16String = std::u16string;
 	using U32String = std::u32string;
 
-	_NODISCARD inline U8String to_u8string(int _Val)
+	template<typename Type> requires std::is_arithmetic_v<Type>
+	String to_string(Type p_val)
 	{
-		return std::_Integral_to_string<char8_t>(_Val);
+		return std::to_string(p_val);
 	}
 
-	_NODISCARD inline U8String to_u8string(unsigned int _Val)
+	template<typename Type> requires std::is_arithmetic_v<Type>
+	WString to_wstring(Type p_val)
 	{
-		return std::_UIntegral_to_string<char8_t>(_Val);
+		return std::to_wstring(p_val);
 	}
 
-	_NODISCARD inline U8String to_u8string(long _Val)
+	template<typename Type> requires std::is_arithmetic_v<Type>
+	U8String to_u8string(Type p_val)
 	{
-		return std::_Integral_to_string<char8_t>(_Val);
+		std::string ret = std::to_string(p_val);
+		return U8String{ret.begin(), ret.end()};
 	}
 
-	_NODISCARD inline U8String to_u8string(unsigned long _Val)
+	template<typename Type> requires std::is_arithmetic_v<Type>
+	U16String to_u16string(Type p_val)
 	{
-		return std::_UIntegral_to_string<char8_t>(_Val);
+		std::string ret = std::to_string(p_val);
+		return U16String{ret.begin(), ret.end()};
 	}
 
-	_NODISCARD inline U8String to_u8string(long long _Val)
+	template<typename Type> requires std::is_arithmetic_v<Type>
+	U32String to_u32string(Type p_val)
 	{
-		return std::_Integral_to_string<char8_t>(_Val);
+		std::string ret = std::to_string(p_val);
+		return U32String{ret.begin(), ret.end()};
 	}
-
-	_NODISCARD inline U8String to_u8string(unsigned long long _Val)
-	{
-		return std::_UIntegral_to_string<char8_t>(_Val);
-	}
-
-	_NODISCARD inline U8String to_u8string(double _Val)
-	{
-		const auto _Len = static_cast<size_t>(_CSTD _scprintf("%f", _Val));
-		U8String   _Str(_Len, '\0');
-		_CSTD sprintf_s(reinterpret_cast<char *>(&_Str[0]), _Len + 1, "%f", _Val);
-		return _Str;
-	}
-
-	_NODISCARD inline U8String to_u8string(float _Val)
-	{
-		return to_u8string(static_cast<double>(_Val));
-	}
-
-	_NODISCARD inline U8String to_u8string(long double _Val)
-	{
-		return to_u8string(static_cast<double>(_Val));
-	}
-
-
 }

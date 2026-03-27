@@ -79,14 +79,14 @@ namespace toaster
 		}
 	}
 
-	Entity Scene::createEntity(const U8String &p_name)
+	Entity Scene::createEntity(const String &p_name)
 	{
 		auto entity = Entity{m_registry.create(), this};
 
 		entity.addComponent<TransformComponent>();
 
 		const bool name_empty = p_name.empty();
-		entity.addComponent<TagComponent>(name_empty ? u8"ヌル　エンチチ (" + to_u8string(m_newEntityTagCount) + u8")" : p_name);
+		entity.addComponent<TagComponent>(name_empty ? "ヌル　エンチチ (" + std::to_string(m_newEntityTagCount) + ")" : p_name);
 
 		if (name_empty)
 			++m_newEntityTagCount; // E.g. "New Entity (1)"

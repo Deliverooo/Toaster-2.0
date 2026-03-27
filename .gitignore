@@ -8,6 +8,7 @@ cmake-build-release-visual-studio/
 docs/latex/
 docs/html/
 bin/
+lib/
 
 # Compiled Object files
 *.slo

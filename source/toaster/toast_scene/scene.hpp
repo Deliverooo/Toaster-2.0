@@ -19,7 +19,7 @@ namespace toaster
 		void onRender(const RefPtr<Renderer2D> &p_renderer_2d, float32 p_dt);
 		void setViewportSize(uint32 p_width, uint32 p_height);
 
-		Entity createEntity(const U8String &p_name = u8"");
+		Entity createEntity(const String &p_name = "");
 		void   destroyEntity(Entity p_entity);
 
 		Entity getMainCameraEntity();

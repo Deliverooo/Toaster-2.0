@@ -15,7 +15,7 @@ namespace toaster
 		EVENT_CLASS_CATEGORY(EventCategory_Application)
 		EVENT_CLASS_TYPE(WindowClose)
 
-		[[nodiscard]] virtual std::string toStr() const override
+		[[nodiscard]] String toStr() const override
 		{
 			return "Window Closed Event -> [Window Closed]";
 		}
@@ -33,13 +33,11 @@ namespace toaster
 
 		[[nodiscard]] uint32  getWidth() const { return m_width; }
 		[[nodiscard]] uint32  getHeight() const { return m_height; }
-		[[nodiscard]] float32 getAspectRatio() const { return static_cast<float>(m_width) / static_cast<float>(m_height); }
+		[[nodiscard]] float32 getAspectRatio() const { return static_cast<float32>(m_width) / static_cast<float32>(m_height); }
 
-		[[nodiscard]] virtual std::string toStr() const override
+		[[nodiscard]] String toStr() const override
 		{
-			std::ostringstream ss;
-			ss << m_width << " " << m_height;
-			return ss.str();
+			return "Window Resize Event -> [" + to_string(m_width) + ", " + to_string(m_height) + "]";
 		}
 
 	private:
@@ -59,11 +57,9 @@ namespace toaster
 
 		[[nodiscard]] bool isMinimized() const { return m_minimized; }
 
-		[[nodiscard]] virtual std::string toStr() const override
+		[[nodiscard]] std::string toStr() const override
 		{
-			std::ostringstream ss;
-			ss << "Window Minimized Event -> [" << m_minimized << "]";
-			return ss.str();
+			return "Window Minimized Event -> [" + to_string(m_minimized) + "]";
 		}
 
 	private:
@@ -82,11 +78,9 @@ namespace toaster
 
 		[[nodiscard]] bool isMaximized() const { return m_maximized; }
 
-		[[nodiscard]] virtual std::string toStr() const override
+		[[nodiscard]] String toStr() const override
 		{
-			std::ostringstream ss;
-			ss << "Window Minimized Event -> [" << m_maximized << "]";
-			return ss.str();
+			return "Window Minimized Event -> [" + to_string(m_maximized) + "]";
 		}
 
 	private:

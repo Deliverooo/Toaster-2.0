@@ -10,12 +10,12 @@
 
 namespace toaster
 {
-	static void drawVec3Ctrl(const std::string &p_label, glm::vec3 *p_vec, const glm::vec3 &p_reset = glm::vec3{1.0f},
-							 const char *       p_vec1_label                                        = "X", const char *p_vec2_label = "Y", const char *p_vec3_label = "Z")
+	static void drawVec3Ctrl(const String &p_label, glm::vec3 *p_vec, const glm::vec3 &p_reset = glm::vec3{1.0f}, const char *p_vec1_label = "X",
+							 const char *  p_vec2_label                                        = "Y", const char *            p_vec3_label = "Z")
 	{
-		const std::string vec1_str_id = std::string("##") + p_vec1_label;
-		const std::string vec2_str_id = std::string("##") + p_vec2_label;
-		const std::string vec3_str_id = std::string("##") + p_vec3_label;
+		const String vec1_str_id = String("##") + p_vec1_label;
+		const String vec2_str_id = String("##") + p_vec2_label;
+		const String vec3_str_id = String("##") + p_vec3_label;
 
 		ImGuiIO &io        = ig::GetIO();
 		auto     bold_font = io.Fonts->Fonts[1];
@@ -172,12 +172,12 @@ namespace toaster
 		{
 			auto &tag_comp = p_entity.getComponent<TagComponent>();
 
-			char8 buffer[256]{};
+			char buffer[256]{};
 			std::memcpy(buffer, tag_comp.tag.c_str(), tag_comp.tag.size());
 
-			if (ig::InputText("##Tag", reinterpret_cast<char *>(buffer), sizeof(buffer)))
+			if (ig::InputText("##Tag", buffer, sizeof(buffer)))
 			{
-				tag_comp.tag = U8String{buffer};
+				tag_comp.tag = String{buffer};
 			}
 		}
 		ig::SameLine();

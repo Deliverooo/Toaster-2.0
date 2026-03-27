@@ -7,6 +7,7 @@
 
 #include "toast_lib/events/event.hpp"
 #include "toast_lib/system_types.h"
+#include "toast_lib/string.hpp"
 
 struct GLFWwindow;
 
@@ -20,6 +21,10 @@ namespace toaster
 	struct ScreenPos
 	{
 		float32 x, y;
+	};
+
+	struct WindowCreateInfo
+	{
 	};
 
 	/*!
@@ -61,13 +66,13 @@ namespace toaster
 
 		void setEventCallback(const EventCallbackFn &p_callback);
 
-		[[nodiscard]] uint32             getWidth() const;
-		[[nodiscard]] uint32             getHeight() const;
-		[[nodiscard]] float32            getAspect() const;
-		[[nodiscard]] ScreenPos          getCenter() const;
-		[[nodiscard]] const std::string &getTitle() const;
+		[[nodiscard]] uint32        getWidth() const;
+		[[nodiscard]] uint32        getHeight() const;
+		[[nodiscard]] float32       getAspect() const;
+		[[nodiscard]] ScreenPos     getCenter() const;
+		[[nodiscard]] const String &getTitle() const;
 
-		void setTitle(const std::string &p_title);
+		void setTitle(const String &p_title);
 
 		[[nodiscard]] gpu::IGPUContext *getGPUContext() const;
 
@@ -80,9 +85,9 @@ namespace toaster
 
 		struct GLFWCallbackData
 		{
-			uint32      width{0u};
-			uint32      height{0u};
-			std::string title;
+			uint32 width{0u};
+			uint32 height{0u};
+			String title;
 
 			EventCallbackFn eventCallback;
 		};

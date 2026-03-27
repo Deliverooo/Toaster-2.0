@@ -13,7 +13,7 @@ namespace toaster
 		[[nodiscard]] input::EKeyCode getKeyCode() const { return m_keyCode; }
 
 	protected:
-		explicit KeyEvent(const input::EKeyCode keycode) : m_keyCode(keycode)
+		explicit KeyEvent(const input::EKeyCode p_keycode) : m_keyCode(p_keycode)
 		{
 		}
 
@@ -23,19 +23,17 @@ namespace toaster
 	class KeyPressEvent final : public KeyEvent
 	{
 	public:
-		KeyPressEvent(const input::EKeyCode keycode, const int repeatCount) : KeyEvent(keycode), m_repeatCount(repeatCount)
+		KeyPressEvent(const input::EKeyCode p_keycode, const int32 p_repeat_count) : KeyEvent(p_keycode), m_repeatCount(p_repeat_count)
 		{
 		}
 
 		EVENT_CLASS_TYPE(KeyPressed)
 
-		int getRepeatCount() const { return m_repeatCount; }
+		[[nodiscard]] int32 getRepeatCount() const { return m_repeatCount; }
 
-		[[nodiscard]] virtual std::string toStr() const override
+		[[nodiscard]] String toStr() const override
 		{
-			std::stringstream ss;
-			ss << "KeyPressedEvent: " << static_cast<int>(m_keyCode) << "/" << m_repeatCount;
-			return ss.str();
+			return "KeyPressedEvent: " +to_string(static_cast<int32>(m_keyCode)) + "/" + to_string(m_repeatCount);
 		}
 
 	private:
@@ -45,34 +43,30 @@ namespace toaster
 	class KeyTypeEvent final : public KeyEvent
 	{
 	public:
-		explicit KeyTypeEvent(const input::EKeyCode keycode) : KeyEvent(keycode)
+		explicit KeyTypeEvent(const input::EKeyCode p_keycode) : KeyEvent(p_keycode)
 		{
 		}
 
 		EVENT_CLASS_TYPE(KeyTyped)
 
-		[[nodiscard]] virtual std::string toStr() const override
+		[[nodiscard]] String toStr() const override
 		{
-			std::stringstream ss;
-			ss << "KeyTypedEvent: " << static_cast<int>(m_keyCode);
-			return ss.str();
+			return "KeyTypedEvent: " + to_string(static_cast<int32>(m_keyCode));
 		}
 	};
 
 	class KeyReleaseEvent final : public KeyEvent
 	{
 	public:
-		explicit KeyReleaseEvent(const input::EKeyCode keycode) : KeyEvent(keycode)
+		explicit KeyReleaseEvent(const input::EKeyCode p_keycode) : KeyEvent(p_keycode)
 		{
 		}
 
 		EVENT_CLASS_TYPE(KeyReleased)
 
-		[[nodiscard]] virtual std::string toStr() const override
+		[[nodiscard]] String toStr() const override
 		{
-			std::stringstream ss;
-			ss << "KeyReleasedEvent: " << static_cast<int>(m_keyCode);
-			return ss.str();
+			return "KeyReleasedEvent: " + to_string(static_cast<int32>(m_keyCode));
 		}
 	};
 }

@@ -3,12 +3,11 @@
  */
 #pragma once
 
+#include "../string.hpp"
 #include "../system_types.h"
 #include "../util_defines.hpp"
 
 #include <functional>
-#include <sstream>
-#include <string>
 
 namespace toaster
 {
@@ -45,11 +44,11 @@ namespace toaster
 		EventCategory_MouseButton = BIT(4)
 	};
 
-	#define EVENT_CLASS_TYPE(type) static EventType getStaticType() {return EventType::type;}\
+	#define EVENT_CLASS_TYPE(__type) static EventType getStaticType() {return EventType::__type;}\
 							   EventType getEventType() const override {return getStaticType();}\
-							   const char* getEventName() const override {return #type;}
+							   CString getEventName() const override {return #__type;}
 
-	#define EVENT_CLASS_CATEGORY(category) virtual int getEventCategory() const override {return category;}
+	#define EVENT_CLASS_CATEGORY(__category) virtual int32 getEventCategory() const override {return __category;}
 
 	/*!
 	 * @class Event
@@ -62,16 +61,16 @@ namespace toaster
 
 		[[nodiscard]] virtual EventType getEventType() const = 0;
 
-		[[nodiscard]] virtual const char *getEventName() const = 0;
+		[[nodiscard]] virtual CString getEventName() const = 0;
 
-		[[nodiscard]] virtual int getEventCategory() const = 0;
+		[[nodiscard]] virtual int32 getEventCategory() const = 0;
 
-		[[nodiscard]] virtual std::string toStr() const = 0;
+		[[nodiscard]] virtual String toStr() const = 0;
 
-		[[nodiscard]] bool inCategory(const EventCategory category) const { return getEventCategory() & category; }
+		[[nodiscard]] bool inCategory(const EventCategory p_category) const { return getEventCategory() & p_category; }
 
 		[[nodiscard]] bool isHandled() const { return m_handled; }
-		void               setHandled(const bool handled) { m_handled = handled; }
+		void               setHandled(const bool p_handled) { m_handled = p_handled; }
 
 	protected:
 		bool m_handled = false;
@@ -79,11 +78,11 @@ namespace toaster
 		friend class EventDispatcher;
 	};
 
-	// std::bind is not good, so I use this instead
-	#define TST_BIND_EVENT_FN(fn) [this](auto &event) mutable -> bool { return fn(event); }
+	// std::bind is not good, so I use this instead...
+	#define TST_BIND_EVENT_FN(__func) [this](auto &p_event) mutable -> bool { return __func(p_event); }
 
-	template<typename T>
-	using EventFunc = std::function<bool(T &)>;
+	template<typename Type>
+	using EventFunc = std::function<bool(Type &)>;
 
 	// EventDispatcher is a utility class that allows for easy dispatching of events
 	// It takes an event and a function, and calls the function if the event type matches
@@ -91,19 +90,19 @@ namespace toaster
 	{
 	public:
 		// Constructor that takes an event reference
-		explicit EventDispatcher(Event &event) : m_event(event)
+		explicit EventDispatcher(Event &p_event) : m_event(p_event)
 		{
 		}
 
 		// Dispatch function that takes a function and calls it if the event type matches
-		template<typename T> requires std::derived_from<T, Event>
-		bool dispatch(EventFunc<T> func)
+		template<typename Type> requires std::derived_from<Type, Event>
+		bool dispatch(EventFunc<Type> p_func)
 		{
 			// Check if the event type matches the type T
-			if (m_event.getEventType() == T::getStaticType())
+			if (m_event.getEventType() == Type::getStaticType())
 			{
 				// Cast the event to type T and call the function with it
-				m_event.m_handled = func(static_cast<T &>(m_event));
+				m_event.m_handled = p_func(static_cast<Type &>(m_event));
 				return true;
 			}
 

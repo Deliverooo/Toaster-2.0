@@ -8,3 +8,6 @@
 	path = extern/imgui
 	url = https://github.com/Deliverooo/imgui.git
 	branch = docking
+[submodule "extern/opengl-hpp"]
+	path = extern/opengl-hpp
+	url = https://github.com/Deliverooo/opengl-hpp.git

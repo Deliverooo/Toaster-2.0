@@ -73,7 +73,7 @@ target_link_libraries(toast_gpu PUBLIC glfw)
 target_link_libraries(toast_gpu PUBLIC stb)
 
 if (${WITH_OPENGL_BACKEND})
-	target_link_libraries(toast_gpu PUBLIC openglhpp)
+	target_link_libraries(toast_gpu PUBLIC opengl-hpp)
 
 	target_include_directories(toast_gpu PUBLIC "$ENV{VULKAN_SDK}/Include")
 

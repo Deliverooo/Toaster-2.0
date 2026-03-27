@@ -52,7 +52,7 @@ namespace toaster
 		}
 
 		{
-			m_cameraEntity = m_scene->createEntity(u8"オルボ　ステトソン");
+			m_cameraEntity = m_scene->createEntity("オルボ　ステトソン");
 			auto &cc       = m_cameraEntity.addComponent<CameraComponent>();
 
 			class TestScript : public ScriptableEntity
