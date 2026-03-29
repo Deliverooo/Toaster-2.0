@@ -5,9 +5,10 @@
 
 #include <string>
 
-#include "toast_lib/events/event.hpp"
-#include "toast_lib/system_types.h"
 #include "toast_lib/string.hpp"
+#include "toast_lib/system_types.h"
+#include "toast_lib/events/event.hpp"
+#include "toast_lib/io/filesystem.hpp"
 
 struct GLFWwindow;
 
@@ -25,6 +26,13 @@ namespace toaster
 
 	struct WindowCreateInfo
 	{
+		uint32 width{1920u};
+		uint32 height{1080u};
+		String title{""};
+
+		io::filesystem::Path iconPath{""};
+
+		bool startMaximized{false};
 	};
 
 	/*!
@@ -48,7 +56,7 @@ namespace toaster
  		 */
 		static void shutdownWindowingAPI();
 
-		Window(uint32 p_width, uint32 p_height, const std::string &p_title);
+		Window(const WindowCreateInfo &p_create_info);
 		~Window();
 
 		void beginFrame();

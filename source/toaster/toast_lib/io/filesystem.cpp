@@ -38,9 +38,26 @@ namespace toaster::io::filesystem
 		return std::filesystem::exists(p_path);
 	}
 
-	std::string readFile(const Path &p_path)
+	String readFile(const Path &p_path)
 	{
-		std::string   result;
+		String        result;
+		std::ifstream in{p_path, std::ios::in | std::ios::binary | std::ios::ate};
+		if (in)
+		{
+			const auto file_size = in.tellg();
+			result.resize(file_size);
+
+			in.seekg(0);
+
+			in.read(result.data(), file_size);
+		}
+		in.close();
+		return result;
+	}
+
+	String readFileAndSkipBOM(const Path &p_path)
+	{
+		String        result;
 		std::ifstream in{p_path, std::ios::in | std::ios::binary};
 		if (in)
 		{
@@ -56,5 +73,15 @@ namespace toaster::io::filesystem
 		}
 		in.close();
 		return result;
+	}
+
+	void writeFile(const Path &p_path, const String &p_data)
+	{
+		std::ofstream out{p_path, std::ios::out | std::ios::binary};
+		if (out)
+		{
+			out.write(p_data.data(), static_cast<std::streamsize>(p_data.size()));
+		}
+		out.close();
 	}
 }

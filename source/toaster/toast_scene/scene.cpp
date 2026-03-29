@@ -6,7 +6,7 @@
 
 namespace toaster
 {
-	Scene::Scene()
+	Scene::Scene(const String &p_name) : m_name(p_name.empty() ? "Untitled Scene" : p_name)
 	{
 	}
 
@@ -119,6 +119,16 @@ namespace toaster
 	const entt::registry &Scene::getRegistry() const
 	{
 		return m_registry;
+	}
+
+	void Scene::setName(const String &p_name)
+	{
+		m_name = p_name;
+	}
+
+	String Scene::getName() const
+	{
+		return m_name;
 	}
 
 	template<typename Type>

@@ -6,7 +6,7 @@ namespace toaster
 	class EditorApplication : public Application
 	{
 	public:
-		EditorApplication();
+		EditorApplication(const ApplicationCreateInfo& p_create_info);
 		~EditorApplication();
 
 		void setBlockUIEvents(bool p_block_ui_events);

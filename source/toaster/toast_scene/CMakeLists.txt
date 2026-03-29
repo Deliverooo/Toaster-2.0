@@ -9,6 +9,9 @@ set(SRC
 		scene_camera.hpp
 		scene_camera.cpp
 
+		scene_serializer.cpp
+		scene_serializer.hpp
+
 		scriptable_entity.hpp
 )
 

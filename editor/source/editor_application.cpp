@@ -4,17 +4,17 @@
 
 namespace toaster
 {
-	EditorApplication::EditorApplication() : Application()
+	EditorApplication::EditorApplication(const ApplicationCreateInfo& p_create_info) : Application(p_create_info)
 	{
 		io::filesystem::setWorkingDirectory("../"); // The main Toaster dir (where the resource folder is)
 
-		__super::addLayer(IAppLayer::alloc<EditorLayer>(this));
+		addLayer(IAppLayer::alloc<EditorLayer>(this));
 
 		m_imGuiLayer = IAppLayer::alloc<ImGuiLayer>(this);
-		__super::addLayer(m_imGuiLayer);
+		addLayer(m_imGuiLayer);
 
-		__super::setBeginUIRenderCallback([&]() -> void { m_imGuiLayer->begin(); });
-		__super::setEndUIRenderCallback([&]() -> void { m_imGuiLayer->end(); });
+		setBeginUIRenderCallback([&]() -> void { m_imGuiLayer->begin(); });
+		setEndUIRenderCallback([&]() -> void { m_imGuiLayer->end(); });
 	}
 
 	EditorApplication::~EditorApplication() = default;

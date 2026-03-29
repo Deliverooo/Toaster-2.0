@@ -22,10 +22,12 @@ namespace toaster::gpu
 		[[nodiscard]] uint32 getWidth() const override;
 		[[nodiscard]] uint32 getHeight() const override;
 
+		std::optional<io::filesystem::Path> getPath() override;
+
 		bool operator==(const ITexture &p_other) const override;
 
 	private:
-		io::filesystem::Path m_path;
+		io::filesystem::Path m_path{""};
 
 		uint32 m_width{0u};
 		uint32 m_height{0u};

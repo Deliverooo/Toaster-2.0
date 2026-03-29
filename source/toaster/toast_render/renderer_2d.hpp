@@ -19,6 +19,13 @@ namespace toaster
 	class Renderer2D
 	{
 	public:
+		#ifndef TST_RENDERER_2D_USE_64_BIT_IDS
+		using IDType = uint32;
+		static constexpr IDType c_invalidID{UINT32_MAX};
+		#else
+		using IDType = uint64; static constexpr IDType c_invalidID{UINT64_MAX};
+		#endif
+
 		explicit Renderer2D(const Renderer2DCreateInfo &p_create_info);
 		~Renderer2D();
 
@@ -26,16 +33,16 @@ namespace toaster
 		void begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix);
 		void end();
 
-		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
-		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
-		void submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour);
+		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour, IDType p_object_id = c_invalidID);
+		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour, IDType p_object_id = c_invalidID);
+		void submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour, IDType p_object_id = c_invalidID);
 
 		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &                              p_scale, const RefPtr<gpu::ITexture2D> &p_texture,
-						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f);
+						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f, IDType          p_object_id = c_invalidID);
 		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &                              p_scale, const RefPtr<gpu::ITexture2D> &p_texture,
-						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f);
+						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f, IDType          p_object_id = c_invalidID);
 		void submitQuad(const tsm::float4x4 &p_transform, const RefPtr<gpu::ITexture2D> &                 p_texture,
-						const tsm::float4 &  p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f);
+						const tsm::float4 &  p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f, IDType p_object_id = c_invalidID);
 
 	private:
 		void   _beginNewBatch();
@@ -52,6 +59,7 @@ namespace toaster
 			tsm::float2 texCoord;
 			float32     texIndex;
 			float32     tilingFactor;
+			IDType      objectID;
 		};
 
 		RefPtr<gpu::IVertexArray>  m_quadVertexArray;

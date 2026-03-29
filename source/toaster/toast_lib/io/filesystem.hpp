@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include "../string.hpp"
 
 namespace toaster::io::filesystem
 {
@@ -13,5 +14,7 @@ namespace toaster::io::filesystem
 
 	bool exists(const Path &p_path);
 
-	std::string readFile(const Path &p_path);
+	String readFile(const Path &p_path);
+	String readFileAndSkipBOM(const Path &p_path);
+	void   writeFile(const Path &p_path, const String &p_data);
 }

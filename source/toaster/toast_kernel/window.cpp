@@ -11,6 +11,8 @@
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 #endif
 
+#include <stb/stb_image.h>
+
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
 
@@ -47,18 +49,18 @@ namespace toaster
 		glfwTerminate();
 	}
 
-	Window::Window(uint32 p_width, uint32 p_height, const std::string &p_title)
+	Window::Window(const WindowCreateInfo &p_create_info)
 	{
 		glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 
 		// Hides the window during creation, as to not have a blank white screen
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-		m_callbackData.width  = p_width;
-		m_callbackData.height = p_height;
-		m_callbackData.title  = p_title;
+		m_callbackData.width  = p_create_info.width;
+		m_callbackData.height = p_create_info.height;
+		m_callbackData.title  = p_create_info.title;
 
-		m_window = glfwCreateWindow(static_cast<int32>(p_width), static_cast<int32>(p_height), p_title.c_str(), nullptr, nullptr);
+		m_window = glfwCreateWindow(static_cast<int32>(p_create_info.width), static_cast<int32>(p_create_info.height), p_create_info.title.c_str(), nullptr, nullptr);
 
 		m_gpuContext = gpu::IGPUContext::create(m_window);
 
@@ -72,7 +74,8 @@ namespace toaster
 			auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
 			WindowResizeEvent event(width, height);
-			data.eventCallback(event);
+			if (data.eventCallback)
+				data.eventCallback(event);
 			data.width  = width;
 			data.height = height;
 		});
@@ -82,7 +85,8 @@ namespace toaster
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
 			WindowCloseEvent event;
-			data.eventCallback(event);
+			if (data.eventCallback)
+				data.eventCallback(event);
 		});
 
 		glfwSetKeyCallback(m_window, [](GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -94,19 +98,22 @@ namespace toaster
 				case GLFW_PRESS:
 				{
 					KeyPressEvent event(static_cast<input::EKeyCode>(key), 0);
-					data.eventCallback(event);
+					if (data.eventCallback)
+						data.eventCallback(event);
 					break;
 				}
 				case GLFW_RELEASE:
 				{
 					KeyReleaseEvent event(static_cast<input::EKeyCode>(key));
-					data.eventCallback(event);
+					if (data.eventCallback)
+						data.eventCallback(event);
 					break;
 				}
 				case GLFW_REPEAT:
 				{
 					KeyPressEvent event(static_cast<input::EKeyCode>(key), 1);
-					data.eventCallback(event);
+					if (data.eventCallback)
+						data.eventCallback(event);
 					break;
 				}
 				default:
@@ -119,7 +126,8 @@ namespace toaster
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
 			KeyTypeEvent event(static_cast<input::EKeyCode>(codepoint));
-			data.eventCallback(event);
+			if (data.eventCallback)
+				data.eventCallback(event);
 		});
 
 		glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int button, int action, int mods)
@@ -131,13 +139,15 @@ namespace toaster
 				case GLFW_PRESS:
 				{
 					MouseButtonPressEvent event(static_cast<input::EMouseButton>(button));
-					data.eventCallback(event);
+					if (data.eventCallback)
+						data.eventCallback(event);
 					break;
 				}
 				case GLFW_RELEASE:
 				{
 					MouseButtonReleaseEvent event(static_cast<input::EMouseButton>(button));
-					data.eventCallback(event);
+					if (data.eventCallback)
+						data.eventCallback(event);
 					break;
 				}
 				default: break;
@@ -149,14 +159,16 @@ namespace toaster
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
 			MouseScrollEvent event(static_cast<float>(xOffset), static_cast<float>(yOffset));
-			data.eventCallback(event);
+			if (data.eventCallback)
+				data.eventCallback(event);
 		});
 
 		glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, double x, double y)
 		{
 			const auto &   data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 			MouseMoveEvent event(static_cast<float>(x), static_cast<float>(y));
-			data.eventCallback(event);
+			if (data.eventCallback)
+				data.eventCallback(event);
 		});
 
 		glfwSetWindowMaximizeCallback(m_window, [](GLFWwindow *window, int maximized)
@@ -164,7 +176,8 @@ namespace toaster
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
 			WindowMaximizeEvent event(static_cast<bool>(maximized));
-			data.eventCallback(event);
+			if (data.eventCallback)
+				data.eventCallback(event);
 		});
 
 		glfwSetWindowIconifyCallback(m_window, [](GLFWwindow *window, int iconified)
@@ -172,8 +185,29 @@ namespace toaster
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
 			WindowMinimizeEvent event(static_cast<bool>(iconified));
-			data.eventCallback(event);
+			if (data.eventCallback)
+				data.eventCallback(event);
 		});
+
+		if (!p_create_info.iconPath.empty())
+		{
+			GLFWimage window_icon[1];
+
+			int32 nr_channels;
+			window_icon[0].pixels = stbi_load(p_create_info.iconPath.string().c_str(), &window_icon[0].width, &window_icon[0].height, &nr_channels, 4);
+			if (window_icon[0].pixels)
+			{
+				glfwSetWindowIcon(m_window, 1, window_icon);
+				stbi_image_free(window_icon[0].pixels);
+			}
+			else
+			{
+				LOG_ERROR("Failed to load image icon. Path: {}", p_create_info.iconPath.string());
+			}
+		}
+
+		if (p_create_info.startMaximized)
+			maximize();
 
 		showWindow();
 	}

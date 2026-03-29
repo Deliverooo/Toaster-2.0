@@ -12,7 +12,7 @@ namespace toaster
 	class Scene
 	{
 	public:
-		Scene();
+		Scene(const String &p_name = "");
 		~Scene();
 
 		void onUpdate(float32 p_dt);
@@ -24,14 +24,19 @@ namespace toaster
 
 		Entity getMainCameraEntity();
 
-		entt::registry &      getRegistry();
-		const entt::registry &getRegistry() const;
+		entt::registry &                    getRegistry();
+		[[nodiscard]] const entt::registry &getRegistry() const;
+
+		void                 setName(const String &p_name);
+		[[nodiscard]] String getName() const;
 
 	private:
 		template<typename Type>
 		void onComponentAdded(Entity p_entity, Type &p_component);
 
 		entt::registry m_registry;
+
+		String m_name;
 
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};

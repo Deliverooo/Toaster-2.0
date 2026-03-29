@@ -10,11 +10,11 @@
 
 namespace toaster
 {
-	Application::Application()
+	Application::Application(const ApplicationCreateInfo &p_create_info) : m_createInfo(p_create_info)
 	{
 		Window::initWindowingAPI();
 
-		m_window = new Window(1280, 720, "Toaster: v0.314");
+		m_window = new Window(p_create_info.windowCreateInfo);
 
 		m_window->setEventCallback([this](Event &e)
 		{

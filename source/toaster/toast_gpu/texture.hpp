@@ -4,6 +4,8 @@
 #include "toast_lib/system_types.h"
 #include "toast_lib/io/filesystem.hpp"
 
+#include <optional>
+
 namespace toaster::gpu
 {
 	class ITexture
@@ -28,5 +30,7 @@ namespace toaster::gpu
 	public:
 		static RefPtr<ITexture2D> create(uint32 p_width, uint32 p_height);
 		static RefPtr<ITexture2D> create(const io::filesystem::Path &p_path);
+
+		virtual std::optional<io::filesystem::Path> getPath() = 0;
 	};
 }

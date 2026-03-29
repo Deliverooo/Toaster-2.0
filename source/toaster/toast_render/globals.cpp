@@ -30,18 +30,21 @@ namespace toaster
 
 		const io::filesystem::Path shader_dir = "../source/toaster/toast_shaders/";
 
+		TST_ASSERT_MSG(io::filesystem::exists(shader_dir),
+					   "You probably set the working directory before creating the application, or the .exe is not in the bin directory");
+
 		s_globalData->g_shaderLibrary = make_reference<ShaderLibrary>();
 
 		const auto quad_shader = gpu::IShader::create("Quad", {
-														 {gpu::EShaderType::eVertex, io::filesystem::readFile(shader_dir / "quad.vert.glsl").c_str()},
-														 {gpu::EShaderType::ePixel, io::filesystem::readFile(shader_dir / "quad.pixel.glsl").c_str()}
-													 });
+														  {gpu::EShaderType::eVertex, io::filesystem::readFile(shader_dir / "quad.vert.glsl").c_str()},
+														  {gpu::EShaderType::ePixel, io::filesystem::readFile(shader_dir / "quad.pixel.glsl").c_str()}
+													  });
 		s_globalData->g_shaderLibrary->add("Quad", quad_shader);
 
 		auto mesh_shader = gpu::IShader::create("Mesh", {
-												   {gpu::EShaderType::eVertex, io::filesystem::readFile(shader_dir / "mesh.vert.glsl").c_str()},
-												   {gpu::EShaderType::ePixel, io::filesystem::readFile(shader_dir / "mesh.pixel.glsl").c_str()}
-											   });
+													{gpu::EShaderType::eVertex, io::filesystem::readFile(shader_dir / "mesh.vert.glsl").c_str()},
+													{gpu::EShaderType::ePixel, io::filesystem::readFile(shader_dir / "mesh.pixel.glsl").c_str()}
+												});
 		s_globalData->g_shaderLibrary->add("Mesh", mesh_shader);
 
 		{

@@ -94,7 +94,8 @@ namespace toaster
 
 	void SceneHierarchyPanel::setScene(const RefPtr<Scene> &p_scene)
 	{
-		m_scene = p_scene;
+		m_scene          = p_scene;
+		m_selectedEntity = {};
 	}
 
 	void SceneHierarchyPanel::onUIRender()

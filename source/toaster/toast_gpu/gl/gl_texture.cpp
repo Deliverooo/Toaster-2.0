@@ -119,6 +119,13 @@ namespace toaster::gpu
 		return m_height;
 	}
 
+	std::optional<io::filesystem::Path> GLTexture2D::getPath()
+	{
+		if (m_path.empty())
+			return std::nullopt;
+		return m_path;
+	}
+
 	bool GLTexture2D::operator==(const ITexture &p_other) const
 	{
 		return m_textureId == p_other.getID();

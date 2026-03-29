@@ -31,6 +31,8 @@ namespace toaster
 		void onUIRender() override;
 
 	private:
+		void saveScene();
+		void openScene();
 		bool onKeyPressEvent(KeyPressEvent &p_event);
 		bool onMouseMoveEvent(MouseMoveEvent &p_event);
 		bool onWindowResizeEvent(WindowResizeEvent &p_event);

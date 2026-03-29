@@ -7,8 +7,11 @@
 #include "toaster/toast_render/renderer.hpp"
 
 #include "toaster/toast_scene/components.hpp"
+#include "toaster/toast_scene/scene_serializer.hpp"
 
 #include "editor_application.hpp"
+
+#include "toast_lib/os/file_dialog.hpp"
 
 #include "ui/ui_utils.hpp"
 
@@ -39,6 +42,7 @@ namespace toaster
 		renderer_2d_create_info.maxQuads = 1u;
 		m_renderer2d                     = make_reference<Renderer2D>(renderer_2d_create_info);
 
+		#if 0
 		{
 			Entity entity = m_scene->createEntity();
 
@@ -84,6 +88,13 @@ namespace toaster
 
 			m_cameraEntity.addComponent<NativeScriptComponent>().bind<TestScript>();
 		}
+		#endif
+
+		// SceneSerializer ss{m_scene};
+		// TST_ASSERT(ss.deserialize("resources/scenes/ore.tscene"	));
+
+		auto &app = getApp();
+		app.getWindow().setTitle(app.getWindow().getTitle() + " -> " + m_scene->getName());
 	}
 
 	void EditorLayer::onDestroy()
@@ -95,8 +106,7 @@ namespace toaster
 		m_time += p_dt;
 
 		if (const auto &[width, height] = m_framebuffer->getCreateInfo();
-			m_viewportSize.x > 0.0f && m_viewportSize.y > 0.0f &&
-			(static_cast<float32>(width) != m_viewportSize.x || static_cast<float32>(height) != m_viewportSize.y))
+			m_viewportSize.x > 0.0f && m_viewportSize.y > 0.0f && (static_cast<float32>(width) != m_viewportSize.x || static_cast<float32>(height) != m_viewportSize.y))
 		{
 			m_framebuffer->resize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
 			m_cameraController.onResize(m_viewportSize.x, m_viewportSize.y);
@@ -183,8 +193,22 @@ namespace toaster
 		{
 			if (ig::BeginMenu("File"))
 			{
+				if (ig::MenuItem("New", "Ctrl+N"))
+				{
+					m_scene = make_reference<Scene>();
+					m_scene->setViewportSize(m_viewportSize.x, m_viewportSize.y);
+					m_sceneHierarchyPanel->setScene(m_scene);
+				}
+				if (ig::MenuItem("Save", "Ctrl+S"))
+				{
+					saveScene();
+				}
+				if (ig::MenuItem("Open", "Ctrl+O"))
+				{
+					openScene();
+				}
 				if (ig::MenuItem("Quit", "Ctrl+Q"))
-					__super::getApp().close();
+					getApp().close();
 
 				ig::Separator();
 				ig::EndMenu();
@@ -205,7 +229,7 @@ namespace toaster
 
 			m_viewportFocused = ig::IsWindowFocused();
 			m_viewportHovered = ig::IsWindowHovered();
-			((EditorApplication &) __super::getApp()).setBlockUIEvents(!m_viewportFocused || !m_viewportHovered);
+			((EditorApplication &) getApp()).setBlockUIEvents(!m_viewportFocused || !m_viewportHovered);
 
 			auto size      = ig::GetContentRegionAvail();
 			m_viewportSize = {size.x, size.y};
@@ -216,6 +240,31 @@ namespace toaster
 		}
 
 		ig::End(); // DockSpace Demo
+	}
+
+	void EditorLayer::saveScene()
+	{
+		auto save_location = os::saveFileDialog({{"Toaster Scene", "tscene"}});
+		if (!save_location.empty())
+		{
+			SceneSerializer ss{m_scene};
+			ss.serialize(save_location);
+		}
+	}
+
+	void EditorLayer::openScene()
+	{
+		auto scene_location = os::openFileDialog({{"Toaster Scene", "tscene"}});
+		if (!scene_location.empty())
+		{
+			m_scene = make_reference<Scene>();
+			m_scene->setViewportSize(m_viewportSize.x, m_viewportSize.y);
+			m_sceneHierarchyPanel->setScene(m_scene);
+			SceneSerializer ss{m_scene};
+			ss.deserialize(scene_location);
+
+			LOG_INFO("{}", scene_location.string());
+		}
 	}
 
 	bool EditorLayer::onKeyPressEvent(KeyPressEvent &p_event)
@@ -234,7 +283,7 @@ namespace toaster
 
 		if (p_event.getKeyCode() == input::EKeyCode::eEscape)
 		{
-			__super::getApp().close();
+			getApp().close();
 		}
 
 		return false;

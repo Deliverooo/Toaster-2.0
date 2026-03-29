@@ -12,10 +12,15 @@
 
 namespace toaster
 {
+	struct ApplicationCreateInfo
+	{
+		WindowCreateInfo windowCreateInfo;
+	};
+
 	class Application
 	{
 	public:
-		Application();
+		Application(const ApplicationCreateInfo &p_create_info);
 		~Application() noexcept;
 
 		void run();
@@ -27,7 +32,8 @@ namespace toaster
 		bool onWindowCloseEvent(WindowCloseEvent &p_event);
 		bool onWindowResizeEvent(WindowResizeEvent &p_event);
 
-		Window *m_window{nullptr};
+		ApplicationCreateInfo m_createInfo;
+		Window *              m_window{nullptr};
 
 		std::vector<IAppLayer *> m_layers;
 
