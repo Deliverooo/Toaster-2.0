@@ -1,0 +1,41 @@
+Scene: OpenGL
+Entities:
+  - Entity: 67676767
+    TagComponent:
+      Tag: Orbo
+    TransformComponent:
+      Translation: [0, 0.5, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    SpriteRendererComponent:
+      Colour: [1, 1, 1, 1]
+      TexturePath: C:\dev\Toaster\resources\textures\Orbo_02.png
+      TilingFactor: 1
+  - Entity: 67676767
+    TagComponent:
+      Tag: Ground Plane
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [-1.5703083, 0, 0]
+      Scale: [6, 5.9999995, 5.9999995]
+    SpriteRendererComponent:
+      Colour: [1, 1, 1, 1]
+      TexturePath: "Null"
+      TilingFactor: 1
+  - Entity: 67676767
+    TagComponent:
+      Tag: Camera
+    TransformComponent:
+      Translation: [0, 0, 5]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        ProjectionType: 0
+        PerspectiveFov: 0.7853982
+        PerspectiveNear: 0.1
+        PerspectiveFar: 1000
+        OrthoSize: 10
+        OrthoNear: -1
+        OrthoFar: 1
+      Primary: true
