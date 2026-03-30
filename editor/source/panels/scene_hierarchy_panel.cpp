@@ -28,10 +28,10 @@ namespace toaster
 		ui::dragFloatWithReset(p_vec3_label, &p_vec->z, vec3_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.z);
 		ig::PopStyleVar();
 
-		ImGui::PopID();
+		ig::PopID();
 	}
 
-	template<typename Type, typename UIFunc>
+	template<typename Type, bool Removable = true, typename UIFunc>
 	static void drawComponent(const String &p_name, Entity p_entity, UIFunc p_func)
 	{
 		ig::PushID(typeid(Type).hash_code());
@@ -40,7 +40,9 @@ namespace toaster
 		{
 			auto &comp = p_entity.getComponent<Type>();
 
-			ImVec2 content_region = ImGui::GetContentRegionAvail();
+			ImGuiIO &io = ig::GetIO();
+
+			ImVec2 content_region = ig::GetContentRegionAvail();
 			ig::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{4, 4});
 
 			float line_height = ig::GetFrameHeight();
@@ -48,24 +50,29 @@ namespace toaster
 			float button_width = line_height;
 			ig::Separator();
 
-			ImVec2 prev_cursor_pos = ig::GetCursorPos();
-			bool   open            = ig::TreeNodeEx(typeid(Type).name(),
-													ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_Framed |
-													ImGuiTreeNodeFlags_FramePadding,
-													p_name.c_str());
-			ig::PopStyleVar();
-			// ig::SetCursorPos({content_region.x - button_width, prev_cursor_pos.y});
+			ig::PushFont(io.Fonts->Fonts[1]);
+
+			bool open = ig::TreeNodeEx(typeid(Type).name(),
+									   ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_FramePadding,
+									   "%s", p_name.c_str());
+			ig::PopStyleVar(); // ImGuiStyleVar_FramePadding
 			ig::SameLine(content_region.x - line_height);
 			ig::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.5f);
+
 			if (ig::Button("+", ImVec2{button_width, button_width}))
 				ig::OpenPopup("Component_Settings");
-			ig::PopStyleVar();
+
+			ig::PopFont();
+			ig::PopStyleVar(); // ImGuiStyleVar_FrameRounding
 
 			bool remove_component{false};
 			if (ig::BeginPopup("Component_Settings"))
 			{
-				if (ig::MenuItem("Remove Component"))
-					remove_component = true;
+				if constexpr (Removable)
+				{
+					if (ig::MenuItem("Remove Component"))
+						remove_component = true;
+				}
 
 				if (ig::MenuItem("Reset"))
 					comp.reset();
@@ -132,6 +139,11 @@ namespace toaster
 		}
 
 		ig::End();
+	}
+
+	Entity SceneHierarchyPanel::getSelectedEntity() const
+	{
+		return m_selectedEntity;
 	}
 
 	void SceneHierarchyPanel::_drawEntityNode(Entity p_entity)
@@ -205,7 +217,7 @@ namespace toaster
 			ig::EndPopup();
 		}
 
-		drawComponent<TransformComponent>("Transform", p_entity, [](TransformComponent &p_comp)
+		drawComponent<TransformComponent, false>("Transform", p_entity, [](TransformComponent &p_comp)
 		{
 			drawVec3Ctrl("Position", &p_comp.translation, glm::vec3{0.0f});
 			ig::Separator();

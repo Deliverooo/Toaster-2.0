@@ -10,17 +10,17 @@ namespace toaster
 	public:
 		Entity() = default;
 
-		Entity(entt::entity handle, Scene *scene) : m_handle(handle), m_scene(scene)
+		Entity(entt::entity p_handle, Scene *p_scene) : m_handle(p_handle), m_scene(p_scene)
 		{
 		}
 
 		~Entity() = default;
 
 		template<typename Type, typename... TArgs>
-		Type &addComponent(TArgs &&... args)
+		Type &addComponent(TArgs &&... p_args)
 		{
 			TST_ASSERT_MSG(!hasComponent<Type>(), "Entity already has component!");
-			Type &comp = m_scene->m_registry.emplace<Type>(m_handle, std::forward<TArgs>(args)...);
+			Type &comp = m_scene->m_registry.emplace<Type>(m_handle, std::forward<TArgs>(p_args)...);
 			m_scene->onComponentAdded<Type>(*this, comp);
 			return comp;
 		}

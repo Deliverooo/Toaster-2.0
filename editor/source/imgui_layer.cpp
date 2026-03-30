@@ -9,6 +9,8 @@
 
 #include "ui/colours.hpp"
 
+#include <ImGuizmo.h>
+
 namespace toaster
 {
 	ImGuiLayer::ImGuiLayer(Application *p_app) : IAppLayer(p_app)
@@ -26,8 +28,8 @@ namespace toaster
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-		io.FontDefault = io.Fonts->AddFontFromFileTTF(R"(C:\Windows\Fonts\UDDigiKyokashoN-R.ttc)", 16.0f, nullptr, io.Fonts->GetGlyphRangesChineseFull());
-		io.Fonts->AddFontFromFileTTF(R"(C:\Windows\Fonts\UDDigiKyokashoN-B.ttc)", 16.0f, nullptr, io.Fonts->GetGlyphRangesChineseFull());
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
+		io.Fonts->AddFontFromFileTTF("resources/fonts/Noto_Sans_JP/static/NotoSansJP-Bold.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
 		// io.FontDefault = io.Fonts->AddFontFromFileTTF("resources/fonts/DejaVuSans/DejaVuSans.ttf", 16.0f, nullptr, io.Fonts->GetGlyphRangesChineseFull());
 		// io.Fonts->AddFontFromFileTTF("resources/fonts/DejaVuSans/DejaVuSans-Bold.ttf", 16.0f, nullptr, io.Fonts->GetGlyphRangesChineseFull());
 
@@ -138,6 +140,7 @@ namespace toaster
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
+		ImGuizmo::BeginFrame();
 	}
 
 	void ImGuiLayer::end()

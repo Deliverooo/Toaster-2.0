@@ -16,11 +16,16 @@
 #include "ui/ui_utils.hpp"
 
 #include "toaster/toast_lib/logging.hpp"
+
+#include <ImGuizmo.h>
 namespace ig = ImGui;
+namespace igz = ImGuizmo;
+
+#include "toast_lib/math/math_matrix.hpp"
 
 namespace toaster
 {
-	EditorLayer::EditorLayer(Application *p_app) : IAppLayer(p_app), m_cameraController(1920.0f / 1080.0f, true)
+	EditorLayer::EditorLayer(Application *p_app) : IAppLayer(p_app), m_editorCamera(90.0f, 1.7776f, 0.1f, 1000.0f)
 	{
 	}
 
@@ -34,67 +39,20 @@ namespace toaster
 		m_peeberTex = gpu::ITexture2D::create("resources/textures/peeber.png");
 
 		gpu::FramebufferCreateInfo framebuffer_create_info{};
-		framebuffer_create_info.width  = 1920;
-		framebuffer_create_info.height = 1080;
-		m_framebuffer                  = gpu::IFramebuffer::create(framebuffer_create_info);
+		framebuffer_create_info.width       = 1920;
+		framebuffer_create_info.height      = 1080;
+		framebuffer_create_info.samples     = 1u;
+		framebuffer_create_info.attachments = {gpu::EImageFormat::eRGBA32F, gpu::EImageFormat::eDepth32FStencil8UInt};
+
+		m_framebuffer = gpu::IFramebuffer::create(framebuffer_create_info);
 
 		Renderer2DCreateInfo renderer_2d_create_info;
-		renderer_2d_create_info.maxQuads = 1u;
+		renderer_2d_create_info.maxQuads = 1000u;
 		m_renderer2d                     = make_reference<Renderer2D>(renderer_2d_create_info);
 
-		#if 0
-		{
-			Entity entity = m_scene->createEntity();
-
-			auto &tc                    = entity.getComponent<TransformComponent>();
-			tc.translation              = {0.0f, 0.0f, -0.1f};
-			tc.scale                    = {1.0f, 1.0f, 1.0f};
-			auto &[colour, texture, tf] = entity.addComponent<SpriteRendererComponent>();
-			colour                      = {1.0f, 1.0f, 1.0f, 1.0f};
-			texture                     = m_texture;
-			tf                          = 1.0f;
-		}
-
-		{
-			m_cameraEntity = m_scene->createEntity("オルボ　ステトソン");
-			auto &cc       = m_cameraEntity.addComponent<CameraComponent>();
-
-			class TestScript : public ScriptableEntity
-			{
-			public:
-				void onCreate() override
-				{
-				}
-
-				void onUpdate(float32 p_dt) override
-				{
-					auto &transform = getComponent<TransformComponent>();
-					if (input::isKeyDown(input::EKeyCode::eUp))
-						transform.rotation.x += p_dt;
-					if (input::isKeyDown(input::EKeyCode::eDown))
-						transform.rotation.x -= p_dt;
-					if (input::isKeyDown(input::EKeyCode::eLeft))
-						transform.rotation.y += p_dt;
-					if (input::isKeyDown(input::EKeyCode::eRight))
-						transform.rotation.y -= p_dt;
-				}
-
-				void onDestroy() override
-				{
-				}
-
-			private:
-			};
-
-			m_cameraEntity.addComponent<NativeScriptComponent>().bind<TestScript>();
-		}
-		#endif
-
-		// SceneSerializer ss{m_scene};
-		// TST_ASSERT(ss.deserialize("resources/scenes/ore.tscene"	));
-
-		auto &app = getApp();
-		app.getWindow().setTitle(app.getWindow().getTitle() + " -> " + m_scene->getName());
+		auto &app            = getApp();
+		m_initialWindowTitle = app.getWindow().getTitle();
+		app.getWindow().setTitle(m_initialWindowTitle + " -> " + m_scene->getName());
 	}
 
 	void EditorLayer::onDestroy()
@@ -103,26 +61,30 @@ namespace toaster
 
 	void EditorLayer::onUpdate(const float32 p_dt)
 	{
-		m_time += p_dt;
-
-		if (const auto &[width, height] = m_framebuffer->getCreateInfo();
-			m_viewportSize.x > 0.0f && m_viewportSize.y > 0.0f && (static_cast<float32>(width) != m_viewportSize.x || static_cast<float32>(height) != m_viewportSize.y))
 		{
-			m_framebuffer->resize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
-			m_cameraController.onResize(m_viewportSize.x, m_viewportSize.y);
-			m_scene->setViewportSize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
-			RenderCommand::setViewport({0.0f, 0.0f, m_viewportSize});
+			auto   create_info = m_framebuffer->getCreateInfo();
+			uint32 width       = create_info.width;
+			uint32 height      = create_info.height;
+			if (m_viewportSize.x > 0.0f && m_viewportSize.y > 0.0f && (
+					static_cast<float32>(width) != m_viewportSize.x || static_cast<float32>(height) != m_viewportSize.y))
+			{
+				m_framebuffer->resize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
+				m_editorCamera.setViewportSize(m_viewportSize.x, m_viewportSize.y);
+				m_scene->setViewportSize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
+				RenderCommand::setViewport({0.0f, 0.0f, m_viewportSize});
+			}
 		}
-
 		if (m_viewportFocused)
-			m_cameraController.onUpdate(p_dt);
+		{
+			m_editorCamera.onUpdate(p_dt);
+		}
 
 		m_framebuffer->bind();
 		RenderCommand::clearColour({0.2f, 0.3f, 0.3f, 1.0f});
 		RenderCommand::clear();
 
 		m_scene->onUpdate(p_dt);
-		m_scene->onRender(m_renderer2d, p_dt);
+		m_scene->onRender(p_dt, m_renderer2d, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
 
 		m_framebuffer->unbind();
 	}
@@ -134,7 +96,7 @@ namespace toaster
 		eventDispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(EditorLayer::onWindowResizeEvent));
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(EditorLayer::onKeyPressEvent));
 
-		m_cameraController.onEvent(p_event);
+		m_editorCamera.onEvent(p_event);
 	}
 
 	void EditorLayer::onUIRender()
@@ -195,9 +157,7 @@ namespace toaster
 			{
 				if (ig::MenuItem("New", "Ctrl+N"))
 				{
-					m_scene = make_reference<Scene>();
-					m_scene->setViewportSize(m_viewportSize.x, m_viewportSize.y);
-					m_sceneHierarchyPanel->setScene(m_scene);
+					newScene();
 				}
 				if (ig::MenuItem("Save", "Ctrl+S"))
 				{
@@ -218,6 +178,8 @@ namespace toaster
 
 		ig::Begin("Settings");
 
+		ig::Text("%d", m_renderer2d->getStats().quadCount);
+
 		ig::End(); // Settings
 
 		m_sceneHierarchyPanel->onUIRender();
@@ -229,17 +191,68 @@ namespace toaster
 
 			m_viewportFocused = ig::IsWindowFocused();
 			m_viewportHovered = ig::IsWindowHovered();
-			((EditorApplication &) getApp()).setBlockUIEvents(!m_viewportFocused || !m_viewportHovered);
+			((EditorApplication &) getApp()).setBlockUIEvents(!m_viewportFocused && !m_viewportHovered);
 
 			auto size      = ig::GetContentRegionAvail();
 			m_viewportSize = {size.x, size.y};
 
 			ig::Image(m_framebuffer->getColourAttachmentID(), size, ImVec2(0, 1), ImVec2(1, 0));
 
+			Entity selected_entity = m_sceneHierarchyPanel->getSelectedEntity();
+			if (selected_entity && m_gizmoType != -1)
+			{
+				igz::SetOrthographic(false);
+				igz::SetDrawlist();
+				igz::SetRect(ig::GetWindowPos().x, ig::GetWindowPos().y, ig::GetWindowWidth(), ig::GetWindowHeight());
+
+				// auto camera_entity = m_scene->getMainCameraEntity();
+
+				// if (camera_entity)
+				// {
+				const glm::mat4 &view = m_editorCamera.getViewMatrix();
+				glm::mat4        proj = m_editorCamera.getProjectionMatrix();
+
+				auto &tc = selected_entity.getComponent<TransformComponent>();
+
+				glm::mat4 entity_transform = tc.getTransform();
+
+				bool    snap_transform = input::isKeyDown(input::EKeyCode::eLeftControl);
+				float32 snap_value{0.5f};
+
+				if (m_gizmoType == igz::OPERATION::ROTATE)
+					snap_value = 45.0f;
+
+				const float32 snap_values[3] = {snap_value, snap_value, snap_value};
+
+				if (igz::Manipulate(&view[0].x, &proj[0].x, static_cast<igz::OPERATION>(m_gizmoType), static_cast<igz::MODE>(m_gizmoMode), &entity_transform[0].x,
+									nullptr, snap_transform ? snap_values : nullptr))
+				{
+					glm::vec3 translation;
+					glm::quat rotation;
+					glm::vec3 scale;
+
+					tsm::decomposeTransform(entity_transform, translation, rotation, scale);
+
+					tc.translation = translation;
+
+					const glm::vec3 delta_rotation = glm::eulerAngles(rotation) - tc.rotation;
+					tc.rotation                    += delta_rotation;
+					tc.scale                       = scale;
+				}
+				// }
+			}
+
 			ig::End(); // Viewport
 		}
 
 		ig::End(); // DockSpace Demo
+	}
+
+	void EditorLayer::newScene()
+	{
+		m_scene = make_reference<Scene>();
+		m_scene->setViewportSize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
+		m_sceneHierarchyPanel->setScene(m_scene);
 	}
 
 	void EditorLayer::saveScene()
@@ -257,27 +270,51 @@ namespace toaster
 		auto scene_location = os::openFileDialog({{"Toaster Scene", "tscene"}});
 		if (!scene_location.empty())
 		{
-			m_scene = make_reference<Scene>();
-			m_scene->setViewportSize(m_viewportSize.x, m_viewportSize.y);
-			m_sceneHierarchyPanel->setScene(m_scene);
+			newScene();
+
 			SceneSerializer ss{m_scene};
 			ss.deserialize(scene_location);
 
 			LOG_INFO("{}", scene_location.string());
+			auto &app = getApp();
+			app.getWindow().setTitle(m_initialWindowTitle + " -> " + m_scene->getName());
 		}
 	}
 
 	bool EditorLayer::onKeyPressEvent(KeyPressEvent &p_event)
 	{
-		if (p_event.getKeyCode() == input::EKeyCode::eI)
+		if (m_viewportFocused)
 		{
-			if (input::getCursorMode() == input::ECursorMode::eDisabled)
+			if (m_viewportHovered && !input::isMouseButtonDown(input::EMouseButton::eRight))
 			{
-				input::setCursorMode(input::ECursorMode::eNormal);
-			}
-			else
-			{
-				input::setCursorMode(input::ECursorMode::eDisabled);
+				switch (p_event.getKeyCode())
+				{
+					case input::EKeyCode::eQ:
+						m_gizmoType = -1;
+						break;
+					case input::EKeyCode::eW:
+						m_gizmoType = igz::OPERATION::TRANSLATE;
+						break;
+					case input::EKeyCode::eE:
+						m_gizmoType = igz::OPERATION::ROTATE;
+						break;
+					case input::EKeyCode::eR:
+						m_gizmoType = igz::OPERATION::SCALE;
+						break;
+					case input::EKeyCode::eL:
+					{
+						// Switch between world and local space transforming for the gizmos
+						if (input::isKeyDown(input::EKeyCode::eLeftAlt))
+						{
+							if (m_gizmoMode == igz::MODE::LOCAL)
+								m_gizmoMode = igz::MODE::WORLD;
+							else
+								m_gizmoMode = igz::MODE::LOCAL;
+						}
+						break;
+					}
+					default: break;
+				}
 			}
 		}
 

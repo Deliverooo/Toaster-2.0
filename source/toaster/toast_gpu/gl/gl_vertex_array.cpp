@@ -93,7 +93,7 @@ namespace toaster::gpu
 					{
 						gl::enableVertexArrayAttrib(m_vao, m_vboIndex);
 						gl::vertexArrayAttribFormat(m_vao, m_vboIndex, count, getComponentType(elem.type), elem.normalized,
-													static_cast<gl::UInt>(elem.offset + sizeof(float) * count * i));
+													static_cast<gl::UInt>(elem.offset + sizeof(float32) * count * i));
 
 						gl::vertexArrayAttribBinding(m_vao, m_vboIndex, bindingIndex);
 						gl::vertexArrayBindingDivisor(m_vao, bindingIndex, 1);

@@ -56,6 +56,8 @@ namespace toaster
 		// Hides the window during creation, as to not have a blank white screen
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
+		glfwWindowHint(GLFW_SAMPLES, 4);
+
 		m_callbackData.width  = p_create_info.width;
 		m_callbackData.height = p_create_info.height;
 		m_callbackData.title  = p_create_info.title;

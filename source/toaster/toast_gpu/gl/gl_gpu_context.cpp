@@ -42,6 +42,8 @@ namespace toaster::gpu
 		gl::enable(gl::Capability::eDebugOutput);
 		gl::enable(gl::Capability::eDebugOutputSynchronous);
 
+		gl::enable(gl::Capability::eMultisample);
+
 		gl::debugMessageCallback(debugMessageCallback, nullptr);
 	}
 }

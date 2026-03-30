@@ -23,6 +23,7 @@ set(SRC
 		math/math_vector.cpp
 		math/math_vector.hpp
 		math/math_constants.hpp
+		math/math_matrix.hpp
 
 		util_defines.hpp
 

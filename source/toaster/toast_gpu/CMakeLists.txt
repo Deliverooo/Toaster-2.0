@@ -11,6 +11,8 @@ set(GPU_SRC
 		texture.hpp
 		texture.cpp
 
+		image.hpp
+
 		framebuffer.cpp
 		framebuffer.hpp
 

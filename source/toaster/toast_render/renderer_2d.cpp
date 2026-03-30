@@ -98,19 +98,24 @@ namespace toaster
 		m_quadIndexCount   = 0u;
 		m_quadVertexPtr    = m_quadVertexBase;
 		m_textureSlotIndex = 1u;
+
+		m_stats.quadCount = 0u;
 	}
 
 	void Renderer2D::end()
 	{
 		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
-		m_quadVertexBuffer->setData(m_quadVertexBase, size);
-
-		for (uint32 i{0u}; i < m_textureSlotIndex; ++i)
+		if (size) // Apparently you have to check ts, or things won't work correctly and there will be artifacts...
 		{
-			m_textureSlots[i]->bind(i);
-		}
+			m_quadVertexBuffer->setData(m_quadVertexBase, size);
 
-		RenderCommand::drawIndexed(m_quadVertexArray, m_quadIndexCount);
+			for (uint32 i{0u}; i < m_textureSlotIndex; ++i)
+			{
+				m_textureSlots[i]->bind(i);
+			}
+
+			RenderCommand::drawIndexed(m_quadVertexArray, m_quadIndexCount);
+		}
 	}
 
 	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour, IDType p_object_id)
@@ -145,6 +150,7 @@ namespace toaster
 			m_quadVertexPtr++;
 		}
 		m_quadIndexCount += 6u;
+		m_stats.quadCount++;
 	}
 
 	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::ITexture2D> &p_texture, const tsm::float4 &p_tint_colour,
@@ -185,6 +191,12 @@ namespace toaster
 		}
 
 		m_quadIndexCount += 6u;
+		m_stats.quadCount++;
+	}
+
+	const Renderer2D::Stats &Renderer2D::getStats() const
+	{
+		return m_stats;
 	}
 
 	void Renderer2D::_beginNewBatch()

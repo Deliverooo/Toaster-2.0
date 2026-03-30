@@ -99,4 +99,6 @@ namespace tsm
 	typedef glm::mat<4, 2, double, glm::highp> double4x2; //!< \brief double-qualifier floating-point matrix with 4 x 2 components. (From GLM_GTX_compatibility extension)
 	typedef glm::mat<4, 3, double, glm::highp> double4x3; //!< \brief double-qualifier floating-point matrix with 4 x 3 components. (From GLM_GTX_compatibility extension)
 	typedef glm::mat<4, 4, double, glm::highp> double4x4; //!< \brief double-qualifier floating-point matrix with 4 x 4 components. (From GLM_GTX_compatibility extension)
+
+	typedef glm::quat quat;
 }

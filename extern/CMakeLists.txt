@@ -27,4 +27,6 @@ endif ()
 
 add_subdirectory(imgui)
 
+add_subdirectory(ImGuizmo)
+
 add_subdirectory(glfw)

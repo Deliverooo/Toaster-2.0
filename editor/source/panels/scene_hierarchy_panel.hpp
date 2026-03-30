@@ -15,6 +15,8 @@ namespace toaster
 
 		void onUIRender();
 
+		Entity getSelectedEntity() const;
+
 	private:
 		void _drawEntityNode(Entity p_entity);
 		void _drawComponents(Entity p_entity);

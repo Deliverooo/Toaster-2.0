@@ -29,7 +29,7 @@ namespace toaster
 		});
 	}
 
-	void Scene::onRender(const RefPtr<Renderer2D> &p_renderer_2d, float32 p_dt)
+	void Scene::onRender(float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d)
 	{
 		Camera *  main_camera{nullptr};
 		glm::mat4 camera_transform{1.0f};
@@ -64,6 +64,24 @@ namespace toaster
 
 			p_renderer_2d->end();
 		}
+	}
+
+	void Scene::onRender(float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d, const glm::mat4 &p_view, const glm::mat4 &p_projection)
+	{
+		p_renderer_2d->begin(p_view, p_projection);
+
+		auto group = m_registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
+		for (auto entity: group)
+		{
+			auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+
+			if (sprite.texture)
+				p_renderer_2d->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor);
+			else
+				p_renderer_2d->submitQuad(transform.getTransform(), sprite.colour);
+		}
+
+		p_renderer_2d->end();
 	}
 
 	void Scene::setViewportSize(uint32 p_width, uint32 p_height)

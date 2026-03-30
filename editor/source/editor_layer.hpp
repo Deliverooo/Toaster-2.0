@@ -1,5 +1,6 @@
 #pragma once
 
+#include "editor_camera.hpp"
 #include "panels/scene_hierarchy_panel.hpp"
 #include "toaster/toast_gpu/framebuffer.hpp"
 #include "toaster/toast_kernel/layer.hpp"
@@ -31,6 +32,7 @@ namespace toaster
 		void onUIRender() override;
 
 	private:
+		void newScene();
 		void saveScene();
 		void openScene();
 		bool onKeyPressEvent(KeyPressEvent &p_event);
@@ -47,17 +49,16 @@ namespace toaster
 		RefPtr<gpu::ITexture2D>   m_peeberTex;
 		RefPtr<gpu::IFramebuffer> m_framebuffer;
 
+		EditorCamera m_editorCamera;
+
+		String m_initialWindowTitle;
 		glm::vec2 m_viewportSize{0.0f, 0.0f};
+
+		int32 m_gizmoType{-1}; // Translate, rotate or scale
+		int32 m_gizmoMode{0};  // 0 For local, 1 for world space
 
 		bool m_viewportFocused{false};
 		bool m_viewportHovered{false};
-
-		OrthoCameraController m_cameraController;
-		float32               m_time{0.0f};
-
-		glm::vec4 m_colour{1.0f};
-
-		Entity m_cameraEntity;
 
 	};
 }
