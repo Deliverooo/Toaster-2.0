@@ -33,8 +33,7 @@ namespace toaster
 
 	void EditorLayer::onInit()
 	{
-		m_scene = make_reference<Scene>();
-
+		m_scene               = make_reference<Scene>();
 		m_sceneHierarchyPanel = make_reference<SceneHierarchyPanel>(m_scene);
 
 		gpu::FramebufferCreateInfo framebuffer_create_info{};
