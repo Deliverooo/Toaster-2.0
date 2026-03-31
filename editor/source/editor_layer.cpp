@@ -39,10 +39,10 @@ namespace toaster
 		m_peeberTex = gpu::ITexture2D::create("resources/textures/peeber.png");
 
 		gpu::FramebufferCreateInfo framebuffer_create_info{};
-		framebuffer_create_info.width       = 1920;
-		framebuffer_create_info.height      = 1080;
+		framebuffer_create_info.width       = 1920u;
+		framebuffer_create_info.height      = 1080u;
 		framebuffer_create_info.samples     = 1u;
-		framebuffer_create_info.attachments = {gpu::EImageFormat::eRGBA32F, gpu::EImageFormat::eDepth32FStencil8UInt};
+		framebuffer_create_info.attachments = {gpu::EImageFormat::eRGBA32F, gpu::EImageFormat::eRedInteger, gpu::EImageFormat::eDepth32FStencil8UInt};
 
 		m_framebuffer = gpu::IFramebuffer::create(framebuffer_create_info);
 
@@ -86,6 +86,25 @@ namespace toaster
 		m_scene->onUpdate(p_dt);
 		m_scene->onRender(p_dt, m_renderer2d, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
 
+		auto [mx, my]      = ig::GetMousePos();
+		mx                 -= m_viewportBounds[0].x;
+		my                 -= m_viewportBounds[0].y;
+		auto viewport_size = m_viewportBounds[1] - m_viewportBounds[0];
+
+		my            = viewport_size.y - my;
+		int32 mouse_x = static_cast<int32>(mx);
+		int32 mouse_y = static_cast<int32>(my);
+
+		if (mouse_x >= 0 && mouse_y >= 0 && mouse_x < static_cast<int32>(viewport_size.x) && mouse_y < static_cast<int32>(viewport_size.y))
+		{
+			int32 pixel_data = m_framebuffer->readPixel(1, mouse_x, mouse_y);
+
+			if (pixel_data != -1)
+			{
+				m_hoveredEntity = {static_cast<entt::entity>(pixel_data), m_scene.get()};
+			}
+		}
+
 		m_framebuffer->unbind();
 	}
 
@@ -95,6 +114,7 @@ namespace toaster
 		eventDispatcher.dispatch<MouseMoveEvent>(TST_BIND_EVENT_FN(EditorLayer::onMouseMoveEvent));
 		eventDispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(EditorLayer::onWindowResizeEvent));
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(EditorLayer::onKeyPressEvent));
+		eventDispatcher.dispatch<MouseButtonPressEvent>(TST_BIND_EVENT_FN(EditorLayer::onMouseButtonPressEvent));
 
 		m_editorCamera.onEvent(p_event);
 	}
@@ -178,7 +198,8 @@ namespace toaster
 
 		ig::Begin("Settings");
 
-		ig::Text("%d", m_renderer2d->getStats().quadCount);
+		ig::Text("Renderer2D quad count: %d", m_renderer2d->getStats().quadCount);
+		ig::Text("Hovered entity tag: %s", m_hoveredEntity ? m_hoveredEntity.getComponent<TagComponent>().tag.c_str() : "Null");
 
 		ig::End(); // Settings
 
@@ -188,6 +209,7 @@ namespace toaster
 			ui::ScopedStyle window_padding{ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f)};
 
 			ig::Begin("Viewport");
+			ImVec2 viewport_offset = ig::GetCursorPos();
 
 			m_viewportFocused = ig::IsWindowFocused();
 			m_viewportHovered = ig::IsWindowHovered();
@@ -197,6 +219,15 @@ namespace toaster
 			m_viewportSize = {size.x, size.y};
 
 			ig::Image(m_framebuffer->getColourAttachmentID(), size, ImVec2(0, 1), ImVec2(1, 0));
+
+			ImVec2 window_size = ig::GetWindowSize();
+			ImVec2 min_bound   = ig::GetWindowPos();
+			min_bound.x        += viewport_offset.x;
+			// min_bound.y += viewport_offset.y;
+
+			ImVec2 max_bound    = {min_bound.x + window_size.x, min_bound.y + window_size.y};
+			m_viewportBounds[0] = {min_bound.x, min_bound.y};
+			m_viewportBounds[1] = {max_bound.x, max_bound.y};
 
 			Entity selected_entity = m_sceneHierarchyPanel->getSelectedEntity();
 			if (selected_entity && m_gizmoType != -1)
@@ -321,6 +352,17 @@ namespace toaster
 		if (p_event.getKeyCode() == input::EKeyCode::eEscape)
 		{
 			getApp().close();
+		}
+
+		return false;
+	}
+
+	bool EditorLayer::onMouseButtonPressEvent(MouseButtonPressEvent &p_event)
+	{
+		if (p_event.getMouseButton() == input::EMouseButton::eLeft)
+		{
+			if (m_viewportHovered)
+				m_sceneHierarchyPanel->setSelectedEntity(m_hoveredEntity);
 		}
 
 		return false;

@@ -25,10 +25,10 @@ namespace toaster
 		};
 
 		#ifndef TST_RENDERER_2D_USE_64_BIT_IDS
-		using IDType = uint32;
-		static constexpr IDType c_invalidID{UINT32_MAX};
+		using IDType = int32;
+		static constexpr IDType c_invalidID{-1};
 		#else
-		using IDType = uint64; static constexpr IDType c_invalidID{UINT64_MAX};
+		using IDType = int64; static constexpr IDType c_invalidID{-1};
 		#endif
 
 		explicit Renderer2D(const Renderer2DCreateInfo &p_create_info);

@@ -53,9 +53,11 @@ namespace toaster::gpu
 		virtual void resize(uint32 p_width, uint32 p_height) = 0;
 
 		[[nodiscard]] virtual uint32 getID() const = 0;
-		[[nodiscard]] virtual uint32 getColourAttachmentID() const = 0;
+		[[nodiscard]] virtual uint32 getColourAttachmentID(uint32 p_attachment_index = 0) const = 0;
 		[[nodiscard]] virtual uint32 getDepthStencilAttachmentID() const = 0;
 
 		[[nodiscard]] virtual const FramebufferCreateInfo &getCreateInfo() const = 0;
+
+		virtual int32 readPixel(uint32 p_attachment_index, int32 p_x, int32 p_y) = 0;
 	};
 }

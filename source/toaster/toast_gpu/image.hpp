@@ -5,7 +5,7 @@ namespace toaster::gpu
 	enum class EImageFormat
 	{
 		eInvalid = 0,
-		eRed8UN,
+		eRedInteger,
 		eRed8UI,
 		eRed16UI,
 		eRed32UI,

@@ -76,9 +76,9 @@ namespace toaster
 			auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
 			if (sprite.texture)
-				p_renderer_2d->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor);
+				p_renderer_2d->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor, static_cast<uint32>(entity));
 			else
-				p_renderer_2d->submitQuad(transform.getTransform(), sprite.colour);
+				p_renderer_2d->submitQuad(transform.getTransform(), sprite.colour, static_cast<uint32>(entity));
 		}
 
 		p_renderer_2d->end();

@@ -20,7 +20,7 @@ namespace toaster
 
 		[[nodiscard]] String toStr() const override
 		{
-			return "Mouse Move Event -> [" +to_string(m_mouseX) + "," + to_string(m_mouseY) + "]";
+			return "Mouse Move Event -> [" + to_string(m_mouseX) + "," + to_string(m_mouseY) + "]";
 		}
 
 	private:
@@ -94,21 +94,5 @@ namespace toaster
 		{
 			return "Mouse Button Released Event -> [" + to_string(static_cast<uint16>(m_mouseButton)) + "]";
 		}
-	};
-
-	class MouseButtonDownEvent final : public MouseButtonEvent
-	{
-	public:
-		explicit MouseButtonDownEvent(const input::EMouseButton p_button)
-			: MouseButtonEvent(p_button)
-		{
-		}
-
-		[[nodiscard]] String toStr() const override
-		{
-			return "Mouse Button Down Event -> [" + to_string(static_cast<uint16>(m_mouseButton)) + "]";
-		}
-
-		EVENT_CLASS_TYPE(MouseButtonDown)
 	};
 }

@@ -146,6 +146,11 @@ namespace toaster
 		return m_selectedEntity;
 	}
 
+	void SceneHierarchyPanel::setSelectedEntity(Entity p_entity)
+	{
+		m_selectedEntity = p_entity;
+	}
+
 	void SceneHierarchyPanel::_drawEntityNode(Entity p_entity)
 	{
 		auto &tag_comp = p_entity.getComponent<TagComponent>();

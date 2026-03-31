@@ -1,5 +1,6 @@
 #include "gl_framebuffer.hpp"
 
+#include "openglhpp/gl_to_string.hpp"
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
 
@@ -63,9 +64,10 @@ namespace toaster::gpu
 		return m_framebufferID;
 	}
 
-	uint32 GLFramebuffer::getColourAttachmentID() const
+	uint32 GLFramebuffer::getColourAttachmentID(uint32 p_attachment_index) const
 	{
-		return m_colourAttachmentIDs[0];
+		TST_ASSERT(p_attachment_index < m_colourAttachmentIDs.size());
+		return m_colourAttachmentIDs[p_attachment_index];
 	}
 
 	uint32 GLFramebuffer::getDepthStencilAttachmentID() const
@@ -76,6 +78,16 @@ namespace toaster::gpu
 	const FramebufferCreateInfo &GLFramebuffer::getCreateInfo() const
 	{
 		return m_createInfo;
+	}
+
+	int32 GLFramebuffer::readPixel(uint32 p_attachment_index, int32 p_x, int32 p_y)
+	{
+		gl::namedFramebufferReadBuffer(m_framebufferID, glEnumVal((gl::FramebufferAttachment)((gl::UInt)gl::FramebufferAttachment::eColor0 + p_attachment_index)));
+
+		int32 pixel_data;
+		gl::readPixels(p_x, p_y, 1, 1, getFormat(m_colourAttachmentCreateInfos[p_attachment_index].format),
+					   getDataType(m_colourAttachmentCreateInfos[p_attachment_index].format), &pixel_data);
+		return pixel_data;
 	}
 
 	void GLFramebuffer::recreate()
@@ -93,6 +105,7 @@ namespace toaster::gpu
 		gl::createFramebuffers(1, &m_framebufferID);
 
 		bool multisample = (m_createInfo.samples > 1);
+
 		if (!m_colourAttachmentCreateInfos.empty())
 		{
 			m_colourAttachmentIDs.resize(m_colourAttachmentCreateInfos.size());
@@ -104,20 +117,32 @@ namespace toaster::gpu
 			{
 				if (multisample)
 					gl::textureStorage2DMultisample(m_colourAttachmentIDs[i], static_cast<gl::Int>(m_createInfo.samples),
-													getFormat(m_colourAttachmentCreateInfos[i].format), static_cast<gl::Int>(m_createInfo.width),
-													static_cast<gl::Int>(m_createInfo.height), true);
+													getInternalFormat(m_colourAttachmentCreateInfos[i].format), static_cast<gl::Int>(m_createInfo.width),
+													static_cast<gl::Int>(m_createInfo.height), false);
 				else
-					gl::textureStorage2D(m_colourAttachmentIDs[i], 1, getFormat(m_colourAttachmentCreateInfos[i].format),
+				{
+					gl::textureStorage2D(m_colourAttachmentIDs[i], 1, getInternalFormat(m_colourAttachmentCreateInfos[i].format),
 										 static_cast<gl::Int>(m_createInfo.width), static_cast<gl::Int>(m_createInfo.height));
 
-				gl::textureParameteri(m_colourAttachmentIDs[i], gl::SamplerParameter::eTextureMinFilter, glEnumVal(gl::TextureFiltering::eLinear));
-				gl::textureParameteri(m_colourAttachmentIDs[i], gl::SamplerParameter::eTextureMagFilter, glEnumVal(gl::TextureFiltering::eLinear));
-				gl::textureParameteri(m_colourAttachmentIDs[i], gl::SamplerParameter::eTextureWrapR, glEnumVal(gl::TextureWrapping::eClampToEdge));
-				gl::textureParameteri(m_colourAttachmentIDs[i], gl::SamplerParameter::eTextureWrapS, glEnumVal(gl::TextureWrapping::eClampToEdge));
-				gl::textureParameteri(m_colourAttachmentIDs[i], gl::SamplerParameter::eTextureWrapT, glEnumVal(gl::TextureWrapping::eClampToEdge));
-
+					gl::textureParameteri(m_colourAttachmentIDs[i], gl::SamplerParameter::eTextureMinFilter, glEnumVal(gl::TextureFiltering::eLinear));
+					gl::textureParameteri(m_colourAttachmentIDs[i], gl::SamplerParameter::eTextureMagFilter, glEnumVal(gl::TextureFiltering::eLinear));
+					gl::textureParameteri(m_colourAttachmentIDs[i], gl::SamplerParameter::eTextureWrapR, glEnumVal(gl::TextureWrapping::eClampToEdge));
+					gl::textureParameteri(m_colourAttachmentIDs[i], gl::SamplerParameter::eTextureWrapS, glEnumVal(gl::TextureWrapping::eClampToEdge));
+					gl::textureParameteri(m_colourAttachmentIDs[i], gl::SamplerParameter::eTextureWrapT, glEnumVal(gl::TextureWrapping::eClampToEdge));
+				}
 				gl::namedFramebufferTexture(m_framebufferID, static_cast<gl::FramebufferAttachment>(static_cast<gl::UInt>(gl::FramebufferAttachment::eColor0) + i),
 											m_colourAttachmentIDs[i], 0);
+			}
+
+			if (m_colourAttachmentIDs.size() > 1)
+			{
+				gl::Enum draw_buffers[] = {
+					glEnumVal(gl::FramebufferAttachment::eColor0),
+					glEnumVal(gl::FramebufferAttachment::eColor1),
+					glEnumVal(gl::FramebufferAttachment::eColor2),
+					glEnumVal(gl::FramebufferAttachment::eColor3)
+				};
+				gl::namedFramebufferDrawBuffers(m_framebufferID, static_cast<gl::SizeI>(m_colourAttachmentIDs.size()), draw_buffers);
 			}
 		}
 		if (m_depthStencilAttachmentCreateInfo.format != EImageFormat::eInvalid)
@@ -126,30 +151,35 @@ namespace toaster::gpu
 
 			if (multisample)
 				gl::textureStorage2DMultisample(m_depthStencilAttachmentID, static_cast<gl::Int>(m_createInfo.samples),
-												getFormat(m_depthStencilAttachmentCreateInfo.format), static_cast<gl::Int>(m_createInfo.width),
-												static_cast<gl::Int>(m_createInfo.height), true);
+												getInternalFormat(m_depthStencilAttachmentCreateInfo.format), static_cast<gl::Int>(m_createInfo.width),
+												static_cast<gl::Int>(m_createInfo.height), false);
 			else
-				gl::textureStorage2D(m_depthStencilAttachmentID, 1, getFormat(m_depthStencilAttachmentCreateInfo.format),
+			{
+				gl::textureStorage2D(m_depthStencilAttachmentID, 1, getInternalFormat(m_depthStencilAttachmentCreateInfo.format),
 									 static_cast<gl::Int>(m_createInfo.width), static_cast<gl::Int>(m_createInfo.height));
 
-			gl::textureParameteri(m_depthStencilAttachmentID, gl::SamplerParameter::eTextureMinFilter, glEnumVal(gl::TextureFiltering::eLinear));
-			gl::textureParameteri(m_depthStencilAttachmentID, gl::SamplerParameter::eTextureMagFilter, glEnumVal(gl::TextureFiltering::eLinear));
-			gl::textureParameteri(m_depthStencilAttachmentID, gl::SamplerParameter::eTextureWrapR, glEnumVal(gl::TextureWrapping::eClampToEdge));
-			gl::textureParameteri(m_depthStencilAttachmentID, gl::SamplerParameter::eTextureWrapS, glEnumVal(gl::TextureWrapping::eClampToEdge));
-			gl::textureParameteri(m_depthStencilAttachmentID, gl::SamplerParameter::eTextureWrapT, glEnumVal(gl::TextureWrapping::eClampToEdge));
-
+				gl::textureParameteri(m_depthStencilAttachmentID, gl::SamplerParameter::eTextureMinFilter, glEnumVal(gl::TextureFiltering::eLinear));
+				gl::textureParameteri(m_depthStencilAttachmentID, gl::SamplerParameter::eTextureMagFilter, glEnumVal(gl::TextureFiltering::eLinear));
+				gl::textureParameteri(m_depthStencilAttachmentID, gl::SamplerParameter::eTextureWrapR, glEnumVal(gl::TextureWrapping::eClampToEdge));
+				gl::textureParameteri(m_depthStencilAttachmentID, gl::SamplerParameter::eTextureWrapS, glEnumVal(gl::TextureWrapping::eClampToEdge));
+				gl::textureParameteri(m_depthStencilAttachmentID, gl::SamplerParameter::eTextureWrapT, glEnumVal(gl::TextureWrapping::eClampToEdge));
+			}
 			gl::namedFramebufferTexture(m_framebufferID, getAttachment(m_depthStencilAttachmentCreateInfo.format), m_depthStencilAttachmentID, 0);
 		}
 
-		TST_ASSERT_MSG(gl::checkNamedFramebufferStatus(m_framebufferID, gl::FramebufferType::eFramebuffer) == gl::FramebufferStatus::eComplete,
-					   "Incomplete framebuffer!!");
+		auto status = gl::checkNamedFramebufferStatus(m_framebufferID, gl::FramebufferType::eFramebuffer);
+		if (status != gl::FramebufferStatus::eComplete)
+		{
+			LOG_ERROR("Framebuffer is not complete: {}", gl::to_string(status));
+			TST_ASSERT(false);
+		}
 	}
 
 	gl::FramebufferAttachment getAttachment(EImageFormat p_format)
 	{
 		switch (p_format)
 		{
-			case EImageFormat::eRed8UN:
+			case EImageFormat::eRedInteger:
 			case EImageFormat::eRed8UI:
 			case EImageFormat::eRed16UI:
 			case EImageFormat::eRed32UI:
@@ -180,7 +210,34 @@ namespace toaster::gpu
 	{
 		switch (p_format)
 		{
-			case EImageFormat::eRed8UN: return gl::Format::eRedInteger;
+			case EImageFormat::eRedInteger: return gl::Format::eRedInteger;
+			case EImageFormat::eRed8UI: return gl::Format::eRedInteger;
+			case EImageFormat::eRed16UI: return gl::Format::eRedInteger;
+			case EImageFormat::eRed32UI: return gl::Format::eRedInteger;
+			case EImageFormat::eRed32F: return gl::Format::eRed;
+			case EImageFormat::eRG8: return gl::Format::eRG;
+			case EImageFormat::eRG16F: return gl::Format::eRG;
+			case EImageFormat::eRG32F: return gl::Format::eRG;
+			case EImageFormat::eRGB: return gl::Format::eRGB;
+			case EImageFormat::eRGBA: return gl::Format::eRGBA;
+			case EImageFormat::eRGBA16F: return gl::Format::eRGBA;
+			case EImageFormat::eRGBA32F: return gl::Format::eRGBA;
+			case EImageFormat::eB10R11G11UF: return gl::Format::eBGR;
+			case EImageFormat::eSRGB: return gl::Format::eSRGB;
+			case EImageFormat::eSRGBA: return gl::Format::eSRGBA;
+			case EImageFormat::eDepth32FStencil8UInt: return gl::Format::eDepthStencil;
+			case EImageFormat::eDepth24Stencil8: return gl::Format::eDepthStencil;
+			case EImageFormat::eDepth32F: return gl::Format::eDepthComponent;
+		}
+		TST_ASSERT(false);
+		return static_cast<gl::Format>(0u);
+	}
+
+	gl::Format getInternalFormat(EImageFormat p_format)
+	{
+		switch (p_format)
+		{
+			case EImageFormat::eRedInteger: return gl::Format::eR32I;
 			case EImageFormat::eRed8UI: return gl::Format::eR8UI;
 			case EImageFormat::eRed16UI: return gl::Format::eR16UI;
 			case EImageFormat::eRed32UI: return gl::Format::eR32UI;
@@ -201,5 +258,32 @@ namespace toaster::gpu
 		}
 		TST_ASSERT(false);
 		return static_cast<gl::Format>(0u);
+	}
+
+	gl::DataType getDataType(EImageFormat p_format)
+	{
+		switch (p_format)
+		{
+			case EImageFormat::eRedInteger: return gl::DataType::eInt;
+			case EImageFormat::eRed8UI: return gl::DataType::eUnsignedInt;
+			case EImageFormat::eRed16UI: return gl::DataType::eUnsignedInt;
+			case EImageFormat::eRed32UI: return gl::DataType::eUnsignedInt;
+			case EImageFormat::eRed32F: return gl::DataType::eFloat;
+			case EImageFormat::eRG8: return gl::DataType::eInt;
+			case EImageFormat::eRG16F: return gl::DataType::eFloat;
+			case EImageFormat::eRG32F: return gl::DataType::eFloat;
+			case EImageFormat::eRGB: return gl::DataType::eInt;
+			case EImageFormat::eRGBA: return gl::DataType::eInt;
+			case EImageFormat::eRGBA16F: return gl::DataType::eFloat;
+			case EImageFormat::eRGBA32F: return gl::DataType::eFloat;
+			case EImageFormat::eB10R11G11UF: return gl::DataType::eUnsignedInt_10F_11F_11F_REV;
+			case EImageFormat::eSRGB: return gl::DataType::eFloat;
+			case EImageFormat::eSRGBA: return gl::DataType::eFloat;
+			case EImageFormat::eDepth32FStencil8UInt: return gl::DataType::eFloat_32_UnsignedInt_24_8_REV;
+			case EImageFormat::eDepth24Stencil8: return gl::DataType::eUnsignedInt_24_8;
+			case EImageFormat::eDepth32F: return gl::DataType::eFloat;
+		}
+		TST_ASSERT(false);
+		return static_cast<gl::DataType>(0u);
 	}
 }

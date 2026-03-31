@@ -17,6 +17,8 @@
 #include "toaster/toast_scene/entity.hpp"
 #include "toaster/toast_scene/scene.hpp"
 
+#include <array>
+
 namespace toaster
 {
 	class EditorLayer : public IAppLayer
@@ -36,6 +38,7 @@ namespace toaster
 		void saveScene();
 		void openScene();
 		bool onKeyPressEvent(KeyPressEvent &p_event);
+		bool onMouseButtonPressEvent(MouseButtonPressEvent &p_event);
 		bool onMouseMoveEvent(MouseMoveEvent &p_event);
 		bool onWindowResizeEvent(WindowResizeEvent &p_event);
 
@@ -51,14 +54,16 @@ namespace toaster
 
 		EditorCamera m_editorCamera;
 
-		String m_initialWindowTitle;
-		glm::vec2 m_viewportSize{0.0f, 0.0f};
+		String                   m_initialWindowTitle;
+		glm::vec2                m_viewportSize{0.0f, 0.0f};
+		std::array<glm::vec2, 2> m_viewportBounds{};
 
 		int32 m_gizmoType{-1}; // Translate, rotate or scale
 		int32 m_gizmoMode{0};  // 0 For local, 1 for world space
 
+		Entity m_hoveredEntity{};
+
 		bool m_viewportFocused{false};
 		bool m_viewportHovered{false};
-
 	};
 }

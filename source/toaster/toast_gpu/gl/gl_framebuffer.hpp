@@ -17,10 +17,12 @@ namespace toaster::gpu
 		void resize(uint32 p_width, uint32 p_height) override;
 
 		[[nodiscard]] uint32 getID() const override;
-		[[nodiscard]] uint32 getColourAttachmentID() const override;
+		[[nodiscard]] uint32 getColourAttachmentID(uint32 p_attachment_index) const override;
 		[[nodiscard]] uint32 getDepthStencilAttachmentID() const override;
 
 		[[nodiscard]] const FramebufferCreateInfo &getCreateInfo() const override;
+
+		int32 readPixel(uint32 p_attachment_index, int32 p_x, int32 p_y) override;
 
 		void recreate();
 
@@ -28,6 +30,7 @@ namespace toaster::gpu
 		FramebufferCreateInfo m_createInfo;
 
 		gl::ID m_framebufferID{0u};
+		gl::ID m_multisampleID{0u};
 
 		std::vector<gl::ID>                       m_colourAttachmentIDs{0u};
 		std::vector<FramebufferTextureCreateInfo> m_colourAttachmentCreateInfos;
@@ -37,5 +40,7 @@ namespace toaster::gpu
 	};
 
 	gl::FramebufferAttachment getAttachment(EImageFormat p_format);
-	gl::Format getFormat(EImageFormat p_format);
+	gl::Format                getFormat(EImageFormat p_format);
+	gl::Format                getInternalFormat(EImageFormat p_format);
+	gl::DataType              getDataType(EImageFormat p_format);
 }
