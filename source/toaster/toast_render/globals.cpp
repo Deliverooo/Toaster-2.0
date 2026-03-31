@@ -41,11 +41,11 @@ namespace toaster
 													  });
 		s_globalData->g_shaderLibrary->add("Quad", quad_shader);
 
-		auto mesh_shader = gpu::IShader::create("Mesh", {
-													{gpu::EShaderType::eVertex, io::filesystem::readFile(shader_dir / "mesh.vert.glsl").c_str()},
-													{gpu::EShaderType::ePixel, io::filesystem::readFile(shader_dir / "mesh.pixel.glsl").c_str()}
-												});
-		s_globalData->g_shaderLibrary->add("Mesh", mesh_shader);
+		// auto mesh_shader = gpu::IShader::create("Mesh", {
+													// {gpu::EShaderType::eVertex, io::filesystem::readFile(shader_dir / "mesh.vert.glsl").c_str()},
+													// {gpu::EShaderType::ePixel, io::filesystem::readFile(shader_dir / "mesh.pixel.glsl").c_str()}
+												// });
+		// s_globalData->g_shaderLibrary->add("Mesh", mesh_shader);
 
 		{
 			std::vector<QuadVertex> vertices = {

@@ -76,6 +76,7 @@ target_link_libraries(toast_gpu PUBLIC stb)
 
 if (${WITH_OPENGL_BACKEND})
 	target_link_libraries(toast_gpu PUBLIC opengl-hpp)
+	target_link_libraries(toast_gpu PRIVATE Vulkan::shaderc_combined)
 
 	target_include_directories(toast_gpu PUBLIC "$ENV{VULKAN_SDK}/Include")
 

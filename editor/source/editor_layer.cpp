@@ -18,6 +18,8 @@
 #include "toaster/toast_lib/logging.hpp"
 
 #include <ImGuizmo.h>
+
+#include "glm/gtc/type_ptr.hpp"
 namespace ig = ImGui;
 namespace igz = ImGuizmo;
 
@@ -34,9 +36,6 @@ namespace toaster
 		m_scene = make_reference<Scene>();
 
 		m_sceneHierarchyPanel = make_reference<SceneHierarchyPanel>(m_scene);
-
-		m_texture   = gpu::ITexture2D::create("resources/textures/Orbo_02.png");
-		m_peeberTex = gpu::ITexture2D::create("resources/textures/peeber.png");
 
 		gpu::FramebufferCreateInfo framebuffer_create_info{};
 		framebuffer_create_info.width       = 1920u;
@@ -110,13 +109,12 @@ namespace toaster
 
 	void EditorLayer::onEvent(Event &p_event)
 	{
+		if (m_viewportHovered)
+			m_editorCamera.onEvent(p_event);
+
 		EventDispatcher eventDispatcher(p_event);
-		eventDispatcher.dispatch<MouseMoveEvent>(TST_BIND_EVENT_FN(EditorLayer::onMouseMoveEvent));
-		eventDispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(EditorLayer::onWindowResizeEvent));
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(EditorLayer::onKeyPressEvent));
 		eventDispatcher.dispatch<MouseButtonPressEvent>(TST_BIND_EVENT_FN(EditorLayer::onMouseButtonPressEvent));
-
-		m_editorCamera.onEvent(p_event);
 	}
 
 	void EditorLayer::onUIRender()
@@ -209,14 +207,14 @@ namespace toaster
 			ui::ScopedStyle window_padding{ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f)};
 
 			ig::Begin("Viewport");
-			ImVec2 viewport_offset = ig::GetCursorPos();
 
 			m_viewportFocused = ig::IsWindowFocused();
 			m_viewportHovered = ig::IsWindowHovered();
 			((EditorApplication &) getApp()).setBlockUIEvents(!m_viewportFocused && !m_viewportHovered);
 
-			auto size      = ig::GetContentRegionAvail();
-			m_viewportSize = {size.x, size.y};
+			ImVec2 viewport_offset = ig::GetCursorPos();
+			auto   size            = ig::GetContentRegionAvail();
+			m_viewportSize         = {size.x, size.y};
 
 			ig::Image(m_framebuffer->getColourAttachmentID(), size, ImVec2(0, 1), ImVec2(1, 0));
 
@@ -230,33 +228,29 @@ namespace toaster
 			m_viewportBounds[1] = {max_bound.x, max_bound.y};
 
 			Entity selected_entity = m_sceneHierarchyPanel->getSelectedEntity();
+
 			if (selected_entity && m_gizmoType != -1)
 			{
+				auto w = ig::GetWindowWidth();
+				auto h = ig::GetWindowHeight();
+
 				igz::SetOrthographic(false);
 				igz::SetDrawlist();
-				igz::SetRect(ig::GetWindowPos().x, ig::GetWindowPos().y, ig::GetWindowWidth(), ig::GetWindowHeight());
+				igz::SetRect(ig::GetWindowPos().x, ig::GetWindowPos().y, w, h);
 
-				// auto camera_entity = m_scene->getMainCameraEntity();
+				bool snap_transform = input::isKeyDown(input::EKeyCode::eLeftControl);
 
-				// if (camera_entity)
-				// {
-				const glm::mat4 &view = m_editorCamera.getViewMatrix();
-				glm::mat4        proj = m_editorCamera.getProjectionMatrix();
-
-				auto &tc = selected_entity.getComponent<TransformComponent>();
-
+				auto &    tc               = selected_entity.getComponent<TransformComponent>();
 				glm::mat4 entity_transform = tc.getTransform();
-
-				bool    snap_transform = input::isKeyDown(input::EKeyCode::eLeftControl);
-				float32 snap_value{0.5f};
-
+				float32   snap_value{0.5f};
 				if (m_gizmoType == igz::OPERATION::ROTATE)
 					snap_value = 45.0f;
-
 				const float32 snap_values[3] = {snap_value, snap_value, snap_value};
 
-				if (igz::Manipulate(&view[0].x, &proj[0].x, static_cast<igz::OPERATION>(m_gizmoType), static_cast<igz::MODE>(m_gizmoMode), &entity_transform[0].x,
-									nullptr, snap_transform ? snap_values : nullptr))
+				igz::Manipulate(glm::value_ptr(m_editorCamera.getViewMatrix()), glm::value_ptr(m_editorCamera.getProjectionMatrix()),
+								static_cast<igz::OPERATION>(m_gizmoType), static_cast<igz::MODE>(m_gizmoMode), glm::value_ptr(entity_transform), nullptr,
+								snap_transform ? snap_values : nullptr);
+				if (igz::IsUsing())
 				{
 					glm::vec3 translation;
 					glm::quat rotation;
@@ -264,13 +258,11 @@ namespace toaster
 
 					tsm::decomposeTransform(entity_transform, translation, rotation, scale);
 
-					tc.translation = translation;
-
 					const glm::vec3 delta_rotation = glm::eulerAngles(rotation) - tc.rotation;
+					tc.translation                 = translation;
 					tc.rotation                    += delta_rotation;
 					tc.scale                       = scale;
 				}
-				// }
 			}
 
 			ig::End(); // Viewport
@@ -361,21 +353,10 @@ namespace toaster
 	{
 		if (p_event.getMouseButton() == input::EMouseButton::eLeft)
 		{
-			if (m_viewportHovered)
+			if (m_viewportHovered && !igz::IsOver() && !input::isKeyDown(input::EKeyCode::eLeftAlt))
 				m_sceneHierarchyPanel->setSelectedEntity(m_hoveredEntity);
 		}
 
-		return false;
-	}
-
-	bool EditorLayer::onMouseMoveEvent(MouseMoveEvent &p_event)
-	{
-		// Stuff...
-		return false;
-	}
-
-	bool EditorLayer::onWindowResizeEvent(WindowResizeEvent &p_event)
-	{
 		return false;
 	}
 }

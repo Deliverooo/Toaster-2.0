@@ -1,5 +1,5 @@
 /*!
- * @file gl_shader.hpp
+* @file gl_shader.hpp
  */
 #pragma once
 
@@ -15,30 +15,28 @@ namespace toaster::gpu
 	class GLShader : public IShader
 	{
 	public:
-		GLShader(std::string p_name, const std::map<EShaderType, ShaderBlob> &p_shader_bytecode_map);
-		GLShader(std::string p_name, const std::map<EShaderType, const char *> &p_shader_source_map);
+		GLShader(String p_name, const std::map<EShaderType, CString> &p_shader_source_map);
 		~GLShader() override;
 
 		void bind() const override;
 		void unbind() const override;
 
-		void setUniform(const std::string &p_name, float p_value) override;
-		void setUniform(const std::string &p_name, int p_value) override;
-		void setUniform(const std::string &p_name, uint32 p_value) override;
-		void setUniform(const std::string &p_name, const glm::vec2 &p_value) override;
-		void setUniform(const std::string &p_name, const glm::vec3 &p_value) override;
-		void setUniform(const std::string &p_name, const glm::vec4 &p_value) override;
-		void setUniform(const std::string &p_name, const glm::mat3 &p_value) override;
-		void setUniform(const std::string &p_name, const glm::mat4 &p_value) override;
-		void setUniform(const std::string &p_name, float32 *p_values, uint32 p_count) override;
-		void setUniform(const std::string &p_name, int32 *p_values, uint32 p_count) override;
-		void setUniform(const std::string &p_name, uint32 *p_values, uint32 p_count) override;
+		void setUniform(const String &p_name, float32 p_value) override;
+		void setUniform(const String &p_name, int32 p_value) override;
+		void setUniform(const String &p_name, uint32 p_value) override;
+		void setUniform(const String &p_name, const glm::vec2 &p_value) override;
+		void setUniform(const String &p_name, const glm::vec3 &p_value) override;
+		void setUniform(const String &p_name, const glm::vec4 &p_value) override;
+		void setUniform(const String &p_name, const glm::mat3 &p_value) override;
+		void setUniform(const String &p_name, const glm::mat4 &p_value) override;
+		void setUniform(const String &p_name, float32 *p_values, uint32 p_count) override;
+		void setUniform(const String &p_name, int32 *p_values, uint32 p_count) override;
+		void setUniform(const String &p_name, uint32 *p_values, uint32 p_count) override;
 
 	private:
-		std::string m_name;
+		String m_name;
 		gl::ID m_programId{0u};
 
-		std::unordered_map<std::string, gl::Int> m_uniformLocations;
-
+		std::unordered_map<String, gl::Int> m_uniformLocations;
 	};
 }

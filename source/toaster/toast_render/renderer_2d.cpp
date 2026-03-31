@@ -79,6 +79,8 @@ namespace toaster
 		const auto quad_shader = Globals::shaderLibrary()->get("Quad");
 		quad_shader->bind();
 
+		// quad_shader->setUniformBinding(0, glm::inverse(p_transform));
+		// quad_shader->setUniformBinding(1, p_camera.getProjectionMatrix());
 		quad_shader->setUniform("u_View", glm::inverse(p_transform));
 		quad_shader->setUniform("u_Proj", p_camera.getProjectionMatrix());
 
@@ -92,6 +94,8 @@ namespace toaster
 		const auto quad_shader = Globals::shaderLibrary()->get("Quad");
 		quad_shader->bind();
 
+		// quad_shader->setUniformBinding(0, p_view_matrix);
+		// quad_shader->setUniformBinding(1, p_proj_matrix);
 		quad_shader->setUniform("u_View", p_view_matrix);
 		quad_shader->setUniform("u_Proj", p_proj_matrix);
 

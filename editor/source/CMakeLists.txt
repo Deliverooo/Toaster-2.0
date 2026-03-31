@@ -12,6 +12,9 @@ set(SRC
 		panels/scene_hierarchy_panel.cpp
 		panels/scene_hierarchy_panel.hpp
 
+		panels/content_browser_panel.cpp
+		panels/content_browser_panel.hpp
+
 		ui/ui_utils.cpp
 		ui/ui_utils.hpp
 

@@ -39,8 +39,6 @@ namespace toaster
 		void openScene();
 		bool onKeyPressEvent(KeyPressEvent &p_event);
 		bool onMouseButtonPressEvent(MouseButtonPressEvent &p_event);
-		bool onMouseMoveEvent(MouseMoveEvent &p_event);
-		bool onWindowResizeEvent(WindowResizeEvent &p_event);
 
 		RefPtr<Scene> m_scene;
 
@@ -48,8 +46,6 @@ namespace toaster
 
 		RefPtr<Renderer2D> m_renderer2d;
 
-		RefPtr<gpu::ITexture2D>   m_texture;
-		RefPtr<gpu::ITexture2D>   m_peeberTex;
 		RefPtr<gpu::IFramebuffer> m_framebuffer;
 
 		EditorCamera m_editorCamera;
@@ -63,7 +59,7 @@ namespace toaster
 
 		Entity m_hoveredEntity{};
 
-		bool m_viewportFocused{false};
-		bool m_viewportHovered{false};
+		volatile bool m_viewportFocused{false};
+		volatile bool m_viewportHovered{false};
 	};
 }

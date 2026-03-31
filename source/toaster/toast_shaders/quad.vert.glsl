@@ -13,8 +13,8 @@ layout (location = 2) out float v_TexIndex;
 layout (location = 3) out float v_TilingFactor;
 layout (location = 4) out int   v_ObjectID;
 
-uniform mat4 u_View;
-uniform mat4 u_Proj;
+layout (location = 0) uniform mat4 u_View;
+layout (location = 1) uniform mat4 u_Proj;
 
 void main()
 {
