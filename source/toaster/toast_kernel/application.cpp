@@ -30,8 +30,8 @@ namespace toaster
 			});
 		});
 
-		Globals::init();
-		RenderCommand::init();
+		// Globals::init();
+		// RenderCommand::init();
 
 		input::setCurrentWindowContext(m_window->getNativeWindow());
 	}
@@ -42,7 +42,7 @@ namespace toaster
 			removeLayer(layer);
 		m_layers.clear();
 
-		Globals::shutdown();
+		// Globals::shutdown();
 
 		delete m_window;
 		Window::shutdownWindowingAPI();

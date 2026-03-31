@@ -11,6 +11,6 @@ namespace toaster::gpu
 	{
 	public:
 		static IGPUContext *create(GLFWwindow *p_window);
-		virtual            ~IGPUContext() = default;
+		virtual             ~IGPUContext() = default;
 	};
 }

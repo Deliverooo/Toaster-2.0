@@ -13,6 +13,7 @@
 
 #include <stb/stb_image.h>
 
+#include "application.hpp"
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
 
@@ -51,7 +52,7 @@ namespace toaster
 
 	Window::Window(const WindowCreateInfo &p_create_info)
 	{
-		glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		// Hides the window during creation, as to not have a blank white screen
 		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -65,6 +66,7 @@ namespace toaster
 		m_window = glfwCreateWindow(static_cast<int32>(p_create_info.width), static_cast<int32>(p_create_info.height), p_create_info.title.c_str(), nullptr, nullptr);
 
 		m_gpuContext = gpu::IGPUContext::create(m_window);
+		// m_swapchain  = new gpu::VKSwapChain(m_gpuContext, m_window);
 
 		BOOL useDarkMode = TRUE;
 		DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
@@ -232,7 +234,7 @@ namespace toaster
 
 	void Window::endFrame()
 	{
-		glfwSwapBuffers(m_window);
+		// glfwSwapBuffers(m_window);
 	}
 
 	void Window::showWindow()

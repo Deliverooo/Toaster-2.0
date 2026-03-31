@@ -25,15 +25,5 @@ namespace toaster
 
 	private:
 		bool onKeyPressEvent(KeyPressEvent &e);
-		bool onMouseMoveEvent(MouseMoveEvent &e);
-		bool onWindowResizeEvent(WindowResizeEvent &e);
-
-		RefPtr<Renderer2D> m_renderer2d;
-
-		RefPtr<gpu::ITexture2D> m_texture;
-		RefPtr<gpu::ITexture2D> m_texture2;
-
-		OrthoCameraController m_cameraController;
-		float32 m_time{0.0f};
 	};
 }
