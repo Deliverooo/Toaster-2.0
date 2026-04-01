@@ -62,7 +62,8 @@ namespace toaster
 
 		[[nodiscard]] const std::vector<Submesh> &getSubmeshes() const;
 
-		[[nodiscard]] const RefPtr<MMaterial> &getMaterial(uint32 p_index = 0) const;
+		[[nodiscard]] const RefPtr<Material> &getMaterial(uint32 p_index = 0) const;
+		std::vector<RefPtr<Material>> getMaterials() const;
 
 	private:
 		void traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform = glm::mat4{1.0f}, uint32 p_level = 0u);
@@ -72,7 +73,9 @@ namespace toaster
 		std::vector<Submesh>  m_submeshes;
 		std::vector<MeshNode> m_nodes;
 
-		std::vector<RefPtr<MMaterial> > m_materials;
+		RefPtr<gpu::IShader>                  m_shader;
+		std::vector<RefPtr<gpu::ITexture2D> > m_textures;
+		std::vector<RefPtr<Material> >        m_materials;
 
 		std::vector<MeshVertex> m_vertices;
 		std::vector<uint32>     m_indices;

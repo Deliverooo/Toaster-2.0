@@ -5,8 +5,8 @@ layout (location = 1) in vec2  a_TexCoords;
 
 layout (location = 0) out vec2  v_TexCoords;
 
-layout (location = 0) uniform mat4 u_View;
-layout (location = 1) uniform mat4 u_Proj;
+uniform mat4 u_View;
+uniform mat4 u_Proj;
 
 void main()
 {

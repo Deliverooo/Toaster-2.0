@@ -13,6 +13,8 @@ set(GPU_SRC
 
 		image.hpp
 
+		buffer.hpp
+
 		framebuffer.cpp
 		framebuffer.hpp
 
@@ -52,6 +54,9 @@ if (${WITH_OPENGL_BACKEND})
 
 			gl/gl_shader.cpp
 			gl/gl_shader.hpp
+
+			gl/gl_shader_uniform.cpp
+			gl/gl_shader_uniform.hpp
 
 			gl/gl_texture.cpp
 			gl/gl_texture.hpp

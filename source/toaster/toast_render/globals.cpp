@@ -53,6 +53,12 @@ namespace toaster
 																 });
 		s_globalData->g_shaderLibrary->add("Fullscreen_Quad", fullscreen_quad_shader);
 
+		const auto mesh_shader = gpu::IShader::create("Mesh", {
+														  {gpu::EShaderType::eVertex, io::filesystem::readFile(shader_dir / "mesh.vert.glsl").c_str()},
+														  {gpu::EShaderType::ePixel, io::filesystem::readFile(shader_dir / "mesh.pixel.glsl").c_str()}
+													  });
+		s_globalData->g_shaderLibrary->add("Mesh", mesh_shader);
+
 		{
 			std::vector<QuadVertex> vertices = {
 				{{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f}},
@@ -63,7 +69,7 @@ namespace toaster
 			std::vector<uint32> indices = {0, 1, 3, 1, 2, 3};
 
 			s_globalData->g_quadVertexBuffer = gpu::IVertexBuffer::create(vertices.data(), vertices.size() * sizeof(QuadVertex));
-			const auto vbl                   = gpu::VertexBufferLayout{{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
+			const auto vbl                   = gpu::VertexBufferLayout{{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoords"}};
 			s_globalData->g_quadVertexBuffer->setLayout(vbl);
 
 			s_globalData->g_quadIndexBuffer = gpu::IIndexBuffer::create(indices.data(), indices.size());
@@ -83,7 +89,7 @@ namespace toaster
 			std::vector<uint32> indices = {0, 1, 3, 1, 2, 3};
 
 			s_globalData->g_fullscreenQuadVertexBuffer = gpu::IVertexBuffer::create(vertices.data(), vertices.size() * sizeof(QuadVertex));
-			const auto vbl = gpu::VertexBufferLayout{{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
+			const auto vbl = gpu::VertexBufferLayout{{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoords"}};
 			s_globalData->g_fullscreenQuadVertexBuffer->setLayout(vbl);
 
 			s_globalData->g_fullscreenQuadVertexArray = gpu::IVertexArray::create();

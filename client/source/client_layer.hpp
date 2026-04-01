@@ -11,6 +11,7 @@
 #include "toaster/toast_lib/events/mouse_event.hpp"
 #include "toaster/toast_lib/events/window_event.hpp"
 #include "toast_render/material.hpp"
+#include "toast_render/mesh.hpp"
 
 namespace toaster
 {
@@ -28,7 +29,10 @@ namespace toaster
 		bool onKeyPressEvent(KeyPressEvent &e);
 
 		RefPtr<gpu::IShader> m_shader;
+
+		RefPtr<gpu::ITexture2D> m_texture;
 		RefPtr<Material>     m_material;
+		RefPtr<Mesh>         m_mesh;
 
 		float32 m_time{0.0f};
 	};

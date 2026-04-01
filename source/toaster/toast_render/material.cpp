@@ -6,136 +6,6 @@
 
 namespace toaster
 {
-	RefPtr<MMaterial> MMaterial::create(const RefPtr<gpu::IShader> &p_shader, const std::string &p_name)
-	{
-		return make_reference<MMaterial>(p_shader, p_name);
-	}
-
-	MMaterial::MMaterial(const RefPtr<gpu::IShader> &p_shader, std::string p_name) : m_name(std::move(p_name))
-	{
-		TST_ASSERT_MSG(p_shader != nullptr, "Material shader cannot be null");
-		m_shader = p_shader;
-	}
-
-	glm::vec3 &MMaterial::getAlbedoColour()
-	{
-		return m_albedoColour;
-	}
-
-	void MMaterial::setAlbedoColour(const glm::vec3 &p_colour)
-	{
-		m_albedoColour = p_colour;
-	}
-
-	float32 &MMaterial::getMetalness()
-	{
-		return m_metalness;
-	}
-
-	void MMaterial::setMetalness(float32 p_metalness)
-	{
-		m_metalness = p_metalness;
-	}
-
-	float32 &MMaterial::getRoughness()
-	{
-		return m_roughness;
-	}
-
-	void MMaterial::setRoughness(float32 p_roughness)
-	{
-		m_roughness = p_roughness;
-	}
-
-	float32 &MMaterial::getOpacity()
-	{
-		return m_opacity;
-	}
-
-	void MMaterial::setOpacity(float32 p_opacity)
-	{
-		m_opacity = p_opacity;
-	}
-
-	RefPtr<gpu::ITexture2D> MMaterial::getAlbedoMap()
-	{
-		return m_albedoMap;
-	}
-
-	void MMaterial::setAlbedoMap(const RefPtr<gpu::ITexture2D> &p_albedo_map)
-	{
-		m_albedoMap = p_albedo_map;
-	}
-
-	void MMaterial::clearAlbedoMap()
-	{
-		m_albedoMap = nullptr;
-	}
-
-	RefPtr<gpu::ITexture2D> MMaterial::getNormalMap()
-	{
-		return m_normalMap;
-	}
-
-	void MMaterial::setNormalMap(const RefPtr<gpu::ITexture2D> &p_normal_map)
-	{
-		m_normalMap = p_normal_map;
-	}
-
-	void MMaterial::clearNormalMap()
-	{
-		m_normalMap = nullptr;
-	}
-
-	bool MMaterial::isUsingNormalMap() const
-	{
-		return m_useNormalMap;
-	}
-
-	void MMaterial::setUseNormalMap(bool p_use)
-	{
-		m_useNormalMap = p_use;
-	}
-
-	RefPtr<gpu::ITexture2D> MMaterial::getMetalnessMap()
-	{
-		return m_metalnessMap;
-	}
-
-	void MMaterial::setMetalnessMap(const RefPtr<gpu::ITexture2D> &p_metalness_map)
-	{
-		m_metalnessMap = p_metalness_map;
-	}
-
-	void MMaterial::clearMetalnessMap()
-	{
-		m_metalnessMap = nullptr;
-	}
-
-	RefPtr<gpu::ITexture2D> MMaterial::getRoughnessMap()
-	{
-		return m_roughnessMap;
-	}
-
-	void MMaterial::setRoughnessMap(const RefPtr<gpu::ITexture2D> &p_roughness_map)
-	{
-		m_roughnessMap = p_roughness_map;
-	}
-
-	void MMaterial::clearRoughnessMap()
-	{
-		m_roughnessMap = nullptr;
-	}
-
-	void MMaterial::use() const
-	{
-		m_shader->bind();
-
-		m_albedoMap->bind();
-		m_shader->setUniform("u_AlbedoMap", 0);
-		m_shader->setUniform("u_AlbedoColour", m_albedoColour);
-	}
-
 	RefPtr<Material> Material::create(const RefPtr<gpu::IShader> &p_shader)
 	{
 		return make_reference<Material>(p_shader);
@@ -143,16 +13,113 @@ namespace toaster
 
 	Material::Material(const RefPtr<gpu::IShader> &p_shader) : m_shader(p_shader)
 	{
+		TST_ASSERT(m_shader);
+		_allocateStorage();
+	}
+
+	void Material::_allocateStorage()
+	{
+		// Allocate storage for VS material uniforms
+		auto &vsUniforms = m_shader->getVSMaterialUniforms();
+		if (!vsUniforms.empty())
+		{
+			auto buffer = vsUniforms.front();
+			if (buffer)
+			{
+				m_vsUniformStorageBuffer.allocate(buffer->getSize());
+				m_vsUniformStorageBuffer.zeroInitialize();
+			}
+		}
+
+		// Allocate storage for PS material uniforms
+		auto &psUniforms = m_shader->getPSMaterialUniforms();
+		if (!psUniforms.empty())
+		{
+			auto buffer = psUniforms.front();
+			if (buffer)
+			{
+				m_psUniformStorageBuffer.allocate(buffer->getSize());
+				m_psUniformStorageBuffer.zeroInitialize();
+			}
+		}
 	}
 
 	void Material::use()
 	{
 		m_shader->bind();
+
+		// Upload vertex shader material uniforms
+		if (m_vsUniformStorageBuffer.data())
+		{
+			auto &uniforms = m_shader->getVSMaterialUniforms();
+			if (!uniforms.empty())
+			{
+				auto buffer = uniforms.front();
+				for (auto uniform: buffer->getUniformDeclarations())
+				{
+					if (uniform->getLocation() >= 0)
+					{
+						uint8 *data = static_cast<uint8 *>(m_vsUniformStorageBuffer.data()) + uniform->getOffset();
+						_uploadUniformFromBuffer(uniform, data);
+					}
+				}
+			}
+		}
+
+		// Upload pixel shader material uniforms
+		if (m_psUniformStorageBuffer.data())
+		{
+			auto &uniforms = m_shader->getPSMaterialUniforms();
+			if (!uniforms.empty())
+			{
+				auto buffer = uniforms.front();
+				for (auto uniform: buffer->getUniformDeclarations())
+				{
+					if (uniform->getLocation() >= 0)
+					{
+						uint8 *data = static_cast<uint8 *>(m_psUniformStorageBuffer.data()) + uniform->getOffset();
+						_uploadUniformFromBuffer(uniform, data);
+					}
+				}
+			}
+		}
+
+		// Bind textures
+		for (uint32 i{0u}; i < m_textures.size(); i++)
+		{
+			if (auto &texture = m_textures[i])
+				texture->bind(i);
+		}
 	}
 
 	RefPtr<gpu::IShader> Material::getShader()
 	{
 		return m_shader;
+	}
+
+	const gpu::ShaderUniformBufferList &Material::getVSMaterialUniforms() const
+	{
+		return m_shader->getVSMaterialUniforms();
+	}
+
+	const gpu::ShaderUniformBufferList &Material::getPSMaterialUniforms() const
+	{
+		return m_shader->getPSMaterialUniforms();
+	}
+
+	const gpu::ShaderResourceList &Material::getResources() const
+	{
+		return m_shader->getResources();
+	}
+
+	gpu::ShaderUniformDeclaration *Material::findUniformDeclaration(const String &name)
+	{
+		return m_shader->findUniformDeclaration(name);
+	}
+
+	gpu::ShaderResourceDeclaration *Material::findResourceDeclaration(const String &name)
+	{
+		return m_shader->findResourceDeclaration(name);
 	}
 
 	void Material::setUniform(const String &p_name, float32 p_value)
@@ -168,6 +135,22 @@ namespace toaster
 	void Material::setUniform(const String &p_name, uint32 p_value)
 	{
 		m_shader->setUniform(p_name, p_value);
+	}
+
+	void Material::set(const String &p_name, const RefPtr<gpu::ITexture2D> &p_value)
+	{
+		auto decl = findResourceDeclaration(p_name);
+		if (decl)
+		{
+			uint32 slot = decl->getRegister();
+			if (m_textures.size() <= slot)
+				m_textures.resize(slot + 1);
+			m_textures[slot] = p_value;
+		}
+		else
+		{
+			LOG_WARN("Could not find texture resource {}", p_name);
+		}
 	}
 
 	void Material::setUniform(const String &p_name, const glm::vec2 &p_value)
@@ -208,5 +191,85 @@ namespace toaster
 	void Material::setUniform(const String &p_name, uint32 *p_values, uint32 p_count)
 	{
 		m_shader->setUniform(p_name, p_values, p_count);
+	}
+
+	gpu::ShaderUniformDeclaration *Material::_findUniformDeclaration(const String &p_name)
+	{
+		// Use the new shader interface
+		return m_shader->findUniformDeclaration(p_name);
+	}
+
+	Buffer &Material::_getUniformBufferTarget(gpu::ShaderUniformDeclaration *decl)
+	{
+		if (decl->getDomain() == gpu::EShaderDomain::eVertex)
+			return m_vsUniformStorageBuffer;
+		else
+			return m_psUniformStorageBuffer;
+	}
+
+	void Material::_uploadUniformFromBuffer(gpu::ShaderUniformDeclaration *uniform, uint8 *data)
+	{
+		int32 location = uniform->getLocation();
+		if (location < 0)
+		{
+			LOG_WARN("[_uploadUniformFromBuffer] Invalid location {} for uniform {}", location, uniform->getName());
+			return;
+		}
+
+		auto type = uniform->getType();
+
+		switch (type)
+		{
+			case gpu::EShaderUniformType::eFloat:
+			{
+				float32 value = *reinterpret_cast<float32 *>(data);
+				m_shader->setUniform(uniform->getName(), value);
+				break;
+			}
+			case gpu::EShaderUniformType::eInt:
+			{
+				int32 value = *reinterpret_cast<int32 *>(data);
+				m_shader->setUniform(uniform->getName(), value);
+				break;
+			}
+			case gpu::EShaderUniformType::eUInt:
+			{
+				uint32 value = *reinterpret_cast<uint32 *>(data);
+				m_shader->setUniform(uniform->getName(), value);
+				break;
+			}
+			case gpu::EShaderUniformType::eVec2:
+			{
+				glm::vec2 value = *reinterpret_cast<glm::vec2 *>(data);
+				m_shader->setUniform(uniform->getName(), value);
+				break;
+			}
+			case gpu::EShaderUniformType::eVec3:
+			{
+				glm::vec3 value = *reinterpret_cast<glm::vec3 *>(data);
+				m_shader->setUniform(uniform->getName(), value);
+				break;
+			}
+			case gpu::EShaderUniformType::eVec4:
+			{
+				glm::vec4 value = *reinterpret_cast<glm::vec4 *>(data);
+				m_shader->setUniform(uniform->getName(), value);
+				break;
+			}
+			case gpu::EShaderUniformType::eMat3:
+			{
+				glm::mat3 value = *reinterpret_cast<glm::mat3 *>(data);
+				m_shader->setUniform(uniform->getName(), value);
+				break;
+			}
+			case gpu::EShaderUniformType::eMat4:
+			{
+				glm::mat4 value = *reinterpret_cast<glm::mat4 *>(data);
+				m_shader->setUniform(uniform->getName(), value);
+				break;
+			}
+			default: LOG_WARN("[_uploadUniformFromBuffer] Unsupported uniform type {} for {}", static_cast<int>(type), uniform->getName());
+				break;
+		}
 	}
 }

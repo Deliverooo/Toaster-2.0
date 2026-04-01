@@ -6,6 +6,8 @@
 #include "toaster/toast_render/globals.hpp"
 #include "toaster/toast_render/renderer.hpp"
 
+#include <openglhpp/opengl.hpp>
+
 namespace toaster
 {
 	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app)
@@ -16,9 +18,13 @@ namespace toaster
 	{
 		auto vertex_stage = io::filesystem::readFile("resources/shaders/fullscreen_quad.vert.glsl");
 		auto pixel_stage  = io::filesystem::readFile("resources/shaders/fullscreen_quad.pixel.glsl");
-		m_shader = gpu::IShader::create("Fullscreen", {{gpu::EShaderType::eVertex, vertex_stage.c_str()}, {gpu::EShaderType::ePixel, pixel_stage.c_str()}});
+		m_shader          = gpu::IShader::create("Fullscreen", {{gpu::EShaderType::eVertex, vertex_stage}, {gpu::EShaderType::ePixel, pixel_stage}});
 
-		m_material  = Material::create(m_shader);
+		m_texture  = gpu::ITexture2D::create("resources/textures/Peeber.png");
+		m_material = Material::create(m_shader);
+
+		// Globals::shaderLibrary()
+		m_mesh = Mesh::importFromFile("resources/meshes/Orbo.fbx");
 	}
 
 	void ClientLayer::onDestroy()
@@ -37,13 +43,14 @@ namespace toaster
 		RenderCommand::clear();
 		RenderCommand::clearColour(0.0f, 0.0f, 0.0f, 1.0f);
 
-		m_material->setUniform("u_View", glm::mat4{1.0f});
-		m_material->setUniform("u_Proj", glm::mat4{1.0f});
+		m_material->set("u_View", glm::mat4{1.0f});
+		m_material->set("u_Proj", glm::mat4{1.0f});
 
-		m_material->setUniform("u_Res", glm::vec2{width, height});
-		m_material->setUniform("u_Time", m_time);
+		m_material->set("u_Tex", m_texture);
 
-		Renderer::submitFullscreenQuad(m_material);
+		m_material->use();
+
+		RenderCommand::drawIndexed(Globals::fullscreenQuadVertexArray());
 	}
 
 	void ClientLayer::onEvent(Event &p_event)

@@ -15,41 +15,20 @@ namespace toaster
 		RenderCommand::drawIndexed(p_vertex_array);
 	}
 
-	void Renderer::submitMesh(const RefPtr<Mesh> &p_mesh, const glm::mat4 &p_view, const glm::mat4 &p_proj, const glm::mat4 &p_model_matrix)
+	void Renderer::submitMesh(const RefPtr<Mesh> &p_mesh, const glm::mat4 &p_transform)
 	{
-		auto mesh_shader = Globals::shaderLibrary()->get("Mesh");
-		mesh_shader->bind();
-		mesh_shader->setUniform("u_View", p_view);
-		mesh_shader->setUniform("u_Proj", p_proj);
-
-		for (const auto &sm: p_mesh->getSubmeshes())
+		for (auto &submesh: p_mesh->getSubmeshes())
 		{
-			glm::mat4  transform = p_model_matrix * sm.transform;
-			const auto material  = p_mesh->getMaterial(sm.materialIndex);
+			auto material = p_mesh->getMaterials()[submesh.materialIndex];
+			auto shader   = material->getShader();
+			material->use();  // This binds the shader and uploads uniforms
 
-			mesh_shader->setUniform("u_Model", transform);
-			material->use();
+			// Note: For mesh rendering, prefer using material->set() for type-safe uniform setting
+			// But direct shader->setUniform() also works if shader is already bound via material->use()
+			shader->setUniform("u_Model", glm::mat4{p_transform * submesh.transform});
 
-			RenderCommand::drawIndexedBaseVertex(p_mesh->getVertexArray(), sm.indexCount, sm.baseIndex, sm.baseVertex);
+			RenderCommand::drawIndexedBaseVertex(p_mesh->getVertexArray(), submesh.indexCount, submesh.baseIndex, submesh.baseVertex);
 		}
-	}
-
-	void Renderer::renderSubmesh(const RefPtr<Mesh> &p_mesh, uint32 p_submesh_index, const glm::mat4 &p_view, const glm::mat4 &p_proj, const glm::mat4 &p_model_matrix)
-	{
-		auto mesh_shader = Globals::shaderLibrary()->get("Mesh");
-		mesh_shader->bind();
-		mesh_shader->setUniform("u_View", p_view);
-		mesh_shader->setUniform("u_Proj", p_proj);
-
-		const Submesh sm = p_mesh->getSubmeshes()[p_submesh_index];
-
-		glm::mat4  transform = p_model_matrix * sm.transform;
-		const auto material  = p_mesh->getMaterial(sm.materialIndex);
-
-		mesh_shader->setUniform("u_Model", transform);
-		material->use();
-
-		RenderCommand::drawIndexedBaseVertex(p_mesh->getVertexArray(), sm.indexCount, sm.baseIndex, sm.baseVertex);
 	}
 
 	void Renderer::submitFullscreenQuad(const RefPtr<Material> &p_material)

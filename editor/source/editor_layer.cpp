@@ -48,6 +48,8 @@ namespace toaster
 		renderer_2d_create_info.maxQuads = 1000u;
 		m_renderer2d                     = make_reference<Renderer2D>(renderer_2d_create_info);
 
+		m_mesh = Mesh::importFromFile("resources/meshes/Orbo.fbx");
+
 		auto &app            = getApp();
 		m_initialWindowTitle = app.getWindow().getTitle();
 		app.getWindow().setTitle(m_initialWindowTitle + " -> " + m_scene->getName());
@@ -103,7 +105,14 @@ namespace toaster
 			}
 		}
 
+		auto shader = Globals::shaderLibrary()->get("Mesh");
+		shader->setUniform("u_View", m_editorCamera.getViewMatrix());
+		shader->setUniform("u_Proj", m_editorCamera.getProjectionMatrix());
+		Renderer::submitMesh(m_mesh, glm::mat4{1.0f});
+
 		m_framebuffer->unbind();
+
+
 	}
 
 	void EditorLayer::onEvent(Event &p_event)

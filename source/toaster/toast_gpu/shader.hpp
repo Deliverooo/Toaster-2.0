@@ -25,9 +25,11 @@ namespace toaster::gpu
 															io::filesystem::readFile(shader_dir / "quad.pixel.glsl").c_str()}
 															});
 		 */
-		static RefPtr<IShader> create(const String &p_name, const std::map<EShaderType, CString> &p_shader_source_map);
+		static RefPtr<IShader> create(const String &p_name, const std::unordered_map<EShaderType, String> &p_shader_source_map);
 
 		virtual ~IShader() = default;
+
+		virtual uint32 getID() const = 0;
 
 		// Not really used because the OpenGL implementation uses Direct State Access (DSA)
 		virtual void bind() const = 0;
@@ -44,5 +46,16 @@ namespace toaster::gpu
 		virtual void setUniform(const String &p_name, float32 *p_values, uint32 p_count) = 0;
 		virtual void setUniform(const String &p_name, int32 *p_values, uint32 p_count) = 0;
 		virtual void setUniform(const String &p_name, uint32 *p_values, uint32 p_count) = 0;
+
+		// New interface for reflection and material system
+		virtual const ShaderUniformBufferList& getVSMaterialUniforms() const = 0;
+		virtual const ShaderUniformBufferList& getPSMaterialUniforms() const = 0;
+		virtual const ShaderResourceList& getResources() const = 0;
+
+		virtual ShaderUniformDeclaration* findUniformDeclaration(const String& name) = 0;
+		virtual ShaderResourceDeclaration* findResourceDeclaration(const String& name) = 0;
+
+		// Backward compatibility
+		virtual const std::vector<ShaderUniformDeclaration *> &getUniformDeclarations() const = 0;
 	};
 }

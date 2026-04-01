@@ -10,22 +10,10 @@
 
 namespace toaster
 {
-	static constexpr uint32 s_MeshImportFlags = aiProcess_CalcTangentSpace // Create binormals/tangents just in case
-												| aiProcess_Triangulate    // Make sure we're triangles
-												| aiProcess_SortByPType    // Split meshes by primitive type
-												| aiProcess_GenNormals     // Make sure we have legit normals
-												| aiProcess_GenUVCoords    // Convert UVs if required
-												//		| aiProcess_OptimizeGraph
-												| aiProcess_OptimizeMeshes // Batch draws where possible
-												| aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights
-												// If more than N (=4) bone weights, discard least influencing bones and renormalise sum to 1
-												| aiProcess_ValidateDataStructure // Validation
-												| aiProcess_GlobalScale           // e.g. convert cm to m for fbx import (and other formats where cm is native)
-	;
-
-	glm::mat4 mat4FromAIMatrix4x4(const aiMatrix4x4 &matrix)
+	glm::mat4 Mat4FromAssimpMat4(const aiMatrix4x4 &matrix)
 	{
 		glm::mat4 result;
+		//the a,b,c,d in assimp is the row ; the 1,2,3,4 is the column
 		result[0][0] = matrix.a1;
 		result[1][0] = matrix.a2;
 		result[2][0] = matrix.a3;
@@ -44,6 +32,14 @@ namespace toaster
 		result[3][3] = matrix.d4;
 		return result;
 	}
+
+	static const uint32_t s_MeshImportFlags = aiProcess_CalcTangentSpace |     // Create binormals/tangents just in case
+											  aiProcess_Triangulate |          // Make sure we're triangles
+											  aiProcess_SortByPType |          // Split meshes by primitive type
+											  aiProcess_GenNormals |           // Make sure we have legit normals
+											  aiProcess_GenUVCoords |          // Convert UVs if required
+											  aiProcess_OptimizeMeshes |       // Batch draws where possible
+											  aiProcess_ValidateDataStructure; // Validation
 
 	RefPtr<Mesh> Mesh::create(const std::vector<MeshVertex> &p_vertices, const std::vector<uint32> &p_indices)
 	{
@@ -67,6 +63,8 @@ namespace toaster
 		m_vertexArray = gpu::IVertexArray::create();
 		m_vertexArray->addVertexBuffer(m_vertexBuffer);
 		m_vertexArray->setIndexBuffer(m_indexBuffer);
+
+		m_shader = Globals::shaderLibrary()->get("Mesh");
 	}
 
 	RefPtr<Mesh> Mesh::importFromFile(const io::filesystem::Path &p_path)
@@ -159,7 +157,8 @@ namespace toaster
 				auto ai_material      = scene->mMaterials[i];
 				auto ai_material_name = ai_material->GetName();
 
-				auto material = MMaterial::create(Globals::shaderLibrary()->get("Mesh"), ai_material_name.data);
+				auto &material =mesh->m_materials[i];
+				material = Material::create(Globals::shaderLibrary()->get("Mesh"));
 
 				LOG_TRACE("\t{} (Index = {})", ai_material_name.data, i);
 
@@ -170,7 +169,7 @@ namespace toaster
 				if (ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS)
 					albedo_colour = {ai_colour.r, ai_colour.g, ai_colour.b};
 
-				material->setAlbedoColour(albedo_colour);
+				material->set("u_AlbedoColour", albedo_colour);
 
 				float32 roughness;
 				if (ai_material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) != aiReturn_SUCCESS)
@@ -185,8 +184,8 @@ namespace toaster
 				else
 					metalness = 1.0f;
 
-				material->setRoughness(roughness);
-				material->setMetalness(metalness);
+				material->set("u_Roughness", roughness);
+				material->set("u_Metalness", metalness);
 
 				LOG_TRACE("\tCOLOUR = {}, {}, {}", ai_colour.r, ai_colour.g, ai_colour.b);
 				LOG_TRACE("\tROUGHNESS = {}", roughness);
@@ -211,14 +210,14 @@ namespace toaster
 
 					auto albedo_map = gpu::ITexture2D::create(texture_path);
 
-					material->setAlbedoMap(albedo_map);
-					material->setAlbedoColour(glm::vec3{1.0f});
+					material->set("u_AlbedoMap", albedo_map);
+					material->set("u_AlbedoColour", glm::vec3{1.0f});
 				}
 				else
 				{
 					auto map = gpu::ITexture2D::create("error");
 
-					material->setAlbedoMap(map);
+					material->set("u_AlbedoMap", map);
 				}
 
 				mesh->m_materials[i] = material;
@@ -274,10 +273,15 @@ namespace toaster
 		return m_submeshes;
 	}
 
-	const RefPtr<MMaterial> &Mesh::getMaterial(uint32 p_index) const
+	const RefPtr<Material> &Mesh::getMaterial(uint32 p_index) const
 	{
 		TST_ASSERT_MSG(p_index < m_materials.size(), "Out of range!");
 		return m_materials[p_index];
+	}
+
+	std::vector<RefPtr<Material> > Mesh::getMaterials() const
+	{
+		return m_materials;
 	}
 
 	void Mesh::traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level)
@@ -286,7 +290,7 @@ namespace toaster
 
 		MeshNode &node = m_nodes[p_node_index];
 		node.name      = ai_node->mName.C_Str();
-		node.transform = mat4FromAIMatrix4x4(ai_node->mTransformation);
+		node.transform = Mat4FromAssimpMat4(ai_node->mTransformation);
 
 		glm::mat4 transform = p_parent_transform * node.transform;
 		for (uint32 i{0u}; i < ai_node->mNumMeshes; ++i)

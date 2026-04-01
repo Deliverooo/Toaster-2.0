@@ -5,15 +5,14 @@ namespace toaster::gpu
 	GLIndexBuffer::GLIndexBuffer(uint32 p_count) : m_indexCount(p_count)
 	{
 		gl::createBuffers(1, &m_ebo);
-		gl::bindBuffer(gl::BufferType::eElementArray, m_ebo);
-		gl::bufferData(gl::BufferType::eElementArray, static_cast<gl::SizeIPtr>(p_count * sizeof(uint32)), nullptr, gl::BufferUsage::eDynamicDraw);
+		gl::namedBufferStorage(m_ebo, static_cast<gl::SizeIPtr>(p_count * sizeof(uint32)), nullptr, gl::BufferAccessBits::eDynamicStorage);
 	}
 
 	GLIndexBuffer::GLIndexBuffer(const uint32 *p_data, uint32 p_count) : m_indexCount(p_count)
 	{
 		gl::createBuffers(1, &m_ebo);
-		gl::bindBuffer(gl::BufferType::eElementArray, m_ebo);
-		gl::bufferData(gl::BufferType::eElementArray, static_cast<gl::SizeIPtr>(p_count * sizeof(uint32)), p_data, gl::BufferUsage::eStaticDraw);
+		gl::namedBufferStorage(m_ebo, static_cast<gl::SizeIPtr>(p_count * sizeof(uint32)), nullptr, gl::BufferAccessBits::eDynamicStorage);
+		gl::namedBufferSubData(m_ebo, 0, static_cast<gl::SizeIPtr>(p_count * sizeof(uint32)), p_data);
 	}
 
 	GLIndexBuffer::~GLIndexBuffer()

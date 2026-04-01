@@ -13,7 +13,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) // Maybe_todo,
 	app_create_info.windowCreateInfo.height         = 720u;
 	app_create_info.windowCreateInfo.title          = "Toaster v3.1415 - OpenGL";
 	app_create_info.windowCreateInfo.iconPath       = "../resources/textures/OrboCloseup.png";
-	app_create_info.windowCreateInfo.startMaximized = false;
+	app_create_info.windowCreateInfo.startMaximized = true;
 
 	auto *app = new toaster::ClientApplication(app_create_info);
 

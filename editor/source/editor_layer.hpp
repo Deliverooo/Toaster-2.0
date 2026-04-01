@@ -19,6 +19,8 @@
 
 #include <array>
 
+#include "toast_render/mesh.hpp"
+
 namespace toaster
 {
 	class EditorLayer : public IAppLayer
@@ -45,6 +47,8 @@ namespace toaster
 		RefPtr<SceneHierarchyPanel> m_sceneHierarchyPanel;
 
 		RefPtr<Renderer2D> m_renderer2d;
+
+		RefPtr<Mesh> m_mesh;
 
 		RefPtr<gpu::IFramebuffer> m_framebuffer;
 
