@@ -19,11 +19,11 @@ namespace toaster
 
 	void Material::_allocateStorage()
 	{
-		// Allocate storage for VS material uniforms
-		auto &vsUniforms = m_shader->getVSMaterialUniforms();
-		if (!vsUniforms.empty())
+		// Allocate storage for vs material uniforms
+		auto &vertex_shader_uniforms = m_shader->getVSMaterialUniforms();
+		if (!vertex_shader_uniforms.empty())
 		{
-			auto buffer = vsUniforms.front();
+			auto buffer = vertex_shader_uniforms.front();
 			if (buffer)
 			{
 				m_vsUniformStorageBuffer.allocate(buffer->getSize());
@@ -31,11 +31,11 @@ namespace toaster
 			}
 		}
 
-		// Allocate storage for PS material uniforms
-		auto &psUniforms = m_shader->getPSMaterialUniforms();
-		if (!psUniforms.empty())
+		// Allocate storage for ps material uniforms
+		auto &pixel_shader_uniforms = m_shader->getPSMaterialUniforms();
+		if (!pixel_shader_uniforms.empty())
 		{
-			auto buffer = psUniforms.front();
+			auto buffer = pixel_shader_uniforms.front();
 			if (buffer)
 			{
 				m_psUniformStorageBuffer.allocate(buffer->getSize());
@@ -203,8 +203,7 @@ namespace toaster
 	{
 		if (decl->getDomain() == gpu::EShaderDomain::eVertex)
 			return m_vsUniformStorageBuffer;
-		else
-			return m_psUniformStorageBuffer;
+		return m_psUniformStorageBuffer;
 	}
 
 	void Material::_uploadUniformFromBuffer(gpu::ShaderUniformDeclaration *uniform, uint8 *data)

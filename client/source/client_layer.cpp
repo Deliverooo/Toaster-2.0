@@ -23,7 +23,6 @@ namespace toaster
 		m_texture  = gpu::ITexture2D::create("resources/textures/Peeber.png");
 		m_material = Material::create(m_shader);
 
-		// Globals::shaderLibrary()
 		m_mesh = Mesh::importFromFile("resources/meshes/Orbo.fbx");
 	}
 

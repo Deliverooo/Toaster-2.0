@@ -22,15 +22,13 @@ namespace toaster::gpu
 		return static_cast<gl::ShaderStage>(0);
 	}
 
-	#define RETRIEVE_UNIFORM(__name) if (!m_uniformLocations.contains(p_name)) {	m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str()); }
-
 	GLShader::GLShader(String p_name, const std::unordered_map<EShaderType, String> &p_shader_source_map) : m_name(std::move(p_name)),
 																											m_shaderSourceMap(p_shader_source_map)
 	{
 		m_programId = gl::createProgram();
 
 		std::vector<gl::UInt> shader_ids;
-		for (auto [stage, source]: p_shader_source_map)
+		for (const auto stage: p_shader_source_map | std::views::keys)
 		{
 			gl::UInt id         = gl::createShader(getShaderStage(stage));
 			auto     source_str = m_shaderSourceMap[stage].c_str();
@@ -67,18 +65,15 @@ namespace toaster::gpu
 			gl::detachShader(m_programId, id);
 			gl::deleteShader(id);
 		}
-		// gl::getProgramResourceName(m_programId, gl::ProgramInterface::eUniform, 0)
 	}
 
 	GLShader::~GLShader()
 	{
-		// Don't delete m_uniformDeclarations - they're stored in the buffers
-		// The buffers will clean them up
-		for (auto& buf : m_vsMaterialUniforms)
+		for (auto &buf: m_vsMaterialUniforms)
 			delete buf;
-		for (auto& buf : m_psMaterialUniforms)
+		for (auto &buf: m_psMaterialUniforms)
 			delete buf;
-		for (auto& res : m_resources)
+		for (auto &res: m_resources)
 			delete res;
 		gl::deleteProgram(m_programId);
 	}
@@ -97,6 +92,8 @@ namespace toaster::gpu
 	{
 		gl::useProgram(0);
 	}
+
+	#define RETRIEVE_UNIFORM(__name) if (!m_uniformLocations.contains(p_name)) {	m_uniformLocations[p_name] = gl::getUniformLocation(m_programId, p_name.c_str()); }
 
 	void GLShader::setUniform(const String &p_name, float32 p_value)
 	{
@@ -167,22 +164,20 @@ namespace toaster::gpu
 
 	const std::vector<ShaderUniformDeclaration *> &GLShader::getUniformDeclarations() const
 	{
-		// Return empty vector for backward compatibility
-		// The new system uses getVSMaterialUniforms() and getPSMaterialUniforms() instead
-		static const std::vector<ShaderUniformDeclaration *> emptyVector;
-		return emptyVector;
+		static const std::vector<ShaderUniformDeclaration *> s_fallback;
+		return s_fallback;
 	}
 
-	ShaderUniformDeclaration* GLShader::findUniformDeclaration(const String& name)
+	ShaderUniformDeclaration *GLShader::findUniformDeclaration(const String &name)
 	{
-		for (auto& buffer : m_vsMaterialUniforms)
+		for (auto &buffer: m_vsMaterialUniforms)
 		{
 			auto uniform = buffer->findUniform(name);
 			if (uniform)
 				return uniform;
 		}
 
-		for (auto& buffer : m_psMaterialUniforms)
+		for (auto &buffer: m_psMaterialUniforms)
 		{
 			auto uniform = buffer->findUniform(name);
 			if (uniform)
@@ -192,9 +187,9 @@ namespace toaster::gpu
 		return nullptr;
 	}
 
-	ShaderResourceDeclaration* GLShader::findResourceDeclaration(const String& name)
+	ShaderResourceDeclaration *GLShader::findResourceDeclaration(const String &name)
 	{
-		for (auto& resource : m_resources)
+		for (auto &resource: m_resources)
 		{
 			if (resource->getName() == name)
 				return resource;
@@ -212,8 +207,8 @@ namespace toaster::gpu
 		gl::getProgramiv(m_programId, gl::ProgramQuery::eActiveUniformMaxLength, &max_length);
 
 		// Create material uniform buffers for each domain
-		auto vsMaterialBuffer = new GLShaderUniformBufferDeclaration("Material_VS", EShaderDomain::eVertex);
-		auto psMaterialBuffer = new GLShaderUniformBufferDeclaration("Material_PS", EShaderDomain::ePixel);
+		auto vertex_shader_material_buffer = new GLShaderUniformBufferDeclaration("Material_VS", EShaderDomain::eVertex);
+		auto pixel_shader_material_buffer  = new GLShaderUniformBufferDeclaration("Material_PS", EShaderDomain::ePixel);
 
 		for (uint32 i{0u}; i < count; ++i)
 		{
@@ -228,53 +223,41 @@ namespace toaster::gpu
 
 			uniform_name.resize(actual_length);
 
-			gl::Int location = gl::getUniformLocation(m_programId, uniform_name.c_str());
+			const gl::Int location = gl::getUniformLocation(m_programId, uniform_name.c_str());
 
 			// Skip built-in uniforms
 			if (uniform_name.find("gl_") != std::string::npos)
 				continue;
 
 			// Determine if this is a resource (texture) or a uniform
-			auto resourceType = GLShaderResourceDeclaration::glTypeToResourceType(type);
-			if (resourceType != EShaderResourceType::eNone)
+			auto resource_type = GLShaderResourceDeclaration::glTypeToResourceType(type);
+			if (resource_type != EShaderResourceType::eNone)
 			{
-				auto resource = new GLShaderResourceDeclaration(resourceType, uniform_name, 1);
-				m_resources.push_back(resource);
+				m_resources.push_back(new GLShaderResourceDeclaration(resource_type, uniform_name, 1));
 			}
 			else
 			{
 				// This is a regular uniform
-				auto uniformType = GLShaderUniformDeclaration::glTypeToUniformType(type);
-				if (uniformType == EShaderUniformType::eNone)
+				auto uniform_type = GLShaderUniformDeclaration::glTypeToUniformType(type);
+				if (uniform_type == EShaderUniformType::eNone)
 					continue;
 
-				// Only add to VS buffer - OpenGL's glGetActiveUniform() doesn't provide
-				// per-stage usage info. For proper per-stage reflection, you would need to:
-				// 1. Parse shader source code
-				// 2. Use GL_ARB_separate_shader_objects per-stage queries
-				// 3. Maintain separate reflection for each stage
-				// For now, VS buffer contains all uniforms (typically they're defined
-				// once in the linked program and available to all stages)
-				auto uniformDeclVS = new GLShaderUniformDeclaration(
-					EShaderDomain::eVertex,
-					uniformType,
-					uniform_name,
-					static_cast<uint32>(size_count));
-				uniformDeclVS->m_location = location;
-				vsMaterialBuffer->pushUniform(uniformDeclVS);
+				auto uniform_decl_vs        = new GLShaderUniformDeclaration(EShaderDomain::eVertex, uniform_type, uniform_name, static_cast<uint32>(size_count));
+				uniform_decl_vs->m_location = location;
+				vertex_shader_material_buffer->pushUniform(uniform_decl_vs);
 			}
 		}
 
 		// Only add buffers if they have uniforms
-		if (!vsMaterialBuffer->getUniformDeclarations().empty())
-			m_vsMaterialUniforms.push_back(vsMaterialBuffer);
+		if (!vertex_shader_material_buffer->getUniformDeclarations().empty())
+			m_vsMaterialUniforms.push_back(vertex_shader_material_buffer);
 		else
-			delete vsMaterialBuffer;
+			delete vertex_shader_material_buffer;
 
 		// PS buffer typically stays empty with this approach
-		if (!psMaterialBuffer->getUniformDeclarations().empty())
-			m_psMaterialUniforms.push_back(psMaterialBuffer);
+		if (!pixel_shader_material_buffer->getUniformDeclarations().empty())
+			m_psMaterialUniforms.push_back(pixel_shader_material_buffer);
 		else
-			delete psMaterialBuffer;
+			delete pixel_shader_material_buffer;
 	}
 }
