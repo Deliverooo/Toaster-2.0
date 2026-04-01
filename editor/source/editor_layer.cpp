@@ -69,7 +69,7 @@ namespace toaster
 				m_framebuffer->resize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
 				m_editorCamera.setViewportSize(m_viewportSize.x, m_viewportSize.y);
 				m_scene->setViewportSize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
-				RenderCommand::setViewport({0.0f, 0.0f, m_viewportSize});
+				RenderCommand::setViewport(0.0f, 0.0f, m_viewportSize.x, m_viewportSize.y);
 			}
 		}
 		if (m_viewportFocused)
@@ -78,7 +78,7 @@ namespace toaster
 		}
 
 		m_framebuffer->bind();
-		RenderCommand::clearColour({0.2f, 0.3f, 0.3f, 1.0f});
+		RenderCommand::clearColour(0.2f, 0.3f, 0.3f, 1.0f);
 		RenderCommand::clear();
 
 		m_scene->onUpdate(p_dt);
@@ -89,9 +89,9 @@ namespace toaster
 		my                 -= m_viewportBounds[0].y;
 		auto viewport_size = m_viewportBounds[1] - m_viewportBounds[0];
 
-		my            = viewport_size.y - my;
-		int32 mouse_x = static_cast<int32>(mx);
-		int32 mouse_y = static_cast<int32>(my);
+		my           = viewport_size.y - my;
+		auto mouse_x = static_cast<int32>(mx);
+		auto mouse_y = static_cast<int32>(my);
 
 		if (mouse_x >= 0 && mouse_y >= 0 && mouse_x < static_cast<int32>(viewport_size.x) && mouse_y < static_cast<int32>(viewport_size.y))
 		{

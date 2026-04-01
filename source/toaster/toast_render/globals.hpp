@@ -14,5 +14,6 @@ namespace toaster
 		static const RefPtr<ShaderLibrary> &shaderLibrary();
 
 		static RefPtr<gpu::IVertexArray> quadVertexArray();
+		static RefPtr<gpu::IVertexArray> fullscreenQuadVertexArray();
 	};
 }

@@ -12,9 +12,9 @@ namespace toaster::gpu
 		gl::enable(gl::Capability::eDepthTest);
 	}
 
-	void GLGPUAPI::clearColour(const glm::vec4 &p_colour)
+	void GLGPUAPI::clearColour(float32 p_r, float32 p_g, float32 p_b, float32 p_a)
 	{
-		gl::clearColor(p_colour.r, p_colour.g, p_colour.b, p_colour.a);
+		gl::clearColor(p_r, p_g, p_b, p_a);
 	}
 
 	void GLGPUAPI::clear()
@@ -47,9 +47,9 @@ namespace toaster::gpu
 		}
 	}
 
-	void GLGPUAPI::setViewport(const glm::vec4 &p_viewport)
+	void GLGPUAPI::setViewport(int32 p_x, int32 p_y, int32 p_width, int32 p_height)
 	{
-		gl::viewport(static_cast<gl::Int>(p_viewport.x), static_cast<gl::Int>(p_viewport.y), static_cast<gl::Int>(p_viewport.z), static_cast<gl::Int>(p_viewport.w));
+		gl::viewport(p_x, p_y, p_width, p_height);
 	}
 
 	void GLGPUAPI::drawIndexed(const RefPtr<IVertexArray> &p_vertex_array, uint32 p_index_count)

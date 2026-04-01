@@ -16,6 +16,8 @@ namespace toaster
 		static void submitMesh(const RefPtr<Mesh> &p_mesh, const glm::mat4 &p_view, const glm::mat4 &p_proj, const glm::mat4 &p_model_matrix);
 		static void renderSubmesh(const RefPtr<Mesh> &p_mesh, uint32 p_submesh_index, const glm::mat4 &p_view, const glm::mat4 &p_proj, const glm::mat4 &p_model_matrix);
 
+		static void submitFullscreenQuad(const RefPtr<Material> &p_material);
+
 		static void submitQuad(const glm::vec3 &p_positon);
 	};
 }

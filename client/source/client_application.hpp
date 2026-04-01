@@ -6,7 +6,7 @@ namespace toaster
 	class ClientApplication : public Application
 	{
 	public:
-		ClientApplication();
+		ClientApplication(const ApplicationCreateInfo& p_create_info);
 		~ClientApplication();
 
 	private:

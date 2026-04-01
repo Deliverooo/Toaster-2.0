@@ -54,7 +54,7 @@ namespace toaster
 		}
 
 		const auto quad_shader = Globals::shaderLibrary()->get("Quad");
-		quad_shader->bind();
+		// quad_shader->bind();
 		quad_shader->setUniform("u_Textures", samplers, c_maxTextureSlots);
 
 		m_textureSlots[0] = m_whiteTexture;

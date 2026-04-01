@@ -9,10 +9,10 @@ namespace toaster
 	class RenderCommand final
 	{
 	public:
-		static void clearColour(const glm::vec4 &p_colour);
+		static void clearColour(float32 p_r, float32 p_g, float32 p_b, float32 p_a);
 		static void clear();
 
-		static void setViewport(const glm::vec4 &p_viewport);
+		static void setViewport(int32 p_x, int32 p_y, int32 p_width, int32 p_height);
 
 		static void drawIndexed(const RefPtr<gpu::IVertexArray> &p_vertex_array, uint32 p_index_count = 0);
 		static void drawIndexedBaseVertex(const RefPtr<gpu::IVertexArray> &p_vertex_array, uint32 p_index_count, uint32 p_base_index, uint32 p_base_vertex);

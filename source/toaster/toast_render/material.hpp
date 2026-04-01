@@ -5,12 +5,12 @@
 
 namespace toaster
 {
-	class Material
+	class MMaterial
 	{
 	public:
-		static RefPtr<Material> create(const RefPtr<gpu::IShader> &p_shader, const std::string &p_name);
-		Material(const RefPtr<gpu::IShader> &p_shader, std::string p_name);
-		~Material() = default;
+		static RefPtr<MMaterial> create(const RefPtr<gpu::IShader> &p_shader, const std::string &p_name);
+		MMaterial(const RefPtr<gpu::IShader> &p_shader, std::string p_name);
+		~MMaterial() = default;
 
 		glm::vec3 &getAlbedoColour();
 		void       setAlbedoColour(const glm::vec3 &p_colour);
@@ -25,23 +25,23 @@ namespace toaster
 		void     setOpacity(float32 p_opacity);
 
 		RefPtr<gpu::ITexture2D> getAlbedoMap();
-		void                   setAlbedoMap(const RefPtr<gpu::ITexture2D> &p_albedo_map);
-		void                   clearAlbedoMap();
+		void                    setAlbedoMap(const RefPtr<gpu::ITexture2D> &p_albedo_map);
+		void                    clearAlbedoMap();
 
 		RefPtr<gpu::ITexture2D> getNormalMap();
-		void                   setNormalMap(const RefPtr<gpu::ITexture2D> &p_normal_map);
-		void                   clearNormalMap();
+		void                    setNormalMap(const RefPtr<gpu::ITexture2D> &p_normal_map);
+		void                    clearNormalMap();
 
 		[[nodiscard]] bool isUsingNormalMap() const;
 		void               setUseNormalMap(bool p_use);
 
 		RefPtr<gpu::ITexture2D> getMetalnessMap();
-		void                   setMetalnessMap(const RefPtr<gpu::ITexture2D> &p_metalness_map);
-		void                   clearMetalnessMap();
+		void                    setMetalnessMap(const RefPtr<gpu::ITexture2D> &p_metalness_map);
+		void                    clearMetalnessMap();
 
 		RefPtr<gpu::ITexture2D> getRoughnessMap();
-		void                   setRoughnessMap(const RefPtr<gpu::ITexture2D> &p_roughness_map);
-		void                   clearRoughnessMap();
+		void                    setRoughnessMap(const RefPtr<gpu::ITexture2D> &p_roughness_map);
+		void                    clearRoughnessMap();
 
 		void use() const;
 
@@ -61,5 +61,31 @@ namespace toaster
 		float32   m_opacity{1.0f};
 
 		bool m_useNormalMap{false}; // sometimes you may not want to use a normal map
+	};
+
+	class Material
+	{
+	public:
+		static RefPtr<Material> create(const RefPtr<gpu::IShader> &p_shader);
+		Material(const RefPtr<gpu::IShader> &p_shader);
+
+		void use();
+
+		RefPtr<gpu::IShader> getShader();
+
+		void setUniform(const String &p_name, float32 p_value);
+		void setUniform(const String &p_name, int32 p_value);
+		void setUniform(const String &p_name, uint32 p_value);
+		void setUniform(const String &p_name, const glm::vec2 &p_value);
+		void setUniform(const String &p_name, const glm::vec3 &p_value);
+		void setUniform(const String &p_name, const glm::vec4 &p_value);
+		void setUniform(const String &p_name, const glm::mat3 &p_value);
+		void setUniform(const String &p_name, const glm::mat4 &p_value);
+		void setUniform(const String &p_name, float32 *p_values, uint32 p_count);
+		void setUniform(const String &p_name, int32 *p_values, uint32 p_count);
+		void setUniform(const String &p_name, uint32 *p_values, uint32 p_count);
+
+	private:
+		RefPtr<gpu::IShader> m_shader;
 	};
 }

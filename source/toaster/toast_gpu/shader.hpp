@@ -17,10 +17,19 @@ namespace toaster::gpu
 	class IShader
 	{
 	public:
+		/*! Creates a shader directly from the shader sources e.g.
+		* 	const auto quad_shader = gpu::IShader::create("Quad", {
+		* 													{gpu::EShaderType::eVertex,
+		* 													io::filesystem::readFile(shader_dir / "quad.vert.glsl").c_str()},
+															{gpu::EShaderType::ePixel,
+															io::filesystem::readFile(shader_dir / "quad.pixel.glsl").c_str()}
+															});
+		 */
 		static RefPtr<IShader> create(const String &p_name, const std::map<EShaderType, CString> &p_shader_source_map);
 
 		virtual ~IShader() = default;
 
+		// Not really used because the OpenGL implementation uses Direct State Access (DSA)
 		virtual void bind() const = 0;
 		virtual void unbind() const = 0;
 

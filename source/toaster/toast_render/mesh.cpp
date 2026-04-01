@@ -159,7 +159,7 @@ namespace toaster
 				auto ai_material      = scene->mMaterials[i];
 				auto ai_material_name = ai_material->GetName();
 
-				auto material = Material::create(Globals::shaderLibrary()->get("Mesh"), ai_material_name.data);
+				auto material = MMaterial::create(Globals::shaderLibrary()->get("Mesh"), ai_material_name.data);
 
 				LOG_TRACE("\t{} (Index = {})", ai_material_name.data, i);
 
@@ -274,7 +274,7 @@ namespace toaster
 		return m_submeshes;
 	}
 
-	const RefPtr<Material> &Mesh::getMaterial(uint32 p_index) const
+	const RefPtr<MMaterial> &Mesh::getMaterial(uint32 p_index) const
 	{
 		TST_ASSERT_MSG(p_index < m_materials.size(), "Out of range!");
 		return m_materials[p_index];

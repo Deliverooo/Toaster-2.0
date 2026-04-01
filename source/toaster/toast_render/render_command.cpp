@@ -11,9 +11,9 @@ namespace toaster
 		s_gpuAPI = gpu::IGPUAPI::create();
 	}
 
-	void RenderCommand::clearColour(const glm::vec4 &p_colour)
+	void RenderCommand::clearColour(float32 p_r, float32 p_g, float32 p_b, float32 p_a)
 	{
-		s_gpuAPI->clearColour(p_colour);
+		s_gpuAPI->clearColour(p_r, p_g, p_b, p_a);
 	}
 
 	void RenderCommand::clear()
@@ -21,9 +21,9 @@ namespace toaster
 		s_gpuAPI->clear();
 	}
 
-	void RenderCommand::setViewport(const glm::vec4 &p_viewport)
+	void RenderCommand::setViewport(int32 p_x, int32 p_y, int32 p_width, int32 p_height)
 	{
-		s_gpuAPI->setViewport(p_viewport);
+		s_gpuAPI->setViewport(p_x, p_y, p_width, p_height);
 	}
 
 	void RenderCommand::drawIndexed(const RefPtr<gpu::IVertexArray> &p_vertex_array, uint32 p_index_count)

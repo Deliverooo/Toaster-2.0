@@ -62,7 +62,7 @@ namespace toaster
 
 		[[nodiscard]] const std::vector<Submesh> &getSubmeshes() const;
 
-		[[nodiscard]] const RefPtr<Material> &getMaterial(uint32 p_index = 0) const;
+		[[nodiscard]] const RefPtr<MMaterial> &getMaterial(uint32 p_index = 0) const;
 
 	private:
 		void traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform = glm::mat4{1.0f}, uint32 p_level = 0u);
@@ -72,7 +72,7 @@ namespace toaster
 		std::vector<Submesh>  m_submeshes;
 		std::vector<MeshNode> m_nodes;
 
-		std::vector<RefPtr<Material> > m_materials;
+		std::vector<RefPtr<MMaterial> > m_materials;
 
 		std::vector<MeshVertex> m_vertices;
 		std::vector<uint32>     m_indices;

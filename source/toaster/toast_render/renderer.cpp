@@ -52,6 +52,12 @@ namespace toaster
 		RenderCommand::drawIndexedBaseVertex(p_mesh->getVertexArray(), sm.indexCount, sm.baseIndex, sm.baseVertex);
 	}
 
+	void Renderer::submitFullscreenQuad(const RefPtr<Material> &p_material)
+	{
+		p_material->use();
+		RenderCommand::drawIndexed(Globals::fullscreenQuadVertexArray());
+	}
+
 	void Renderer::submitQuad(const glm::vec3 &p_positon)
 	{
 		submitGeometry(Globals::quadVertexArray(), Globals::shaderLibrary()->get("Quad"), glm::translate(glm::mat4{1.0f}, p_positon));

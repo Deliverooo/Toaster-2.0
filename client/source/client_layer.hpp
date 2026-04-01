@@ -10,6 +10,7 @@
 #include "toaster/toast_lib/events/key_event.hpp"
 #include "toaster/toast_lib/events/mouse_event.hpp"
 #include "toaster/toast_lib/events/window_event.hpp"
+#include "toast_render/material.hpp"
 
 namespace toaster
 {
@@ -25,15 +26,10 @@ namespace toaster
 
 	private:
 		bool onKeyPressEvent(KeyPressEvent &e);
-		bool onMouseMoveEvent(MouseMoveEvent &e);
-		bool onWindowResizeEvent(WindowResizeEvent &e);
 
-		RefPtr<Renderer2D> m_renderer2d;
+		RefPtr<gpu::IShader> m_shader;
+		RefPtr<Material>     m_material;
 
-		RefPtr<gpu::ITexture2D> m_texture;
-		RefPtr<gpu::ITexture2D> m_texture2;
-
-		OrthoCameraController m_cameraController;
 		float32 m_time{0.0f};
 	};
 }

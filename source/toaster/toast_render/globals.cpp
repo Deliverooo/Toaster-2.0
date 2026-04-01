@@ -8,12 +8,12 @@ namespace toaster
 	{
 		RefPtr<ShaderLibrary> g_shaderLibrary;
 
-		struct
-		{
-			RefPtr<gpu::IVertexBuffer> vertexBuffer;
-			RefPtr<gpu::IIndexBuffer>  indexBuffer;
-			RefPtr<gpu::IVertexArray>  vertexArray;
-		} g_quad;
+		RefPtr<gpu::IVertexBuffer> g_quadVertexBuffer;
+		RefPtr<gpu::IIndexBuffer>  g_quadIndexBuffer;
+		RefPtr<gpu::IVertexArray>  g_quadVertexArray;
+
+		RefPtr<gpu::IVertexBuffer> g_fullscreenQuadVertexBuffer;
+		RefPtr<gpu::IVertexArray>  g_fullscreenQuadVertexArray;
 	};
 
 	struct QuadVertex
@@ -41,11 +41,17 @@ namespace toaster
 													  });
 		s_globalData->g_shaderLibrary->add("Quad", quad_shader);
 
-		// auto mesh_shader = gpu::IShader::create("Mesh", {
-													// {gpu::EShaderType::eVertex, io::filesystem::readFile(shader_dir / "mesh.vert.glsl").c_str()},
-													// {gpu::EShaderType::ePixel, io::filesystem::readFile(shader_dir / "mesh.pixel.glsl").c_str()}
-												// });
-		// s_globalData->g_shaderLibrary->add("Mesh", mesh_shader);
+		const auto fullscreen_quad_shader = gpu::IShader::create("Fullscreen_Quad", {
+																	 {
+																		 gpu::EShaderType::eVertex,
+																		 io::filesystem::readFile(shader_dir / "fullscreen_quad.vert.glsl").c_str()
+																	 },
+																	 {
+																		 gpu::EShaderType::ePixel,
+																		 io::filesystem::readFile(shader_dir / "fullscreen_quad.pixel.glsl").c_str()
+																	 }
+																 });
+		s_globalData->g_shaderLibrary->add("Fullscreen_Quad", fullscreen_quad_shader);
 
 		{
 			std::vector<QuadVertex> vertices = {
@@ -56,15 +62,33 @@ namespace toaster
 			};
 			std::vector<uint32> indices = {0, 1, 3, 1, 2, 3};
 
-			s_globalData->g_quad.vertexBuffer = gpu::IVertexBuffer::create(vertices.data(), vertices.size() * sizeof(QuadVertex));
-			const auto vbl                    = gpu::VertexBufferLayout{{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
-			s_globalData->g_quad.vertexBuffer->setLayout(vbl);
+			s_globalData->g_quadVertexBuffer = gpu::IVertexBuffer::create(vertices.data(), vertices.size() * sizeof(QuadVertex));
+			const auto vbl                   = gpu::VertexBufferLayout{{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
+			s_globalData->g_quadVertexBuffer->setLayout(vbl);
 
-			s_globalData->g_quad.indexBuffer = gpu::IIndexBuffer::create(indices.data(), indices.size());
+			s_globalData->g_quadIndexBuffer = gpu::IIndexBuffer::create(indices.data(), indices.size());
 
-			s_globalData->g_quad.vertexArray = gpu::IVertexArray::create();
-			s_globalData->g_quad.vertexArray->addVertexBuffer(s_globalData->g_quad.vertexBuffer);
-			s_globalData->g_quad.vertexArray->setIndexBuffer(s_globalData->g_quad.indexBuffer);
+			s_globalData->g_quadVertexArray = gpu::IVertexArray::create();
+			s_globalData->g_quadVertexArray->addVertexBuffer(s_globalData->g_quadVertexBuffer);
+			s_globalData->g_quadVertexArray->setIndexBuffer(s_globalData->g_quadIndexBuffer);
+		}
+
+		{
+			std::vector<QuadVertex> vertices = {
+				{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+				{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+				{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
+				{{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+			};
+			std::vector<uint32> indices = {0, 1, 3, 1, 2, 3};
+
+			s_globalData->g_fullscreenQuadVertexBuffer = gpu::IVertexBuffer::create(vertices.data(), vertices.size() * sizeof(QuadVertex));
+			const auto vbl = gpu::VertexBufferLayout{{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
+			s_globalData->g_fullscreenQuadVertexBuffer->setLayout(vbl);
+
+			s_globalData->g_fullscreenQuadVertexArray = gpu::IVertexArray::create();
+			s_globalData->g_fullscreenQuadVertexArray->addVertexBuffer(s_globalData->g_fullscreenQuadVertexBuffer);
+			s_globalData->g_fullscreenQuadVertexArray->setIndexBuffer(s_globalData->g_quadIndexBuffer);
 		}
 	}
 
@@ -80,6 +104,11 @@ namespace toaster
 
 	RefPtr<gpu::IVertexArray> Globals::quadVertexArray()
 	{
-		return s_globalData->g_quad.vertexArray;
+		return s_globalData->g_quadVertexArray;
+	}
+
+	RefPtr<gpu::IVertexArray> Globals::fullscreenQuadVertexArray()
+	{
+		return s_globalData->g_fullscreenQuadVertexArray;
 	}
 }
