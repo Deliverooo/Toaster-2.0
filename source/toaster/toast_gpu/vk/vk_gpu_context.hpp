@@ -10,6 +10,7 @@
 #include <GLFW/glfw3native.h>
 
 #include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan_raii.hpp>
 #include "../gpu_context.hpp"
 
 #include "toast_lib/string.hpp"
@@ -17,37 +18,38 @@
 
 #include <unordered_set>
 
-#ifndef NDEBUG
-#define ENABLE_VALIDATION_LAYERS 1
+#ifdef NDEBUG
+constexpr bool c_enableValidationLayers{false};
 #else
-#define ENABLE_VALIDATION_LAYERS 0
+constexpr bool c_enableValidationLayers{true};
 #endif
-
-
-#define TST_VK_CHECK_RESULT(f) \
-{\
-	vk::Result res = (f);\
-	assert(res == vk::Result::eSuccess);\
-}
 
 namespace toaster::gpu
 {
-	// struct QueueFamilyIndices
-	// {
-	// 	int32 graphics = -1;
-	// 	int32 compute  = -1;
-	// 	int32 transfer = -1;
-	// 	int32 present  = -1;
-	// };
-
 	class VKGPUContext : public IGPUContext
 	{
 	public:
 		VKGPUContext(GLFWwindow *p_window);
 		~VKGPUContext() override;
 
-	private:
+		[[nodiscard]] vk::raii::Instance &getVulkanInstance();
 
-		vk::Instance m_vulkanInstance{nullptr};
+		const std::vector<vk::raii::PhysicalDevice> &getPhysicalDevices() const;
+
+	private:
+		void                 _createInstance();
+		void                 _createDebugMessenger();
+		std::vector<CString> _getRequiredInstanceExtensions();
+
+		static VKAPI_ATTR vk::Bool32 VKAPI_CALL _debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity,
+															   vk::DebugUtilsMessageTypeFlagsEXT             p_message_type,
+															   const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, void *p_user_data);
+
+		vk::raii::Context  m_context;
+		vk::raii::Instance m_vulkanInstance{nullptr};
+
+		vk::raii::DebugUtilsMessengerEXT m_debugUtilsMessenger{nullptr};
+
+		std::vector<vk::raii::PhysicalDevice> m_physicalDevices;
 	};
 }

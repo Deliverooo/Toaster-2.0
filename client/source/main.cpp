@@ -11,7 +11,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) // Maybe_todo,
 	toaster::ApplicationCreateInfo app_create_info{};
 	app_create_info.windowCreateInfo.width          = 1280u;
 	app_create_info.windowCreateInfo.height         = 720u;
-	app_create_info.windowCreateInfo.title          = "Toaster v3.1415 - vulkan";
+	app_create_info.windowCreateInfo.title          = "Toaster v3.1415 - Vulkan";
 	app_create_info.windowCreateInfo.iconPath       = "../resources/textures/OrboCloseup.png";
 	app_create_info.windowCreateInfo.startMaximized = false;
 
