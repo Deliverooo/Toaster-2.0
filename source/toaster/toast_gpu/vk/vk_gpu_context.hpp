@@ -35,7 +35,16 @@ namespace toaster::gpu
 		[[nodiscard]] vk::raii::Queue &         getGraphicsQueue();
 		[[nodiscard]] vk::raii::SurfaceKHR &    getSurface();
 
+		[[nodiscard]] vk::raii::CommandPool &  getCommandPool();
+		[[nodiscard]] vk::raii::CommandBuffer &getCommandBuffer(uint32 p_index);
+
+		[[nodiscard]] vk::raii::Pipeline &     getGraphicsPipeline();
+
 		void drawFrame();
+
+		void transitionImageLayout(vk::Image &p_image, uint32 p_frame_index,vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
+									vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask);
+
 
 	private:
 		void _createInstance();
@@ -43,12 +52,12 @@ namespace toaster::gpu
 		void _createSurface();
 		void _pickPhysicalDevice();
 		void _createLogicalDevice();
-		void _createSwapchain();
-		void _createImageViews();
+		// void _createSwapchain();
+		// void _createImageViews();
+		// void _createSyncObjects();
 		void _createGraphicsPipeline();
 		void _createCommandPool();
 		void _createCommandBuffer();
-		void _createSyncObjects();
 
 		void _recreateSwapchain();
 
@@ -81,36 +90,32 @@ namespace toaster::gpu
 		vk::raii::Queue    m_graphicsQueue{nullptr};
 		QueueFamilyIndices m_queueFamilyIndices{};
 
-		vk::SurfaceFormatKHR _chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const;
-		vk::PresentModeKHR   _chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes) const;
-		vk::Extent2D         _chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const;
-		uint32               _chooseSwapchainMinImageCount(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const;
-
-		vk::raii::SwapchainKHR           m_swapchain{nullptr};
-		std::vector<vk::Image>           m_swapchainImages;
-		std::vector<vk::raii::ImageView> m_swapchainImageViews;
-		vk::SurfaceFormatKHR             m_swapchainSurfaceFormat;
-		vk::Extent2D                     m_swapchainExtent;
+		// vk::SurfaceFormatKHR _chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const;
+		// vk::PresentModeKHR   _chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes) const;
+		// vk::Extent2D         _chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const;
+		// uint32               _chooseSwapchainMinImageCount(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const;
+		//
+		// vk::raii::SwapchainKHR           m_swapchain{nullptr};
+		// std::vector<vk::Image>           m_swapchainImages;
+		// std::vector<vk::raii::ImageView> m_swapchainImageViews;
+		// vk::SurfaceFormatKHR             m_swapchainSurfaceFormat;
+		// vk::Extent2D                     m_swapchainExtent;
 
 		vk::raii::ShaderModule _createShaderModule(const std::vector<uint8> &p_code);
 
 		vk::raii::Pipeline       m_graphicsPipeline{nullptr};
 		vk::raii::PipelineLayout m_pipelineLayout{nullptr};
 
-		vk::raii::CommandPool   m_commandPool{nullptr};
+		vk::raii::CommandPool                m_commandPool{nullptr};
 		std::vector<vk::raii::CommandBuffer> m_commandBuffers;
 
-		void _recordCommandBuffer(uint32 p_image_index);
+		// void _recordCommandBuffer(uint32 p_image_index);
+		//
 
-		void _transitionImageLayout(uint32           p_image_index, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
-									vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask);
-
-		std::vector<vk::raii::Semaphore> m_imageAvailableSemaphores;
-		std::vector<vk::raii::Semaphore> m_renderFinishedSemaphores;
-		std::vector<vk::raii::Fence>     m_inFlightFences;
-
-		uint32 m_frameIndex{0u};
-
-		bool m_framebufferResized{false};
+		// std::vector<vk::raii::Semaphore> m_imageAvailableSemaphores;
+		// std::vector<vk::raii::Semaphore> m_renderFinishedSemaphores;
+		// std::vector<vk::raii::Fence>     m_inFlightFences;
+		//
+		// uint32 m_frameIndex{0u};
 	};
 }

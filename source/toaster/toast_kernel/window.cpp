@@ -21,6 +21,8 @@
 #include "toast_lib/events/mouse_event.hpp"
 #include "toast_lib/events/window_event.hpp"
 
+#include "toast_gpu/vk/vk_swapchain.hpp"
+
 namespace toaster
 {
 	static bool s_glfwInitialized = false;
@@ -66,7 +68,7 @@ namespace toaster
 		m_window = glfwCreateWindow(static_cast<int32>(p_create_info.width), static_cast<int32>(p_create_info.height), p_create_info.title.c_str(), nullptr, nullptr);
 
 		m_gpuContext = gpu::IGPUContext::create(m_window);
-		// m_swapchain  = new gpu::VKSwapChain(m_gpuContext, m_window);
+		m_swapchain  = new gpu::VKSwapchain((gpu::VKGPUContext*)m_gpuContext, m_window);
 
 		BOOL useDarkMode = TRUE;
 		DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
@@ -218,6 +220,7 @@ namespace toaster
 
 	Window::~Window()
 	{
+		delete m_swapchain;
 		delete m_gpuContext;
 
 		glfwDestroyWindow(m_window);
@@ -225,6 +228,7 @@ namespace toaster
 
 	void Window::beginFrame()
 	{
+		m_swapchain->beginFrame();
 	}
 
 	void Window::processEvents()
@@ -234,7 +238,7 @@ namespace toaster
 
 	void Window::endFrame()
 	{
-		// glfwSwapBuffers(m_window);
+		m_swapchain->endFrame();
 	}
 
 	void Window::showWindow()
@@ -314,5 +318,10 @@ namespace toaster
 	GLFWwindow *Window::getNativeWindow() const
 	{
 		return m_window;
+	}
+
+	gpu::VKSwapchain *Window::getSwapchain() const
+	{
+		return m_swapchain;
 	}
 }

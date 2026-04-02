@@ -16,12 +16,12 @@ namespace toaster::gpu
 			_createSurface();
 			_pickPhysicalDevice();
 			_createLogicalDevice();
-			_createSwapchain();
-			_createImageViews();
+			// _createSwapchain();
+			// _createImageViews();
+			// _createSyncObjects();
 			_createGraphicsPipeline();
 			_createCommandPool();
 			_createCommandBuffer();
-			_createSyncObjects();
 		}
 		catch (const vk::SystemError &err)
 		{
@@ -58,62 +58,24 @@ namespace toaster::gpu
 		return m_surface;
 	}
 
+	vk::raii::CommandPool &VKGPUContext::getCommandPool()
+	{
+		return m_commandPool;
+	}
+
+	vk::raii::CommandBuffer &VKGPUContext::getCommandBuffer(uint32 p_index)
+	{
+		return m_commandBuffers[p_index];
+	}
+
+	vk::raii::Pipeline &VKGPUContext::getGraphicsPipeline()
+	{
+		return m_graphicsPipeline;
+	}
+
 	void VKGPUContext::drawFrame()
 	{
-		auto fence_result = m_device.waitForFences(*m_inFlightFences[m_frameIndex], true, UINT64_MAX);
-		if (fence_result != vk::Result::eSuccess)
-		{
-			LOG_ERROR("Failed to wait for Fence");
-			TST_ASSERT(false);
-		}
-		m_device.resetFences(*m_inFlightFences[m_frameIndex]);
-
-		auto [res, image_index] = m_swapchain.acquireNextImage(UINT64_MAX, *m_imageAvailableSemaphores[m_frameIndex], nullptr);
-
-		if (res == vk::Result::eErrorOutOfDateKHR)
-		{
-			_recreateSwapchain();
-			return;
-		}
-
-		if (res != vk::Result::eSuccess && res != vk::Result::eSuboptimalKHR)
-		{
-			LOG_ERROR("Failed to acquire swapchain image");
-			TST_ASSERT(false);
-		}
-
-		m_commandBuffers[m_frameIndex].reset();
-		_recordCommandBuffer(image_index);
-
-		vk::PipelineStageFlags wait_dst_stage_mask{vk::PipelineStageFlagBits::eColorAttachmentOutput};
-		vk::SubmitInfo         submit_info{};
-		submit_info.commandBufferCount   = 1;
-		submit_info.pCommandBuffers      = &*m_commandBuffers[m_frameIndex];
-		submit_info.pWaitDstStageMask    = &wait_dst_stage_mask;
-		submit_info.pWaitSemaphores      = &*m_imageAvailableSemaphores[m_frameIndex];
-		submit_info.waitSemaphoreCount   = 1;
-		submit_info.pSignalSemaphores    = &*m_renderFinishedSemaphores[image_index];
-		submit_info.signalSemaphoreCount = 1;
-
-		m_graphicsQueue.submit(submit_info, m_inFlightFences[m_frameIndex]);
-
-		vk::PresentInfoKHR present_info{};
-		present_info.waitSemaphoreCount = 1;
-		present_info.pWaitSemaphores    = &*m_renderFinishedSemaphores[image_index];
-		present_info.swapchainCount     = 1;
-		present_info.pSwapchains        = &*m_swapchain;
-		present_info.pImageIndices      = &image_index;
-
-		res = m_graphicsQueue.presentKHR(present_info);
-		if ((res == vk::Result::eSuboptimalKHR) || (res == vk::Result::eErrorOutOfDateKHR) )
-		{
-			// m_framebufferResized = false;
-			_recreateSwapchain();
-		}
-		else
-			TST_ASSERT(res == vk::Result::eSuccess);
-
-		m_frameIndex = (m_frameIndex + 1) % c_maxFramesInFlight;
+		// _recordCommandBuffer(image_index);
 	}
 
 	void VKGPUContext::_createInstance()
@@ -272,6 +234,8 @@ namespace toaster::gpu
 		m_graphicsQueue = {m_device, m_queueFamilyIndices.graphics, 0};
 	}
 
+	#if 0
+
 	void VKGPUContext::_createSwapchain()
 	{
 		vk::SurfaceCapabilitiesKHR surface_caps = m_currentPhysicalDevice.getSurfaceCapabilitiesKHR(m_surface);
@@ -300,9 +264,7 @@ namespace toaster::gpu
 
 		m_swapchain       = {m_device, swapchain_create_info};
 		m_swapchainImages = m_swapchain.getImages();
-	}
-
-	void VKGPUContext::_createImageViews()
+	} void VKGPUContext::_createImageViews()
 	{
 		vk::ImageViewCreateInfo image_view_create_info{};
 		image_view_create_info.viewType         = vk::ImageViewType::e2D;
@@ -319,8 +281,22 @@ namespace toaster::gpu
 			image_view_create_info.image = image;
 			m_swapchainImageViews.emplace_back(m_device, image_view_create_info);
 		}
+	} void VKGPUContext::_createSyncObjects()
+	{
+		for (uint32 i{0u}; i < m_swapchainImageViews.size(); ++i)
+			m_renderFinishedSemaphores.emplace_back(m_device, vk::SemaphoreCreateInfo{});
+
+		for (uint32 i{0u}; i < c_maxFramesInFlight; ++i)
+		{
+			m_imageAvailableSemaphores.emplace_back(m_device, vk::SemaphoreCreateInfo{});
+
+			vk::FenceCreateInfo fence_create_info{};
+			fence_create_info.flags = vk::FenceCreateFlagBits::eSignaled;
+			m_inFlightFences.emplace_back(m_device, fence_create_info);
+		}
 	}
 
+	#endif
 	void VKGPUContext::_createGraphicsPipeline()
 	{
 		vk::raii::ShaderModule vertex_shader_module = _createShaderModule(io::filesystem::readBinary("shaders/test.vert.glsl.spv"));
@@ -376,9 +352,11 @@ namespace toaster::gpu
 		multisample_state_create_info.rasterizationSamples = vk::SampleCountFlagBits::e1;
 		multisample_state_create_info.sampleShadingEnable  = false;
 
+		vk::Format                      attachment_format = vk::Format::eR8G8B8A8Srgb;
 		vk::PipelineRenderingCreateInfo rendering_create_info{};
-		rendering_create_info.colorAttachmentCount    = 1;
-		rendering_create_info.pColorAttachmentFormats = &m_swapchainSurfaceFormat.format;
+		rendering_create_info.colorAttachmentCount = 1;
+		// rendering_create_info.pColorAttachmentFormats = &m_swapchainSurfaceFormat.format;
+		rendering_create_info.pColorAttachmentFormats = &attachment_format;
 
 		vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
 		pipeline_layout_create_info.setLayoutCount         = 0;
@@ -421,30 +399,15 @@ namespace toaster::gpu
 		m_commandBuffers = vk::raii::CommandBuffers{m_device, command_buffer_allocate_info};
 	}
 
-	void VKGPUContext::_createSyncObjects()
-	{
-		for (uint32 i{0u}; i < m_swapchainImageViews.size(); ++i)
-			m_renderFinishedSemaphores.emplace_back(m_device, vk::SemaphoreCreateInfo{});
-
-		for (uint32 i{0u}; i < c_maxFramesInFlight; ++i)
-		{
-			m_imageAvailableSemaphores.emplace_back(m_device, vk::SemaphoreCreateInfo{});
-
-			vk::FenceCreateInfo fence_create_info{};
-			fence_create_info.flags = vk::FenceCreateFlagBits::eSignaled;
-			m_inFlightFences.emplace_back(m_device, fence_create_info);
-		}
-	}
-
 	void VKGPUContext::_recreateSwapchain()
 	{
 		m_device.waitIdle();
-
-		m_swapchainImageViews.clear();
-		m_swapchain = nullptr;
-
-		_createSwapchain();
-		_createImageViews();
+		//
+		// m_swapchainImageViews.clear();
+		// m_swapchain = nullptr;
+		//
+		// _createSwapchain();
+		// _createImageViews();
 	}
 
 	bool VKGPUContext::_isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const
@@ -523,52 +486,6 @@ namespace toaster::gpu
 		return vk::False;
 	}
 
-	vk::SurfaceFormatKHR VKGPUContext::_chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const
-	{
-		TST_ASSERT(!p_available_formats.empty());
-		const auto format_it = std::ranges::find_if(p_available_formats, [](const auto &format)
-		{
-			return format.format == vk::Format::eR8G8B8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
-		});
-		return format_it == p_available_formats.end() ? p_available_formats[0] : *format_it;
-	}
-
-	vk::PresentModeKHR VKGPUContext::_chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes) const
-	{
-		TST_ASSERT(!p_available_present_modes.empty());
-		return std::ranges::any_of(p_available_present_modes, [](const auto &present_mode)
-		{
-			return present_mode == vk::PresentModeKHR::eMailbox;
-		})
-				   ? vk::PresentModeKHR::eMailbox
-				   : vk::PresentModeKHR::eFifo;
-	}
-
-	vk::Extent2D VKGPUContext::_chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const
-	{
-		if (p_surface_capabilities.currentExtent.width != UINT32_MAX)
-			return p_surface_capabilities.currentExtent;
-
-		int32 width;
-		int32 height;
-		glfwGetFramebufferSize(m_window, &width, &height);
-
-		return {
-			std::clamp<uint32>(width, p_surface_capabilities.minImageExtent.width, p_surface_capabilities.maxImageExtent.width),
-			std::clamp<uint32>(height, p_surface_capabilities.minImageExtent.height, p_surface_capabilities.maxImageExtent.height)
-		};
-	}
-
-	uint32 VKGPUContext::_chooseSwapchainMinImageCount(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const
-	{
-		uint32 min_image_count = std::max(3u, p_surface_capabilities.minImageCount);
-		if ((p_surface_capabilities.maxImageCount > 0) && (p_surface_capabilities.maxImageCount < min_image_count))
-		{
-			min_image_count = p_surface_capabilities.maxImageCount;
-		}
-		return min_image_count;
-	}
-
 	vk::raii::ShaderModule VKGPUContext::_createShaderModule(const std::vector<uint8> &p_code)
 	{
 		vk::ShaderModuleCreateInfo shader_module_create_info{};
@@ -578,57 +495,9 @@ namespace toaster::gpu
 		return {m_device, shader_module_create_info};
 	}
 
-	void VKGPUContext::_recordCommandBuffer(uint32 p_image_index)
-	{
-		vk::CommandBufferBeginInfo begin_info{};
-
-		m_commandBuffers[m_frameIndex].begin(begin_info);
-
-		_transitionImageLayout(p_image_index, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone,
-							   vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-							   vk::PipelineStageFlagBits2::eColorAttachmentOutput);
-
-		vk::ClearValue              clear_value = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f};
-		vk::RenderingAttachmentInfo rendering_attachment_info{};
-		rendering_attachment_info.clearValue  = clear_value;
-		rendering_attachment_info.imageView   = m_swapchainImageViews[p_image_index];
-		rendering_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		rendering_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
-		rendering_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
-
-		vk::RenderingInfo rendering_info{};
-		rendering_info.renderArea           = vk::Rect2D{{0, 0}, m_swapchainExtent};
-		rendering_info.layerCount           = 1;
-		rendering_info.colorAttachmentCount = 1;
-		rendering_info.pColorAttachments    = &rendering_attachment_info;
-
-		vk::Viewport viewport{};
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		viewport.x        = 0.0f;
-		viewport.y        = 0.0f;
-		viewport.width    = m_swapchainExtent.width;
-		viewport.height   = m_swapchainExtent.height;
-
-		vk::Rect2D scissor{};
-		scissor.offset = vk::Offset2D{0, 0};
-		scissor.extent = m_swapchainExtent;
-
-		m_commandBuffers[m_frameIndex].beginRendering(rendering_info);
-		m_commandBuffers[m_frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *m_graphicsPipeline);
-		m_commandBuffers[m_frameIndex].setViewport(0, viewport);
-		m_commandBuffers[m_frameIndex].setScissor(0, scissor);
-		m_commandBuffers[m_frameIndex].draw(3, 1, 0, 0);
-		m_commandBuffers[m_frameIndex].endRendering();
-
-		_transitionImageLayout(p_image_index, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR, vk::AccessFlagBits2::eColorAttachmentWrite,
-							   vk::AccessFlagBits2::eNone, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eBottomOfPipe);
-
-		m_commandBuffers[m_frameIndex].end();
-	}
-
-	void VKGPUContext::_transitionImageLayout(uint32 p_image_index, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
-											  vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask)
+	void VKGPUContext::transitionImageLayout(vk::Image &             p_image, uint32 p_frame_index, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
+											 vk::AccessFlags2        p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
+											 vk::PipelineStageFlags2 p_dst_stage_mask)
 	{
 		vk::ImageMemoryBarrier2 image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;
@@ -639,13 +508,13 @@ namespace toaster::gpu
 		image_memory_barrier.dstStageMask        = p_dst_stage_mask;
 		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
-		image_memory_barrier.image               = m_swapchainImages[p_image_index];
+		image_memory_barrier.image               = p_image;
 		image_memory_barrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
 
 		vk::DependencyInfo dependency_info{};
 		dependency_info.imageMemoryBarrierCount = 1;
 		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
 
-		m_commandBuffers[m_frameIndex].pipelineBarrier2(dependency_info);
+		m_commandBuffers[p_frame_index].pipelineBarrier2(dependency_info);
 	}
 }

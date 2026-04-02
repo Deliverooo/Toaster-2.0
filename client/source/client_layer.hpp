@@ -11,6 +11,8 @@
 #include "toaster/toast_lib/events/mouse_event.hpp"
 #include "toaster/toast_lib/events/window_event.hpp"
 
+#include "toast_gpu/vk/vk_gpu_context.hpp"
+
 namespace toaster
 {
 	class ClientLayer : public IAppLayer
@@ -25,5 +27,8 @@ namespace toaster
 
 	private:
 		bool onKeyPressEvent(KeyPressEvent &e);
-	};
+
+		void _recordCommandBuffer(uint32 p_image_index);
+
+			};
 }
