@@ -62,6 +62,9 @@ if (${WITH_VULKAN_BACKEND})
 	list(APPEND GPU_SRC
 			vk/vk_gpu_context.hpp
 			vk/vk_gpu_context.cpp
+
+			vk/vk_swapchain.cpp
+			vk/vk_swapchain.hpp
 	)
 endif ()
 
@@ -111,3 +114,5 @@ if (${WITH_VULKAN_BACKEND})
 endif ()
 
 add_library(tst::toast_gpu ALIAS toast_gpu)
+
+add_dependencies(toast_gpu tst::toast_shaders)

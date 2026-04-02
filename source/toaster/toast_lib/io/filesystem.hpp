@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../system_types.h"
+
 #include <filesystem>
 #include "../string.hpp"
 
@@ -14,7 +16,9 @@ namespace toaster::io::filesystem
 
 	bool exists(const Path &p_path);
 
-	String readFile(const Path &p_path);
+	std::vector<uint8> readBinary(const Path &p_path);
+	String             readFile(const Path &p_path);
+
 	String readFileAndSkipBOM(const Path &p_path);
 	void   writeFile(const Path &p_path, const String &p_data);
 }

@@ -3,6 +3,8 @@
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
 
+#include "toast_lib/io/filesystem.hpp"
+
 namespace toaster::gpu
 {
 	VKGPUContext::VKGPUContext(GLFWwindow *p_window) : m_window(p_window)
@@ -14,6 +16,12 @@ namespace toaster::gpu
 			_createSurface();
 			_pickPhysicalDevice();
 			_createLogicalDevice();
+			_createSwapchain();
+			_createImageViews();
+			_createGraphicsPipeline();
+			_createCommandPool();
+			_createCommandBuffer();
+			_createSyncObjects();
 		}
 		catch (const vk::SystemError &err)
 		{
@@ -35,6 +43,79 @@ namespace toaster::gpu
 		return m_currentPhysicalDevice;
 	}
 
+	vk::raii::Device &VKGPUContext::getDevice()
+	{
+		return m_device;
+	}
+
+	vk::raii::Queue &VKGPUContext::getGraphicsQueue()
+	{
+		return m_graphicsQueue;
+	}
+
+	vk::raii::SurfaceKHR &VKGPUContext::getSurface()
+	{
+		return m_surface;
+	}
+
+	void VKGPUContext::drawFrame()
+	{
+		auto fence_result = m_device.waitForFences(*m_inFlightFences[m_frameIndex], true, UINT64_MAX);
+		if (fence_result != vk::Result::eSuccess)
+		{
+			LOG_ERROR("Failed to wait for Fence");
+			TST_ASSERT(false);
+		}
+		m_device.resetFences(*m_inFlightFences[m_frameIndex]);
+
+		auto [res, image_index] = m_swapchain.acquireNextImage(UINT64_MAX, *m_imageAvailableSemaphores[m_frameIndex], nullptr);
+
+		if (res == vk::Result::eErrorOutOfDateKHR)
+		{
+			_recreateSwapchain();
+			return;
+		}
+
+		if (res != vk::Result::eSuccess && res != vk::Result::eSuboptimalKHR)
+		{
+			LOG_ERROR("Failed to acquire swapchain image");
+			TST_ASSERT(false);
+		}
+
+		m_commandBuffers[m_frameIndex].reset();
+		_recordCommandBuffer(image_index);
+
+		vk::PipelineStageFlags wait_dst_stage_mask{vk::PipelineStageFlagBits::eColorAttachmentOutput};
+		vk::SubmitInfo         submit_info{};
+		submit_info.commandBufferCount   = 1;
+		submit_info.pCommandBuffers      = &*m_commandBuffers[m_frameIndex];
+		submit_info.pWaitDstStageMask    = &wait_dst_stage_mask;
+		submit_info.pWaitSemaphores      = &*m_imageAvailableSemaphores[m_frameIndex];
+		submit_info.waitSemaphoreCount   = 1;
+		submit_info.pSignalSemaphores    = &*m_renderFinishedSemaphores[image_index];
+		submit_info.signalSemaphoreCount = 1;
+
+		m_graphicsQueue.submit(submit_info, m_inFlightFences[m_frameIndex]);
+
+		vk::PresentInfoKHR present_info{};
+		present_info.waitSemaphoreCount = 1;
+		present_info.pWaitSemaphores    = &*m_renderFinishedSemaphores[image_index];
+		present_info.swapchainCount     = 1;
+		present_info.pSwapchains        = &*m_swapchain;
+		present_info.pImageIndices      = &image_index;
+
+		res = m_graphicsQueue.presentKHR(present_info);
+		if ((res == vk::Result::eSuboptimalKHR) || (res == vk::Result::eErrorOutOfDateKHR) )
+		{
+			// m_framebufferResized = false;
+			_recreateSwapchain();
+		}
+		else
+			TST_ASSERT(res == vk::Result::eSuccess);
+
+		m_frameIndex = (m_frameIndex + 1) % c_maxFramesInFlight;
+	}
+
 	void VKGPUContext::_createInstance()
 	{
 		vk::ApplicationInfo app_info{};
@@ -49,7 +130,7 @@ namespace toaster::gpu
 		auto extension_props     = m_context.enumerateInstanceExtensionProperties();
 
 		// Make sure that all the glfw extensions are present in the extension_props vector
-		auto unsupported_extension = std::ranges::find_if(required_extensions, [extension_props](const auto &extension)
+		const auto unsupported_extension = std::ranges::find_if(required_extensions, [extension_props](const auto &extension)
 		{
 			// returns true if none of the extensions are present (the strcmp would always evaluate to false)
 			return std::ranges::none_of(extension_props, [ext = extension](const auto &prop)
@@ -75,7 +156,7 @@ namespace toaster::gpu
 		auto layer_props = m_context.enumerateInstanceLayerProperties();
 
 		// Finds any layer in required_validation_layers, such that it is also not present in the actual layer_props vector
-		auto unsupported_layer_it = std::ranges::find_if(required_validation_layers, [layer_props](const auto &layer)
+		const auto unsupported_layer_it = std::ranges::find_if(required_validation_layers, [layer_props](const auto &layer)
 		{
 			return std::ranges::none_of(layer_props, [layer](const auto &prop)
 			{
@@ -102,10 +183,12 @@ namespace toaster::gpu
 
 	void VKGPUContext::_createDebugMessenger()
 	{
-		vk::DebugUtilsMessageSeverityFlagsEXT severity_flags{
+		constexpr vk::DebugUtilsMessageSeverityFlagsEXT severity_flags{
 			vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo
 		};
-		vk::DebugUtilsMessageTypeFlagsEXT    message_type_flags{vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance};
+		constexpr vk::DebugUtilsMessageTypeFlagsEXT message_type_flags{
+			vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
+		};
 		vk::DebugUtilsMessengerCreateInfoEXT debug_messenger_create_info{};
 		debug_messenger_create_info.messageSeverity = severity_flags;
 		debug_messenger_create_info.messageType     = message_type_flags;
@@ -152,16 +235,15 @@ namespace toaster::gpu
 	{
 		auto queue_family_props = m_currentPhysicalDevice.getQueueFamilyProperties();
 
-		uint32 present_graphics_index{UINT32_MAX};
 		for (uint32 i{0u}; i < queue_family_props.size(); ++i)
 		{
 			if (queue_family_props[i].queueFlags & vk::QueueFlagBits::eGraphics && m_currentPhysicalDevice.getSurfaceSupportKHR(i, m_surface))
 			{
-				present_graphics_index = i;
+				m_queueFamilyIndices.graphics = i;
 				break;
 			}
 		}
-		if (present_graphics_index == UINT32_MAX)
+		if (m_queueFamilyIndices.graphics == UINT32_MAX)
 		{
 			LOG_ERROR("Failed to find a queue family that supports present");
 			TST_ASSERT(false);
@@ -174,7 +256,7 @@ namespace toaster::gpu
 		std::array<vk::DeviceQueueCreateInfo, 1> queue_create_infos{};
 		// Create the graphics and present queue
 		// The graphics queue should be the same as the present one
-		queue_create_infos[0].queueFamilyIndex = present_graphics_index;
+		queue_create_infos[0].queueFamilyIndex = m_queueFamilyIndices.graphics;
 		queue_create_infos[0].queueCount       = 1;
 		constexpr float32 queue_priority       = 1.0f;
 		queue_create_infos[0].pQueuePriorities = &queue_priority;
@@ -187,14 +269,185 @@ namespace toaster::gpu
 		device_create_info.pNext                   = &feature_chain.get<vk::PhysicalDeviceFeatures2>();
 
 		m_device        = {m_currentPhysicalDevice, device_create_info};
-		m_graphicsQueue = {m_device, present_graphics_index, 0};
+		m_graphicsQueue = {m_device, m_queueFamilyIndices.graphics, 0};
 	}
 
 	void VKGPUContext::_createSwapchain()
 	{
+		vk::SurfaceCapabilitiesKHR surface_caps = m_currentPhysicalDevice.getSurfaceCapabilitiesKHR(m_surface);
+
+		auto available_surface_formats = m_currentPhysicalDevice.getSurfaceFormatsKHR(m_surface);
+		auto available_present_modes   = m_currentPhysicalDevice.getSurfacePresentModesKHR(m_surface);
+
+		m_swapchainSurfaceFormat = _chooseSwapchainSurfaceFormat(available_surface_formats);
+		m_swapchainExtent        = _chooseSwapchainExtent(surface_caps);
+
+		uint32 min_image_count = _chooseSwapchainMinImageCount(surface_caps);
+
+		vk::SwapchainCreateInfoKHR swapchain_create_info{};
+		swapchain_create_info.surface          = m_surface;
+		swapchain_create_info.minImageCount    = min_image_count;
+		swapchain_create_info.imageFormat      = m_swapchainSurfaceFormat.format;
+		swapchain_create_info.imageColorSpace  = m_swapchainSurfaceFormat.colorSpace;
+		swapchain_create_info.imageExtent      = m_swapchainExtent;
+		swapchain_create_info.imageArrayLayers = 1;
+		swapchain_create_info.imageUsage       = vk::ImageUsageFlagBits::eColorAttachment;
+		swapchain_create_info.imageSharingMode = vk::SharingMode::eExclusive;
+		swapchain_create_info.preTransform     = surface_caps.currentTransform;
+		swapchain_create_info.compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque;
+		swapchain_create_info.presentMode      = _chooseSwapchainPresentMode(available_present_modes);
+		swapchain_create_info.clipped          = true;
+
+		m_swapchain       = {m_device, swapchain_create_info};
+		m_swapchainImages = m_swapchain.getImages();
 	}
 
-	bool VKGPUContext::_isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device)
+	void VKGPUContext::_createImageViews()
+	{
+		vk::ImageViewCreateInfo image_view_create_info{};
+		image_view_create_info.viewType         = vk::ImageViewType::e2D;
+		image_view_create_info.format           = m_swapchainSurfaceFormat.format;
+		image_view_create_info.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+		image_view_create_info.components       = {
+			vk::ComponentSwizzle::eIdentity,
+			vk::ComponentSwizzle::eIdentity,
+			vk::ComponentSwizzle::eIdentity,
+			vk::ComponentSwizzle::eIdentity
+		};
+		for (auto &image: m_swapchainImages)
+		{
+			image_view_create_info.image = image;
+			m_swapchainImageViews.emplace_back(m_device, image_view_create_info);
+		}
+	}
+
+	void VKGPUContext::_createGraphicsPipeline()
+	{
+		vk::raii::ShaderModule vertex_shader_module = _createShaderModule(io::filesystem::readBinary("shaders/test.vert.glsl.spv"));
+		vk::raii::ShaderModule pixel_shader_module  = _createShaderModule(io::filesystem::readBinary("shaders/test.pixel.glsl.spv"));
+
+		vk::PipelineShaderStageCreateInfo vertex_shader_stage_create_info{};
+		vertex_shader_stage_create_info.stage  = vk::ShaderStageFlagBits::eVertex;
+		vertex_shader_stage_create_info.module = vertex_shader_module;
+		vertex_shader_stage_create_info.pName  = "main";
+
+		vk::PipelineShaderStageCreateInfo pixel_shader_stage_create_info{};
+		pixel_shader_stage_create_info.stage  = vk::ShaderStageFlagBits::eFragment;
+		pixel_shader_stage_create_info.module = pixel_shader_module;
+		pixel_shader_stage_create_info.pName  = "main";
+
+		vk::PipelineShaderStageCreateInfo shader_stage_create_infos[] = {vertex_shader_stage_create_info, pixel_shader_stage_create_info};
+
+		vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
+
+		vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info{};
+		input_assembly_state_create_info.topology = vk::PrimitiveTopology::eTriangleList;
+
+		vk::PipelineViewportStateCreateInfo viewport_state_create_info{};
+		viewport_state_create_info.viewportCount = 1;
+		viewport_state_create_info.scissorCount  = 1;
+
+		vk::PipelineRasterizationStateCreateInfo rasterization_state_create_info{};
+		rasterization_state_create_info.depthClampEnable        = false;
+		rasterization_state_create_info.rasterizerDiscardEnable = false;
+		rasterization_state_create_info.polygonMode             = vk::PolygonMode::eFill;
+		rasterization_state_create_info.cullMode                = vk::CullModeFlagBits::eBack;
+		rasterization_state_create_info.frontFace               = vk::FrontFace::eClockwise;
+		rasterization_state_create_info.depthBiasEnable         = false;
+		rasterization_state_create_info.lineWidth               = 1.0f;
+
+		vk::PipelineColorBlendAttachmentState colour_blend_attachment_state{};
+		colour_blend_attachment_state.blendEnable    = false;
+		colour_blend_attachment_state.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+													   vk::ColorComponentFlagBits::eA;
+
+		vk::PipelineColorBlendStateCreateInfo colour_blend_state_create_info{};
+		colour_blend_state_create_info.logicOpEnable   = false;
+		colour_blend_state_create_info.logicOp         = vk::LogicOp::eCopy;
+		colour_blend_state_create_info.attachmentCount = 1;
+		colour_blend_state_create_info.pAttachments    = &colour_blend_attachment_state;
+
+		std::array                         dynamic_states{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+		vk::PipelineDynamicStateCreateInfo dynamic_state_create_info{};
+		dynamic_state_create_info.pDynamicStates    = dynamic_states.data();
+		dynamic_state_create_info.dynamicStateCount = dynamic_states.size();
+
+		vk::PipelineMultisampleStateCreateInfo multisample_state_create_info{};
+		multisample_state_create_info.rasterizationSamples = vk::SampleCountFlagBits::e1;
+		multisample_state_create_info.sampleShadingEnable  = false;
+
+		vk::PipelineRenderingCreateInfo rendering_create_info{};
+		rendering_create_info.colorAttachmentCount    = 1;
+		rendering_create_info.pColorAttachmentFormats = &m_swapchainSurfaceFormat.format;
+
+		vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
+		pipeline_layout_create_info.setLayoutCount         = 0;
+		pipeline_layout_create_info.pushConstantRangeCount = 0;
+		m_pipelineLayout                                   = {m_device, pipeline_layout_create_info};
+
+		vk::GraphicsPipelineCreateInfo graphics_pipeline_create_info{};
+		graphics_pipeline_create_info.stageCount          = 2;
+		graphics_pipeline_create_info.pStages             = shader_stage_create_infos;
+		graphics_pipeline_create_info.pVertexInputState   = &vertex_input_state_create_info;
+		graphics_pipeline_create_info.pInputAssemblyState = &input_assembly_state_create_info;
+		graphics_pipeline_create_info.pRasterizationState = &rasterization_state_create_info;
+		graphics_pipeline_create_info.pViewportState      = &viewport_state_create_info;
+		graphics_pipeline_create_info.pMultisampleState   = &multisample_state_create_info;
+		graphics_pipeline_create_info.pColorBlendState    = &colour_blend_state_create_info;
+		graphics_pipeline_create_info.pDynamicState       = &dynamic_state_create_info;
+		graphics_pipeline_create_info.layout              = m_pipelineLayout;
+		graphics_pipeline_create_info.renderPass          = nullptr;
+		graphics_pipeline_create_info.pNext               = &rendering_create_info;
+
+		m_graphicsPipeline = {m_device, nullptr, graphics_pipeline_create_info};
+	}
+
+	void VKGPUContext::_createCommandPool()
+	{
+		vk::CommandPoolCreateInfo command_pool_create_info{};
+		command_pool_create_info.queueFamilyIndex = m_queueFamilyIndices.graphics;
+		command_pool_create_info.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+
+		m_commandPool = {m_device, command_pool_create_info};
+	}
+
+	void VKGPUContext::_createCommandBuffer()
+	{
+		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
+		command_buffer_allocate_info.commandPool        = m_commandPool;
+		command_buffer_allocate_info.commandBufferCount = c_maxFramesInFlight;
+		command_buffer_allocate_info.level              = vk::CommandBufferLevel::ePrimary;
+
+		m_commandBuffers = vk::raii::CommandBuffers{m_device, command_buffer_allocate_info};
+	}
+
+	void VKGPUContext::_createSyncObjects()
+	{
+		for (uint32 i{0u}; i < m_swapchainImageViews.size(); ++i)
+			m_renderFinishedSemaphores.emplace_back(m_device, vk::SemaphoreCreateInfo{});
+
+		for (uint32 i{0u}; i < c_maxFramesInFlight; ++i)
+		{
+			m_imageAvailableSemaphores.emplace_back(m_device, vk::SemaphoreCreateInfo{});
+
+			vk::FenceCreateInfo fence_create_info{};
+			fence_create_info.flags = vk::FenceCreateFlagBits::eSignaled;
+			m_inFlightFences.emplace_back(m_device, fence_create_info);
+		}
+	}
+
+	void VKGPUContext::_recreateSwapchain()
+	{
+		m_device.waitIdle();
+
+		m_swapchainImageViews.clear();
+		m_swapchain = nullptr;
+
+		_createSwapchain();
+		_createImageViews();
+	}
+
+	bool VKGPUContext::_isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const
 	{
 		auto props              = p_physical_device.getProperties();
 		bool vulkan_1_3_support = props.apiVersion >= vk::ApiVersion13;
@@ -205,7 +458,7 @@ namespace toaster::gpu
 			return static_cast<bool>(queue_family.queueFlags & vk::QueueFlagBits::eGraphics);
 		});
 
-		std::vector<CString> required_device_extensions{vk::KHRSwapchainExtensionName};
+		std::vector required_device_extensions{vk::KHRSwapchainExtensionName};
 
 		auto available_device_extensions             = p_physical_device.enumerateDeviceExtensionProperties();
 		bool supports_all_required_device_extensions = std::ranges::all_of(required_device_extensions, [available_device_extensions](const auto &required_ext)
@@ -225,12 +478,12 @@ namespace toaster::gpu
 		return vulkan_1_3_support && supports_graphics && supports_all_required_device_extensions && supports_required_features;
 	}
 
-	std::vector<CString> VKGPUContext::_getRequiredInstanceExtensions()
+	std::vector<CString> VKGPUContext::_getRequiredInstanceExtensions() const
 	{
 		// Gets all the possible platform-specific extension names that glfw needs to create a window.
 		// For windows, one of them will be VK_KHR_win32_surface extension
-		uint32 glfw_extension_count{0u};
-		auto   glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
+		uint32     glfw_extension_count{0u};
+		const auto glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
 		// Inserts the
 		std::vector<CString> required_extensions{glfw_extension_count};
@@ -270,7 +523,7 @@ namespace toaster::gpu
 		return vk::False;
 	}
 
-	vk::SurfaceFormatKHR VKGPUContext::_chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats)
+	vk::SurfaceFormatKHR VKGPUContext::_chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const
 	{
 		TST_ASSERT(!p_available_formats.empty());
 		const auto format_it = std::ranges::find_if(p_available_formats, [](const auto &format)
@@ -280,7 +533,7 @@ namespace toaster::gpu
 		return format_it == p_available_formats.end() ? p_available_formats[0] : *format_it;
 	}
 
-	vk::PresentModeKHR VKGPUContext::_chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes)
+	vk::PresentModeKHR VKGPUContext::_chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes) const
 	{
 		TST_ASSERT(!p_available_present_modes.empty());
 		return std::ranges::any_of(p_available_present_modes, [](const auto &present_mode)
@@ -291,7 +544,7 @@ namespace toaster::gpu
 				   : vk::PresentModeKHR::eFifo;
 	}
 
-	vk::Extent2D VKGPUContext::_chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities)
+	vk::Extent2D VKGPUContext::_chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const
 	{
 		if (p_surface_capabilities.currentExtent.width != UINT32_MAX)
 			return p_surface_capabilities.currentExtent;
@@ -304,5 +557,95 @@ namespace toaster::gpu
 			std::clamp<uint32>(width, p_surface_capabilities.minImageExtent.width, p_surface_capabilities.maxImageExtent.width),
 			std::clamp<uint32>(height, p_surface_capabilities.minImageExtent.height, p_surface_capabilities.maxImageExtent.height)
 		};
+	}
+
+	uint32 VKGPUContext::_chooseSwapchainMinImageCount(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const
+	{
+		uint32 min_image_count = std::max(3u, p_surface_capabilities.minImageCount);
+		if ((p_surface_capabilities.maxImageCount > 0) && (p_surface_capabilities.maxImageCount < min_image_count))
+		{
+			min_image_count = p_surface_capabilities.maxImageCount;
+		}
+		return min_image_count;
+	}
+
+	vk::raii::ShaderModule VKGPUContext::_createShaderModule(const std::vector<uint8> &p_code)
+	{
+		vk::ShaderModuleCreateInfo shader_module_create_info{};
+		shader_module_create_info.codeSize = p_code.size();
+		shader_module_create_info.pCode    = reinterpret_cast<const uint32 *>(p_code.data());
+
+		return {m_device, shader_module_create_info};
+	}
+
+	void VKGPUContext::_recordCommandBuffer(uint32 p_image_index)
+	{
+		vk::CommandBufferBeginInfo begin_info{};
+
+		m_commandBuffers[m_frameIndex].begin(begin_info);
+
+		_transitionImageLayout(p_image_index, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone,
+							   vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+							   vk::PipelineStageFlagBits2::eColorAttachmentOutput);
+
+		vk::ClearValue              clear_value = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f};
+		vk::RenderingAttachmentInfo rendering_attachment_info{};
+		rendering_attachment_info.clearValue  = clear_value;
+		rendering_attachment_info.imageView   = m_swapchainImageViews[p_image_index];
+		rendering_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		rendering_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
+		rendering_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
+
+		vk::RenderingInfo rendering_info{};
+		rendering_info.renderArea           = vk::Rect2D{{0, 0}, m_swapchainExtent};
+		rendering_info.layerCount           = 1;
+		rendering_info.colorAttachmentCount = 1;
+		rendering_info.pColorAttachments    = &rendering_attachment_info;
+
+		vk::Viewport viewport{};
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		viewport.x        = 0.0f;
+		viewport.y        = 0.0f;
+		viewport.width    = m_swapchainExtent.width;
+		viewport.height   = m_swapchainExtent.height;
+
+		vk::Rect2D scissor{};
+		scissor.offset = vk::Offset2D{0, 0};
+		scissor.extent = m_swapchainExtent;
+
+		m_commandBuffers[m_frameIndex].beginRendering(rendering_info);
+		m_commandBuffers[m_frameIndex].bindPipeline(vk::PipelineBindPoint::eGraphics, *m_graphicsPipeline);
+		m_commandBuffers[m_frameIndex].setViewport(0, viewport);
+		m_commandBuffers[m_frameIndex].setScissor(0, scissor);
+		m_commandBuffers[m_frameIndex].draw(3, 1, 0, 0);
+		m_commandBuffers[m_frameIndex].endRendering();
+
+		_transitionImageLayout(p_image_index, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR, vk::AccessFlagBits2::eColorAttachmentWrite,
+							   vk::AccessFlagBits2::eNone, vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eBottomOfPipe);
+
+		m_commandBuffers[m_frameIndex].end();
+	}
+
+	void VKGPUContext::_transitionImageLayout(uint32 p_image_index, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
+											  vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask)
+	{
+		vk::ImageMemoryBarrier2 image_memory_barrier{};
+		image_memory_barrier.oldLayout           = p_old_layout;
+		image_memory_barrier.newLayout           = p_new_layout;
+		image_memory_barrier.srcAccessMask       = p_src_access_mask;
+		image_memory_barrier.dstAccessMask       = p_dst_access_mask;
+		image_memory_barrier.srcStageMask        = p_src_stage_mask;
+		image_memory_barrier.dstStageMask        = p_dst_stage_mask;
+		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.image               = m_swapchainImages[p_image_index];
+		image_memory_barrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+
+		vk::DependencyInfo dependency_info{};
+		dependency_info.imageMemoryBarrierCount = 1;
+		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
+
+		m_commandBuffers[m_frameIndex].pipelineBarrier2(dependency_info);
 	}
 }

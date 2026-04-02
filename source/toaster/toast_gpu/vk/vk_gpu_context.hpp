@@ -24,11 +24,18 @@ namespace toaster::gpu
 	class VKGPUContext final : public IGPUContext
 	{
 	public:
+		constexpr static uint32 c_maxFramesInFlight{3u};
+
 		VKGPUContext(GLFWwindow *p_window);
 		~VKGPUContext() noexcept override;
 
 		[[nodiscard]] vk::raii::Instance &      getVulkanInstance();
 		[[nodiscard]] vk::raii::PhysicalDevice &getPhysicalDevice();
+		[[nodiscard]] vk::raii::Device &        getDevice();
+		[[nodiscard]] vk::raii::Queue &         getGraphicsQueue();
+		[[nodiscard]] vk::raii::SurfaceKHR &    getSurface();
+
+		void drawFrame();
 
 	private:
 		void _createInstance();
@@ -37,10 +44,17 @@ namespace toaster::gpu
 		void _pickPhysicalDevice();
 		void _createLogicalDevice();
 		void _createSwapchain();
+		void _createImageViews();
+		void _createGraphicsPipeline();
+		void _createCommandPool();
+		void _createCommandBuffer();
+		void _createSyncObjects();
 
-		bool _isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device);
+		void _recreateSwapchain();
 
-		std::vector<CString> _getRequiredInstanceExtensions();
+		bool _isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const;
+
+		std::vector<CString> _getRequiredInstanceExtensions() const;
 
 		static VKAPI_ATTR vk::Bool32 VKAPI_CALL _debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity,
 															   vk::DebugUtilsMessageTypeFlagsEXT             p_message_type,
@@ -56,13 +70,47 @@ namespace toaster::gpu
 
 		vk::raii::PhysicalDevice m_currentPhysicalDevice{nullptr};
 
+		struct QueueFamilyIndices
+		{
+			uint32 graphics{UINT32_MAX};
+		};
+
 		std::vector<CString> m_requiredDeviceExtensions{vk::KHRSwapchainExtensionName};
 		vk::raii::Device     m_device{nullptr};
 
-		vk::raii::Queue m_graphicsQueue{nullptr};
+		vk::raii::Queue    m_graphicsQueue{nullptr};
+		QueueFamilyIndices m_queueFamilyIndices{};
 
-		vk::SurfaceFormatKHR _chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats);
-		vk::PresentModeKHR   _chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes);
-		vk::Extent2D         _chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities);
+		vk::SurfaceFormatKHR _chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const;
+		vk::PresentModeKHR   _chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes) const;
+		vk::Extent2D         _chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const;
+		uint32               _chooseSwapchainMinImageCount(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const;
+
+		vk::raii::SwapchainKHR           m_swapchain{nullptr};
+		std::vector<vk::Image>           m_swapchainImages;
+		std::vector<vk::raii::ImageView> m_swapchainImageViews;
+		vk::SurfaceFormatKHR             m_swapchainSurfaceFormat;
+		vk::Extent2D                     m_swapchainExtent;
+
+		vk::raii::ShaderModule _createShaderModule(const std::vector<uint8> &p_code);
+
+		vk::raii::Pipeline       m_graphicsPipeline{nullptr};
+		vk::raii::PipelineLayout m_pipelineLayout{nullptr};
+
+		vk::raii::CommandPool   m_commandPool{nullptr};
+		std::vector<vk::raii::CommandBuffer> m_commandBuffers;
+
+		void _recordCommandBuffer(uint32 p_image_index);
+
+		void _transitionImageLayout(uint32           p_image_index, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
+									vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask);
+
+		std::vector<vk::raii::Semaphore> m_imageAvailableSemaphores;
+		std::vector<vk::raii::Semaphore> m_renderFinishedSemaphores;
+		std::vector<vk::raii::Fence>     m_inFlightFences;
+
+		uint32 m_frameIndex{0u};
+
+		bool m_framebufferResized{false};
 	};
 }

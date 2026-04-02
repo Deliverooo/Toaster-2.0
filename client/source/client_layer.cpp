@@ -18,6 +18,7 @@ namespace toaster
 
 	void ClientLayer::onInit()
 	{
+
 		auto &app = getApp();
 		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 
@@ -31,10 +32,15 @@ namespace toaster
 
 	void ClientLayer::onDestroy()
 	{
+
 	}
 
 	void ClientLayer::onUpdate(const float32 p_dt)
 	{
+		auto &app = getApp();
+		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+
+		ctx->drawFrame();
 	}
 
 	void ClientLayer::onEvent(Event &p_event)

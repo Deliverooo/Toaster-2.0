@@ -6,7 +6,6 @@
 
 #include <set>
 #include <sstream>
-#include <GLFW/glfw3.h>
 
 #include "vk/vk_gpu_context.hpp"
 
