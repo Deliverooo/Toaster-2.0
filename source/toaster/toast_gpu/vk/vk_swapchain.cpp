@@ -28,20 +28,7 @@ namespace toaster::gpu
 		}
 		device.resetFences(*m_inFlightFences[m_frameIndex]);
 
-		auto [res, image_index] = m_swapchain.acquireNextImage(UINT64_MAX, *m_imageAvailableSemaphores[m_frameIndex], nullptr);
-		m_imageIndex            = image_index;
-
-		if (res == vk::Result::eErrorOutOfDateKHR)
-		{
-			// _recreateSwapchain();
-			return;
-		}
-
-		if (res != vk::Result::eSuccess && res != vk::Result::eSuboptimalKHR)
-		{
-			LOG_ERROR("Failed to acquire swapchain image");
-			TST_ASSERT(false);
-		}
+		m_imageIndex = _acquireNextImage();
 
 		auto &command_buffer = m_ctx->getCommandBuffer(m_frameIndex);
 
@@ -116,6 +103,10 @@ namespace toaster::gpu
 		return m_swapchainExtent;
 	}
 
+	void VKSwapchain::resize(uint32 p_width, uint32 p_height)
+	{
+	}
+
 	void VKSwapchain::_createSwapchain()
 	{
 		auto &                     physical_device = m_ctx->getPhysicalDevice();
@@ -181,6 +172,22 @@ namespace toaster::gpu
 			fence_create_info.flags = vk::FenceCreateFlagBits::eSignaled;
 			m_inFlightFences.emplace_back(device, fence_create_info);
 		}
+	}
+
+	uint32 VKSwapchain::_acquireNextImage()
+	{
+		auto [res, image_index] = m_swapchain.acquireNextImage(UINT64_MAX, *m_imageAvailableSemaphores[m_frameIndex], nullptr);
+
+		if ((res != vk::Result::eSuccess) && (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR))
+		{
+			resize(m_swapchainExtent.width, m_swapchainExtent.height);
+
+			auto [r, i] = m_swapchain.acquireNextImage(UINT64_MAX, *m_imageAvailableSemaphores[m_frameIndex], nullptr);
+			TST_ASSERT(r == vk::Result::eSuccess);
+			image_index = i;
+		}
+
+		return image_index;
 	}
 
 	vk::SurfaceFormatKHR VKSwapchain::_chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const

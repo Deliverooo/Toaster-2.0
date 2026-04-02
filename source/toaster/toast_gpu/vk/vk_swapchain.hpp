@@ -21,10 +21,13 @@ namespace toaster::gpu
 
 		vk::Extent2D getExtent() const;
 
+		void resize(uint32 p_width, uint32 p_height);
 	private:
 		void _createSwapchain();
 		void _createImageViews();
 		void _createSyncObjects();
+
+		uint32 _acquireNextImage();
 
 		VKGPUContext *m_ctx{nullptr};
 		GLFWwindow *  m_window{nullptr};

@@ -16,9 +16,6 @@ namespace toaster::gpu
 			_createSurface();
 			_pickPhysicalDevice();
 			_createLogicalDevice();
-			// _createSwapchain();
-			// _createImageViews();
-			// _createSyncObjects();
 			_createGraphicsPipeline();
 			_createCommandPool();
 			_createCommandBuffer();
@@ -234,69 +231,6 @@ namespace toaster::gpu
 		m_graphicsQueue = {m_device, m_queueFamilyIndices.graphics, 0};
 	}
 
-	#if 0
-
-	void VKGPUContext::_createSwapchain()
-	{
-		vk::SurfaceCapabilitiesKHR surface_caps = m_currentPhysicalDevice.getSurfaceCapabilitiesKHR(m_surface);
-
-		auto available_surface_formats = m_currentPhysicalDevice.getSurfaceFormatsKHR(m_surface);
-		auto available_present_modes   = m_currentPhysicalDevice.getSurfacePresentModesKHR(m_surface);
-
-		m_swapchainSurfaceFormat = _chooseSwapchainSurfaceFormat(available_surface_formats);
-		m_swapchainExtent        = _chooseSwapchainExtent(surface_caps);
-
-		uint32 min_image_count = _chooseSwapchainMinImageCount(surface_caps);
-
-		vk::SwapchainCreateInfoKHR swapchain_create_info{};
-		swapchain_create_info.surface          = m_surface;
-		swapchain_create_info.minImageCount    = min_image_count;
-		swapchain_create_info.imageFormat      = m_swapchainSurfaceFormat.format;
-		swapchain_create_info.imageColorSpace  = m_swapchainSurfaceFormat.colorSpace;
-		swapchain_create_info.imageExtent      = m_swapchainExtent;
-		swapchain_create_info.imageArrayLayers = 1;
-		swapchain_create_info.imageUsage       = vk::ImageUsageFlagBits::eColorAttachment;
-		swapchain_create_info.imageSharingMode = vk::SharingMode::eExclusive;
-		swapchain_create_info.preTransform     = surface_caps.currentTransform;
-		swapchain_create_info.compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-		swapchain_create_info.presentMode      = _chooseSwapchainPresentMode(available_present_modes);
-		swapchain_create_info.clipped          = true;
-
-		m_swapchain       = {m_device, swapchain_create_info};
-		m_swapchainImages = m_swapchain.getImages();
-	} void VKGPUContext::_createImageViews()
-	{
-		vk::ImageViewCreateInfo image_view_create_info{};
-		image_view_create_info.viewType         = vk::ImageViewType::e2D;
-		image_view_create_info.format           = m_swapchainSurfaceFormat.format;
-		image_view_create_info.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-		image_view_create_info.components       = {
-			vk::ComponentSwizzle::eIdentity,
-			vk::ComponentSwizzle::eIdentity,
-			vk::ComponentSwizzle::eIdentity,
-			vk::ComponentSwizzle::eIdentity
-		};
-		for (auto &image: m_swapchainImages)
-		{
-			image_view_create_info.image = image;
-			m_swapchainImageViews.emplace_back(m_device, image_view_create_info);
-		}
-	} void VKGPUContext::_createSyncObjects()
-	{
-		for (uint32 i{0u}; i < m_swapchainImageViews.size(); ++i)
-			m_renderFinishedSemaphores.emplace_back(m_device, vk::SemaphoreCreateInfo{});
-
-		for (uint32 i{0u}; i < c_maxFramesInFlight; ++i)
-		{
-			m_imageAvailableSemaphores.emplace_back(m_device, vk::SemaphoreCreateInfo{});
-
-			vk::FenceCreateInfo fence_create_info{};
-			fence_create_info.flags = vk::FenceCreateFlagBits::eSignaled;
-			m_inFlightFences.emplace_back(m_device, fence_create_info);
-		}
-	}
-
-	#endif
 	void VKGPUContext::_createGraphicsPipeline()
 	{
 		vk::raii::ShaderModule vertex_shader_module = _createShaderModule(io::filesystem::readBinary("shaders/test.vert.glsl.spv"));
