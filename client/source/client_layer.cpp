@@ -23,16 +23,10 @@ namespace toaster
 
 		auto &instance = ctx->getVulkanInstance();
 
-		auto physical_devices = ctx->getPhysicalDevices();
-		for (auto &p: physical_devices)
-		{
-			auto props = p.getProperties();
-			LOG_INFO("Name: {}", props.deviceName.data());
-			LOG_INFO("Type: {}", vk::to_string(props.deviceType));
-		}
-		// gpu::RenderPassCreateInfo render_pass_create_info{};
-		// render_pass_create_info.targetFramebuffer = m_framebuffer;
-		// render_pass_create_info.pipeline          = m_pipeline;
+		auto physical_device = ctx->getPhysicalDevice();
+		auto props           = physical_device.getProperties();
+		LOG_INFO("Name: {}", props.deviceName.data());
+		LOG_INFO("Type: {}", vk::to_string(props.deviceType));
 	}
 
 	void ClientLayer::onDestroy()
