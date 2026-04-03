@@ -19,6 +19,10 @@ namespace toaster::gpu
 		vk::Image &          getImage(uint32 p_index);
 		vk::raii::ImageView &getImageView(uint32 p_index);
 
+		vk::raii::Image &       getDepthImage();
+		vk::raii::ImageView &   getDepthImageView();
+		vk::raii::DeviceMemory &getDepthImageMemory();
+
 		[[nodiscard]] vk::raii::CommandBuffer &getCommandBuffer(uint32 p_frame_index);
 		[[nodiscard]] vk::raii::CommandBuffer &getCurrentCommandBuffer();
 
@@ -34,6 +38,7 @@ namespace toaster::gpu
 		void _createImageViews();
 		void _createSyncObjects();
 		void _createCommandBuffers();
+		void _createDepthResources();
 
 		void _create();
 		void _recreateSwapchain();
@@ -58,6 +63,10 @@ namespace toaster::gpu
 		std::vector<vk::raii::Fence>     m_inFlightFences;
 
 		std::vector<vk::raii::CommandBuffer> m_commandBuffers;
+
+		vk::raii::Image        m_depthImage{nullptr};
+		vk::raii::DeviceMemory m_depthImageMemory{nullptr};
+		vk::raii::ImageView    m_depthImageView{nullptr};
 
 		uint32 m_frameIndex{0u};
 		uint32 m_imageIndex{0u};

@@ -11,6 +11,7 @@ namespace toaster::gpu
 		_createImageViews();
 		_createSyncObjects();
 		_createCommandBuffers();
+		_createDepthResources();
 	}
 
 	VKSwapchain::~VKSwapchain()
@@ -131,6 +132,21 @@ namespace toaster::gpu
 		return m_swapchainImageViews[p_index];
 	}
 
+	vk::raii::Image &VKSwapchain::getDepthImage()
+	{
+		return m_depthImage;
+	}
+
+	vk::raii::ImageView &VKSwapchain::getDepthImageView()
+	{
+		return m_depthImageView;
+	}
+
+	vk::raii::DeviceMemory &VKSwapchain::getDepthImageMemory()
+	{
+		return m_depthImageMemory;
+	}
+
 	vk::raii::CommandBuffer &VKSwapchain::getCommandBuffer(uint32 p_frame_index)
 	{
 		return m_commandBuffers[p_frame_index];
@@ -169,7 +185,15 @@ namespace toaster::gpu
 	void VKSwapchain::_createImageViews()
 	{
 		for (auto &img: m_swapchainImages)
-			m_swapchainImageViews.emplace_back(m_ctx->createImageView(img, m_swapchainSurfaceFormat.format));
+			m_swapchainImageViews.emplace_back(m_ctx->createImageView(img, m_swapchainSurfaceFormat.format, vk::ImageAspectFlagBits::eColor));
+	}
+
+	void VKSwapchain::_createDepthResources()
+	{
+		vk::Format depth_format = m_ctx->findDepthFormat();
+		m_ctx->createImage(m_swapchainExtent.width, m_swapchainExtent.height, depth_format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment,
+						   vk::MemoryPropertyFlagBits::eDeviceLocal, m_depthImage, m_depthImageMemory);
+		m_depthImageView = m_ctx->createImageView(m_depthImage, depth_format, vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
 	}
 
 	void VKSwapchain::_createSyncObjects()
@@ -257,6 +281,7 @@ namespace toaster::gpu
 
 		_create();
 		_createImageViews();
+		_createDepthResources();
 
 		m_ctx->getDevice().waitIdle();
 	}

@@ -69,11 +69,15 @@ namespace toaster::gpu
 
 		void copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, uint32 p_width, uint32 p_height) const;
 
-		[[nodiscard]] vk::raii::ImageView createImageView(vk::raii::Image &p_src_image, vk::Format p_format) const;
-		[[nodiscard]] vk::raii::ImageView createImageView(vk::Image &p_src_image, vk::Format p_format) const;
+		[[nodiscard]] vk::raii::ImageView createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags) const;
+		[[nodiscard]] vk::raii::ImageView createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags) const;
 
 		[[nodiscard]] vk::raii::CommandBuffer beginSingleTimeCommands() const;
 		void                                  endSingleTimeCommands(vk::raii::CommandBuffer &p_command_buffer) const;
+
+		vk::Format findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling, vk::FormatFeatureFlags p_feature_flags) const;
+		vk::Format findDepthFormat() const;
+		bool       hasStencilComponent(vk::Format p_format) const;
 
 	private:
 		void _createInstance();
@@ -101,8 +105,13 @@ namespace toaster::gpu
 
 		vk::raii::PhysicalDevice m_currentPhysicalDevice{nullptr};
 
-		std::vector<CString> m_requiredDeviceExtensions{vk::KHRSwapchainExtensionName, vk::KHRDynamicRenderingExtensionName, vk::KHRTimelineSemaphoreExtensionName, vk::EXTCustomBorderColorExtensionName};
-		vk::raii::Device     m_device{nullptr};
+		std::vector<CString> m_requiredDeviceExtensions{
+			vk::KHRSwapchainExtensionName,
+			vk::KHRDynamicRenderingExtensionName,
+			vk::KHRTimelineSemaphoreExtensionName,
+			vk::EXTCustomBorderColorExtensionName
+		};
+		vk::raii::Device m_device{nullptr};
 
 		vk::raii::Queue    m_graphicsQueue{nullptr};
 		vk::raii::Queue    m_transferQueue{nullptr};

@@ -35,6 +35,7 @@ namespace toaster
 		void _createDescriptorSetLayout();
 		void _createGraphicsPipeline();
 
+
 		void _createTextureImage();
 		void _createTextureImageView();
 		void _createTextureSampler();
@@ -67,13 +68,17 @@ namespace toaster
 		};
 
 		const std::vector<Vertex> m_vertices{
-			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-			{{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-			{{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-			{{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+			{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+			{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+			{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+			{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+			{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+			{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+			{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
 		};
 
-		const std::vector<uint16> m_indices{0, 1, 2, 2, 3, 0};
+		const std::vector<uint16> m_indices{0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
 
 		vk::raii::Buffer       m_vertexBuffer{nullptr};
 		vk::raii::DeviceMemory m_vertexBufferMemory{nullptr};

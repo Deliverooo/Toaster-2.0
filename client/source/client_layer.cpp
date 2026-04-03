@@ -90,19 +90,28 @@ namespace toaster
 
 		auto &command_buffer = swapchain->getCurrentCommandBuffer();
 
-		vk::ClearValue              clear_value = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};
-		vk::RenderingAttachmentInfo rendering_attachment_info{};
-		rendering_attachment_info.clearValue  = clear_value;
-		rendering_attachment_info.imageView   = swapchain->getImageView(p_image_index);
-		rendering_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		rendering_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
-		rendering_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
+		vk::ClearValue              clear_colour = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};
+		vk::RenderingAttachmentInfo colour_attachment_info{};
+		colour_attachment_info.clearValue  = clear_colour;
+		colour_attachment_info.imageView   = swapchain->getImageView(p_image_index);
+		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
+		colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
+
+		vk::ClearValue              clear_depth = vk::ClearDepthStencilValue{1.0f, 0u};
+		vk::RenderingAttachmentInfo depth_attachment_info{};
+		depth_attachment_info.clearValue  = clear_depth;
+		depth_attachment_info.imageView   = swapchain->getDepthImageView();
+		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
+		depth_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
 
 		vk::RenderingInfo rendering_info{};
 		rendering_info.renderArea           = vk::Rect2D{{0, 0}, swapchain->getExtent()};
 		rendering_info.layerCount           = 1;
 		rendering_info.colorAttachmentCount = 1;
-		rendering_info.pColorAttachments    = &rendering_attachment_info;
+		rendering_info.pColorAttachments    = &colour_attachment_info;
+		rendering_info.pDepthAttachment     = &depth_attachment_info;
 
 		vk::Viewport viewport{};
 		viewport.minDepth = 0.0f;
@@ -260,6 +269,14 @@ namespace toaster
 		rendering_create_info.colorAttachmentCount    = 1;
 		vk::Format colour_attachment_format           = swapchain->getSurfaceFormat().format;
 		rendering_create_info.pColorAttachmentFormats = &colour_attachment_format;
+		rendering_create_info.depthAttachmentFormat   = ctx->findDepthFormat();
+
+		vk::PipelineDepthStencilStateCreateInfo depth_stencil_state_create_info{};
+		depth_stencil_state_create_info.depthTestEnable       = true;
+		depth_stencil_state_create_info.depthWriteEnable      = true;
+		depth_stencil_state_create_info.depthCompareOp        = vk::CompareOp::eLess;
+		depth_stencil_state_create_info.depthBoundsTestEnable = false;
+		depth_stencil_state_create_info.stencilTestEnable     = false;
 
 		vk::DescriptorSetLayout      set_layouts[] = {m_descriptorSetLayout};
 		vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
@@ -278,6 +295,7 @@ namespace toaster
 		graphics_pipeline_create_info.pMultisampleState   = &multisample_state_create_info;
 		graphics_pipeline_create_info.pColorBlendState    = &colour_blend_state_create_info;
 		graphics_pipeline_create_info.pDynamicState       = &dynamic_state_create_info;
+		graphics_pipeline_create_info.pDepthStencilState  = &depth_stencil_state_create_info;
 		graphics_pipeline_create_info.layout              = m_pipelineLayout;
 		graphics_pipeline_create_info.renderPass          = nullptr;
 		graphics_pipeline_create_info.pNext               = &rendering_create_info;
@@ -325,7 +343,7 @@ namespace toaster
 		auto &app = getApp();
 		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 
-		m_textureImageView = ctx->createImageView(m_textureImage, vk::Format::eR8G8B8A8Srgb);
+		m_textureImageView = ctx->createImageView(m_textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
 	}
 
 	void ClientLayer::_createTextureSampler()

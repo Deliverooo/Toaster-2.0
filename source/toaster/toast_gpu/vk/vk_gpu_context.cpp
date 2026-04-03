@@ -581,7 +581,7 @@ namespace toaster::gpu
 		endSingleTimeCommands(cmd);
 	}
 
-	vk::raii::ImageView VKGPUContext::createImageView(vk::raii::Image &p_src_image, vk::Format p_format) const
+	vk::raii::ImageView VKGPUContext::createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags) const
 	{
 		vk::ImageViewCreateInfo image_view_create_info{};
 		image_view_create_info.viewType   = vk::ImageViewType::e2D;
@@ -592,13 +592,13 @@ namespace toaster::gpu
 			vk::ComponentSwizzle::eIdentity,
 			vk::ComponentSwizzle::eIdentity
 		};
-		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{p_aspect_flags, 0, 1, 0, 1};
 		image_view_create_info.format           = p_format;
 
 		return {m_device, image_view_create_info};
 	}
 
-	vk::raii::ImageView VKGPUContext::createImageView(vk::Image &p_src_image, vk::Format p_format) const
+	vk::raii::ImageView VKGPUContext::createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags) const
 	{
 		vk::ImageViewCreateInfo image_view_create_info{};
 		image_view_create_info.viewType   = vk::ImageViewType::e2D;
@@ -609,7 +609,7 @@ namespace toaster::gpu
 			vk::ComponentSwizzle::eIdentity,
 			vk::ComponentSwizzle::eIdentity
 		};
-		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{p_aspect_flags, 0, 1, 0, 1};
 		image_view_create_info.format           = p_format;
 
 		return {m_device, image_view_create_info};
@@ -646,5 +646,32 @@ namespace toaster::gpu
 		vk::Result res = m_device.waitForFences(*wait_fence, true, UINT64_MAX);
 		if (res != vk::Result::eSuccess)
 			TST_ASSERT_MSG(false, "Failed to wait for Fence");
+	}
+
+	vk::Format VKGPUContext::findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling,
+												 vk::FormatFeatureFlags         p_feature_flags) const
+	{
+		for (const auto &format: p_supported_formats)
+		{
+			vk::FormatProperties props = m_currentPhysicalDevice.getFormatProperties(format);
+
+			if (p_tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & p_feature_flags) == p_feature_flags)
+				return format;
+			if (p_tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & p_feature_flags) == p_feature_flags)
+				return format;
+		}
+		TST_ASSERT_MSG(false, "Unsupported format");
+		return vk::Format::eUndefined;
+	}
+
+	vk::Format VKGPUContext::findDepthFormat() const
+	{
+		return findSupportedFormat({vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint}, vk::ImageTiling::eOptimal,
+								   vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+	}
+
+	bool VKGPUContext::hasStencilComponent(vk::Format p_format) const
+	{
+		return p_format == vk::Format::eD32SfloatS8Uint || p_format == vk::Format::eD24UnormS8Uint;
 	}
 }
