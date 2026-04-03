@@ -22,7 +22,7 @@ namespace toaster::gpu
 		[[nodiscard]] vk::raii::Pipeline &      getPipeline();
 		[[nodiscard]] vk::raii::PipelineLayout &getPipelineLayout();
 
-		const PipelineCreateInfo &getCreateInfo() const;
+		[[nodiscard]] const PipelineCreateInfo &getCreateInfo() const;
 
 	private:
 		void _createGraphicsPipeline();

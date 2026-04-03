@@ -80,7 +80,7 @@ namespace toaster::gpu
 		vk::PipelineRasterizationStateCreateInfo rasterization_state_create_info{};
 		rasterization_state_create_info.depthClampEnable        = false;
 		rasterization_state_create_info.rasterizerDiscardEnable = false;
-		rasterization_state_create_info.polygonMode             = vk::PolygonMode::eLine;
+		rasterization_state_create_info.polygonMode             = vk::PolygonMode::eFill;
 		rasterization_state_create_info.cullMode                = vk::CullModeFlagBits::eBack;
 		rasterization_state_create_info.frontFace               = vk::FrontFace::eClockwise;
 		rasterization_state_create_info.depthBiasEnable         = false;

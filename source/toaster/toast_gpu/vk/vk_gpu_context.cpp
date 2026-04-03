@@ -112,8 +112,14 @@ namespace toaster::gpu
 			TST_ASSERT(false);
 		}
 
+		#ifndef NDEBUG
+
+		LOG_INFO("Available instance extensions:");
 		for (auto &prop: extension_props)
-			LOG_INFO("Extension: {} | Version: {}", prop.extensionName.data(), prop.specVersion);
+			LOG_INFO("\t{}", prop.extensionName.data());
+		LOG_INFO("");
+
+		#endif
 
 		std::vector<CString> required_validation_layers;
 		if (c_enableValidationLayers)
@@ -199,8 +205,13 @@ namespace toaster::gpu
 		#ifndef NDEBUG
 
 		auto props = m_currentPhysicalDevice.getProperties();
+		LOG_INFO("Using physical device: {} | Device ID: {}\n", props.deviceName.data(), props.deviceID);
 
-		LOG_INFO("Using physical device: {} | Device ID: {}", props.deviceName.data(), props.deviceID);
+		LOG_INFO("Available device extensions:");
+		auto extension_props = m_currentPhysicalDevice.enumerateDeviceExtensionProperties();
+		for (auto ext: extension_props)
+			LOG_INFO("\t{}", ext.extensionName.data());
+		LOG_INFO("");
 
 		#endif
 	}
@@ -254,7 +265,9 @@ namespace toaster::gpu
 			TST_ASSERT(false);
 		}
 
-		vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT> feature_chain{{}, {}, {}};
+		vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
+			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT> feature_chain{{}, {}, {}, {}};
+		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                   = true;
 		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                    = true;
 		feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState = true;
 
@@ -340,8 +353,13 @@ namespace toaster::gpu
 			return !!(queue_family.queueFlags & vk::QueueFlagBits::eGraphics);
 		});
 
+		bool supports_compute = std::ranges::any_of(queue_families, [](const auto &queue_family)
+		{
+			return !!(queue_family.queueFlags & vk::QueueFlagBits::eCompute);
+		});
+
 		// For the moment, the only required extension is the swapchain one.
-		std::vector required_device_extensions{vk::KHRSwapchainExtensionName};
+		std::vector required_device_extensions{vk::KHRSwapchainExtensionName, vk::KHRDynamicRenderingExtensionName, vk::KHRTimelineSemaphoreExtensionName};
 
 		// Checks if all the required extensions are present in the available_device_extensions vector.
 		auto available_device_extensions             = p_physical_device.enumerateDeviceExtensionProperties();
@@ -353,13 +371,13 @@ namespace toaster::gpu
 			});
 		});
 
-		auto features = p_physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features,
+		auto features = p_physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
 			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
 
-		bool supports_required_features = features.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering && features.get<
-											  vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
+		bool supports_required_features = features.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore && features.get<vk::PhysicalDeviceVulkan13Features>().
+										  dynamicRendering && features.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState;
 
-		return vulkan_1_3_support && supports_graphics && supports_all_required_device_extensions && supports_required_features;
+		return vulkan_1_3_support && supports_graphics && supports_compute && supports_all_required_device_extensions && supports_required_features;
 	}
 
 	std::vector<CString> VKGPUContext::_getRequiredInstanceExtensions() const
@@ -479,19 +497,23 @@ namespace toaster::gpu
 
 		vk::raii::CommandBuffer command_buffer{std::move(m_device.allocateCommandBuffers(command_buffer_allocate_info).front())};
 
+		vk::FenceCreateInfo fence_create_info{};
+		vk::raii::Fence     wait_fence{m_device, fence_create_info};
+
 		vk::CommandBufferBeginInfo command_buffer_begin_info{};
 		command_buffer_begin_info.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+
 		command_buffer.begin(command_buffer_begin_info);
-
 		command_buffer.copyBuffer(p_src_buffer, p_dst_buffer, buffer_copy);
-
 		command_buffer.end();
 
 		vk::SubmitInfo submit_info{};
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers    = &*command_buffer;
-		m_transferQueue.submit(submit_info);
+		m_transferQueue.submit(submit_info, *wait_fence);
 
-		m_transferQueue.waitIdle();
+		vk::Result res = m_device.waitForFences(*wait_fence, true, UINT64_MAX);
+		if (res != vk::Result::eSuccess)
+			TST_ASSERT_MSG(false, "Failed to wait for Fence");
 	}
 }

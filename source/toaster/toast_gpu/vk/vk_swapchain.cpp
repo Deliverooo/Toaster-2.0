@@ -25,8 +25,7 @@ namespace toaster::gpu
 		auto fence_result = device.waitForFences(*m_inFlightFences[m_frameIndex], true, UINT64_MAX);
 		if (fence_result != vk::Result::eSuccess)
 		{
-			LOG_ERROR("Failed to wait for Fence");
-			TST_ASSERT(false);
+			TST_ASSERT_MSG(false, "Failed to wait for Fence");
 		}
 		// Reset the fence so we can signal it later
 		device.resetFences(*m_inFlightFences[m_frameIndex]);
@@ -42,8 +41,7 @@ namespace toaster::gpu
 		}
 		if (res != vk::Result::eSuccess)
 		{
-			LOG_ERROR("Failed to acquire swapchain image!");
-			TST_ASSERT(false);
+			TST_ASSERT_MSG(false, "Failed to acquire swapchain image!");
 		}
 
 		auto &command_buffer = m_commandBuffers[m_frameIndex];
