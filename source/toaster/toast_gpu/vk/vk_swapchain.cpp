@@ -7,9 +7,10 @@ namespace toaster::gpu
 {
 	VKSwapchain::VKSwapchain(VKGPUContext *p_ctx, GLFWwindow *p_window) : m_ctx(p_ctx), m_window(p_window)
 	{
-		_createSwapchain();
+		_create();
 		_createImageViews();
 		_createSyncObjects();
+		_createCommandBuffers();
 	}
 
 	VKSwapchain::~VKSwapchain()
@@ -28,9 +29,21 @@ namespace toaster::gpu
 		}
 		device.resetFences(*m_inFlightFences[m_frameIndex]);
 
-		m_imageIndex = _acquireNextImage();
+		auto [res, image_index] = m_swapchain.acquireNextImage(UINT64_MAX, *m_imageAvailableSemaphores[m_frameIndex], nullptr);
+		m_imageIndex            = image_index;
 
-		auto &command_buffer = m_ctx->getCommandBuffer(m_frameIndex);
+		if (res == vk::Result::eErrorOutOfDateKHR)
+		{
+			_recreateSwapchain();
+			return;
+		}
+		else if (res != vk::Result::eSuccess)
+		{
+			LOG_ERROR("Failed to acquire swapchain image!");
+			TST_ASSERT(false);
+		}
+
+		auto &command_buffer = m_commandBuffers[m_frameIndex];
 
 		command_buffer.reset();
 
@@ -38,19 +51,27 @@ namespace toaster::gpu
 
 		command_buffer.begin(begin_info);
 
-		m_ctx->transitionImageLayout(m_swapchainImages[m_imageIndex], m_frameIndex, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
+		m_ctx->transitionImageLayout(command_buffer, m_swapchainImages[m_imageIndex], vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
 									 vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
 									 vk::PipelineStageFlagBits2::eColorAttachmentOutput);
 	}
 
 	void VKSwapchain::endFrame()
 	{
+		auto &command_buffer = m_commandBuffers[m_frameIndex];
+
+		m_ctx->transitionImageLayout(command_buffer, m_swapchainImages[m_imageIndex], vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR,
+									 vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eNone, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+									 vk::PipelineStageFlagBits2::eColorAttachmentOutput);
+
+		command_buffer.end();
+
 		auto &graphics_queue = m_ctx->getGraphicsQueue();
 
 		vk::PipelineStageFlags wait_dst_stage_mask{vk::PipelineStageFlagBits::eColorAttachmentOutput};
 		vk::SubmitInfo         submit_info{};
 		submit_info.commandBufferCount   = 1;
-		submit_info.pCommandBuffers      = &*m_ctx->getCommandBuffer(m_frameIndex);
+		submit_info.pCommandBuffers      = &*m_commandBuffers[m_frameIndex];
 		submit_info.pWaitDstStageMask    = &wait_dst_stage_mask;
 		submit_info.pWaitSemaphores      = &*m_imageAvailableSemaphores[m_frameIndex];
 		submit_info.waitSemaphoreCount   = 1;
@@ -66,14 +87,20 @@ namespace toaster::gpu
 		present_info.pSwapchains        = &*m_swapchain;
 		present_info.pImageIndices      = &m_imageIndex;
 
-		vk::Result res = graphics_queue.presentKHR(present_info);
-		if ((res == vk::Result::eSuboptimalKHR) || (res == vk::Result::eErrorOutOfDateKHR))
+		// For some reason, Vulkan-hpp classifies vk::Result::eErrorOutOfDateKHR as an error and automatically throws an exception
+		// So this is what I came up with to bypass that :)
+		vk::Result res = static_cast<vk::Result>(graphics_queue.getDispatcher()->vkQueuePresentKHR(static_cast<VkQueue>(*graphics_queue),
+																								   reinterpret_cast<const VkPresentInfoKHR *>(&present_info)));
+
+		if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR)
 		{
-			// m_framebufferResized = false;
-			// _recreateSwapchain();
+			_recreateSwapchain();
 		}
-		else
-			TST_ASSERT(res == vk::Result::eSuccess);
+		else if (res != vk::Result::eSuccess)
+		{
+			LOG_ERROR("Failed to present swapchain image!");
+			TST_ASSERT(false);
+		}
 
 		m_frameIndex = (m_frameIndex + 1) % VKGPUContext::c_maxFramesInFlight;
 	}
@@ -98,16 +125,27 @@ namespace toaster::gpu
 		return m_swapchainImageViews[p_index];
 	}
 
+	vk::raii::CommandBuffer &VKSwapchain::getCommandBuffer(uint32 p_frame_index)
+	{
+		return m_commandBuffers[p_frame_index];
+	}
+
+	vk::raii::CommandBuffer &VKSwapchain::getCurrentCommandBuffer()
+	{
+		return m_commandBuffers[m_frameIndex];
+	}
+
 	vk::Extent2D VKSwapchain::getExtent() const
 	{
 		return m_swapchainExtent;
 	}
 
-	void VKSwapchain::resize(uint32 p_width, uint32 p_height)
+	vk::SurfaceFormatKHR VKSwapchain::getSurfaceFormat() const
 	{
+		return m_swapchainSurfaceFormat;
 	}
 
-	void VKSwapchain::_createSwapchain()
+	void VKSwapchain::_createSwapchain(vk::SwapchainKHR p_old_swapchain)
 	{
 		auto &                     physical_device = m_ctx->getPhysicalDevice();
 		auto &                     surface         = m_ctx->getSurface();
@@ -134,6 +172,9 @@ namespace toaster::gpu
 		swapchain_create_info.compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque;
 		swapchain_create_info.presentMode      = _chooseSwapchainPresentMode(available_present_modes);
 		swapchain_create_info.clipped          = true;
+
+		// Pass the old swapchain to the create info
+		swapchain_create_info.oldSwapchain = p_old_swapchain;
 
 		m_swapchain       = {m_ctx->getDevice(), swapchain_create_info};
 		m_swapchainImages = m_swapchain.getImages();
@@ -174,20 +215,74 @@ namespace toaster::gpu
 		}
 	}
 
-	uint32 VKSwapchain::_acquireNextImage()
+	void VKSwapchain::_createCommandBuffers()
 	{
-		auto [res, image_index] = m_swapchain.acquireNextImage(UINT64_MAX, *m_imageAvailableSemaphores[m_frameIndex], nullptr);
+		auto &device = m_ctx->getDevice();
 
-		if ((res != vk::Result::eSuccess) && (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR))
+		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
+		command_buffer_allocate_info.commandBufferCount = VKGPUContext::c_maxFramesInFlight;
+		command_buffer_allocate_info.commandPool        = m_ctx->getCommandPool();
+		command_buffer_allocate_info.level              = vk::CommandBufferLevel::ePrimary;
+
+		m_commandBuffers = vk::raii::CommandBuffers{device, command_buffer_allocate_info};
+	}
+
+	void VKSwapchain::_create()
+	{
+		auto &                     physical_device = m_ctx->getPhysicalDevice();
+		auto &                     surface         = m_ctx->getSurface();
+		vk::SurfaceCapabilitiesKHR surface_caps    = physical_device.getSurfaceCapabilitiesKHR(surface);
+
+		auto available_surface_formats = physical_device.getSurfaceFormatsKHR(surface);
+		auto available_present_modes   = physical_device.getSurfacePresentModesKHR(surface);
+
+		m_swapchainSurfaceFormat = _chooseSwapchainSurfaceFormat(available_surface_formats);
+		m_swapchainExtent        = _chooseSwapchainExtent(surface_caps);
+
+		uint32 min_image_count = _chooseSwapchainMinImageCount(surface_caps);
+
+		vk::SwapchainCreateInfoKHR swapchain_create_info{};
+		swapchain_create_info.surface          = surface;
+		swapchain_create_info.minImageCount    = min_image_count;
+		swapchain_create_info.imageFormat      = m_swapchainSurfaceFormat.format;
+		swapchain_create_info.imageColorSpace  = m_swapchainSurfaceFormat.colorSpace;
+		swapchain_create_info.imageExtent      = m_swapchainExtent;
+		swapchain_create_info.imageArrayLayers = 1;
+		swapchain_create_info.imageUsage       = vk::ImageUsageFlagBits::eColorAttachment;
+		swapchain_create_info.imageSharingMode = vk::SharingMode::eExclusive;
+		swapchain_create_info.preTransform     = surface_caps.currentTransform;
+		swapchain_create_info.compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque;
+		swapchain_create_info.presentMode      = _chooseSwapchainPresentMode(available_present_modes);
+		swapchain_create_info.clipped          = true;
+
+		swapchain_create_info.oldSwapchain = nullptr;
+
+		m_swapchain       = {m_ctx->getDevice(), swapchain_create_info};
+		m_swapchainImages = m_swapchain.getImages();
+	}
+
+	void VKSwapchain::_recreateSwapchain()
+	{
+		LOG_TRACE("{}, {}", m_swapchainExtent.width, m_swapchainExtent.height);
+
+		int32 width;
+		int32 height;
+		glfwGetFramebufferSize(m_window, &width, &height);
+		while (width == 0 || height == 0)
 		{
-			resize(m_swapchainExtent.width, m_swapchainExtent.height);
-
-			auto [r, i] = m_swapchain.acquireNextImage(UINT64_MAX, *m_imageAvailableSemaphores[m_frameIndex], nullptr);
-			TST_ASSERT(r == vk::Result::eSuccess);
-			image_index = i;
+			glfwGetWindowSize(m_window, &width, &height);
+			glfwWaitEvents();
 		}
 
-		return image_index;
+		m_ctx->getDevice().waitIdle();
+
+		m_swapchainImageViews.clear();
+		m_swapchain = nullptr;
+
+		_create();
+		_createImageViews();
+
+		m_ctx->getDevice().waitIdle();
 	}
 
 	vk::SurfaceFormatKHR VKSwapchain::_chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const

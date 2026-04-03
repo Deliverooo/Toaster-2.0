@@ -35,16 +35,15 @@ namespace toaster::gpu
 		[[nodiscard]] vk::raii::Queue &         getGraphicsQueue();
 		[[nodiscard]] vk::raii::SurfaceKHR &    getSurface();
 
-		[[nodiscard]] vk::raii::CommandPool &  getCommandPool();
-		[[nodiscard]] vk::raii::CommandBuffer &getCommandBuffer(uint32 p_index);
-
-		[[nodiscard]] vk::raii::Pipeline &getGraphicsPipeline();
+		[[nodiscard]] vk::raii::CommandPool &getCommandPool();
 
 		void drawFrame();
 
-		void transitionImageLayout(vk::Image &             p_image, uint32                     p_frame_index, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
-								   vk::AccessFlags2        p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-								   vk::PipelineStageFlags2 p_dst_stage_mask);
+		void transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::Image &       p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
+								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
+								   vk::PipelineStageFlags2  p_dst_stage_mask);
+
+		vk::raii::ShaderModule createShaderModule(const std::vector<uint8> &p_code);
 
 	private:
 		void _createInstance();
@@ -53,15 +52,14 @@ namespace toaster::gpu
 		void _pickPhysicalDevice();
 		void _createLogicalDevice();
 
-		void _createGraphicsPipeline();
 		void _createCommandPool();
-		void _createCommandBuffer();
+		// void _createCommandBuffer();
 
 		void _recreateSwapchain();
 
-		bool _isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const;
+		[[nodiscard]] bool _isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const;
 
-		std::vector<CString> _getRequiredInstanceExtensions() const;
+		[[nodiscard]] std::vector<CString> _getRequiredInstanceExtensions() const;
 
 		static VKAPI_ATTR vk::Bool32 VKAPI_CALL _debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity,
 															   vk::DebugUtilsMessageTypeFlagsEXT             p_message_type,
@@ -88,12 +86,6 @@ namespace toaster::gpu
 		vk::raii::Queue    m_graphicsQueue{nullptr};
 		QueueFamilyIndices m_queueFamilyIndices{};
 
-		vk::raii::ShaderModule _createShaderModule(const std::vector<uint8> &p_code);
-
-		vk::raii::Pipeline       m_graphicsPipeline{nullptr};
-		vk::raii::PipelineLayout m_pipelineLayout{nullptr};
-
-		vk::raii::CommandPool                m_commandPool{nullptr};
-		std::vector<vk::raii::CommandBuffer> m_commandBuffers;
+		vk::raii::CommandPool m_commandPool{nullptr};
 	};
 }

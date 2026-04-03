@@ -15,7 +15,7 @@
 
 namespace toaster
 {
-	class ClientLayer : public IAppLayer
+	class ClientLayer final : public IAppLayer
 	{
 	public:
 		ClientLayer(Application *p_app);
@@ -29,6 +29,9 @@ namespace toaster
 		bool onKeyPressEvent(KeyPressEvent &e);
 
 		void _recordCommandBuffer(uint32 p_image_index);
+		void _createGraphicsPipeline();
 
-			};
+		vk::raii::Pipeline       m_graphicsPipeline{nullptr};
+		vk::raii::PipelineLayout m_pipelineLayout{nullptr};
+	};
 }

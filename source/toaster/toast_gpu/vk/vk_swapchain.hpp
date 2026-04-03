@@ -13,21 +13,26 @@ namespace toaster::gpu
 		void beginFrame();
 		void endFrame();
 
-		uint32 getFrameIndex() const;
-		uint32 getImageIndex() const;
+		[[nodiscard]] uint32 getFrameIndex() const;
+		[[nodiscard]] uint32 getImageIndex() const;
 
 		vk::Image &          getImage(uint32 p_index);
 		vk::raii::ImageView &getImageView(uint32 p_index);
 
-		vk::Extent2D getExtent() const;
+		[[nodiscard]] vk::raii::CommandBuffer &getCommandBuffer(uint32 p_frame_index);
+		[[nodiscard]] vk::raii::CommandBuffer &getCurrentCommandBuffer();
 
-		void resize(uint32 p_width, uint32 p_height);
+		[[nodiscard]] vk::Extent2D getExtent() const;
+		vk::SurfaceFormatKHR       getSurfaceFormat() const;
+
 	private:
-		void _createSwapchain();
+		void _createSwapchain(vk::SwapchainKHR p_old_swapchain);
 		void _createImageViews();
 		void _createSyncObjects();
+		void _createCommandBuffers();
 
-		uint32 _acquireNextImage();
+		void _create();
+		void _recreateSwapchain();
 
 		VKGPUContext *m_ctx{nullptr};
 		GLFWwindow *  m_window{nullptr};
@@ -46,6 +51,8 @@ namespace toaster::gpu
 		std::vector<vk::raii::Semaphore> m_imageAvailableSemaphores;
 		std::vector<vk::raii::Semaphore> m_renderFinishedSemaphores;
 		std::vector<vk::raii::Fence>     m_inFlightFences;
+
+		std::vector<vk::raii::CommandBuffer> m_commandBuffers;
 
 		uint32 m_frameIndex{0u};
 		uint32 m_imageIndex{0u};

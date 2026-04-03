@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <GLFW/glfw3.h>
 
+#include "toast_gpu/vk/vk_swapchain.hpp"
+
 namespace toaster
 {
 	Application::Application(const ApplicationCreateInfo &p_create_info) : m_createInfo(p_create_info)
@@ -99,11 +101,14 @@ namespace toaster
 
 	bool Application::onWindowResizeEvent(WindowResizeEvent &p_event)
 	{
-		if (p_event.getWidth() == 0 || p_event.getHeight() == 0)
+		uint32 width  = p_event.getWidth();
+		uint32 height = p_event.getHeight();
+		if (width == 0 || height == 0)
 		{
 			m_minimized = true;
 			return false;
 		}
+
 		m_minimized = false;
 		return false;
 	}

@@ -16,9 +16,7 @@ namespace toaster::gpu
 			_createSurface();
 			_pickPhysicalDevice();
 			_createLogicalDevice();
-			_createGraphicsPipeline();
 			_createCommandPool();
-			_createCommandBuffer();
 		}
 		catch (const vk::SystemError &err)
 		{
@@ -26,9 +24,7 @@ namespace toaster::gpu
 		}
 	}
 
-	VKGPUContext::~VKGPUContext() noexcept
-	{
-	}
+	VKGPUContext::~VKGPUContext() noexcept = default;
 
 	vk::raii::Instance &VKGPUContext::getVulkanInstance()
 	{
@@ -58,16 +54,6 @@ namespace toaster::gpu
 	vk::raii::CommandPool &VKGPUContext::getCommandPool()
 	{
 		return m_commandPool;
-	}
-
-	vk::raii::CommandBuffer &VKGPUContext::getCommandBuffer(uint32 p_index)
-	{
-		return m_commandBuffers[p_index];
-	}
-
-	vk::raii::Pipeline &VKGPUContext::getGraphicsPipeline()
-	{
-		return m_graphicsPipeline;
 	}
 
 	void VKGPUContext::drawFrame()
@@ -231,89 +217,6 @@ namespace toaster::gpu
 		m_graphicsQueue = {m_device, m_queueFamilyIndices.graphics, 0};
 	}
 
-	void VKGPUContext::_createGraphicsPipeline()
-	{
-		vk::raii::ShaderModule vertex_shader_module = _createShaderModule(io::filesystem::readBinary("shaders/test.vert.glsl.spv"));
-		vk::raii::ShaderModule pixel_shader_module  = _createShaderModule(io::filesystem::readBinary("shaders/test.pixel.glsl.spv"));
-
-		vk::PipelineShaderStageCreateInfo vertex_shader_stage_create_info{};
-		vertex_shader_stage_create_info.stage  = vk::ShaderStageFlagBits::eVertex;
-		vertex_shader_stage_create_info.module = vertex_shader_module;
-		vertex_shader_stage_create_info.pName  = "main";
-
-		vk::PipelineShaderStageCreateInfo pixel_shader_stage_create_info{};
-		pixel_shader_stage_create_info.stage  = vk::ShaderStageFlagBits::eFragment;
-		pixel_shader_stage_create_info.module = pixel_shader_module;
-		pixel_shader_stage_create_info.pName  = "main";
-
-		vk::PipelineShaderStageCreateInfo shader_stage_create_infos[] = {vertex_shader_stage_create_info, pixel_shader_stage_create_info};
-
-		vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
-
-		vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info{};
-		input_assembly_state_create_info.topology = vk::PrimitiveTopology::eTriangleList;
-
-		vk::PipelineViewportStateCreateInfo viewport_state_create_info{};
-		viewport_state_create_info.viewportCount = 1;
-		viewport_state_create_info.scissorCount  = 1;
-
-		vk::PipelineRasterizationStateCreateInfo rasterization_state_create_info{};
-		rasterization_state_create_info.depthClampEnable        = false;
-		rasterization_state_create_info.rasterizerDiscardEnable = false;
-		rasterization_state_create_info.polygonMode             = vk::PolygonMode::eFill;
-		rasterization_state_create_info.cullMode                = vk::CullModeFlagBits::eBack;
-		rasterization_state_create_info.frontFace               = vk::FrontFace::eClockwise;
-		rasterization_state_create_info.depthBiasEnable         = false;
-		rasterization_state_create_info.lineWidth               = 1.0f;
-
-		vk::PipelineColorBlendAttachmentState colour_blend_attachment_state{};
-		colour_blend_attachment_state.blendEnable    = false;
-		colour_blend_attachment_state.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-													   vk::ColorComponentFlagBits::eA;
-
-		vk::PipelineColorBlendStateCreateInfo colour_blend_state_create_info{};
-		colour_blend_state_create_info.logicOpEnable   = false;
-		colour_blend_state_create_info.logicOp         = vk::LogicOp::eCopy;
-		colour_blend_state_create_info.attachmentCount = 1;
-		colour_blend_state_create_info.pAttachments    = &colour_blend_attachment_state;
-
-		std::array                         dynamic_states{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-		vk::PipelineDynamicStateCreateInfo dynamic_state_create_info{};
-		dynamic_state_create_info.pDynamicStates    = dynamic_states.data();
-		dynamic_state_create_info.dynamicStateCount = dynamic_states.size();
-
-		vk::PipelineMultisampleStateCreateInfo multisample_state_create_info{};
-		multisample_state_create_info.rasterizationSamples = vk::SampleCountFlagBits::e1;
-		multisample_state_create_info.sampleShadingEnable  = false;
-
-		vk::Format                      attachment_format = vk::Format::eR8G8B8A8Srgb;
-		vk::PipelineRenderingCreateInfo rendering_create_info{};
-		rendering_create_info.colorAttachmentCount = 1;
-		// rendering_create_info.pColorAttachmentFormats = &m_swapchainSurfaceFormat.format;
-		rendering_create_info.pColorAttachmentFormats = &attachment_format;
-
-		vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
-		pipeline_layout_create_info.setLayoutCount         = 0;
-		pipeline_layout_create_info.pushConstantRangeCount = 0;
-		m_pipelineLayout                                   = {m_device, pipeline_layout_create_info};
-
-		vk::GraphicsPipelineCreateInfo graphics_pipeline_create_info{};
-		graphics_pipeline_create_info.stageCount          = 2;
-		graphics_pipeline_create_info.pStages             = shader_stage_create_infos;
-		graphics_pipeline_create_info.pVertexInputState   = &vertex_input_state_create_info;
-		graphics_pipeline_create_info.pInputAssemblyState = &input_assembly_state_create_info;
-		graphics_pipeline_create_info.pRasterizationState = &rasterization_state_create_info;
-		graphics_pipeline_create_info.pViewportState      = &viewport_state_create_info;
-		graphics_pipeline_create_info.pMultisampleState   = &multisample_state_create_info;
-		graphics_pipeline_create_info.pColorBlendState    = &colour_blend_state_create_info;
-		graphics_pipeline_create_info.pDynamicState       = &dynamic_state_create_info;
-		graphics_pipeline_create_info.layout              = m_pipelineLayout;
-		graphics_pipeline_create_info.renderPass          = nullptr;
-		graphics_pipeline_create_info.pNext               = &rendering_create_info;
-
-		m_graphicsPipeline = {m_device, nullptr, graphics_pipeline_create_info};
-	}
-
 	void VKGPUContext::_createCommandPool()
 	{
 		vk::CommandPoolCreateInfo command_pool_create_info{};
@@ -321,16 +224,6 @@ namespace toaster::gpu
 		command_pool_create_info.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 
 		m_commandPool = {m_device, command_pool_create_info};
-	}
-
-	void VKGPUContext::_createCommandBuffer()
-	{
-		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
-		command_buffer_allocate_info.commandPool        = m_commandPool;
-		command_buffer_allocate_info.commandBufferCount = c_maxFramesInFlight;
-		command_buffer_allocate_info.level              = vk::CommandBufferLevel::ePrimary;
-
-		m_commandBuffers = vk::raii::CommandBuffers{m_device, command_buffer_allocate_info};
 	}
 
 	void VKGPUContext::_recreateSwapchain()
@@ -352,7 +245,7 @@ namespace toaster::gpu
 		auto queue_families    = p_physical_device.getQueueFamilyProperties();
 		bool supports_graphics = std::ranges::any_of(queue_families, [](const auto &queue_family)
 		{
-			return static_cast<bool>(queue_family.queueFlags & vk::QueueFlagBits::eGraphics);
+			return !!(queue_family.queueFlags & vk::QueueFlagBits::eGraphics);
 		});
 
 		std::vector required_device_extensions{vk::KHRSwapchainExtensionName};
@@ -400,38 +293,21 @@ namespace toaster::gpu
 	{
 		switch (p_message_severity)
 		{
-			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose:
-			{
-				LOG_TRACE("[Verbose] | Validation layer: {} | Message: {}", vk::to_string(p_message_type), p_callback_data->pMessage);
-			}
-			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo:
-			{
-				LOG_INFO("[Info] | Validation layer: {} | Message: {}", vk::to_string(p_message_type), p_callback_data->pMessage);
-			}
-			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning:
-			{
-				LOG_WARN("[Warning] | Validation layer: {} | Message: {}", vk::to_string(p_message_type), p_callback_data->pMessage);
-			}
-			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError:
-			{
-				LOG_ERROR("[Error] | Validation layer: {} | Message: {}", vk::to_string(p_message_type), p_callback_data->pMessage);
-			}
+			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose: LOG_TRACE("[Verbose] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
+																			   p_callback_data->pMessage);
+			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo: LOG_INFO("[Info] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
+																		   p_callback_data->pMessage);
+			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning: LOG_WARN("[Warning] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
+																			  p_callback_data->pMessage);
+			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError: LOG_ERROR("[Error] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
+																			 p_callback_data->pMessage);
 		}
 		return vk::False;
 	}
 
-	vk::raii::ShaderModule VKGPUContext::_createShaderModule(const std::vector<uint8> &p_code)
-	{
-		vk::ShaderModuleCreateInfo shader_module_create_info{};
-		shader_module_create_info.codeSize = p_code.size();
-		shader_module_create_info.pCode    = reinterpret_cast<const uint32 *>(p_code.data());
-
-		return {m_device, shader_module_create_info};
-	}
-
-	void VKGPUContext::transitionImageLayout(vk::Image &             p_image, uint32 p_frame_index, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
-											 vk::AccessFlags2        p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-											 vk::PipelineStageFlags2 p_dst_stage_mask)
+	void VKGPUContext::transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
+											 vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
+											 vk::PipelineStageFlags2  p_dst_stage_mask)
 	{
 		vk::ImageMemoryBarrier2 image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;
@@ -449,6 +325,15 @@ namespace toaster::gpu
 		dependency_info.imageMemoryBarrierCount = 1;
 		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
 
-		m_commandBuffers[p_frame_index].pipelineBarrier2(dependency_info);
+		p_command_buffer.pipelineBarrier2(dependency_info);
+	}
+
+	vk::raii::ShaderModule VKGPUContext::createShaderModule(const std::vector<uint8> &p_code)
+	{
+		vk::ShaderModuleCreateInfo shader_module_create_info{};
+		shader_module_create_info.codeSize = p_code.size();
+		shader_module_create_info.pCode    = reinterpret_cast<const uint32 *>(p_code.data());
+
+		return {m_device, shader_module_create_info};
 	}
 }
