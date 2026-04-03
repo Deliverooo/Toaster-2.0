@@ -78,7 +78,7 @@ namespace toaster::gpu
 		submit_info.pWaitDstStageMask    = &wait_dst_stage_mask;
 		submit_info.pWaitSemaphores      = &*m_imageAvailableSemaphores[m_frameIndex];
 		submit_info.waitSemaphoreCount   = 1;
-		submit_info.pSignalSemaphores    = &*m_renderFinishedSemaphores[m_imageIndex];
+		submit_info.pSignalSemaphores    = &*m_renderFinishedSemaphores[m_frameIndex];
 		submit_info.signalSemaphoreCount = 1;
 
 		// When we submit the work to the GPU we signal a fence then wait on it before beginning the next frame
@@ -87,7 +87,7 @@ namespace toaster::gpu
 		// Waits for m_renderFinishedSemaphores[m_imageIndex] to be signalled and submits the work to the GPU.
 		vk::PresentInfoKHR present_info{};
 		present_info.waitSemaphoreCount = 1;
-		present_info.pWaitSemaphores    = &*m_renderFinishedSemaphores[m_imageIndex];
+		present_info.pWaitSemaphores    = &*m_renderFinishedSemaphores[m_frameIndex];
 		present_info.swapchainCount     = 1;
 		present_info.pSwapchains        = &*m_swapchain;
 		present_info.pImageIndices      = &m_imageIndex;
@@ -168,32 +168,19 @@ namespace toaster::gpu
 
 	void VKSwapchain::_createImageViews()
 	{
-		vk::ImageViewCreateInfo image_view_create_info{};
-		image_view_create_info.viewType         = vk::ImageViewType::e2D;
-		image_view_create_info.format           = m_swapchainSurfaceFormat.format;
-		image_view_create_info.subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
-		image_view_create_info.components       = {
-			vk::ComponentSwizzle::eIdentity,
-			vk::ComponentSwizzle::eIdentity,
-			vk::ComponentSwizzle::eIdentity,
-			vk::ComponentSwizzle::eIdentity
-		};
-		for (auto &image: m_swapchainImages)
-		{
-			image_view_create_info.image = image;
-			m_swapchainImageViews.emplace_back(m_ctx->getDevice(), image_view_create_info);
-		}
+		for (auto &img: m_swapchainImages)
+			m_swapchainImageViews.emplace_back(m_ctx->createImageView(img, m_swapchainSurfaceFormat.format));
 	}
 
 	void VKSwapchain::_createSyncObjects()
 	{
 		auto &device = m_ctx->getDevice();
-		for (uint32 i{0u}; i < m_swapchainImageViews.size(); ++i)
-			m_renderFinishedSemaphores.emplace_back(device, vk::SemaphoreCreateInfo{});
-
 		for (uint32 i{0u}; i < VKGPUContext::c_maxFramesInFlight; ++i)
 		{
-			m_imageAvailableSemaphores.emplace_back(device, vk::SemaphoreCreateInfo{});
+			// I don't know why vk::SemaphoreCreateInfo exists, there are no parameters that you can set for it
+			vk::SemaphoreCreateInfo semaphore_create_info{};
+			m_imageAvailableSemaphores.emplace_back(device, semaphore_create_info);
+			m_renderFinishedSemaphores.emplace_back(device, semaphore_create_info);
 
 			vk::FenceCreateInfo fence_create_info{};
 			fence_create_info.flags = vk::FenceCreateFlagBits::eSignaled;

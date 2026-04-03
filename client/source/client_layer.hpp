@@ -34,6 +34,11 @@ namespace toaster
 
 		void _createDescriptorSetLayout();
 		void _createGraphicsPipeline();
+
+		void _createTextureImage();
+		void _createTextureImageView();
+		void _createTextureSampler();
+
 		void _createVertexBuffer();
 		void _createIndexBuffer();
 		void _createUniformBuffers();
@@ -42,24 +47,30 @@ namespace toaster
 
 		float32 m_time{0.0f};
 
-		gpu::VertexBufferLayout m_vertexBufferLayout;
-
 		vk::raii::DescriptorSetLayout m_descriptorSetLayout{nullptr};
+
+		gpu::VertexBufferLayout m_vertexBufferLayout;
 
 		vk::raii::Pipeline       m_graphicsPipeline{nullptr};
 		vk::raii::PipelineLayout m_pipelineLayout{nullptr};
+
+		vk::raii::Image        m_textureImage{nullptr};
+		vk::raii::DeviceMemory m_textureImageMemory{nullptr};
+		vk::raii::ImageView    m_textureImageView{nullptr};
+		vk::raii::Sampler      m_textureImageSampler{nullptr};
 
 		struct Vertex
 		{
 			glm::vec3 position;
 			glm::vec3 colour;
+			glm::vec2 texCoord;
 		};
 
 		const std::vector<Vertex> m_vertices{
-			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-			{{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}},
-			{{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 1.0f}},
-			{{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 1.0f}}
+			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+			{{0.5f, -0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+			{{0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+			{{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
 		};
 
 		const std::vector<uint16> m_indices{0, 1, 2, 2, 3, 0};
