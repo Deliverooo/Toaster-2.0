@@ -65,6 +65,9 @@ if (${WITH_VULKAN_BACKEND})
 
 			vk/vk_swapchain.cpp
 			vk/vk_swapchain.hpp
+
+			vk/vk_pipeline.cpp
+			vk/vk_pipeline.hpp
 	)
 endif ()
 

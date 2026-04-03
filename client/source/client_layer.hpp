@@ -12,6 +12,7 @@
 #include "toaster/toast_lib/events/window_event.hpp"
 
 #include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_pipeline.hpp"
 
 namespace toaster
 {
@@ -29,9 +30,9 @@ namespace toaster
 		bool onKeyPressEvent(KeyPressEvent &e);
 
 		void _recordCommandBuffer(uint32 p_image_index);
-		void _createGraphicsPipeline();
 
-		vk::raii::Pipeline       m_graphicsPipeline{nullptr};
-		vk::raii::PipelineLayout m_pipelineLayout{nullptr};
+		RefPtr<gpu::VKPipeline> m_pipeline{nullptr};
+		// vk::raii::Pipeline       m_graphicsPipeline{nullptr};
+		// vk::raii::PipelineLayout m_pipelineLayout{nullptr};
 	};
 }

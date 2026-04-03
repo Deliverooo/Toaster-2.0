@@ -11,6 +11,8 @@
 #include "toast_lib/string.hpp"
 #include "toast_lib/system_types.h"
 
+#include "toast_lib/toast_assert.h"
+
 #include <unordered_set>
 
 namespace toaster::gpu
