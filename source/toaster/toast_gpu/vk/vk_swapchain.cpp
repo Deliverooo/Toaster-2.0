@@ -193,7 +193,7 @@ namespace toaster::gpu
 		vk::Format depth_format = m_ctx->findDepthFormat();
 		m_ctx->createImage(m_swapchainExtent.width, m_swapchainExtent.height, depth_format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment,
 						   vk::MemoryPropertyFlagBits::eDeviceLocal, m_depthImage, m_depthImageMemory);
-		m_depthImageView = m_ctx->createImageView(m_depthImage, depth_format, vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil);
+		m_depthImageView = m_ctx->createImageView(m_depthImage, depth_format, vk::ImageAspectFlagBits::eDepth);
 	}
 
 	void VKSwapchain::_createSyncObjects()

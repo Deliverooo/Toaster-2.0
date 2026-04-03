@@ -308,6 +308,8 @@ namespace toaster
 		auto &app = getApp();
 		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 
+		stbi_set_flip_vertically_on_load(true);
+
 		int32          tex_width;
 		int32          tex_height;
 		int32          tex_channels;
