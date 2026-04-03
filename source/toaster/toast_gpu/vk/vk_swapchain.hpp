@@ -22,13 +22,15 @@ namespace toaster::gpu
 		[[nodiscard]] vk::raii::CommandBuffer &getCommandBuffer(uint32 p_frame_index);
 		[[nodiscard]] vk::raii::CommandBuffer &getCurrentCommandBuffer();
 
-		[[nodiscard]] vk::Extent2D getExtent() const;
-		vk::SurfaceFormatKHR       getSurfaceFormat() const;
+		[[nodiscard]] vk::Extent2D         getExtent() const;
+		[[nodiscard]] vk::SurfaceFormatKHR getSurfaceFormat() const;
+
+		[[nodiscard]] uint32 getMinImageCount() const;
+		[[nodiscard]] uint32 getImageCount() const;
 
 		void setFramebufferResized(bool p_resized);
 
 	private:
-		void _createSwapchain(vk::SwapchainKHR p_old_swapchain);
 		void _createImageViews();
 		void _createSyncObjects();
 		void _createCommandBuffers();
@@ -49,6 +51,7 @@ namespace toaster::gpu
 		std::vector<vk::raii::ImageView> m_swapchainImageViews;
 		vk::SurfaceFormatKHR             m_swapchainSurfaceFormat;
 		vk::Extent2D                     m_swapchainExtent;
+		uint32                           m_minImageCount{0u};
 
 		std::vector<vk::raii::Semaphore> m_imageAvailableSemaphores;
 		std::vector<vk::raii::Semaphore> m_renderFinishedSemaphores;

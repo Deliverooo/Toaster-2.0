@@ -47,6 +47,28 @@ namespace toaster::gpu
 		vk::PipelineShaderStageCreateInfo shader_stage_create_infos[] = {vertex_shader_stage_create_info, pixel_shader_stage_create_info};
 
 		vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
+		vk::VertexInputBindingDescription      vertex_input_binding_description{};
+		vertex_input_binding_description.binding                     = 0;
+		vertex_input_binding_description.stride                      = m_createInfo.vertexBufferLayout.getStride();
+		vertex_input_binding_description.inputRate                   = vk::VertexInputRate::eVertex;
+		vertex_input_state_create_info.pVertexBindingDescriptions    = &vertex_input_binding_description;
+		vertex_input_state_create_info.vertexBindingDescriptionCount = 1;
+
+		std::vector<vk::VertexInputAttributeDescription> vertex_input_attribute_descriptions;
+		vertex_input_attribute_descriptions.resize(m_createInfo.vertexBufferLayout.getElements().size());
+
+		uint32 location{0u};
+		for (const auto &element: m_createInfo.vertexBufferLayout)
+		{
+			vertex_input_attribute_descriptions[location].binding  = 0;
+			vertex_input_attribute_descriptions[location].format   = _getVulkanAttribType(element.type);
+			vertex_input_attribute_descriptions[location].location = location;
+			vertex_input_attribute_descriptions[location].offset   = element.offset;
+			++location;
+		}
+
+		vertex_input_state_create_info.pVertexAttributeDescriptions    = vertex_input_attribute_descriptions.data();
+		vertex_input_state_create_info.vertexAttributeDescriptionCount = static_cast<uint32>(vertex_input_attribute_descriptions.size());
 
 		vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info{};
 		input_assembly_state_create_info.topology = vk::PrimitiveTopology::eTriangleList;
@@ -58,7 +80,7 @@ namespace toaster::gpu
 		vk::PipelineRasterizationStateCreateInfo rasterization_state_create_info{};
 		rasterization_state_create_info.depthClampEnable        = false;
 		rasterization_state_create_info.rasterizerDiscardEnable = false;
-		rasterization_state_create_info.polygonMode             = vk::PolygonMode::eFill;
+		rasterization_state_create_info.polygonMode             = vk::PolygonMode::eLine;
 		rasterization_state_create_info.cullMode                = vk::CullModeFlagBits::eBack;
 		rasterization_state_create_info.frontFace               = vk::FrontFace::eClockwise;
 		rasterization_state_create_info.depthBiasEnable         = false;
@@ -108,5 +130,24 @@ namespace toaster::gpu
 		graphics_pipeline_create_info.pNext               = &rendering_create_info;
 
 		m_graphicsPipeline = {m_ctx->getDevice(), nullptr, graphics_pipeline_create_info};
+	}
+
+	vk::Format VKPipeline::_getVulkanAttribType(EShaderDataType p_type)
+	{
+		switch (p_type)
+		{
+			case EShaderDataType::eFloat: return vk::Format::eR32Sfloat;
+			case EShaderDataType::eFloat2: return vk::Format::eR32G32Sfloat;
+			case EShaderDataType::eFloat3: return vk::Format::eR32G32B32Sfloat;
+			case EShaderDataType::eFloat4: return vk::Format::eR32G32B32A32Sfloat;
+			case EShaderDataType::eInt: return vk::Format::eR32Sint;
+			case EShaderDataType::eInt2: return vk::Format::eR32G32Sint;
+			case EShaderDataType::eInt3: return vk::Format::eR32G32B32Sint;
+			case EShaderDataType::eInt4: return vk::Format::eR32G32B32A32Sint;
+			case EShaderDataType::eBool: return vk::Format::eR32Sint;
+			default: return vk::Format::eUndefined;
+		}
+		TST_ASSERT_MSG(false, "Unsupported shader data type");
+		return vk::Format::eUndefined;
 	}
 }

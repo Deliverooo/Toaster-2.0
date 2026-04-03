@@ -153,44 +153,19 @@ namespace toaster::gpu
 		return m_swapchainSurfaceFormat;
 	}
 
+	uint32 VKSwapchain::getMinImageCount() const
+	{
+		return m_minImageCount;
+	}
+
+	uint32 VKSwapchain::getImageCount() const
+	{
+		return m_swapchainImages.size();
+	}
+
 	void VKSwapchain::setFramebufferResized(bool p_resized)
 	{
 		m_framebufferResized = p_resized;
-	}
-
-	void VKSwapchain::_createSwapchain(vk::SwapchainKHR p_old_swapchain)
-	{
-		auto &                     physical_device = m_ctx->getPhysicalDevice();
-		auto &                     surface         = m_ctx->getSurface();
-		vk::SurfaceCapabilitiesKHR surface_caps    = physical_device.getSurfaceCapabilitiesKHR(surface);
-
-		auto available_surface_formats = physical_device.getSurfaceFormatsKHR(surface);
-		auto available_present_modes   = physical_device.getSurfacePresentModesKHR(surface);
-
-		m_swapchainSurfaceFormat = _chooseSwapchainSurfaceFormat(available_surface_formats);
-		m_swapchainExtent        = _chooseSwapchainExtent(surface_caps);
-
-		uint32 min_image_count = _chooseSwapchainMinImageCount(surface_caps);
-
-		vk::SwapchainCreateInfoKHR swapchain_create_info{};
-		swapchain_create_info.surface          = surface;
-		swapchain_create_info.minImageCount    = min_image_count;
-		swapchain_create_info.imageFormat      = m_swapchainSurfaceFormat.format;
-		swapchain_create_info.imageColorSpace  = m_swapchainSurfaceFormat.colorSpace;
-		swapchain_create_info.imageExtent      = m_swapchainExtent;
-		swapchain_create_info.imageArrayLayers = 1;
-		swapchain_create_info.imageUsage       = vk::ImageUsageFlagBits::eColorAttachment;
-		swapchain_create_info.imageSharingMode = vk::SharingMode::eExclusive;
-		swapchain_create_info.preTransform     = surface_caps.currentTransform;
-		swapchain_create_info.compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-		swapchain_create_info.presentMode      = _chooseSwapchainPresentMode(available_present_modes);
-		swapchain_create_info.clipped          = true;
-
-		// Pass the old swapchain to the create info
-		swapchain_create_info.oldSwapchain = p_old_swapchain;
-
-		m_swapchain       = {m_ctx->getDevice(), swapchain_create_info};
-		m_swapchainImages = m_swapchain.getImages();
 	}
 
 	void VKSwapchain::_createImageViews()
@@ -234,7 +209,7 @@ namespace toaster::gpu
 
 		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
 		command_buffer_allocate_info.commandBufferCount = VKGPUContext::c_maxFramesInFlight;
-		command_buffer_allocate_info.commandPool        = m_ctx->getCommandPool();
+		command_buffer_allocate_info.commandPool        = m_ctx->getGraphicsCommandPool();
 		command_buffer_allocate_info.level              = vk::CommandBufferLevel::ePrimary;
 
 		m_commandBuffers = vk::raii::CommandBuffers{device, command_buffer_allocate_info};
@@ -252,11 +227,11 @@ namespace toaster::gpu
 		m_swapchainSurfaceFormat = _chooseSwapchainSurfaceFormat(available_surface_formats);
 		m_swapchainExtent        = _chooseSwapchainExtent(surface_caps);
 
-		uint32 min_image_count = _chooseSwapchainMinImageCount(surface_caps);
+		m_minImageCount = _chooseSwapchainMinImageCount(surface_caps);
 
 		vk::SwapchainCreateInfoKHR swapchain_create_info{};
 		swapchain_create_info.surface          = surface;
-		swapchain_create_info.minImageCount    = min_image_count;
+		swapchain_create_info.minImageCount    = m_minImageCount;
 		swapchain_create_info.imageFormat      = m_swapchainSurfaceFormat.format;
 		swapchain_create_info.imageColorSpace  = m_swapchainSurfaceFormat.colorSpace;
 		swapchain_create_info.imageExtent      = m_swapchainExtent;

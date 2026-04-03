@@ -13,8 +13,6 @@
 
 #include "toast_lib/toast_assert.h"
 
-#include <unordered_set>
-
 namespace toaster::gpu
 {
 	#ifdef NDEBUG
@@ -28,6 +26,13 @@ namespace toaster::gpu
 	public:
 		constexpr static uint32 c_maxFramesInFlight{3u};
 
+		struct QueueFamilyIndices
+		{
+			uint32 graphics{UINT32_MAX};
+			uint32 transfer{UINT32_MAX};
+			uint32 compute{UINT32_MAX};
+		};
+
 		VKGPUContext(GLFWwindow *p_window);
 		~VKGPUContext() noexcept override;
 
@@ -35,11 +40,14 @@ namespace toaster::gpu
 		[[nodiscard]] vk::raii::PhysicalDevice &getPhysicalDevice();
 		[[nodiscard]] vk::raii::Device &        getDevice();
 		[[nodiscard]] vk::raii::Queue &         getGraphicsQueue();
+		[[nodiscard]] vk::raii::Queue &         getTransferQueue();
+		[[nodiscard]] vk::raii::Queue &         getComputeQueue();
+		[[nodiscard]] const QueueFamilyIndices &getQueueFamilyIndices() const;
 		[[nodiscard]] vk::raii::SurfaceKHR &    getSurface();
 
-		[[nodiscard]] vk::raii::CommandPool &getCommandPool();
-
-		void drawFrame();
+		[[nodiscard]] vk::raii::CommandPool &getGraphicsCommandPool();
+		[[nodiscard]] vk::raii::CommandPool &getTransferCommandPool();
+		[[nodiscard]] vk::raii::CommandPool &getComputeCommandPool();
 
 		void transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::Image &       p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
@@ -47,17 +55,20 @@ namespace toaster::gpu
 
 		vk::raii::ShaderModule createShaderModule(const std::vector<uint8> &p_code);
 
+		[[nodiscard]] uint32 findMemoryType(uint32 p_type_filter, vk::MemoryPropertyFlags p_properties) const;
+
+		void createBuffer(vk::DeviceSize          p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Buffer &p_out_buffer,
+						  vk::raii::DeviceMemory &p_out_memory) const;
+
+		void copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) const;
+
 	private:
 		void _createInstance();
 		void _createDebugMessenger();
 		void _createSurface();
 		void _pickPhysicalDevice();
 		void _createLogicalDevice();
-
-		void _createCommandPool();
-		// void _createCommandBuffer();
-
-		void _recreateSwapchain();
+		void _createCommandPools();
 
 		[[nodiscard]] bool _isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const;
 
@@ -77,17 +88,16 @@ namespace toaster::gpu
 
 		vk::raii::PhysicalDevice m_currentPhysicalDevice{nullptr};
 
-		struct QueueFamilyIndices
-		{
-			uint32 graphics{UINT32_MAX};
-		};
-
 		std::vector<CString> m_requiredDeviceExtensions{vk::KHRSwapchainExtensionName};
 		vk::raii::Device     m_device{nullptr};
 
 		vk::raii::Queue    m_graphicsQueue{nullptr};
+		vk::raii::Queue    m_transferQueue{nullptr};
+		vk::raii::Queue    m_computeQueue{nullptr};
 		QueueFamilyIndices m_queueFamilyIndices{};
 
-		vk::raii::CommandPool m_commandPool{nullptr};
+		vk::raii::CommandPool m_graphicsCommandPool{nullptr};
+		vk::raii::CommandPool m_transferCommandPool{nullptr};
+		vk::raii::CommandPool m_computeCommandPool{nullptr};
 	};
 }

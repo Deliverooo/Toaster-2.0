@@ -2,6 +2,7 @@
 
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
+#include "toast_lib/util_defines.hpp"
 
 #include "toast_lib/io/filesystem.hpp"
 
@@ -16,7 +17,7 @@ namespace toaster::gpu
 			_createSurface();
 			_pickPhysicalDevice();
 			_createLogicalDevice();
-			_createCommandPool();
+			_createCommandPools();
 		}
 		catch (const vk::SystemError &err)
 		{
@@ -46,19 +47,39 @@ namespace toaster::gpu
 		return m_graphicsQueue;
 	}
 
+	vk::raii::Queue &VKGPUContext::getTransferQueue()
+	{
+		return m_transferQueue;
+	}
+
+	vk::raii::Queue &VKGPUContext::getComputeQueue()
+	{
+		return m_computeQueue;
+	}
+
+	const VKGPUContext::QueueFamilyIndices &VKGPUContext::getQueueFamilyIndices() const
+	{
+		return m_queueFamilyIndices;
+	}
+
 	vk::raii::SurfaceKHR &VKGPUContext::getSurface()
 	{
 		return m_surface;
 	}
 
-	vk::raii::CommandPool &VKGPUContext::getCommandPool()
+	vk::raii::CommandPool &VKGPUContext::getGraphicsCommandPool()
 	{
-		return m_commandPool;
+		return m_graphicsCommandPool;
 	}
 
-	void VKGPUContext::drawFrame()
+	vk::raii::CommandPool &VKGPUContext::getTransferCommandPool()
 	{
-		// _recordCommandBuffer(image_index);
+		return m_transferCommandPool;
+	}
+
+	vk::raii::CommandPool &VKGPUContext::getComputeCommandPool()
+	{
+		return m_computeCommandPool;
 	}
 
 	void VKGPUContext::_createInstance()
@@ -174,6 +195,14 @@ namespace toaster::gpu
 		}
 
 		m_currentPhysicalDevice = *device_it;
+
+		#ifndef NDEBUG
+
+		auto props = m_currentPhysicalDevice.getProperties();
+
+		LOG_INFO("Using physical device: {} | Device ID: {}", props.deviceName.data(), props.deviceID);
+
+		#endif
 	}
 
 	void VKGPUContext::_createLogicalDevice()
@@ -188,9 +217,40 @@ namespace toaster::gpu
 				break;
 			}
 		}
+		for (uint32 i{0u}; i < queue_family_props.size(); ++i)
+		{
+			if (queue_family_props[i].queueFlags & vk::QueueFlagBits::eCompute && queue_family_props[i].queueFlags & vk::QueueFlagBits::eGraphics)
+			{
+				m_queueFamilyIndices.compute = i;
+				break;
+			}
+		}
+		for (uint32 i{0u}; i < queue_family_props.size(); ++i)
+		{
+			if (queue_family_props[i].queueFlags & vk::QueueFlagBits::eTransfer && (
+					static_cast<uint32>(queue_family_props[i].queueFlags & vk::QueueFlagBits::eGraphics) == 0) && (
+					static_cast<uint32>(queue_family_props[i].queueFlags & vk::QueueFlagBits::eCompute) == 0))
+			{
+				m_queueFamilyIndices.transfer = i;
+				break;
+			}
+		}
+
 		if (m_queueFamilyIndices.graphics == UINT32_MAX)
 		{
 			LOG_ERROR("Failed to find a queue family that supports present");
+			TST_ASSERT(false);
+		}
+
+		if (m_queueFamilyIndices.transfer == UINT32_MAX)
+		{
+			LOG_ERROR("Failed to find a transfer queue family");
+			TST_ASSERT(false);
+		}
+
+		if (m_queueFamilyIndices.compute == UINT32_MAX)
+		{
+			LOG_ERROR("Failed to find a compute queue family");
 			TST_ASSERT(false);
 		}
 
@@ -198,13 +258,30 @@ namespace toaster::gpu
 		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                    = true;
 		feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState = true;
 
-		std::array<vk::DeviceQueueCreateInfo, 1> queue_create_infos{};
+		std::vector<vk::DeviceQueueCreateInfo> queue_create_infos{};
+
 		// Create the graphics and present queue
 		// The graphics queue should be the same as the present one
-		queue_create_infos[0].queueFamilyIndex = m_queueFamilyIndices.graphics;
-		queue_create_infos[0].queueCount       = 1;
-		constexpr float32 queue_priority       = 1.0f;
-		queue_create_infos[0].pQueuePriorities = &queue_priority;
+		auto &graphics_queue_create_info            = queue_create_infos.emplace_back();
+		graphics_queue_create_info.queueFamilyIndex = m_queueFamilyIndices.graphics;
+		graphics_queue_create_info.queueCount       = 1;
+		constexpr float32 queue_priority            = 1.0f;
+		graphics_queue_create_info.pQueuePriorities = &queue_priority;
+
+		// Create the transfer queue
+		auto &transfer_queue_create_info            = queue_create_infos.emplace_back();
+		transfer_queue_create_info.queueFamilyIndex = m_queueFamilyIndices.transfer;
+		transfer_queue_create_info.queueCount       = 1;
+		transfer_queue_create_info.pQueuePriorities = &queue_priority;
+
+		if (m_queueFamilyIndices.graphics != m_queueFamilyIndices.compute)
+		{
+			// Create the compute queue
+			auto &compute_queue_create_info            = queue_create_infos.emplace_back();
+			compute_queue_create_info.queueFamilyIndex = m_queueFamilyIndices.compute;
+			compute_queue_create_info.queueCount       = 1;
+			compute_queue_create_info.pQueuePriorities = &queue_priority;
+		}
 
 		vk::DeviceCreateInfo device_create_info{};
 		device_create_info.enabledExtensionCount   = static_cast<uint32>(m_requiredDeviceExtensions.size());
@@ -213,28 +290,43 @@ namespace toaster::gpu
 		device_create_info.pQueueCreateInfos       = queue_create_infos.data();
 		device_create_info.pNext                   = &feature_chain.get<vk::PhysicalDeviceFeatures2>();
 
-		m_device        = {m_currentPhysicalDevice, device_create_info};
+		m_device = {m_currentPhysicalDevice, device_create_info};
+
+		// Create the queues
 		m_graphicsQueue = {m_device, m_queueFamilyIndices.graphics, 0};
+		m_transferQueue = {m_device, m_queueFamilyIndices.transfer, 0};
+		if (m_queueFamilyIndices.graphics == m_queueFamilyIndices.compute)
+			m_computeQueue = {m_device, m_queueFamilyIndices.compute, 1};
+
+		#ifndef NDEBUG
+		LOG_TRACE("Graphics queue family index {}", m_queueFamilyIndices.graphics);
+		LOG_TRACE("Transfer queue family index {}", m_queueFamilyIndices.transfer);
+		LOG_TRACE("Compute queue family index {}", m_queueFamilyIndices.compute);
+		#endif
 	}
 
-	void VKGPUContext::_createCommandPool()
+	void VKGPUContext::_createCommandPools()
 	{
-		vk::CommandPoolCreateInfo command_pool_create_info{};
-		command_pool_create_info.queueFamilyIndex = m_queueFamilyIndices.graphics;
-		command_pool_create_info.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+		// Graphics
+		vk::CommandPoolCreateInfo graphics_command_pool_create_info{};
+		graphics_command_pool_create_info.queueFamilyIndex = m_queueFamilyIndices.graphics;
+		graphics_command_pool_create_info.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 
-		m_commandPool = {m_device, command_pool_create_info};
-	}
+		m_graphicsCommandPool = {m_device, graphics_command_pool_create_info};
 
-	void VKGPUContext::_recreateSwapchain()
-	{
-		m_device.waitIdle();
-		//
-		// m_swapchainImageViews.clear();
-		// m_swapchain = nullptr;
-		//
-		// _createSwapchain();
-		// _createImageViews();
+		// Transfer
+		vk::CommandPoolCreateInfo transfer_command_pool_create_info{};
+		transfer_command_pool_create_info.queueFamilyIndex = m_queueFamilyIndices.transfer;
+		transfer_command_pool_create_info.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+
+		m_transferCommandPool = {m_device, transfer_command_pool_create_info};
+
+		// Compute
+		vk::CommandPoolCreateInfo compute_command_pool_create_info{};
+		compute_command_pool_create_info.queueFamilyIndex = m_queueFamilyIndices.compute;
+		compute_command_pool_create_info.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+
+		m_computeCommandPool = {m_device, compute_command_pool_create_info};
 	}
 
 	bool VKGPUContext::_isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const
@@ -248,8 +340,10 @@ namespace toaster::gpu
 			return !!(queue_family.queueFlags & vk::QueueFlagBits::eGraphics);
 		});
 
+		// For the moment, the only required extension is the swapchain one.
 		std::vector required_device_extensions{vk::KHRSwapchainExtensionName};
 
+		// Checks if all the required extensions are present in the available_device_extensions vector.
 		auto available_device_extensions             = p_physical_device.enumerateDeviceExtensionProperties();
 		bool supports_all_required_device_extensions = std::ranges::all_of(required_device_extensions, [available_device_extensions](const auto &required_ext)
 		{
@@ -335,5 +429,69 @@ namespace toaster::gpu
 		shader_module_create_info.pCode    = reinterpret_cast<const uint32 *>(p_code.data());
 
 		return {m_device, shader_module_create_info};
+	}
+
+	uint32 VKGPUContext::findMemoryType(uint32 p_type_filter, vk::MemoryPropertyFlags p_properties) const
+	{
+		vk::PhysicalDeviceMemoryProperties memory_properties = m_currentPhysicalDevice.getMemoryProperties();
+		for (uint32 i{0u}; i < memory_properties.memoryTypeCount; i++)
+		{
+			if ((p_type_filter & BIT(i)) && (memory_properties.memoryTypes[i].propertyFlags & p_properties) == p_properties)
+			{
+				return i;
+			}
+		}
+		TST_ASSERT_MSG(false, "Failed to find a matching memory type!");
+		return UINT32_MAX;
+	}
+
+	void VKGPUContext::createBuffer(vk::DeviceSize    p_size, vk::BufferUsageFlags          p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
+									vk::raii::Buffer &p_out_buffer, vk::raii::DeviceMemory &p_out_memory) const
+	{
+		vk::BufferCreateInfo buffer_create_info{};
+		buffer_create_info.size        = p_size;
+		buffer_create_info.usage       = p_usage_flags;
+		buffer_create_info.sharingMode = vk::SharingMode::eConcurrent;
+
+		p_out_buffer = {m_device, buffer_create_info};
+
+		vk::MemoryRequirements memory_requirements = p_out_buffer.getMemoryRequirements();
+		vk::MemoryAllocateInfo memory_allocate_info{};
+		memory_allocate_info.memoryTypeIndex = findMemoryType(memory_requirements.memoryTypeBits, p_memory_properties);
+		memory_allocate_info.allocationSize  = memory_requirements.size;
+
+		p_out_memory = {m_device, memory_allocate_info};
+
+		p_out_buffer.bindMemory(p_out_memory, 0u);
+	}
+
+	void VKGPUContext::copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) const
+	{
+		vk::BufferCopy buffer_copy{};
+		buffer_copy.size      = static_cast<uint32>(p_size);
+		buffer_copy.srcOffset = 0;
+		buffer_copy.dstOffset = 0;
+
+		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
+		command_buffer_allocate_info.commandBufferCount = 1;
+		command_buffer_allocate_info.commandPool        = m_transferCommandPool;
+		command_buffer_allocate_info.level              = vk::CommandBufferLevel::ePrimary;
+
+		vk::raii::CommandBuffer command_buffer{std::move(m_device.allocateCommandBuffers(command_buffer_allocate_info).front())};
+
+		vk::CommandBufferBeginInfo command_buffer_begin_info{};
+		command_buffer_begin_info.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+		command_buffer.begin(command_buffer_begin_info);
+
+		command_buffer.copyBuffer(p_src_buffer, p_dst_buffer, buffer_copy);
+
+		command_buffer.end();
+
+		vk::SubmitInfo submit_info{};
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers    = &*command_buffer;
+		m_transferQueue.submit(submit_info);
+
+		m_transferQueue.waitIdle();
 	}
 }

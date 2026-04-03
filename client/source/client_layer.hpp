@@ -32,7 +32,20 @@ namespace toaster
 		void _recordCommandBuffer(uint32 p_image_index);
 
 		RefPtr<gpu::VKPipeline> m_pipeline{nullptr};
-		// vk::raii::Pipeline       m_graphicsPipeline{nullptr};
-		// vk::raii::PipelineLayout m_pipelineLayout{nullptr};
+
+		struct Vertex
+		{
+			glm::vec3 position;
+			glm::vec3 colour;
+		};
+
+		const std::vector<Vertex> m_vertices = {
+			{{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+			{{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 0.0f}},
+			{{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 1.0f}}
+		};
+
+		vk::raii::Buffer       m_vertexBuffer{nullptr};
+		vk::raii::DeviceMemory m_vertexBufferMemory{nullptr};
 	};
 }

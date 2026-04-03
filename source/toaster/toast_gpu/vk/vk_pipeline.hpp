@@ -2,10 +2,14 @@
 
 #include "vk_gpu_context.hpp"
 
+#include "../vertex_buffer_layout.hpp"
+
 namespace toaster::gpu
 {
 	struct PipelineCreateInfo
 	{
+		VertexBufferLayout vertexBufferLayout;
+
 		vk::Format colourAttachmentFormat;
 	};
 
@@ -22,6 +26,8 @@ namespace toaster::gpu
 
 	private:
 		void _createGraphicsPipeline();
+
+		static vk::Format _getVulkanAttribType(EShaderDataType p_type);
 
 		VKGPUContext *m_ctx{nullptr};
 

@@ -9,4 +9,5 @@ set(SRC
 add_executable(toaster_client ${SRC})
 
 target_link_libraries(toaster_client PRIVATE Toaster)
+target_link_libraries(toaster_client PRIVATE imgui)
 
