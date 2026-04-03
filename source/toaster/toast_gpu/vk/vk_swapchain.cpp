@@ -21,14 +21,17 @@ namespace toaster::gpu
 	{
 		auto &device = m_ctx->getDevice();
 
+		// Wait for the previous frame to be finished before rendering this one
 		auto fence_result = device.waitForFences(*m_inFlightFences[m_frameIndex], true, UINT64_MAX);
 		if (fence_result != vk::Result::eSuccess)
 		{
 			LOG_ERROR("Failed to wait for Fence");
 			TST_ASSERT(false);
 		}
+		// Reset the fence so we can signal it later
 		device.resetFences(*m_inFlightFences[m_frameIndex]);
 
+		// Signals m_imageAvailableSemaphores[m_frameIndex] when complete
 		auto [res, image_index] = m_swapchain.acquireNextImage(UINT64_MAX, *m_imageAvailableSemaphores[m_frameIndex], nullptr);
 		m_imageIndex            = image_index;
 
@@ -37,7 +40,7 @@ namespace toaster::gpu
 			_recreateSwapchain();
 			return;
 		}
-		else if (res != vk::Result::eSuccess)
+		if (res != vk::Result::eSuccess)
 		{
 			LOG_ERROR("Failed to acquire swapchain image!");
 			TST_ASSERT(false);
@@ -68,6 +71,8 @@ namespace toaster::gpu
 
 		auto &graphics_queue = m_ctx->getGraphicsQueue();
 
+		// Waits for the image to be acquired before executing
+		// Signals m_renderFinishedSemaphores[m_imageIndex] when finished.
 		vk::PipelineStageFlags wait_dst_stage_mask{vk::PipelineStageFlagBits::eColorAttachmentOutput};
 		vk::SubmitInfo         submit_info{};
 		submit_info.commandBufferCount   = 1;
@@ -78,8 +83,10 @@ namespace toaster::gpu
 		submit_info.pSignalSemaphores    = &*m_renderFinishedSemaphores[m_imageIndex];
 		submit_info.signalSemaphoreCount = 1;
 
+		// When we submit the work to the GPU we signal a fence then wait on it before beginning the next frame
 		graphics_queue.submit(submit_info, m_inFlightFences[m_frameIndex]);
 
+		// Waits for m_renderFinishedSemaphores[m_imageIndex] to be signalled and submits the work to the GPU.
 		vk::PresentInfoKHR present_info{};
 		present_info.waitSemaphoreCount = 1;
 		present_info.pWaitSemaphores    = &*m_renderFinishedSemaphores[m_imageIndex];
@@ -92,8 +99,9 @@ namespace toaster::gpu
 		vk::Result res = static_cast<vk::Result>(graphics_queue.getDispatcher()->vkQueuePresentKHR(static_cast<VkQueue>(*graphics_queue),
 																								   reinterpret_cast<const VkPresentInfoKHR *>(&present_info)));
 
-		if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR)
+		if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR || m_framebufferResized)
 		{
+			m_framebufferResized = false;
 			_recreateSwapchain();
 		}
 		else if (res != vk::Result::eSuccess)
@@ -143,6 +151,11 @@ namespace toaster::gpu
 	vk::SurfaceFormatKHR VKSwapchain::getSurfaceFormat() const
 	{
 		return m_swapchainSurfaceFormat;
+	}
+
+	void VKSwapchain::setFramebufferResized(bool p_resized)
+	{
+		m_framebufferResized = p_resized;
 	}
 
 	void VKSwapchain::_createSwapchain(vk::SwapchainKHR p_old_swapchain)
@@ -255,7 +268,11 @@ namespace toaster::gpu
 		swapchain_create_info.presentMode      = _chooseSwapchainPresentMode(available_present_modes);
 		swapchain_create_info.clipped          = true;
 
-		swapchain_create_info.oldSwapchain = nullptr;
+		if (*m_swapchain)
+		{
+			// I think this should work, but I am not totally sure
+			swapchain_create_info.oldSwapchain = std::move(*m_swapchain);
+		}
 
 		m_swapchain       = {m_ctx->getDevice(), swapchain_create_info};
 		m_swapchainImages = m_swapchain.getImages();
@@ -263,8 +280,7 @@ namespace toaster::gpu
 
 	void VKSwapchain::_recreateSwapchain()
 	{
-		LOG_TRACE("{}, {}", m_swapchainExtent.width, m_swapchainExtent.height);
-
+		// Blocks execution until the window is a valid size (for minimisation)
 		int32 width;
 		int32 height;
 		glfwGetFramebufferSize(m_window, &width, &height);
@@ -274,10 +290,10 @@ namespace toaster::gpu
 			glfwWaitEvents();
 		}
 
+		// Wait for the GPU to finish processing anything before recreating, so nothing that depends on the swapchain becomes invalid
 		m_ctx->getDevice().waitIdle();
 
 		m_swapchainImageViews.clear();
-		m_swapchain = nullptr;
 
 		_create();
 		_createImageViews();
@@ -288,6 +304,8 @@ namespace toaster::gpu
 	vk::SurfaceFormatKHR VKSwapchain::_chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const
 	{
 		TST_ASSERT(!p_available_formats.empty());
+		// According to my expert research, the most aesthetically pleasing image format is RGBA in the SRGB colour space.
+		// If for some reason, your GPU does not support that, then just fall back to the first available format.
 		const auto format_it = std::ranges::find_if(p_available_formats, [](const auto &format)
 		{
 			return format.format == vk::Format::eR8G8B8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
@@ -297,6 +315,8 @@ namespace toaster::gpu
 
 	vk::PresentModeKHR VKSwapchain::_chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes) const
 	{
+		// The ideal present mode would be mailbox because it is the fastest.
+		// However, not every device supports it. But Fifo is guaranteed to be supported, so that is the fallback option
 		TST_ASSERT(!p_available_present_modes.empty());
 		return std::ranges::any_of(p_available_present_modes, [](const auto &present_mode)
 		{
@@ -308,13 +328,17 @@ namespace toaster::gpu
 
 	vk::Extent2D VKSwapchain::_chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const
 	{
+		// If the current extent is UINT32_MAX, it means that we can choose our own custom extent
 		if (p_surface_capabilities.currentExtent.width != UINT32_MAX)
 			return p_surface_capabilities.currentExtent;
 
+		// That extent will be equal to the back buffer's size
 		int32 width;
 		int32 height;
 		glfwGetFramebufferSize(m_window, &width, &height);
 
+		// But we still have to make sure that we clamp the extent between the min and max.
+		// I think this probably has to do with certain displays (Apple Retina) having a very high pixel density (DPI).
 		return {
 			std::clamp<uint32>(width, p_surface_capabilities.minImageExtent.width, p_surface_capabilities.maxImageExtent.width),
 			std::clamp<uint32>(height, p_surface_capabilities.minImageExtent.height, p_surface_capabilities.maxImageExtent.height)
@@ -323,7 +347,11 @@ namespace toaster::gpu
 
 	uint32 VKSwapchain::_chooseSwapchainMinImageCount(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const
 	{
+		// Ideally, we want the min image count to be at least 3. However, if your GPU is bad, it might not be able to handle that many images.
+		// So if 3 is greater than the max image count, we fall back to the max image count as the min image count... I don't know if that made sense...
 		uint32 min_image_count = std::max(3u, p_surface_capabilities.minImageCount);
+
+		// Apparently, if the maxImageCount == 0, then there is no maximum (unlimited).
 		if ((p_surface_capabilities.maxImageCount > 0) && (p_surface_capabilities.maxImageCount < min_image_count))
 		{
 			min_image_count = p_surface_capabilities.maxImageCount;

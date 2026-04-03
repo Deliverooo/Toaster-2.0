@@ -25,6 +25,8 @@ namespace toaster::gpu
 		[[nodiscard]] vk::Extent2D getExtent() const;
 		vk::SurfaceFormatKHR       getSurfaceFormat() const;
 
+		void setFramebufferResized(bool p_resized);
+
 	private:
 		void _createSwapchain(vk::SwapchainKHR p_old_swapchain);
 		void _createImageViews();
@@ -56,5 +58,7 @@ namespace toaster::gpu
 
 		uint32 m_frameIndex{0u};
 		uint32 m_imageIndex{0u};
+
+		bool m_framebufferResized{false};
 	};
 }

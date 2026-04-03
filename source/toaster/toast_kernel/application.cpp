@@ -103,11 +103,14 @@ namespace toaster
 	{
 		uint32 width  = p_event.getWidth();
 		uint32 height = p_event.getHeight();
+
 		if (width == 0 || height == 0)
 		{
 			m_minimized = true;
 			return false;
 		}
+
+		m_window->getSwapchain()->setFramebufferResized(true);
 
 		m_minimized = false;
 		return false;

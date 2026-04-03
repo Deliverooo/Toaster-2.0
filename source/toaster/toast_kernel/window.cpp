@@ -68,10 +68,10 @@ namespace toaster
 		m_window = glfwCreateWindow(static_cast<int32>(p_create_info.width), static_cast<int32>(p_create_info.height), p_create_info.title.c_str(), nullptr, nullptr);
 
 		m_gpuContext = gpu::IGPUContext::create(m_window);
-		m_swapchain  = new gpu::VKSwapchain((gpu::VKGPUContext*)m_gpuContext, m_window);
+		m_swapchain  = new gpu::VKSwapchain(dynamic_cast<gpu::VKGPUContext *>(m_gpuContext), m_window);
 
-		BOOL useDarkMode = TRUE;
-		DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
+		constexpr BOOL use_dark_mode = TRUE;
+		DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &use_dark_mode, sizeof(use_dark_mode));
 
 		glfwSetWindowUserPointer(m_window, &m_callbackData);
 
