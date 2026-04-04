@@ -476,6 +476,15 @@ namespace toaster::gpu
 		return {m_device, shader_module_create_info};
 	}
 
+	vk::raii::ShaderModule VKGPUContext::createShaderModule(const std::vector<uint32> &p_code)
+	{
+		vk::ShaderModuleCreateInfo shader_module_create_info{};
+		shader_module_create_info.codeSize = p_code.size() * sizeof(uint32);
+		shader_module_create_info.pCode    = p_code.data();
+
+		return {m_device, shader_module_create_info};
+	}
+
 	uint32 VKGPUContext::findMemoryType(uint32 p_type_filter, vk::MemoryPropertyFlags p_properties) const
 	{
 		vk::PhysicalDeviceMemoryProperties memory_properties = m_currentPhysicalDevice.getMemoryProperties();

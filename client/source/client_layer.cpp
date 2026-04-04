@@ -33,10 +33,9 @@ namespace toaster
 
 		_createDescriptorSetLayout();
 
-		gpu::VKShader::BytecodeMap shader_bytecode_map{
-			{vk::ShaderStageFlagBits::eVertex, io::filesystem::readBinary("shaders/test.vert.glsl.spv")},
-			{vk::ShaderStageFlagBits::eFragment, io::filesystem::readBinary("shaders/test.pixel.glsl.spv")}
-		};
+		gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/test.vert.glsl.spv");
+		gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/test.pixel.glsl.spv");
+		gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
 		m_shader = make_reference<gpu::VKShader>(ctx, shader_bytecode_map);
 
 		_createGraphicsPipeline();

@@ -58,6 +58,7 @@ namespace toaster::gpu
 								   vk::PipelineStageFlags2  p_dst_stage_mask);
 
 		vk::raii::ShaderModule createShaderModule(const std::vector<uint8> &p_code);
+		vk::raii::ShaderModule createShaderModule(const std::vector<uint32> &p_code);
 
 		[[nodiscard]] uint32 findMemoryType(uint32 p_type_filter, vk::MemoryPropertyFlags p_properties) const;
 

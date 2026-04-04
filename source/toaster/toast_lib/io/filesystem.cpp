@@ -38,14 +38,14 @@ namespace toaster::io::filesystem
 		return std::filesystem::exists(p_path);
 	}
 
-	std::vector<uint8> readBinary(const Path &p_path)
+	std::vector<uint32> readBinary(const Path &p_path)
 	{
-		std::vector<uint8> result;
-		std::ifstream      in{p_path, std::ios::in | std::ios::binary | std::ios::ate};
+		std::vector<uint32> result;
+		std::ifstream       in{p_path, std::ios::in | std::ios::binary | std::ios::ate};
 		if (in)
 		{
 			const auto file_size = in.tellg();
-			result.resize(file_size);
+			result.resize(file_size / sizeof(uint32));
 
 			in.seekg(0);
 

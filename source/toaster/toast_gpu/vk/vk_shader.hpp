@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 #include <vulkan/vulkan_raii.hpp>
+
+#include "vk_shader_resources.hpp"
 #include "toast_lib/system_types.h"
 
 namespace toaster::gpu
@@ -11,7 +13,7 @@ namespace toaster::gpu
 	class VKShader
 	{
 	public:
-		using Bytecode              = std::vector<uint8>;
+		using Bytecode              = std::vector<uint32>;
 		using PipelineCreateInfoMap = std::unordered_map<vk::ShaderStageFlagBits, vk::PipelineShaderStageCreateInfo>;
 		using BytecodeMap           = std::unordered_map<vk::ShaderStageFlagBits, Bytecode>;
 
@@ -31,17 +33,30 @@ namespace toaster::gpu
 		const vk::raii::DescriptorSetLayout &             getDescriptorSetLayout(uint32 p_set_index) const;
 
 	private:
+		void _reflect(vk::ShaderStageFlagBits p_stage, Bytecode p_bytecode);
 		void _createDescriptors();
+
+		struct ReflectionData
+		{
+			std::vector<DescriptorSet> descriptorSets;
+		};
 
 		VKGPUContext *m_ctx{nullptr};
 
 		// Useful for the pipeline to use to access shader modules
 		PipelineCreateInfoMap m_shaderCreateInfos;
 
+		std::unordered_map<vk::ShaderStageFlagBits, vk::raii::ShaderModule> m_shaderModules{};
+
 		// Stores the compiled shader code for each stage
 		BytecodeMap m_shaderBytecodeMap;
 
-		std::vector<vk::raii::DescriptorSetLayout> m_descriptorSetLayouts;
-		std::vector<vk::raii::DescriptorSet>       m_descriptorSets;
+		std::vector<vk::raii::DescriptorSetLayout> m_descriptorSetLayouts{};
+		std::vector<vk::raii::DescriptorSet>       m_descriptorSets{};
+
+		ReflectionData m_reflectionData{};
+
+		// Set -> pool sizes
+		std::unordered_map<uint32, std::vector<vk::DescriptorPoolSize> > m_poolSizes;
 	};
 }
