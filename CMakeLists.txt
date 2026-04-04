@@ -35,15 +35,15 @@ message(STATUS "DEBUG: WITH_OPENGL_BACKEND is set to: '${WITH_OPENGL_BACKEND}'")
 
 
 #if (WITH_VULKAN_BACKEND)
-	find_package(Vulkan REQUIRED COMPONENTS glslangValidator shaderc_combined SPIRV-Tools)
+find_package(Vulkan REQUIRED COMPONENTS glslangValidator shaderc_combined SPIRV-Tools)
 
-	if (NOT ${Vulkan_FOUND} OR NOT ${Vulkan_glslangValidator_FOUND} OR NOT ${Vulkan_shaderc_combined_FOUND} OR NOT ${Vulkan_SPIRV-Tools_FOUND})
-		message(FATAL_ERROR "Vulkan enabled as a graphics backend, but cannot be found or cannot find required components!")
-		message(FATAL_ERROR "Try (re)installing the Vulkan SDK and checking that the shader components are selected")
+if (NOT ${Vulkan_FOUND} OR NOT ${Vulkan_glslangValidator_FOUND} OR NOT ${Vulkan_shaderc_combined_FOUND} OR NOT ${Vulkan_SPIRV-Tools_FOUND})
+	message(FATAL_ERROR "Vulkan enabled as a graphics backend, but cannot be found or cannot find required components!")
+	message(FATAL_ERROR "Try (re)installing the Vulkan SDK and checking that the shader components are selected")
 
-	else ()
-		message(NOTICE "Found Vulkan :)")
-	endif ()
+else ()
+	message(NOTICE "Found Vulkan :)")
+endif ()
 
 #endif ()
 

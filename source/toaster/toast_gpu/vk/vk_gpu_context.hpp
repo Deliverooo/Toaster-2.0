@@ -83,6 +83,7 @@ namespace toaster::gpu
 		vk::Format findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling, vk::FormatFeatureFlags p_feature_flags) const;
 		vk::Format findDepthFormat() const;
 		bool       hasStencilComponent(vk::Format p_format) const;
+		bool       isDepthFormat(vk::Format p_format) const;
 
 	private:
 		void _createInstance();

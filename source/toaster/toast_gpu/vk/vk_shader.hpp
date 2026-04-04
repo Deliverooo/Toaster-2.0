@@ -29,8 +29,8 @@ namespace toaster::gpu
 		const std::vector<vk::raii::DescriptorSet> &getDescriptorSets() const;
 		const vk::raii::DescriptorSet &             getDescriptorSet(uint32 p_set_index) const;
 
-		const std::vector<vk::raii::DescriptorSetLayout> &getDescriptorSetLayouts() const;
-		const vk::raii::DescriptorSetLayout &             getDescriptorSetLayout(uint32 p_set_index) const;
+		std::vector<vk::DescriptorSetLayout> getDescriptorSetLayouts() const;
+		const vk::raii::DescriptorSetLayout &getDescriptorSetLayout(uint32 p_set_index) const;
 
 	private:
 		void _reflect(vk::ShaderStageFlagBits p_stage, Bytecode p_bytecode);

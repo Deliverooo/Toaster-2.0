@@ -22,8 +22,12 @@ namespace toaster
 
 	void ClientLayer::onInit()
 	{
-		auto &app = getApp();
-		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		auto &app       = getApp();
+		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		auto  swapchain = app.getWindow().getSwapchain();
+
+		uint32 window_width{swapchain->getExtent().width};
+		uint32 window_height{swapchain->getExtent().height};
 
 		m_vertexBufferLayout = {
 			{gpu::EShaderDataType::eFloat3, "a_Position"},
@@ -39,6 +43,13 @@ namespace toaster
 		m_shader = make_reference<gpu::VKShader>(ctx, shader_bytecode_map);
 
 		_createGraphicsPipeline();
+
+		gpu::ImageCreateInfo image_create_info{};
+		image_create_info.width  = window_width;
+		image_create_info.height = window_height;
+		image_create_info.format = gpu::EImageFormat::eSRGBA;
+		image_create_info.usage  = gpu::EImageUsage::eTexture;
+		m_image                  = make_reference<gpu::VKImage2D>(ctx, image_create_info);
 
 		_createTextureImage();
 		_createTextureImageView();

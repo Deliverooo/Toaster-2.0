@@ -70,9 +70,12 @@ namespace toaster::gpu
 		return m_descriptorSets.at(p_set_index);
 	}
 
-	const std::vector<vk::raii::DescriptorSetLayout> &VKShader::getDescriptorSetLayouts() const
+	std::vector<vk::DescriptorSetLayout> VKShader::getDescriptorSetLayouts() const
 	{
-		return m_descriptorSetLayouts;
+		std::vector<vk::DescriptorSetLayout> result;
+		for (const auto &layout: m_descriptorSetLayouts)
+			result.emplace_back(layout);
+		return result;
 	}
 
 	const vk::raii::DescriptorSetLayout &VKShader::getDescriptorSetLayout(uint32 p_set_index) const
@@ -87,6 +90,10 @@ namespace toaster::gpu
 		spirv_cross::CompilerGLSL compiler{copy};
 		auto                      resources{compiler.get_shader_resources()};
 
+		LOG_INFO("Shader stage: {}\n", vk::to_string(p_stage));
+
+		if (!resources.uniform_buffers.empty())
+			LOG_INFO("Uniform buffers:");
 		for (const auto &resource: resources.uniform_buffers)
 		{
 			const auto &name = resource.name;
@@ -111,10 +118,40 @@ namespace toaster::gpu
 
 			descriptorSet.uniformBuffers[binding] = uniform_buffer;
 
-			LOG_TRACE("{} ({}, {})", name, set, binding);
-			LOG_TRACE("Member count: {}", member_count);
-			LOG_TRACE("size: {}", size);
+			LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
+			LOG_TRACE("\t\tMember count: {}", member_count);
+			LOG_TRACE("\t\tSize: {}", size);
 		}
+
+		if (!resources.sampled_images.empty())
+			LOG_INFO("Combined image samplers:");
+		for (const auto &resource: resources.sampled_images)
+		{
+			const auto &name = resource.name;
+
+			uint32 binding    = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			uint32 set        = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+			auto & type       = compiler.get_type(resource.base_type_id);
+			uint32 array_size = type.array.empty() ? 1 : type.array[0];
+			if (array_size == 0)
+				array_size = 1;
+
+			if (set >= m_reflectionData.descriptorSets.size())
+				m_reflectionData.descriptorSets.resize(set + 1);
+
+			auto &       descriptorSet = m_reflectionData.descriptorSets[set];
+			ImageSampler image_sampler{};
+			image_sampler.stage     = p_stage;
+			image_sampler.name      = name;
+			image_sampler.binding   = binding;
+			image_sampler.arraySize = array_size;
+
+			descriptorSet.imageSamplers[binding] = image_sampler;
+
+			LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
+			LOG_TRACE("\t\tArray size: {}", array_size);
+		}
+		LOG_INFO("");
 	}
 
 	void VKShader::_createDescriptors()
@@ -128,6 +165,13 @@ namespace toaster::gpu
 				vk::DescriptorPoolSize &pool_size = m_poolSizes[set].emplace_back();
 				pool_size.type                    = vk::DescriptorType::eUniformBuffer;
 				pool_size.descriptorCount         = descriptor_set.uniformBuffers.size();
+			}
+
+			if (!descriptor_set.imageSamplers.empty())
+			{
+				vk::DescriptorPoolSize &pool_size = m_poolSizes[set].emplace_back();
+				pool_size.type                    = vk::DescriptorType::eCombinedImageSampler;
+				pool_size.descriptorCount         = descriptor_set.imageSamplers.size();
 			}
 
 			std::vector<vk::DescriptorSetLayoutBinding> layout_bindings{};
@@ -144,6 +188,22 @@ namespace toaster::gpu
 				write_descriptor                         = vk::WriteDescriptorSet{};
 				write_descriptor.descriptorCount         = 1;
 				write_descriptor.descriptorType          = vk::DescriptorType::eUniformBuffer;
+				write_descriptor.dstBinding              = binding;
+			}
+
+			for (auto &[binding, image_sampler]: descriptor_set.imageSamplers)
+			{
+				vk::DescriptorSetLayoutBinding &layout_binding = layout_bindings.emplace_back();
+				layout_binding.binding                         = binding;
+				layout_binding.descriptorCount                 = image_sampler.arraySize;
+				layout_binding.descriptorType                  = vk::DescriptorType::eCombinedImageSampler;
+				layout_binding.pImmutableSamplers              = nullptr;
+				layout_binding.stageFlags                      = image_sampler.stage;
+
+				vk::WriteDescriptorSet &write_descriptor = descriptor_set.writeDescriptorSets[image_sampler.name];
+				write_descriptor                         = vk::WriteDescriptorSet{};
+				write_descriptor.descriptorCount         = image_sampler.arraySize;
+				write_descriptor.descriptorType          = vk::DescriptorType::eCombinedImageSampler;
 				write_descriptor.dstBinding              = binding;
 			}
 

@@ -706,4 +706,10 @@ namespace toaster::gpu
 	{
 		return p_format == vk::Format::eD32SfloatS8Uint || p_format == vk::Format::eD24UnormS8Uint;
 	}
+
+	bool VKGPUContext::isDepthFormat(vk::Format p_format) const
+	{
+		return p_format == vk::Format::eD16Unorm || p_format == vk::Format::eD16UnormS8Uint || p_format == vk::Format::eD24UnormS8Uint || p_format ==
+			   vk::Format::eD32Sfloat || p_format == vk::Format::eD32SfloatS8Uint;
+	}
 }

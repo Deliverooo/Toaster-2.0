@@ -15,6 +15,7 @@
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_shader.hpp"
+#include "toast_gpu/vk/vk_image.hpp"
 
 namespace toaster
 {
@@ -65,6 +66,8 @@ namespace toaster
 		vk::raii::DeviceMemory m_textureImageMemory{nullptr};
 		vk::raii::ImageView    m_textureImageView{nullptr};
 		vk::raii::Sampler      m_textureImageSampler{nullptr};
+
+		RefPtr<gpu::VKImage2D> m_image{nullptr};
 
 		struct Vertex
 		{

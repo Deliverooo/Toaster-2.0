@@ -11,16 +11,25 @@ namespace toaster::gpu
 	struct UniformBuffer
 	{
 		vk::DescriptorBufferInfo descriptorInfo{};
+		String                   name{};
 		uint32                   size{0u};
 		uint32                   binding{0u};
-		String                   name{};
 		vk::ShaderStageFlagBits  stage{vk::ShaderStageFlagBits::eAll};
+	};
+
+	struct ImageSampler
+	{
+		String                  name{};
+		uint32                  binding{0u};
+		uint32                  arraySize{0u};
+		vk::ShaderStageFlagBits stage{vk::ShaderStageFlagBits::eAll};
 	};
 
 	struct DescriptorSet
 	{
 		// Set -> binding
 		std::unordered_map<uint32, UniformBuffer> uniformBuffers;
+		std::unordered_map<uint32, ImageSampler>  imageSamplers;
 
 		// Descriptor name -> vk::WriteDescriptorSet
 		std::unordered_map<String, vk::WriteDescriptorSet> writeDescriptorSets;

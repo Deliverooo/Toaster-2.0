@@ -79,6 +79,12 @@ if (${WITH_VULKAN_BACKEND})
 			vk/vk_shader.hpp
 
 			vk/vk_shader_resources.hpp
+
+			vk/vk_image.cpp
+			vk/vk_image.hpp
+
+			vk/vk_texture.cpp
+			vk/vk_texture.hpp
 	)
 endif ()
 
