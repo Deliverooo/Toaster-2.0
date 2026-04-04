@@ -4,6 +4,8 @@ set(SRC
 		client_application.hpp
 		client_layer.cpp
 		client_layer.hpp
+		imgui_layer.cpp
+		imgui_layer.hpp
 )
 
 add_executable(toaster_client ${SRC})

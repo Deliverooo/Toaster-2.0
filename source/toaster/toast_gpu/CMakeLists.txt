@@ -74,6 +74,9 @@ if (${WITH_VULKAN_BACKEND})
 
 			vk/vk_index_buffer.cpp
 			vk/vk_index_buffer.hpp
+
+			vk/vk_shader.cpp
+			vk/vk_shader.hpp
 	)
 endif ()
 

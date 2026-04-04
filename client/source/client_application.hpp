@@ -10,5 +10,6 @@ namespace toaster
 		~ClientApplication();
 
 	private:
+		class ImGuiLayer *m_imGuiLayer{nullptr};
 	};
 }

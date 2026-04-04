@@ -12,12 +12,6 @@ namespace toaster
 	{
 		auto &device = m_ctx->getDevice();
 
-		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
-		command_buffer_allocate_info.commandBufferCount = gpu::VKGPUContext::c_maxFramesInFlight;
-		command_buffer_allocate_info.commandPool        = m_ctx->getGraphicsCommandPool();
-		command_buffer_allocate_info.level              = vk::CommandBufferLevel::ePrimary;
-
-		m_commandBuffers = vk::raii::CommandBuffers{device, command_buffer_allocate_info};
 
 		m_ctx->createImage(1280, 720, vk::Format::eR8G8B8A8Srgb, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment,
 						   vk::MemoryPropertyFlagBits::eDeviceLocal, m_renderTargetImage, m_renderTargetImageMemory);
@@ -87,12 +81,15 @@ namespace toaster
 		delete[] m_quadVertexBase;
 	}
 
-	void Renderer2D::begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix)
+	void Renderer2D::begin(vk::raii::CommandBuffer& p_cmd, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix)
 	{
-		vk::CommandBufferBeginInfo begin_info{};
-		begin_info.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+		CameraUB ubo{};
+		ubo.view  = p_view_matrix;
+		ubo.proj  = p_proj_matrix;
 
-		m_commandBuffers[m_frameIndex].begin(begin_info);
+		ubo.proj[1][1] *= -1.0f;
+
+		// std::memcpy(m_mappedUniformBuffers[swapchain->getFrameIndex()], &ubo, sizeof(CameraUB));
 
 		// const auto quad_shader = Globals::shaderLibrary()->get("Quad");
 		// quad_shader->bind();
@@ -106,10 +103,8 @@ namespace toaster
 		m_stats.quadCount = 0u;
 	}
 
-	void Renderer2D::end()
+	void Renderer2D::end(vk::raii::CommandBuffer& p_cmd)
 	{
-		m_ctx->transitionImageLayout(m_renderTargetImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
-
 		vk::RenderingAttachmentInfo rendering_attachment_info{};
 		rendering_attachment_info.imageView   = m_renderTargetImageView;
 		rendering_attachment_info.clearValue  = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
@@ -123,7 +118,7 @@ namespace toaster
 		rendering_info.layerCount           = 1;
 		rendering_info.renderArea           = {0, 0, 1280, 720};
 
-		m_commandBuffers[m_frameIndex].beginRendering(rendering_info);
+		p_cmd.beginRendering(rendering_info);
 
 		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
 		if (size) // Apparently you have to check ts, or things won't work correctly and there will be artifacts...
@@ -133,23 +128,9 @@ namespace toaster
 			// RenderCommand::drawIndexed(m_quadVertexArray, m_quadIndexCount);
 		}
 
-		m_commandBuffers[m_frameIndex].endRendering();
+		p_cmd.endRendering();
 
-		m_commandBuffers[m_frameIndex].end();
 
-		vk::PipelineStageFlags wait_dst_stage_mask{vk::PipelineStageFlagBits::eColorAttachmentOutput};
-		vk::SubmitInfo         submit_info{};
-		submit_info.commandBufferCount   = 1;
-		submit_info.pCommandBuffers      = &*m_commandBuffers[m_frameIndex];
-		submit_info.waitSemaphoreCount   = 0;
-		submit_info.signalSemaphoreCount = 0;
-		submit_info.pWaitSemaphores      = nullptr;
-		submit_info.pSignalSemaphores    = nullptr;
-		submit_info.pWaitDstStageMask    = &wait_dst_stage_mask;
-
-		m_ctx->getGraphicsQueue().submit(submit_info);
-
-		m_frameIndex = (m_frameIndex + 1) % gpu::VKGPUContext::c_maxFramesInFlight;
 	}
 
 	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)
@@ -206,7 +187,7 @@ namespace toaster
 
 	void Renderer2D::_beginNewBatch()
 	{
-		end();
+		// end();
 
 		m_quadIndexCount = 0u;
 		m_quadVertexPtr  = m_quadVertexBase;

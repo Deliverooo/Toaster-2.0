@@ -28,8 +28,8 @@ namespace toaster
 		explicit Renderer2D(gpu::VKGPUContext *p_ctx, const Renderer2DCreateInfo &p_create_info);
 		~Renderer2D();
 
-		void begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix);
-		void end();
+		void begin(vk::raii::CommandBuffer& p_cmd, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix);
+		void end(vk::raii::CommandBuffer& p_cmd);
 
 		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
 		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
@@ -37,10 +37,9 @@ namespace toaster
 
 		[[nodiscard]] const Stats &getStats() const;
 
-		vk::raii::Image       &getRenderTargetImage();
-		vk::raii::DeviceMemory&getRenderTargetImageMemory();
-		vk::raii::ImageView   &getRenderTargetImageView();
-
+		vk::raii::Image &       getRenderTargetImage();
+		vk::raii::DeviceMemory &getRenderTargetImageMemory();
+		vk::raii::ImageView &   getRenderTargetImageView();
 
 	private:
 		void _beginNewBatch();
@@ -50,9 +49,6 @@ namespace toaster
 		Renderer2DCreateInfo m_createInfo;
 		uint32               m_maxVertices;
 		uint32               m_maxIndices;
-
-		std::vector<vk::raii::CommandBuffer> m_commandBuffers;
-		uint32                               m_frameIndex{0u};
 
 		struct QuadVertex
 		{
@@ -81,6 +77,17 @@ namespace toaster
 
 		QuadVertex *m_quadVertexBase{nullptr};
 		QuadVertex *m_quadVertexPtr{nullptr};
+
+		struct CameraUB
+		{
+			glm::mat4 model;
+			glm::mat4 view;
+			glm::mat4 proj;
+		};
+
+		std::vector<vk::raii::Buffer>       m_uniformBuffers;
+		std::vector<vk::raii::DeviceMemory> m_uniformBufferMemories;
+		std::vector<void *>                 m_mappedUniformBuffers;
 
 		uint32 m_quadIndexCount{0u};
 

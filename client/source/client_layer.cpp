@@ -11,6 +11,9 @@
 
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
+#include <imgui.h>
+namespace ig = ImGui;
+
 namespace toaster
 {
 	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app)
@@ -29,6 +32,13 @@ namespace toaster
 		};
 
 		_createDescriptorSetLayout();
+
+		gpu::VKShader::BytecodeMap shader_bytecode_map{
+			{vk::ShaderStageFlagBits::eVertex, io::filesystem::readBinary("shaders/test.vert.glsl.spv")},
+			{vk::ShaderStageFlagBits::eFragment, io::filesystem::readBinary("shaders/test.pixel.glsl.spv")}
+		};
+		m_shader = make_reference<gpu::VKShader>(ctx, shader_bytecode_map);
+
 		_createGraphicsPipeline();
 
 		_createTextureImage();
@@ -44,6 +54,8 @@ namespace toaster
 		_createUniformBuffers();
 		_createDescriptorPool();
 		_createDescriptorSets();
+
+		m_renderer2D = make_reference<Renderer2D>(ctx, Renderer2DCreateInfo{});
 	}
 
 	void ClientLayer::onDestroy()
@@ -74,6 +86,12 @@ namespace toaster
 	{
 		EventDispatcher eventDispatcher(p_event);
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(ClientLayer::onKeyPressEvent));
+	}
+
+	void ClientLayer::onUIRender()
+	{
+		ig::Begin("Viewport");
+		ig::End();
 	}
 
 	bool ClientLayer::onKeyPressEvent(KeyPressEvent &e)
@@ -138,7 +156,6 @@ namespace toaster
 
 		command_buffer.bindVertexBuffers(0, *m_vertexBuffer->getBuffer(), {0});
 		command_buffer.bindIndexBuffer(*m_indexBuffer->getBuffer(), 0u, vk::IndexType::eUint16);
-
 		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout, 0, *m_descriptorSets[swapchain->getFrameIndex()], nullptr);
 		command_buffer.drawIndexed(m_indices.size(), 1, 0, 0, 0);
 
@@ -194,20 +211,17 @@ namespace toaster
 		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 		auto  swapchain = app.getWindow().getSwapchain();
 
-		vk::raii::ShaderModule vertex_shader_module = ctx->createShaderModule(io::filesystem::readBinary("shaders/test.vert.glsl.spv"));
-		vk::raii::ShaderModule pixel_shader_module  = ctx->createShaderModule(io::filesystem::readBinary("shaders/test.pixel.glsl.spv"));
+		// vk::PipelineShaderStageCreateInfo vertex_shader_stage_create_info{};
+		// vertex_shader_stage_create_info.stage  = vk::ShaderStageFlagBits::eVertex;
+		// vertex_shader_stage_create_info.module = vertex_shader_module;
+		// vertex_shader_stage_create_info.pName  = "main";
+		//
+		// vk::PipelineShaderStageCreateInfo pixel_shader_stage_create_info{};
+		// pixel_shader_stage_create_info.stage  = vk::ShaderStageFlagBits::eFragment;
+		// pixel_shader_stage_create_info.module = pixel_shader_module;
+		// pixel_shader_stage_create_info.pName  = "main";
 
-		vk::PipelineShaderStageCreateInfo vertex_shader_stage_create_info{};
-		vertex_shader_stage_create_info.stage  = vk::ShaderStageFlagBits::eVertex;
-		vertex_shader_stage_create_info.module = vertex_shader_module;
-		vertex_shader_stage_create_info.pName  = "main";
-
-		vk::PipelineShaderStageCreateInfo pixel_shader_stage_create_info{};
-		pixel_shader_stage_create_info.stage  = vk::ShaderStageFlagBits::eFragment;
-		pixel_shader_stage_create_info.module = pixel_shader_module;
-		pixel_shader_stage_create_info.pName  = "main";
-
-		vk::PipelineShaderStageCreateInfo shader_stage_create_infos[] = {vertex_shader_stage_create_info, pixel_shader_stage_create_info};
+		// vk::PipelineShaderStageCreateInfo shader_stage_create_infos[] = {vertex_shader_stage_create_info, pixel_shader_stage_create_info};
 
 		vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
 		vk::VertexInputBindingDescription      vertex_input_binding_description{};
@@ -289,9 +303,11 @@ namespace toaster
 		pipeline_layout_create_info.pushConstantRangeCount = 0;
 		m_pipelineLayout                                   = {ctx->getDevice(), pipeline_layout_create_info};
 
+		std::vector<vk::PipelineShaderStageCreateInfo> stage_infos = m_shader->getPipelineShaderStageCreateInfos();
+
 		vk::GraphicsPipelineCreateInfo graphics_pipeline_create_info{};
 		graphics_pipeline_create_info.stageCount          = 2;
-		graphics_pipeline_create_info.pStages             = shader_stage_create_infos;
+		graphics_pipeline_create_info.pStages             = stage_infos.data();
 		graphics_pipeline_create_info.pVertexInputState   = &vertex_input_state_create_info;
 		graphics_pipeline_create_info.pInputAssemblyState = &input_assembly_state_create_info;
 		graphics_pipeline_create_info.pRasterizationState = &rasterization_state_create_info;

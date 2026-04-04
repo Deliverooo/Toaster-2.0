@@ -14,6 +14,7 @@
 #include "toast_gpu/vk/vk_gpu_context.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
 #include "toast_gpu/vk/vk_index_buffer.hpp"
+#include "toast_gpu/vk/vk_shader.hpp"
 
 namespace toaster
 {
@@ -26,6 +27,8 @@ namespace toaster
 		void onDestroy() override;
 		void onUpdate(float32 p_dt) override;
 		void onEvent(Event &p_event) override;
+
+		void onUIRender() override;
 
 	private:
 		bool onKeyPressEvent(KeyPressEvent &e);
@@ -47,9 +50,13 @@ namespace toaster
 
 		float32 m_time{0.0f};
 
+		RefPtr<Renderer2D> m_renderer2D;
+
 		vk::raii::DescriptorSetLayout m_descriptorSetLayout{nullptr};
 
 		gpu::VertexBufferLayout m_vertexBufferLayout;
+
+		RefPtr<gpu::VKShader> m_shader{nullptr};
 
 		vk::raii::Pipeline       m_graphicsPipeline{nullptr};
 		vk::raii::PipelineLayout m_pipelineLayout{nullptr};
