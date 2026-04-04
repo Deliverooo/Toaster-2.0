@@ -68,6 +68,12 @@ if (${WITH_VULKAN_BACKEND})
 
 			vk/vk_pipeline.cpp
 			vk/vk_pipeline.hpp
+
+			vk/vk_vertex_buffer.cpp
+			vk/vk_vertex_buffer.hpp
+
+			vk/vk_index_buffer.cpp
+			vk/vk_index_buffer.hpp
 	)
 endif ()
 

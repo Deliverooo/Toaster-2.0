@@ -12,6 +12,8 @@
 #include "toaster/toast_lib/events/window_event.hpp"
 
 #include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_vertex_buffer.hpp"
+#include "toast_gpu/vk/vk_index_buffer.hpp"
 
 namespace toaster
 {
@@ -35,13 +37,10 @@ namespace toaster
 		void _createDescriptorSetLayout();
 		void _createGraphicsPipeline();
 
-
 		void _createTextureImage();
 		void _createTextureImageView();
 		void _createTextureSampler();
 
-		void _createVertexBuffer();
-		void _createIndexBuffer();
 		void _createUniformBuffers();
 		void _createDescriptorPool();
 		void _createDescriptorSets();
@@ -80,11 +79,8 @@ namespace toaster
 
 		const std::vector<uint16> m_indices{0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
 
-		vk::raii::Buffer       m_vertexBuffer{nullptr};
-		vk::raii::DeviceMemory m_vertexBufferMemory{nullptr};
-
-		vk::raii::Buffer       m_indexBuffer{nullptr};
-		vk::raii::DeviceMemory m_indexBufferMemory{nullptr};
+		RefPtr<gpu::VKVertexBuffer> m_vertexBuffer{nullptr};
+		RefPtr<gpu::VKIndexBuffer>  m_indexBuffer{nullptr};
 
 		struct UniformBufferObject
 		{

@@ -444,6 +444,29 @@ namespace toaster::gpu
 		p_command_buffer.pipelineBarrier2(dependency_info);
 	}
 
+	void VKGPUContext::transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::raii::Image &       p_image, vk::ImageLayout            p_old_layout,
+											 vk::ImageLayout          p_new_layout, vk::AccessFlags2            p_src_access_mask, vk::AccessFlags2 p_dst_access_mask,
+											 vk::PipelineStageFlags2  p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask)
+	{
+		vk::ImageMemoryBarrier2 image_memory_barrier{};
+		image_memory_barrier.oldLayout           = p_old_layout;
+		image_memory_barrier.newLayout           = p_new_layout;
+		image_memory_barrier.srcAccessMask       = p_src_access_mask;
+		image_memory_barrier.dstAccessMask       = p_dst_access_mask;
+		image_memory_barrier.srcStageMask        = p_src_stage_mask;
+		image_memory_barrier.dstStageMask        = p_dst_stage_mask;
+		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.image               = p_image;
+		image_memory_barrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+
+		vk::DependencyInfo dependency_info{};
+		dependency_info.imageMemoryBarrierCount = 1;
+		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
+
+		p_command_buffer.pipelineBarrier2(dependency_info);
+	}
+
 	vk::raii::ShaderModule VKGPUContext::createShaderModule(const std::vector<uint8> &p_code)
 	{
 		vk::ShaderModuleCreateInfo shader_module_create_info{};

@@ -3,6 +3,7 @@
 #include "toast_gpu/framebuffer.hpp"
 #include "toast_gpu/texture.hpp"
 #include "toast_gpu/vertex_array.hpp"
+#include "toast_gpu/vk/vk_gpu_context.hpp"
 
 #include "toast_lib/camera.hpp"
 #include "toast_lib/math/math_vector.hpp"
@@ -24,54 +25,59 @@ namespace toaster
 			uint32 quadCount{0u};
 		};
 
-		#ifndef TST_RENDERER_2D_USE_64_BIT_IDS
-		using IDType = int32;
-		static constexpr IDType c_invalidID{-1};
-		#else
-		using IDType = int64; static constexpr IDType c_invalidID{-1};
-		#endif
-
-		explicit Renderer2D(const Renderer2DCreateInfo &p_create_info);
+		explicit Renderer2D(gpu::VKGPUContext *p_ctx, const Renderer2DCreateInfo &p_create_info);
 		~Renderer2D();
 
-		void begin(const Camera &p_camera, const tsm::float4x4 &p_transform);
 		void begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix);
 		void end();
 
-		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour, IDType p_object_id = c_invalidID);
-		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour, IDType p_object_id = c_invalidID);
-		void submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour, IDType p_object_id = c_invalidID);
+		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
+		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
+		void submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour);
 
-		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::ITexture2D> &p_texture,
-						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f, IDType p_object_id = c_invalidID);
-		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &                              p_scale, const RefPtr<gpu::ITexture2D> &p_texture,
-						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f, IDType p_object_id = c_invalidID);
-		void submitQuad(const tsm::float4x4 &p_transform, const RefPtr<gpu::ITexture2D> &                 p_texture,
-						const tsm::float4 &  p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f, IDType p_object_id = c_invalidID);
+		[[nodiscard]] const Stats &getStats() const;
 
-		const Stats &getStats() const;
+		vk::raii::Image       &getRenderTargetImage();
+		vk::raii::DeviceMemory&getRenderTargetImageMemory();
+		vk::raii::ImageView   &getRenderTargetImageView();
+
 
 	private:
-		void   _beginNewBatch();
-		uint32 _getTextureSlotIndex(const RefPtr<gpu::ITexture2D> &p_texture);
+		void _beginNewBatch();
+
+		gpu::VKGPUContext *m_ctx;
 
 		Renderer2DCreateInfo m_createInfo;
 		uint32               m_maxVertices;
 		uint32               m_maxIndices;
+
+		std::vector<vk::raii::CommandBuffer> m_commandBuffers;
+		uint32                               m_frameIndex{0u};
 
 		struct QuadVertex
 		{
 			tsm::float4 position;
 			tsm::float4 colour;
 			tsm::float2 texCoord;
-			float32     texIndex;
-			float32     tilingFactor;
-			IDType      objectID;
 		};
 
-		RefPtr<gpu::IVertexArray>  m_quadVertexArray;
-		RefPtr<gpu::IVertexBuffer> m_quadVertexBuffer;
-		RefPtr<gpu::IIndexBuffer>  m_quadIndexBuffer;
+		gpu::VertexBufferLayout m_quadVertexBufferLayout;
+
+		vk::raii::DescriptorSetLayout m_quadDescriptorSetLayout{nullptr};
+
+		vk::raii::Image        m_renderTargetImage{nullptr};
+		vk::raii::DeviceMemory m_renderTargetImageMemory{nullptr};
+		vk::raii::ImageView    m_renderTargetImageView{nullptr};
+
+		vk::raii::Pipeline       m_quadPipeline{nullptr};
+		vk::raii::PipelineLayout m_quadPipelineLayout{nullptr};
+
+		vk::raii::Buffer       m_quadVertexBuffer{nullptr};
+		vk::raii::DeviceMemory m_quadVertexBufferMemory{nullptr};
+		void *                 m_mappedQuadVertexBufferMemory{nullptr};
+
+		vk::raii::Buffer       m_quadIndexBuffer{nullptr};
+		vk::raii::DeviceMemory m_quadIndexBufferMemory{nullptr};
 
 		QuadVertex *m_quadVertexBase{nullptr};
 		QuadVertex *m_quadVertexPtr{nullptr};
@@ -80,12 +86,6 @@ namespace toaster
 
 		std::array<tsm::float4, 4u> m_quadVertexPositions;
 		std::array<tsm::float2, 4u> m_quadVertexTexCoords;
-
-		static constexpr uint32                                c_maxTextureSlots{32u};
-		std::array<RefPtr<gpu::ITexture2D>, c_maxTextureSlots> m_textureSlots;
-		uint32                                                 m_textureSlotIndex{1u};
-
-		RefPtr<gpu::ITexture2D> m_whiteTexture;
 
 		Stats m_stats;
 	};

@@ -35,8 +35,12 @@ namespace toaster
 		_createTextureImageView();
 		_createTextureSampler();
 
-		_createVertexBuffer();
-		_createIndexBuffer();
+		const vk::DeviceSize vertex_buffer_size{sizeof(Vertex) * m_vertices.size()};
+		m_vertexBuffer = make_reference<gpu::VKVertexBuffer>(ctx, (void *) m_vertices.data(), vertex_buffer_size);
+
+		const vk::DeviceSize index_buffer_size{sizeof(uint16) * m_indices.size()};
+		m_indexBuffer = make_reference<gpu::VKIndexBuffer>(ctx, (void *) m_indices.data(), index_buffer_size);
+
 		_createUniformBuffers();
 		_createDescriptorPool();
 		_createDescriptorSets();
@@ -132,8 +136,8 @@ namespace toaster
 		command_buffer.setViewport(0, viewport);
 		command_buffer.setScissor(0, scissor);
 
-		command_buffer.bindVertexBuffers(0, *m_vertexBuffer, {0});
-		command_buffer.bindIndexBuffer(m_indexBuffer, 0u, vk::IndexType::eUint16);
+		command_buffer.bindVertexBuffers(0, *m_vertexBuffer->getBuffer(), {0});
+		command_buffer.bindIndexBuffer(*m_indexBuffer->getBuffer(), 0u, vk::IndexType::eUint16);
 
 		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout, 0, *m_descriptorSets[swapchain->getFrameIndex()], nullptr);
 		command_buffer.drawIndexed(m_indices.size(), 1, 0, 0, 0);
@@ -379,52 +383,6 @@ namespace toaster
 		sampler_create_info.pNext = &border_colour_create_info;
 
 		m_textureImageSampler = {ctx->getDevice(), sampler_create_info};
-	}
-
-	void ClientLayer::_createVertexBuffer()
-	{
-		auto &app = getApp();
-		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-
-		const vk::DeviceSize vertex_buffer_size{sizeof(Vertex) * m_vertices.size()};
-
-		vk::raii::Buffer       staging_buffer{nullptr};
-		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
-
-		ctx->createBuffer(vertex_buffer_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-						  staging_buffer, staging_buffer_memory);
-
-		void *data = staging_buffer_memory.mapMemory(0, vertex_buffer_size);
-		std::memcpy(data, m_vertices.data(), vertex_buffer_size);
-		staging_buffer_memory.unmapMemory();
-
-		ctx->createBuffer(vertex_buffer_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal,
-						  m_vertexBuffer, m_vertexBufferMemory);
-
-		ctx->copyBuffer(staging_buffer, m_vertexBuffer, vertex_buffer_size);
-	}
-
-	void ClientLayer::_createIndexBuffer()
-	{
-		auto &app = getApp();
-		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-
-		const vk::DeviceSize index_buffer_size{sizeof(uint16) * m_indices.size()};
-
-		vk::raii::Buffer       staging_buffer{nullptr};
-		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
-
-		ctx->createBuffer(index_buffer_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-						  staging_buffer, staging_buffer_memory);
-
-		void *data = staging_buffer_memory.mapMemory(0, index_buffer_size);
-		std::memcpy(data, m_indices.data(), index_buffer_size);
-		staging_buffer_memory.unmapMemory();
-
-		ctx->createBuffer(index_buffer_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal,
-						  m_indexBuffer, m_indexBufferMemory);
-
-		ctx->copyBuffer(staging_buffer, m_indexBuffer, index_buffer_size);
 	}
 
 	void ClientLayer::_createUniformBuffers()

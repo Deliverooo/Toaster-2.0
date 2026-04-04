@@ -15,10 +15,10 @@
 
 namespace toaster::gpu
 {
-	#ifdef NDEBUG
-	constexpr bool c_enableValidationLayers{false};
-	#else
+	#ifndef NDEBUG
 	constexpr bool c_enableValidationLayers{true};
+	#else
+	constexpr bool c_enableValidationLayers{false};
 	#endif
 
 	class VKGPUContext final : public IGPUContext
@@ -50,6 +50,10 @@ namespace toaster::gpu
 		[[nodiscard]] vk::raii::CommandPool &getComputeCommandPool();
 
 		void transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::Image &       p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
+								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
+								   vk::PipelineStageFlags2  p_dst_stage_mask);
+
+		void transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::raii::Image & p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
 								   vk::PipelineStageFlags2  p_dst_stage_mask);
 
@@ -105,7 +109,7 @@ namespace toaster::gpu
 
 		vk::raii::PhysicalDevice m_currentPhysicalDevice{nullptr};
 
-		std::vector<CString> m_requiredDeviceExtensions{
+		const std::array<CString, 4> m_requiredDeviceExtensions{
 			vk::KHRSwapchainExtensionName,
 			vk::KHRDynamicRenderingExtensionName,
 			vk::KHRTimelineSemaphoreExtensionName,

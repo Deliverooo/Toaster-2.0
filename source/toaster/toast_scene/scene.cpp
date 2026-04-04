@@ -47,6 +47,7 @@ namespace toaster
 			}
 		}
 
+		#if 0
 		if (main_camera)
 		{
 			p_renderer_2d->begin(*main_camera, camera_transform);
@@ -64,11 +65,15 @@ namespace toaster
 
 			p_renderer_2d->end();
 		}
+		#endif
 	}
 
 	void Scene::onRender(float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d, const glm::mat4 &p_view, const glm::mat4 &p_projection)
 	{
+		#if 0
+
 		p_renderer_2d->begin(p_view, p_projection);
+
 
 		auto group = m_registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
 		for (auto entity: group)
@@ -82,6 +87,8 @@ namespace toaster
 		}
 
 		p_renderer_2d->end();
+
+		#endif
 	}
 
 	void Scene::setViewportSize(uint32 p_width, uint32 p_height)
