@@ -26,9 +26,6 @@ namespace toaster::gpu
 		const BytecodeMap &getShaderBytecodeMap() const;
 		const Bytecode &   getShaderBytecode(vk::ShaderStageFlagBits p_stage) const;
 
-		const std::vector<vk::raii::DescriptorSet> &getDescriptorSets() const;
-		const vk::raii::DescriptorSet &             getDescriptorSet(uint32 p_set_index) const;
-
 		std::vector<vk::DescriptorSetLayout> getDescriptorSetLayouts() const;
 		const vk::raii::DescriptorSetLayout &getDescriptorSetLayout(uint32 p_set_index) const;
 
@@ -52,7 +49,6 @@ namespace toaster::gpu
 		BytecodeMap m_shaderBytecodeMap;
 
 		std::vector<vk::raii::DescriptorSetLayout> m_descriptorSetLayouts{};
-		std::vector<vk::raii::DescriptorSet>       m_descriptorSets{};
 
 		ReflectionData m_reflectionData{};
 

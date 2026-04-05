@@ -71,6 +71,8 @@ namespace toaster::gpu
 						 vk::MemoryPropertyFlags p_memory_properties, vk::raii::Image &p_out_image, vk::raii::DeviceMemory &p_out_memory) const;
 
 		void transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout) const;
+		void transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags p_src_access_mask,
+								   vk::AccessFlags  p_dst_access_mask, vk::PipelineStageFlags p_src_stage_mask, vk::PipelineStageFlags p_dst_stage_mask) const;
 
 		void copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, uint32 p_width, uint32 p_height) const;
 
@@ -80,10 +82,11 @@ namespace toaster::gpu
 		[[nodiscard]] vk::raii::CommandBuffer beginSingleTimeCommands() const;
 		void                                  endSingleTimeCommands(vk::raii::CommandBuffer &p_command_buffer) const;
 
-		vk::Format findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling, vk::FormatFeatureFlags p_feature_flags) const;
-		vk::Format findDepthFormat() const;
-		bool       hasStencilComponent(vk::Format p_format) const;
-		bool       isDepthFormat(vk::Format p_format) const;
+		[[nodiscard]] vk::Format findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling,
+													 vk::FormatFeatureFlags         p_feature_flags) const;
+		[[nodiscard]] vk::Format findDepthFormat() const;
+		[[nodiscard]] bool       hasStencilComponent(vk::Format p_format) const;
+		[[nodiscard]] bool       isDepthFormat(vk::Format p_format) const;
 
 	private:
 		void _createInstance();

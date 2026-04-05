@@ -1,16 +1,24 @@
 #pragma once
 
-#include "vk_gpu_context.hpp"
+#include "vk_shader.hpp"
 
 #include "../vertex_buffer_layout.hpp"
+#include "toast_lib/ptr.hpp"
 
 namespace toaster::gpu
 {
+	class VKGPUContext;
+
 	struct PipelineCreateInfo
 	{
 		VertexBufferLayout vertexBufferLayout;
 
-		vk::Format colourAttachmentFormat;
+		// Thanks to Vulkan 1.3's dynamic rendering, when creating a pipeline, you only need to specify the formats for your rendering attachments
+		// This is very helpful because I hate framebuffers and Vulkan render passes.
+		std::vector<vk::Format> colourAttachments{};
+		vk::Format              depthFormat{vk::Format::eUndefined};
+
+		RefPtr<VKShader> shader{nullptr};
 	};
 
 	class VKPipeline
@@ -31,7 +39,7 @@ namespace toaster::gpu
 
 		VKGPUContext *m_ctx{nullptr};
 
-		PipelineCreateInfo m_createInfo;
+		PipelineCreateInfo m_createInfo{};
 
 		vk::raii::Pipeline       m_graphicsPipeline{nullptr};
 		vk::raii::PipelineLayout m_pipelineLayout{nullptr};

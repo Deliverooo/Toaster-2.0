@@ -28,6 +28,11 @@ namespace toaster::gpu
 		return m_sampler;
 	}
 
+	vk::DescriptorImageInfo &VKImage2D::getDescriptorInfo()
+	{
+		return m_descriptorImageInfo;
+	}
+
 	const ImageCreateInfo &VKImage2D::getCreateInfo() const
 	{
 		return m_createInfo;

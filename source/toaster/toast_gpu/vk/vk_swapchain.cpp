@@ -1,5 +1,7 @@
 #include "vk_swapchain.hpp"
 
+#include "vk_gpu_context.hpp"
+
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
 
@@ -170,6 +172,11 @@ namespace toaster::gpu
 	vk::SurfaceFormatKHR VKSwapchain::getSurfaceFormat() const
 	{
 		return m_swapchainSurfaceFormat;
+	}
+
+	vk::Format VKSwapchain::getDepthFormat() const
+	{
+		return m_ctx->findDepthFormat();
 	}
 
 	uint32 VKSwapchain::getMinImageCount() const

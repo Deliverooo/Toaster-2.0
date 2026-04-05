@@ -156,10 +156,11 @@ namespace toaster::gpu
 	void VKGPUContext::_createDebugMessenger()
 	{
 		constexpr vk::DebugUtilsMessageSeverityFlagsEXT severity_flags{
-			vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo
+			vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
+			vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
 		};
 		constexpr vk::DebugUtilsMessageTypeFlagsEXT message_type_flags{
-			vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance
+			vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
 		};
 		vk::DebugUtilsMessengerCreateInfoEXT debug_messenger_create_info{};
 		debug_messenger_create_info.messageSeverity = severity_flags;
@@ -595,6 +596,24 @@ namespace toaster::gpu
 
 		vk::raii::CommandBuffer cmd = beginSingleTimeCommands();
 		cmd.pipelineBarrier(src_stage, dst_stage, {}, {}, {}, image_memory_barrier);
+		endSingleTimeCommands(cmd);
+	}
+
+	void VKGPUContext::transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags p_src_access_mask,
+											 vk::AccessFlags  p_dst_access_mask, vk::PipelineStageFlags p_src_stage_mask, vk::PipelineStageFlags p_dst_stage_mask) const
+	{
+		vk::ImageMemoryBarrier image_memory_barrier{};
+		image_memory_barrier.oldLayout           = p_old_layout;
+		image_memory_barrier.newLayout           = p_new_layout;
+		image_memory_barrier.srcAccessMask       = p_src_access_mask;
+		image_memory_barrier.dstAccessMask       = p_dst_access_mask;
+		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.image               = p_image;
+		image_memory_barrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1};
+
+		vk::raii::CommandBuffer cmd = beginSingleTimeCommands();
+		cmd.pipelineBarrier(p_src_stage_mask, p_dst_stage_mask, {}, {}, {}, image_memory_barrier);
 		endSingleTimeCommands(cmd);
 	}
 

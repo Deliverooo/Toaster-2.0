@@ -3,7 +3,7 @@
  */
 #pragma once
 
-#include <string>
+#include <utility> // std::pair
 
 #include "toast_lib/string.hpp"
 #include "toast_lib/system_types.h"
@@ -20,18 +20,13 @@ namespace toaster
 		class VKSwapchain;
 	}
 
-	struct ScreenPos
-	{
-		float32 x, y;
-	};
-
 	struct WindowCreateInfo
 	{
 		uint32 width{1920u};
 		uint32 height{1080u};
-		String title{""};
+		String title{};
 
-		io::filesystem::Path iconPath{""};
+		io::filesystem::Path iconPath{};
 
 		bool startMaximized{false};
 	};
@@ -75,17 +70,17 @@ namespace toaster
 
 		void setEventCallback(const EventCallbackFn &p_callback);
 
-		[[nodiscard]] uint32        getWidth() const;
-		[[nodiscard]] uint32        getHeight() const;
-		[[nodiscard]] float32       getAspect() const;
-		[[nodiscard]] ScreenPos     getCenter() const;
-		[[nodiscard]] const String &getTitle() const;
+		[[nodiscard]] uint32                      getWidth() const;
+		[[nodiscard]] uint32                      getHeight() const;
+		[[nodiscard]] float32                     getAspect() const;
+		[[nodiscard]] std::pair<float32, float32> getCenter() const;
+		[[nodiscard]] const String &              getTitle() const;
 
 		void setTitle(const String &p_title);
 
 		[[nodiscard]] gpu::IGPUContext *getGPUContext() const;
 
-		[[nodiscard]] GLFWwindow *getNativeWindow() const;
+		[[nodiscard]] GLFWwindow *      getNativeWindow() const;
 		[[nodiscard]] gpu::VKSwapchain *getSwapchain() const;
 
 	private:
@@ -99,11 +94,11 @@ namespace toaster
 		{
 			uint32 width{0u};
 			uint32 height{0u};
-			String title;
+			String title{};
 
-			EventCallbackFn eventCallback;
+			EventCallbackFn eventCallback{nullptr};
 		};
 
-		GLFWCallbackData m_callbackData;
+		GLFWCallbackData m_callbackData{};
 	};
 }

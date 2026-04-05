@@ -35,25 +35,25 @@ namespace toaster
 			{gpu::EShaderDataType::eFloat2, "a_TexCoord"}
 		};
 
-		_createDescriptorSetLayout();
+		// _createDescriptorSetLayout();
 
 		gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/test.vert.glsl.spv");
 		gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/test.pixel.glsl.spv");
 		gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
 		m_shader = make_reference<gpu::VKShader>(ctx, shader_bytecode_map);
 
-		_createGraphicsPipeline();
+		gpu::PipelineCreateInfo pipeline_create_info{};
+		pipeline_create_info.vertexBufferLayout = m_vertexBufferLayout;
+		pipeline_create_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
+		pipeline_create_info.depthFormat        = {swapchain->getDepthFormat()};
+		pipeline_create_info.shader             = m_shader;
 
-		gpu::ImageCreateInfo image_create_info{};
-		image_create_info.width  = window_width;
-		image_create_info.height = window_height;
-		image_create_info.format = gpu::EImageFormat::eSRGBA;
-		image_create_info.usage  = gpu::EImageUsage::eTexture;
-		m_image                  = make_reference<gpu::VKImage2D>(ctx, image_create_info);
+		m_pipeline = make_reference<gpu::VKPipeline>(ctx, pipeline_create_info);
 
-		_createTextureImage();
-		_createTextureImageView();
-		_createTextureSampler();
+		// _createGraphicsPipeline();
+
+		gpu::TextureSpecInfo texture_spec_info{};
+		m_texture = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info, "../resources/textures/Peeber.png");
 
 		const vk::DeviceSize vertex_buffer_size{sizeof(Vertex) * m_vertices.size()};
 		m_vertexBuffer = make_reference<gpu::VKVertexBuffer>(ctx, (void *) m_vertices.data(), vertex_buffer_size);
@@ -159,14 +159,14 @@ namespace toaster
 
 		command_buffer.beginRendering(rendering_info);
 
-		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, *m_graphicsPipeline);
+		command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline->getPipeline());
 
 		command_buffer.setViewport(0, viewport);
 		command_buffer.setScissor(0, scissor);
 
 		command_buffer.bindVertexBuffers(0, *m_vertexBuffer->getBuffer(), {0});
 		command_buffer.bindIndexBuffer(*m_indexBuffer->getBuffer(), 0u, vk::IndexType::eUint16);
-		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelineLayout, 0, *m_descriptorSets[swapchain->getFrameIndex()], nullptr);
+		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipeline->getPipelineLayout(), 0, *m_descriptorSets[swapchain->getFrameIndex()], nullptr);
 		command_buffer.drawIndexed(m_indices.size(), 1, 0, 0, 0);
 
 		command_buffer.endRendering();
@@ -191,47 +191,12 @@ namespace toaster
 		return vk::Format::eUndefined;
 	}
 
-	void ClientLayer::_createDescriptorSetLayout()
-	{
-		auto &app = getApp();
-		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-
-		std::array<vk::DescriptorSetLayoutBinding, 2> bindings{};
-
-		bindings[0].binding         = 0;
-		bindings[0].descriptorCount = 1;
-		bindings[0].descriptorType  = vk::DescriptorType::eUniformBuffer;
-		bindings[0].stageFlags      = vk::ShaderStageFlagBits::eVertex;
-
-		bindings[1].binding         = 1;
-		bindings[1].descriptorCount = 1;
-		bindings[1].descriptorType  = vk::DescriptorType::eCombinedImageSampler;
-		bindings[1].stageFlags      = vk::ShaderStageFlagBits::eFragment;
-
-		vk::DescriptorSetLayoutCreateInfo layout_create_info{};
-		layout_create_info.bindingCount = bindings.size();
-		layout_create_info.pBindings    = bindings.data();
-
-		m_descriptorSetLayout = {ctx->getDevice(), layout_create_info};
-	}
-
+	#if 0
 	void ClientLayer::_createGraphicsPipeline()
 	{
 		auto &app       = getApp();
 		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 		auto  swapchain = app.getWindow().getSwapchain();
-
-		// vk::PipelineShaderStageCreateInfo vertex_shader_stage_create_info{};
-		// vertex_shader_stage_create_info.stage  = vk::ShaderStageFlagBits::eVertex;
-		// vertex_shader_stage_create_info.module = vertex_shader_module;
-		// vertex_shader_stage_create_info.pName  = "main";
-		//
-		// vk::PipelineShaderStageCreateInfo pixel_shader_stage_create_info{};
-		// pixel_shader_stage_create_info.stage  = vk::ShaderStageFlagBits::eFragment;
-		// pixel_shader_stage_create_info.module = pixel_shader_module;
-		// pixel_shader_stage_create_info.pName  = "main";
-
-		// vk::PipelineShaderStageCreateInfo shader_stage_create_infos[] = {vertex_shader_stage_create_info, pixel_shader_stage_create_info};
 
 		vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
 		vk::VertexInputBindingDescription      vertex_input_binding_description{};
@@ -306,17 +271,21 @@ namespace toaster
 		depth_stencil_state_create_info.depthBoundsTestEnable = false;
 		depth_stencil_state_create_info.stencilTestEnable     = false;
 
-		vk::DescriptorSetLayout      set_layouts[] = {m_descriptorSetLayout};
+		auto descriptor_set_layouts = m_shader->getDescriptorSetLayouts();
+		TST_ASSERT(!descriptor_set_layouts.empty());
+		LOG_INFO("{}", descriptor_set_layouts.size());
+
 		vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
-		pipeline_layout_create_info.setLayoutCount         = 1;
-		pipeline_layout_create_info.pSetLayouts            = set_layouts;
+		pipeline_layout_create_info.setLayoutCount         = 0;
 		pipeline_layout_create_info.pushConstantRangeCount = 0;
+		pipeline_layout_create_info.setLayoutCount         = descriptor_set_layouts.size();
+		pipeline_layout_create_info.pSetLayouts            = descriptor_set_layouts.data();
 		m_pipelineLayout                                   = {ctx->getDevice(), pipeline_layout_create_info};
 
 		std::vector<vk::PipelineShaderStageCreateInfo> stage_infos = m_shader->getPipelineShaderStageCreateInfos();
 
 		vk::GraphicsPipelineCreateInfo graphics_pipeline_create_info{};
-		graphics_pipeline_create_info.stageCount          = 2;
+		graphics_pipeline_create_info.stageCount          = stage_infos.size();
 		graphics_pipeline_create_info.pStages             = stage_infos.data();
 		graphics_pipeline_create_info.pVertexInputState   = &vertex_input_state_create_info;
 		graphics_pipeline_create_info.pInputAssemblyState = &input_assembly_state_create_info;
@@ -333,83 +302,8 @@ namespace toaster
 		m_graphicsPipeline = {ctx->getDevice(), nullptr, graphics_pipeline_create_info};
 	}
 
-	void ClientLayer::_createTextureImage()
-	{
-		auto &app = getApp();
-		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+	#endif
 
-		stbi_set_flip_vertically_on_load(true);
-
-		int32          tex_width;
-		int32          tex_height;
-		int32          tex_channels;
-		auto           pixels     = stbi_load("../resources/textures/Peeber.png", &tex_width, &tex_height, &tex_channels, STBI_rgb_alpha);
-		vk::DeviceSize image_size = tex_width * tex_height * 4;
-
-		if (!pixels)
-			TST_ASSERT_MSG(false, "failed to load texture image");
-
-		vk::raii::Buffer       staging_buffer{nullptr};
-		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
-
-		ctx->createBuffer(image_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-						  staging_buffer, staging_buffer_memory);
-
-		void *data = staging_buffer_memory.mapMemory(0, image_size);
-		std::memcpy(data, pixels, image_size);
-		staging_buffer_memory.unmapMemory();
-
-		stbi_image_free(pixels);
-
-		ctx->createImage(tex_width, tex_height, vk::Format::eR8G8B8A8Srgb, vk::ImageTiling::eOptimal,
-						 vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal, m_textureImage,
-						 m_textureImageMemory);
-
-		ctx->transitionImageLayout(m_textureImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
-		ctx->copyBufferToImage(staging_buffer, m_textureImage, tex_width, tex_height);
-		ctx->transitionImageLayout(m_textureImage, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
-	}
-
-	void ClientLayer::_createTextureImageView()
-	{
-		auto &app = getApp();
-		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-
-		m_textureImageView = ctx->createImageView(m_textureImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
-	}
-
-	void ClientLayer::_createTextureSampler()
-	{
-		auto &app = getApp();
-		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-
-		auto props = ctx->getPhysicalDevice().getProperties();
-
-		vk::SamplerCreateInfo sampler_create_info{};
-		sampler_create_info.magFilter               = vk::Filter::eLinear;
-		sampler_create_info.minFilter               = vk::Filter::eLinear;
-		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.mipLodBias              = 0.0f;
-		sampler_create_info.anisotropyEnable        = true;
-		sampler_create_info.maxAnisotropy           = props.limits.maxSamplerAnisotropy;
-		sampler_create_info.compareEnable           = false;
-		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
-		sampler_create_info.minLod                  = 0.0f;
-		sampler_create_info.maxLod                  = 0.0f;
-		sampler_create_info.borderColor             = vk::BorderColor::eFloatCustomEXT;
-		sampler_create_info.unnormalizedCoordinates = false;
-
-		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{};
-		border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
-		border_colour_create_info.format            = vk::Format::eR8G8B8A8Srgb;
-
-		sampler_create_info.pNext = &border_colour_create_info;
-
-		m_textureImageSampler = {ctx->getDevice(), sampler_create_info};
-	}
 
 	void ClientLayer::_createUniformBuffers()
 	{
@@ -454,8 +348,9 @@ namespace toaster
 		auto &app = getApp();
 		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 
+		auto &set_layout = m_shader->getDescriptorSetLayout(0);
 		{
-			std::vector                   descriptor_set_layouts{gpu::VKGPUContext::c_maxFramesInFlight, *m_descriptorSetLayout};
+			std::vector                   descriptor_set_layouts{gpu::VKGPUContext::c_maxFramesInFlight, *set_layout};
 			vk::DescriptorSetAllocateInfo descriptor_set_allocate_info{};
 			descriptor_set_allocate_info.descriptorPool     = m_descriptorPool;
 			descriptor_set_allocate_info.descriptorSetCount = gpu::VKGPUContext::c_maxFramesInFlight;
@@ -471,9 +366,9 @@ namespace toaster
 				descriptor_buffer_info.range  = sizeof(UniformBufferObject);
 
 				vk::DescriptorImageInfo descriptor_image_info{};
-				descriptor_image_info.imageView   = m_textureImageView;
+				descriptor_image_info.imageView   = m_texture->getImageView();
 				descriptor_image_info.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-				descriptor_image_info.sampler     = m_textureImageSampler;
+				descriptor_image_info.sampler     = m_texture->getSampler();
 
 				std::array<vk::WriteDescriptorSet, 2> write_descriptor_sets{};
 				write_descriptor_sets[0].descriptorCount = 1;

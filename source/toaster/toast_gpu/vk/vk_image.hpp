@@ -29,7 +29,9 @@ namespace toaster::gpu
 		vk::raii::ImageView &   getImageView();
 		vk::raii::Sampler &     getSampler();
 
-		const ImageCreateInfo &getCreateInfo() const;
+		vk::DescriptorImageInfo &getDescriptorInfo();
+
+		[[nodiscard]] const ImageCreateInfo &getCreateInfo() const;
 
 		void resize(uint32 p_width, uint32 p_height);
 		void recreate();
@@ -72,5 +74,6 @@ namespace toaster::gpu
 			case EImageFormat::eDepth32F: return vk::Format::eD32Sfloat;
 			case EImageFormat::eDepth24Stencil8: return vk::Format::eD24UnormS8Uint;
 		}
+		return vk::Format::eUndefined;
 	}
 }

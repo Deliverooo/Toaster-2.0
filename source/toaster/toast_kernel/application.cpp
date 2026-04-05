@@ -1,8 +1,10 @@
 #include "application.hpp"
 
+#include "toast_lib/events/window_event.hpp"
+
 #include "input.hpp"
 #include "toast_lib/logging.hpp"
-#include "toast_render/globals.hpp"
+// #include "toast_render/globals.hpp"
 #include "toast_render/render_command.hpp"
 
 #include <algorithm>
@@ -64,17 +66,13 @@ namespace toaster
 			if (!m_minimized)
 			{
 				for (IAppLayer *layer: m_layers)
-				{
 					layer->onUpdate(m_deltaTime);
-				}
 
 				if (m_cbBeginUIRender)
 					m_cbBeginUIRender();
 
 				for (IAppLayer *layer: m_layers)
-				{
 					layer->onUIRender();
-				}
 
 				if (m_cbEndUIRender)
 					m_cbEndUIRender();
@@ -101,8 +99,8 @@ namespace toaster
 
 	bool Application::onWindowResizeEvent(WindowResizeEvent &p_event)
 	{
-		uint32 width  = p_event.getWidth();
-		uint32 height = p_event.getHeight();
+		const uint32 width  = p_event.getWidth();
+		const uint32 height = p_event.getHeight();
 
 		if (width == 0 || height == 0)
 		{

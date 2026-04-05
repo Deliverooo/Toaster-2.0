@@ -1,9 +1,14 @@
 #pragma once
 
-#include "vk_gpu_context.hpp"
+#include <vulkan/vulkan_raii.hpp>
+#include "toast_lib/system_types.h"
+
+struct GLFWwindow;
 
 namespace toaster::gpu
 {
+	class VKGPUContext;
+
 	class VKSwapchain
 	{
 	public:
@@ -28,6 +33,7 @@ namespace toaster::gpu
 
 		[[nodiscard]] vk::Extent2D         getExtent() const;
 		[[nodiscard]] vk::SurfaceFormatKHR getSurfaceFormat() const;
+		[[nodiscard]] vk::Format           getDepthFormat() const;
 
 		[[nodiscard]] uint32 getMinImageCount() const;
 		[[nodiscard]] uint32 getImageCount() const;

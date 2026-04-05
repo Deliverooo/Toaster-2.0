@@ -59,17 +59,6 @@ namespace toaster::gpu
 		return m_shaderBytecodeMap.at(p_stage);
 	}
 
-	const std::vector<vk::raii::DescriptorSet> &VKShader::getDescriptorSets() const
-	{
-		return m_descriptorSets;
-	}
-
-	const vk::raii::DescriptorSet &VKShader::getDescriptorSet(uint32 p_set_index) const
-	{
-		TST_ASSERT_MSG(p_set_index < m_descriptorSets.size(), "Set index out of bounds");
-		return m_descriptorSets.at(p_set_index);
-	}
-
 	std::vector<vk::DescriptorSetLayout> VKShader::getDescriptorSetLayouts() const
 	{
 		std::vector<vk::DescriptorSetLayout> result;

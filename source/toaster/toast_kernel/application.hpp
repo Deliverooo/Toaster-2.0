@@ -3,15 +3,14 @@
  */
 #pragma once
 
-#include <vector>
-
 #include "layer.hpp"
 #include "window.hpp"
 
-#include "toast_lib/events/window_event.hpp"
-
 namespace toaster
 {
+	class WindowCloseEvent;
+	class WindowResizeEvent;
+
 	struct ApplicationCreateInfo
 	{
 		WindowCreateInfo windowCreateInfo;
@@ -53,7 +52,5 @@ namespace toaster
 
 		bool m_minimized{false};
 		bool m_isRunning{true};
-
-		friend class ViewportLayer;
 	};
 }

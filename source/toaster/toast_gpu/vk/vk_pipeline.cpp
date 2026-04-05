@@ -2,6 +2,9 @@
 
 #include "toast_lib/io/filesystem.hpp"
 
+#include "vk_gpu_context.hpp"
+#include "toast_lib/logging.hpp"
+
 namespace toaster::gpu
 {
 	VKPipeline::VKPipeline(VKGPUContext *p_ctx, const PipelineCreateInfo &p_create_info) : m_ctx(p_ctx), m_createInfo(p_create_info)
@@ -31,21 +34,6 @@ namespace toaster::gpu
 
 	void VKPipeline::_createGraphicsPipeline()
 	{
-		vk::raii::ShaderModule vertex_shader_module = m_ctx->createShaderModule(io::filesystem::readBinary("shaders/test.vert.glsl.spv"));
-		vk::raii::ShaderModule pixel_shader_module  = m_ctx->createShaderModule(io::filesystem::readBinary("shaders/test.pixel.glsl.spv"));
-
-		vk::PipelineShaderStageCreateInfo vertex_shader_stage_create_info{};
-		vertex_shader_stage_create_info.stage  = vk::ShaderStageFlagBits::eVertex;
-		vertex_shader_stage_create_info.module = vertex_shader_module;
-		vertex_shader_stage_create_info.pName  = "main";
-
-		vk::PipelineShaderStageCreateInfo pixel_shader_stage_create_info{};
-		pixel_shader_stage_create_info.stage  = vk::ShaderStageFlagBits::eFragment;
-		pixel_shader_stage_create_info.module = pixel_shader_module;
-		pixel_shader_stage_create_info.pName  = "main";
-
-		vk::PipelineShaderStageCreateInfo shader_stage_create_infos[] = {vertex_shader_stage_create_info, pixel_shader_stage_create_info};
-
 		vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
 		vk::VertexInputBindingDescription      vertex_input_binding_description{};
 		vertex_input_binding_description.binding                     = 0;
@@ -82,7 +70,7 @@ namespace toaster::gpu
 		rasterization_state_create_info.rasterizerDiscardEnable = false;
 		rasterization_state_create_info.polygonMode             = vk::PolygonMode::eFill;
 		rasterization_state_create_info.cullMode                = vk::CullModeFlagBits::eBack;
-		rasterization_state_create_info.frontFace               = vk::FrontFace::eClockwise;
+		rasterization_state_create_info.frontFace               = vk::FrontFace::eCounterClockwise;
 		rasterization_state_create_info.depthBiasEnable         = false;
 		rasterization_state_create_info.lineWidth               = 1.0f;
 
@@ -107,17 +95,33 @@ namespace toaster::gpu
 		multisample_state_create_info.sampleShadingEnable  = false;
 
 		vk::PipelineRenderingCreateInfo rendering_create_info{};
-		rendering_create_info.colorAttachmentCount    = 1;
-		rendering_create_info.pColorAttachmentFormats = &m_createInfo.colourAttachmentFormat;
+		rendering_create_info.colorAttachmentCount    = m_createInfo.colourAttachments.size();
+		rendering_create_info.pColorAttachmentFormats = m_createInfo.colourAttachments.data();
+		rendering_create_info.depthAttachmentFormat   = m_ctx->findDepthFormat();
+
+		vk::PipelineDepthStencilStateCreateInfo depth_stencil_state_create_info{};
+		depth_stencil_state_create_info.depthTestEnable       = true;
+		depth_stencil_state_create_info.depthWriteEnable      = true;
+		depth_stencil_state_create_info.depthCompareOp        = vk::CompareOp::eLess;
+		depth_stencil_state_create_info.depthBoundsTestEnable = false;
+		depth_stencil_state_create_info.stencilTestEnable     = false;
+
+		auto descriptor_set_layouts = m_createInfo.shader->getDescriptorSetLayouts();
+		TST_ASSERT(!descriptor_set_layouts.empty());
+		LOG_INFO("{}", descriptor_set_layouts.size());
 
 		vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
 		pipeline_layout_create_info.setLayoutCount         = 0;
 		pipeline_layout_create_info.pushConstantRangeCount = 0;
+		pipeline_layout_create_info.setLayoutCount         = descriptor_set_layouts.size();
+		pipeline_layout_create_info.pSetLayouts            = descriptor_set_layouts.data();
 		m_pipelineLayout                                   = {m_ctx->getDevice(), pipeline_layout_create_info};
 
+		std::vector<vk::PipelineShaderStageCreateInfo> stage_infos = m_createInfo.shader->getPipelineShaderStageCreateInfos();
+
 		vk::GraphicsPipelineCreateInfo graphics_pipeline_create_info{};
-		graphics_pipeline_create_info.stageCount          = 2;
-		graphics_pipeline_create_info.pStages             = shader_stage_create_infos;
+		graphics_pipeline_create_info.stageCount          = stage_infos.size();
+		graphics_pipeline_create_info.pStages             = stage_infos.data();
 		graphics_pipeline_create_info.pVertexInputState   = &vertex_input_state_create_info;
 		graphics_pipeline_create_info.pInputAssemblyState = &input_assembly_state_create_info;
 		graphics_pipeline_create_info.pRasterizationState = &rasterization_state_create_info;
@@ -125,6 +129,7 @@ namespace toaster::gpu
 		graphics_pipeline_create_info.pMultisampleState   = &multisample_state_create_info;
 		graphics_pipeline_create_info.pColorBlendState    = &colour_blend_state_create_info;
 		graphics_pipeline_create_info.pDynamicState       = &dynamic_state_create_info;
+		graphics_pipeline_create_info.pDepthStencilState  = &depth_stencil_state_create_info;
 		graphics_pipeline_create_info.layout              = m_pipelineLayout;
 		graphics_pipeline_create_info.renderPass          = nullptr;
 		graphics_pipeline_create_info.pNext               = &rendering_create_info;

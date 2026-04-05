@@ -13,7 +13,6 @@
 
 #include <stb/stb_image.h>
 
-#include "application.hpp"
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
 
@@ -21,13 +20,14 @@
 #include "toast_lib/events/mouse_event.hpp"
 #include "toast_lib/events/window_event.hpp"
 
+#include "toast_gpu/vk/vk_gpu_context.hpp"
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
 namespace toaster
 {
-	static bool s_glfwInitialized = false;
+	static bool s_glfwInitialized{false};
 
-	static void glfwErrorCallback(int error, const char *description)
+	static void glfwErrorCallback(int32 error, CString description)
 	{
 		LOG_ERROR("GLFW error: ({}): {}", error, description);
 	}
@@ -75,7 +75,7 @@ namespace toaster
 
 		glfwSetWindowUserPointer(m_window, &m_callbackData);
 
-		glfwSetWindowSizeCallback(m_window, [](GLFWwindow *window, const int width, const int height)
+		glfwSetWindowSizeCallback(m_window, [](GLFWwindow *window, const int32 width, const int32 height)
 		{
 			auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
@@ -95,7 +95,7 @@ namespace toaster
 				data.eventCallback(event);
 		});
 
-		glfwSetKeyCallback(m_window, [](GLFWwindow *window, int key, int scancode, int action, int mods)
+		glfwSetKeyCallback(m_window, [](GLFWwindow *window, int32 key, int32 scancode, int32 action, int32 mods)
 		{
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
@@ -136,7 +136,7 @@ namespace toaster
 				data.eventCallback(event);
 		});
 
-		glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int button, int action, int mods)
+		glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int32 button, int32 action, int32 mods)
 		{
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
@@ -160,24 +160,24 @@ namespace toaster
 			}
 		});
 
-		glfwSetScrollCallback(m_window, [](GLFWwindow *window, double xOffset, double yOffset)
+		glfwSetScrollCallback(m_window, [](GLFWwindow *window, float64 xOffset, float64 yOffset)
 		{
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
-			MouseScrollEvent event(static_cast<float>(xOffset), static_cast<float>(yOffset));
+			MouseScrollEvent event(static_cast<float32>(xOffset), static_cast<float32>(yOffset));
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
 
-		glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, double x, double y)
+		glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, float64 x, float64 y)
 		{
 			const auto &   data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
-			MouseMoveEvent event(static_cast<float>(x), static_cast<float>(y));
+			MouseMoveEvent event(static_cast<float32>(x), static_cast<float32>(y));
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
 
-		glfwSetWindowMaximizeCallback(m_window, [](GLFWwindow *window, int maximized)
+		glfwSetWindowMaximizeCallback(m_window, [](GLFWwindow *window, int32 maximized)
 		{
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
@@ -186,7 +186,7 @@ namespace toaster
 				data.eventCallback(event);
 		});
 
-		glfwSetWindowIconifyCallback(m_window, [](GLFWwindow *window, int iconified)
+		glfwSetWindowIconifyCallback(m_window, [](GLFWwindow *window, int32 iconified)
 		{
 			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
 
@@ -207,9 +207,7 @@ namespace toaster
 				stbi_image_free(window_icon[0].pixels);
 			}
 			else
-			{
 				LOG_ERROR("Failed to load image icon. Path: {}", p_create_info.iconPath.string());
-			}
 		}
 
 		if (p_create_info.startMaximized)
@@ -289,7 +287,7 @@ namespace toaster
 		return static_cast<float32>(m_callbackData.height) / static_cast<float32>(m_callbackData.width);
 	}
 
-	ScreenPos Window::getCenter() const
+	std::pair<float32, float32> Window::getCenter() const
 	{
 		return {static_cast<float32>(m_callbackData.width) / 2.0f, static_cast<float32>(m_callbackData.height) / 2.0f};
 	}

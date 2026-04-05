@@ -16,6 +16,8 @@
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_shader.hpp"
 #include "toast_gpu/vk/vk_image.hpp"
+#include "toast_gpu/vk/vk_pipeline.hpp"
+#include "toast_gpu/vk/vk_texture.hpp"
 
 namespace toaster
 {
@@ -38,12 +40,7 @@ namespace toaster
 
 		static vk::Format _getVulkanAttribType(gpu::EShaderDataType p_type);
 
-		void _createDescriptorSetLayout();
-		void _createGraphicsPipeline();
-
-		void _createTextureImage();
-		void _createTextureImageView();
-		void _createTextureSampler();
+		// void _createGraphicsPipeline();
 
 		void _createUniformBuffers();
 		void _createDescriptorPool();
@@ -53,21 +50,16 @@ namespace toaster
 
 		RefPtr<Renderer2D> m_renderer2D;
 
-		vk::raii::DescriptorSetLayout m_descriptorSetLayout{nullptr};
-
 		gpu::VertexBufferLayout m_vertexBufferLayout;
 
 		RefPtr<gpu::VKShader> m_shader{nullptr};
 
-		vk::raii::Pipeline       m_graphicsPipeline{nullptr};
-		vk::raii::PipelineLayout m_pipelineLayout{nullptr};
+		RefPtr<gpu::VKPipeline> m_pipeline{nullptr};
 
-		vk::raii::Image        m_textureImage{nullptr};
-		vk::raii::DeviceMemory m_textureImageMemory{nullptr};
-		vk::raii::ImageView    m_textureImageView{nullptr};
-		vk::raii::Sampler      m_textureImageSampler{nullptr};
+		// vk::raii::Pipeline       m_graphicsPipeline{nullptr};
+		// vk::raii::PipelineLayout m_pipelineLayout{nullptr};
 
-		RefPtr<gpu::VKImage2D> m_image{nullptr};
+		RefPtr<gpu::VKTexture2D> m_texture{nullptr};
 
 		struct Vertex
 		{

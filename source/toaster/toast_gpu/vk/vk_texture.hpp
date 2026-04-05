@@ -3,10 +3,11 @@
 #include "vk_image.hpp"
 #include "toast_lib/buffer.hpp"
 #include "toast_lib/ptr.hpp"
+#include "toast_lib/io/filesystem.hpp"
 
 namespace toaster::gpu
 {
-	struct TextureCreateInfo
+	struct TextureSpecInfo
 	{
 		uint32       width{0u};
 		uint32       height{0u};
@@ -16,20 +17,23 @@ namespace toaster::gpu
 	class VKTexture2D
 	{
 	public:
-		VKTexture2D(VKGPUContext *p_ctx, const TextureCreateInfo &p_create_info);
+		VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
 
-		RefPtr<VKImage2D> getImage() const;
+		vk::raii::Image &       getImage();
+		vk::raii::DeviceMemory &getImageMemory();
+		vk::raii::ImageView &   getImageView();
+		vk::raii::Sampler &     getSampler();
 
-		const TextureCreateInfo &getCreateInfo() const;
-
-		Buffer getImageData();
+		[[nodiscard]] const TextureSpecInfo &getSpecInfo() const;
 
 	private:
 		VKGPUContext *m_ctx{nullptr};
 
-		TextureCreateInfo m_createInfo{};
+		TextureSpecInfo m_specInfo{};
 
-		Buffer            m_imageData{};
-		RefPtr<VKImage2D> m_image;
+		vk::raii::Image        m_image{nullptr};
+		vk::raii::DeviceMemory m_imageMemory{nullptr};
+		vk::raii::ImageView    m_imageView{nullptr};
+		vk::raii::Sampler      m_sampler{nullptr};
 	};
 }
