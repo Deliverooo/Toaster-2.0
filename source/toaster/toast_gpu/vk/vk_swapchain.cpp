@@ -9,6 +9,8 @@ namespace toaster::gpu
 {
 	VKSwapchain::VKSwapchain(VKGPUContext *p_ctx, GLFWwindow *p_window) : m_ctx(p_ctx), m_window(p_window)
 	{
+		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+
 		_create();
 		_createImageViews();
 		_createSyncObjects();

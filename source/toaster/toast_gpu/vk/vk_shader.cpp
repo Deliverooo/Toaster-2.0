@@ -12,6 +12,8 @@ namespace toaster::gpu
 {
 	VKShader::VKShader(VKGPUContext *p_ctx, const BytecodeMap &p_bytecode_map) : m_ctx(p_ctx), m_shaderBytecodeMap(p_bytecode_map)
 	{
+		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+
 		for (auto &[stage, code]: p_bytecode_map)
 		{
 			m_shaderModules.insert({stage, m_ctx->createShaderModule(code)});
@@ -73,6 +75,16 @@ namespace toaster::gpu
 		return m_descriptorSetLayouts.at(p_set_index);
 	}
 
+	const std::vector<DescriptorSet> &VKShader::getReflectedShaderDescriptorSets() const
+	{
+		return m_reflectionData.descriptorSets;
+	}
+
+	const std::unordered_map<String, ShaderResource> &VKShader::getReflectedShaderResources() const
+	{
+		return m_reflectionData.resources;
+	}
+
 	void VKShader::_reflect(vk::ShaderStageFlagBits p_stage, Bytecode p_bytecode)
 	{
 		const Bytecode            copy = {p_bytecode.begin(), p_bytecode.end()};
@@ -85,7 +97,7 @@ namespace toaster::gpu
 			LOG_INFO("Uniform buffers:");
 		for (const auto &resource: resources.uniform_buffers)
 		{
-			const auto &name = resource.name;
+			const String &name = resource.name;
 
 			auto & buffer_type = compiler.get_type(resource.base_type_id);
 			uint32 size        = compiler.get_declared_struct_size(buffer_type);
@@ -98,14 +110,13 @@ namespace toaster::gpu
 			if (set >= m_reflectionData.descriptorSets.size())
 				m_reflectionData.descriptorSets.resize(set + 1);
 
-			auto &        descriptorSet = m_reflectionData.descriptorSets[set];
-			UniformBuffer uniform_buffer{};
-			uniform_buffer.size    = size;
-			uniform_buffer.stage   = p_stage;
-			uniform_buffer.name    = name;
-			uniform_buffer.binding = binding;
+			DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
 
-			descriptorSet.uniformBuffers[binding] = uniform_buffer;
+			UniformBuffer &uniform_buffer = descriptorSet.uniformBuffers[binding];
+			uniform_buffer.size           = size;
+			uniform_buffer.stage          = p_stage;
+			uniform_buffer.name           = name;
+			uniform_buffer.binding        = binding;
 
 			LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
 			LOG_TRACE("\t\tMember count: {}", member_count);
@@ -116,7 +127,7 @@ namespace toaster::gpu
 			LOG_INFO("Combined image samplers:");
 		for (const auto &resource: resources.sampled_images)
 		{
-			const auto &name = resource.name;
+			const String &name = resource.name;
 
 			uint32 binding    = compiler.get_decoration(resource.id, spv::DecorationBinding);
 			uint32 set        = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
@@ -128,14 +139,19 @@ namespace toaster::gpu
 			if (set >= m_reflectionData.descriptorSets.size())
 				m_reflectionData.descriptorSets.resize(set + 1);
 
-			auto &       descriptorSet = m_reflectionData.descriptorSets[set];
-			ImageSampler image_sampler{};
-			image_sampler.stage     = p_stage;
-			image_sampler.name      = name;
-			image_sampler.binding   = binding;
-			image_sampler.arraySize = array_size;
+			DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
 
-			descriptorSet.imageSamplers[binding] = image_sampler;
+			ImageSampler &image_sampler = descriptorSet.imageSamplers[binding];
+			image_sampler.stage         = p_stage;
+			image_sampler.name          = name;
+			image_sampler.binding       = binding;
+			image_sampler.arraySize     = array_size;
+
+			ShaderResource &image_sampler_resource = m_reflectionData.resources[name];
+			image_sampler_resource.name            = name;
+			image_sampler_resource.set             = set;
+			image_sampler_resource.binding         = binding;
+			image_sampler_resource.arraySize       = array_size;
 
 			LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
 			LOG_TRACE("\t\tArray size: {}", array_size);
@@ -147,7 +163,7 @@ namespace toaster::gpu
 	{
 		for (uint32 set{0u}; set < m_reflectionData.descriptorSets.size(); ++set)
 		{
-			auto &descriptor_set = m_reflectionData.descriptorSets.at(set);
+			DescriptorSet &descriptor_set = m_reflectionData.descriptorSets.at(set);
 
 			if (!descriptor_set.uniformBuffers.empty())
 			{

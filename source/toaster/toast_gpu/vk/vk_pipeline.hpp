@@ -1,9 +1,9 @@
 #pragma once
 
 #include "vk_shader.hpp"
-
 #include "../vertex_buffer_layout.hpp"
-#include "toast_lib/ptr.hpp"
+
+#include "toast_lib/core_basic.hpp"
 
 namespace toaster::gpu
 {

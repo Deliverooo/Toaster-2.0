@@ -8,6 +8,8 @@ namespace toaster::gpu
 {
 	VKTexture2D::VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path) : m_ctx(p_ctx), m_specInfo(p_spec_info)
 	{
+		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+
 		// Ts is somewhat necessary
 		stbi_set_flip_vertically_on_load(true);
 

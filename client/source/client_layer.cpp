@@ -35,8 +35,6 @@ namespace toaster
 			{gpu::EShaderDataType::eFloat2, "a_TexCoord"}
 		};
 
-		// _createDescriptorSetLayout();
-
 		gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/test.vert.glsl.spv");
 		gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/test.pixel.glsl.spv");
 		gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
@@ -49,8 +47,6 @@ namespace toaster
 		pipeline_create_info.shader             = m_shader;
 
 		m_pipeline = make_reference<gpu::VKPipeline>(ctx, pipeline_create_info);
-
-		// _createGraphicsPipeline();
 
 		gpu::TextureSpecInfo texture_spec_info{};
 		m_texture = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info, "../resources/textures/Peeber.png");
@@ -70,6 +66,8 @@ namespace toaster
 
 	void ClientLayer::onDestroy()
 	{
+		for (auto &ubo: m_ubos)
+			ubo->unmapMemory();
 	}
 
 	void ClientLayer::onUpdate(const float32 p_dt)
@@ -80,6 +78,8 @@ namespace toaster
 		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 		auto  swapchain = app.getWindow().getSwapchain();
 
+		uint32 frame_index = swapchain->getFrameIndex();
+
 		_recordCommandBuffer(swapchain->getImageIndex());
 
 		UniformBufferObject ubo{};
@@ -89,7 +89,31 @@ namespace toaster
 									 10.0f);
 		ubo.proj[1][1] *= -1.0f;
 
-		std::memcpy(m_mappedUniformBuffers[swapchain->getFrameIndex()], &ubo, sizeof(UniformBufferObject));
+		std::memcpy(m_mappedUniformBuffers[frame_index], &ubo, sizeof(UniformBufferObject));
+
+		// m_ubCamera->setData(&ubo, sizeof(UniformBufferObject));
+
+		// gpu::RenderPassBeginInfo begin_info{};
+		//
+		// begin_info.pipeline = m_pipeline;
+		// begin_info.width    = static_cast<float32>(swapchain->getExtent().width);
+		// begin_info.height   = static_cast<float32>(swapchain->getExtent().height);
+		//
+		// gpu::VKRenderAttachment colour_attachment{};
+		// colour_attachment.type        = gpu::ERenderAttachmentType::eColour;
+		// colour_attachment.clearValue  = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
+		// colour_attachment.targetImage = swapchain->getImageView(swapchain->getImageIndex());
+		//
+		// gpu::VKRenderAttachment depth_attachment{};
+		// colour_attachment.type        = gpu::ERenderAttachmentType::eDepth;
+		// colour_attachment.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
+		// colour_attachment.targetImage = swapchain->getDepthImageView();
+		//
+		// begin_info.attachments = {colour_attachment, depth_attachment};
+		//
+		// Renderer::beginRenderPass(swapchain->getCurrentCommandBuffer(), frame_index, begin_info);
+		//
+		// Renderer::endRenderPass(swapchain->getCurrentCommandBuffer());
 	}
 
 	void ClientLayer::onEvent(Event &p_event)
@@ -166,144 +190,13 @@ namespace toaster
 
 		command_buffer.bindVertexBuffers(0, *m_vertexBuffer->getBuffer(), {0});
 		command_buffer.bindIndexBuffer(*m_indexBuffer->getBuffer(), 0u, vk::IndexType::eUint16);
+
 		command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipeline->getPipelineLayout(), 0, *m_descriptorSets[swapchain->getFrameIndex()], nullptr);
+
 		command_buffer.drawIndexed(m_indices.size(), 1, 0, 0, 0);
 
 		command_buffer.endRendering();
 	}
-
-	vk::Format ClientLayer::_getVulkanAttribType(gpu::EShaderDataType p_type)
-	{
-		switch (p_type)
-		{
-			case gpu::EShaderDataType::eFloat: return vk::Format::eR32Sfloat;
-			case gpu::EShaderDataType::eFloat2: return vk::Format::eR32G32Sfloat;
-			case gpu::EShaderDataType::eFloat3: return vk::Format::eR32G32B32Sfloat;
-			case gpu::EShaderDataType::eFloat4: return vk::Format::eR32G32B32A32Sfloat;
-			case gpu::EShaderDataType::eInt: return vk::Format::eR32Sint;
-			case gpu::EShaderDataType::eInt2: return vk::Format::eR32G32Sint;
-			case gpu::EShaderDataType::eInt3: return vk::Format::eR32G32B32Sint;
-			case gpu::EShaderDataType::eInt4: return vk::Format::eR32G32B32A32Sint;
-			case gpu::EShaderDataType::eBool: return vk::Format::eR32Sint;
-			default: return vk::Format::eUndefined;
-		}
-		TST_ASSERT_MSG(false, "Unsupported shader data type");
-		return vk::Format::eUndefined;
-	}
-
-	#if 0
-	void ClientLayer::_createGraphicsPipeline()
-	{
-		auto &app       = getApp();
-		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-		auto  swapchain = app.getWindow().getSwapchain();
-
-		vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
-		vk::VertexInputBindingDescription      vertex_input_binding_description{};
-		vertex_input_binding_description.binding                     = 0;
-		vertex_input_binding_description.stride                      = m_vertexBufferLayout.getStride();
-		vertex_input_binding_description.inputRate                   = vk::VertexInputRate::eVertex;
-		vertex_input_state_create_info.pVertexBindingDescriptions    = &vertex_input_binding_description;
-		vertex_input_state_create_info.vertexBindingDescriptionCount = 1;
-
-		std::vector<vk::VertexInputAttributeDescription> vertex_input_attribute_descriptions;
-		vertex_input_attribute_descriptions.resize(m_vertexBufferLayout.getElements().size());
-
-		uint32 location{0u};
-		for (const auto &element: m_vertexBufferLayout)
-		{
-			vertex_input_attribute_descriptions[location].binding  = 0;
-			vertex_input_attribute_descriptions[location].format   = _getVulkanAttribType(element.type);
-			vertex_input_attribute_descriptions[location].location = location;
-			vertex_input_attribute_descriptions[location].offset   = element.offset;
-			++location;
-		}
-
-		vertex_input_state_create_info.pVertexAttributeDescriptions    = vertex_input_attribute_descriptions.data();
-		vertex_input_state_create_info.vertexAttributeDescriptionCount = static_cast<uint32>(vertex_input_attribute_descriptions.size());
-
-		vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info{};
-		input_assembly_state_create_info.topology = vk::PrimitiveTopology::eTriangleList;
-
-		vk::PipelineViewportStateCreateInfo viewport_state_create_info{};
-		viewport_state_create_info.viewportCount = 1;
-		viewport_state_create_info.scissorCount  = 1;
-
-		vk::PipelineRasterizationStateCreateInfo rasterization_state_create_info{};
-		rasterization_state_create_info.depthClampEnable        = false;
-		rasterization_state_create_info.rasterizerDiscardEnable = false;
-		rasterization_state_create_info.polygonMode             = vk::PolygonMode::eFill;
-		rasterization_state_create_info.cullMode                = vk::CullModeFlagBits::eBack;
-		rasterization_state_create_info.frontFace               = vk::FrontFace::eCounterClockwise;
-		rasterization_state_create_info.depthBiasEnable         = false;
-		rasterization_state_create_info.lineWidth               = 1.0f;
-
-		vk::PipelineColorBlendAttachmentState colour_blend_attachment_state{};
-		colour_blend_attachment_state.blendEnable    = false;
-		colour_blend_attachment_state.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-													   vk::ColorComponentFlagBits::eA;
-
-		vk::PipelineColorBlendStateCreateInfo colour_blend_state_create_info{};
-		colour_blend_state_create_info.logicOpEnable   = false;
-		colour_blend_state_create_info.logicOp         = vk::LogicOp::eCopy;
-		colour_blend_state_create_info.attachmentCount = 1;
-		colour_blend_state_create_info.pAttachments    = &colour_blend_attachment_state;
-
-		std::array                         dynamic_states{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-		vk::PipelineDynamicStateCreateInfo dynamic_state_create_info{};
-		dynamic_state_create_info.pDynamicStates    = dynamic_states.data();
-		dynamic_state_create_info.dynamicStateCount = dynamic_states.size();
-
-		vk::PipelineMultisampleStateCreateInfo multisample_state_create_info{};
-		multisample_state_create_info.rasterizationSamples = vk::SampleCountFlagBits::e1;
-		multisample_state_create_info.sampleShadingEnable  = false;
-
-		vk::PipelineRenderingCreateInfo rendering_create_info{};
-		rendering_create_info.colorAttachmentCount    = 1;
-		vk::Format colour_attachment_format           = swapchain->getSurfaceFormat().format;
-		rendering_create_info.pColorAttachmentFormats = &colour_attachment_format;
-		rendering_create_info.depthAttachmentFormat   = ctx->findDepthFormat();
-
-		vk::PipelineDepthStencilStateCreateInfo depth_stencil_state_create_info{};
-		depth_stencil_state_create_info.depthTestEnable       = true;
-		depth_stencil_state_create_info.depthWriteEnable      = true;
-		depth_stencil_state_create_info.depthCompareOp        = vk::CompareOp::eLess;
-		depth_stencil_state_create_info.depthBoundsTestEnable = false;
-		depth_stencil_state_create_info.stencilTestEnable     = false;
-
-		auto descriptor_set_layouts = m_shader->getDescriptorSetLayouts();
-		TST_ASSERT(!descriptor_set_layouts.empty());
-		LOG_INFO("{}", descriptor_set_layouts.size());
-
-		vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
-		pipeline_layout_create_info.setLayoutCount         = 0;
-		pipeline_layout_create_info.pushConstantRangeCount = 0;
-		pipeline_layout_create_info.setLayoutCount         = descriptor_set_layouts.size();
-		pipeline_layout_create_info.pSetLayouts            = descriptor_set_layouts.data();
-		m_pipelineLayout                                   = {ctx->getDevice(), pipeline_layout_create_info};
-
-		std::vector<vk::PipelineShaderStageCreateInfo> stage_infos = m_shader->getPipelineShaderStageCreateInfos();
-
-		vk::GraphicsPipelineCreateInfo graphics_pipeline_create_info{};
-		graphics_pipeline_create_info.stageCount          = stage_infos.size();
-		graphics_pipeline_create_info.pStages             = stage_infos.data();
-		graphics_pipeline_create_info.pVertexInputState   = &vertex_input_state_create_info;
-		graphics_pipeline_create_info.pInputAssemblyState = &input_assembly_state_create_info;
-		graphics_pipeline_create_info.pRasterizationState = &rasterization_state_create_info;
-		graphics_pipeline_create_info.pViewportState      = &viewport_state_create_info;
-		graphics_pipeline_create_info.pMultisampleState   = &multisample_state_create_info;
-		graphics_pipeline_create_info.pColorBlendState    = &colour_blend_state_create_info;
-		graphics_pipeline_create_info.pDynamicState       = &dynamic_state_create_info;
-		graphics_pipeline_create_info.pDepthStencilState  = &depth_stencil_state_create_info;
-		graphics_pipeline_create_info.layout              = m_pipelineLayout;
-		graphics_pipeline_create_info.renderPass          = nullptr;
-		graphics_pipeline_create_info.pNext               = &rendering_create_info;
-
-		m_graphicsPipeline = {ctx->getDevice(), nullptr, graphics_pipeline_create_info};
-	}
-
-	#endif
-
 
 	void ClientLayer::_createUniformBuffers()
 	{
@@ -312,15 +205,25 @@ namespace toaster
 
 		for (uint32 i{0u}; i < gpu::VKGPUContext::c_maxFramesInFlight; ++i)
 		{
-			vk::DeviceSize         ubo_size{sizeof(UniformBufferObject)};
-			vk::raii::Buffer       ubo{nullptr};
-			vk::raii::DeviceMemory ubo_memory{nullptr};
-			ctx->createBuffer(ubo_size, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-							  ubo, ubo_memory);
-			m_uniformBuffers.emplace_back(std::move(ubo));
-			m_uniformBufferMemories.emplace_back(std::move(ubo_memory));
-			m_mappedUniformBuffers.emplace_back(m_uniformBufferMemories[i].mapMemory(0, ubo_size));
+			vk::DeviceSize ubo_size{sizeof(UniformBufferObject)};
+
+			auto ubo = make_reference<gpu::VKUniformBuffer>(ctx, ubo_size);
+			m_ubos.emplace_back(ubo);
+
+			m_mappedUniformBuffers.emplace_back(ubo->mapMemory(ubo_size, 0));
 		}
+
+		// for (uint32 i{0u}; i < gpu::VKGPUContext::c_maxFramesInFlight; ++i)
+		// {
+		// 	vk::DeviceSize         ubo_size{sizeof(UniformBufferObject)};
+		// 	vk::raii::Buffer       ubo{nullptr};
+		// 	vk::raii::DeviceMemory ubo_memory{nullptr};
+		// 	ctx->createBuffer(ubo_size, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+		// 					  ubo, ubo_memory);
+		// 	m_uniformBuffers.emplace_back(std::move(ubo));
+		// 	m_uniformBufferMemories.emplace_back(std::move(ubo_memory));
+		// 	m_mappedUniformBuffers.emplace_back(m_uniformBufferMemories[i].mapMemory(0, ubo_size));
+		// }
 	}
 
 	void ClientLayer::_createDescriptorPool()
@@ -360,10 +263,10 @@ namespace toaster
 
 			for (uint32 i{0u}; i < gpu::VKGPUContext::c_maxFramesInFlight; ++i)
 			{
-				vk::DescriptorBufferInfo descriptor_buffer_info{};
-				descriptor_buffer_info.buffer = m_uniformBuffers[i];
-				descriptor_buffer_info.offset = 0;
-				descriptor_buffer_info.range  = sizeof(UniformBufferObject);
+				// vk::DescriptorBufferInfo descriptor_buffer_info{};
+				// descriptor_buffer_info.buffer = m_uniformBuffers[i];
+				// descriptor_buffer_info.offset = 0;
+				// descriptor_buffer_info.range  = sizeof(UniformBufferObject);
 
 				vk::DescriptorImageInfo descriptor_image_info{};
 				descriptor_image_info.imageView   = m_texture->getImageView();
@@ -373,7 +276,7 @@ namespace toaster
 				std::array<vk::WriteDescriptorSet, 2> write_descriptor_sets{};
 				write_descriptor_sets[0].descriptorCount = 1;
 				write_descriptor_sets[0].descriptorType  = vk::DescriptorType::eUniformBuffer;
-				write_descriptor_sets[0].pBufferInfo     = &descriptor_buffer_info;
+				write_descriptor_sets[0].pBufferInfo     = &m_ubos[i]->getDescriptorInfo();
 				write_descriptor_sets[0].dstSet          = m_descriptorSets[i];
 				write_descriptor_sets[0].dstBinding      = 0;
 				write_descriptor_sets[0].dstArrayElement = 0;

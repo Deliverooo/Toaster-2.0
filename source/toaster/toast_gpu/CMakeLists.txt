@@ -75,8 +75,14 @@ if (${WITH_VULKAN_BACKEND})
 			vk/vk_index_buffer.cpp
 			vk/vk_index_buffer.hpp
 
+			vk/vk_uniform_buffer.cpp
+			vk/vk_uniform_buffer.hpp
+
 			vk/vk_shader.cpp
 			vk/vk_shader.hpp
+
+			vk/vk_material.cpp
+			vk/vk_material.hpp
 
 			vk/vk_shader_resources.hpp
 
@@ -85,6 +91,12 @@ if (${WITH_VULKAN_BACKEND})
 
 			vk/vk_texture.cpp
 			vk/vk_texture.hpp
+
+			vk/vk_render_pass.cpp
+			vk/vk_render_pass.hpp
+
+			vk/vk_descriptor_set_manager.cpp
+			vk/vk_descriptor_set_manager.hpp
 	)
 endif ()
 

@@ -1,59 +1,29 @@
 #include "renderer.hpp"
 
-#include "globals.hpp"
-
-#include <glm/ext/matrix_transform.hpp>
-
-#include "toast_lib/logging.hpp"
-
 namespace toaster
 {
-	void Renderer::submitGeometry(const RefPtr<gpu::IVertexArray> &p_vertex_array, const RefPtr<gpu::IShader> &p_shader, const glm::mat4 &p_model_matrix)
+	void Renderer::beginRenderPass(vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const gpu::RenderPassBeginInfo &begin_info)
 	{
-		p_shader->bind();
-		p_shader->setUniform("u_Model", p_model_matrix);
-		RenderCommand::drawIndexed(p_vertex_array);
-	}
+		std::vector<vk::RenderingAttachmentInfo> colour_attachments{};
+		vk::RenderingAttachmentInfo              depth_attachment{};
 
-	void Renderer::submitMesh(const RefPtr<Mesh> &p_mesh, const glm::mat4 &p_view, const glm::mat4 &p_proj, const glm::mat4 &p_model_matrix)
-	{
-		auto mesh_shader = Globals::shaderLibrary()->get("Mesh");
-		mesh_shader->bind();
-		mesh_shader->setUniform("u_View", p_view);
-		mesh_shader->setUniform("u_Proj", p_proj);
-
-		for (const auto &sm: p_mesh->getSubmeshes())
+		for (auto &attachment: begin_info.attachments)
 		{
-			glm::mat4  transform = p_model_matrix * sm.transform;
-			const auto material  = p_mesh->getMaterial(sm.materialIndex);
-
-			mesh_shader->setUniform("u_Model", transform);
-			material->use();
-
-			RenderCommand::drawIndexedBaseVertex(p_mesh->getVertexArray(), sm.indexCount, sm.baseIndex, sm.baseVertex);
+			if (attachment.type == gpu::ERenderAttachmentType::eColour)
+			{
+				vk::RenderingAttachmentInfo &colour_attachment = colour_attachments.emplace_back();
+				colour_attachment.clearValue                   = attachment.clearValue;
+				colour_attachment.imageLayout                  = vk::ImageLayout::eColorAttachmentOptimal;
+				colour_attachment.imageView                    = attachment.targetImage;
+				colour_attachment.loadOp                       = vk::AttachmentLoadOp::eClear;
+				colour_attachment.storeOp                      = vk::AttachmentStoreOp::eStore;
+			}
 		}
+
 	}
 
-	void Renderer::renderSubmesh(const RefPtr<Mesh> &p_mesh, uint32 p_submesh_index, const glm::mat4 &p_view, const glm::mat4 &p_proj, const glm::mat4 &p_model_matrix)
+	void Renderer::endRenderPass(vk::raii::CommandBuffer &p_command_buffer)
 	{
-		auto mesh_shader = Globals::shaderLibrary()->get("Mesh");
-		mesh_shader->bind();
-		mesh_shader->setUniform("u_View", p_view);
-		mesh_shader->setUniform("u_Proj", p_proj);
-
-		const Submesh sm = p_mesh->getSubmeshes()[p_submesh_index];
-
-		glm::mat4  transform = p_model_matrix * sm.transform;
-		const auto material  = p_mesh->getMaterial(sm.materialIndex);
-
-		mesh_shader->setUniform("u_Model", transform);
-		material->use();
-
-		RenderCommand::drawIndexedBaseVertex(p_mesh->getVertexArray(), sm.indexCount, sm.baseIndex, sm.baseVertex);
-	}
-
-	void Renderer::submitQuad(const glm::vec3 &p_positon)
-	{
-		submitGeometry(Globals::quadVertexArray(), Globals::shaderLibrary()->get("Quad"), glm::translate(glm::mat4{1.0f}, p_positon));
+		p_command_buffer.endRendering();
 	}
 }

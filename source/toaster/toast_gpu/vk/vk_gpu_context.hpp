@@ -8,10 +8,7 @@
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
-#include "toast_lib/string.hpp"
-#include "toast_lib/system_types.h"
-
-#include "toast_lib/toast_assert.h"
+#include "toast_lib/core_basic.hpp"
 
 namespace toaster::gpu
 {

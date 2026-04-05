@@ -9,7 +9,8 @@ namespace toaster::gpu
 {
 	VKPipeline::VKPipeline(VKGPUContext *p_ctx, const PipelineCreateInfo &p_create_info) : m_ctx(p_ctx), m_createInfo(p_create_info)
 	{
-		TST_ASSERT_MSG(p_ctx, "GPU Context is null");
+		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+
 		_createGraphicsPipeline();
 	}
 
@@ -74,16 +75,20 @@ namespace toaster::gpu
 		rasterization_state_create_info.depthBiasEnable         = false;
 		rasterization_state_create_info.lineWidth               = 1.0f;
 
-		vk::PipelineColorBlendAttachmentState colour_blend_attachment_state{};
-		colour_blend_attachment_state.blendEnable    = false;
-		colour_blend_attachment_state.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-													   vk::ColorComponentFlagBits::eA;
+		std::vector<vk::PipelineColorBlendAttachmentState> colour_blend_attachment_states{};
+		for (vk::Format attachment: m_createInfo.colourAttachments)
+		{
+			auto &colour_blend_attachment_state{colour_blend_attachment_states.emplace_back()};
+			colour_blend_attachment_state.blendEnable    = false;
+			colour_blend_attachment_state.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+														   vk::ColorComponentFlagBits::eA;
+		}
 
 		vk::PipelineColorBlendStateCreateInfo colour_blend_state_create_info{};
 		colour_blend_state_create_info.logicOpEnable   = false;
 		colour_blend_state_create_info.logicOp         = vk::LogicOp::eCopy;
-		colour_blend_state_create_info.attachmentCount = 1;
-		colour_blend_state_create_info.pAttachments    = &colour_blend_attachment_state;
+		colour_blend_state_create_info.attachmentCount = colour_blend_attachment_states.size();
+		colour_blend_state_create_info.pAttachments    = colour_blend_attachment_states.data();
 
 		std::array                         dynamic_states{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
 		vk::PipelineDynamicStateCreateInfo dynamic_state_create_info{};
@@ -94,21 +99,23 @@ namespace toaster::gpu
 		multisample_state_create_info.rasterizationSamples = vk::SampleCountFlagBits::e1;
 		multisample_state_create_info.sampleShadingEnable  = false;
 
+		TST_ASSERT(!m_createInfo.colourAttachments.empty());
 		vk::PipelineRenderingCreateInfo rendering_create_info{};
 		rendering_create_info.colorAttachmentCount    = m_createInfo.colourAttachments.size();
 		rendering_create_info.pColorAttachmentFormats = m_createInfo.colourAttachments.data();
 		rendering_create_info.depthAttachmentFormat   = m_ctx->findDepthFormat();
 
 		vk::PipelineDepthStencilStateCreateInfo depth_stencil_state_create_info{};
-		depth_stencil_state_create_info.depthTestEnable       = true;
-		depth_stencil_state_create_info.depthWriteEnable      = true;
-		depth_stencil_state_create_info.depthCompareOp        = vk::CompareOp::eLess;
-		depth_stencil_state_create_info.depthBoundsTestEnable = false;
-		depth_stencil_state_create_info.stencilTestEnable     = false;
-
+		if (m_createInfo.depthFormat != vk::Format::eUndefined)
+		{
+			depth_stencil_state_create_info.depthTestEnable       = true;
+			depth_stencil_state_create_info.depthWriteEnable      = true;
+			depth_stencil_state_create_info.depthCompareOp        = vk::CompareOp::eLess;
+			depth_stencil_state_create_info.depthBoundsTestEnable = false;
+			depth_stencil_state_create_info.stencilTestEnable     = false;
+		}
 		auto descriptor_set_layouts = m_createInfo.shader->getDescriptorSetLayouts();
 		TST_ASSERT(!descriptor_set_layouts.empty());
-		LOG_INFO("{}", descriptor_set_layouts.size());
 
 		vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
 		pipeline_layout_create_info.setLayoutCount         = 0;

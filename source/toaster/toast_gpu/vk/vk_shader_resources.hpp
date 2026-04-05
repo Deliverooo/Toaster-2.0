@@ -34,4 +34,12 @@ namespace toaster::gpu
 		// Descriptor name -> vk::WriteDescriptorSet
 		std::unordered_map<String, vk::WriteDescriptorSet> writeDescriptorSets;
 	};
+
+	struct ShaderResource
+	{
+		String name{};
+		uint32 set{0u};
+		uint32 binding{0u};
+		uint32 arraySize{0u};
+	};
 }

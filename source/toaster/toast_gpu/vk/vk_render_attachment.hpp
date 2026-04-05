@@ -4,9 +4,19 @@
 
 namespace toaster::gpu
 {
+	enum class ERenderAttachmentType
+	{
+		eColour,
+		eDepth,
+		eStencil,
+		eDepthStencil
+	};
+
 	struct VKRenderAttachment
 	{
-		vk::ClearValue clearValue{};
-		vk::Format     format{vk::Format::eUndefined};
+		ERenderAttachmentType type{ERenderAttachmentType::eColour};
+		vk::ClearValue        clearValue{};
+
+		vk::ImageView targetImage{nullptr};
 	};
 }

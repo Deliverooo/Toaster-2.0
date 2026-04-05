@@ -18,6 +18,8 @@
 #include "toast_gpu/vk/vk_image.hpp"
 #include "toast_gpu/vk/vk_pipeline.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
+#include "toast_gpu/vk/vk_uniform_buffer.hpp"
+#include "toast_gpu/vk/vk_render_attachment.hpp"
 
 namespace toaster
 {
@@ -38,10 +40,6 @@ namespace toaster
 
 		void _recordCommandBuffer(uint32 p_image_index);
 
-		static vk::Format _getVulkanAttribType(gpu::EShaderDataType p_type);
-
-		// void _createGraphicsPipeline();
-
 		void _createUniformBuffers();
 		void _createDescriptorPool();
 		void _createDescriptorSets();
@@ -51,13 +49,8 @@ namespace toaster
 		RefPtr<Renderer2D> m_renderer2D;
 
 		gpu::VertexBufferLayout m_vertexBufferLayout;
-
-		RefPtr<gpu::VKShader> m_shader{nullptr};
-
+		RefPtr<gpu::VKShader>   m_shader{nullptr};
 		RefPtr<gpu::VKPipeline> m_pipeline{nullptr};
-
-		// vk::raii::Pipeline       m_graphicsPipeline{nullptr};
-		// vk::raii::PipelineLayout m_pipelineLayout{nullptr};
 
 		RefPtr<gpu::VKTexture2D> m_texture{nullptr};
 
@@ -91,9 +84,9 @@ namespace toaster
 			glm::mat4 proj;
 		};
 
-		std::vector<vk::raii::Buffer>       m_uniformBuffers;
-		std::vector<vk::raii::DeviceMemory> m_uniformBufferMemories;
-		std::vector<void *>                 m_mappedUniformBuffers;
+		std::vector<RefPtr<gpu::VKUniformBuffer> > m_ubos;
+
+		std::vector<void *> m_mappedUniformBuffers;
 
 		struct FrameDataUB
 		{

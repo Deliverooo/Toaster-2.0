@@ -6,6 +6,7 @@ namespace toaster::gpu
 {
 	VKImage2D::VKImage2D(VKGPUContext *p_ctx, const ImageCreateInfo &p_create_info) : m_ctx(p_ctx), m_createInfo(p_create_info)
 	{
+		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
 	}
 
 	vk::raii::Image &VKImage2D::getImage()

@@ -13,6 +13,14 @@ namespace toaster::gpu
 	class VKShader
 	{
 	public:
+		struct ReflectionData
+		{
+			std::vector<DescriptorSet> descriptorSets;
+
+			// Ts just makes it easier to access the shader resources
+			std::unordered_map<String, ShaderResource> resources; // Textures / images
+		};
+
 		using Bytecode              = std::vector<uint32>;
 		using PipelineCreateInfoMap = std::unordered_map<vk::ShaderStageFlagBits, vk::PipelineShaderStageCreateInfo>;
 		using BytecodeMap           = std::unordered_map<vk::ShaderStageFlagBits, Bytecode>;
@@ -29,14 +37,12 @@ namespace toaster::gpu
 		std::vector<vk::DescriptorSetLayout> getDescriptorSetLayouts() const;
 		const vk::raii::DescriptorSetLayout &getDescriptorSetLayout(uint32 p_set_index) const;
 
+		const std::vector<DescriptorSet> &                getReflectedShaderDescriptorSets() const;
+		const std::unordered_map<String, ShaderResource> &getReflectedShaderResources() const;
+
 	private:
 		void _reflect(vk::ShaderStageFlagBits p_stage, Bytecode p_bytecode);
 		void _createDescriptors();
-
-		struct ReflectionData
-		{
-			std::vector<DescriptorSet> descriptorSets;
-		};
 
 		VKGPUContext *m_ctx{nullptr};
 

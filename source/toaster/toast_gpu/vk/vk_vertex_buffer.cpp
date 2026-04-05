@@ -6,6 +6,8 @@ namespace toaster::gpu
 {
 	VKVertexBuffer::VKVertexBuffer(VKGPUContext *p_ctx, void *p_data, uint64 p_size) : m_ctx(p_ctx)
 	{
+		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
 
