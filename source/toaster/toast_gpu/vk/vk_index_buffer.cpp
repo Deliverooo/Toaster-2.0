@@ -45,4 +45,9 @@ namespace toaster::gpu
 		std::memcpy(mapped, p_data, p_size);
 		m_indexBufferMemory.unmapMemory();
 	}
+
+	void VKIndexBuffer::bind(vk::raii::CommandBuffer &p_command_buffer, vk::IndexType p_index_type)
+	{
+		p_command_buffer.bindIndexBuffer(m_indexBuffer, 0, p_index_type);
+	}
 }

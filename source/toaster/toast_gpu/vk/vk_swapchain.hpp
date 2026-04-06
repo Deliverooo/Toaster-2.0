@@ -13,7 +13,6 @@ namespace toaster::gpu
 	{
 	public:
 		VKSwapchain(VKGPUContext *p_ctx, GLFWwindow *p_window);
-		~VKSwapchain();
 
 		void beginFrame();
 		void endFrame();
@@ -21,12 +20,12 @@ namespace toaster::gpu
 		[[nodiscard]] uint32 getFrameIndex() const;
 		[[nodiscard]] uint32 getImageIndex() const;
 
-		vk::Image &          getImage(uint32 p_index);
-		vk::raii::ImageView &getImageView(uint32 p_index);
+		[[nodiscard]] vk::Image &          getImage(uint32 p_index);
+		[[nodiscard]] vk::raii::ImageView &getImageView(uint32 p_index);
 
-		vk::raii::Image &       getDepthImage();
-		vk::raii::ImageView &   getDepthImageView();
-		vk::raii::DeviceMemory &getDepthImageMemory();
+		[[nodiscard]] vk::raii::Image &       getDepthImage();
+		[[nodiscard]] vk::raii::ImageView &   getDepthImageView();
+		[[nodiscard]] vk::raii::DeviceMemory &getDepthImageMemory();
 
 		[[nodiscard]] vk::raii::CommandBuffer &getCommandBuffer(uint32 p_frame_index);
 		[[nodiscard]] vk::raii::CommandBuffer &getCurrentCommandBuffer();
@@ -38,6 +37,7 @@ namespace toaster::gpu
 		[[nodiscard]] uint32 getMinImageCount() const;
 		[[nodiscard]] uint32 getImageCount() const;
 
+		// Only use within the windowing API. E.g. when you set the glfwFramebufferResize callback
 		void setFramebufferResized(bool p_resized);
 
 	private:

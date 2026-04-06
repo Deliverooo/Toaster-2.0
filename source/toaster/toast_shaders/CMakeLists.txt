@@ -2,8 +2,11 @@ set(SHADER_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders")
 
 if (${WITH_VULKAN_BACKEND})
 	set(SHADER_SOURCES_VULKAN
-			${CMAKE_CURRENT_SOURCE_DIR}/test.vert.glsl
-			${CMAKE_CURRENT_SOURCE_DIR}/test.pixel.glsl
+			${CMAKE_CURRENT_SOURCE_DIR}/geometry.vert.glsl
+			${CMAKE_CURRENT_SOURCE_DIR}/geometry.pixel.glsl
+
+			${CMAKE_CURRENT_SOURCE_DIR}/composite.vert.glsl
+			${CMAKE_CURRENT_SOURCE_DIR}/composite.pixel.glsl
 	)
 endif ()
 

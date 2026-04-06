@@ -91,6 +91,9 @@ if (${WITH_VULKAN_BACKEND})
 
 			vk/vk_texture.cpp
 			vk/vk_texture.hpp
+
+			vk/vk_mesh.cpp
+			vk/vk_mesh.hpp
 	)
 endif ()
 
@@ -102,6 +105,7 @@ target_sources(toast_gpu PRIVATE ${GPU_SRC})
 target_link_libraries(toast_gpu PUBLIC tst::toast_lib)
 target_link_libraries(toast_gpu PUBLIC glfw)
 target_link_libraries(toast_gpu PUBLIC stb)
+target_link_libraries(toast_gpu PUBLIC assimp::assimp)
 
 if (${WITH_OPENGL_BACKEND})
 	target_link_libraries(toast_gpu PUBLIC opengl-hpp)

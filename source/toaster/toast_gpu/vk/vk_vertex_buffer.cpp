@@ -45,4 +45,9 @@ namespace toaster::gpu
 		std::memcpy(mapped, p_data, p_size);
 		m_vertexBufferMemory.unmapMemory();
 	}
+
+	void VKVertexBuffer::bind(vk::raii::CommandBuffer &p_command_buffer)
+	{
+		p_command_buffer.bindVertexBuffers(0, *m_vertexBuffer, {0});
+	}
 }

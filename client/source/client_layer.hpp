@@ -16,6 +16,7 @@
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_shader.hpp"
 #include "toast_gpu/vk/vk_image.hpp"
+#include "toast_gpu/vk/vk_mesh.hpp"
 #include "toast_gpu/vk/vk_pipeline.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_gpu/vk/vk_uniform_buffer.hpp"
@@ -37,21 +38,32 @@ namespace toaster
 
 	private:
 		bool onKeyPressEvent(KeyPressEvent &e);
+		bool onWindowResizeEvent(WindowResizeEvent &e);
 
-		void _createUniformBuffers();
+		void _createGeometryAttachments();
 		void _createDescriptorPool();
 		void _createDescriptorSets();
 
 		float32 m_time{0.0f};
 
-		RefPtr<Renderer2D> m_renderer2D;
+		gpu::VertexBufferLayout m_geometryVertexBufferLayout;
+		RefPtr<gpu::VKShader>   m_geometryShader{nullptr}; // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
+		RefPtr<gpu::VKPipeline> m_geometryPipeline{nullptr};
 
-		gpu::VertexBufferLayout m_vertexBufferLayout;
-		RefPtr<gpu::VKShader>   m_shader{nullptr};
-		RefPtr<gpu::VKPipeline> m_pipeline{nullptr};
+		vk::raii::Image         m_geometryAttachmentImage{nullptr};
+		vk::raii::DeviceMemory  m_geometryAttachmentImageMemory{nullptr};
+		vk::raii::ImageView     m_geometryAttachmentImageView{nullptr};
+		vk::raii::Sampler       m_geometryAttachmentImageSampler{nullptr};
+		vk::DescriptorImageInfo m_geometryAttachmentDescriptorImageInfo{nullptr};
+
+		vk::raii::Image        m_geometryDepthAttachmentImage{nullptr};
+		vk::raii::DeviceMemory m_geometryDepthAttachmentImageMemory{nullptr};
+		vk::raii::ImageView    m_geometryDepthAttachmentImageView{nullptr};
 
 		RefPtr<gpu::VKTexture2D> m_texture{nullptr};
-		RefPtr<gpu::VKTexture2D> m_texture2{nullptr};
+
+		RefPtr<gpu::VKShader>   m_compositeShader{nullptr};
+		RefPtr<gpu::VKPipeline> m_compositePipeline{nullptr};
 
 		struct Vertex
 		{
@@ -60,23 +72,12 @@ namespace toaster
 			glm::vec2 texCoord;
 		};
 
-		const std::vector<Vertex> m_vertices{
-			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-			{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-			{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-			{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-			{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-			{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-			{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-			{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-		};
+		RefPtr<gpu::VKVertexBuffer> m_compositeVertexBuffer{nullptr};
+		RefPtr<gpu::VKIndexBuffer>  m_compositeIndexBuffer{nullptr};
 
-		const std::vector<uint16> m_indices{0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
+		RefPtr<gpu::VKMesh> m_mesh{nullptr};
 
-		RefPtr<gpu::VKVertexBuffer> m_vertexBuffer{nullptr};
-		RefPtr<gpu::VKIndexBuffer>  m_indexBuffer{nullptr};
-
-		struct UniformBufferObject
+		struct CameraUB
 		{
 			glm::mat4 model;
 			glm::mat4 view;
@@ -84,8 +85,7 @@ namespace toaster
 		};
 
 		RefPtr<gpu::VKUniformBufferPFF> m_ubos;
-
-		std::vector<void *> m_mappedUniformBuffers;
+		std::vector<void *>             m_mappedUniformBuffers;
 
 		struct FrameData
 		{
@@ -93,7 +93,9 @@ namespace toaster
 			float32   time;
 		};
 
-		vk::raii::DescriptorPool             m_descriptorPool{nullptr};
+		vk::raii::DescriptorPool m_descriptorPool{nullptr};
+
 		std::vector<vk::raii::DescriptorSet> m_descriptorSets;
+		std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
 	};
 }

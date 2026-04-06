@@ -94,13 +94,9 @@ namespace toaster
 				aiMesh *ai_mesh = scene->mMeshes[i];
 
 				if (!ai_mesh->HasPositions())
-				{
 					LOG_WARN("Mesh index {0} with name '{1}' has no vertex positions - skipping import!", i, ai_mesh->mName.C_Str());
-				}
 				if (!ai_mesh->HasNormals())
-				{
 					LOG_WARN("Mesh index {0} with name '{1}' has no vertex normals, and they could not be computed - skipping import!", i, ai_mesh->mName.C_Str());
-				}
 
 				bool skip = !ai_mesh->HasPositions() || !ai_mesh->HasNormals();
 
@@ -194,9 +190,7 @@ namespace toaster
 
 				bool has_albedo_map = ai_material->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &ai_tex_path) == AI_SUCCESS;
 				if (!has_albedo_map)
-				{
 					has_albedo_map = ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &ai_tex_path) == AI_SUCCESS;
-				}
 
 				if (has_albedo_map)
 				{
@@ -217,7 +211,6 @@ namespace toaster
 				else
 				{
 					auto map = gpu::ITexture2D::create("error");
-
 					material->setAlbedoMap(map);
 				}
 

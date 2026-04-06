@@ -18,6 +18,8 @@ namespace toaster::gpu
 
 		void setData(void *p_data, uint64 p_size, uint64 p_offset);
 
+		void bind(vk::raii::CommandBuffer &p_command_buffer, vk::IndexType p_index_type);
+
 	private:
 		VKGPUContext *m_ctx{nullptr};
 
