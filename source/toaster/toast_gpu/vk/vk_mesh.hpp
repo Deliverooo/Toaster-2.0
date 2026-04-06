@@ -29,6 +29,8 @@ namespace toaster::gpu
 
 		const RefPtr<VKTexture2D> &getAlbedoMap() const;
 
+		float32 getRoughness() const;
+
 		const std::vector<MeshVertex> &getVertices() const;
 		const std::vector<uint16> &    getIndices() const;
 
@@ -44,5 +46,6 @@ namespace toaster::gpu
 		RefPtr<VKIndexBuffer>  m_indexBuffer{nullptr};
 
 		RefPtr<VKTexture2D> m_albedoMap{nullptr};
+		float32             m_roughness{0.0f};
 	};
 }

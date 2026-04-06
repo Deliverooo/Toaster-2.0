@@ -124,6 +124,8 @@ namespace toaster
 
 		CameraUB camera_ub{};
 		camera_ub.model = glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{20.0f, 20.0f, 20.0f}), m_time * glm::radians(90.0f), glm::vec3{0.0f, 0.0f, 1.0f});
+		// camera_ub.view  = m_editorCamera.getViewMatrix();
+		// camera_ub.proj  = m_editorCamera.getProjectionMatrix();
 		camera_ub.view = glm::lookAt(glm::vec3{2.0f, 2.0f, 2.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
 		camera_ub.proj = glm::perspective(glm::radians(45.0f), static_cast<float32>(swapchain_extent.width) / static_cast<float32>(swapchain_extent.height), 0.1f, 10.0f);
 		camera_ub.proj[1][1] *= -1.0f;
@@ -169,10 +171,9 @@ namespace toaster
 			command_buffer.setViewport(0, viewport);
 			command_buffer.setScissor(0, scissor);
 
-			FrameData frame_data{};
-			frame_data.resolution = {swapchain_extent.width, swapchain_extent.height};
-			frame_data.time       = m_time;
-			command_buffer.pushConstants<FrameData>(m_geometryPipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, frame_data);
+			MaterialCB material_constant_buffer{};
+			material_constant_buffer.roughness = m_mesh->getRoughness();
+			command_buffer.pushConstants<MaterialCB>(m_geometryPipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 0, material_constant_buffer);
 
 			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_geometryPipeline->getPipelineLayout(), 0, *m_descriptorSets[frame_index], nullptr);
 
@@ -188,20 +189,19 @@ namespace toaster
 	{
 		EventDispatcher eventDispatcher(p_event);
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(ClientLayer::onKeyPressEvent));
+		eventDispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(ClientLayer::onWindowResizeEvent));
 	}
 
 	void ClientLayer::onUIRender()
 	{
-		ig::Begin("Viewport");
-		ig::End();
+		// ig::Begin("Viewport");
+		// ig::End();
 	}
 
 	bool ClientLayer::onKeyPressEvent(KeyPressEvent &e)
 	{
 		if (e.getKeyCode() == input::EKeyCode::eEscape)
-		{
 			getApp().close();
-		}
 
 		return false;
 	}

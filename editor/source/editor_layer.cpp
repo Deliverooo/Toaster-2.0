@@ -19,7 +19,9 @@
 
 #include <ImGuizmo.h>
 
+#include "backends/imgui_impl_vulkan.h"
 #include "glm/gtc/type_ptr.hpp"
+#include "toast_gpu/vk/vk_swapchain.hpp"
 namespace ig = ImGui;
 namespace igz = ImGuizmo;
 
@@ -36,17 +38,19 @@ namespace toaster
 		m_scene               = make_reference<Scene>();
 		m_sceneHierarchyPanel = make_reference<SceneHierarchyPanel>(m_scene);
 
-		gpu::FramebufferCreateInfo framebuffer_create_info{};
-		framebuffer_create_info.width       = 1920u;
-		framebuffer_create_info.height      = 1080u;
-		framebuffer_create_info.samples     = 1u;
-		framebuffer_create_info.attachments = {gpu::EImageFormat::eRGBA32F, gpu::EImageFormat::eRedInteger, gpu::EImageFormat::eDepth32FStencil8UInt};
+		_createRenderTargetResources(1920u, 1080u);
 
-		m_framebuffer = gpu::IFramebuffer::create(framebuffer_create_info);
+		// gpu::FramebufferCreateInfo framebuffer_create_info{};
+		// framebuffer_create_info.width       = 1920u;
+		// framebuffer_create_info.height      = 1080u;
+		// framebuffer_create_info.samples     = 1u;
+		// framebuffer_create_info.attachments = {gpu::EImageFormat::eRGBA32F, gpu::EImageFormat::eRedInteger, gpu::EImageFormat::eDepth32FStencil8UInt};
 
-		Renderer2DCreateInfo renderer_2d_create_info;
-		renderer_2d_create_info.maxQuads = 1000u;
-		m_renderer2d                     = make_reference<Renderer2D>(renderer_2d_create_info);
+		// m_framebuffer = gpu::IFramebuffer::create(framebuffer_create_info);
+
+		// Renderer2DCreateInfo renderer_2d_create_info;
+		// renderer_2d_create_info.maxQuads = 1000u;
+		// m_renderer2d                     = make_reference<Renderer2D>(renderer_2d_create_info);
 
 		auto &app            = getApp();
 		m_initialWindowTitle = app.getWindow().getTitle();
@@ -59,30 +63,67 @@ namespace toaster
 
 	void EditorLayer::onUpdate(const float32 p_dt)
 	{
+		auto &app       = getApp();
+		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		auto  swapchain = app.getWindow().getSwapchain();
+
+		uint32 frame_index{swapchain->getFrameIndex()};
+		uint32 image_index{swapchain->getImageIndex()};
+
+		vk::Extent2D swapchain_extent{swapchain->getExtent()};
+
+		auto &command_buffer = swapchain->getCurrentCommandBuffer();
+
+		if (m_viewportSize.x > 0.0f && m_viewportSize.y > 0.0f && (static_cast<float32>(m_renderTargetImageWidth) != m_viewportSize.x || static_cast<float32>(
+																	   m_renderTargetImageHeight) != m_viewportSize.y))
 		{
-			auto   create_info = m_framebuffer->getCreateInfo();
-			uint32 width       = create_info.width;
-			uint32 height      = create_info.height;
-			if (m_viewportSize.x > 0.0f && m_viewportSize.y > 0.0f && (
-					static_cast<float32>(width) != m_viewportSize.x || static_cast<float32>(height) != m_viewportSize.y))
-			{
-				m_framebuffer->resize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
-				m_editorCamera.setViewportSize(m_viewportSize.x, m_viewportSize.y);
-				m_scene->setViewportSize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
-				RenderCommand::setViewport({0.0f, 0.0f, m_viewportSize});
-			}
-		}
-		if (m_viewportFocused)
-		{
-			m_editorCamera.onUpdate(p_dt);
+			_createRenderTargetResources(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
+			m_editorCamera.setViewportSize(m_viewportSize.x, m_viewportSize.y);
+			m_scene->setViewportSize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
 		}
 
-		m_framebuffer->bind();
-		RenderCommand::clearColour({0.2f, 0.3f, 0.3f, 1.0f});
-		RenderCommand::clear();
+		vk::ClearValue              clear_colour = vk::ClearColorValue{0.2f, 0.3f, 0.3f, 1.0f};
+		vk::RenderingAttachmentInfo colour_attachment_info{};
+		colour_attachment_info.clearValue  = clear_colour;
+		colour_attachment_info.imageView   = m_renderTargetImageView;
+		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
+		colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
+
+		vk::ClearValue              clear_depth = vk::ClearDepthStencilValue{1.0f, 0u};
+		vk::RenderingAttachmentInfo depth_attachment_info{};
+		depth_attachment_info.clearValue  = clear_depth;
+		depth_attachment_info.imageView   = m_renderTargetDepthImageView;
+		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
+		depth_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
+
+		vk::RenderingInfo rendering_info{};
+		rendering_info.renderArea           = vk::Rect2D{{0, 0}, swapchain_extent};
+		rendering_info.layerCount           = 1;
+		rendering_info.colorAttachmentCount = 1;
+		rendering_info.pColorAttachments    = &colour_attachment_info;
+		rendering_info.pDepthAttachment     = &depth_attachment_info;
+
+		vk::Viewport viewport{};
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		viewport.x        = 0.0f;
+		viewport.y        = 0.0f;
+		viewport.width    = static_cast<float32>(swapchain_extent.width);
+		viewport.height   = static_cast<float32>(swapchain_extent.height);
+
+		vk::Rect2D scissor{vk::Offset2D{0, 0}, swapchain_extent};
+
+		command_buffer.beginRendering(rendering_info);
+		command_buffer.setViewport(0, viewport);
+		command_buffer.setScissor(0, scissor);
+
+		if (m_viewportFocused)
+			m_editorCamera.onUpdate(p_dt);
 
 		m_scene->onUpdate(p_dt);
-		m_scene->onRender(p_dt, m_renderer2d, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
+		// m_scene->onRender(p_dt, m_renderer2d, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
 
 		auto [mx, my]      = ig::GetMousePos();
 		mx                 -= m_viewportBounds[0].x;
@@ -95,15 +136,12 @@ namespace toaster
 
 		if (mouse_x >= 0 && mouse_y >= 0 && mouse_x < static_cast<int32>(viewport_size.x) && mouse_y < static_cast<int32>(viewport_size.y))
 		{
-			int32 pixel_data = m_framebuffer->readPixel(1, mouse_x, mouse_y);
+			// int32 pixel_data = m_framebuffer->readPixel(1, mouse_x, mouse_y);
 
-			if (pixel_data != -1)
-			{
-				m_hoveredEntity = {static_cast<entt::entity>(pixel_data), m_scene.get()};
-			}
+			// if (pixel_data != -1)
+			// m_hoveredEntity = {static_cast<entt::entity>(pixel_data), m_scene.get()};
 		}
-
-		m_framebuffer->unbind();
+		command_buffer.endRendering();
 	}
 
 	void EditorLayer::onEvent(Event &p_event)
@@ -137,9 +175,7 @@ namespace toaster
 			window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 		}
 		else
-		{
 			dockspace_flags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
-		}
 
 		if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
 			window_flags |= ImGuiWindowFlags_NoBackground;
@@ -173,17 +209,11 @@ namespace toaster
 			if (ig::BeginMenu("File"))
 			{
 				if (ig::MenuItem("New", "Ctrl+N"))
-				{
 					newScene();
-				}
 				if (ig::MenuItem("Save", "Ctrl+S"))
-				{
 					saveScene();
-				}
 				if (ig::MenuItem("Open", "Ctrl+O"))
-				{
 					openScene();
-				}
 				if (ig::MenuItem("Quit", "Ctrl+Q"))
 					getApp().close();
 
@@ -195,7 +225,7 @@ namespace toaster
 
 		ig::Begin("Settings");
 
-		ig::Text("Renderer2D quad count: %d", m_renderer2d->getStats().quadCount);
+		// ig::Text("Renderer2D quad count: %d", m_renderer2d->getStats().quadCount);
 		ig::Text("Hovered entity tag: %s", m_hoveredEntity ? m_hoveredEntity.getComponent<TagComponent>().tag.c_str() : "Null");
 
 		ig::End(); // Settings
@@ -215,7 +245,7 @@ namespace toaster
 			auto   size            = ig::GetContentRegionAvail();
 			m_viewportSize         = {size.x, size.y};
 
-			ig::Image(m_framebuffer->getColourAttachmentID(), size, ImVec2(0, 1), ImVec2(1, 0));
+			ig::Image((VkDescriptorSet) m_renderTargetDescriptorSet, size, ImVec2(0, 1), ImVec2(1, 0));
 
 			ImVec2 window_size = ig::GetWindowSize();
 			ImVec2 min_bound   = ig::GetWindowPos();
@@ -341,9 +371,7 @@ namespace toaster
 		}
 
 		if (p_event.getKeyCode() == input::EKeyCode::eEscape)
-		{
 			getApp().close();
-		}
 
 		return false;
 	}
@@ -351,11 +379,86 @@ namespace toaster
 	bool EditorLayer::onMouseButtonPressEvent(MouseButtonPressEvent &p_event)
 	{
 		if (p_event.getMouseButton() == input::EMouseButton::eLeft)
-		{
 			if (m_viewportHovered && !igz::IsOver() && !input::isKeyDown(input::EKeyCode::eLeftAlt))
 				m_sceneHierarchyPanel->setSelectedEntity(m_hoveredEntity);
-		}
 
 		return false;
+	}
+
+	void EditorLayer::_createRenderTargetResources(uint32 p_width, uint32 p_height)
+	{
+		m_renderTargetImage        = nullptr;
+		m_renderTargetImageMemory  = nullptr;
+		m_renderTargetImageView    = nullptr;
+		m_renderTargetImageSampler = nullptr;
+
+		m_renderTargetImageDescriptorInfo = vk::DescriptorImageInfo{};
+
+		m_renderTargetDepthImage       = nullptr;
+		m_renderTargetDepthImageMemory = nullptr;
+		m_renderTargetDepthImageView   = nullptr;
+
+		auto &app       = getApp();
+		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		auto  swapchain = app.getWindow().getSwapchain();
+
+		vk::Format colour_attachment_format{swapchain->getSurfaceFormat().format};
+
+		ctx->createImage(p_width, p_height, colour_attachment_format, vk::ImageTiling::eOptimal,
+						 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal, m_renderTargetImage,
+						 m_renderTargetImageMemory);
+
+		ctx->transitionImageLayout(m_renderTargetImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
+								   vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eColorAttachmentOutput);
+
+		m_renderTargetImageView = ctx->createImageView(m_renderTargetImage, colour_attachment_format, vk::ImageAspectFlagBits::eColor);
+
+		auto physical_device_props = ctx->getPhysicalDevice().getProperties();
+
+		vk::SamplerCreateInfo sampler_create_info{};
+		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.magFilter               = vk::Filter::eLinear;
+		sampler_create_info.minFilter               = vk::Filter::eLinear;
+		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
+		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.mipLodBias              = 0.0f;
+		sampler_create_info.anisotropyEnable        = true;
+		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
+		sampler_create_info.compareEnable           = false;
+		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
+		sampler_create_info.minLod                  = 0.0f;
+		sampler_create_info.maxLod                  = 0.0f;
+		sampler_create_info.borderColor             = vk::BorderColor::eFloatCustomEXT;
+		sampler_create_info.unnormalizedCoordinates = false;
+
+		// This is purely aesthetic
+		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{};
+		border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
+		border_colour_create_info.format            = vk::Format::eR8G8B8A8Srgb;
+
+		sampler_create_info.pNext = &border_colour_create_info;
+
+		m_renderTargetImageSampler = {ctx->getDevice(), sampler_create_info};
+
+		m_renderTargetImageDescriptorInfo.imageView   = m_renderTargetImageView;
+		m_renderTargetImageDescriptorInfo.sampler     = m_renderTargetImageSampler;
+		m_renderTargetImageDescriptorInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+
+		vk::Format depth_attachment_format{swapchain->getDepthFormat()};
+
+		ctx->createImage(p_width, p_height, depth_attachment_format, vk::ImageTiling::eOptimal,
+						 vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal,
+						 m_renderTargetDepthImage, m_renderTargetDepthImageMemory);
+
+		ctx->transitionImageLayout(m_renderTargetDepthImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits::eNone,
+								   vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+								   vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
+								   vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests);
+
+		m_renderTargetDepthImageView = ctx->createImageView(m_renderTargetDepthImage, depth_attachment_format, vk::ImageAspectFlagBits::eDepth);
 	}
 }

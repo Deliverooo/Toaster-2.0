@@ -3,10 +3,13 @@
 #include "toaster/toast_kernel/layer.hpp"
 
 #include <imgui.h>
+namespace ig = ImGui;
+
+#include <vulkan/vulkan_raii.hpp>
 
 namespace toaster
 {
-	class ImGuiLayer : public IAppLayer
+	class ImGuiLayer final : public IAppLayer
 	{
 	public:
 		ImGuiLayer(Application *p_app);
@@ -25,5 +28,7 @@ namespace toaster
 
 	private:
 		bool m_blockEvents{false};
+
+		vk::raii::DescriptorPool m_descriptorPool{nullptr};
 	};
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "editor_camera.hpp"
 #include "toaster/toast_kernel/layer.hpp"
 #include "toaster/toast_render/renderer_2d.hpp"
 
@@ -15,12 +16,10 @@
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_shader.hpp"
-#include "toast_gpu/vk/vk_image.hpp"
 #include "toast_gpu/vk/vk_mesh.hpp"
 #include "toast_gpu/vk/vk_pipeline.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_gpu/vk/vk_uniform_buffer.hpp"
-#include "toast_gpu/vk/vk_render_attachment.hpp"
 
 namespace toaster
 {
@@ -87,15 +86,15 @@ namespace toaster
 		RefPtr<gpu::VKUniformBufferPFF> m_ubos;
 		std::vector<void *>             m_mappedUniformBuffers;
 
-		struct FrameData
+		struct MaterialCB
 		{
-			glm::vec2 resolution;
-			float32   time;
+			float32 roughness;
 		};
 
 		vk::raii::DescriptorPool m_descriptorPool{nullptr};
 
 		std::vector<vk::raii::DescriptorSet> m_descriptorSets;
 		std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
+
 	};
 }

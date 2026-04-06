@@ -8,11 +8,10 @@ layout(location = 0) out vec4 o_Colour;
 layout(set = 0, binding = 1) uniform sampler2D u_Texture;
 layout(set = 0, binding = 2) uniform sampler2D u_Texture2;
 
-layout(push_constant) uniform FrameData
+layout(push_constant) uniform Material
 {
-    vec2 res;
-    float time;
-} frameData;
+    float roughness;
+} material;
 
 
 void main()

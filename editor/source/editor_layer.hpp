@@ -17,11 +17,18 @@
 #include "toaster/toast_scene/entity.hpp"
 #include "toaster/toast_scene/scene.hpp"
 
-#include <array>
+#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_vertex_buffer.hpp"
+#include "toast_gpu/vk/vk_index_buffer.hpp"
+#include "toast_gpu/vk/vk_shader.hpp"
+#include "toast_gpu/vk/vk_mesh.hpp"
+#include "toast_gpu/vk/vk_pipeline.hpp"
+#include "toast_gpu/vk/vk_texture.hpp"
+#include "toast_gpu/vk/vk_uniform_buffer.hpp"
 
 namespace toaster
 {
-	class EditorLayer : public IAppLayer
+	class EditorLayer final : public IAppLayer
 	{
 	public:
 		EditorLayer(Application *p_app);
@@ -40,13 +47,29 @@ namespace toaster
 		bool onKeyPressEvent(KeyPressEvent &p_event);
 		bool onMouseButtonPressEvent(MouseButtonPressEvent &p_event);
 
-		RefPtr<Scene> m_scene;
-
+		void                        _createRenderTargetResources(uint32 p_width, uint32 p_height);
+		RefPtr<Scene>               m_scene;
 		RefPtr<SceneHierarchyPanel> m_sceneHierarchyPanel;
 
 		RefPtr<Renderer2D> m_renderer2d;
 
-		RefPtr<gpu::IFramebuffer> m_framebuffer;
+		vk::raii::Image        m_renderTargetImage{nullptr};
+		vk::raii::DeviceMemory m_renderTargetImageMemory{nullptr};
+		vk::raii::ImageView    m_renderTargetImageView{nullptr};
+		vk::raii::Sampler      m_renderTargetImageSampler{nullptr};
+
+		vk::DescriptorImageInfo m_renderTargetImageDescriptorInfo{nullptr};
+
+		vk::raii::Image        m_renderTargetDepthImage{nullptr};
+		vk::raii::DeviceMemory m_renderTargetDepthImageMemory{nullptr};
+		vk::raii::ImageView    m_renderTargetDepthImageView{nullptr};
+
+		vk::DescriptorSet m_renderTargetDescriptorSet{nullptr};
+
+		uint32 m_renderTargetImageWidth{0u};
+		uint32 m_renderTargetImageHeight{0u};
+
+		// RefPtr<gpu::IFramebuffer> m_framebuffer;
 
 		EditorCamera m_editorCamera;
 

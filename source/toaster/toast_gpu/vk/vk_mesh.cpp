@@ -119,6 +119,8 @@ namespace toaster::gpu
 				LOG_TRACE("\tROUGHNESS = {}", roughness);
 				LOG_TRACE("\tMETALNESS = {}", metalness);
 
+				m_roughness = roughness;
+
 				bool has_albedo_map = ai_material->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &ai_tex_path) == AI_SUCCESS;
 				if (!has_albedo_map)
 					has_albedo_map = ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &ai_tex_path) == AI_SUCCESS;
@@ -158,6 +160,11 @@ namespace toaster::gpu
 	const RefPtr<VKTexture2D> &VKMesh::getAlbedoMap() const
 	{
 		return m_albedoMap;
+	}
+
+	float32 VKMesh::getRoughness() const
+	{
+		return m_roughness;
 	}
 
 	const std::vector<MeshVertex> &VKMesh::getVertices() const
