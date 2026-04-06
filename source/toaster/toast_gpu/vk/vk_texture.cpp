@@ -82,6 +82,11 @@ namespace toaster::gpu
 		sampler_create_info.pNext = &border_colour_create_info;
 
 		m_sampler = {m_ctx->getDevice(), sampler_create_info};
+
+		m_descriptorImageInfo             = vk::DescriptorImageInfo{};
+		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		m_descriptorImageInfo.imageView   = m_imageView;
+		m_descriptorImageInfo.sampler     = m_sampler;
 	}
 
 	vk::raii::Image &VKTexture2D::getImage()
@@ -104,8 +109,18 @@ namespace toaster::gpu
 		return m_sampler;
 	}
 
+	vk::DescriptorImageInfo &VKTexture2D::getDescriptorInfo()
+	{
+		return m_descriptorImageInfo;
+	}
+
 	const TextureSpecInfo &VKTexture2D::getSpecInfo() const
 	{
 		return m_specInfo;
+	}
+
+	EResourceType VKTexture2D::getResourceType() const
+	{
+		return EResourceType::eTexture2D;
 	}
 }

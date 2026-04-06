@@ -35,6 +35,13 @@ namespace toaster::gpu
 		std::unordered_map<String, vk::WriteDescriptorSet> writeDescriptorSets;
 	};
 
+	struct PushConstantRange
+	{
+		vk::ShaderStageFlagBits stage{vk::ShaderStageFlagBits::eAll};
+		uint32                  offset{0u};
+		uint32                  size{0u};
+	};
+
 	struct ShaderResource
 	{
 		String name{};

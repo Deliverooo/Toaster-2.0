@@ -19,6 +19,11 @@ namespace toaster::gpu
 
 			// Ts just makes it easier to access the shader resources
 			std::unordered_map<String, ShaderResource> resources; // Textures / images
+
+			// // Ts just makes it easier to access the shader push constant buffers
+			// std::unordered_map<String, ShaderResource> pushConstantBuffers;
+
+			std::vector<PushConstantRange> pushConstantRanges;
 		};
 
 		using Bytecode              = std::vector<uint32>;
@@ -27,18 +32,21 @@ namespace toaster::gpu
 
 		VKShader(VKGPUContext *p_ctx, const BytecodeMap &p_bytecode_map);
 
-		const PipelineCreateInfoMap &                  getPipelineShaderStageCreateInfoMap() const;
-		std::vector<vk::PipelineShaderStageCreateInfo> getPipelineShaderStageCreateInfos() const;
-		const vk::PipelineShaderStageCreateInfo &      getPipelineShaderStageCreateInfo(vk::ShaderStageFlagBits p_stage) const;
+		[[nodiscard]] const PipelineCreateInfoMap &                  getPipelineShaderStageCreateInfoMap() const;
+		[[nodiscard]] std::vector<vk::PipelineShaderStageCreateInfo> getPipelineShaderStageCreateInfos() const;
+		[[nodiscard]] const vk::PipelineShaderStageCreateInfo &      getPipelineShaderStageCreateInfo(vk::ShaderStageFlagBits p_stage) const;
 
-		const BytecodeMap &getShaderBytecodeMap() const;
-		const Bytecode &   getShaderBytecode(vk::ShaderStageFlagBits p_stage) const;
+		[[nodiscard]] const BytecodeMap &getShaderBytecodeMap() const;
+		[[nodiscard]] const Bytecode &   getShaderBytecode(vk::ShaderStageFlagBits p_stage) const;
 
-		std::vector<vk::DescriptorSetLayout> getDescriptorSetLayouts() const;
-		const vk::raii::DescriptorSetLayout &getDescriptorSetLayout(uint32 p_set_index) const;
+		[[nodiscard]] std::vector<vk::DescriptorSetLayout> getDescriptorSetLayouts() const;
+		[[nodiscard]] const vk::raii::DescriptorSetLayout &getDescriptorSetLayout(uint32 p_set_index) const;
 
-		const std::vector<DescriptorSet> &                getReflectedShaderDescriptorSets() const;
-		const std::unordered_map<String, ShaderResource> &getReflectedShaderResources() const;
+		[[nodiscard]] const std::vector<DescriptorSet> &                getReflectedShaderDescriptorSets() const;
+		[[nodiscard]] const std::unordered_map<String, ShaderResource> &getReflectedShaderResources() const;
+		[[nodiscard]] const std::vector<PushConstantRange> &            getReflectedPushConstantRanges() const;
+
+		[[nodiscard]] const std::vector<vk::DescriptorPoolSize> &getDescriptorPoolSizes(uint32 p_set_index) const;
 
 	private:
 		void _reflect(vk::ShaderStageFlagBits p_stage, Bytecode p_bytecode);

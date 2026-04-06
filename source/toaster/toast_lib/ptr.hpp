@@ -22,13 +22,13 @@ namespace toaster
 		}
 
 		template<typename TOther>
-		RefPtr(const RefPtr<TOther> &p_other) : m_ptr(p_other.m_ptr), m_refCount(p_other.m_refCount)
+		RefPtr(const RefPtr<TOther> &p_other) : m_ptr(dynamic_cast<Type *>(p_other.m_ptr)), m_refCount(p_other.m_refCount)
 		{
 			_incRef();
 		}
 
 		template<typename TOther>
-		RefPtr(RefPtr<TOther> &&p_other) : m_ptr(p_other.m_ptr), m_refCount(p_other.m_refCount)
+		RefPtr(RefPtr<TOther> &&p_other) : m_ptr(dynamic_cast<Type *>(p_other.m_ptr)), m_refCount(p_other.m_refCount)
 		{
 			p_other.m_ptr      = nullptr;
 			p_other.m_refCount = nullptr;

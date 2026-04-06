@@ -85,6 +85,17 @@ namespace toaster::gpu
 		return m_reflectionData.resources;
 	}
 
+	const std::vector<PushConstantRange> &VKShader::getReflectedPushConstantRanges() const
+	{
+		return m_reflectionData.pushConstantRanges;
+	}
+
+	const std::vector<vk::DescriptorPoolSize> &VKShader::getDescriptorPoolSizes(uint32 p_set_index) const
+	{
+		TST_ASSERT_MSG(m_poolSizes.contains(p_set_index), "Set index out of bounds");
+		return m_poolSizes.at(p_set_index);
+	}
+
 	void VKShader::_reflect(vk::ShaderStageFlagBits p_stage, Bytecode p_bytecode)
 	{
 		const Bytecode            copy = {p_bytecode.begin(), p_bytecode.end()};
@@ -122,6 +133,7 @@ namespace toaster::gpu
 			LOG_TRACE("\t\tMember count: {}", member_count);
 			LOG_TRACE("\t\tSize: {}", size);
 		}
+		LOG_INFO("");
 
 		if (!resources.sampled_images.empty())
 			LOG_INFO("Combined image samplers:");
@@ -157,6 +169,30 @@ namespace toaster::gpu
 			LOG_TRACE("\t\tArray size: {}", array_size);
 		}
 		LOG_INFO("");
+
+		if (!resources.push_constant_buffers.empty())
+			LOG_INFO("Push constant buffers:");
+		for (const auto &resource: resources.push_constant_buffers)
+		{
+			const String &name = resource.name;
+
+			auto & buffer_type  = compiler.get_type(resource.base_type_id);
+			uint32 size         = compiler.get_declared_struct_size(buffer_type);
+			uint32 member_count = buffer_type.member_types.size();
+
+			uint32 offset{0u};
+			if (!m_reflectionData.pushConstantRanges.empty())
+				offset = m_reflectionData.pushConstantRanges.back().offset + m_reflectionData.pushConstantRanges.back().size;
+
+			PushConstantRange &push_constant_range = m_reflectionData.pushConstantRanges.emplace_back();
+			push_constant_range.stage              = p_stage;
+			push_constant_range.offset             = offset;
+			push_constant_range.size               = size;
+
+			LOG_TRACE("\t{}", name);
+			LOG_TRACE("\t\tMember count: {}", member_count);
+			LOG_TRACE("\t\tSize: {}", size);
+		}
 	}
 
 	void VKShader::_createDescriptors()

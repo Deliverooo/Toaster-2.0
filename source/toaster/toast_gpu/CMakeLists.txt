@@ -91,12 +91,6 @@ if (${WITH_VULKAN_BACKEND})
 
 			vk/vk_texture.cpp
 			vk/vk_texture.hpp
-
-			vk/vk_render_pass.cpp
-			vk/vk_render_pass.hpp
-
-			vk/vk_descriptor_set_manager.cpp
-			vk/vk_descriptor_set_manager.hpp
 	)
 endif ()
 

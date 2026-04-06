@@ -117,9 +117,20 @@ namespace toaster::gpu
 		auto descriptor_set_layouts = m_createInfo.shader->getDescriptorSetLayouts();
 		TST_ASSERT(!descriptor_set_layouts.empty());
 
+		auto &push_constant_ranges = m_createInfo.shader->getReflectedPushConstantRanges();
+
+		std::vector<vk::PushConstantRange> vk_push_constant_ranges{};
+		for (auto &push_constant_range: push_constant_ranges)
+		{
+			auto &pcr{vk_push_constant_ranges.emplace_back()};
+			pcr.size       = push_constant_range.size;
+			pcr.offset     = push_constant_range.offset;
+			pcr.stageFlags = push_constant_range.stage;
+		}
+
 		vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};
-		pipeline_layout_create_info.setLayoutCount         = 0;
-		pipeline_layout_create_info.pushConstantRangeCount = 0;
+		pipeline_layout_create_info.pushConstantRangeCount = vk_push_constant_ranges.size();
+		pipeline_layout_create_info.pPushConstantRanges    = vk_push_constant_ranges.data();
 		pipeline_layout_create_info.setLayoutCount         = descriptor_set_layouts.size();
 		pipeline_layout_create_info.pSetLayouts            = descriptor_set_layouts.data();
 		m_pipelineLayout                                   = {m_ctx->getDevice(), pipeline_layout_create_info};

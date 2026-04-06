@@ -38,8 +38,6 @@ namespace toaster
 	private:
 		bool onKeyPressEvent(KeyPressEvent &e);
 
-		void _recordCommandBuffer(uint32 p_image_index);
-
 		void _createUniformBuffers();
 		void _createDescriptorPool();
 		void _createDescriptorSets();
@@ -53,6 +51,7 @@ namespace toaster
 		RefPtr<gpu::VKPipeline> m_pipeline{nullptr};
 
 		RefPtr<gpu::VKTexture2D> m_texture{nullptr};
+		RefPtr<gpu::VKTexture2D> m_texture2{nullptr};
 
 		struct Vertex
 		{
@@ -84,11 +83,11 @@ namespace toaster
 			glm::mat4 proj;
 		};
 
-		std::vector<RefPtr<gpu::VKUniformBuffer> > m_ubos;
+		RefPtr<gpu::VKUniformBufferPFF> m_ubos;
 
 		std::vector<void *> m_mappedUniformBuffers;
 
-		struct FrameDataUB
+		struct FrameData
 		{
 			glm::vec2 resolution;
 			float32   time;

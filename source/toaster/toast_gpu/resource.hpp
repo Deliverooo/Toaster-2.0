@@ -5,9 +5,9 @@ namespace toaster::gpu
 	enum class EResourceType
 	{
 		eUniformBuffer,
-		eUniformBufferSet,
+		eUniformBufferPFF,
 		eStorageBuffer,
-		eStorageBufferSet,
+		eStorageBufferPFF,
 		eTexture2D,
 		eTexture3D,
 		eSampler

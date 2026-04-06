@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vk_image.hpp"
+#include "toast_gpu/resource.hpp"
 #include "toast_lib/buffer.hpp"
 #include "toast_lib/ptr.hpp"
 #include "toast_lib/io/filesystem.hpp"
@@ -14,7 +15,7 @@ namespace toaster::gpu
 		EImageFormat format{EImageFormat::eRGBA};
 	};
 
-	class VKTexture2D
+	class VKTexture2D final : public IResource
 	{
 	public:
 		VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
@@ -24,7 +25,11 @@ namespace toaster::gpu
 		vk::raii::ImageView &   getImageView();
 		vk::raii::Sampler &     getSampler();
 
+		vk::DescriptorImageInfo& getDescriptorInfo();
+
 		[[nodiscard]] const TextureSpecInfo &getSpecInfo() const;
+
+		EResourceType getResourceType() const override;
 
 	private:
 		VKGPUContext *m_ctx{nullptr};
@@ -35,5 +40,7 @@ namespace toaster::gpu
 		vk::raii::DeviceMemory m_imageMemory{nullptr};
 		vk::raii::ImageView    m_imageView{nullptr};
 		vk::raii::Sampler      m_sampler{nullptr};
+
+		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};
 	};
 }
