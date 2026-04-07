@@ -25,7 +25,7 @@ namespace toaster
 		uint32 renderTargetHeight{1080u};
 	};
 
-	class Renderer2D
+	class Renderer2D final
 	{
 	public:
 		struct Stats
@@ -45,10 +45,10 @@ namespace toaster
 
 		[[nodiscard]] const Stats &getStats() const;
 
-		vk::raii::Image &       getRenderTargetImage();
-		vk::raii::DeviceMemory &getRenderTargetImageMemory();
-		vk::raii::ImageView &   getRenderTargetImageView();
-		vk::DescriptorImageInfo &   getRenderTargetDescriptorImageInfo();
+		vk::raii::Image &        getRenderTargetImage();
+		vk::raii::DeviceMemory & getRenderTargetImageMemory();
+		vk::raii::ImageView &    getRenderTargetImageView();
+		vk::DescriptorImageInfo &getRenderTargetDescriptorImageInfo();
 
 		void onResize(uint32 p_width, uint32 p_height);
 
