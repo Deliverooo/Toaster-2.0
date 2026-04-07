@@ -45,8 +45,6 @@ namespace toaster
 
 		float32 m_time{0.0f};
 
-		RefPtr<Renderer2D> m_renderer2D{nullptr};
-
 		gpu::VertexBufferLayout m_geometryVertexBufferLayout;
 		RefPtr<gpu::VKShader>   m_geometryShader{nullptr}; // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
 		RefPtr<gpu::VKPipeline> m_geometryPipeline{nullptr};

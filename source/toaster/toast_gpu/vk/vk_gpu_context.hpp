@@ -48,11 +48,11 @@ namespace toaster::gpu
 
 		void transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::Image &       p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-								   vk::PipelineStageFlags2  p_dst_stage_mask);
+								   vk::PipelineStageFlags2  p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags);
 
 		void transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::raii::Image & p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-								   vk::PipelineStageFlags2  p_dst_stage_mask);
+								   vk::PipelineStageFlags2  p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags);
 
 		vk::raii::ShaderModule createShaderModule(const std::vector<uint8> &p_code);
 		vk::raii::ShaderModule createShaderModule(const std::vector<uint32> &p_code);
@@ -80,8 +80,11 @@ namespace toaster::gpu
 
 		void generateMipmaps(vk::raii::Image &p_src_image, vk::Format p_format, uint32 p_width, uint32 p_height, uint32 p_mip_levels) const;
 
-		[[nodiscard]] vk::raii::CommandBuffer beginSingleTimeCommands() const;
-		void                                  endSingleTimeCommands(vk::raii::CommandBuffer &p_command_buffer) const;
+		[[nodiscard]] vk::raii::CommandBuffer beginSingleTimeCommandsTransfer() const;
+		void                                  endSingleTimeCommandsTransfer(vk::raii::CommandBuffer &p_command_buffer) const;
+
+		[[nodiscard]] vk::raii::CommandBuffer beginSingleTimeCommandsGraphics() const;
+		void                                  endSingleTimeCommandsGraphics(vk::raii::CommandBuffer &p_command_buffer) const;
 
 		[[nodiscard]] vk::Format findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling,
 													 vk::FormatFeatureFlags         p_feature_flags) const;

@@ -218,6 +218,7 @@ namespace toaster
 
 	Window::~Window()
 	{
+		dynamic_cast<gpu::VKGPUContext *>(m_gpuContext)->getDevice().waitIdle();
 		delete m_swapchain;
 		delete m_gpuContext;
 

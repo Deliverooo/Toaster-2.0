@@ -30,11 +30,6 @@ namespace toaster
 		uint32 window_width{swapchain->getExtent().width};
 		uint32 window_height{swapchain->getExtent().height};
 
-		Renderer2DCreateInfo renderer_2d_create_info{};
-		renderer_2d_create_info.renderTargetWidth  = window_width;
-		renderer_2d_create_info.renderTargetHeight = window_height;
-		m_renderer2D                               = make_reference<Renderer2D>(ctx, renderer_2d_create_info);
-
 		swapchain->addResizeCallback([this](uint32 width, uint32 height)
 		{
 			LOG_INFO("{}, {}", width, height);
@@ -84,6 +79,10 @@ namespace toaster
 	void ClientLayer::onDestroy()
 	{
 		m_ubos->unmapMemory();
+
+		auto &app       = getApp();
+		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		ctx->getDevice().waitIdle();
 	}
 
 	void ClientLayer::onUpdate(const float32 p_dt)
@@ -309,13 +308,14 @@ namespace toaster
 		descriptor_pool_sizes[0].descriptorCount = 2 * gpu::VKGPUContext::c_maxFramesInFlight;
 		descriptor_pool_sizes[0].type            = vk::DescriptorType::eUniformBuffer;
 
-		descriptor_pool_sizes[1].descriptorCount = gpu::VKGPUContext::c_maxFramesInFlight;
+		descriptor_pool_sizes[1].descriptorCount = 2 * gpu::VKGPUContext::c_maxFramesInFlight;
 		descriptor_pool_sizes[1].type            = vk::DescriptorType::eCombinedImageSampler;
 
 		vk::DescriptorPoolCreateInfo descriptor_pool_create_info{};
 		descriptor_pool_create_info.poolSizeCount = descriptor_pool_sizes.size();
 		descriptor_pool_create_info.pPoolSizes    = descriptor_pool_sizes.data();
 		descriptor_pool_create_info.maxSets       = gpu::VKGPUContext::c_maxFramesInFlight;
+		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 
 		m_descriptorPool = {ctx->getDevice(), descriptor_pool_create_info};
 	}

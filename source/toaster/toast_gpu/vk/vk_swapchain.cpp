@@ -51,12 +51,12 @@ namespace toaster::gpu
 
 		m_ctx->transitionImageLayout(command_buffer, m_swapchainImages[m_imageIndex], vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
 									 vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-									 vk::PipelineStageFlagBits2::eColorAttachmentOutput);
+									 vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::ImageAspectFlagBits::eColor);
 
 		m_ctx->transitionImageLayout(command_buffer, m_depthImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone,
 									 vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
 									 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-									 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests);
+									 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, vk::ImageAspectFlagBits::eDepth);
 	}
 
 	void VKSwapchain::endFrame()
@@ -65,7 +65,7 @@ namespace toaster::gpu
 
 		m_ctx->transitionImageLayout(command_buffer, m_swapchainImages[m_imageIndex], vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR,
 									 vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eNone, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-									 vk::PipelineStageFlagBits2::eColorAttachmentOutput);
+									 vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::ImageAspectFlagBits::eColor);
 
 		command_buffer.end();
 
