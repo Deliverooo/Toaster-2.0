@@ -229,13 +229,13 @@ namespace toaster
 		m_renderTargetDepthImageView   = nullptr;
 
 		vk::Format image_format = vk::Format::eR8G8B8A8Srgb;
-		m_ctx->createImage(m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight, 1, image_format, vk::ImageTiling::eOptimal,
+		m_ctx->createImage(m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight, 1, vk::SampleCountFlagBits::e1, image_format, vk::ImageTiling::eOptimal,
 						   vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal, m_renderTargetImage,
 						   m_renderTargetImageMemory);
 
 		m_ctx->transitionImageLayout(m_renderTargetImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
 									 vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eColorAttachmentOutput,
-									 1);
+									 1, vk::ImageAspectFlagBits::eColor);
 
 		m_renderTargetImageView = m_ctx->createImageView(m_renderTargetImage, image_format, vk::ImageAspectFlagBits::eColor, 1);
 
@@ -276,7 +276,7 @@ namespace toaster
 		m_renderTargetDescriptorImageInfo.sampler     = m_renderTargetImageSampler;
 
 		vk::Format depth_format{m_ctx->findDepthFormat()};
-		m_ctx->createImage(m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight, 1, depth_format, vk::ImageTiling::eOptimal,
+		m_ctx->createImage(m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight, 1, vk::SampleCountFlagBits::e1, depth_format, vk::ImageTiling::eOptimal,
 						   vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal, m_renderTargetDepthImage,
 						   m_renderTargetDepthImageMemory);
 

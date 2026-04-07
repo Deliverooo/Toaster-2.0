@@ -80,7 +80,7 @@ namespace toaster::gpu
 				: vk::MemoryPropertyFlagBits::eDeviceLocal
 		};
 
-		m_ctx->createImage(m_createInfo.width, m_createInfo.height, 1, format, tiling, usage_flags, memory_property_flags, m_image, m_imageMemory);
+		m_ctx->createImage(m_createInfo.width, m_createInfo.height, 1, m_ctx->getMaxUsableSampleCount(),  format, tiling, usage_flags, memory_property_flags, m_image, m_imageMemory);
 
 		m_imageView = m_ctx->createImageView(m_image, format, aspect_mask, 1);
 

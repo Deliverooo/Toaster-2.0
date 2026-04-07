@@ -46,14 +46,6 @@ namespace toaster::gpu
 		[[nodiscard]] vk::raii::CommandPool &getTransferCommandPool();
 		[[nodiscard]] vk::raii::CommandPool &getComputeCommandPool();
 
-		void transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::Image &       p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
-								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-								   vk::PipelineStageFlags2  p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags);
-
-		void transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::raii::Image & p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
-								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-								   vk::PipelineStageFlags2  p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags);
-
 		vk::raii::ShaderModule createShaderModule(const std::vector<uint8> &p_code);
 		vk::raii::ShaderModule createShaderModule(const std::vector<uint32> &p_code);
 
@@ -64,13 +56,21 @@ namespace toaster::gpu
 
 		void copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) const;
 
-		void createImage(uint32 p_width, uint32 p_height, uint32 p_mip_levels, vk::Format p_format, vk::ImageTiling p_image_tiling, vk::ImageUsageFlags p_usage_flags,
-						 vk::MemoryPropertyFlags p_memory_properties, vk::raii::Image &p_out_image, vk::raii::DeviceMemory &p_out_memory) const;
+		void createImage(uint32 p_width, uint32 p_height, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count, vk::Format p_format,
+						 vk::ImageTiling p_image_tiling, vk::ImageUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Image &p_out_image,
+						 vk::raii::DeviceMemory &p_out_memory) const;
 
-		void transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, uint32 p_mip_levels) const;
+		void transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::Image &          p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
+								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2    p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
+								   vk::PipelineStageFlags2  p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags);
+
+		void transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::raii::Image &    p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
+								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2    p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
+								   vk::PipelineStageFlags2  p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags);
+
 		void transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags p_src_access_mask,
 								   vk::AccessFlags  p_dst_access_mask, vk::PipelineStageFlags p_src_stage_mask, vk::PipelineStageFlags p_dst_stage_mask,
-								   uint32           p_mip_levels) const;
+								   uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) const;
 
 		void copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, uint32 p_width, uint32 p_height) const;
 
@@ -91,6 +91,8 @@ namespace toaster::gpu
 		[[nodiscard]] vk::Format findDepthFormat() const;
 		[[nodiscard]] bool       hasStencilComponent(vk::Format p_format) const;
 		[[nodiscard]] bool       isDepthFormat(vk::Format p_format) const;
+
+		[[nodiscard]] vk::SampleCountFlagBits getMaxUsableSampleCount() const;
 
 	private:
 		void _createInstance();
@@ -134,5 +136,8 @@ namespace toaster::gpu
 		vk::raii::CommandPool m_graphicsCommandPool{nullptr};
 		vk::raii::CommandPool m_transferCommandPool{nullptr};
 		vk::raii::CommandPool m_computeCommandPool{nullptr};
+
+		vk::Format              m_depthFormat{vk::Format::eUndefined};
+		vk::SampleCountFlagBits m_maxUsableSampleCount{vk::SampleCountFlagBits::e1};
 	};
 }

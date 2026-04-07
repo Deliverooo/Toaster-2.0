@@ -96,8 +96,8 @@ namespace toaster::gpu
 		dynamic_state_create_info.dynamicStateCount = dynamic_states.size();
 
 		vk::PipelineMultisampleStateCreateInfo multisample_state_create_info{};
-		multisample_state_create_info.rasterizationSamples = vk::SampleCountFlagBits::e1;
-		multisample_state_create_info.sampleShadingEnable  = false;
+		multisample_state_create_info.rasterizationSamples = m_ctx->getMaxUsableSampleCount();
+		multisample_state_create_info.sampleShadingEnable  = true;
 
 		TST_ASSERT(!m_createInfo.colourAttachments.empty());
 		vk::PipelineRenderingCreateInfo rendering_create_info{};

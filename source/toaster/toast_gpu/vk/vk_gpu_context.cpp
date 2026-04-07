@@ -227,9 +227,29 @@ namespace toaster::gpu
 
 		m_currentPhysicalDevice = *device_it;
 
+		vk::PhysicalDeviceProperties props{m_currentPhysicalDevice.getProperties()};
+
+		vk::SampleCountFlags sample_counts{props.limits.framebufferColorSampleCounts & props.limits.framebufferDepthSampleCounts};
+		if (sample_counts & vk::SampleCountFlagBits::e64)
+			m_maxUsableSampleCount = vk::SampleCountFlagBits::e64;
+		else if (sample_counts & vk::SampleCountFlagBits::e32)
+			m_maxUsableSampleCount = vk::SampleCountFlagBits::e32;
+		else if (sample_counts & vk::SampleCountFlagBits::e16)
+			m_maxUsableSampleCount = vk::SampleCountFlagBits::e16;
+		else if (sample_counts & vk::SampleCountFlagBits::e8)
+			m_maxUsableSampleCount = vk::SampleCountFlagBits::e8;
+		else if (sample_counts & vk::SampleCountFlagBits::e4)
+			m_maxUsableSampleCount = vk::SampleCountFlagBits::e4;
+		else if (sample_counts & vk::SampleCountFlagBits::e2)
+			m_maxUsableSampleCount = vk::SampleCountFlagBits::e2;
+		else
+			m_maxUsableSampleCount = vk::SampleCountFlagBits::e1;
+
+		m_depthFormat = findSupportedFormat({vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint}, vk::ImageTiling::eOptimal,
+											vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+
 		#ifndef NDEBUG
 
-		auto props = m_currentPhysicalDevice.getProperties();
 		LOG_INFO("Using physical device: {} | Device ID: {}\n", props.deviceName.data(), props.deviceID);
 
 		LOG_INFO("Available device extensions:");
@@ -293,6 +313,7 @@ namespace toaster::gpu
 		vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
 			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT> feature_chain{{}, {}, {}, {}, {}};
 		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                 = true;
+		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                 = true;
 		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                   = true;
 		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                    = true;
 		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                    = true;
@@ -409,10 +430,11 @@ namespace toaster::gpu
 		auto features = p_physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
 			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
 
-		bool supports_required_features = features.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy && features.get<vk::PhysicalDeviceVulkan12Features>().
-										  timelineSemaphore && features.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering && features.get<
-											  vk::PhysicalDeviceVulkan13Features>().synchronization2 && features.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().
-										  extendedDynamicState && features.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors;
+		bool supports_required_features = features.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy && features.get<vk::PhysicalDeviceFeatures2>().features.
+										  sampleRateShading && features.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore && features.get<
+											  vk::PhysicalDeviceVulkan13Features>().dynamicRendering && features.get<vk::PhysicalDeviceVulkan13Features>().
+										  synchronization2 && features.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState && features.get<
+											  vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors;
 
 		return vulkan_1_3_support && supports_graphics && supports_compute && supports_all_required_device_extensions && supports_required_features;
 	}
@@ -482,8 +504,8 @@ namespace toaster::gpu
 		p_command_buffer.pipelineBarrier2(dependency_info);
 	}
 
-	void VKGPUContext::transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::raii::Image &       p_image, vk::ImageLayout            p_old_layout,
-											 vk::ImageLayout          p_new_layout, vk::AccessFlags2            p_src_access_mask, vk::AccessFlags2 p_dst_access_mask,
+	void VKGPUContext::transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::raii::Image &       p_image, vk::ImageLayout               p_old_layout,
+											 vk::ImageLayout          p_new_layout, vk::AccessFlags2            p_src_access_mask, vk::AccessFlags2    p_dst_access_mask,
 											 vk::PipelineStageFlags2  p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags)
 	{
 		vk::ImageMemoryBarrier2 image_memory_barrier{};
@@ -573,9 +595,9 @@ namespace toaster::gpu
 		endSingleTimeCommandsTransfer(cmd);
 	}
 
-	void VKGPUContext::createImage(uint32                  p_width, uint32 p_height, uint32 p_mip_levels, vk::Format p_format, vk::ImageTiling p_image_tiling,
-								   vk::ImageUsageFlags     p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Image &p_out_image,
-								   vk::raii::DeviceMemory &p_out_memory) const
+	void VKGPUContext::createImage(uint32           p_width, uint32 p_height, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count, vk::Format p_format,
+								   vk::ImageTiling  p_image_tiling, vk::ImageUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
+								   vk::raii::Image &p_out_image, vk::raii::DeviceMemory &p_out_memory) const
 	{
 		vk::ImageCreateInfo image_create_info{};
 		image_create_info.extent.width  = p_width;
@@ -584,7 +606,7 @@ namespace toaster::gpu
 		image_create_info.mipLevels     = p_mip_levels;
 		image_create_info.arrayLayers   = 1;
 		image_create_info.imageType     = vk::ImageType::e2D;
-		image_create_info.samples       = vk::SampleCountFlagBits::e1;
+		image_create_info.samples       = p_sample_count;
 		image_create_info.sharingMode   = vk::SharingMode::eConcurrent;
 		image_create_info.tiling        = p_image_tiling;
 		image_create_info.initialLayout = vk::ImageLayout::eUndefined;
@@ -607,44 +629,9 @@ namespace toaster::gpu
 		p_out_image.bindMemory(p_out_memory, 0u);
 	}
 
-	void VKGPUContext::transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, uint32 p_mip_levels) const
-	{
-		vk::ImageMemoryBarrier image_memory_barrier{};
-		image_memory_barrier.image     = p_image;
-		image_memory_barrier.oldLayout = p_old_layout;
-		image_memory_barrier.newLayout = p_new_layout;
-
-		vk::PipelineStageFlags src_stage;
-		vk::PipelineStageFlags dst_stage;
-
-		if (p_old_layout == vk::ImageLayout::eUndefined && p_new_layout == vk::ImageLayout::eTransferDstOptimal)
-		{
-			image_memory_barrier.srcAccessMask = vk::AccessFlagBits::eNone;
-			image_memory_barrier.dstAccessMask = vk::AccessFlagBits::eTransferWrite;
-
-			src_stage = vk::PipelineStageFlagBits::eTopOfPipe;
-			dst_stage = vk::PipelineStageFlagBits::eTransfer;
-		}
-		else if (p_old_layout == vk::ImageLayout::eTransferDstOptimal && p_new_layout == vk::ImageLayout::eShaderReadOnlyOptimal)
-		{
-			image_memory_barrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-			image_memory_barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-			src_stage = vk::PipelineStageFlagBits::eTransfer;
-			dst_stage = vk::PipelineStageFlagBits::eFragmentShader;
-		}
-		else
-			TST_ASSERT_MSG(false, "Unsupported image layout transition");
-
-		image_memory_barrier.subresourceRange = vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, p_mip_levels, 0, 1};
-		vk::raii::CommandBuffer cmd           = beginSingleTimeCommandsGraphics();
-		cmd.pipelineBarrier(src_stage, dst_stage, {}, {}, {}, image_memory_barrier);
-		endSingleTimeCommandsGraphics(cmd);
-	}
-
 	void VKGPUContext::transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags p_src_access_mask,
 											 vk::AccessFlags  p_dst_access_mask, vk::PipelineStageFlags p_src_stage_mask, vk::PipelineStageFlags p_dst_stage_mask,
-											 uint32           p_mip_levels) const
+											 uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) const
 	{
 		vk::ImageMemoryBarrier image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;
@@ -654,7 +641,7 @@ namespace toaster::gpu
 		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.image               = p_image;
-		image_memory_barrier.subresourceRange    = {vk::ImageAspectFlagBits::eColor, 0, p_mip_levels, 0, 1};
+		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, 1};
 
 		vk::raii::CommandBuffer cmd = beginSingleTimeCommandsGraphics();
 		cmd.pipelineBarrier(p_src_stage_mask, p_dst_stage_mask, {}, {}, {}, image_memory_barrier);
@@ -888,8 +875,7 @@ namespace toaster::gpu
 
 	vk::Format VKGPUContext::findDepthFormat() const
 	{
-		return findSupportedFormat({vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint}, vk::ImageTiling::eOptimal,
-								   vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+		return m_depthFormat;
 	}
 
 	bool VKGPUContext::hasStencilComponent(vk::Format p_format) const
@@ -901,5 +887,10 @@ namespace toaster::gpu
 	{
 		return p_format == vk::Format::eD16Unorm || p_format == vk::Format::eD16UnormS8Uint || p_format == vk::Format::eD24UnormS8Uint || p_format ==
 			   vk::Format::eD32Sfloat || p_format == vk::Format::eD32SfloatS8Uint;
+	}
+
+	vk::SampleCountFlagBits VKGPUContext::getMaxUsableSampleCount() const
+	{
+		return m_maxUsableSampleCount;
 	}
 }

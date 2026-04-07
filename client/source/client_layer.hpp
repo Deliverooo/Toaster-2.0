@@ -56,13 +56,13 @@ namespace toaster
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
 
-		vk::raii::Image         m_colourAttachmentImage{nullptr};
-		vk::raii::DeviceMemory  m_colourAttachmentImageMemory{nullptr};
-		vk::raii::ImageView     m_colourAttachmentImageView{nullptr};
-		vk::raii::Sampler       m_colourAttachmentImageSampler{nullptr};
-		vk::DescriptorImageInfo m_colourAttachmentImageDescriptorInfo{};
+		vk::raii::Image        m_colourAttachmentImage{nullptr};
+		vk::raii::DeviceMemory m_colourAttachmentImageMemory{nullptr};
+		vk::raii::ImageView    m_colourAttachmentImageView{nullptr};
 
-		vk::ImageLayout m_colourAttachmentLayout{vk::ImageLayout::eUndefined};
+		vk::raii::Image        m_depthAttachmentImage{nullptr};
+		vk::raii::DeviceMemory m_depthAttachmentImageMemory{nullptr};
+		vk::raii::ImageView    m_depthAttachmentImageView{nullptr};
 
 		RefPtr<gpu::VKTexture2D> m_texture{nullptr};
 

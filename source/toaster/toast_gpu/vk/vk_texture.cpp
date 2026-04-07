@@ -44,12 +44,14 @@ namespace toaster::gpu
 		stbi_image_free(pixels);
 
 		vk::Format image_format = vk::Format::eR8G8B8A8Srgb;
-		m_ctx->createImage(m_specInfo.width, m_specInfo.height, m_mipLevels, image_format, vk::ImageTiling::eOptimal,
+
+		m_ctx->createImage(m_specInfo.width, m_specInfo.height, m_mipLevels, vk::SampleCountFlagBits::e1, image_format, vk::ImageTiling::eOptimal,
 						   vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 						   vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
 
 		m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eNone,
-									 vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, m_mipLevels);
+									 vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, m_mipLevels,
+									 vk::ImageAspectFlagBits::eColor);
 
 		m_ctx->copyBufferToImage(staging_buffer, m_image, m_specInfo.width, m_specInfo.height);
 
