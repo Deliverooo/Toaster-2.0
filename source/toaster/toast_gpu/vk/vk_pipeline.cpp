@@ -70,7 +70,7 @@ namespace toaster::gpu
 		rasterization_state_create_info.depthClampEnable        = false;
 		rasterization_state_create_info.rasterizerDiscardEnable = false;
 		rasterization_state_create_info.polygonMode             = vk::PolygonMode::eFill;
-		rasterization_state_create_info.cullMode                = vk::CullModeFlagBits::eBack;
+		rasterization_state_create_info.cullMode                = vk::CullModeFlagBits::eNone;
 		rasterization_state_create_info.frontFace               = vk::FrontFace::eCounterClockwise;
 		rasterization_state_create_info.depthBiasEnable         = false;
 		rasterization_state_create_info.lineWidth               = 1.0f;
@@ -96,8 +96,17 @@ namespace toaster::gpu
 		dynamic_state_create_info.dynamicStateCount = dynamic_states.size();
 
 		vk::PipelineMultisampleStateCreateInfo multisample_state_create_info{};
-		multisample_state_create_info.rasterizationSamples = m_ctx->getMaxUsableSampleCount();
-		multisample_state_create_info.sampleShadingEnable  = true;
+
+		if (m_createInfo.multisample)
+		{
+			multisample_state_create_info.rasterizationSamples = m_ctx->getMaxUsableSampleCount();
+			multisample_state_create_info.sampleShadingEnable  = true;
+		}
+		else
+		{
+			multisample_state_create_info.rasterizationSamples = vk::SampleCountFlagBits::e1;
+			multisample_state_create_info.sampleShadingEnable  = false;
+		}
 
 		TST_ASSERT(!m_createInfo.colourAttachments.empty());
 		vk::PipelineRenderingCreateInfo rendering_create_info{};

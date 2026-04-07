@@ -8,5 +8,5 @@ layout (location = 1) in vec4       v_Colour;
 
 void main()
 {
-    o_Colour   = vec4(v_TexCoords, 0.0f, 1.0f);
+    o_Colour = v_Colour;
 }

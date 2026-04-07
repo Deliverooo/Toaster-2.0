@@ -10,6 +10,8 @@ namespace toaster::gpu
 	class VKIndexBuffer
 	{
 	public:
+		// Note to self, always remember to upload the indices instead of just passing in the size...
+		// I'm such a diddyblud
 		VKIndexBuffer(VKGPUContext *p_ctx, void *p_data, uint64 p_size);
 		VKIndexBuffer(VKGPUContext *p_ctx, uint64 p_size);
 

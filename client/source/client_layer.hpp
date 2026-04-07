@@ -45,16 +45,22 @@ namespace toaster
 
 		float32 m_time{0.0f};
 
-		gpu::VertexBufferLayout m_geometryVertexBufferLayout;
-		RefPtr<gpu::VKShader>   m_geometryShader{nullptr}; // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
-		RefPtr<gpu::VKPipeline> m_geometryPipeline{nullptr};
+		gpu::VertexBufferLayout m_compositeVertexBufferLayout;
+		RefPtr<gpu::VKShader>   m_compositeShader{nullptr};
+		RefPtr<gpu::VKPipeline> m_compositePipeline{nullptr};
 
-		gpu::VertexBufferLayout m_quadVertexBufferLayout;
-		RefPtr<gpu::VKShader>   m_quadShader{nullptr};
-		RefPtr<gpu::VKPipeline> m_quadPipeline{nullptr};
 
-		uint32 m_viewportWidth{0u};
-		uint32 m_viewportHeight{0u};
+		RefPtr<gpu::VKVertexBuffer> m_fullscreenQuadVertexBuffer{nullptr};
+		RefPtr<gpu::VKIndexBuffer>  m_fullscreenQuadIndexBuffer{nullptr};
+
+		struct FullscreenQuadVertex
+		{
+			glm::vec3 positon;
+			glm::vec2 texCoord;
+		};
+
+		std::vector<FullscreenQuadVertex> m_fullscreenQuadVertices;
+		std::vector<uint16>               m_fullscreenQuadIndices;
 
 		vk::raii::Image        m_colourAttachmentImage{nullptr};
 		vk::raii::DeviceMemory m_colourAttachmentImageMemory{nullptr};
@@ -64,7 +70,14 @@ namespace toaster
 		vk::raii::DeviceMemory m_depthAttachmentImageMemory{nullptr};
 		vk::raii::ImageView    m_depthAttachmentImageView{nullptr};
 
+		uint32 m_viewportWidth{0u};
+		uint32 m_viewportHeight{0u};
+
+
+
 		RefPtr<gpu::VKTexture2D> m_texture{nullptr};
+
+		RefPtr<Renderer2D> m_renderer2D{nullptr};
 
 		struct QuadVertex
 		{
@@ -73,10 +86,6 @@ namespace toaster
 			glm::vec2 texCoord;
 		};
 
-		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
-		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
-
-		RefPtr<gpu::VKMesh> m_mesh{nullptr};
 
 		struct CameraUB
 		{
@@ -85,13 +94,8 @@ namespace toaster
 			glm::mat4 proj;
 		};
 
-		RefPtr<gpu::VKUniformBufferPFF> m_ubos;
-		std::vector<void *>             m_mappedUniformBuffers;
-
-		struct MaterialCB
-		{
-			float32 roughness;
-		};
+		glm::vec3 m_quadTranslation{0.0f};
+		glm::vec3 m_quadScale{1.0f};
 
 		vk::raii::DescriptorPool m_descriptorPool{nullptr};
 

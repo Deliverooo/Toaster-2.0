@@ -37,7 +37,7 @@ namespace toaster
 		~Renderer2D();
 
 		void begin(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix);
-		void end(vk::raii::CommandBuffer &p_cmd);
+		void end(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index);
 
 		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
 		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
@@ -48,6 +48,7 @@ namespace toaster
 		vk::raii::Image &       getRenderTargetImage();
 		vk::raii::DeviceMemory &getRenderTargetImageMemory();
 		vk::raii::ImageView &   getRenderTargetImageView();
+		vk::DescriptorImageInfo &   getRenderTargetDescriptorImageInfo();
 
 		void onResize(uint32 p_width, uint32 p_height);
 

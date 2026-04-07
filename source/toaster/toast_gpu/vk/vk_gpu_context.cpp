@@ -314,6 +314,7 @@ namespace toaster::gpu
 			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT> feature_chain{{}, {}, {}, {}, {}};
 		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                 = true;
 		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                 = true;
+		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                  = true;
 		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                   = true;
 		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                    = true;
 		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                    = true;
@@ -431,9 +432,10 @@ namespace toaster::gpu
 			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
 
 		bool supports_required_features = features.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy && features.get<vk::PhysicalDeviceFeatures2>().features.
-										  sampleRateShading && features.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore && features.get<
-											  vk::PhysicalDeviceVulkan13Features>().dynamicRendering && features.get<vk::PhysicalDeviceVulkan13Features>().
-										  synchronization2 && features.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState && features.get<
+										  sampleRateShading && features.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid && features.get<
+											  vk::PhysicalDeviceVulkan12Features>().timelineSemaphore && features.get<vk::PhysicalDeviceVulkan13Features>().
+										  dynamicRendering && features.get<vk::PhysicalDeviceVulkan13Features>().synchronization2 && features.get<
+											  vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState && features.get<
 											  vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors;
 
 		return vulkan_1_3_support && supports_graphics && supports_compute && supports_all_required_device_extensions && supports_required_features;

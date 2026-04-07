@@ -8,8 +8,6 @@ layout(set = 0, binding = 0) uniform sampler2D u_Texture;
 
 void main()
 {
-
     vec4 composite = texture(u_Texture, v_TexCoord);
-
     o_Colour = vec4(composite.rgb, 1.0f);
 }

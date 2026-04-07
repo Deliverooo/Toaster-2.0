@@ -28,6 +28,7 @@ namespace toaster
 		pipeline_create_info.depthFormat        = m_ctx->findDepthFormat();
 		pipeline_create_info.vertexBufferLayout = m_quadVertexBufferLayout;
 		pipeline_create_info.shader             = m_quadShader;
+		pipeline_create_info.multisample        = false;
 		m_quadPipeline                          = make_reference<gpu::VKPipeline>(m_ctx, pipeline_create_info);
 
 		vk::DeviceSize quad_vertex_buffer_size{sizeof(QuadVertex) * m_maxVertices};
@@ -50,7 +51,7 @@ namespace toaster
 		}
 
 		vk::DeviceSize index_buffer_size{m_maxIndices * sizeof(uint32)};
-		m_quadIndexBuffer = make_reference<gpu::VKIndexBuffer>(m_ctx, index_buffer_size);
+		m_quadIndexBuffer = make_reference<gpu::VKIndexBuffer>(m_ctx, quad_indices, index_buffer_size);
 
 		delete[] quad_indices;
 
@@ -92,10 +93,16 @@ namespace toaster
 		m_quadVertexPtr  = m_quadVertexBase;
 
 		m_stats.quadCount = 0u;
+		
+		LOG_INFO("Renderer2D::begin() - Frame {}", p_frame_index);
 	}
 
-	void Renderer2D::end(vk::raii::CommandBuffer &p_cmd)
+	void Renderer2D::end(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index)
 	{
+		m_ctx->transitionImageLayout(m_renderTargetImage, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+									 vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eFragmentShader,
+									 vk::PipelineStageFlagBits::eColorAttachmentOutput, 1, vk::ImageAspectFlagBits::eColor);
+
 		vk::RenderingAttachmentInfo colour_attachment_info{};
 		colour_attachment_info.imageView   = m_renderTargetImageView;
 		colour_attachment_info.clearValue  = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
@@ -103,9 +110,8 @@ namespace toaster
 		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
 		colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
 
-		vk::ClearValue              clear_depth = vk::ClearDepthStencilValue{1.0f, 0u};
 		vk::RenderingAttachmentInfo depth_attachment_info{};
-		depth_attachment_info.clearValue  = clear_depth;
+		depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
 		depth_attachment_info.imageView   = m_renderTargetDepthImageView;
 		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
@@ -118,34 +124,41 @@ namespace toaster
 		rendering_info.pColorAttachments    = &colour_attachment_info;
 		rendering_info.pDepthAttachment     = &depth_attachment_info;
 
-		vk::Viewport viewport{};
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		viewport.x        = 0.0f;
-		viewport.y        = 0.0f;
-		viewport.width    = static_cast<float32>(m_createInfo.renderTargetWidth);
-		viewport.height   = static_cast<float32>(m_createInfo.renderTargetHeight);
-
-		vk::Rect2D scissor{vk::Offset2D{0, 0}, {m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight}};
-
 		p_cmd.beginRendering(rendering_info);
+
+		const vk::Viewport viewport{0.0f, 0.0f, static_cast<float32>(m_createInfo.renderTargetWidth), static_cast<float32>(m_createInfo.renderTargetHeight), 0.0f, 1.0f};
+		const vk::Rect2D   scissor{vk::Offset2D{0, 0}, {m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight}};
 
 		p_cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_quadPipeline->getPipeline());
 		p_cmd.setViewport(0, viewport);
 		p_cmd.setScissor(0, scissor);
 
 		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
+		LOG_INFO("Renderer2D::end() - Size: {}, Index count: {}", size, m_quadIndexCount);
+		
 		if (size) // Apparently you have to check ts, or things won't work correctly and there will be artifacts...
 		{
+			LOG_INFO("Uploading vertex data and rendering {} quads", m_stats.quadCount);
+			
 			m_quadVertexBuffer->setData(m_quadVertexBase, size, 0);
+
+			p_cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_quadPipeline->getPipelineLayout(), 0, *m_descriptorSets[p_frame_index], nullptr);
 
 			m_quadVertexBuffer->bind(p_cmd);
 			m_quadIndexBuffer->bind(p_cmd, vk::IndexType::eUint32);
 
 			p_cmd.drawIndexed(m_quadIndexCount, 1, 0, 0, 0);
 		}
+		else
+		{
+			LOG_WARN("Renderer2D::end() - No vertex data to render!");
+		}
 
 		p_cmd.endRendering();
+
+		m_ctx->transitionImageLayout(m_renderTargetImage, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+									 vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eColorAttachmentOutput,
+									 vk::PipelineStageFlagBits::eFragmentShader, 1, vk::ImageAspectFlagBits::eColor);
 	}
 
 	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)
@@ -178,6 +191,8 @@ namespace toaster
 		}
 		m_quadIndexCount += 6u;
 		m_stats.quadCount++;
+		
+		LOG_INFO("Renderer2D::submitQuad() - Quad count: {}, Index count: {}", m_stats.quadCount, m_quadIndexCount);
 	}
 
 	const Renderer2D::Stats &Renderer2D::getStats() const
@@ -198,6 +213,11 @@ namespace toaster
 	vk::raii::ImageView &Renderer2D::getRenderTargetImageView()
 	{
 		return m_renderTargetImageView;
+	}
+
+	vk::DescriptorImageInfo &Renderer2D::getRenderTargetDescriptorImageInfo()
+	{
+		return m_renderTargetDescriptorImageInfo;
 	}
 
 	void Renderer2D::onResize(uint32 p_width, uint32 p_height)
@@ -233,9 +253,9 @@ namespace toaster
 						   vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal, m_renderTargetImage,
 						   m_renderTargetImageMemory);
 
-		m_ctx->transitionImageLayout(m_renderTargetImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
-									 vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eColorAttachmentOutput,
-									 1, vk::ImageAspectFlagBits::eColor);
+		m_ctx->transitionImageLayout(m_renderTargetImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eNone,
+									 vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eFragmentShader, 1,
+									 vk::ImageAspectFlagBits::eColor);
 
 		m_renderTargetImageView = m_ctx->createImageView(m_renderTargetImage, image_format, vk::ImageAspectFlagBits::eColor, 1);
 
@@ -296,6 +316,7 @@ namespace toaster
 		descriptor_pool_create_info.poolSizeCount = descriptor_pool_sizes.size();
 		descriptor_pool_create_info.pPoolSizes    = descriptor_pool_sizes.data();
 		descriptor_pool_create_info.maxSets       = gpu::VKGPUContext::c_maxFramesInFlight;
+		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 
 		m_descriptorPool = {m_ctx->getDevice(), descriptor_pool_create_info};
 	}

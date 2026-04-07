@@ -19,6 +19,8 @@ namespace toaster::gpu
 		vk::Format              depthFormat{vk::Format::eUndefined};
 
 		RefPtr<VKShader> shader{nullptr};
+
+		bool multisample{true};
 	};
 
 	class VKPipeline
