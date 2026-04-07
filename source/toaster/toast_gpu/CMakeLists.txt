@@ -94,6 +94,9 @@ if (${WITH_VULKAN_BACKEND})
 
 			vk/vk_mesh.cpp
 			vk/vk_mesh.hpp
+
+			vk/vk_render_graph.cpp
+			vk/vk_render_graph.hpp
 	)
 endif ()
 

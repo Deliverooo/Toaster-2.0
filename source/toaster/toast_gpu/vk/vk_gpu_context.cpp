@@ -144,17 +144,41 @@ namespace toaster::gpu
 			TST_ASSERT(false);
 		}
 
+		vk::DebugUtilsMessengerCreateInfoEXT debug_messenger_create_info{};
+		if (c_enableValidationLayers)
+		{
+			constexpr vk::DebugUtilsMessageSeverityFlagsEXT severity_flags{
+				vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
+				vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
+			};
+			constexpr vk::DebugUtilsMessageTypeFlagsEXT message_type_flags{
+				vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
+			};
+			debug_messenger_create_info.messageSeverity = severity_flags;
+			debug_messenger_create_info.messageType     = message_type_flags;
+			debug_messenger_create_info.pfnUserCallback = &_debugCallback;
+		}
+
 		vk::InstanceCreateInfo instance_create_info{};
 		instance_create_info.pApplicationInfo        = &app_info;
 		instance_create_info.enabledExtensionCount   = required_extensions.size();
 		instance_create_info.ppEnabledExtensionNames = required_extensions.data();
 		instance_create_info.flags                   = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
 
+		if (c_enableValidationLayers)
+		{
+			instance_create_info.enabledLayerCount   = required_validation_layers.size();
+			instance_create_info.ppEnabledLayerNames = required_validation_layers.data();
+			instance_create_info.pNext               = &debug_messenger_create_info;
+		}
+
 		m_vulkanInstance = vk::raii::Instance{m_context, instance_create_info};
 	}
 
 	void VKGPUContext::_createDebugMessenger()
 	{
+		if (!c_enableValidationLayers)
+			return;
 		constexpr vk::DebugUtilsMessageSeverityFlagsEXT severity_flags{
 			vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
 			vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
@@ -412,12 +436,17 @@ namespace toaster::gpu
 		{
 			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose: LOG_TRACE("[Verbose] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
 																			   p_callback_data->pMessage);
+				break;
 			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo: LOG_INFO("[Info] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
 																		   p_callback_data->pMessage);
+				break;
 			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning: LOG_WARN("[Warning] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
 																			  p_callback_data->pMessage);
+				break;
 			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError: LOG_ERROR("[Error] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
 																			 p_callback_data->pMessage);
+				break;
+			default: break;
 		}
 		return vk::False;
 	}

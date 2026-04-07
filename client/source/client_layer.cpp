@@ -26,6 +26,7 @@ namespace toaster
 		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 		auto  swapchain = app.getWindow().getSwapchain();
 
+		// auto geometry_pass = m_renderGraph.addPass("Geometry").
 		uint32 window_width{swapchain->getExtent().width};
 		uint32 window_height{swapchain->getExtent().height};
 
@@ -38,7 +39,10 @@ namespace toaster
 		{
 			LOG_INFO("{}, {}", width, height);
 
-			m_renderer2D->onResize(width, height);
+			m_viewportWidth  = width;
+			m_viewportHeight = height;
+
+			// _createAttachmentImages();
 		});
 
 		{
@@ -72,6 +76,7 @@ namespace toaster
 
 		m_mesh = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx");
 
+		// _createAttachmentImages();
 		_createDescriptorPool();
 		_createDescriptorSets();
 	}
@@ -105,6 +110,49 @@ namespace toaster
 
 		std::memcpy(m_mappedUniformBuffers[frame_index], &camera_ub, sizeof(CameraUB));
 
+		#if 0
+		if (m_colourAttachmentLayout != vk::ImageLayout::eColorAttachmentOptimal)
+		{
+			ctx->transitionImageLayout(m_colourAttachmentImage, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+									   vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eFragmentShader,
+									   vk::PipelineStageFlagBits::eColorAttachmentOutput, 1);
+		}
+		{
+			vk::ClearValue              clear_colour = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};
+			vk::RenderingAttachmentInfo colour_attachment_info{};
+			colour_attachment_info.clearValue  = clear_colour;
+			colour_attachment_info.imageView   = m_colourAttachmentImageView;
+			colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
+			colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
+
+			vk::RenderingInfo rendering_info{};
+			rendering_info.renderArea           = vk::Rect2D{{0, 0}, swapchain_extent};
+			rendering_info.layerCount           = 1;
+			rendering_info.colorAttachmentCount = 1;
+			rendering_info.pColorAttachments    = &colour_attachment_info;
+			rendering_info.pDepthAttachment     = nullptr;
+
+			vk::Viewport viewport{};
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+			viewport.x        = 0.0f;
+			viewport.y        = 0.0f;
+			viewport.width    = static_cast<float32>(swapchain_extent.width);
+			viewport.height   = static_cast<float32>(swapchain_extent.height);
+
+			vk::Rect2D scissor{vk::Offset2D{0, 0}, swapchain_extent};
+
+			command_buffer.beginRendering(rendering_info);
+
+			command_buffer.endRendering();
+
+			ctx->transitionImageLayout(m_colourAttachmentImage, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+									   vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eColorAttachmentOutput,
+									   vk::PipelineStageFlagBits::eFragmentShader, 1);
+			m_colourAttachmentLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		}
+		#endif
 		{
 			vk::ClearValue              clear_colour = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};
 			vk::RenderingAttachmentInfo colour_attachment_info{};
@@ -182,6 +230,74 @@ namespace toaster
 	bool ClientLayer::onWindowResizeEvent(WindowResizeEvent &e)
 	{
 		return false;
+	}
+
+	void ClientLayer::_createAttachmentImages()
+	{
+		m_colourAttachmentImage               = nullptr;
+		m_colourAttachmentImageMemory         = nullptr;
+		m_colourAttachmentImageView           = nullptr;
+		m_colourAttachmentImageDescriptorInfo = vk::DescriptorImageInfo{};
+
+		auto &app = getApp();
+		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		auto  swapchain{app.getWindow().getSwapchain()};
+
+		vk::Format colour_attachment_format{swapchain->getSurfaceFormat().format};
+		ctx->createImage(m_viewportWidth, m_viewportHeight, 1, colour_attachment_format, vk::ImageTiling::eOptimal,
+						 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal, m_colourAttachmentImage,
+						 m_colourAttachmentImageMemory);
+
+		if (m_colourAttachmentLayout == vk::ImageLayout::eShaderReadOnlyOptimal)
+		{
+			ctx->transitionImageLayout(m_colourAttachmentImage, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+									   vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eFragmentShader,
+									   vk::PipelineStageFlagBits::eColorAttachmentOutput, 1);
+		}
+		else
+		{
+			ctx->transitionImageLayout(m_colourAttachmentImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
+									   vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eTopOfPipe,
+									   vk::PipelineStageFlagBits::eColorAttachmentOutput, 1);
+		}
+		m_colourAttachmentLayout = vk::ImageLayout::eColorAttachmentOptimal;
+
+		m_colourAttachmentImageView = ctx->createImageView(m_colourAttachmentImage, colour_attachment_format, vk::ImageAspectFlagBits::eColor, 1);
+
+		auto physical_device_props{ctx->getPhysicalDevice().getProperties()};
+
+		vk::SamplerCreateInfo sampler_create_info{};
+		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.magFilter               = vk::Filter::eLinear;
+		sampler_create_info.minFilter               = vk::Filter::eLinear;
+		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
+		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.mipLodBias              = 0.0f;
+		sampler_create_info.anisotropyEnable        = true;
+		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
+		sampler_create_info.compareEnable           = false;
+		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
+		sampler_create_info.minLod                  = 0.0f;
+		sampler_create_info.maxLod                  = vk::LodClampNone;
+		sampler_create_info.borderColor             = vk::BorderColor::eFloatCustomEXT;
+		sampler_create_info.unnormalizedCoordinates = false;
+
+		// This is purely aesthetic
+		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{};
+		border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
+		border_colour_create_info.format            = vk::Format::eR8G8B8A8Srgb;
+
+		sampler_create_info.pNext = &border_colour_create_info;
+
+		m_colourAttachmentImageSampler = {ctx->getDevice(), sampler_create_info};
+
+		m_colourAttachmentImageDescriptorInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		m_colourAttachmentImageDescriptorInfo.imageView   = m_colourAttachmentImageView;
+		m_colourAttachmentImageDescriptorInfo.sampler     = m_colourAttachmentImageSampler;
 	}
 
 	void ClientLayer::_createDescriptorPool()
