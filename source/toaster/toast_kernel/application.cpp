@@ -61,6 +61,11 @@ namespace toaster
 			m_lastFrameTime      = startTime;
 
 			m_window->processEvents();
+
+			// TODO: Add some kind of callback thing so we can handle the creation and recreation of renderer resources.
+			// Example from Hazel, I'm not sure about doing things this way because I don't like any form of static interfaces or coupling
+			// Ref<VulkanTexture2D> instance = this; Renderer::Submit([instance]() mutable { instance->Invalidate(); });
+
 			m_window->beginFrame();
 
 			if (!m_minimized)

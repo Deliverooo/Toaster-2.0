@@ -137,6 +137,7 @@ namespace toaster::gpu
 					LOG_TRACE("\tAlbedo map path = {}{}", texture_path.string(), std::filesystem::exists(texture_path) ? "" : " --> NOT FOUND");
 
 					TextureSpecInfo texture_spec_info{};
+					texture_spec_info.generateMips = false;
 					m_albedoMap = make_reference<VKTexture2D>(m_ctx, texture_spec_info, texture_path);
 				}
 				else

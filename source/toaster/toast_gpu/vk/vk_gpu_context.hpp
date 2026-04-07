@@ -64,17 +64,21 @@ namespace toaster::gpu
 
 		void copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) const;
 
-		void createImage(uint32                  p_width, uint32 p_height, vk::Format p_format, vk::ImageTiling p_image_tiling, vk::ImageUsageFlags p_usage_flags,
+		void createImage(uint32 p_width, uint32 p_height, uint32 p_mip_levels, vk::Format p_format, vk::ImageTiling p_image_tiling, vk::ImageUsageFlags p_usage_flags,
 						 vk::MemoryPropertyFlags p_memory_properties, vk::raii::Image &p_out_image, vk::raii::DeviceMemory &p_out_memory) const;
 
-		void transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout) const;
+		void transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, uint32 p_mip_levels) const;
 		void transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags p_src_access_mask,
-								   vk::AccessFlags  p_dst_access_mask, vk::PipelineStageFlags p_src_stage_mask, vk::PipelineStageFlags p_dst_stage_mask) const;
+								   vk::AccessFlags  p_dst_access_mask, vk::PipelineStageFlags p_src_stage_mask, vk::PipelineStageFlags p_dst_stage_mask,
+								   uint32           p_mip_levels) const;
 
 		void copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, uint32 p_width, uint32 p_height) const;
 
-		[[nodiscard]] vk::raii::ImageView createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags) const;
-		[[nodiscard]] vk::raii::ImageView createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags) const;
+		[[nodiscard]] vk::raii::ImageView createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags,
+														  uint32           p_mip_levels) const;
+		[[nodiscard]] vk::raii::ImageView createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_mip_levels) const;
+
+		void generateMipmaps(vk::raii::Image &p_src_image, vk::Format p_format, uint32 p_width, uint32 p_height, uint32 p_mip_levels) const;
 
 		[[nodiscard]] vk::raii::CommandBuffer beginSingleTimeCommands() const;
 		void                                  endSingleTimeCommands(vk::raii::CommandBuffer &p_command_buffer) const;

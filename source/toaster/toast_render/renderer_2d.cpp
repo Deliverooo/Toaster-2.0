@@ -13,9 +13,9 @@ namespace toaster
 		auto &device = m_ctx->getDevice();
 
 
-		m_ctx->createImage(1280, 720, vk::Format::eR8G8B8A8Srgb, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment,
+		m_ctx->createImage(1280, 720,1, vk::Format::eR8G8B8A8Srgb, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eColorAttachment,
 						   vk::MemoryPropertyFlagBits::eDeviceLocal, m_renderTargetImage, m_renderTargetImageMemory);
-		m_renderTargetImageView = m_ctx->createImageView(m_renderTargetImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor);
+		m_renderTargetImageView = m_ctx->createImageView(m_renderTargetImage, vk::Format::eR8G8B8A8Srgb, vk::ImageAspectFlagBits::eColor, 1);
 
 		m_quadVertexBufferLayout = gpu::VertexBufferLayout{
 			{gpu::EShaderDataType::eFloat4, "a_Position"},

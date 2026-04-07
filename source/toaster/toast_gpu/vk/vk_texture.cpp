@@ -26,6 +26,11 @@ namespace toaster::gpu
 		m_specInfo.width          = static_cast<uint32>(width);
 		m_specInfo.height         = static_cast<uint32>(height);
 
+		if (m_specInfo.generateMips)
+			m_mipLevels = std::floor(std::log2(std::max(m_specInfo.width, m_specInfo.height))) + 1u;
+		else
+			m_mipLevels = 1;
+
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
 
@@ -39,18 +44,18 @@ namespace toaster::gpu
 		stbi_image_free(pixels);
 
 		vk::Format image_format = vk::Format::eR8G8B8A8Srgb;
-		m_ctx->createImage(m_specInfo.width, m_specInfo.height, image_format, vk::ImageTiling::eOptimal,
-						   vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
+		m_ctx->createImage(m_specInfo.width, m_specInfo.height, m_mipLevels, image_format, vk::ImageTiling::eOptimal,
+						   vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+						   vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
 
 		m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eNone,
-									 vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer);
+									 vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, m_mipLevels);
 
 		m_ctx->copyBufferToImage(staging_buffer, m_image, m_specInfo.width, m_specInfo.height);
 
-		m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eTransferWrite,
-									 vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader);
+		m_ctx->generateMipmaps(m_image, image_format, m_specInfo.width, m_specInfo.height, m_mipLevels);
 
-		m_imageView = m_ctx->createImageView(m_image, image_format, vk::ImageAspectFlagBits::eColor);
+		m_imageView = m_ctx->createImageView(m_image, image_format, vk::ImageAspectFlagBits::eColor, m_mipLevels);
 
 		auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 
@@ -70,7 +75,7 @@ namespace toaster::gpu
 		sampler_create_info.compareEnable           = false;
 		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
 		sampler_create_info.minLod                  = 0.0f;
-		sampler_create_info.maxLod                  = 0.0f;
+		sampler_create_info.maxLod                  = vk::LodClampNone;
 		sampler_create_info.borderColor             = vk::BorderColor::eFloatCustomEXT;
 		sampler_create_info.unnormalizedCoordinates = false;
 

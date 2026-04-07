@@ -29,6 +29,11 @@ namespace toaster
 		uint32 window_width{swapchain->getExtent().width};
 		uint32 window_height{swapchain->getExtent().height};
 
+		swapchain->addResizeCallback([](uint32 width, uint32 height)
+		{
+			LOG_INFO("{}, {}", width, height);
+		});
+
 		{
 			m_geometryVertexBufferLayout = {
 				{gpu::EShaderDataType::eFloat3, "a_Position"},
@@ -57,44 +62,6 @@ namespace toaster
 			m_ubos                 = make_reference<gpu::VKUniformBufferPFF>(ctx, ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
 			m_mappedUniformBuffers = m_ubos->mapMemory(ubo_size, 0);
 		}
-
-		#if 0
-		{
-			gpu::VertexBufferLayout composite_vbl = {{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
-
-			gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/composite.vert.glsl.spv");
-			gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/composite.pixel.glsl.spv");
-			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
-			m_compositeShader = make_reference<gpu::VKShader>(ctx, shader_bytecode_map);
-
-			gpu::PipelineCreateInfo pipeline_create_info{};
-			pipeline_create_info.vertexBufferLayout = composite_vbl;
-			pipeline_create_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
-			pipeline_create_info.depthFormat        = {swapchain->getDepthFormat()};
-			pipeline_create_info.shader             = m_compositeShader;
-			m_compositePipeline                     = make_reference<gpu::VKPipeline>(ctx, pipeline_create_info);
-
-			struct QuadVertex
-			{
-				glm::vec3 position;
-				glm::vec2 texCoord;
-			};
-
-			std::array<QuadVertex, 4> vertices = {
-				QuadVertex{{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f}},
-				QuadVertex{{0.5f, -0.5f, 0.0f}, {1.0f, 0.0f}},
-				QuadVertex{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f}},
-				QuadVertex{{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f}},
-			};
-			std::array<uint16, 6> indices = {0, 1, 3, 1, 2, 3};
-
-			constexpr vk::DeviceSize vertex_buffer_size{sizeof(QuadVertex) * vertices.size()};
-			m_compositeVertexBuffer = make_reference<gpu::VKVertexBuffer>(ctx, (void *) vertices.data(), vertex_buffer_size);
-
-			constexpr vk::DeviceSize index_buffer_size{sizeof(uint16) * indices.size()};
-			m_compositeIndexBuffer = make_reference<gpu::VKIndexBuffer>(ctx, (void *) indices.data(), index_buffer_size);
-		}
-		#endif
 
 		m_mesh = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx");
 
@@ -209,75 +176,6 @@ namespace toaster
 	bool ClientLayer::onWindowResizeEvent(WindowResizeEvent &e)
 	{
 		return false;
-	}
-
-	void ClientLayer::_createGeometryAttachments()
-	{
-		auto &app       = getApp();
-		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-		auto  swapchain = app.getWindow().getSwapchain();
-
-		vk::Format colour_attachment_format{swapchain->getSurfaceFormat().format};
-
-		uint32 attachment_width{swapchain->getExtent().width};
-		uint32 attachment_height{swapchain->getExtent().height};
-
-		ctx->createImage(attachment_width, attachment_height, colour_attachment_format, vk::ImageTiling::eOptimal,
-						 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal, m_geometryAttachmentImage,
-						 m_geometryDepthAttachmentImageMemory);
-
-		ctx->transitionImageLayout(m_geometryAttachmentImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
-								   vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eColorAttachmentOutput);
-
-		m_geometryAttachmentImageView = ctx->createImageView(m_geometryAttachmentImage, colour_attachment_format, vk::ImageAspectFlagBits::eColor);
-
-		auto physical_device_props = ctx->getPhysicalDevice().getProperties();
-
-		vk::SamplerCreateInfo sampler_create_info{};
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.magFilter               = vk::Filter::eLinear;
-		sampler_create_info.minFilter               = vk::Filter::eLinear;
-		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.mipLodBias              = 0.0f;
-		sampler_create_info.anisotropyEnable        = true;
-		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
-		sampler_create_info.compareEnable           = false;
-		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
-		sampler_create_info.minLod                  = 0.0f;
-		sampler_create_info.maxLod                  = 0.0f;
-		sampler_create_info.borderColor             = vk::BorderColor::eFloatCustomEXT;
-		sampler_create_info.unnormalizedCoordinates = false;
-
-		// This is purely aesthetic
-		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{};
-		border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
-		border_colour_create_info.format            = vk::Format::eR8G8B8A8Srgb;
-
-		sampler_create_info.pNext = &border_colour_create_info;
-
-		m_geometryAttachmentImageSampler = {ctx->getDevice(), sampler_create_info};
-
-		m_geometryAttachmentDescriptorImageInfo.imageView   = m_geometryAttachmentImageView;
-		m_geometryAttachmentDescriptorImageInfo.sampler     = m_geometryAttachmentImageSampler;
-		m_geometryAttachmentDescriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-
-		vk::Format depth_attachment_format{swapchain->getDepthFormat()};
-
-		ctx->createImage(attachment_width, attachment_height, depth_attachment_format, vk::ImageTiling::eOptimal,
-						 vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal,
-						 m_geometryDepthAttachmentImage, m_geometryDepthAttachmentImageMemory);
-
-		ctx->transitionImageLayout(m_geometryDepthAttachmentImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits::eNone,
-								   vk::AccessFlagBits::eDepthStencilAttachmentWrite,
-								   vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
-								   vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests);
-
-		m_geometryDepthAttachmentImageView = ctx->createImageView(m_geometryDepthAttachmentImage, depth_attachment_format, vk::ImageAspectFlagBits::eDepth);
 	}
 
 	void ClientLayer::_createDescriptorPool()

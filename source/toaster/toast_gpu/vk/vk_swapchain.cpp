@@ -25,9 +25,7 @@ namespace toaster::gpu
 		// Wait for the previous frame to be finished before rendering this one
 		auto fence_result = device.waitForFences(*m_inFlightFences[m_frameIndex], true, UINT64_MAX);
 		if (fence_result != vk::Result::eSuccess)
-		{
 			TST_ASSERT_MSG(false, "Failed to wait for Fence");
-		}
 		// Reset the fence so we can signal it later
 		device.resetFences(*m_inFlightFences[m_frameIndex]);
 
@@ -41,9 +39,7 @@ namespace toaster::gpu
 			return;
 		}
 		if (res != vk::Result::eSuccess)
-		{
 			TST_ASSERT_MSG(false, "Failed to acquire swapchain image!");
-		}
 
 		auto &command_buffer = m_commandBuffers[m_frameIndex];
 
@@ -100,8 +96,8 @@ namespace toaster::gpu
 
 		// For some reason, Vulkan-hpp classifies vk::Result::eErrorOutOfDateKHR as an error and automatically throws an exception
 		// So this is what I came up with to bypass that :)
-		vk::Result res = static_cast<vk::Result>(graphics_queue.getDispatcher()->vkQueuePresentKHR(static_cast<VkQueue>(*graphics_queue),
-																								   reinterpret_cast<const VkPresentInfoKHR *>(&present_info)));
+		auto res = static_cast<vk::Result>(graphics_queue.getDispatcher()->vkQueuePresentKHR(static_cast<VkQueue>(*graphics_queue),
+																							 reinterpret_cast<const VkPresentInfoKHR *>(&present_info)));
 
 		if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR || m_framebufferResized)
 		{
@@ -109,10 +105,7 @@ namespace toaster::gpu
 			_recreateSwapchain();
 		}
 		else if (res != vk::Result::eSuccess)
-		{
-			LOG_ERROR("Failed to present swapchain image!");
-			TST_ASSERT(false);
-		}
+			TST_ASSERT_MSG(false, "Failed to present swapchain image!");
 
 		m_frameIndex = (m_frameIndex + 1) % VKGPUContext::c_maxFramesInFlight;
 	}
@@ -192,18 +185,23 @@ namespace toaster::gpu
 		m_framebufferResized = p_resized;
 	}
 
+	void VKSwapchain::addResizeCallback(const ResizeCB &p_resize_cb)
+	{
+		m_resizeCallbacks.emplace_back(p_resize_cb);
+	}
+
 	void VKSwapchain::_createImageViews()
 	{
 		for (auto &img: m_swapchainImages)
-			m_swapchainImageViews.emplace_back(m_ctx->createImageView(img, m_swapchainSurfaceFormat.format, vk::ImageAspectFlagBits::eColor));
+			m_swapchainImageViews.emplace_back(m_ctx->createImageView(img, m_swapchainSurfaceFormat.format, vk::ImageAspectFlagBits::eColor, 1));
 	}
 
 	void VKSwapchain::_createDepthResources()
 	{
 		vk::Format depth_format = m_ctx->findDepthFormat();
-		m_ctx->createImage(m_swapchainExtent.width, m_swapchainExtent.height, depth_format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment,
+		m_ctx->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, depth_format, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment,
 						   vk::MemoryPropertyFlagBits::eDeviceLocal, m_depthImage, m_depthImageMemory);
-		m_depthImageView = m_ctx->createImageView(m_depthImage, depth_format, vk::ImageAspectFlagBits::eDepth);
+		m_depthImageView = m_ctx->createImageView(m_depthImage, depth_format, vk::ImageAspectFlagBits::eDepth, 1);
 	}
 
 	void VKSwapchain::_createSyncObjects()
@@ -265,7 +263,7 @@ namespace toaster::gpu
 		if (*m_swapchain)
 		{
 			// I think this should work, but I am not totally sure
-			swapchain_create_info.oldSwapchain = std::move(*m_swapchain);
+			swapchain_create_info.oldSwapchain = *m_swapchain;
 		}
 
 		m_swapchain       = {m_ctx->getDevice(), swapchain_create_info};
@@ -292,6 +290,9 @@ namespace toaster::gpu
 		_create();
 		_createImageViews();
 		_createDepthResources();
+
+		for (auto &callback: m_resizeCallbacks)
+			callback(m_swapchainExtent.width, m_swapchainExtent.height);
 
 		m_ctx->getDevice().waitIdle();
 	}
@@ -348,9 +349,7 @@ namespace toaster::gpu
 
 		// Apparently, if the maxImageCount == 0, then there is no maximum (unlimited).
 		if ((p_surface_capabilities.maxImageCount > 0) && (p_surface_capabilities.maxImageCount < min_image_count))
-		{
 			min_image_count = p_surface_capabilities.maxImageCount;
-		}
 		return min_image_count;
 	}
 }

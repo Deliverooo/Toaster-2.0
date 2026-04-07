@@ -39,7 +39,6 @@ namespace toaster
 		bool onKeyPressEvent(KeyPressEvent &e);
 		bool onWindowResizeEvent(WindowResizeEvent &e);
 
-		void _createGeometryAttachments();
 		void _createDescriptorPool();
 		void _createDescriptorSets();
 
@@ -49,30 +48,25 @@ namespace toaster
 		RefPtr<gpu::VKShader>   m_geometryShader{nullptr}; // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
 		RefPtr<gpu::VKPipeline> m_geometryPipeline{nullptr};
 
-		vk::raii::Image         m_geometryAttachmentImage{nullptr};
-		vk::raii::DeviceMemory  m_geometryAttachmentImageMemory{nullptr};
-		vk::raii::ImageView     m_geometryAttachmentImageView{nullptr};
-		vk::raii::Sampler       m_geometryAttachmentImageSampler{nullptr};
-		vk::DescriptorImageInfo m_geometryAttachmentDescriptorImageInfo{nullptr};
+		gpu::VertexBufferLayout m_quadVertexBufferLayout;
+		RefPtr<gpu::VKShader>   m_quadShader{nullptr};
+		RefPtr<gpu::VKPipeline> m_quadPipeline{nullptr};
 
-		vk::raii::Image        m_geometryDepthAttachmentImage{nullptr};
-		vk::raii::DeviceMemory m_geometryDepthAttachmentImageMemory{nullptr};
-		vk::raii::ImageView    m_geometryDepthAttachmentImageView{nullptr};
+		vk::raii::Image        m_colourAttachmentImage{nullptr};
+		vk::raii::DeviceMemory m_colourAttachmentImageMemory{nullptr};
+		vk::raii::ImageView    m_colourAttachmentImageView{nullptr};
 
 		RefPtr<gpu::VKTexture2D> m_texture{nullptr};
 
-		RefPtr<gpu::VKShader>   m_compositeShader{nullptr};
-		RefPtr<gpu::VKPipeline> m_compositePipeline{nullptr};
-
-		struct Vertex
+		struct QuadVertex
 		{
 			glm::vec3 position;
 			glm::vec3 colour;
 			glm::vec2 texCoord;
 		};
 
-		RefPtr<gpu::VKVertexBuffer> m_compositeVertexBuffer{nullptr};
-		RefPtr<gpu::VKIndexBuffer>  m_compositeIndexBuffer{nullptr};
+		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
+		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
 
 		RefPtr<gpu::VKMesh> m_mesh{nullptr};
 
@@ -95,6 +89,5 @@ namespace toaster
 
 		std::vector<vk::raii::DescriptorSet> m_descriptorSets;
 		std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
-
 	};
 }

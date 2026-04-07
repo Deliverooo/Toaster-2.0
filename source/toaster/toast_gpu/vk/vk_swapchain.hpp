@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <vulkan/vulkan_raii.hpp>
 #include "toast_lib/system_types.h"
 
@@ -12,6 +13,8 @@ namespace toaster::gpu
 	class VKSwapchain
 	{
 	public:
+		using ResizeCB = std::function<void(uint32, uint32)>;
+
 		VKSwapchain(VKGPUContext *p_ctx, GLFWwindow *p_window);
 
 		void beginFrame();
@@ -39,6 +42,8 @@ namespace toaster::gpu
 
 		// Only use within the windowing API. E.g. when you set the glfwFramebufferResize callback
 		void setFramebufferResized(bool p_resized);
+
+		void addResizeCallback(const ResizeCB &p_resize_cb);
 
 	private:
 		void _createImageViews();
@@ -73,6 +78,8 @@ namespace toaster::gpu
 		vk::raii::Image        m_depthImage{nullptr};
 		vk::raii::DeviceMemory m_depthImageMemory{nullptr};
 		vk::raii::ImageView    m_depthImageView{nullptr};
+
+		std::vector<ResizeCB> m_resizeCallbacks;
 
 		uint32 m_frameIndex{0u};
 		uint32 m_imageIndex{0u};

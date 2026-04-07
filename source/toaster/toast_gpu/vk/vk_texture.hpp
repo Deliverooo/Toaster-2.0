@@ -13,6 +13,8 @@ namespace toaster::gpu
 		uint32       width{0u};
 		uint32       height{0u};
 		EImageFormat format{EImageFormat::eRGBA};
+
+		bool generateMips{true};
 	};
 
 	class VKTexture2D final : public IResource
@@ -25,16 +27,18 @@ namespace toaster::gpu
 		vk::raii::ImageView &   getImageView();
 		vk::raii::Sampler &     getSampler();
 
-		vk::DescriptorImageInfo& getDescriptorInfo();
+		vk::DescriptorImageInfo &getDescriptorInfo();
 
 		[[nodiscard]] const TextureSpecInfo &getSpecInfo() const;
 
-		EResourceType getResourceType() const override;
+		[[nodiscard]] EResourceType getResourceType() const override;
 
 	private:
 		VKGPUContext *m_ctx{nullptr};
 
 		TextureSpecInfo m_specInfo{};
+
+		uint32 m_mipLevels{1u};
 
 		vk::raii::Image        m_image{nullptr};
 		vk::raii::DeviceMemory m_imageMemory{nullptr};
