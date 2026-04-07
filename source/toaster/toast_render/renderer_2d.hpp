@@ -10,11 +10,19 @@
 
 #include <array>
 
+#include "toast_gpu/vk/vk_pipeline.hpp"
+#include "toast_gpu/vk/vk_vertex_buffer.hpp"
+#include "toast_gpu/vk/vk_index_buffer.hpp"
+#include "toast_gpu/vk/vk_uniform_buffer.hpp"
+
 namespace toaster
 {
 	struct Renderer2DCreateInfo
 	{
 		uint32 maxQuads{10000u};
+
+		uint32 renderTargetWidth{1920u};
+		uint32 renderTargetHeight{1080u};
 	};
 
 	class Renderer2D
@@ -28,8 +36,8 @@ namespace toaster
 		explicit Renderer2D(gpu::VKGPUContext *p_ctx, const Renderer2DCreateInfo &p_create_info);
 		~Renderer2D();
 
-		void begin(vk::raii::CommandBuffer& p_cmd, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix);
-		void end(vk::raii::CommandBuffer& p_cmd);
+		void begin(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix);
+		void end(vk::raii::CommandBuffer &p_cmd);
 
 		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
 		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
@@ -41,8 +49,14 @@ namespace toaster
 		vk::raii::DeviceMemory &getRenderTargetImageMemory();
 		vk::raii::ImageView &   getRenderTargetImageView();
 
+		void onResize(uint32 p_width, uint32 p_height);
+
 	private:
 		void _beginNewBatch();
+		void _createRenderTargetResources();
+
+		void _createDescriptorPool();
+		void _createDescriptorSets();
 
 		gpu::VKGPUContext *m_ctx;
 
@@ -64,35 +78,41 @@ namespace toaster
 		vk::raii::Image        m_renderTargetImage{nullptr};
 		vk::raii::DeviceMemory m_renderTargetImageMemory{nullptr};
 		vk::raii::ImageView    m_renderTargetImageView{nullptr};
+		vk::raii::Sampler      m_renderTargetImageSampler{nullptr};
 
-		vk::raii::Pipeline       m_quadPipeline{nullptr};
-		vk::raii::PipelineLayout m_quadPipelineLayout{nullptr};
+		vk::DescriptorImageInfo m_renderTargetDescriptorImageInfo{nullptr};
 
-		vk::raii::Buffer       m_quadVertexBuffer{nullptr};
-		vk::raii::DeviceMemory m_quadVertexBufferMemory{nullptr};
-		void *                 m_mappedQuadVertexBufferMemory{nullptr};
+		vk::raii::Image        m_renderTargetDepthImage{nullptr};
+		vk::raii::DeviceMemory m_renderTargetDepthImageMemory{nullptr};
+		vk::raii::ImageView    m_renderTargetDepthImageView{nullptr};
 
-		vk::raii::Buffer       m_quadIndexBuffer{nullptr};
-		vk::raii::DeviceMemory m_quadIndexBufferMemory{nullptr};
+		RefPtr<gpu::VKShader>   m_quadShader{nullptr};
+		RefPtr<gpu::VKPipeline> m_quadPipeline{nullptr};
+
+		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
+		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
 
 		QuadVertex *m_quadVertexBase{nullptr};
 		QuadVertex *m_quadVertexPtr{nullptr};
 
 		struct CameraUB
 		{
-			glm::mat4 model;
 			glm::mat4 view;
 			glm::mat4 proj;
 		};
 
-		std::vector<vk::raii::Buffer>       m_uniformBuffers;
-		std::vector<vk::raii::DeviceMemory> m_uniformBufferMemories;
-		std::vector<void *>                 m_mappedUniformBuffers;
+		RefPtr<gpu::VKUniformBufferPFF> m_uniformBuffers{nullptr};
+		std::vector<void *>             m_mappedUniformBuffers;
 
 		uint32 m_quadIndexCount{0u};
 
 		std::array<tsm::float4, 4u> m_quadVertexPositions;
 		std::array<tsm::float2, 4u> m_quadVertexTexCoords;
+
+		vk::raii::DescriptorPool m_descriptorPool{nullptr};
+
+		std::vector<vk::raii::DescriptorSet> m_descriptorSets;
+		std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
 
 		Stats m_stats;
 	};

@@ -29,9 +29,16 @@ namespace toaster
 		uint32 window_width{swapchain->getExtent().width};
 		uint32 window_height{swapchain->getExtent().height};
 
-		swapchain->addResizeCallback([](uint32 width, uint32 height)
+		Renderer2DCreateInfo renderer_2d_create_info{};
+		renderer_2d_create_info.renderTargetWidth  = window_width;
+		renderer_2d_create_info.renderTargetHeight = window_height;
+		m_renderer2D                               = make_reference<Renderer2D>(ctx, renderer_2d_create_info);
+
+		swapchain->addResizeCallback([this](uint32 width, uint32 height)
 		{
 			LOG_INFO("{}, {}", width, height);
+
+			m_renderer2D->onResize(width, height);
 		});
 
 		{
@@ -86,8 +93,7 @@ namespace toaster
 		uint32 image_index{swapchain->getImageIndex()};
 
 		vk::Extent2D swapchain_extent{swapchain->getExtent()};
-
-		auto &command_buffer = swapchain->getCurrentCommandBuffer();
+		auto &       command_buffer = swapchain->getCurrentCommandBuffer();
 
 		CameraUB camera_ub{};
 		camera_ub.model = glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{20.0f, 20.0f, 20.0f}), m_time * glm::radians(90.0f), glm::vec3{0.0f, 0.0f, 1.0f});

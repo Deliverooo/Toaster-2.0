@@ -7,6 +7,9 @@ if (${WITH_VULKAN_BACKEND})
 
 			${CMAKE_CURRENT_SOURCE_DIR}/composite.vert.glsl
 			${CMAKE_CURRENT_SOURCE_DIR}/composite.pixel.glsl
+
+			${CMAKE_CURRENT_SOURCE_DIR}/quad.vert.glsl
+			${CMAKE_CURRENT_SOURCE_DIR}/quad.pixel.glsl
 	)
 endif ()
 
