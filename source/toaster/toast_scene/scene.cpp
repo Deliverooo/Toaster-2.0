@@ -31,6 +31,7 @@ namespace toaster
 
 	void Scene::onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d)
 	{
+
 		Camera *  main_camera{nullptr};
 		glm::mat4 camera_transform{1.0f};
 		{

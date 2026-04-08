@@ -18,6 +18,7 @@
 #include "toast_gpu/vk/vk_shader.hpp"
 #include "toast_gpu/vk/vk_mesh.hpp"
 #include "toast_gpu/vk/vk_pipeline.hpp"
+#include "toast_gpu/vk/vk_render_pass.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_gpu/vk/vk_uniform_buffer.hpp"
 
@@ -45,22 +46,16 @@ namespace toaster
 
 		float32 m_time{0.0f};
 
-		gpu::VertexBufferLayout m_compositeVertexBufferLayout;
-		RefPtr<gpu::VKShader>   m_compositeShader{nullptr};
-		RefPtr<gpu::VKPipeline> m_compositePipeline{nullptr};
+		uint32 m_viewportWidth{0u};
+		uint32 m_viewportHeight{0u};
 
+		RefPtr<gpu::VKShader>     m_geometryShader{nullptr}; // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
+		RefPtr<gpu::VKPipeline>   m_geometryPipeline{nullptr};
+		RefPtr<gpu::VKRenderPass> m_geometryPass{nullptr};
 
-		RefPtr<gpu::VKVertexBuffer> m_fullscreenQuadVertexBuffer{nullptr};
-		RefPtr<gpu::VKIndexBuffer>  m_fullscreenQuadIndexBuffer{nullptr};
-
-		struct FullscreenQuadVertex
-		{
-			glm::vec3 positon;
-			glm::vec2 texCoord;
-		};
-
-		std::vector<FullscreenQuadVertex> m_fullscreenQuadVertices;
-		std::vector<uint16>               m_fullscreenQuadIndices;
+		gpu::VertexBufferLayout m_quadVertexBufferLayout;
+		RefPtr<gpu::VKShader>   m_quadShader{nullptr};
+		RefPtr<gpu::VKPipeline> m_quadPipeline{nullptr};
 
 		vk::raii::Image        m_colourAttachmentImage{nullptr};
 		vk::raii::DeviceMemory m_colourAttachmentImageMemory{nullptr};
@@ -70,14 +65,7 @@ namespace toaster
 		vk::raii::DeviceMemory m_depthAttachmentImageMemory{nullptr};
 		vk::raii::ImageView    m_depthAttachmentImageView{nullptr};
 
-		uint32 m_viewportWidth{0u};
-		uint32 m_viewportHeight{0u};
-
-
-
 		RefPtr<gpu::VKTexture2D> m_texture{nullptr};
-
-		RefPtr<Renderer2D> m_renderer2D{nullptr};
 
 		struct QuadVertex
 		{
@@ -86,20 +74,33 @@ namespace toaster
 			glm::vec2 texCoord;
 		};
 
+		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
+		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
+
+		RefPtr<gpu::VKMesh> m_mesh{nullptr};
 
 		struct CameraUB
 		{
-			glm::mat4 model;
 			glm::mat4 view;
 			glm::mat4 proj;
 		};
 
-		glm::vec3 m_quadTranslation{0.0f};
-		glm::vec3 m_quadScale{1.0f};
+		RefPtr<gpu::VKUniformBufferPFF> m_ubos;
+		std::vector<void *>             m_mappedUniformBuffers;
+
+		struct MaterialCB
+		{
+			float32 roughness{0.0f};
+		};
+
+		struct TransformCB
+		{
+			glm::mat4 model{1.0f};
+		};
 
 		vk::raii::DescriptorPool m_descriptorPool{nullptr};
-		std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
 
-		EditorCamera m_editorCamera;
+		std::vector<vk::raii::DescriptorSet> m_descriptorSets;
+		std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
 	};
 }

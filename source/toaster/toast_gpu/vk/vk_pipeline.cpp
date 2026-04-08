@@ -70,7 +70,7 @@ namespace toaster::gpu
 		rasterization_state_create_info.depthClampEnable        = false;
 		rasterization_state_create_info.rasterizerDiscardEnable = false;
 		rasterization_state_create_info.polygonMode             = vk::PolygonMode::eFill;
-		rasterization_state_create_info.cullMode                = vk::CullModeFlagBits::eNone;
+		rasterization_state_create_info.cullMode                = vk::CullModeFlagBits::eBack;
 		rasterization_state_create_info.frontFace               = vk::FrontFace::eCounterClockwise;
 		rasterization_state_create_info.depthBiasEnable         = false;
 		rasterization_state_create_info.lineWidth               = 1.0f;

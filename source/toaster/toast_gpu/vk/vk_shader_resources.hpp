@@ -42,6 +42,7 @@ namespace toaster::gpu
 		uint32                  size{0u};
 	};
 
+	// A "Resource" is basically just another way of saying anything like a texture, sampler or combined image sampler
 	struct ShaderResource
 	{
 		String name{};

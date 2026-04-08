@@ -95,8 +95,11 @@ if (${WITH_VULKAN_BACKEND})
 			vk/vk_mesh.cpp
 			vk/vk_mesh.hpp
 
-			vk/vk_render_graph.cpp
-			vk/vk_render_graph.hpp
+			vk/vk_render_pass.cpp
+			vk/vk_render_pass.hpp
+
+			vk/vk_descriptor_set_manager.cpp
+			vk/vk_descriptor_set_manager.hpp
 	)
 endif ()
 

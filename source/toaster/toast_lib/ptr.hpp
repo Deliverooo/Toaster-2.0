@@ -181,6 +181,22 @@ namespace toaster
 		Type *m_ptr{nullptr};
 	};
 
+	#if 0
+	template<typename Type>
+	class UniquePtr
+	{
+	public:
+		UniquePtr ~UniquePtr()
+		{
+			delete m_ptr;
+		}
+
+	private:
+		Type *m_ptr{nullptr};
+	};
+
+	#endif
+
 	template<typename Type>
 	using UniquePtr = std::unique_ptr<Type>;
 

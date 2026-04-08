@@ -77,13 +77,10 @@ namespace toaster
 
 		gpu::VertexBufferLayout m_quadVertexBufferLayout;
 
-		vk::raii::DescriptorSetLayout m_quadDescriptorSetLayout{nullptr};
-
-		vk::raii::Image        m_renderTargetImage{nullptr};
-		vk::raii::DeviceMemory m_renderTargetImageMemory{nullptr};
-		vk::raii::ImageView    m_renderTargetImageView{nullptr};
-		vk::raii::Sampler      m_renderTargetImageSampler{nullptr};
-
+		vk::raii::Image         m_renderTargetImage{nullptr};
+		vk::raii::DeviceMemory  m_renderTargetImageMemory{nullptr};
+		vk::raii::ImageView     m_renderTargetImageView{nullptr};
+		vk::raii::Sampler       m_renderTargetImageSampler{nullptr};
 		vk::DescriptorImageInfo m_renderTargetDescriptorImageInfo{nullptr};
 
 		vk::raii::Image        m_renderTargetDepthImage{nullptr};
@@ -99,6 +96,11 @@ namespace toaster
 		QuadVertex *m_quadVertexBase{nullptr};
 		QuadVertex *m_quadVertexPtr{nullptr};
 
+		uint32 m_quadIndexCount{0u};
+
+		std::array<tsm::float4, 4u> m_quadVertexPositions;
+		std::array<tsm::float2, 4u> m_quadVertexTexCoords;
+
 		struct CameraUB
 		{
 			glm::mat4 view;
@@ -108,25 +110,12 @@ namespace toaster
 		RefPtr<gpu::VKUniformBufferPFF> m_uniformBuffers{nullptr};
 		std::vector<void *>             m_mappedUniformBuffers;
 
-		uint32 m_quadIndexCount{0u};
-
-		std::array<tsm::float4, 4u> m_quadVertexPositions;
-		std::array<tsm::float2, 4u> m_quadVertexTexCoords;
-
-		vk::raii::DescriptorPool m_descriptorPool{nullptr};
-
+		vk::raii::DescriptorPool             m_descriptorPool{nullptr};
 		std::vector<vk::raii::DescriptorSet> m_descriptorSets;
-		std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
 
 		RefPtr<gpu::VKImage2D>                  m_whiteImage{nullptr};
 		std::array<RefPtr<gpu::VKImage2D>, 32u> m_textureSlots;
 		uint32                                  m_textureSlotIndex{1u};
-
-		// vk::raii::Image         m_whiteImage{nullptr};
-		// vk::raii::DeviceMemory  m_whiteImageMemory{nullptr};
-		// vk::raii::ImageView     m_whiteImageView{nullptr};
-		// vk::raii::Sampler       m_whiteImageSampler{nullptr};
-		// vk::DescriptorImageInfo m_whiteImageDescriptorInfo{};
 
 		Stats m_stats;
 	};

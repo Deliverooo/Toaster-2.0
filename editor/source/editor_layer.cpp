@@ -199,12 +199,12 @@ namespace toaster
 
 	void EditorLayer::onUIRender()
 	{
+		#if 0
 		auto & app       = getApp();
 		auto   ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 		auto   swapchain = app.getWindow().getSwapchain();
 		uint32 frame_index{swapchain->getFrameIndex()};
 
-		// #if 0
 		#pragma region Setup Dockspace
 		static bool               p_open          = true;
 		static bool               opt_fullscreen  = true;
@@ -339,7 +339,7 @@ namespace toaster
 		}
 		ig::End(); // DockSpace Demo
 
-		// #endif
+		#endif
 	}
 
 	void EditorLayer::newScene()

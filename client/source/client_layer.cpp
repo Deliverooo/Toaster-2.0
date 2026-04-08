@@ -12,14 +12,11 @@
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
 #include <imgui.h>
-
-#include "backends/imgui_impl_vulkan.h"
-#include "glm/gtc/type_ptr.hpp"
 namespace ig = ImGui;
 
 namespace toaster
 {
-	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app), m_editorCamera(90.0f, 1.7776f, 0.1f, 1000.0f)
+	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app)
 	{
 	}
 
@@ -35,8 +32,6 @@ namespace toaster
 		m_viewportWidth  = window_width;
 		m_viewportHeight = window_height;
 
-		m_editorCamera.setViewportSize(static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight));
-
 		swapchain->addResizeCallback([this](uint32 width, uint32 height)
 		{
 			LOG_INFO("{}, {}", width, height);
@@ -45,47 +40,38 @@ namespace toaster
 			m_viewportHeight = height;
 
 			_createAttachmentImages();
-
-			m_editorCamera.setViewportSize(static_cast<float32>(width), static_cast<float32>(height));
-			m_renderer2D->onResize(width, height);
-			_createDescriptorSets();
 		});
 
 		{
-			m_compositeVertexBufferLayout = {{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
-
-			gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/composite.vert.glsl.spv");
-			gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/composite.pixel.glsl.spv");
+			gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/geometry.vert.glsl.spv");
+			gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/geometry.pixel.glsl.spv");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
-			m_compositeShader = make_reference<gpu::VKShader>(ctx, shader_bytecode_map);
+			m_geometryShader = make_reference<gpu::VKShader>(ctx, shader_bytecode_map);
 
 			gpu::PipelineCreateInfo pipeline_create_info{};
-			pipeline_create_info.vertexBufferLayout = m_compositeVertexBufferLayout;
-			pipeline_create_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
-			pipeline_create_info.depthFormat        = {swapchain->getDepthFormat()};
-			pipeline_create_info.shader             = m_compositeShader;
-			m_compositePipeline                     = make_reference<gpu::VKPipeline>(ctx, pipeline_create_info);
+			pipeline_create_info.vertexBufferLayout = {
+				{gpu::EShaderDataType::eFloat3, "a_Position"},
+				{gpu::EShaderDataType::eFloat3, "a_Normal"},
+				{gpu::EShaderDataType::eFloat3, "a_Tangent"},
+				{gpu::EShaderDataType::eFloat3, "a_Bitangent"},
+				{gpu::EShaderDataType::eFloat2, "a_TexCoord"}
+			};;
+			pipeline_create_info.colourAttachments = {swapchain->getSurfaceFormat().format};
+			pipeline_create_info.depthFormat       = {swapchain->getDepthFormat()};
+			pipeline_create_info.shader            = m_geometryShader;
+			m_geometryPipeline                     = make_reference<gpu::VKPipeline>(ctx, pipeline_create_info);
 
-			m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
-			m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});
-			m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}});
-			m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}});
-			m_fullscreenQuadIndices = {0, 1, 3, 1, 2, 3};
-
-			vk::DeviceSize vbo_size{m_fullscreenQuadVertices.size() * sizeof(FullscreenQuadVertex)};
-			m_fullscreenQuadVertexBuffer = make_reference<gpu::VKVertexBuffer>(ctx, m_fullscreenQuadVertices.data(), vbo_size);
-
-			vk::DeviceSize ibo_size{m_fullscreenQuadIndices.size() * sizeof(uint16)};
-			m_fullscreenQuadIndexBuffer = make_reference<gpu::VKIndexBuffer>(ctx, m_fullscreenQuadIndices.data(), ibo_size);
-
-			gpu::TextureSpecInfo texture_spec_info{};
-			m_texture = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info, "../resources/textures/Peeber.png");
+			m_geometryPass = make_reference<gpu::VKRenderPass>(ctx, m_geometryPipeline);
 		}
 
-		Renderer2DCreateInfo renderer_2d_create_info{};
-		renderer_2d_create_info.renderTargetWidth  = m_viewportWidth;
-		renderer_2d_create_info.renderTargetHeight = m_viewportHeight;
-		m_renderer2D                               = make_reference<Renderer2D>(ctx, renderer_2d_create_info);
+		gpu::TextureSpecInfo texture_spec_info{};
+		m_texture = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info, "../resources/textures/Peeber.png");
+
+		constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
+		m_ubos                 = make_reference<gpu::VKUniformBufferPFF>(ctx, ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
+		m_mappedUniformBuffers = m_ubos->mapMemory(ubo_size, 0);
+
+		m_mesh = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx");
 
 		_createAttachmentImages();
 		_createDescriptorPool();
@@ -94,6 +80,8 @@ namespace toaster
 
 	void ClientLayer::onDestroy()
 	{
+		m_ubos->unmapMemory();
+
 		auto &app = getApp();
 		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 		ctx->getDevice().waitIdle();
@@ -103,8 +91,6 @@ namespace toaster
 	{
 		m_time += p_dt;
 
-		m_editorCamera.onUpdate(p_dt);
-
 		auto &app       = getApp();
 		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 		auto  swapchain = app.getWindow().getSwapchain();
@@ -112,30 +98,31 @@ namespace toaster
 		uint32 frame_index{swapchain->getFrameIndex()};
 		uint32 image_index{swapchain->getImageIndex()};
 
-		auto &command_buffer = swapchain->getCurrentCommandBuffer();
+		vk::Extent2D swapchain_extent{swapchain->getExtent()};
+		auto &       command_buffer = swapchain->getCurrentCommandBuffer();
 
-		// glm::mat4 ortho_view{1.0f};
-		// glm::mat4 ortho_proj{glm::ortho(0.0f, static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight), 0.0f, -1.0f, 1.0f)};
-		// ortho_proj[1][1] *= -1.0f;
+		CameraUB camera_ub{};
+		camera_ub.view = glm::lookAt(glm::vec3{2.0f, 2.0f, 2.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
+		camera_ub.proj = glm::perspective(glm::radians(45.0f), static_cast<float32>(swapchain_extent.width) / static_cast<float32>(swapchain_extent.height), 0.1f, 10.0f);
+		camera_ub.proj[1][1] *= -1.0f;
 
-		m_renderer2D->begin(command_buffer, frame_index, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
-		glm::mat4 quad_transform{glm::translate(glm::mat4{1.0f}, m_quadTranslation) * glm::scale(glm::mat4{1.0f}, glm::vec3{200.0f, 200.0f, 1.0f})};
-		m_renderer2D->submitQuad(quad_transform, {1.0f, 1.0f, 1.0f, 1.0f});
-		m_renderer2D->end(command_buffer, frame_index);
+		std::memcpy(m_mappedUniformBuffers[frame_index], &camera_ub, sizeof(CameraUB));
 
 		{
+			vk::ClearValue              clear_colour = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};
 			vk::RenderingAttachmentInfo colour_attachment_info{};
-			colour_attachment_info.clearValue         = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};;
+			colour_attachment_info.clearValue         = clear_colour;
 			colour_attachment_info.imageView          = m_colourAttachmentImageView;
 			colour_attachment_info.imageLayout        = vk::ImageLayout::eColorAttachmentOptimal;
 			colour_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
 			colour_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
 			colour_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eAverage;
 			colour_attachment_info.resolveImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			colour_attachment_info.resolveImageView   = swapchain->getImageView(image_index);
+			colour_attachment_info.resolveImageView   = swapchain->getImageView(swapchain->getImageIndex());
 
+			vk::ClearValue              clear_depth = vk::ClearDepthStencilValue{1.0f, 0u};
 			vk::RenderingAttachmentInfo depth_attachment_info{};
-			depth_attachment_info.clearValue         = vk::ClearDepthStencilValue{1.0f, 0u};;
+			depth_attachment_info.clearValue         = clear_depth;
 			depth_attachment_info.imageView          = m_depthAttachmentImageView;
 			depth_attachment_info.imageLayout        = vk::ImageLayout::eDepthAttachmentOptimal;
 			depth_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
@@ -145,25 +132,43 @@ namespace toaster
 			depth_attachment_info.resolveImageView   = swapchain->getDepthImageView();
 
 			vk::RenderingInfo rendering_info{};
-			rendering_info.renderArea           = vk::Rect2D{{0, 0}, vk::Extent2D{m_viewportWidth, m_viewportHeight}};
+			rendering_info.renderArea           = vk::Rect2D{{0, 0}, swapchain_extent};
 			rendering_info.layerCount           = 1;
 			rendering_info.colorAttachmentCount = 1;
 			rendering_info.pColorAttachments    = &colour_attachment_info;
 			rendering_info.pDepthAttachment     = &depth_attachment_info;
 
-			vk::Viewport viewport{0.0f, 0.0f, static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight), 0.0f, 1.0f};
-			vk::Rect2D   scissor{vk::Offset2D{0, 0}, vk::Extent2D{m_viewportWidth, m_viewportHeight}};
+			vk::Viewport viewport{};
+			viewport.minDepth = 0.0f;
+			viewport.maxDepth = 1.0f;
+			viewport.x        = 0.0f;
+			viewport.y        = 0.0f;
+			viewport.width    = static_cast<float32>(swapchain_extent.width);
+			viewport.height   = static_cast<float32>(swapchain_extent.height);
+
+			vk::Rect2D scissor{vk::Offset2D{0, 0}, swapchain_extent};
 
 			command_buffer.beginRendering(rendering_info);
-			command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_compositePipeline->getPipeline());
+			command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_geometryPipeline->getPipeline());
 			command_buffer.setViewport(0, viewport);
 			command_buffer.setScissor(0, scissor);
 
-			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_compositePipeline->getPipelineLayout(), 0, *m_compositeDescriptorSets[frame_index], nullptr);
-			m_fullscreenQuadVertexBuffer->bind(command_buffer);
-			m_fullscreenQuadIndexBuffer->bind(command_buffer, vk::IndexType::eUint16);
+			TransformCB transform_constant_buffer{};
+			transform_constant_buffer.model = glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{20.0f, 20.0f, 20.0f}), m_time * glm::radians(90.0f),
+														  glm::vec3{0.0f, 0.0f, 1.0f});
+			command_buffer.pushConstants<TransformCB>(m_geometryPipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, transform_constant_buffer);
 
-			command_buffer.drawIndexed(m_fullscreenQuadIndices.size(), 1, 0, 0, 0);
+			MaterialCB material_constant_buffer{};
+			material_constant_buffer.roughness = m_mesh->getRoughness();
+			command_buffer.pushConstants<MaterialCB>(m_geometryPipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eFragment, sizeof(TransformCB),
+													 material_constant_buffer);
+
+			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_geometryPipeline->getPipelineLayout(), 0, *m_descriptorSets[frame_index], nullptr);
+
+			m_mesh->getVertexBuffer()->bind(command_buffer);
+			m_mesh->getIndexBuffer()->bind(command_buffer, vk::IndexType::eUint16);
+
+			command_buffer.drawIndexed(m_mesh->getIndices().size(), 1, 0, 0, 0);
 			command_buffer.endRendering();
 		}
 	}
@@ -173,21 +178,12 @@ namespace toaster
 		EventDispatcher eventDispatcher(p_event);
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(ClientLayer::onKeyPressEvent));
 		eventDispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(ClientLayer::onWindowResizeEvent));
-		m_editorCamera.onEvent(p_event);
 	}
 
 	void ClientLayer::onUIRender()
 	{
-		#if 0
-		auto &app = getApp(); auto ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext()); auto swapchain = app.getWindow().getSwapchain(); uint32
-				frame_index{swapchain->getFrameIndex()}; ig::Begin("Viewport"); ig::SliderFloat3("Translation", glm::value_ptr(m_quadTranslation), -10.0f, 10.0f);
-		ig::SliderFloat3("Scale", glm::value_ptr(m_quadScale), -10.0f, 10.0f);
-
-		// ig::Image((ImTextureRef) *m_descriptorSets[frame_index], ImVec2{static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight)});
-
-		ig::End();
-
-		#endif
+		// ig::Begin("Viewport");
+		// ig::End();
 	}
 
 	bool ClientLayer::onKeyPressEvent(KeyPressEvent &e)
@@ -272,26 +268,39 @@ namespace toaster
 		auto &app = getApp();
 		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 
-		m_compositeDescriptorSets.clear();
 		{
-			auto &                        set_layout = m_compositeShader->getDescriptorSetLayout(0);
+			auto &                        set_layout = m_geometryShader->getDescriptorSetLayout(0);
 			std::vector                   descriptor_set_layouts{gpu::VKGPUContext::c_maxFramesInFlight, *set_layout};
 			vk::DescriptorSetAllocateInfo descriptor_set_allocate_info{};
 			descriptor_set_allocate_info.descriptorPool     = m_descriptorPool;
 			descriptor_set_allocate_info.descriptorSetCount = gpu::VKGPUContext::c_maxFramesInFlight;
 			descriptor_set_allocate_info.pSetLayouts        = descriptor_set_layouts.data();
 
-			m_compositeDescriptorSets = ctx->getDevice().allocateDescriptorSets(descriptor_set_allocate_info);
+			m_descriptorSets = ctx->getDevice().allocateDescriptorSets(descriptor_set_allocate_info);
 
 			for (uint32 i{0u}; i < gpu::VKGPUContext::c_maxFramesInFlight; ++i)
 			{
-				std::array<vk::WriteDescriptorSet, 1> write_descriptor_sets{};
+				std::array<vk::WriteDescriptorSet, 3> write_descriptor_sets{};
 				write_descriptor_sets[0].descriptorCount = 1;
-				write_descriptor_sets[0].descriptorType  = vk::DescriptorType::eCombinedImageSampler;
-				write_descriptor_sets[0].pImageInfo      = &m_renderer2D->getRenderTargetDescriptorImageInfo();
-				write_descriptor_sets[0].dstSet          = m_compositeDescriptorSets[i];
+				write_descriptor_sets[0].descriptorType  = vk::DescriptorType::eUniformBuffer;
+				write_descriptor_sets[0].pBufferInfo     = &m_ubos->getUBO(i)->getDescriptorInfo();
+				write_descriptor_sets[0].dstSet          = m_descriptorSets[i];
 				write_descriptor_sets[0].dstBinding      = 0;
 				write_descriptor_sets[0].dstArrayElement = 0;
+
+				write_descriptor_sets[1].descriptorCount = 1;
+				write_descriptor_sets[1].descriptorType  = vk::DescriptorType::eCombinedImageSampler;
+				write_descriptor_sets[1].pImageInfo      = &m_mesh->getAlbedoMap()->getDescriptorInfo();
+				write_descriptor_sets[1].dstSet          = m_descriptorSets[i];
+				write_descriptor_sets[1].dstBinding      = 1;
+				write_descriptor_sets[1].dstArrayElement = 0;
+
+				write_descriptor_sets[2].descriptorCount = 1;
+				write_descriptor_sets[2].descriptorType  = vk::DescriptorType::eCombinedImageSampler;
+				write_descriptor_sets[2].pImageInfo      = &m_texture->getDescriptorInfo();
+				write_descriptor_sets[2].dstSet          = m_descriptorSets[i];
+				write_descriptor_sets[2].dstBinding      = 2;
+				write_descriptor_sets[2].dstArrayElement = 0;
 
 				ctx->getDevice().updateDescriptorSets(write_descriptor_sets, {});
 			}
