@@ -8,7 +8,7 @@
 #include "scriptable_entity.hpp"
 #include "glm/gtx/quaternion.hpp"
 
-#include "toast_gpu/texture.hpp"
+#include "toast_gpu/vk/vk_texture.hpp"
 
 #define DEFINE_COMPONENT(__name) struct __name
 
@@ -64,9 +64,9 @@ namespace toaster
 			tilingFactor = 1.0f;
 		}
 
-		glm::vec4               colour{1.0f};
-		RefPtr<gpu::ITexture2D> texture{nullptr};
-		float32                 tilingFactor{1.0f};
+		glm::vec4                colour{1.0f};
+		RefPtr<gpu::VKTexture2D> texture{nullptr};
+		float32                  tilingFactor{1.0f};
 	};
 
 	DEFINE_COMPONENT(CameraComponent)

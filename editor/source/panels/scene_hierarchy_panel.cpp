@@ -91,7 +91,7 @@ namespace toaster
 		ig::PopID();
 	}
 
-	SceneHierarchyPanel::SceneHierarchyPanel(const RefPtr<Scene> &p_scene) : m_scene(p_scene)
+	SceneHierarchyPanel::SceneHierarchyPanel(gpu::VKGPUContext *p_ctx,const RefPtr<Scene> &p_scene) : m_ctx(p_ctx), m_scene(p_scene)
 	{
 	}
 
@@ -291,7 +291,7 @@ namespace toaster
 			ig::SetItemTooltip("If true, the camera will be used as the main camera to view the scene from.");
 		});
 
-		drawComponent<SpriteRendererComponent>("Sprite Renderer", p_entity, [](SpriteRendererComponent &p_comp)
+		drawComponent<SpriteRendererComponent>("Sprite Renderer", p_entity, [this](SpriteRendererComponent &p_comp)
 		{
 			ui::colourEdit4("Colour", &p_comp.colour.x);
 
@@ -306,7 +306,9 @@ namespace toaster
 				if (io::filesystem::exists(path))
 				{
 					LOG_INFO("{}", path.string());
-					p_comp.texture = gpu::ITexture2D::create(path);
+					gpu::TextureSpecInfo texture_spec{};
+
+					p_comp.texture = make_reference<gpu::VKTexture2D>(m_ctx, texture_spec, path);
 				}
 			}
 		});

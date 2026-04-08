@@ -6,7 +6,7 @@
 
 namespace toaster::gpu
 {
-	VKTexture2D::VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path) : m_ctx(p_ctx), m_specInfo(p_spec_info)
+	VKTexture2D::VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path) : m_ctx(p_ctx), m_specInfo(p_spec_info), m_path(p_path)
 	{
 		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
 
@@ -124,6 +124,11 @@ namespace toaster::gpu
 	const TextureSpecInfo &VKTexture2D::getSpecInfo() const
 	{
 		return m_specInfo;
+	}
+
+	const io::filesystem::Path &VKTexture2D::getPath() const
+	{
+		return m_path;
 	}
 
 	EResourceType VKTexture2D::getResourceType() const

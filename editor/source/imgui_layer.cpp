@@ -37,8 +37,8 @@ namespace toaster
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Viewports
 
-		io.FontDefault = io.Fonts->AddFontFromFileTTF("resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
-		io.Fonts->AddFontFromFileTTF("resources/fonts/Noto_Sans_JP/static/NotoSansJP-Bold.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
+		io.Fonts->AddFontFromFileTTF("../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Bold.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
 
 		auto &style   = ImGui::GetStyle();
 		auto &colours = ImGui::GetStyle().Colors;

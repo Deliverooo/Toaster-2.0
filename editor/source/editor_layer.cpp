@@ -35,34 +35,91 @@ namespace toaster
 
 	void EditorLayer::onInit()
 	{
-		m_scene               = make_reference<Scene>();
-		m_sceneHierarchyPanel = make_reference<SceneHierarchyPanel>(m_scene);
+		auto &app       = getApp();
+		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		auto  swapchain = app.getWindow().getSwapchain();
 
-		_createRenderTargetResources(1920u, 1080u);
+		m_scene               = make_reference<Scene>(ctx);
+		m_sceneHierarchyPanel = make_reference<SceneHierarchyPanel>(ctx, m_scene);
 
-		// gpu::FramebufferCreateInfo framebuffer_create_info{};
-		// framebuffer_create_info.width       = 1920u;
-		// framebuffer_create_info.height      = 1080u;
-		// framebuffer_create_info.samples     = 1u;
-		// framebuffer_create_info.attachments = {gpu::EImageFormat::eRGBA32F, gpu::EImageFormat::eRedInteger, gpu::EImageFormat::eDepth32FStencil8UInt};
+		uint32 window_width{swapchain->getExtent().width};
+		uint32 window_height{swapchain->getExtent().height};
 
-		// m_framebuffer = gpu::IFramebuffer::create(framebuffer_create_info);
+		m_windowWidth  = window_width;
+		m_windowHeight = window_height;
 
-		// Renderer2DCreateInfo renderer_2d_create_info;
-		// renderer_2d_create_info.maxQuads = 1000u;
-		// m_renderer2d                     = make_reference<Renderer2D>(renderer_2d_create_info);
+		m_editorCamera.setViewportSize(static_cast<float32>(m_windowWidth), static_cast<float32>(m_windowHeight));
 
-		auto &app            = getApp();
+		swapchain->addResizeCallback([this](uint32 width, uint32 height)
+		{
+			LOG_INFO("{}, {}", width, height);
+
+			m_windowWidth  = width;
+			m_windowHeight = height;
+
+			_createAttachmentImages();
+
+			m_editorCamera.setViewportSize(static_cast<float32>(m_windowWidth), static_cast<float32>(m_windowHeight));
+			m_scene->setViewportSize(m_windowWidth, m_windowHeight);
+			m_renderer2D->onResize(width, height);
+
+			_createDescriptorSets();
+		});
+
+		m_compositeVertexBufferLayout = {{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
+
+		gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/composite.vert.glsl.spv");
+		gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/composite.pixel.glsl.spv");
+		gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
+		m_compositeShader = make_reference<gpu::VKShader>(ctx, shader_bytecode_map);
+
+		gpu::PipelineCreateInfo pipeline_create_info{};
+		pipeline_create_info.vertexBufferLayout = m_compositeVertexBufferLayout;
+		pipeline_create_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
+		pipeline_create_info.depthFormat        = {swapchain->getDepthFormat()};
+		pipeline_create_info.shader             = m_compositeShader;
+		m_compositePipeline                     = make_reference<gpu::VKPipeline>(ctx, pipeline_create_info);
+
+		m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
+		m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});
+		m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}});
+		m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}});
+		m_fullscreenQuadIndices = {0, 1, 3, 1, 2, 3};
+
+		vk::DeviceSize vbo_size{m_fullscreenQuadVertices.size() * sizeof(FullscreenQuadVertex)};
+		m_fullscreenQuadVertexBuffer = make_reference<gpu::VKVertexBuffer>(ctx, m_fullscreenQuadVertices.data(), vbo_size);
+
+		vk::DeviceSize ibo_size{m_fullscreenQuadIndices.size() * sizeof(uint16)};
+		m_fullscreenQuadIndexBuffer = make_reference<gpu::VKIndexBuffer>(ctx, m_fullscreenQuadIndices.data(), ibo_size);
+
+		Renderer2DCreateInfo renderer_2d_create_info{};
+		renderer_2d_create_info.renderTargetWidth  = m_windowWidth;
+		renderer_2d_create_info.renderTargetHeight = m_windowHeight;
+		m_renderer2D                               = make_reference<Renderer2D>(ctx, renderer_2d_create_info);
+
+		_createAttachmentImages();
+		_createDescriptorPool();
+		_createDescriptorSets();
+
 		m_initialWindowTitle = app.getWindow().getTitle();
 		app.getWindow().setTitle(m_initialWindowTitle + " -> " + m_scene->getName());
+
+		Entity e{m_scene->createEntity()};
+		auto & src{e.addComponent<SpriteRendererComponent>()};
+		src.colour = {1.0f, 1.0f, 0.0f, 1.0f};
 	}
 
 	void EditorLayer::onDestroy()
 	{
+		auto &app = getApp();
+		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		ctx->getDevice().waitIdle();
 	}
 
 	void EditorLayer::onUpdate(const float32 p_dt)
 	{
+		m_time += p_dt;
+
 		auto &app       = getApp();
 		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 		auto  swapchain = app.getWindow().getSwapchain();
@@ -70,84 +127,70 @@ namespace toaster
 		uint32 frame_index{swapchain->getFrameIndex()};
 		uint32 image_index{swapchain->getImageIndex()};
 
-		vk::Extent2D swapchain_extent{swapchain->getExtent()};
-
 		auto &command_buffer = swapchain->getCurrentCommandBuffer();
 
-		if (m_viewportSize.x > 0.0f && m_viewportSize.y > 0.0f && (static_cast<float32>(m_renderTargetImageWidth) != m_viewportSize.x || static_cast<float32>(
-																	   m_renderTargetImageHeight) != m_viewportSize.y))
+		// if (m_viewportFocused)
+		m_editorCamera.onUpdate(p_dt);
+
+		// m_scene->onUpdate(p_dt);
+
+		// m_renderer2D->begin(command_buffer, frame_index, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
+		// glm::mat4 quad_transform{glm::translate(glm::mat4{1.0f}, {0.0f, 0.0f, -1.0f}) * glm::scale(glm::mat4{1.0f}, glm::vec3{200.0f, 200.0f, 1.0f})};
+		// m_renderer2D->submitQuad(quad_transform, {1.0f, 1.0f, 1.0f, 1.0f});
+		// m_renderer2D->end(command_buffer, frame_index);
+
+		m_scene->onRender(command_buffer, frame_index, p_dt, m_renderer2D, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
+
 		{
-			_createRenderTargetResources(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
-			m_editorCamera.setViewportSize(m_viewportSize.x, m_viewportSize.y);
-			m_scene->setViewportSize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
+			vk::RenderingAttachmentInfo colour_attachment_info{};
+			colour_attachment_info.clearValue         = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};;
+			colour_attachment_info.imageView          = m_colourAttachmentImageView;
+			colour_attachment_info.imageLayout        = vk::ImageLayout::eColorAttachmentOptimal;
+			colour_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
+			colour_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
+			colour_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eAverage;
+			colour_attachment_info.resolveImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			colour_attachment_info.resolveImageView   = swapchain->getImageView(image_index);
+
+			vk::RenderingAttachmentInfo depth_attachment_info{};
+			depth_attachment_info.clearValue         = vk::ClearDepthStencilValue{1.0f, 0u};;
+			depth_attachment_info.imageView          = m_depthAttachmentImageView;
+			depth_attachment_info.imageLayout        = vk::ImageLayout::eDepthAttachmentOptimal;
+			depth_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
+			depth_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
+			depth_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eMin;
+			depth_attachment_info.resolveImageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+			depth_attachment_info.resolveImageView   = swapchain->getDepthImageView();
+
+			vk::RenderingInfo rendering_info{};
+			rendering_info.renderArea           = vk::Rect2D{{0, 0}, vk::Extent2D{m_windowWidth, m_windowHeight}};
+			rendering_info.layerCount           = 1;
+			rendering_info.colorAttachmentCount = 1;
+			rendering_info.pColorAttachments    = &colour_attachment_info;
+			rendering_info.pDepthAttachment     = &depth_attachment_info;
+
+			vk::Viewport viewport{0.0f, 0.0f, static_cast<float32>(m_windowWidth), static_cast<float32>(m_windowHeight), 0.0f, 1.0f};
+			vk::Rect2D   scissor{vk::Offset2D{0, 0}, vk::Extent2D{m_windowWidth, m_windowHeight}};
+
+			command_buffer.beginRendering(rendering_info);
+			command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_compositePipeline->getPipeline());
+			command_buffer.setViewport(0, viewport);
+			command_buffer.setScissor(0, scissor);
+
+			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_compositePipeline->getPipelineLayout(), 0, *m_compositeDescriptorSets[frame_index],
+											  nullptr);
+			m_fullscreenQuadVertexBuffer->bind(command_buffer);
+			m_fullscreenQuadIndexBuffer->bind(command_buffer, vk::IndexType::eUint16);
+
+			command_buffer.drawIndexed(m_fullscreenQuadIndices.size(), 1, 0, 0, 0);
+			command_buffer.endRendering();
 		}
-
-		vk::ClearValue              clear_colour = vk::ClearColorValue{0.2f, 0.3f, 0.3f, 1.0f};
-		vk::RenderingAttachmentInfo colour_attachment_info{};
-		colour_attachment_info.clearValue  = clear_colour;
-		colour_attachment_info.imageView   = m_renderTargetImageView;
-		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
-		colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
-
-		vk::ClearValue              clear_depth = vk::ClearDepthStencilValue{1.0f, 0u};
-		vk::RenderingAttachmentInfo depth_attachment_info{};
-		depth_attachment_info.clearValue  = clear_depth;
-		depth_attachment_info.imageView   = m_renderTargetDepthImageView;
-		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
-		depth_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
-
-		vk::RenderingInfo rendering_info{};
-		rendering_info.renderArea           = vk::Rect2D{{0, 0}, swapchain_extent};
-		rendering_info.layerCount           = 1;
-		rendering_info.colorAttachmentCount = 1;
-		rendering_info.pColorAttachments    = &colour_attachment_info;
-		rendering_info.pDepthAttachment     = &depth_attachment_info;
-
-		vk::Viewport viewport{};
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		viewport.x        = 0.0f;
-		viewport.y        = 0.0f;
-		viewport.width    = static_cast<float32>(swapchain_extent.width);
-		viewport.height   = static_cast<float32>(swapchain_extent.height);
-
-		vk::Rect2D scissor{vk::Offset2D{0, 0}, swapchain_extent};
-
-		command_buffer.beginRendering(rendering_info);
-		command_buffer.setViewport(0, viewport);
-		command_buffer.setScissor(0, scissor);
-
-		if (m_viewportFocused)
-			m_editorCamera.onUpdate(p_dt);
-
-		m_scene->onUpdate(p_dt);
-		// m_scene->onRender(p_dt, m_renderer2d, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
-
-		auto [mx, my]      = ig::GetMousePos();
-		mx                 -= m_viewportBounds[0].x;
-		my                 -= m_viewportBounds[0].y;
-		auto viewport_size = m_viewportBounds[1] - m_viewportBounds[0];
-
-		my            = viewport_size.y - my;
-		int32 mouse_x = static_cast<int32>(mx);
-		int32 mouse_y = static_cast<int32>(my);
-
-		if (mouse_x >= 0 && mouse_y >= 0 && mouse_x < static_cast<int32>(viewport_size.x) && mouse_y < static_cast<int32>(viewport_size.y))
-		{
-			// int32 pixel_data = m_framebuffer->readPixel(1, mouse_x, mouse_y);
-
-			// if (pixel_data != -1)
-			// m_hoveredEntity = {static_cast<entt::entity>(pixel_data), m_scene.get()};
-		}
-		command_buffer.endRendering();
 	}
 
 	void EditorLayer::onEvent(Event &p_event)
 	{
-		if (m_viewportHovered)
-			m_editorCamera.onEvent(p_event);
+		// if (m_viewportHovered)
+		m_editorCamera.onEvent(p_event);
 
 		EventDispatcher eventDispatcher(p_event);
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(EditorLayer::onKeyPressEvent));
@@ -156,13 +199,18 @@ namespace toaster
 
 	void EditorLayer::onUIRender()
 	{
+		auto & app       = getApp();
+		auto   ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		auto   swapchain = app.getWindow().getSwapchain();
+		uint32 frame_index{swapchain->getFrameIndex()};
+
+		// #if 0
 		#pragma region Setup Dockspace
 		static bool               p_open          = true;
 		static bool               opt_fullscreen  = true;
 		static bool               opt_padding     = false;
 		static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
-
-		ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+		ImGuiWindowFlags          window_flags    = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
 		if (opt_fullscreen)
 		{
 			const ImGuiViewport *viewport = ig::GetMainViewport();
@@ -176,15 +224,11 @@ namespace toaster
 		}
 		else
 			dockspace_flags &= ~ImGuiDockNodeFlags_PassthruCentralNode;
-
 		if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
 			window_flags |= ImGuiWindowFlags_NoBackground;
-
 		if (!opt_padding)
 			ig::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
 		ig::Begin("DockSpace Demo", &p_open, window_flags);
-
 		if (!opt_padding)
 			ig::PopStyleVar(); // ImGuiStyleVar_WindowPadding
 
@@ -200,7 +244,6 @@ namespace toaster
 			ImGuiID dockspace_id = ig::GetID("MyDockSpace");
 			ig::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 		}
-
 		style.WindowMinSize.x = 30.0f;
 		#pragma endregion
 
@@ -222,12 +265,10 @@ namespace toaster
 			}
 			ig::EndMenuBar();
 		}
-
 		ig::Begin("Settings");
 
 		// ig::Text("Renderer2D quad count: %d", m_renderer2d->getStats().quadCount);
 		ig::Text("Hovered entity tag: %s", m_hoveredEntity ? m_hoveredEntity.getComponent<TagComponent>().tag.c_str() : "Null");
-
 		ig::End(); // Settings
 
 		m_sceneHierarchyPanel->onUIRender();
@@ -245,7 +286,7 @@ namespace toaster
 			auto   size            = ig::GetContentRegionAvail();
 			m_viewportSize         = {size.x, size.y};
 
-			ig::Image((VkDescriptorSet) m_renderTargetDescriptorSet, size, ImVec2(0, 1), ImVec2(1, 0));
+			ig::Image(static_cast<VkDescriptorSet>(*m_compositeDescriptorSets[frame_index]), size, ImVec2(0, 1), ImVec2(1, 0));
 
 			ImVec2 window_size = ig::GetWindowSize();
 			ImVec2 min_bound   = ig::GetWindowPos();
@@ -296,13 +337,16 @@ namespace toaster
 
 			ig::End(); // Viewport
 		}
-
 		ig::End(); // DockSpace Demo
+
+		// #endif
 	}
 
 	void EditorLayer::newScene()
 	{
-		m_scene = make_reference<Scene>();
+		auto &app = getApp();
+		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		m_scene   = make_reference<Scene>(ctx);
 		m_scene->setViewportSize(static_cast<uint32>(m_viewportSize.x), static_cast<uint32>(m_viewportSize.y));
 		m_sceneHierarchyPanel->setScene(m_scene);
 	}
@@ -385,80 +429,98 @@ namespace toaster
 		return false;
 	}
 
-	void EditorLayer::_createRenderTargetResources(uint32 p_width, uint32 p_height)
+	void EditorLayer::_createAttachmentImages()
 	{
-		m_renderTargetImage        = nullptr;
-		m_renderTargetImageMemory  = nullptr;
-		m_renderTargetImageView    = nullptr;
-		m_renderTargetImageSampler = nullptr;
+		m_colourAttachmentImage       = nullptr;
+		m_colourAttachmentImageMemory = nullptr;
+		m_colourAttachmentImageView   = nullptr;
 
-		m_renderTargetImageDescriptorInfo = vk::DescriptorImageInfo{};
+		m_depthAttachmentImage       = nullptr;
+		m_depthAttachmentImageMemory = nullptr;
+		m_depthAttachmentImageView   = nullptr;
 
-		m_renderTargetDepthImage       = nullptr;
-		m_renderTargetDepthImageMemory = nullptr;
-		m_renderTargetDepthImageView   = nullptr;
+		auto &app = getApp();
+		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		auto  swapchain{app.getWindow().getSwapchain()};
 
-		auto &app       = getApp();
-		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-		auto  swapchain = app.getWindow().getSwapchain();
+		vk::SampleCountFlagBits sample_count{ctx->getMaxUsableSampleCount()};
 
-		vk::Format colour_attachment_format{swapchain->getSurfaceFormat().format};
+		{
+			vk::Format colour_attachment_format{swapchain->getSurfaceFormat().format};
+			ctx->createImage(m_windowWidth, m_windowHeight, 1, sample_count, colour_attachment_format, vk::ImageTiling::eOptimal,
+							 vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal,
+							 m_colourAttachmentImage, m_colourAttachmentImageMemory);
 
-		ctx->createImage(p_width, p_height, colour_attachment_format, vk::ImageTiling::eOptimal,
-						 vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal, m_renderTargetImage,
-						 m_renderTargetImageMemory);
+			ctx->transitionImageLayout(m_colourAttachmentImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
+									   vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eColorAttachmentOutput, 1,
+									   vk::ImageAspectFlagBits::eColor);
 
-		ctx->transitionImageLayout(m_renderTargetImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
-								   vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eColorAttachmentOutput);
+			m_colourAttachmentImageView = ctx->createImageView(m_colourAttachmentImage, colour_attachment_format, vk::ImageAspectFlagBits::eColor, 1);
+		}
+		{
+			vk::Format depth_attachment_format{swapchain->getDepthFormat()};
+			ctx->createImage(m_windowWidth, m_windowHeight, 1, sample_count, depth_attachment_format, vk::ImageTiling::eOptimal,
+							 vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal,
+							 m_depthAttachmentImage, m_depthAttachmentImageMemory);
 
-		m_renderTargetImageView = ctx->createImageView(m_renderTargetImage, colour_attachment_format, vk::ImageAspectFlagBits::eColor);
+			ctx->transitionImageLayout(m_depthAttachmentImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits::eNone,
+									   vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits::eNone,
+									   vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests, 1,
+									   vk::ImageAspectFlagBits::eDepth);
 
-		auto physical_device_props = ctx->getPhysicalDevice().getProperties();
+			m_depthAttachmentImageView = ctx->createImageView(m_depthAttachmentImage, depth_attachment_format, vk::ImageAspectFlagBits::eDepth, 1);
+		}
+	}
 
-		vk::SamplerCreateInfo sampler_create_info{};
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.magFilter               = vk::Filter::eLinear;
-		sampler_create_info.minFilter               = vk::Filter::eLinear;
-		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.mipLodBias              = 0.0f;
-		sampler_create_info.anisotropyEnable        = true;
-		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
-		sampler_create_info.compareEnable           = false;
-		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
-		sampler_create_info.minLod                  = 0.0f;
-		sampler_create_info.maxLod                  = 0.0f;
-		sampler_create_info.borderColor             = vk::BorderColor::eFloatCustomEXT;
-		sampler_create_info.unnormalizedCoordinates = false;
+	void EditorLayer::_createDescriptorPool()
+	{
+		auto &app = getApp();
+		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 
-		// This is purely aesthetic
-		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{};
-		border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
-		border_colour_create_info.format            = vk::Format::eR8G8B8A8Srgb;
+		std::array<vk::DescriptorPoolSize, 2> descriptor_pool_sizes{};
+		descriptor_pool_sizes[0].descriptorCount = 2 * gpu::VKGPUContext::c_maxFramesInFlight;
+		descriptor_pool_sizes[0].type            = vk::DescriptorType::eUniformBuffer;
 
-		sampler_create_info.pNext = &border_colour_create_info;
+		descriptor_pool_sizes[1].descriptorCount = 2 * gpu::VKGPUContext::c_maxFramesInFlight;
+		descriptor_pool_sizes[1].type            = vk::DescriptorType::eCombinedImageSampler;
 
-		m_renderTargetImageSampler = {ctx->getDevice(), sampler_create_info};
+		vk::DescriptorPoolCreateInfo descriptor_pool_create_info{};
+		descriptor_pool_create_info.poolSizeCount = descriptor_pool_sizes.size();
+		descriptor_pool_create_info.pPoolSizes    = descriptor_pool_sizes.data();
+		descriptor_pool_create_info.maxSets       = gpu::VKGPUContext::c_maxFramesInFlight;
+		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 
-		m_renderTargetImageDescriptorInfo.imageView   = m_renderTargetImageView;
-		m_renderTargetImageDescriptorInfo.sampler     = m_renderTargetImageSampler;
-		m_renderTargetImageDescriptorInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		m_descriptorPool = {ctx->getDevice(), descriptor_pool_create_info};
+	}
 
-		vk::Format depth_attachment_format{swapchain->getDepthFormat()};
+	void EditorLayer::_createDescriptorSets()
+	{
+		auto &app = getApp();
+		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 
-		ctx->createImage(p_width, p_height, depth_attachment_format, vk::ImageTiling::eOptimal,
-						 vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal,
-						 m_renderTargetDepthImage, m_renderTargetDepthImageMemory);
+		m_compositeDescriptorSets.clear();
+		{
+			auto &                        set_layout = m_compositeShader->getDescriptorSetLayout(0);
+			std::vector                   descriptor_set_layouts{gpu::VKGPUContext::c_maxFramesInFlight, *set_layout};
+			vk::DescriptorSetAllocateInfo descriptor_set_allocate_info{};
+			descriptor_set_allocate_info.descriptorPool     = m_descriptorPool;
+			descriptor_set_allocate_info.descriptorSetCount = gpu::VKGPUContext::c_maxFramesInFlight;
+			descriptor_set_allocate_info.pSetLayouts        = descriptor_set_layouts.data();
 
-		ctx->transitionImageLayout(m_renderTargetDepthImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits::eNone,
-								   vk::AccessFlagBits::eDepthStencilAttachmentWrite,
-								   vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
-								   vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests);
+			m_compositeDescriptorSets = ctx->getDevice().allocateDescriptorSets(descriptor_set_allocate_info);
 
-		m_renderTargetDepthImageView = ctx->createImageView(m_renderTargetDepthImage, depth_attachment_format, vk::ImageAspectFlagBits::eDepth);
+			for (uint32 i{0u}; i < gpu::VKGPUContext::c_maxFramesInFlight; ++i)
+			{
+				std::array<vk::WriteDescriptorSet, 1> write_descriptor_sets{};
+				write_descriptor_sets[0].descriptorCount = 1;
+				write_descriptor_sets[0].descriptorType  = vk::DescriptorType::eCombinedImageSampler;
+				write_descriptor_sets[0].pImageInfo      = &m_renderer2D->getRenderTargetDescriptorImageInfo();
+				write_descriptor_sets[0].dstSet          = m_compositeDescriptorSets[i];
+				write_descriptor_sets[0].dstBinding      = 0;
+				write_descriptor_sets[0].dstArrayElement = 0;
+
+				ctx->getDevice().updateDescriptorSets(write_descriptor_sets, {});
+			}
+		}
 	}
 }

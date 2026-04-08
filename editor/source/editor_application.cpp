@@ -6,7 +6,6 @@ namespace toaster
 {
 	EditorApplication::EditorApplication(const ApplicationCreateInfo& p_create_info) : Application(p_create_info)
 	{
-		io::filesystem::setWorkingDirectory("../"); // The main Toaster dir (where the resource folder is)
 
 		addLayer(IAppLayer::alloc<EditorLayer>(this));
 

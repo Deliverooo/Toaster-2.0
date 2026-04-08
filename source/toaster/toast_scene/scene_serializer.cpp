@@ -11,6 +11,8 @@
 #include <fstream>
 #include <yaml-cpp/yaml.h>
 
+#include "toast_gpu/vk/vk_texture.hpp"
+
 inline YAML::Emitter &operator<<(YAML::Emitter &out, const glm::vec2 &v)
 {
 	out << YAML::Flow;
@@ -248,7 +250,7 @@ namespace toaster
 			const auto &src = p_entity.getComponent<SpriteRendererComponent>();
 			p_out << YAML::Key << "Colour" << YAML::Value << src.colour;
 
-			auto texture_path = src.texture ? src.texture->getPath().value() : "Null";
+			auto texture_path = src.texture ? src.texture->getPath() : "Null";
 			p_out << YAML::Key << "TexturePath" << YAML::Value << texture_path.string();
 			p_out << YAML::Key << "TilingFactor" << YAML::Value << src.tilingFactor;
 
@@ -311,7 +313,11 @@ namespace toaster
 
 				auto texture_path = sprite_comp["TexturePath"].as<String>();
 				if (texture_path != "Null")
-					src.texture = gpu::ITexture2D::create(texture_path);
+				{
+					gpu::TextureSpecInfo texture_spec{};
+					texture_spec.generateMips = false;
+					src.texture               = make_reference<gpu::VKTexture2D>(p_scene->m_ctx, texture_spec, texture_path);
+				}
 				else
 					src.texture = nullptr;
 

@@ -107,8 +107,8 @@ namespace toaster
 	{
 		m_position = _calcPosition();
 
-		m_viewMatrix = glm::translate(glm::mat4{1.0f}, m_position) * glm::toMat4(getOrientation());
-		m_viewMatrix = glm::inverse(m_viewMatrix);
+		m_viewMatrix       = glm::translate(glm::mat4{1.0f}, m_position) * glm::toMat4(getOrientation());
+		m_viewMatrix       = glm::inverse(m_viewMatrix);
 	}
 
 	bool EditorCamera::_onMouseScrollEvent(MouseScrollEvent &p_event)

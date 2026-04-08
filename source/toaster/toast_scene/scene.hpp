@@ -12,13 +12,14 @@ namespace toaster
 	class Scene
 	{
 	public:
-		Scene(const String &p_name = "");
+		Scene(gpu::VKGPUContext *p_ctx, const String &p_name = "");
 		~Scene();
 
 		void onUpdate(float32 p_dt);
 
-		void onRender(float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d);
-		void onRender(float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d, const glm::mat4 &p_view, const glm::mat4 &p_projection);
+		void onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d);
+		void onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d, const glm::mat4 &p_view,
+					  const glm::mat4 &        p_projection);
 		void setViewportSize(uint32 p_width, uint32 p_height);
 
 		Entity createEntity(const String &p_name = "");
@@ -36,6 +37,8 @@ namespace toaster
 		template<typename Type>
 		void onComponentAdded(Entity p_entity, Type &p_component);
 
+		gpu::VKGPUContext *m_ctx{nullptr};
+
 		entt::registry m_registry;
 
 		String m_name;
@@ -45,5 +48,6 @@ namespace toaster
 
 		uint32 m_newEntityTagCount{0u};
 		friend class Entity;
+		friend class SceneSerializer;
 	};
 }

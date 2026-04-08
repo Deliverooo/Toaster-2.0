@@ -114,9 +114,9 @@ namespace toaster
 
 		auto &command_buffer = swapchain->getCurrentCommandBuffer();
 
-		glm::mat4 ortho_view{1.0f};
-		glm::mat4 ortho_proj{glm::ortho(0.0f, static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight), 0.0f, -1.0f, 1.0f)};
-		ortho_proj[1][1] *= -1.0f;
+		// glm::mat4 ortho_view{1.0f};
+		// glm::mat4 ortho_proj{glm::ortho(0.0f, static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight), 0.0f, -1.0f, 1.0f)};
+		// ortho_proj[1][1] *= -1.0f;
 
 		m_renderer2D->begin(command_buffer, frame_index, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
 		glm::mat4 quad_transform{glm::translate(glm::mat4{1.0f}, m_quadTranslation) * glm::scale(glm::mat4{1.0f}, glm::vec3{200.0f, 200.0f, 1.0f})};
@@ -159,7 +159,7 @@ namespace toaster
 			command_buffer.setViewport(0, viewport);
 			command_buffer.setScissor(0, scissor);
 
-			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_compositePipeline->getPipelineLayout(), 0, *m_descriptorSets[frame_index], nullptr);
+			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_compositePipeline->getPipelineLayout(), 0, *m_compositeDescriptorSets[frame_index], nullptr);
 			m_fullscreenQuadVertexBuffer->bind(command_buffer);
 			m_fullscreenQuadIndexBuffer->bind(command_buffer, vk::IndexType::eUint16);
 
@@ -179,15 +179,8 @@ namespace toaster
 	void ClientLayer::onUIRender()
 	{
 		#if 0
-		auto &app       = getApp();
-		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-		auto  swapchain = app.getWindow().getSwapchain();
-
-		uint32 frame_index{swapchain->getFrameIndex()};
-
-		ig::Begin("Viewport");
-
-		ig::SliderFloat3("Translation", glm::value_ptr(m_quadTranslation), -10.0f, 10.0f);
+		auto &app = getApp(); auto ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext()); auto swapchain = app.getWindow().getSwapchain(); uint32
+				frame_index{swapchain->getFrameIndex()}; ig::Begin("Viewport"); ig::SliderFloat3("Translation", glm::value_ptr(m_quadTranslation), -10.0f, 10.0f);
 		ig::SliderFloat3("Scale", glm::value_ptr(m_quadScale), -10.0f, 10.0f);
 
 		// ig::Image((ImTextureRef) *m_descriptorSets[frame_index], ImVec2{static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight)});
@@ -279,7 +272,7 @@ namespace toaster
 		auto &app = getApp();
 		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 
-		m_descriptorSets.clear();
+		m_compositeDescriptorSets.clear();
 		{
 			auto &                        set_layout = m_compositeShader->getDescriptorSetLayout(0);
 			std::vector                   descriptor_set_layouts{gpu::VKGPUContext::c_maxFramesInFlight, *set_layout};
@@ -288,7 +281,7 @@ namespace toaster
 			descriptor_set_allocate_info.descriptorSetCount = gpu::VKGPUContext::c_maxFramesInFlight;
 			descriptor_set_allocate_info.pSetLayouts        = descriptor_set_layouts.data();
 
-			m_descriptorSets = ctx->getDevice().allocateDescriptorSets(descriptor_set_allocate_info);
+			m_compositeDescriptorSets = ctx->getDevice().allocateDescriptorSets(descriptor_set_allocate_info);
 
 			for (uint32 i{0u}; i < gpu::VKGPUContext::c_maxFramesInFlight; ++i)
 			{
@@ -296,7 +289,7 @@ namespace toaster
 				write_descriptor_sets[0].descriptorCount = 1;
 				write_descriptor_sets[0].descriptorType  = vk::DescriptorType::eCombinedImageSampler;
 				write_descriptor_sets[0].pImageInfo      = &m_renderer2D->getRenderTargetDescriptorImageInfo();
-				write_descriptor_sets[0].dstSet          = m_descriptorSets[i];
+				write_descriptor_sets[0].dstSet          = m_compositeDescriptorSets[i];
 				write_descriptor_sets[0].dstBinding      = 0;
 				write_descriptor_sets[0].dstArrayElement = 0;
 

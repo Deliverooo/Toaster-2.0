@@ -6,7 +6,7 @@
 
 namespace toaster
 {
-	Scene::Scene(const String &p_name) : m_name(p_name.empty() ? "Untitled Scene" : p_name)
+	Scene::Scene(gpu::VKGPUContext *p_ctx, const String &p_name) : m_ctx(p_ctx), m_name(p_name.empty() ? "Untitled Scene" : p_name)
 	{
 	}
 
@@ -29,7 +29,7 @@ namespace toaster
 		});
 	}
 
-	void Scene::onRender(float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d)
+	void Scene::onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d)
 	{
 		Camera *  main_camera{nullptr};
 		glm::mat4 camera_transform{1.0f};
@@ -68,27 +68,27 @@ namespace toaster
 		#endif
 	}
 
-	void Scene::onRender(float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d, const glm::mat4 &p_view, const glm::mat4 &p_projection)
+	void Scene::onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d, const glm::mat4 &p_view,
+						 const glm::mat4 &        p_projection)
 	{
-		#if 0
+		// #if 0
 
-		p_renderer_2d->begin(p_view, p_projection);
-
+		p_renderer_2d->begin(p_cmd, p_frame_index, p_view, p_projection);
 
 		auto group = m_registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
 		for (auto entity: group)
 		{
 			auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
-			if (sprite.texture)
-				p_renderer_2d->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor, static_cast<uint32>(entity));
-			else
-				p_renderer_2d->submitQuad(transform.getTransform(), sprite.colour, static_cast<uint32>(entity));
+			// if (sprite.texture)
+			// p_renderer_2d->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor, static_cast<uint32>(entity));
+			// else
+			p_renderer_2d->submitQuad(transform.getTransform(), sprite.colour);
 		}
 
-		p_renderer_2d->end();
+		p_renderer_2d->end(p_cmd, p_frame_index);
 
-		#endif
+		// #endif
 	}
 
 	void Scene::setViewportSize(uint32 p_width, uint32 p_height)

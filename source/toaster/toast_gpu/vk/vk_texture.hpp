@@ -31,12 +31,16 @@ namespace toaster::gpu
 
 		[[nodiscard]] const TextureSpecInfo &getSpecInfo() const;
 
+		const io::filesystem::Path& getPath()const;
+
 		[[nodiscard]] EResourceType getResourceType() const override;
 
 	private:
 		VKGPUContext *m_ctx{nullptr};
 
 		TextureSpecInfo m_specInfo{};
+
+		io::filesystem::Path m_path;
 
 		uint32 m_mipLevels{1u};
 

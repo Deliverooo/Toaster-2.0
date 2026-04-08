@@ -98,8 +98,6 @@ namespace toaster
 		glm::vec3 m_quadScale{1.0f};
 
 		vk::raii::DescriptorPool m_descriptorPool{nullptr};
-
-		std::vector<vk::raii::DescriptorSet> m_descriptorSets;
 		std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
 
 		EditorCamera m_editorCamera;
