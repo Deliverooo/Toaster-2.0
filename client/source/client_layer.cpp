@@ -67,7 +67,9 @@ namespace toaster
 
 			m_geometryPass = make_reference<gpu::VKRenderPass>(ctx, m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_ubos);
+
 			m_geometryPass->bake(); // TODO: rename ts to toast
+			//						   Its funny because the engine is called Toaster...
 		}
 
 		gpu::TextureSpecInfo texture_spec_info{};
@@ -165,8 +167,8 @@ namespace toaster
 			command_buffer.pushConstants<MaterialCB>(m_geometryPipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eFragment, sizeof(TransformCB),
 													 material_constant_buffer);
 
-			const auto descriptor_sets=  m_geometryPass->getDescriptorSets(frame_index);
-			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_geometryPipeline->getPipelineLayout(), 0,descriptor_sets, nullptr);
+			const auto descriptor_sets = m_geometryPass->getDescriptorSets(frame_index);
+			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_geometryPipeline->getPipelineLayout(), 0, descriptor_sets, nullptr);
 
 			m_mesh->getVertexBuffer()->bind(command_buffer);
 			m_mesh->getIndexBuffer()->bind(command_buffer, vk::IndexType::eUint16);
