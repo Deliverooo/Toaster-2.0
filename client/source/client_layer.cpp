@@ -61,21 +61,23 @@ namespace toaster
 			pipeline_create_info.shader            = m_geometryShader;
 			m_geometryPipeline                     = make_reference<gpu::VKPipeline>(ctx, pipeline_create_info);
 
+			constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
+			m_ubos                 = make_reference<gpu::VKUniformBufferPFF>(ctx, ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
+			m_mappedUniformBuffers = m_ubos->mapMemory(ubo_size, 0);
+
 			m_geometryPass = make_reference<gpu::VKRenderPass>(ctx, m_geometryPipeline);
+			m_geometryPass->setInput("Camera", m_ubos);
+			m_geometryPass->bake(); // TODO: rename ts to toast
 		}
 
 		gpu::TextureSpecInfo texture_spec_info{};
 		m_texture = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info, "../resources/textures/Peeber.png");
 
-		constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
-		m_ubos                 = make_reference<gpu::VKUniformBufferPFF>(ctx, ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
-		m_mappedUniformBuffers = m_ubos->mapMemory(ubo_size, 0);
-
 		m_mesh = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx");
 
 		_createAttachmentImages();
 		_createDescriptorPool();
-		_createDescriptorSets();
+		// _createDescriptorSets();
 	}
 
 	void ClientLayer::onDestroy()
@@ -163,7 +165,8 @@ namespace toaster
 			command_buffer.pushConstants<MaterialCB>(m_geometryPipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eFragment, sizeof(TransformCB),
 													 material_constant_buffer);
 
-			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_geometryPipeline->getPipelineLayout(), 0, *m_descriptorSets[frame_index], nullptr);
+			const auto descriptor_sets=  m_geometryPass->getDescriptorSets(frame_index);
+			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_geometryPipeline->getPipelineLayout(), 0,descriptor_sets, nullptr);
 
 			m_mesh->getVertexBuffer()->bind(command_buffer);
 			m_mesh->getIndexBuffer()->bind(command_buffer, vk::IndexType::eUint16);

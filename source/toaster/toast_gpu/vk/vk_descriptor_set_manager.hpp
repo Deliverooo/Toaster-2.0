@@ -21,6 +21,24 @@ namespace toaster::gpu
 		EDescriptorType type{EDescriptorType::eUnknown};
 	};
 
+	struct DescriptorResource
+	{
+		std::vector<RefPtr<IGPUResource> > resources;
+		EGPUResourceType                   type{EGPUResourceType::eUnknown};
+
+		DescriptorResource() = default;
+
+		DescriptorResource(RefPtr<VKUniformBuffer> p_uniform_buffer) : resources(std::vector<RefPtr<IGPUResource> >(1, p_uniform_buffer)),
+																	   type(EGPUResourceType::eUniformBuffer)
+		{
+		}
+
+		DescriptorResource(RefPtr<VKUniformBufferPFF> p_uniform_buffer_pff) : resources(std::vector<RefPtr<IGPUResource> >(1, p_uniform_buffer_pff)),
+																			  type(EGPUResourceType::eUniformBufferPFF)
+		{
+		}
+	};
+
 	class VKDescriptorSetManager
 	{
 	public:
@@ -32,9 +50,14 @@ namespace toaster::gpu
 		// Only call when you have set all your required descriptors :)
 		void bakeDescriptors();
 
-		[[nodiscard]] const std::vector<vk::raii::DescriptorSet> &getDescriptorSets(uint32 p_frame_index) const;
+		[[nodiscard]] std::vector<vk::DescriptorSet> getDescriptorSets(uint32 p_frame_index) const;
+
+		const DescriptorDeclaration *getDescriptorDeclaration(const String &p_name) const;
 
 	private:
+		EDescriptorType  _getDescriptorType(vk::DescriptorType p_type) const;
+		EGPUResourceType _getResourceType(vk::DescriptorType p_type) const;
+
 		VKGPUContext *m_ctx{nullptr};
 
 		RefPtr<VKShader> m_shader{nullptr};
@@ -50,6 +73,10 @@ namespace toaster::gpu
 		};
 
 		std::vector<std::unordered_map<uint32, std::unordered_map<uint32, WriteDescriptor> > > m_writeDescriptorMap;
-		std::unordered_map<String, DescriptorDeclaration> m_descriptorDeclarations;
+		std::unordered_map<String, DescriptorDeclaration>                                      m_descriptorDeclarations;
+
+		std::unordered_map<uint32, std::unordered_map<uint32, DescriptorResource> > m_descriptorResources;
+
+		std::vector<std::vector<vk::raii::DescriptorSet> > m_descriptorSets;
 	};
 }

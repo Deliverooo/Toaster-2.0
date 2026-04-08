@@ -131,8 +131,8 @@ namespace toaster::gpu
 		return m_path;
 	}
 
-	EResourceType VKTexture2D::getResourceType() const
+	EGPUResourceType VKTexture2D::getResourceType() const
 	{
-		return EResourceType::eTexture2D;
+		return EGPUResourceType::eTexture2D;
 	}
 }

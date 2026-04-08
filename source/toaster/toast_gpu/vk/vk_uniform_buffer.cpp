@@ -48,9 +48,9 @@ namespace toaster::gpu
 		m_bufferMemory.unmapMemory();
 	}
 
-	EResourceType VKUniformBuffer::getResourceType() const
+	EGPUResourceType VKUniformBuffer::getResourceType() const
 	{
-		return EResourceType::eUniformBuffer;
+		return EGPUResourceType::eUniformBuffer;
 	}
 
 	VKUniformBufferPFF::VKUniformBufferPFF(VKGPUContext *p_ctx, uint64 p_size, uint32 p_frames_in_flight) : m_framesInFlightCount(p_frames_in_flight)
@@ -84,9 +84,9 @@ namespace toaster::gpu
 		return m_uniformBuffers.end();
 	}
 
-	EResourceType VKUniformBufferPFF::getResourceType() const
+	EGPUResourceType VKUniformBufferPFF::getResourceType() const
 	{
-		return EResourceType::eUniformBufferPFF;
+		return EGPUResourceType::eUniformBufferPFF;
 	}
 
 	std::vector<void *> VKUniformBufferPFF::mapMemory(uint64 p_size, uint64 p_offset)

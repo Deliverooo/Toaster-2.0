@@ -17,7 +17,7 @@ namespace toaster::gpu
 		bool generateMips{true};
 	};
 
-	class VKTexture2D final : public IResource
+	class VKTexture2D final : public IGPUResource
 	{
 	public:
 		VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
@@ -33,7 +33,7 @@ namespace toaster::gpu
 
 		const io::filesystem::Path& getPath()const;
 
-		[[nodiscard]] EResourceType getResourceType() const override;
+		[[nodiscard]] EGPUResourceType getResourceType() const override;
 
 	private:
 		VKGPUContext *m_ctx{nullptr};

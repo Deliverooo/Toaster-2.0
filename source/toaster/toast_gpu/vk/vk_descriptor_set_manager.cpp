@@ -19,26 +19,161 @@ namespace toaster::gpu
 			const auto &descriptor_set{descriptor_sets[set]};
 			for (auto &[name, write_descriptor]: descriptor_set.writeDescriptorSets)
 			{
+				uint32 binding{write_descriptor.dstBinding};
+
 				DescriptorDeclaration &descriptor_declaration{m_descriptorDeclarations[name]};
+				descriptor_declaration.name      = name;
+				descriptor_declaration.set       = set;
+				descriptor_declaration.binding   = binding;
+				descriptor_declaration.arraySize = write_descriptor.descriptorCount;
+				descriptor_declaration.type      = _getDescriptorType(write_descriptor.descriptorType);
+
+				DescriptorResource &descriptor_resource{m_descriptorResources[set][binding]};
+				descriptor_resource.resources.resize(write_descriptor.descriptorCount);
+				descriptor_resource.type = _getResourceType(write_descriptor.descriptorType);
+
+				for (uint32 frame_index{0u}; frame_index < VKGPUContext::c_maxFramesInFlight; ++frame_index)
+					m_writeDescriptorMap[frame_index][set][binding] = {write_descriptor, std::vector<void *>{write_descriptor.descriptorCount}};
 			}
 		}
 	}
 
 	void VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer)
 	{
+		if (const auto decl{getDescriptorDeclaration(p_name)})
+			m_descriptorResources.at(decl->set)[decl->binding] = p_uniform_buffer;
+		else
+			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
 
 	void VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff)
 	{
+		if (const auto decl{getDescriptorDeclaration(p_name)})
+			m_descriptorResources.at(decl->set)[decl->binding] = p_uniform_buffer_pff;
+		else
+			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
 
 	void VKDescriptorSetManager::bakeDescriptors()
 	{
+		std::array<vk::DescriptorPoolSize, 1> descriptor_pool_sizes{vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 100}};
+
+		vk::DescriptorPoolCreateInfo descriptor_pool_create_info{};
+		descriptor_pool_create_info.poolSizeCount = descriptor_pool_sizes.size();
+		descriptor_pool_create_info.pPoolSizes    = descriptor_pool_sizes.data();
+		descriptor_pool_create_info.maxSets       = 10u * VKGPUContext::c_maxFramesInFlight;
+		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+
+		m_descriptorPool = {m_ctx->getDevice(), descriptor_pool_create_info};
+
+		if (m_descriptorSets.empty())
+			for (uint32 i{0u}; i < VKGPUContext::c_maxFramesInFlight; ++i)
+				m_descriptorSets.emplace_back();
+
+		for (auto &descriptor_set: m_descriptorSets)
+			descriptor_set.clear();
+
+		for (const auto &[set, resources]: m_descriptorResources)
+		{
+			for (uint32 frame_index{0u}; frame_index < VKGPUContext::c_maxFramesInFlight; ++frame_index)
+			{
+				const vk::raii::DescriptorSetLayout &descriptor_set_layout{m_shader->getDescriptorSetLayout(set)};
+				vk::DescriptorSetAllocateInfo        descriptor_set_allocate_info{};
+				descriptor_set_allocate_info.descriptorPool     = m_descriptorPool;
+				descriptor_set_allocate_info.descriptorSetCount = 1;
+				descriptor_set_allocate_info.pSetLayouts        = &*descriptor_set_layout;
+
+				auto &descriptor_set{
+					m_descriptorSets[frame_index].emplace_back(std::move(m_ctx->getDevice().allocateDescriptorSets(descriptor_set_allocate_info).front()))
+				};
+
+				auto &write_descriptor_sets{m_writeDescriptorMap[frame_index].at(set)};
+				for (const auto &[binding, resource]: resources)
+				{
+					auto &stored_write_descriptor{write_descriptor_sets.at(binding)};
+
+					vk::WriteDescriptorSet &write_descriptor{stored_write_descriptor.wds};
+					write_descriptor.dstSet = descriptor_set;
+
+					switch (resource.type)
+					{
+						case EGPUResourceType::eUniformBuffer:
+						{
+							auto uniform_buffer{resource.resources[0].as<VKUniformBuffer>()};
+							write_descriptor.pBufferInfo               = &uniform_buffer->getDescriptorInfo();
+							stored_write_descriptor.resourceHandles[0] = write_descriptor.pBufferInfo->buffer;
+
+							if (write_descriptor.pBufferInfo->buffer == nullptr)
+								TST_ASSERT_MSG(false, "Oh no");
+							break;
+						}
+						case EGPUResourceType::eUniformBufferPFF:
+						{
+							auto uniform_buffer{resource.resources[0].as<VKUniformBufferPFF>()};
+							TST_ASSERT(uniform_buffer);
+							write_descriptor.pBufferInfo               = &uniform_buffer->getUBO(frame_index).as<VKUniformBuffer>()->getDescriptorInfo();
+							stored_write_descriptor.resourceHandles[0] = write_descriptor.pBufferInfo->buffer;
+
+							if (write_descriptor.pBufferInfo->buffer == nullptr)
+								TST_ASSERT_MSG(false, "Oh no");
+							break;
+						}
+
+						default: break;
+					}
+				}
+
+				std::vector<vk::WriteDescriptorSet> write_descriptors;
+				for (auto &[binding, write_descriptor]: write_descriptor_sets)
+				{
+					if (write_descriptor.wds.descriptorType == vk::DescriptorType::eUniformBuffer)
+						write_descriptors.emplace_back(write_descriptor.wds);
+				}
+
+				if (!write_descriptors.empty())
+				{
+					LOG_INFO("Num descriptors: {} | Set: {}", write_descriptors.size(), set);
+					m_ctx->getDevice().updateDescriptorSets(write_descriptors, {});
+				}
+			}
+		}
 	}
 
-	const std::vector<vk::raii::DescriptorSet> &VKDescriptorSetManager::getDescriptorSets(uint32 p_frame_index) const
+	 std::vector<vk::DescriptorSet> VKDescriptorSetManager::getDescriptorSets(uint32 p_frame_index) const
 	{
 		TST_ASSERT_MSG(p_frame_index < VKGPUContext::c_maxFramesInFlight, "Frame index out of bounds");
-		return {};
+		TST_ASSERT(!m_descriptorSets.empty());
+		std::vector<vk::DescriptorSet> result;
+		for (auto &descriptor_set: m_descriptorSets[p_frame_index])
+			result.emplace_back(*descriptor_set);
+		TST_ASSERT(!result.empty());
+		return result;
+	}
+
+	const DescriptorDeclaration *VKDescriptorSetManager::getDescriptorDeclaration(const String &p_name) const
+	{
+		if (!m_descriptorDeclarations.contains(p_name))
+			return nullptr;
+		return &m_descriptorDeclarations.at(p_name);
+	}
+
+	EDescriptorType VKDescriptorSetManager::_getDescriptorType(vk::DescriptorType p_type) const
+	{
+		switch (p_type)
+		{
+			case vk::DescriptorType::eUniformBuffer: return EDescriptorType::eUniformBuffer;
+			default: return EDescriptorType::eUnknown;
+		}
+		return EDescriptorType::eUnknown;
+	}
+
+	EGPUResourceType VKDescriptorSetManager::_getResourceType(vk::DescriptorType p_type) const
+	{
+		switch (p_type)
+		{
+			case vk::DescriptorType::eUniformBuffer: return EGPUResourceType::eUniformBuffer;
+			default: return EGPUResourceType::eUnknown;
+		}
+		return EGPUResourceType::eUnknown;
 	}
 }

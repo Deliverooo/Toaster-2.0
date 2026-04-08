@@ -2,22 +2,19 @@
 
 namespace toaster::gpu
 {
-	enum class EResourceType
+	enum class EGPUResourceType
 	{
+		eUnknown,
 		eUniformBuffer,
 		eUniformBufferPFF,
-		eStorageBuffer,
-		eStorageBufferPFF,
-		eTexture2D,
-		eTexture3D,
-		eSampler
+		eTexture2D
 	};
 
-	class IResource
+	class IGPUResource
 	{
 	public:
-		virtual ~IResource() = default;
+		virtual ~IGPUResource() = default;
 
-		virtual EResourceType getResourceType() const = 0;
+		virtual EGPUResourceType getResourceType() const = 0;
 	};
 }

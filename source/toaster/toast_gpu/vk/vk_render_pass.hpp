@@ -19,7 +19,7 @@ namespace toaster::gpu
 		// Only call when you have set all your required inputs :)
 		void bake();
 
-		const std::vector<vk::raii::DescriptorSet> &getDescriptorSets(uint32 p_frame_index) const;
+		[[nodiscard]] std::vector<vk::DescriptorSet> getDescriptorSets(uint32 p_frame_index) const;
 
 	private:
 		VKGPUContext *m_ctx{nullptr};

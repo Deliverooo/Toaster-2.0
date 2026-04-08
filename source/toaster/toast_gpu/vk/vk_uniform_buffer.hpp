@@ -8,7 +8,7 @@ namespace toaster::gpu
 {
 	class VKGPUContext;
 
-	class VKUniformBuffer final : public IResource
+	class VKUniformBuffer final : public IGPUResource
 	{
 	public:
 		VKUniformBuffer(VKGPUContext *p_ctx, uint64 p_size);
@@ -23,7 +23,7 @@ namespace toaster::gpu
 		void *mapMemory(uint64 p_size, uint64 p_offset);
 		void  unmapMemory();
 
-		EResourceType getResourceType() const override;
+		EGPUResourceType getResourceType() const override;
 
 	private:
 		VKGPUContext *m_ctx{nullptr};
@@ -36,7 +36,7 @@ namespace toaster::gpu
 	// Uniform buffer, but it's per frame in flight
 	// Ts is easier to use than allocating them manually, so it just makes things more manageable
 	// Typically you wouldn't really use a single uniform buffer anyway, so use this instead.
-	class VKUniformBufferPFF final : public IResource
+	class VKUniformBufferPFF final : public IGPUResource
 	{
 	public:
 		VKUniformBufferPFF(VKGPUContext *p_ctx, uint64 p_size, uint32 p_frames_in_flight);
@@ -47,7 +47,7 @@ namespace toaster::gpu
 		std::vector<RefPtr<VKUniformBuffer> >::iterator begin();
 		std::vector<RefPtr<VKUniformBuffer> >::iterator end();
 
-		EResourceType getResourceType() const override;
+		EGPUResourceType getResourceType() const override;
 
 		std::vector<void *> mapMemory(uint64 p_size, uint64 p_offset);
 		void                unmapMemory();

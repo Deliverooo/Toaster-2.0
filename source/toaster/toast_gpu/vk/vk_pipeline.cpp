@@ -172,6 +172,8 @@ namespace toaster::gpu
 			case EShaderDataType::eFloat2: return vk::Format::eR32G32Sfloat;
 			case EShaderDataType::eFloat3: return vk::Format::eR32G32B32Sfloat;
 			case EShaderDataType::eFloat4: return vk::Format::eR32G32B32A32Sfloat;
+			case EShaderDataType::eMat3: return vk::Format::eR32G32B32A32Sfloat; // TODO: If I ever want to do instanced rendering, I will need to look into ts
+			case EShaderDataType::eMat4: return vk::Format::eR32G32B32A32Sfloat;
 			case EShaderDataType::eInt: return vk::Format::eR32Sint;
 			case EShaderDataType::eInt2: return vk::Format::eR32G32Sint;
 			case EShaderDataType::eInt3: return vk::Format::eR32G32B32Sint;
