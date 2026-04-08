@@ -11,12 +11,10 @@ namespace toaster::gpu
 
 	struct ImageCreateInfo
 	{
-		EImageFormat format{EImageFormat::eRGBA};
-		EImageUsage  usage{EImageUsage::eAttachment};
-		uint32       width{0u};
-		uint32       height{0u};
-		uint32       mips{1u};
-		uint32       layers{1u};
+		vk::Format format{vk::Format::eUndefined};
+		uint32     width{0u};
+		uint32     height{0u};
+		uint32     mips{1u};
 	};
 
 	class VKImage2D
@@ -33,6 +31,7 @@ namespace toaster::gpu
 
 		[[nodiscard]] const ImageCreateInfo &getCreateInfo() const;
 
+		void setData(void *p_data, uint64 p_size);
 		void resize(uint32 p_width, uint32 p_height);
 		void recreate();
 

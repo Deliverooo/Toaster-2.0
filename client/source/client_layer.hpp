@@ -101,5 +101,7 @@ namespace toaster
 
 		std::vector<vk::raii::DescriptorSet> m_descriptorSets;
 		std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
+
+		EditorCamera m_editorCamera;
 	};
 }

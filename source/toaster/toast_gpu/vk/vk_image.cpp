@@ -39,6 +39,66 @@ namespace toaster::gpu
 		return m_createInfo;
 	}
 
+	void VKImage2D::setData(void *p_data, uint64 p_size)
+	{
+		TST_ASSERT_MSG(p_data, "p_data is nullptr");
+
+		vk::raii::Buffer       staging_buffer{nullptr};
+		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
+
+		vk::DeviceSize image_size{p_size}; // 1 Pixel * 1 Pixel * RGBA
+
+		m_ctx->createBuffer(image_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+							staging_buffer, staging_buffer_memory);
+
+		void *mapped = staging_buffer_memory.mapMemory(0, image_size, {});
+		std::memcpy(mapped, p_data, image_size);
+		staging_buffer_memory.unmapMemory();
+
+		vk::Format image_format = vk::Format::eR8G8B8A8Unorm;
+
+		m_ctx->createImage(m_createInfo.width, m_createInfo.height, m_createInfo.mips, vk::SampleCountFlagBits::e1, image_format, vk::ImageTiling::eOptimal,
+						   vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
+						   vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
+
+		m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eNone,
+									 vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, m_createInfo.mips,
+									 vk::ImageAspectFlagBits::eColor);
+
+		m_ctx->copyBufferToImage(staging_buffer, m_image, m_createInfo.width, m_createInfo.height);
+
+		m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eTransferWrite,
+									 vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, m_createInfo.mips,
+									 vk::ImageAspectFlagBits::eColor);
+
+		m_imageView = m_ctx->createImageView(m_image, image_format, vk::ImageAspectFlagBits::eColor, m_createInfo.mips);
+
+		auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
+
+		vk::SamplerCreateInfo sampler_create_info{};
+		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.magFilter               = vk::Filter::eLinear;
+		sampler_create_info.minFilter               = vk::Filter::eLinear;
+		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
+		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.mipLodBias              = 0.0f;
+		sampler_create_info.anisotropyEnable        = true;
+		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
+		sampler_create_info.compareEnable           = false;
+		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
+		sampler_create_info.minLod                  = 0.0f;
+		sampler_create_info.maxLod                  = vk::LodClampNone;
+		sampler_create_info.borderColor             = vk::BorderColor::eIntOpaqueBlack;
+		sampler_create_info.unnormalizedCoordinates = false;
+		m_sampler                                   = {m_ctx->getDevice(), sampler_create_info};
+
+		_updateDescriptorInfo();
+	}
+
 	void VKImage2D::resize(uint32 p_width, uint32 p_height)
 	{
 		m_createInfo.width  = p_width;
@@ -49,81 +109,12 @@ namespace toaster::gpu
 
 	void VKImage2D::recreate()
 	{
-		m_image       = nullptr;
-		m_imageMemory = nullptr;
-		m_imageView   = nullptr;
-		m_sampler     = nullptr;
-
-		const vk::Format format = getVulkanFormat(m_createInfo.format);
-
-		vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eSampled};
-		if (m_createInfo.usage == EImageUsage::eAttachment)
-		{
-			if (m_ctx->isDepthFormat(format))
-				usage_flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
-			else
-				usage_flags |= vk::ImageUsageFlagBits::eColorAttachment;
-		}
-		if (m_createInfo.usage == EImageUsage::eTexture)
-			usage_flags |= vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
-		else if (m_createInfo.usage == EImageUsage::eStorage)
-			usage_flags |= vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferDst;
-
-		vk::ImageAspectFlags aspect_mask{m_ctx->isDepthFormat(format) ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor};
-		if (m_ctx->hasStencilComponent(format))
-			aspect_mask |= vk::ImageAspectFlagBits::eStencil;
-
-		vk::ImageTiling         tiling{m_createInfo.usage == EImageUsage::eHostRead ? vk::ImageTiling::eLinear : vk::ImageTiling::eOptimal};
-		vk::MemoryPropertyFlags memory_property_flags{
-			m_createInfo.usage == EImageUsage::eHostRead
-				? vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent
-				: vk::MemoryPropertyFlagBits::eDeviceLocal
-		};
-
-		m_ctx->createImage(m_createInfo.width, m_createInfo.height, 1, m_ctx->getMaxUsableSampleCount(),  format, tiling, usage_flags, memory_property_flags, m_image, m_imageMemory);
-
-		m_imageView = m_ctx->createImageView(m_image, format, aspect_mask, 1);
-
-		vk::SamplerCreateInfo sampler_create_info{};
-		sampler_create_info.maxAnisotropy = 1.0f;
-
-		sampler_create_info.minFilter  = vk::Filter::eLinear;
-		sampler_create_info.magFilter  = vk::Filter::eLinear;
-		sampler_create_info.mipmapMode = vk::SamplerMipmapMode::eLinear;
-
-		sampler_create_info.addressModeU = vk::SamplerAddressMode::eClampToEdge;
-		sampler_create_info.addressModeV = vk::SamplerAddressMode::eClampToEdge;
-		sampler_create_info.addressModeW = vk::SamplerAddressMode::eClampToEdge;
-		sampler_create_info.mipLodBias   = 0.0f;
-		sampler_create_info.minLod       = 0.0f;
-		sampler_create_info.maxLod       = 100.0f;
-		sampler_create_info.borderColor  = vk::BorderColor::eFloatCustomEXT;
-
-		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{};
-		border_colour_create_info.format            = vk::Format::eR8G8B8A8Srgb;
-		border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
-
-		sampler_create_info.pNext = &border_colour_create_info;
-
-		m_sampler = {m_ctx->getDevice(), sampler_create_info};
-		_updateDescriptorInfo();
 	}
 
 	void VKImage2D::_updateDescriptorInfo()
 	{
-		const vk::Format format = getVulkanFormat(m_createInfo.format);
-
-		if (m_ctx->isDepthFormat(format))
-			m_descriptorImageInfo.imageLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal;
-		else
-			m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-
-		if (m_createInfo.usage == EImageUsage::eStorage)
-			m_descriptorImageInfo.imageLayout = vk::ImageLayout::eGeneral;
-		else if (m_createInfo.usage == EImageUsage::eHostRead)
-			m_descriptorImageInfo.imageLayout = vk::ImageLayout::eTransferDstOptimal;
-
-		m_descriptorImageInfo.imageView = m_imageView;
-		m_descriptorImageInfo.sampler   = m_sampler;
+		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		m_descriptorImageInfo.imageView   = m_imageView;
+		m_descriptorImageInfo.sampler     = m_sampler;
 	}
 }

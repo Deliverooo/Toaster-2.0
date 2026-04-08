@@ -16,6 +16,8 @@ namespace toaster
 			{gpu::EShaderDataType::eFloat4, "a_Position"},
 			{gpu::EShaderDataType::eFloat4, "a_Colour"},
 			{gpu::EShaderDataType::eFloat2, "a_TexCoord"},
+			{gpu::EShaderDataType::eFloat, "a_TexIndex"},
+			{gpu::EShaderDataType::eFloat, "a_TilingFactor"},
 		};
 
 		gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/quad.vert.glsl.spv");
@@ -68,6 +70,19 @@ namespace toaster
 		m_uniformBuffers       = make_reference<gpu::VKUniformBufferPFF>(m_ctx, ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
 		m_mappedUniformBuffers = m_uniformBuffers->mapMemory(ubo_size, 0);
 
+		uint32 white_image_data{0xFFFFFFFF};
+
+		gpu::ImageCreateInfo image_create_info{};
+		image_create_info.width  = 1;
+		image_create_info.height = 1;
+		image_create_info.format = vk::Format::eR8G8B8A8Unorm;
+		image_create_info.mips   = 1;
+		m_whiteImage             = make_reference<gpu::VKImage2D>(m_ctx, image_create_info);
+
+		m_whiteImage->setData(&white_image_data, 4);
+
+		m_textureSlots[0] = m_whiteImage;
+
 		_createDescriptorPool();
 		_createDescriptorSets();
 		_createRenderTargetResources();
@@ -93,8 +108,6 @@ namespace toaster
 		m_quadVertexPtr  = m_quadVertexBase;
 
 		m_stats.quadCount = 0u;
-		
-		LOG_INFO("Renderer2D::begin() - Frame {}", p_frame_index);
 	}
 
 	void Renderer2D::end(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index)
@@ -134,12 +147,8 @@ namespace toaster
 		p_cmd.setScissor(0, scissor);
 
 		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
-		LOG_INFO("Renderer2D::end() - Size: {}, Index count: {}", size, m_quadIndexCount);
-		
 		if (size) // Apparently you have to check ts, or things won't work correctly and there will be artifacts...
 		{
-			LOG_INFO("Uploading vertex data and rendering {} quads", m_stats.quadCount);
-			
 			m_quadVertexBuffer->setData(m_quadVertexBase, size, 0);
 
 			p_cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_quadPipeline->getPipelineLayout(), 0, *m_descriptorSets[p_frame_index], nullptr);
@@ -148,10 +157,6 @@ namespace toaster
 			m_quadIndexBuffer->bind(p_cmd, vk::IndexType::eUint32);
 
 			p_cmd.drawIndexed(m_quadIndexCount, 1, 0, 0, 0);
-		}
-		else
-		{
-			LOG_WARN("Renderer2D::end() - No vertex data to render!");
 		}
 
 		p_cmd.endRendering();
@@ -191,8 +196,6 @@ namespace toaster
 		}
 		m_quadIndexCount += 6u;
 		m_stats.quadCount++;
-		
-		LOG_INFO("Renderer2D::submitQuad() - Quad count: {}, Index count: {}", m_stats.quadCount, m_quadIndexCount);
 	}
 
 	const Renderer2D::Stats &Renderer2D::getStats() const
@@ -335,13 +338,20 @@ namespace toaster
 
 			for (uint32 i{0u}; i < gpu::VKGPUContext::c_maxFramesInFlight; ++i)
 			{
-				std::array<vk::WriteDescriptorSet, 1> write_descriptor_sets{};
+				std::array<vk::WriteDescriptorSet, 2> write_descriptor_sets{};
 				write_descriptor_sets[0].descriptorCount = 1;
 				write_descriptor_sets[0].descriptorType  = vk::DescriptorType::eUniformBuffer;
 				write_descriptor_sets[0].pBufferInfo     = &m_uniformBuffers->getUBO(i)->getDescriptorInfo();
 				write_descriptor_sets[0].dstSet          = m_descriptorSets[i];
 				write_descriptor_sets[0].dstBinding      = 0;
 				write_descriptor_sets[0].dstArrayElement = 0;
+
+				write_descriptor_sets[1].descriptorCount = 1;
+				write_descriptor_sets[1].descriptorType  = vk::DescriptorType::eCombinedImageSampler;
+				write_descriptor_sets[1].pImageInfo      = &m_whiteImage->getDescriptorInfo();
+				write_descriptor_sets[1].dstSet          = m_descriptorSets[i];
+				write_descriptor_sets[1].dstBinding      = 1;
+				write_descriptor_sets[1].dstArrayElement = 0;
 
 				m_ctx->getDevice().updateDescriptorSets(write_descriptor_sets, {});
 			}

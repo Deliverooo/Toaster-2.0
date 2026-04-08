@@ -13,12 +13,13 @@
 
 #include <imgui.h>
 
+#include "backends/imgui_impl_vulkan.h"
 #include "glm/gtc/type_ptr.hpp"
 namespace ig = ImGui;
 
 namespace toaster
 {
-	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app)
+	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app), m_editorCamera(90.0f, 1.7776f, 0.1f, 1000.0f)
 	{
 	}
 
@@ -34,6 +35,8 @@ namespace toaster
 		m_viewportWidth  = window_width;
 		m_viewportHeight = window_height;
 
+		m_editorCamera.setViewportSize(static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight));
+
 		swapchain->addResizeCallback([this](uint32 width, uint32 height)
 		{
 			LOG_INFO("{}, {}", width, height);
@@ -43,6 +46,7 @@ namespace toaster
 
 			_createAttachmentImages();
 
+			m_editorCamera.setViewportSize(static_cast<float32>(width), static_cast<float32>(height));
 			m_renderer2D->onResize(width, height);
 			_createDescriptorSets();
 		});
@@ -62,10 +66,10 @@ namespace toaster
 			pipeline_create_info.shader             = m_compositeShader;
 			m_compositePipeline                     = make_reference<gpu::VKPipeline>(ctx, pipeline_create_info);
 
-			m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f}});
-			m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{0.5f, -0.5f, 0.0f}, {1.0f, 0.0f}});
-			m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f}});
-			m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f}});
+			m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
+			m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});
+			m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}});
+			m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}});
 			m_fullscreenQuadIndices = {0, 1, 3, 1, 2, 3};
 
 			vk::DeviceSize vbo_size{m_fullscreenQuadVertices.size() * sizeof(FullscreenQuadVertex)};
@@ -77,8 +81,6 @@ namespace toaster
 			gpu::TextureSpecInfo texture_spec_info{};
 			m_texture = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info, "../resources/textures/Peeber.png");
 		}
-
-		// m_mesh = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx");
 
 		Renderer2DCreateInfo renderer_2d_create_info{};
 		renderer_2d_create_info.renderTargetWidth  = m_viewportWidth;
@@ -101,6 +103,8 @@ namespace toaster
 	{
 		m_time += p_dt;
 
+		m_editorCamera.onUpdate(p_dt);
+
 		auto &app       = getApp();
 		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 		auto  swapchain = app.getWindow().getSwapchain();
@@ -110,19 +114,12 @@ namespace toaster
 
 		auto &command_buffer = swapchain->getCurrentCommandBuffer();
 
-		// Renderer2D needs orthographic projection for 2D rendering
-		glm::mat4 ortho_view = glm::mat4(1.0f);
-		glm::mat4 ortho_proj = glm::ortho(
-			0.0f, static_cast<float32>(m_viewportWidth),
-			static_cast<float32>(m_viewportHeight), 0.0f,
-			-1.0f, 1.0f
-		);
-		// Flip Y axis for Vulkan NDC
+		glm::mat4 ortho_view{1.0f};
+		glm::mat4 ortho_proj{glm::ortho(0.0f, static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight), 0.0f, -1.0f, 1.0f)};
 		ortho_proj[1][1] *= -1.0f;
 
-		m_renderer2D->begin(command_buffer, frame_index, ortho_view, ortho_proj);
-		// Submit quad at screen coordinates (100, 100) with size (200, 200)
-		glm::mat4 quad_transform = glm::translate(glm::mat4{1.0f}, glm::vec3{100.0f, 100.0f, 0.0f}) * glm::scale(glm::mat4{1.0f}, glm::vec3{200.0f, 200.0f, 1.0f});
+		m_renderer2D->begin(command_buffer, frame_index, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
+		glm::mat4 quad_transform{glm::translate(glm::mat4{1.0f}, m_quadTranslation) * glm::scale(glm::mat4{1.0f}, glm::vec3{200.0f, 200.0f, 1.0f})};
 		m_renderer2D->submitQuad(quad_transform, {1.0f, 1.0f, 1.0f, 1.0f});
 		m_renderer2D->end(command_buffer, frame_index);
 
@@ -176,15 +173,28 @@ namespace toaster
 		EventDispatcher eventDispatcher(p_event);
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(ClientLayer::onKeyPressEvent));
 		eventDispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(ClientLayer::onWindowResizeEvent));
+		m_editorCamera.onEvent(p_event);
 	}
 
 	void ClientLayer::onUIRender()
 	{
+		#if 0
+		auto &app       = getApp();
+		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		auto  swapchain = app.getWindow().getSwapchain();
+
+		uint32 frame_index{swapchain->getFrameIndex()};
+
 		ig::Begin("Viewport");
 
 		ig::SliderFloat3("Translation", glm::value_ptr(m_quadTranslation), -10.0f, 10.0f);
 		ig::SliderFloat3("Scale", glm::value_ptr(m_quadScale), -10.0f, 10.0f);
+
+		// ig::Image((ImTextureRef) *m_descriptorSets[frame_index], ImVec2{static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight)});
+
 		ig::End();
+
+		#endif
 	}
 
 	bool ClientLayer::onKeyPressEvent(KeyPressEvent &e)

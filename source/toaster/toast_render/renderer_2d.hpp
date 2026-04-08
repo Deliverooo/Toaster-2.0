@@ -10,6 +10,7 @@
 
 #include <array>
 
+#include "toast_gpu/vk/vk_image.hpp"
 #include "toast_gpu/vk/vk_pipeline.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
 #include "toast_gpu/vk/vk_index_buffer.hpp"
@@ -70,6 +71,8 @@ namespace toaster
 			tsm::float4 position;
 			tsm::float4 colour;
 			tsm::float2 texCoord;
+			float32     texIndex;
+			float32     tilingFactor;
 		};
 
 		gpu::VertexBufferLayout m_quadVertexBufferLayout;
@@ -114,6 +117,16 @@ namespace toaster
 
 		std::vector<vk::raii::DescriptorSet> m_descriptorSets;
 		std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
+
+		RefPtr<gpu::VKImage2D>                  m_whiteImage{nullptr};
+		std::array<RefPtr<gpu::VKImage2D>, 32u> m_textureSlots;
+		uint32                                  m_textureSlotIndex{1u};
+
+		// vk::raii::Image         m_whiteImage{nullptr};
+		// vk::raii::DeviceMemory  m_whiteImageMemory{nullptr};
+		// vk::raii::ImageView     m_whiteImageView{nullptr};
+		// vk::raii::Sampler       m_whiteImageSampler{nullptr};
+		// vk::DescriptorImageInfo m_whiteImageDescriptorInfo{};
 
 		Stats m_stats;
 	};
