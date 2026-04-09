@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include "vk_index_buffer.hpp"
+#include "vk_material.hpp"
 #include "vk_texture.hpp"
 #include "vk_vertex_buffer.hpp"
 #include "toast_lib/io/filesystem.hpp"
@@ -22,14 +23,15 @@ namespace toaster::gpu
 	class VKMesh
 	{
 	public:
-		VKMesh(VKGPUContext *p_ctx, const io::filesystem::Path &p_path);
+		VKMesh(VKGPUContext *p_ctx, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader); // Shader is temp until I move mesh to the Renderer folder
 
 		const RefPtr<VKVertexBuffer> &getVertexBuffer() const;
 		const RefPtr<VKIndexBuffer> & getIndexBuffer() const;
 
-		const RefPtr<VKTexture2D> &getAlbedoMap() const;
+		const RefPtr<VKMaterial> &getMaterial() const;
+		// const RefPtr<VKTexture2D> &getAlbedoMap() const;
 
-		float32 getRoughness() const;
+		// float32 getRoughness() const;
 
 		const std::vector<MeshVertex> &getVertices() const;
 		const std::vector<uint16> &    getIndices() const;
@@ -45,7 +47,9 @@ namespace toaster::gpu
 		RefPtr<VKVertexBuffer> m_vertexBuffer{nullptr};
 		RefPtr<VKIndexBuffer>  m_indexBuffer{nullptr};
 
+		RefPtr<VKMaterial> m_material{nullptr};
+
 		RefPtr<VKTexture2D> m_albedoMap{nullptr};
-		float32             m_roughness{0.0f};
+		// float32             m_roughness{0.0f};
 	};
 }

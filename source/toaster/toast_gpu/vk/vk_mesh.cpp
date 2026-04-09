@@ -19,8 +19,10 @@ namespace toaster::gpu
 												| aiProcess_GlobalScale           // e.g. convert cm to m for fbx import (and other formats where cm is native)
 	;
 
-	VKMesh::VKMesh(VKGPUContext *p_ctx, const io::filesystem::Path &p_path) : m_ctx(p_ctx), m_path(p_path)
+	VKMesh::VKMesh(VKGPUContext *p_ctx, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader) : m_ctx(p_ctx), m_path(p_path)
 	{
+		m_material = make_reference<VKMaterial>(m_ctx, p_shader);
+
 		Assimp::Importer importer;
 
 		const aiScene *scene = importer.ReadFile(p_path.string(), s_MeshImportFlags);
@@ -29,8 +31,6 @@ namespace toaster::gpu
 			LOG_ERROR("Mesh", "Failed to load mesh file: {0}", p_path.string());
 			TST_ASSERT(false);
 		}
-
-
 
 		if (scene->HasMeshes())
 		{
@@ -119,7 +119,7 @@ namespace toaster::gpu
 				LOG_TRACE("\tROUGHNESS = {}", roughness);
 				LOG_TRACE("\tMETALNESS = {}", metalness);
 
-				m_roughness = roughness;
+				// m_roughness = roughness;
 
 				bool has_albedo_map = ai_material->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &ai_tex_path) == AI_SUCCESS;
 				if (!has_albedo_map)
@@ -138,7 +138,8 @@ namespace toaster::gpu
 
 					TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					m_albedoMap = make_reference<VKTexture2D>(m_ctx, texture_spec_info, texture_path);
+					m_albedoMap                    = {make_reference<VKTexture2D>(m_ctx, texture_spec_info, texture_path)};
+					m_material->set("u_Texture", m_albedoMap);
 				}
 				else
 					TST_ASSERT(false);
@@ -156,14 +157,9 @@ namespace toaster::gpu
 		return m_indexBuffer;
 	}
 
-	const RefPtr<VKTexture2D> &VKMesh::getAlbedoMap() const
+	const RefPtr<VKMaterial> &VKMesh::getMaterial() const
 	{
-		return m_albedoMap;
-	}
-
-	float32 VKMesh::getRoughness() const
-	{
-		return m_roughness;
+		return m_material;
 	}
 
 	const std::vector<MeshVertex> &VKMesh::getVertices() const

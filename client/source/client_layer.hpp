@@ -69,7 +69,7 @@ namespace toaster
 		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
 		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
 
-		RefPtr<gpu::VKMaterial> m_material{nullptr};
+		// RefPtr<gpu::VKMaterial> m_material{nullptr};
 		RefPtr<gpu::VKMesh>     m_mesh{nullptr};
 
 		struct CameraUB

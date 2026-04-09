@@ -17,4 +17,6 @@ namespace toaster::gpu
 
 		virtual EGPUResourceType getResourceType() const = 0;
 	};
+
+	template<typename Type> concept GPUResource_c = std::derived_from<Type, IGPUResource>;
 }

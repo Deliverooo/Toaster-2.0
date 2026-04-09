@@ -42,8 +42,6 @@ namespace toaster::gpu
 		DescriptorResource(const RefPtr<VKTexture2D> &p_texture_2d) : resources(std::vector<RefPtr<IGPUResource> >(1, p_texture_2d)), type(EGPUResourceType::eTexture2D)
 		{
 		}
-
-
 	};
 
 	class VKDescriptorSetManager
@@ -56,6 +54,16 @@ namespace toaster::gpu
 		void setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d);
 		void setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index);
 
+		template<GPUResource_c TResource>
+		RefPtr<TResource> getDescriptor(const String &p_name)
+		{
+			if (const auto decl{getDescriptorDeclaration(p_name)})
+				if (const auto set_it{m_descriptorResources.find(decl->set)}; set_it != m_descriptorResources.end())
+					if (const auto resource_it{set_it->second.find(decl->binding)}; resource_it != set_it->second.end())
+						return resource_it->second.resources[0].as<TResource>();
+			return nullptr;
+		}
+
 		// Only call when you have set all your required descriptors :)
 		void bakeDescriptors();
 
@@ -66,10 +74,10 @@ namespace toaster::gpu
 		const DescriptorDeclaration *                            getDescriptorDeclaration(const String &p_name) const;
 		const std::unordered_map<String, DescriptorDeclaration> &getDescriptorDeclarations() const;
 
-		const RefPtr<VKTexture2D>& getWhiteTexture()const;
+		const RefPtr<VKTexture2D> &getWhiteTexture() const;
 
-		uint32 getStartSetIndex()const;
-		uint32 getEndSetIndex()const;
+		uint32 getStartSetIndex() const;
+		uint32 getEndSetIndex() const;
 
 	private:
 		EDescriptorType  _getDescriptorType(vk::DescriptorType p_type) const;

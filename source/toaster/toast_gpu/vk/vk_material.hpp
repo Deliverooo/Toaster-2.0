@@ -18,6 +18,13 @@ namespace toaster::gpu
 		void update(uint32 p_frame_index);
 
 		vk::DescriptorSet getDescriptorSet(uint32 p_frame_index);
+
+		template<GPUResource_c TResource>
+		RefPtr<TResource> get(const String &p_name)
+		{
+			return m_descriptorSetManager->getDescriptor<TResource>(p_name);
+		}
+
 	private:
 		VKGPUContext *m_ctx{nullptr};
 
