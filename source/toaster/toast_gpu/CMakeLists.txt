@@ -100,6 +100,9 @@ if (${WITH_VULKAN_BACKEND})
 
 			vk/vk_descriptor_set_manager.cpp
 			vk/vk_descriptor_set_manager.hpp
+
+			vk/vk_render_attachment.cpp
+			vk/vk_render_attachment.hpp
 	)
 endif ()
 

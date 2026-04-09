@@ -19,6 +19,11 @@ namespace toaster::gpu
 		m_descriptorSetManager->setDescriptor(p_name, p_uniform_buffer_pff);
 	}
 
+	void VKRenderPass::setInput(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d)
+	{
+		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);
+	}
+
 	void VKRenderPass::bake()
 	{
 		m_descriptorSetManager->bakeDescriptors();
@@ -28,5 +33,10 @@ namespace toaster::gpu
 	{
 		TST_ASSERT_MSG(p_frame_index < VKGPUContext::c_maxFramesInFlight, "Frame index out of bounds");
 		return m_descriptorSetManager->getDescriptorSets(p_frame_index);
+	}
+
+	const RefPtr<VKPipeline> &VKRenderPass::getPipeline() const
+	{
+		return m_pipeline;
 	}
 }

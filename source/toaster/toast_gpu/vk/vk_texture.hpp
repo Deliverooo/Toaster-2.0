@@ -21,6 +21,7 @@ namespace toaster::gpu
 	{
 	public:
 		VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
+		VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size);
 
 		vk::raii::Image &       getImage();
 		vk::raii::DeviceMemory &getImageMemory();
@@ -31,7 +32,7 @@ namespace toaster::gpu
 
 		[[nodiscard]] const TextureSpecInfo &getSpecInfo() const;
 
-		const io::filesystem::Path& getPath()const;
+		const io::filesystem::Path &getPath() const;
 
 		[[nodiscard]] EGPUResourceType getResourceType() const override;
 

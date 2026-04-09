@@ -97,10 +97,5 @@ namespace toaster
 		{
 			glm::mat4 model{1.0f};
 		};
-
-		vk::raii::DescriptorPool m_descriptorPool{nullptr};
-
-		std::vector<vk::raii::DescriptorSet> m_descriptorSets;
-		std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
 	};
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vk_shader.hpp"
+#include "vk_texture.hpp"
 #include "vk_uniform_buffer.hpp"
 
 namespace toaster::gpu
@@ -9,7 +10,7 @@ namespace toaster::gpu
 
 	enum class EDescriptorType
 	{
-		eUnknown, eUniformBuffer
+		eUnknown, eUniformBuffer, eSampler2D
 	};
 
 	struct DescriptorDeclaration
@@ -28,13 +29,17 @@ namespace toaster::gpu
 
 		DescriptorResource() = default;
 
-		DescriptorResource(RefPtr<VKUniformBuffer> p_uniform_buffer) : resources(std::vector<RefPtr<IGPUResource> >(1, p_uniform_buffer)),
-																	   type(EGPUResourceType::eUniformBuffer)
+		DescriptorResource(const RefPtr<VKUniformBuffer> &p_uniform_buffer) : resources(std::vector<RefPtr<IGPUResource> >(1, p_uniform_buffer)),
+																			  type(EGPUResourceType::eUniformBuffer)
 		{
 		}
 
-		DescriptorResource(RefPtr<VKUniformBufferPFF> p_uniform_buffer_pff) : resources(std::vector<RefPtr<IGPUResource> >(1, p_uniform_buffer_pff)),
-																			  type(EGPUResourceType::eUniformBufferPFF)
+		DescriptorResource(const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) : resources(std::vector<RefPtr<IGPUResource> >(1, p_uniform_buffer_pff)),
+																					 type(EGPUResourceType::eUniformBufferPFF)
+		{
+		}
+
+		DescriptorResource(const RefPtr<VKTexture2D> &p_texture_2d) : resources(std::vector<RefPtr<IGPUResource> >(1, p_texture_2d)), type(EGPUResourceType::eTexture2D)
 		{
 		}
 	};
@@ -46,6 +51,7 @@ namespace toaster::gpu
 
 		void setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer);
 		void setDescriptor(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff);
+		void setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d);
 
 		// Only call when you have set all your required descriptors :)
 		void bakeDescriptors();
@@ -78,5 +84,7 @@ namespace toaster::gpu
 		std::unordered_map<uint32, std::unordered_map<uint32, DescriptorResource> > m_descriptorResources;
 
 		std::vector<std::vector<vk::raii::DescriptorSet> > m_descriptorSets;
+
+		RefPtr<VKTexture2D> m_whiteTexture{nullptr};
 	};
 }

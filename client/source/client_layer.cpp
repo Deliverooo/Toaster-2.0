@@ -65,21 +65,20 @@ namespace toaster
 			m_ubos                 = make_reference<gpu::VKUniformBufferPFF>(ctx, ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
 			m_mappedUniformBuffers = m_ubos->mapMemory(ubo_size, 0);
 
+			gpu::TextureSpecInfo texture_spec_info{};
+			m_texture = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info, "../resources/textures/Peeber.png");
+
+
 			m_geometryPass = make_reference<gpu::VKRenderPass>(ctx, m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_ubos);
+			m_geometryPass->setInput("u_Texture", m_texture);
 
 			m_geometryPass->bake(); // TODO: rename ts to toast
 			//						   Its funny because the engine is called Toaster...
 		}
 
-		gpu::TextureSpecInfo texture_spec_info{};
-		m_texture = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info, "../resources/textures/Peeber.png");
-
 		m_mesh = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx");
-
 		_createAttachmentImages();
-		_createDescriptorPool();
-		// _createDescriptorSets();
 	}
 
 	void ClientLayer::onDestroy()
@@ -112,70 +111,51 @@ namespace toaster
 
 		std::memcpy(m_mappedUniformBuffers[frame_index], &camera_ub, sizeof(CameraUB));
 
-		{
-			vk::ClearValue              clear_colour = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};
-			vk::RenderingAttachmentInfo colour_attachment_info{};
-			colour_attachment_info.clearValue         = clear_colour;
-			colour_attachment_info.imageView          = m_colourAttachmentImageView;
-			colour_attachment_info.imageLayout        = vk::ImageLayout::eColorAttachmentOptimal;
-			colour_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
-			colour_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
-			colour_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eAverage;
-			colour_attachment_info.resolveImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-			colour_attachment_info.resolveImageView   = swapchain->getImageView(swapchain->getImageIndex());
+		vk::RenderingAttachmentInfo colour_attachment_info{};
+		colour_attachment_info.clearValue         = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};;
+		colour_attachment_info.imageView          = m_colourAttachmentImageView;
+		colour_attachment_info.imageLayout        = vk::ImageLayout::eColorAttachmentOptimal;
+		colour_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
+		colour_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
+		colour_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eAverage;
+		colour_attachment_info.resolveImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		colour_attachment_info.resolveImageView   = swapchain->getImageView(image_index);
 
-			vk::ClearValue              clear_depth = vk::ClearDepthStencilValue{1.0f, 0u};
-			vk::RenderingAttachmentInfo depth_attachment_info{};
-			depth_attachment_info.clearValue         = clear_depth;
-			depth_attachment_info.imageView          = m_depthAttachmentImageView;
-			depth_attachment_info.imageLayout        = vk::ImageLayout::eDepthAttachmentOptimal;
-			depth_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
-			depth_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
-			depth_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eMin;
-			depth_attachment_info.resolveImageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-			depth_attachment_info.resolveImageView   = swapchain->getDepthImageView();
+		vk::RenderingAttachmentInfo depth_attachment_info{};
+		depth_attachment_info.clearValue         = vk::ClearDepthStencilValue{1.0f, 0u};;
+		depth_attachment_info.imageView          = m_depthAttachmentImageView;
+		depth_attachment_info.imageLayout        = vk::ImageLayout::eDepthAttachmentOptimal;
+		depth_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
+		depth_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
+		depth_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eMin;
+		depth_attachment_info.resolveImageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		depth_attachment_info.resolveImageView   = swapchain->getDepthImageView();
 
-			vk::RenderingInfo rendering_info{};
-			rendering_info.renderArea           = vk::Rect2D{{0, 0}, swapchain_extent};
-			rendering_info.layerCount           = 1;
-			rendering_info.colorAttachmentCount = 1;
-			rendering_info.pColorAttachments    = &colour_attachment_info;
-			rendering_info.pDepthAttachment     = &depth_attachment_info;
+		vk::RenderingInfo rendering_info{};
+		rendering_info.renderArea           = vk::Rect2D{{0, 0}, swapchain_extent};
+		rendering_info.layerCount           = 1;
+		rendering_info.colorAttachmentCount = 1;
+		rendering_info.pColorAttachments    = &colour_attachment_info;
+		rendering_info.pDepthAttachment     = &depth_attachment_info;
 
-			vk::Viewport viewport{};
-			viewport.minDepth = 0.0f;
-			viewport.maxDepth = 1.0f;
-			viewport.x        = 0.0f;
-			viewport.y        = 0.0f;
-			viewport.width    = static_cast<float32>(swapchain_extent.width);
-			viewport.height   = static_cast<float32>(swapchain_extent.height);
+		Renderer::beginRendering(rendering_info, command_buffer, frame_index, m_geometryPass);
 
-			vk::Rect2D scissor{vk::Offset2D{0, 0}, swapchain_extent};
+		TransformCB transform_constant_buffer{};
+		transform_constant_buffer.model = glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{20.0f, 20.0f, 20.0f}), m_time * glm::radians(90.0f),
+													  glm::vec3{0.0f, 0.0f, 1.0f});
+		command_buffer.pushConstants<TransformCB>(m_geometryPipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, transform_constant_buffer);
 
-			command_buffer.beginRendering(rendering_info);
-			command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, m_geometryPipeline->getPipeline());
-			command_buffer.setViewport(0, viewport);
-			command_buffer.setScissor(0, scissor);
+		MaterialCB material_constant_buffer{};
+		material_constant_buffer.roughness = m_mesh->getRoughness();
+		command_buffer.pushConstants<MaterialCB>(m_geometryPipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eFragment, sizeof(TransformCB),
+												 material_constant_buffer);
 
-			TransformCB transform_constant_buffer{};
-			transform_constant_buffer.model = glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{20.0f, 20.0f, 20.0f}), m_time * glm::radians(90.0f),
-														  glm::vec3{0.0f, 0.0f, 1.0f});
-			command_buffer.pushConstants<TransformCB>(m_geometryPipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, transform_constant_buffer);
+		m_mesh->getVertexBuffer()->bind(command_buffer);
+		m_mesh->getIndexBuffer()->bind(command_buffer, vk::IndexType::eUint16);
 
-			MaterialCB material_constant_buffer{};
-			material_constant_buffer.roughness = m_mesh->getRoughness();
-			command_buffer.pushConstants<MaterialCB>(m_geometryPipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eFragment, sizeof(TransformCB),
-													 material_constant_buffer);
+		command_buffer.drawIndexed(m_mesh->getIndices().size(), 1, 0, 0, 0);
 
-			const auto descriptor_sets = m_geometryPass->getDescriptorSets(frame_index);
-			command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_geometryPipeline->getPipelineLayout(), 0, descriptor_sets, nullptr);
-
-			m_mesh->getVertexBuffer()->bind(command_buffer);
-			m_mesh->getIndexBuffer()->bind(command_buffer, vk::IndexType::eUint16);
-
-			command_buffer.drawIndexed(m_mesh->getIndices().size(), 1, 0, 0, 0);
-			command_buffer.endRendering();
-		}
+		Renderer::endRendering(command_buffer);
 	}
 
 	void ClientLayer::onEvent(Event &p_event)
@@ -244,71 +224,6 @@ namespace toaster
 									   vk::ImageAspectFlagBits::eDepth);
 
 			m_depthAttachmentImageView = ctx->createImageView(m_depthAttachmentImage, depth_attachment_format, vk::ImageAspectFlagBits::eDepth, 1);
-		}
-	}
-
-	void ClientLayer::_createDescriptorPool()
-	{
-		auto &app = getApp();
-		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-
-		std::array<vk::DescriptorPoolSize, 2> descriptor_pool_sizes{};
-		descriptor_pool_sizes[0].descriptorCount = 2 * gpu::VKGPUContext::c_maxFramesInFlight;
-		descriptor_pool_sizes[0].type            = vk::DescriptorType::eUniformBuffer;
-
-		descriptor_pool_sizes[1].descriptorCount = 2 * gpu::VKGPUContext::c_maxFramesInFlight;
-		descriptor_pool_sizes[1].type            = vk::DescriptorType::eCombinedImageSampler;
-
-		vk::DescriptorPoolCreateInfo descriptor_pool_create_info{};
-		descriptor_pool_create_info.poolSizeCount = descriptor_pool_sizes.size();
-		descriptor_pool_create_info.pPoolSizes    = descriptor_pool_sizes.data();
-		descriptor_pool_create_info.maxSets       = gpu::VKGPUContext::c_maxFramesInFlight;
-		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
-
-		m_descriptorPool = {ctx->getDevice(), descriptor_pool_create_info};
-	}
-
-	void ClientLayer::_createDescriptorSets()
-	{
-		auto &app = getApp();
-		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-
-		{
-			auto &                        set_layout = m_geometryShader->getDescriptorSetLayout(0);
-			std::vector                   descriptor_set_layouts{gpu::VKGPUContext::c_maxFramesInFlight, *set_layout};
-			vk::DescriptorSetAllocateInfo descriptor_set_allocate_info{};
-			descriptor_set_allocate_info.descriptorPool     = m_descriptorPool;
-			descriptor_set_allocate_info.descriptorSetCount = gpu::VKGPUContext::c_maxFramesInFlight;
-			descriptor_set_allocate_info.pSetLayouts        = descriptor_set_layouts.data();
-
-			m_descriptorSets = ctx->getDevice().allocateDescriptorSets(descriptor_set_allocate_info);
-
-			for (uint32 i{0u}; i < gpu::VKGPUContext::c_maxFramesInFlight; ++i)
-			{
-				std::array<vk::WriteDescriptorSet, 3> write_descriptor_sets{};
-				write_descriptor_sets[0].descriptorCount = 1;
-				write_descriptor_sets[0].descriptorType  = vk::DescriptorType::eUniformBuffer;
-				write_descriptor_sets[0].pBufferInfo     = &m_ubos->getUBO(i)->getDescriptorInfo();
-				write_descriptor_sets[0].dstSet          = m_descriptorSets[i];
-				write_descriptor_sets[0].dstBinding      = 0;
-				write_descriptor_sets[0].dstArrayElement = 0;
-
-				write_descriptor_sets[1].descriptorCount = 1;
-				write_descriptor_sets[1].descriptorType  = vk::DescriptorType::eCombinedImageSampler;
-				write_descriptor_sets[1].pImageInfo      = &m_mesh->getAlbedoMap()->getDescriptorInfo();
-				write_descriptor_sets[1].dstSet          = m_descriptorSets[i];
-				write_descriptor_sets[1].dstBinding      = 1;
-				write_descriptor_sets[1].dstArrayElement = 0;
-
-				write_descriptor_sets[2].descriptorCount = 1;
-				write_descriptor_sets[2].descriptorType  = vk::DescriptorType::eCombinedImageSampler;
-				write_descriptor_sets[2].pImageInfo      = &m_texture->getDescriptorInfo();
-				write_descriptor_sets[2].dstSet          = m_descriptorSets[i];
-				write_descriptor_sets[2].dstBinding      = 2;
-				write_descriptor_sets[2].dstArrayElement = 0;
-
-				ctx->getDevice().updateDescriptorSets(write_descriptor_sets, {});
-			}
 		}
 	}
 }
