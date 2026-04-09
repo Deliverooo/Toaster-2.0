@@ -20,18 +20,12 @@ namespace toaster::gpu
 		image_create_info.format      = m_specInfo.format;
 		m_image                       = make_reference<VKImage2D>(m_ctx, image_create_info);
 
-		#if 0
-		m_ctx->transitionImageLayout(m_image->getImage(), m_currentImageLayout, vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eNone,
-									 vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eFragmentShader, 1,
-									 vk::ImageAspectFlagBits::eColor); m_currentImageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-
-		#endif
 		m_ctx->transitionImageLayout(m_image->getImage(), m_currentImageLayout, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
 									 vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eColorAttachmentOutput,
 									 1, vk::ImageAspectFlagBits::eColor);
 		m_currentImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 
-		auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
+		const auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 
 		vk::SamplerCreateInfo sampler_create_info{};
 		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
@@ -247,7 +241,7 @@ namespace toaster::gpu
 
 		m_currentImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 
-		auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
+		const auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 
 		vk::SamplerCreateInfo sampler_create_info{};
 		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;

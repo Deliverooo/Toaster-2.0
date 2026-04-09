@@ -47,19 +47,18 @@ namespace toaster
 		bool onKeyPressEvent(KeyPressEvent &p_event);
 		bool onMouseButtonPressEvent(MouseButtonPressEvent &p_event);
 
-		void _createAttachmentImages();
-		void _createDescriptorPool();
-		void _createDescriptorSets();
-
 		float32 m_time{0.0f};
 
 		uint32 m_windowWidth{0u};
 		uint32 m_windowHeight{0u};
 
 		#pragma region fullscreen pass
-		gpu::VertexBufferLayout m_compositeVertexBufferLayout;
-		RefPtr<gpu::VKShader>   m_compositeShader{nullptr};
-		RefPtr<gpu::VKPipeline> m_compositePipeline{nullptr};
+		gpu::VertexBufferLayout   m_compositeVertexBufferLayout;
+		RefPtr<gpu::VKShader>     m_compositeShader{nullptr};
+		RefPtr<gpu::VKPipeline>   m_compositePipeline{nullptr};
+		RefPtr<gpu::VKRenderPass> m_fullscreenPass{nullptr};
+
+		RefPtr<gpu::VKMaterial> m_fullscreenMaterial{nullptr};
 
 		RefPtr<gpu::VKVertexBuffer> m_fullscreenQuadVertexBuffer{nullptr};
 		RefPtr<gpu::VKIndexBuffer>  m_fullscreenQuadIndexBuffer{nullptr};
@@ -73,16 +72,11 @@ namespace toaster
 		std::vector<FullscreenQuadVertex> m_fullscreenQuadVertices;
 		std::vector<uint16>               m_fullscreenQuadIndices;
 
-		vk::raii::Image        m_colourAttachmentImage{nullptr};
-		vk::raii::DeviceMemory m_colourAttachmentImageMemory{nullptr};
-		vk::raii::ImageView    m_colourAttachmentImageView{nullptr};
+		RefPtr<gpu::VKImage2D> m_colourAttachmentImage{nullptr};
+		RefPtr<gpu::VKImage2D> m_depthAttachmentImage{nullptr};
 
-		vk::raii::Image        m_depthAttachmentImage{nullptr};
-		vk::raii::DeviceMemory m_depthAttachmentImageMemory{nullptr};
-		vk::raii::ImageView    m_depthAttachmentImageView{nullptr};
-
-		vk::raii::DescriptorPool             m_descriptorPool{nullptr};
-		std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
+		// vk::raii::DescriptorPool             m_descriptorPool{nullptr};
+		// std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
 		#pragma  endregion
 
 		RefPtr<Scene>               m_scene;

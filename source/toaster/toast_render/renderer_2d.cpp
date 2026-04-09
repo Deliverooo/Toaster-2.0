@@ -31,6 +31,7 @@ namespace toaster
 		pipeline_create_info.depthFormat        = m_ctx->findDepthFormat();
 		pipeline_create_info.vertexBufferLayout = m_quadVertexBufferLayout;
 		pipeline_create_info.shader             = m_quadShader;
+		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
 		pipeline_create_info.multisample        = false;
 		m_quadPipeline                          = make_reference<gpu::VKPipeline>(m_ctx, pipeline_create_info);
 
@@ -61,7 +62,7 @@ namespace toaster
 		m_quadVertexBuffer = make_reference<gpu::VKVertexBuffer>(m_ctx, quad_vertex_buffer_size);
 		m_quadVertexBase   = new QuadVertex[m_maxVertices];
 
-		auto * quad_indices = new uint32[m_maxIndices];
+		auto * quad_indices = new uint16[m_maxIndices];
 		uint32 offset{0u};
 		for (uint32 i{0u}; i < m_maxIndices; i += 6u)
 		{
@@ -76,7 +77,7 @@ namespace toaster
 			offset += 4u;
 		}
 
-		vk::DeviceSize index_buffer_size{m_maxIndices * sizeof(uint32)};
+		vk::DeviceSize index_buffer_size{m_maxIndices * sizeof(uint16)};
 		m_quadIndexBuffer = make_reference<gpu::VKIndexBuffer>(m_ctx, quad_indices, index_buffer_size);
 
 		delete[] quad_indices;
@@ -100,8 +101,6 @@ namespace toaster
 
 		for (uint32 i{0u}; i < 32; ++i)
 			m_textureSlots[i] = m_whiteTexture;
-
-		_createRenderTargetResources();
 	}
 
 	Renderer2D::~Renderer2D()
@@ -138,7 +137,7 @@ namespace toaster
 
 		vk::RenderingAttachmentInfo colour_attachment_info{};
 		colour_attachment_info.imageView   = m_renderTargetTexture->getImage()->getImageView();
-		colour_attachment_info.clearValue  = vk::ClearColorValue{1.0f, 1.0f, 0.0f, 1.0f};
+		colour_attachment_info.clearValue  = vk::ClearColorValue{0.0f, 1.0f, 0.0f, 1.0f};
 		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
 		colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
@@ -170,8 +169,8 @@ namespace toaster
 				// m_quadMaterial->set("u_Textures", m_textureSlots[i], i);
 				// else
 				// m_quadMaterial->set("u_Textures", m_whiteTexture, i);
+				m_quadMaterial->set("u_WhiteTexture", m_whiteTexture);
 			}
-			m_quadMaterial->set("u_WhiteTexture", m_whiteTexture);
 
 			Renderer::renderGeometry(p_cmd, p_frame_index, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, glm::mat4{1.0f});
 		}
@@ -241,36 +240,5 @@ namespace toaster
 
 		m_quadIndexCount = 0u;
 		m_quadVertexPtr  = m_quadVertexBase;
-	}
-
-	void Renderer2D::_createRenderTargetResources()
-	{
-		#if 0
-		m_renderTargetImage               = nullptr; m_renderTargetImageMemory = nullptr; m_renderTargetImageView = nullptr; m_renderTargetImageSampler = nullptr;
-		m_renderTargetDescriptorImageInfo = vk::DescriptorImageInfo{}; vk::Format image_format = vk::Format::eR8G8B8A8Srgb; m_ctx->
-				createImage(m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight, 1, vk::SampleCountFlagBits::e1, image_format, vk::ImageTiling::eOptimal,
-							vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal, m_renderTargetImage,
-							m_renderTargetImageMemory); m_ctx->
-				transitionImageLayout(m_renderTargetImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eNone,
-									  vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eFragmentShader, 1,
-									  vk::ImageAspectFlagBits::eColor);
-		m_renderTargetImageView = m_ctx->createImageView(m_renderTargetImage, image_format, vk::ImageAspectFlagBits::eColor, 1); auto physical_device_props = m_ctx->
-				getPhysicalDevice().getProperties(); vk::SamplerCreateInfo sampler_create_info{}; sampler_create_info.addressModeU = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV = vk::SamplerAddressMode::eRepeat; sampler_create_info.addressModeW = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.magFilter = vk::Filter::eLinear; sampler_create_info.minFilter = vk::Filter::eLinear;
-		sampler_create_info.mipmapMode = vk::SamplerMipmapMode::eLinear; sampler_create_info.addressModeU = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV = vk::SamplerAddressMode::eRepeat; sampler_create_info.addressModeW = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.mipLodBias = 0.0f; sampler_create_info.anisotropyEnable = true;
-		sampler_create_info.maxAnisotropy = physical_device_props.limits.maxSamplerAnisotropy; sampler_create_info.compareEnable = false;
-		sampler_create_info.compareOp = vk::CompareOp::eAlways; sampler_create_info.minLod = 0.0f; sampler_create_info.maxLod = vk::LodClampNone;
-		sampler_create_info.borderColor = vk::BorderColor::eFloatCustomEXT; sampler_create_info.unnormalizedCoordinates = false;
-
-		// This is purely aesthetic
-		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{}; border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
-		border_colour_create_info.format = vk::Format::eR8G8B8A8Srgb; sampler_create_info.pNext = &border_colour_create_info;
-		m_renderTargetImageSampler = {m_ctx->getDevice(), sampler_create_info}; m_renderTargetDescriptorImageInfo = vk::DescriptorImageInfo{};
-		m_renderTargetDescriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal; m_renderTargetDescriptorImageInfo.imageView = m_renderTargetImageView;
-		m_renderTargetDescriptorImageInfo.sampler = m_renderTargetImageSampler;
-		#endif
 	}
 }

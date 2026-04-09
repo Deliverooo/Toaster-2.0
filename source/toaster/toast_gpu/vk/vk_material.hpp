@@ -19,6 +19,7 @@ namespace toaster::gpu
 		void update(uint32 p_frame_index);
 
 		vk::DescriptorSet getDescriptorSet(uint32 p_frame_index);
+		bool              hasDescriptorSets() const;
 
 		template<GPUResource_c TResource>
 		RefPtr<TResource> get(const String &p_name)

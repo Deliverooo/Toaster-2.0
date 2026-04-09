@@ -76,6 +76,8 @@ namespace toaster::gpu
 
 		const RefPtr<VKTexture2D> &getWhiteTexture() const;
 
+		bool hasDescriptorSets() const;
+
 		uint32 getStartSetIndex() const;
 		uint32 getEndSetIndex() const;
 

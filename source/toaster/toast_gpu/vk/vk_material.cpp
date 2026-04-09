@@ -42,4 +42,9 @@ namespace toaster::gpu
 		update(p_frame_index);
 		return m_descriptorSetManager->getDescriptorSets(p_frame_index)[0];
 	}
+
+	bool VKMaterial::hasDescriptorSets() const
+	{
+		return m_descriptorSetManager->hasDescriptorSets();
+	}
 }

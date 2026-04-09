@@ -303,6 +303,11 @@ namespace toaster::gpu
 		return m_whiteTexture;
 	}
 
+	bool VKDescriptorSetManager::hasDescriptorSets() const
+	{
+		return !m_descriptorSets.empty() && !m_descriptorSets[0].empty();
+	}
+
 	uint32 VKDescriptorSetManager::getStartSetIndex() const
 	{
 		return m_startSet;

@@ -43,8 +43,6 @@ namespace toaster
 
 			m_colourAttachmentImage->resize(width, height);
 			m_depthAttachmentImage->resize(width, height);
-
-			m_renderer2D->onResize(width, height);
 		});
 
 		{
@@ -79,11 +77,6 @@ namespace toaster
 
 		m_mesh  = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx", m_geometryShader);
 		m_mesh2 = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/DJT_sculpt.fbx", m_geometryShader);
-
-		Renderer2DCreateInfo renderer_2d_create_info{};
-		renderer_2d_create_info.renderTargetWidth  = window_width;
-		renderer_2d_create_info.renderTargetHeight = window_height;
-		m_renderer2D                               = make_reference<Renderer2D>(ctx, renderer_2d_create_info);
 
 		gpu::ImageCreateInfo colour_attachment_image_create_info{};
 		colour_attachment_image_create_info.width       = window_width;
@@ -129,15 +122,6 @@ namespace toaster
 		camera_ub.view = glm::lookAt(glm::vec3{2.0f, 2.0f, 2.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
 		camera_ub.proj = glm::perspective(glm::radians(45.0f), static_cast<float32>(swapchain_extent.width) / static_cast<float32>(swapchain_extent.height), 0.1f, 10.0f);
 		camera_ub.proj[1][1] *= -1.0f;
-
-		m_renderer2D->begin(command_buffer, frame_index, camera_ub.view, camera_ub.proj);
-
-		m_renderer2D->submitQuad(m_meshTranslation, glm::vec2{10.0f, 10.0f}, glm::vec4{0.0f, 1.0f, 1.0f, 1.0f});
-
-		m_renderer2D->end(command_buffer, frame_index);
-
-		m_mesh->getMaterial()->set("u_Texture", m_renderer2D->getColourOutput());
-
 
 		std::memcpy(m_mappedUniformBuffers[frame_index], &camera_ub, sizeof(CameraUB));
 
@@ -196,7 +180,7 @@ namespace toaster
 	{
 		ig::Begin("Tools");
 
-		ig::SliderFloat3("Translation", glm::value_ptr(m_meshTranslation), -100.0f, 100.0f);
+		ig::SliderFloat3("Translation", glm::value_ptr(m_meshTranslation), -1.0f, 1.0f);
 
 		ig::End();
 	}

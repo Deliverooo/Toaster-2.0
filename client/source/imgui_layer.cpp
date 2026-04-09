@@ -41,8 +41,8 @@ namespace toaster
 		auto  swapchain = app.getWindow().getSwapchain();
 
 		vk::DescriptorPoolSize pool_sizes[] = {
-			{vk::DescriptorType::eSampler, 500},
-			{vk::DescriptorType::eCombinedImageSampler, 500},
+			{vk::DescriptorType::eSampler, 1000},
+			{vk::DescriptorType::eCombinedImageSampler, 1000},
 			{vk::DescriptorType::eSampledImage, 256},
 			{vk::DescriptorType::eStorageImage, 24},
 			{vk::DescriptorType::eUniformTexelBuffer, 8},

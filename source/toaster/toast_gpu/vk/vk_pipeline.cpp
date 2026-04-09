@@ -60,7 +60,7 @@ namespace toaster::gpu
 		vertex_input_state_create_info.vertexAttributeDescriptionCount = static_cast<uint32>(vertex_input_attribute_descriptions.size());
 
 		vk::PipelineInputAssemblyStateCreateInfo input_assembly_state_create_info{};
-		input_assembly_state_create_info.topology = vk::PrimitiveTopology::eTriangleList;
+		input_assembly_state_create_info.topology = m_createInfo.primitiveTopology;
 
 		vk::PipelineViewportStateCreateInfo viewport_state_create_info{};
 		viewport_state_create_info.viewportCount = 1;
@@ -69,8 +69,8 @@ namespace toaster::gpu
 		vk::PipelineRasterizationStateCreateInfo rasterization_state_create_info{};
 		rasterization_state_create_info.depthClampEnable        = false;
 		rasterization_state_create_info.rasterizerDiscardEnable = false;
-		rasterization_state_create_info.polygonMode             = vk::PolygonMode::eFill;
-		rasterization_state_create_info.cullMode                = vk::CullModeFlagBits::eBack;
+		rasterization_state_create_info.polygonMode             = m_createInfo.polygonMode;
+		rasterization_state_create_info.cullMode                = m_createInfo.cullMode;
 		rasterization_state_create_info.frontFace               = vk::FrontFace::eCounterClockwise;
 		rasterization_state_create_info.depthBiasEnable         = false;
 		rasterization_state_create_info.lineWidth               = 1.0f;

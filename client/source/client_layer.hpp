@@ -60,8 +60,6 @@ namespace toaster
 		RefPtr<gpu::VKMesh> m_mesh{nullptr};
 		RefPtr<gpu::VKMesh> m_mesh2{nullptr};
 
-		RefPtr<Renderer2D> m_renderer2D{nullptr};
-
 		glm::vec3 m_meshTranslation{0.0f};
 
 		struct CameraUB

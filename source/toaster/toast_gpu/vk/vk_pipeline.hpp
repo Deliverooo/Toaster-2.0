@@ -20,6 +20,10 @@ namespace toaster::gpu
 
 		RefPtr<VKShader> shader{nullptr};
 
+		vk::PrimitiveTopology primitiveTopology{vk::PrimitiveTopology::eTriangleList};
+		vk::PolygonMode       polygonMode{vk::PolygonMode::eFill};
+		vk::CullModeFlags     cullMode{vk::CullModeFlagBits::eBack};
+
 		bool multisample{true};
 	};
 

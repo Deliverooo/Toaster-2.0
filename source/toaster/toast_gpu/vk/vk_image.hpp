@@ -19,7 +19,8 @@ namespace toaster::gpu
 		uint32                  mipCount{1u};
 	};
 
-	// An image is a texture without a sampler
+	// An "Image" represents a texture without a sampler
+	// You would use this for render attachments
 	class VKImage2D
 	{
 	public:

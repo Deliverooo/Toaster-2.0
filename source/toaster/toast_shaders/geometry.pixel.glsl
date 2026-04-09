@@ -7,15 +7,8 @@ layout(location = 0) out vec4 o_Colour;
 
 layout(set = 0, binding = 0) uniform sampler2D u_Texture;
 
-//layout(push_constant) uniform Material
-//{
-//    float roughness;
-//} material;
-
-
 void main()
 {
-
     vec3 col = texture(u_Texture, v_TexCoord).rgb;
 
     o_Colour = vec4(col, 1.0f);

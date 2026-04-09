@@ -54,7 +54,6 @@ namespace toaster
 
 	private:
 		void _beginNewBatch();
-		void _createRenderTargetResources();
 
 		gpu::VKGPUContext *m_ctx;
 

@@ -35,10 +35,12 @@ namespace toaster
 		// Push the constants
 		p_command_buffer.pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
-		// Bind the material descriptor set (0)
-		vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(p_frame_index)};
-		p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0, material_descriptor_set, {});
-
+		if (p_material->hasDescriptorSets())
+		{
+			// Bind the material descriptor set (0)
+			vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(p_frame_index)};
+			p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0, material_descriptor_set, {});
+		}
 		// Bind the vertex and index buffers
 		p_vertex_buffer->bind(p_command_buffer);
 		p_index_buffer->bind(p_command_buffer, vk::IndexType::eUint16);
