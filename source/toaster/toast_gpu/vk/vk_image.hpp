@@ -32,6 +32,9 @@ namespace toaster::gpu
 
 		[[nodiscard]] const ImageCreateInfo &getCreateInfo() const;
 
+		void            setCurrentImageLayout(vk::ImageLayout p_layout);
+		vk::ImageLayout getCurrentImageLayout() const;
+
 		void resize(uint32 p_width, uint32 p_height);
 		void recreate();
 
@@ -43,5 +46,7 @@ namespace toaster::gpu
 		vk::raii::Image        m_image{nullptr};
 		vk::raii::DeviceMemory m_imageMemory{nullptr};
 		vk::raii::ImageView    m_imageView{nullptr};
+
+		vk::ImageLayout m_currentImageLayout{vk::ImageLayout::eUndefined};
 	};
 }

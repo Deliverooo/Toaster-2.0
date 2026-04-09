@@ -127,34 +127,33 @@ namespace toaster
 
 	void Renderer2D::end(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index)
 	{
-		if (m_renderTargetTexture->getCurrentImageLayout() != vk::ImageLayout::eColorAttachmentOptimal)
+		if (m_renderTargetTexture->getImage()->getCurrentImageLayout() != vk::ImageLayout::eColorAttachmentOptimal)
 		{
 			m_ctx->transitionImageLayout(m_renderTargetTexture->getImage()->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
 										 vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eFragmentShader,
 										 vk::PipelineStageFlagBits::eColorAttachmentOutput, 1, vk::ImageAspectFlagBits::eColor);
-			m_renderTargetTexture->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+			m_renderTargetTexture->getImage()->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 		}
 
-		vk::RenderingAttachmentInfo colour_attachment_info{};
+		gpu::RenderingInfo rendering_info{};
+		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight}};
+		rendering_info.layerCount = 1;
+
+		gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
 		colour_attachment_info.imageView   = m_renderTargetTexture->getImage()->getImageView();
 		colour_attachment_info.clearValue  = vk::ClearColorValue{0.0f, 1.0f, 0.0f, 1.0f};
 		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
 		colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
 
-		vk::RenderingAttachmentInfo depth_attachment_info{};
+		gpu::RenderingAttachmentInfo depth_attachment_info{};
 		depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
 		depth_attachment_info.imageView   = m_renderTargetDepthImage->getImageView();
 		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
 		depth_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
 
-		vk::RenderingInfo rendering_info{};
-		rendering_info.renderArea           = vk::Rect2D{{0, 0}, {m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight}};
-		rendering_info.layerCount           = 1;
-		rendering_info.colorAttachmentCount = 1;
-		rendering_info.pColorAttachments    = &colour_attachment_info;
-		rendering_info.pDepthAttachment     = &depth_attachment_info;
+		rendering_info.pDepthAttachment = &depth_attachment_info;
 
 		Renderer::beginRendering(rendering_info, p_cmd, p_frame_index, m_quadRenderPass);
 
@@ -180,7 +179,7 @@ namespace toaster
 		m_ctx->transitionImageLayout(m_renderTargetTexture->getImage()->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
 									 vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eColorAttachmentOutput,
 									 vk::PipelineStageFlagBits::eFragmentShader, 1, vk::ImageAspectFlagBits::eColor);
-		m_renderTargetTexture->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		m_renderTargetTexture->getImage()->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 	}
 
 	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)

@@ -9,7 +9,6 @@ namespace toaster::gpu
 	VKTexture2D::VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info) : m_ctx(p_ctx), m_specInfo(p_spec_info)
 	{
 		// The only reason to create an image without providing it with any data is to use it as an attachment...
-		m_currentImageLayout = vk::ImageLayout::eUndefined;
 
 		ImageCreateInfo image_create_info{};
 		image_create_info.width       = m_specInfo.width;
@@ -20,10 +19,11 @@ namespace toaster::gpu
 		image_create_info.format      = m_specInfo.format;
 		m_image                       = make_reference<VKImage2D>(m_ctx, image_create_info);
 
-		m_ctx->transitionImageLayout(m_image->getImage(), m_currentImageLayout, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
+		m_ctx->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
 									 vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eColorAttachmentOutput,
 									 1, vk::ImageAspectFlagBits::eColor);
-		m_currentImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		m_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
 
 		const auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 
@@ -113,13 +113,13 @@ namespace toaster::gpu
 									 vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, m_mipLevels,
 									 vk::ImageAspectFlagBits::eColor);
 
-		m_currentImageLayout = vk::ImageLayout::eTransferDstOptimal;
+		m_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
 
 		m_ctx->copyBufferToImage(staging_buffer, m_image->getImage(), m_specInfo.width, m_specInfo.height);
 
 		m_ctx->generateMipmaps(m_image->getImage(), image_create_info.format, m_specInfo.width, m_specInfo.height, m_mipLevels);
 
-		m_currentImageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 
@@ -185,7 +185,7 @@ namespace toaster::gpu
 									 vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, 1,
 									 vk::ImageAspectFlagBits::eColor);
 
-		m_currentImageLayout = vk::ImageLayout::eTransferDstOptimal;
+		m_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
 
 		m_ctx->copyBufferToImage(staging_buffer, m_image->getImage(), p_spec_info.width, p_spec_info.height);
 
@@ -193,7 +193,7 @@ namespace toaster::gpu
 									 vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eTransfer,
 									 vk::PipelineStageFlagBits::eFragmentShader, 1, vk::ImageAspectFlagBits::eColor);
 
-		m_currentImageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 
@@ -227,7 +227,7 @@ namespace toaster::gpu
 		m_sampler = {m_ctx->getDevice(), sampler_create_info};
 
 		m_descriptorImageInfo             = vk::DescriptorImageInfo{};
-		m_descriptorImageInfo.imageLayout = m_currentImageLayout;
+		m_descriptorImageInfo.imageLayout = m_image->getCurrentImageLayout();
 		m_descriptorImageInfo.imageView   = m_image->getImageView();
 		m_descriptorImageInfo.sampler     = m_sampler;
 	}
@@ -239,7 +239,7 @@ namespace toaster::gpu
 
 		m_image->resize(p_width, p_height);
 
-		m_currentImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		m_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
 		const auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 
@@ -305,16 +305,6 @@ namespace toaster::gpu
 	vk::DescriptorImageInfo &VKTexture2D::getDescriptorInfo()
 	{
 		return m_descriptorImageInfo;
-	}
-
-	void VKTexture2D::setCurrentImageLayout(vk::ImageLayout p_layout)
-	{
-		m_currentImageLayout = p_layout;
-	}
-
-	vk::ImageLayout VKTexture2D::getCurrentImageLayout() const
-	{
-		return m_currentImageLayout;
 	}
 
 	EGPUResourceType VKTexture2D::getResourceType() const

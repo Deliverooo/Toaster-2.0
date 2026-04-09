@@ -32,9 +32,6 @@ namespace toaster::gpu
 		[[nodiscard]] vk::raii::Sampler &      getSampler();
 		[[nodiscard]] vk::DescriptorImageInfo &getDescriptorInfo();
 
-		void            setCurrentImageLayout(vk::ImageLayout p_layout);
-		vk::ImageLayout getCurrentImageLayout() const;
-
 		[[nodiscard]] EGPUResourceType getResourceType() const override;
 
 	private:
@@ -49,7 +46,5 @@ namespace toaster::gpu
 		vk::raii::Sampler m_sampler{nullptr};
 
 		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};
-
-		vk::ImageLayout m_currentImageLayout{vk::ImageLayout::eUndefined};
 	};
 }

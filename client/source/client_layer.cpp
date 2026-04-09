@@ -43,6 +43,8 @@ namespace toaster
 
 			m_colourAttachmentImage->resize(width, height);
 			m_depthAttachmentImage->resize(width, height);
+
+			m_renderer2D->onResize(width, height);
 		});
 
 		{
@@ -77,6 +79,11 @@ namespace toaster
 
 		m_mesh  = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx", m_geometryShader);
 		m_mesh2 = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/DJT_sculpt.fbx", m_geometryShader);
+
+		Renderer2DCreateInfo renderer_2d_create_info{};
+		renderer_2d_create_info.renderTargetWidth  = window_width;
+		renderer_2d_create_info.renderTargetHeight = window_height;
+		m_renderer2D                               = make_reference<Renderer2D>(ctx, renderer_2d_create_info);
 
 		gpu::ImageCreateInfo colour_attachment_image_create_info{};
 		colour_attachment_image_create_info.width       = window_width;
@@ -123,9 +130,21 @@ namespace toaster
 		camera_ub.proj = glm::perspective(glm::radians(45.0f), static_cast<float32>(swapchain_extent.width) / static_cast<float32>(swapchain_extent.height), 0.1f, 10.0f);
 		camera_ub.proj[1][1] *= -1.0f;
 
+		m_renderer2D->begin(command_buffer, frame_index, camera_ub.view, camera_ub.proj);
+
+		m_renderer2D->submitQuad(m_meshTranslation, glm::vec2{109.0f, 109.0f}, glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
+
+		m_renderer2D->end(command_buffer, frame_index);
+
+		m_geometryPass->setInput("u_2D", m_renderer2D->getColourOutput());
+
 		std::memcpy(m_mappedUniformBuffers[frame_index], &camera_ub, sizeof(CameraUB));
 
-		vk::RenderingAttachmentInfo colour_attachment_info{};
+		gpu::RenderingInfo rendering_info{};
+		rendering_info.renderArea = vk::Rect2D{{0, 0}, swapchain_extent};
+		rendering_info.layerCount = 1;
+
+		gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
 		colour_attachment_info.clearValue         = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};;
 		colour_attachment_info.imageView          = m_colourAttachmentImage->getImageView();
 		colour_attachment_info.imageLayout        = vk::ImageLayout::eColorAttachmentOptimal;
@@ -135,7 +154,7 @@ namespace toaster
 		colour_attachment_info.resolveImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		colour_attachment_info.resolveImageView   = swapchain->getImageView(image_index);
 
-		vk::RenderingAttachmentInfo depth_attachment_info{};
+		gpu::RenderingAttachmentInfo depth_attachment_info{};
 		depth_attachment_info.clearValue         = vk::ClearDepthStencilValue{1.0f, 0u};;
 		depth_attachment_info.imageView          = m_depthAttachmentImage->getImageView();
 		depth_attachment_info.imageLayout        = vk::ImageLayout::eDepthAttachmentOptimal;
@@ -145,12 +164,7 @@ namespace toaster
 		depth_attachment_info.resolveImageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		depth_attachment_info.resolveImageView   = swapchain->getDepthImageView();
 
-		vk::RenderingInfo rendering_info{};
-		rendering_info.renderArea           = vk::Rect2D{{0, 0}, swapchain_extent};
-		rendering_info.layerCount           = 1;
-		rendering_info.colorAttachmentCount = 1;
-		rendering_info.pColorAttachments    = &colour_attachment_info;
-		rendering_info.pDepthAttachment     = &depth_attachment_info;
+		rendering_info.pDepthAttachment = &depth_attachment_info;
 
 		Renderer::beginRendering(rendering_info, command_buffer, frame_index, m_geometryPass);
 

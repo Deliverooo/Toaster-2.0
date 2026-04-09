@@ -7,31 +7,26 @@ namespace toaster::gpu
 {
 	class VKGPUContext;
 
-	struct RenderAttachmentSpecInfo
+	struct RenderingAttachmentInfo
 	{
-		uint32 width{0u};
-		uint32 height{0u};
-
-		std::vector<vk::Format> colourAttachmentFormats;
-		vk::Format              depthAttachmentFormat{vk::Format::eUndefined};
+		vk::ImageView           imageView{};
+		vk::ImageLayout         imageLayout{vk::ImageLayout::eUndefined};
+		vk::ResolveModeFlagBits resolveMode{vk::ResolveModeFlagBits::eNone};
+		vk::ImageView           resolveImageView{};
+		vk::ImageLayout         resolveImageLayout{vk::ImageLayout::eUndefined};
+		vk::AttachmentLoadOp    loadOp{vk::AttachmentLoadOp::eLoad};
+		vk::AttachmentStoreOp   storeOp{vk::AttachmentStoreOp::eStore};
+		vk::ClearValue          clearValue{};
 	};
 
-	class VKRenderAttachment
+	struct RenderingInfo
 	{
-	public:
-		VKRenderAttachment(VKGPUContext *p_ctx, const RenderAttachmentSpecInfo& p_spec_info);
+		vk::RenderingFlags flags{};
+		vk::Rect2D         renderArea{};
+		uint32             layerCount{1u};
 
-	private:
-		VKGPUContext *m_ctx{nullptr};
-
-		RenderAttachmentSpecInfo m_specInfo;
-
-		std::vector<vk::raii::Image>        m_colourAttachments;
-		std::vector<vk::raii::ImageView>    m_colourAttachmentViews;
-		std::vector<vk::raii::DeviceMemory> m_colourAttachmentMemories;
-
-		vk::raii::Image        m_depthAttachment{nullptr};
-		vk::raii::ImageView    m_depthAttachmentView{nullptr};
-		vk::raii::DeviceMemory m_depthAttachmentMemory{nullptr};
+		std::vector<RenderingAttachmentInfo> colourAttachments;
+		RenderingAttachmentInfo *            pDepthAttachment{nullptr};
+		RenderingAttachmentInfo *            pStencilAttachment{nullptr};
 	};
 }

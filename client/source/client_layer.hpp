@@ -22,6 +22,7 @@
 #include "toast_gpu/vk/vk_render_pass.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_gpu/vk/vk_uniform_buffer.hpp"
+#include "toast_gpu/vk/vk_render_attachment.hpp"
 
 namespace toaster
 {
@@ -59,6 +60,8 @@ namespace toaster
 
 		RefPtr<gpu::VKMesh> m_mesh{nullptr};
 		RefPtr<gpu::VKMesh> m_mesh2{nullptr};
+
+		RefPtr<Renderer2D> m_renderer2D{nullptr};
 
 		glm::vec3 m_meshTranslation{0.0f};
 

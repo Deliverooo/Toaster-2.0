@@ -3,7 +3,7 @@
 
 namespace toaster
 {
-	void Renderer::beginRendering(const vk::RenderingInfo &        p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index,
+	void Renderer::beginRendering(const gpu::RenderingInfo &       p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index,
 								  const RefPtr<gpu::VKRenderPass> &p_render_pass)
 	{
 		const vk::Extent2D rendering_extent{p_rendering_info.renderArea.extent};
@@ -11,7 +11,56 @@ namespace toaster
 		const vk::Viewport viewport{0.0f, 0.0f, static_cast<float32>(rendering_extent.width), static_cast<float32>(rendering_extent.height), 0.0f, 1.0f};
 		const vk::Rect2D   scissor{vk::Offset2D{0, 0}, rendering_extent};
 
-		p_command_buffer.beginRendering(p_rendering_info);
+		std::vector<vk::RenderingAttachmentInfo> colour_rendering_attachment_infos{};
+		for (const auto &rendering_attachment: p_rendering_info.colourAttachments)
+		{
+			auto &info{colour_rendering_attachment_infos.emplace_back()};
+			info.imageView          = rendering_attachment.imageView;
+			info.imageLayout        = rendering_attachment.imageLayout;
+			info.resolveMode        = rendering_attachment.resolveMode;
+			info.resolveImageView   = rendering_attachment.resolveImageView;
+			info.resolveImageLayout = rendering_attachment.resolveImageLayout;
+			info.loadOp             = rendering_attachment.loadOp;
+			info.storeOp            = rendering_attachment.storeOp;
+			info.clearValue         = rendering_attachment.clearValue;
+		}
+
+		vk::RenderingAttachmentInfo depth_attachment_info{};
+		if (p_rendering_info.pDepthAttachment != nullptr)
+		{
+			depth_attachment_info.imageView          = p_rendering_info.pDepthAttachment->imageView;
+			depth_attachment_info.imageLayout        = p_rendering_info.pDepthAttachment->imageLayout;
+			depth_attachment_info.resolveMode        = p_rendering_info.pDepthAttachment->resolveMode;
+			depth_attachment_info.resolveImageView   = p_rendering_info.pDepthAttachment->resolveImageView;
+			depth_attachment_info.resolveImageLayout = p_rendering_info.pDepthAttachment->resolveImageLayout;
+			depth_attachment_info.loadOp             = p_rendering_info.pDepthAttachment->loadOp;
+			depth_attachment_info.storeOp            = p_rendering_info.pDepthAttachment->storeOp;
+			depth_attachment_info.clearValue         = p_rendering_info.pDepthAttachment->clearValue;
+		}
+
+		vk::RenderingAttachmentInfo stencil_attachment_info{};
+		if (p_rendering_info.pStencilAttachment != nullptr)
+		{
+			stencil_attachment_info.imageView          = p_rendering_info.pStencilAttachment->imageView;
+			stencil_attachment_info.imageLayout        = p_rendering_info.pStencilAttachment->imageLayout;
+			stencil_attachment_info.resolveMode        = p_rendering_info.pStencilAttachment->resolveMode;
+			stencil_attachment_info.resolveImageView   = p_rendering_info.pStencilAttachment->resolveImageView;
+			stencil_attachment_info.resolveImageLayout = p_rendering_info.pStencilAttachment->resolveImageLayout;
+			stencil_attachment_info.loadOp             = p_rendering_info.pStencilAttachment->loadOp;
+			stencil_attachment_info.storeOp            = p_rendering_info.pStencilAttachment->storeOp;
+			stencil_attachment_info.clearValue         = p_rendering_info.pStencilAttachment->clearValue;
+		}
+
+		vk::RenderingInfo rendering_info{};
+		rendering_info.flags                = p_rendering_info.flags;
+		rendering_info.renderArea           = p_rendering_info.renderArea;
+		rendering_info.layerCount           = p_rendering_info.layerCount;
+		rendering_info.colorAttachmentCount = p_rendering_info.colourAttachments.size();
+		rendering_info.pColorAttachments    = colour_rendering_attachment_infos.data();
+		rendering_info.pDepthAttachment     = p_rendering_info.pDepthAttachment ? &depth_attachment_info : nullptr;
+		rendering_info.pStencilAttachment   = p_rendering_info.pStencilAttachment ? &stencil_attachment_info : nullptr;
+
+		p_command_buffer.beginRendering(rendering_info);
 		p_command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, p_render_pass->getPipeline()->getPipeline());
 		p_command_buffer.setViewport(0, viewport);
 		p_command_buffer.setScissor(0, scissor);

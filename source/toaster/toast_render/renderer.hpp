@@ -4,6 +4,7 @@
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_material.hpp"
+#include "toast_gpu/vk/vk_render_attachment.hpp"
 
 #include <glm/glm.hpp>
 
@@ -13,7 +14,7 @@ namespace toaster
 	class Renderer final
 	{
 	public:
-		static void beginRendering(const vk::RenderingInfo &        p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index,
+		static void beginRendering(const gpu::RenderingInfo &       p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index,
 								   const RefPtr<gpu::VKRenderPass> &p_render_pass);
 		static void endRendering(const vk::raii::CommandBuffer &p_command_buffer);
 

@@ -31,6 +31,16 @@ namespace toaster::gpu
 		return m_createInfo;
 	}
 
+	void VKImage2D::setCurrentImageLayout(vk::ImageLayout p_layout)
+	{
+		m_currentImageLayout = p_layout;
+	}
+
+	vk::ImageLayout VKImage2D::getCurrentImageLayout() const
+	{
+		return m_currentImageLayout;
+	}
+
 	#if 0
 	void VKImage2D::setData(void *p_data, uint64 p_size)
 	{
@@ -107,6 +117,8 @@ namespace toaster::gpu
 		m_imageMemory = nullptr;
 		m_imageView   = nullptr;
 
+		m_currentImageLayout = vk::ImageLayout::eUndefined;
+
 		m_ctx->createImage(m_createInfo.width, m_createInfo.height, m_createInfo.mipCount, m_createInfo.sampleCount, m_createInfo.format, vk::ImageTiling::eOptimal,
 						   m_createInfo.usage, vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
 
@@ -119,6 +131,7 @@ namespace toaster::gpu
 			m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
 										 vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eColorAttachmentOutput,
 										 m_createInfo.mipCount, aspect_flags);
+			m_currentImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		}
 		else if (m_createInfo.usage & vk::ImageUsageFlagBits::eDepthStencilAttachment)
 		{
@@ -126,6 +139,7 @@ namespace toaster::gpu
 										 vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits::eNone,
 										 vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests, m_createInfo.mipCount,
 										 aspect_flags);
+			m_currentImageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		}
 
 		m_imageView = m_ctx->createImageView(m_image, m_createInfo.format, aspect_flags, m_createInfo.mipCount);
