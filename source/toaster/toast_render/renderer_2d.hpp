@@ -14,6 +14,8 @@
 #include "toast_gpu/vk/vk_pipeline.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
 #include "toast_gpu/vk/vk_index_buffer.hpp"
+#include "toast_gpu/vk/vk_material.hpp"
+#include "toast_gpu/vk/vk_render_pass.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_gpu/vk/vk_uniform_buffer.hpp"
 
@@ -45,21 +47,14 @@ namespace toaster
 		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
 		void submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour);
 
-		[[nodiscard]] const Stats &getStats() const;
-
-		vk::raii::Image &        getRenderTargetImage();
-		vk::raii::DeviceMemory & getRenderTargetImageMemory();
-		vk::raii::ImageView &    getRenderTargetImageView();
-		vk::DescriptorImageInfo &getRenderTargetDescriptorImageInfo();
-
 		void onResize(uint32 p_width, uint32 p_height);
+
+		const RefPtr<gpu::VKTexture2D> &getColourOutput() const;
+		[[nodiscard]] const Stats &     getStats() const;
 
 	private:
 		void _beginNewBatch();
 		void _createRenderTargetResources();
-
-		void _createDescriptorPool();
-		void _createDescriptorSets();
 
 		gpu::VKGPUContext *m_ctx;
 
@@ -78,18 +73,19 @@ namespace toaster
 
 		gpu::VertexBufferLayout m_quadVertexBufferLayout;
 
-		vk::raii::Image         m_renderTargetImage{nullptr};
-		vk::raii::DeviceMemory  m_renderTargetImageMemory{nullptr};
-		vk::raii::ImageView     m_renderTargetImageView{nullptr};
-		vk::raii::Sampler       m_renderTargetImageSampler{nullptr};
-		vk::DescriptorImageInfo m_renderTargetDescriptorImageInfo{nullptr};
+		RefPtr<gpu::VKTexture2D> m_renderTargetTexture{nullptr};
+		RefPtr<gpu::VKImage2D>   m_renderTargetDepthImage{nullptr};
 
-		vk::raii::Image        m_renderTargetDepthImage{nullptr};
-		vk::raii::DeviceMemory m_renderTargetDepthImageMemory{nullptr};
-		vk::raii::ImageView    m_renderTargetDepthImageView{nullptr};
+		// vk::raii::Image         m_renderTargetImage{nullptr};
+		// vk::raii::DeviceMemory  m_renderTargetImageMemory{nullptr};
+		// vk::raii::ImageView     m_renderTargetImageView{nullptr};
+		// vk::raii::Sampler       m_renderTargetImageSampler{nullptr};
+		// vk::DescriptorImageInfo m_renderTargetDescriptorImageInfo{nullptr};
 
-		RefPtr<gpu::VKShader>   m_quadShader{nullptr};
-		RefPtr<gpu::VKPipeline> m_quadPipeline{nullptr};
+		RefPtr<gpu::VKShader>     m_quadShader{nullptr};
+		RefPtr<gpu::VKPipeline>   m_quadPipeline{nullptr};
+		RefPtr<gpu::VKRenderPass> m_quadRenderPass{nullptr};
+		RefPtr<gpu::VKMaterial>   m_quadMaterial{nullptr};
 
 		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
 		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
@@ -108,15 +104,12 @@ namespace toaster
 			glm::mat4 proj;
 		};
 
-		RefPtr<gpu::VKUniformBufferPFF> m_uniformBuffers{nullptr};
-		std::vector<void *>             m_mappedUniformBuffers;
+		RefPtr<gpu::VKUniformBufferPFF> m_cameraUBs{nullptr};
+		std::vector<void *>             m_mappedCameraUBs;
 
-		vk::raii::DescriptorPool             m_descriptorPool{nullptr};
-		std::vector<vk::raii::DescriptorSet> m_descriptorSets;
-
-		RefPtr<gpu::VKTexture2D>                  m_whiteImage{nullptr};
+		RefPtr<gpu::VKTexture2D>                  m_whiteTexture{nullptr};
 		std::array<RefPtr<gpu::VKTexture2D>, 32u> m_textureSlots;
-		uint32                                  m_textureSlotIndex{1u};
+		uint32                                    m_textureSlotIndex{1u};
 
 		Stats m_stats;
 	};

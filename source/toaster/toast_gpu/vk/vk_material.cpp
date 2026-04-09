@@ -27,6 +27,11 @@ namespace toaster::gpu
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);
 	}
 
+	void VKMaterial::set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index)
+	{
+		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d, p_array_index);
+	}
+
 	void VKMaterial::update(uint32 p_frame_index)
 	{
 		m_descriptorSetManager->updateDescriptors(p_frame_index);

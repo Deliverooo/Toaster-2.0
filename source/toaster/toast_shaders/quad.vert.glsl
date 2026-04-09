@@ -9,11 +9,15 @@ layout (location = 4) in float  a_TilingFactor;
 layout (location = 0) out vec2  v_TexCoords;
 layout (location = 1) out vec4  v_Colour;
 
-layout (std140, binding = 0) uniform Camera
+layout (std140, set = 1, binding = 0) uniform Camera
 {
     mat4 u_View;
     mat4 u_Proj;
 };
+layout (push_constant) uniform Transform
+{
+    mat4 model;
+} u_Transform;
 
 void main()
 {

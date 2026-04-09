@@ -142,7 +142,7 @@ namespace toaster::gpu
 					m_material->set("u_Texture", m_albedoMap);
 				}
 				else
-					TST_ASSERT(false);
+					LOG_WARN("Mesh material does not have an albedo map");
 			}
 		}
 	}

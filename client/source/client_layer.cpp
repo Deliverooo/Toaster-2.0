@@ -12,6 +12,8 @@
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
 #include <imgui.h>
+
+#include "glm/gtc/type_ptr.hpp"
 namespace ig = ImGui;
 
 namespace toaster
@@ -41,6 +43,8 @@ namespace toaster
 
 			m_colourAttachmentImage->resize(width, height);
 			m_depthAttachmentImage->resize(width, height);
+
+			m_renderer2D->onResize(width, height);
 		});
 
 		{
@@ -66,9 +70,6 @@ namespace toaster
 			m_ubos                 = make_reference<gpu::VKUniformBufferPFF>(ctx, ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
 			m_mappedUniformBuffers = m_ubos->mapMemory(ubo_size, 0);
 
-			gpu::TextureSpecInfo texture_spec_info{};
-			m_texture = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info, "../resources/textures/Peeber.png");
-
 			m_geometryPass = make_reference<gpu::VKRenderPass>(ctx, m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_ubos);
 
@@ -76,10 +77,13 @@ namespace toaster
 			//						   Its funny because the engine is called Toaster...
 		}
 
-		m_mesh = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx", m_geometryShader);
+		m_mesh  = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx", m_geometryShader);
+		m_mesh2 = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/pc.obj", m_geometryShader);
 
-		// m_material = make_reference<gpu::VKMaterial>(ctx, m_geometryShader);
-		// m_material->set("u_Texture", m_mesh->getMaterial()->get<gpu::VKTexture2D>("u_Texture"));
+		Renderer2DCreateInfo renderer_2d_create_info{};
+		renderer_2d_create_info.renderTargetWidth  = window_width;
+		renderer_2d_create_info.renderTargetHeight = window_height;
+		m_renderer2D                               = make_reference<Renderer2D>(ctx, renderer_2d_create_info);
 
 		gpu::ImageCreateInfo colour_attachment_image_create_info{};
 		colour_attachment_image_create_info.width       = window_width;
@@ -126,6 +130,15 @@ namespace toaster
 		camera_ub.proj = glm::perspective(glm::radians(45.0f), static_cast<float32>(swapchain_extent.width) / static_cast<float32>(swapchain_extent.height), 0.1f, 10.0f);
 		camera_ub.proj[1][1] *= -1.0f;
 
+		m_renderer2D->begin(command_buffer, frame_index, camera_ub.view, camera_ub.proj);
+
+		m_renderer2D->submitQuad(m_meshTranslation, glm::vec2{10.0f, 10.0f}, glm::vec4{0.0f, 1.0f, 1.0f, 1.0f});
+
+		m_renderer2D->end(command_buffer, frame_index);
+
+		m_mesh->getMaterial()->set("u_Texture", m_renderer2D->getColourOutput());
+
+
 		std::memcpy(m_mappedUniformBuffers[frame_index], &camera_ub, sizeof(CameraUB));
 
 		vk::RenderingAttachmentInfo colour_attachment_info{};
@@ -158,9 +171,17 @@ namespace toaster
 		Renderer::beginRendering(rendering_info, command_buffer, frame_index, m_geometryPass);
 
 		glm::mat4 transform{glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{20.0f, 20.0f, 20.0f}), m_time * glm::radians(90.0f), glm::vec3{0.0f, 0.0f, 1.0f})};
+		glm::mat4 transform2{
+			glm::translate(glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{1.0f, 1.0f, 1.0f}), m_time * glm::radians(90.0f), glm::vec3{0.0f, 0.0f, 1.0f}),
+						   m_meshTranslation)
+		};
 
 		Renderer::renderGeometry(command_buffer, frame_index, m_geometryPipeline, m_mesh->getVertexBuffer(), m_mesh->getIndexBuffer(), m_mesh->getIndices().size(),
 								 m_mesh->getMaterial(), transform);
+
+		Renderer::renderGeometry(command_buffer, frame_index, m_geometryPipeline, m_mesh2->getVertexBuffer(), m_mesh2->getIndexBuffer(), m_mesh2->getIndices().size(),
+								 m_mesh2->getMaterial(), transform2);
+
 		Renderer::endRendering(command_buffer);
 	}
 
@@ -173,6 +194,11 @@ namespace toaster
 
 	void ClientLayer::onUIRender()
 	{
+		ig::Begin("Tools");
+
+		ig::SliderFloat3("Translation", glm::value_ptr(m_meshTranslation), -100.0f, 100.0f);
+
+		ig::End();
 	}
 
 	bool ClientLayer::onKeyPressEvent(KeyPressEvent &e)

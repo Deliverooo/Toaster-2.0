@@ -14,6 +14,7 @@ namespace toaster::gpu
 		VKMaterial(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader);
 
 		void set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d);
+		void set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index);
 
 		void update(uint32 p_frame_index);
 

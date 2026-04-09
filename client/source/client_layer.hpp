@@ -57,20 +57,12 @@ namespace toaster
 		RefPtr<gpu::VKImage2D> m_colourAttachmentImage{nullptr};
 		RefPtr<gpu::VKImage2D> m_depthAttachmentImage{nullptr};
 
-		RefPtr<gpu::VKTexture2D> m_texture{nullptr};
+		RefPtr<gpu::VKMesh> m_mesh{nullptr};
+		RefPtr<gpu::VKMesh> m_mesh2{nullptr};
 
-		struct QuadVertex
-		{
-			glm::vec3 position;
-			glm::vec3 colour;
-			glm::vec2 texCoord;
-		};
+		RefPtr<Renderer2D> m_renderer2D{nullptr};
 
-		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
-		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
-
-		// RefPtr<gpu::VKMaterial> m_material{nullptr};
-		RefPtr<gpu::VKMesh>     m_mesh{nullptr};
+		glm::vec3 m_meshTranslation{0.0f};
 
 		struct CameraUB
 		{
