@@ -145,9 +145,8 @@ namespace toaster
 		rendering_info.layerCount = 1;
 
 		gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		colour_attachment_info.clearValue         = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};;
-		colour_attachment_info.imageView          = m_colourAttachmentImage->getImageView();
-		colour_attachment_info.imageLayout        = vk::ImageLayout::eColorAttachmentOptimal;
+		colour_attachment_info.clearValue         = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};
+		colour_attachment_info.image              = m_colourAttachmentImage;
 		colour_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
 		colour_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
 		colour_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eAverage;
@@ -155,9 +154,8 @@ namespace toaster
 		colour_attachment_info.resolveImageView   = swapchain->getImageView(image_index);
 
 		gpu::RenderingAttachmentInfo depth_attachment_info{};
-		depth_attachment_info.clearValue         = vk::ClearDepthStencilValue{1.0f, 0u};;
-		depth_attachment_info.imageView          = m_depthAttachmentImage->getImageView();
-		depth_attachment_info.imageLayout        = vk::ImageLayout::eDepthAttachmentOptimal;
+		depth_attachment_info.clearValue         = vk::ClearDepthStencilValue{1.0f, 0u};
+		depth_attachment_info.image              = m_depthAttachmentImage;
 		depth_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
 		depth_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
 		depth_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eMin;
@@ -180,7 +178,7 @@ namespace toaster
 		Renderer::renderGeometry(command_buffer, frame_index, m_geometryPipeline, m_mesh2->getVertexBuffer(), m_mesh2->getIndexBuffer(), m_mesh2->getIndices().size(),
 								 m_mesh2->getMaterial(), transform2);
 
-		Renderer::endRendering(command_buffer);
+		Renderer::endRendering(rendering_info, command_buffer);
 	}
 
 	void ClientLayer::onEvent(Event &p_event)

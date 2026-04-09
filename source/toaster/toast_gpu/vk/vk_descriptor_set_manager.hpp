@@ -48,6 +48,7 @@ namespace toaster::gpu
 	{
 	public:
 		VKDescriptorSetManager(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader, uint32 p_start_set, uint32 p_end_set);
+		VKGPUContext *getContext() const;
 
 		void setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer);
 		void setDescriptor(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff);

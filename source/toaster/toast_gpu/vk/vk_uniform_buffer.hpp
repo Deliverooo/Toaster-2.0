@@ -12,6 +12,7 @@ namespace toaster::gpu
 	{
 	public:
 		VKUniformBuffer(VKGPUContext *p_ctx, uint64 p_size);
+		VKGPUContext *getContext() const;
 
 		vk::raii::Buffer &      getBuffer();
 		vk::raii::DeviceMemory &getBufferMemory();

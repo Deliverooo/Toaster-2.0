@@ -13,6 +13,7 @@ namespace toaster::gpu
 	{
 	public:
 		VKRenderPass(VKGPUContext *p_ctx, const RefPtr<VKPipeline> &p_pipeline);
+		VKGPUContext *getContext() const;
 
 		void setInput(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer);
 		void setInput(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff);

@@ -16,6 +16,7 @@ namespace toaster::gpu
 		using ResizeCB = std::function<void(uint32, uint32)>;
 
 		VKSwapchain(VKGPUContext *p_ctx, GLFWwindow *p_window);
+		VKGPUContext *getContext() const;
 
 		void beginFrame();
 		void endFrame();

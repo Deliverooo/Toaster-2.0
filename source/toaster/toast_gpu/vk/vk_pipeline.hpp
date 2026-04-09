@@ -31,7 +31,7 @@ namespace toaster::gpu
 	{
 	public:
 		VKPipeline(VKGPUContext *p_ctx, const PipelineCreateInfo &p_create_info);
-		~VKPipeline();
+		VKGPUContext *getContext() const;
 
 		[[nodiscard]] vk::raii::Pipeline &      getPipeline();
 		[[nodiscard]] vk::raii::PipelineLayout &getPipelineLayout();

@@ -53,6 +53,11 @@ namespace toaster::gpu
 		}
 	}
 
+	VKGPUContext *VKDescriptorSetManager::getContext() const
+	{
+		return m_ctx;
+	}
+
 	void VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer)
 	{
 		if (const auto decl{getDescriptorDeclaration(p_name)})

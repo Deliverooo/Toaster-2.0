@@ -29,6 +29,11 @@ namespace toaster::gpu
 							m_vertexBuffer, m_vertexBufferMemory);
 	}
 
+	VKGPUContext *VKVertexBuffer::getContext() const
+	{
+		return m_ctx;
+	}
+
 	vk::raii::Buffer &VKVertexBuffer::getBuffer()
 	{
 		return m_vertexBuffer;

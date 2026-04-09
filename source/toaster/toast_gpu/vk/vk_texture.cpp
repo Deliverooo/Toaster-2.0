@@ -24,7 +24,6 @@ namespace toaster::gpu
 									 1, vk::ImageAspectFlagBits::eColor);
 		m_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
-
 		const auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 
 		vk::SamplerCreateInfo sampler_create_info{};
@@ -230,6 +229,11 @@ namespace toaster::gpu
 		m_descriptorImageInfo.imageLayout = m_image->getCurrentImageLayout();
 		m_descriptorImageInfo.imageView   = m_image->getImageView();
 		m_descriptorImageInfo.sampler     = m_sampler;
+	}
+
+	VKGPUContext *VKTexture2D::getContext() const
+	{
+		return m_ctx;
 	}
 
 	void VKTexture2D::resize(uint32 p_width, uint32 p_height)

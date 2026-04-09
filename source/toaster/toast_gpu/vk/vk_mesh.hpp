@@ -24,6 +24,7 @@ namespace toaster::gpu
 	{
 	public:
 		VKMesh(VKGPUContext *p_ctx, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader); // Shader is temp until I move mesh to the Renderer folder
+		VKGPUContext *getContext() const;
 
 		const RefPtr<VKVertexBuffer> &getVertexBuffer() const;
 		const RefPtr<VKIndexBuffer> & getIndexBuffer() const;

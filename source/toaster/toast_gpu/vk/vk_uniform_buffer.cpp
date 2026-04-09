@@ -16,6 +16,11 @@ namespace toaster::gpu
 		m_descriptorInfo.range  = p_size;
 	}
 
+	VKGPUContext *VKUniformBuffer::getContext() const
+	{
+		return m_ctx;
+	}
+
 	vk::raii::Buffer &VKUniformBuffer::getBuffer()
 	{
 		return m_buffer;

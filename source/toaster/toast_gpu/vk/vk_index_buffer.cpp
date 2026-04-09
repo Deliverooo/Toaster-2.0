@@ -29,6 +29,11 @@ namespace toaster::gpu
 							m_indexBuffer, m_indexBufferMemory);
 	}
 
+	VKGPUContext *VKIndexBuffer::getContext() const
+	{
+		return m_ctx;
+	}
+
 	vk::raii::Buffer &VKIndexBuffer::getBuffer()
 	{
 		return m_indexBuffer;

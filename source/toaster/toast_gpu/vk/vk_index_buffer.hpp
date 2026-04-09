@@ -14,6 +14,7 @@ namespace toaster::gpu
 		// I'm such a diddyblud
 		VKIndexBuffer(VKGPUContext *p_ctx, void *p_data, uint64 p_size);
 		VKIndexBuffer(VKGPUContext *p_ctx, uint64 p_size);
+		VKGPUContext *getContext() const;
 
 		vk::raii::Buffer &      getBuffer();
 		vk::raii::DeviceMemory &getBufferMemory();

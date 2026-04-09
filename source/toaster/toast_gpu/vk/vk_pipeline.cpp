@@ -14,8 +14,9 @@ namespace toaster::gpu
 		_createGraphicsPipeline();
 	}
 
-	VKPipeline::~VKPipeline()
+	VKGPUContext *VKPipeline::getContext() const
 	{
+		return m_ctx;
 	}
 
 	vk::raii::Pipeline &VKPipeline::getPipeline()

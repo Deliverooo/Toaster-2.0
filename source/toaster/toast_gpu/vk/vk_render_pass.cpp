@@ -9,6 +9,11 @@ namespace toaster::gpu
 		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_ctx, m_pipeline->getCreateInfo().shader, 1, 3);
 	}
 
+	VKGPUContext *VKRenderPass::getContext() const
+	{
+		return m_ctx;
+	}
+
 	void VKRenderPass::setInput(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer)
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_uniform_buffer);

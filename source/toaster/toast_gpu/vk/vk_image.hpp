@@ -25,6 +25,7 @@ namespace toaster::gpu
 	{
 	public:
 		VKImage2D(VKGPUContext *p_ctx, const ImageCreateInfo &p_create_info);
+		VKGPUContext *getContext() const;
 
 		vk::raii::Image &       getImage();
 		vk::raii::DeviceMemory &getImageMemory();

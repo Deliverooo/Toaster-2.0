@@ -22,6 +22,7 @@ namespace toaster::gpu
 		VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info);
 		VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
 		VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size);
+		VKGPUContext *getContext() const;
 
 		void resize(uint32 p_width, uint32 p_height);
 

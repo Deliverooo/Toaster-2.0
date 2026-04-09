@@ -11,6 +11,11 @@ namespace toaster::gpu
 		recreate();
 	}
 
+	VKGPUContext *VKImage2D::getContext() const
+	{
+		return m_ctx;
+	}
+
 	vk::raii::Image &VKImage2D::getImage()
 	{
 		return m_image;

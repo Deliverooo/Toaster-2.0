@@ -22,6 +22,11 @@ namespace toaster::gpu
 		m_descriptorSetManager->bakeDescriptors();
 	}
 
+	VKGPUContext *VKMaterial::getContext() const
+	{
+		return m_ctx;
+	}
+
 	void VKMaterial::set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d)
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);

@@ -3,20 +3,26 @@
 #include <vulkan/vulkan_raii.hpp>
 #include "toast_lib/core_basic.hpp"
 
+#include "vk_texture.hpp"
+
 namespace toaster::gpu
 {
 	class VKGPUContext;
 
 	struct RenderingAttachmentInfo
 	{
-		vk::ImageView           imageView{};
-		vk::ImageLayout         imageLayout{vk::ImageLayout::eUndefined};
+		RefPtr<VKImage2D> image{nullptr};
+
+		vk::ImageView   imageView{nullptr};
+		vk::ImageLayout imageLayout{vk::ImageLayout::eUndefined};
+
 		vk::ResolveModeFlagBits resolveMode{vk::ResolveModeFlagBits::eNone};
-		vk::ImageView           resolveImageView{};
+		vk::ImageView           resolveImageView{nullptr};
 		vk::ImageLayout         resolveImageLayout{vk::ImageLayout::eUndefined};
-		vk::AttachmentLoadOp    loadOp{vk::AttachmentLoadOp::eLoad};
-		vk::AttachmentStoreOp   storeOp{vk::AttachmentStoreOp::eStore};
-		vk::ClearValue          clearValue{};
+
+		vk::AttachmentLoadOp  loadOp{vk::AttachmentLoadOp::eLoad};
+		vk::AttachmentStoreOp storeOp{vk::AttachmentStoreOp::eStore};
+		vk::ClearValue        clearValue{};
 	};
 
 	struct RenderingInfo

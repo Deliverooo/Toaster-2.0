@@ -15,40 +15,84 @@ namespace toaster
 		for (const auto &rendering_attachment: p_rendering_info.colourAttachments)
 		{
 			auto &info{colour_rendering_attachment_infos.emplace_back()};
-			info.imageView          = rendering_attachment.imageView;
-			info.imageLayout        = rendering_attachment.imageLayout;
+
+			if (rendering_attachment.image != nullptr)
+			{
+				info.imageView   = rendering_attachment.image->getImageView();
+				info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+
+				// Perform the layout transition on sampled attachment images
+				if ((rendering_attachment.image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
+						rendering_attachment.image->getCurrentImageLayout() != vk::ImageLayout::eColorAttachmentOptimal))
+				{
+					rendering_attachment.image->getContext()->transitionImageLayout(rendering_attachment.image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
+																					vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eShaderRead,
+																					vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eFragmentShader,
+																					vk::PipelineStageFlagBits::eColorAttachmentOutput,
+																					rendering_attachment.image->getCreateInfo().mipCount,
+																					vk::ImageAspectFlagBits::eColor);
+					rendering_attachment.image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+				}
+			}
+			else
+			{
+				info.imageView   = rendering_attachment.imageView;
+				info.imageLayout = rendering_attachment.imageLayout;
+			}
+
 			info.resolveMode        = rendering_attachment.resolveMode;
 			info.resolveImageView   = rendering_attachment.resolveImageView;
 			info.resolveImageLayout = rendering_attachment.resolveImageLayout;
-			info.loadOp             = rendering_attachment.loadOp;
-			info.storeOp            = rendering_attachment.storeOp;
-			info.clearValue         = rendering_attachment.clearValue;
+
+			info.loadOp     = rendering_attachment.loadOp;
+			info.storeOp    = rendering_attachment.storeOp;
+			info.clearValue = rendering_attachment.clearValue;
 		}
 
 		vk::RenderingAttachmentInfo depth_attachment_info{};
 		if (p_rendering_info.pDepthAttachment != nullptr)
 		{
-			depth_attachment_info.imageView          = p_rendering_info.pDepthAttachment->imageView;
-			depth_attachment_info.imageLayout        = p_rendering_info.pDepthAttachment->imageLayout;
+			if (p_rendering_info.pDepthAttachment->image != nullptr)
+			{
+				depth_attachment_info.imageView   = p_rendering_info.pDepthAttachment->image->getImageView();
+				depth_attachment_info.imageLayout = p_rendering_info.pDepthAttachment->image->getCurrentImageLayout();
+			}
+			else
+			{
+				depth_attachment_info.imageView   = p_rendering_info.pDepthAttachment->imageView;
+				depth_attachment_info.imageLayout = p_rendering_info.pDepthAttachment->imageLayout;
+			}
+
 			depth_attachment_info.resolveMode        = p_rendering_info.pDepthAttachment->resolveMode;
 			depth_attachment_info.resolveImageView   = p_rendering_info.pDepthAttachment->resolveImageView;
 			depth_attachment_info.resolveImageLayout = p_rendering_info.pDepthAttachment->resolveImageLayout;
-			depth_attachment_info.loadOp             = p_rendering_info.pDepthAttachment->loadOp;
-			depth_attachment_info.storeOp            = p_rendering_info.pDepthAttachment->storeOp;
-			depth_attachment_info.clearValue         = p_rendering_info.pDepthAttachment->clearValue;
+
+			depth_attachment_info.loadOp     = p_rendering_info.pDepthAttachment->loadOp;
+			depth_attachment_info.storeOp    = p_rendering_info.pDepthAttachment->storeOp;
+			depth_attachment_info.clearValue = p_rendering_info.pDepthAttachment->clearValue;
 		}
 
 		vk::RenderingAttachmentInfo stencil_attachment_info{};
 		if (p_rendering_info.pStencilAttachment != nullptr)
 		{
-			stencil_attachment_info.imageView          = p_rendering_info.pStencilAttachment->imageView;
-			stencil_attachment_info.imageLayout        = p_rendering_info.pStencilAttachment->imageLayout;
+			if (p_rendering_info.pStencilAttachment->image != nullptr)
+			{
+				stencil_attachment_info.imageView   = p_rendering_info.pStencilAttachment->image->getImageView();
+				stencil_attachment_info.imageLayout = p_rendering_info.pStencilAttachment->image->getCurrentImageLayout();
+			}
+			else
+			{
+				stencil_attachment_info.imageView   = p_rendering_info.pStencilAttachment->imageView;
+				stencil_attachment_info.imageLayout = p_rendering_info.pStencilAttachment->imageLayout;
+			}
+
 			stencil_attachment_info.resolveMode        = p_rendering_info.pStencilAttachment->resolveMode;
 			stencil_attachment_info.resolveImageView   = p_rendering_info.pStencilAttachment->resolveImageView;
 			stencil_attachment_info.resolveImageLayout = p_rendering_info.pStencilAttachment->resolveImageLayout;
-			stencil_attachment_info.loadOp             = p_rendering_info.pStencilAttachment->loadOp;
-			stencil_attachment_info.storeOp            = p_rendering_info.pStencilAttachment->storeOp;
-			stencil_attachment_info.clearValue         = p_rendering_info.pStencilAttachment->clearValue;
+
+			stencil_attachment_info.loadOp     = p_rendering_info.pStencilAttachment->loadOp;
+			stencil_attachment_info.storeOp    = p_rendering_info.pStencilAttachment->storeOp;
+			stencil_attachment_info.clearValue = p_rendering_info.pStencilAttachment->clearValue;
 		}
 
 		vk::RenderingInfo rendering_info{};
@@ -72,9 +116,23 @@ namespace toaster
 											descriptor_sets, nullptr);
 	}
 
-	void Renderer::endRendering(const vk::raii::CommandBuffer &p_command_buffer)
+	void Renderer::endRendering(const gpu::RenderingInfo &p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer)
 	{
 		p_command_buffer.endRendering();
+
+		// Perform the layout transition on sampled attachment images
+		for (const auto &rendering_attachment: p_rendering_info.colourAttachments)
+		{
+			if ((rendering_attachment.image != nullptr) && (rendering_attachment.image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled))
+			{
+				rendering_attachment.image->getContext()->transitionImageLayout(rendering_attachment.image->getImage(), vk::ImageLayout::eColorAttachmentOptimal,
+																				vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eColorAttachmentWrite,
+																				vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eColorAttachmentOutput,
+																				vk::PipelineStageFlagBits::eFragmentShader,
+																				rendering_attachment.image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+				rendering_attachment.image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+			}
+		}
 	}
 
 	void Renderer::renderGeometry(const vk::raii::CommandBuffer &    p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,

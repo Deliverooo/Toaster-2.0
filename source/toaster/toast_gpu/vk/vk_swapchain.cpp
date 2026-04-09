@@ -18,6 +18,11 @@ namespace toaster::gpu
 		_createDepthResources();
 	}
 
+	VKGPUContext *VKSwapchain::getContext() const
+	{
+		return m_ctx;
+	}
+
 	void VKSwapchain::beginFrame()
 	{
 		auto &device = m_ctx->getDevice();

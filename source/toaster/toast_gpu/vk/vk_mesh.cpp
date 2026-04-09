@@ -147,6 +147,11 @@ namespace toaster::gpu
 		}
 	}
 
+	VKGPUContext *VKMesh::getContext() const
+	{
+		return m_ctx;
+	}
+
 	const RefPtr<VKVertexBuffer> &VKMesh::getVertexBuffer() const
 	{
 		return m_vertexBuffer;

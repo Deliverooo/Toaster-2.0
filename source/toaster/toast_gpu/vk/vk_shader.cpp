@@ -31,6 +31,11 @@ namespace toaster::gpu
 		_createDescriptors();
 	}
 
+	VKGPUContext *VKShader::getContext() const
+	{
+		return m_ctx;
+	}
+
 	const VKShader::PipelineCreateInfoMap &VKShader::getPipelineShaderStageCreateInfoMap() const
 	{
 		return m_shaderCreateInfos;

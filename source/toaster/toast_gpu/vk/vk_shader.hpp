@@ -31,6 +31,7 @@ namespace toaster::gpu
 		using BytecodeMap           = std::unordered_map<vk::ShaderStageFlagBits, Bytecode>;
 
 		VKShader(VKGPUContext *p_ctx, const BytecodeMap &p_bytecode_map);
+		VKGPUContext *getContext() const;
 
 		[[nodiscard]] const PipelineCreateInfoMap &                  getPipelineShaderStageCreateInfoMap() const;
 		[[nodiscard]] std::vector<vk::PipelineShaderStageCreateInfo> getPipelineShaderStageCreateInfos() const;
