@@ -14,6 +14,7 @@
 #include "toast_gpu/vk/vk_pipeline.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
 #include "toast_gpu/vk/vk_index_buffer.hpp"
+#include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_gpu/vk/vk_uniform_buffer.hpp"
 
 namespace toaster
@@ -113,8 +114,8 @@ namespace toaster
 		vk::raii::DescriptorPool             m_descriptorPool{nullptr};
 		std::vector<vk::raii::DescriptorSet> m_descriptorSets;
 
-		RefPtr<gpu::VKImage2D>                  m_whiteImage{nullptr};
-		std::array<RefPtr<gpu::VKImage2D>, 32u> m_textureSlots;
+		RefPtr<gpu::VKTexture2D>                  m_whiteImage{nullptr};
+		std::array<RefPtr<gpu::VKTexture2D>, 32u> m_textureSlots;
 		uint32                                  m_textureSlotIndex{1u};
 
 		Stats m_stats;

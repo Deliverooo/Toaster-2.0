@@ -40,10 +40,6 @@ namespace toaster
 		bool onKeyPressEvent(KeyPressEvent &e);
 		bool onWindowResizeEvent(WindowResizeEvent &e);
 
-		void _createAttachmentImages();
-		void _createDescriptorPool();
-		void _createDescriptorSets();
-
 		float32 m_time{0.0f};
 
 		uint32 m_viewportWidth{0u};
@@ -57,13 +53,8 @@ namespace toaster
 		RefPtr<gpu::VKShader>   m_quadShader{nullptr};
 		RefPtr<gpu::VKPipeline> m_quadPipeline{nullptr};
 
-		vk::raii::Image        m_colourAttachmentImage{nullptr};
-		vk::raii::DeviceMemory m_colourAttachmentImageMemory{nullptr};
-		vk::raii::ImageView    m_colourAttachmentImageView{nullptr};
-
-		vk::raii::Image        m_depthAttachmentImage{nullptr};
-		vk::raii::DeviceMemory m_depthAttachmentImageMemory{nullptr};
-		vk::raii::ImageView    m_depthAttachmentImageView{nullptr};
+		RefPtr<gpu::VKImage2D> m_colourAttachmentImage{nullptr};
+		RefPtr<gpu::VKImage2D> m_depthAttachmentImage{nullptr};
 
 		RefPtr<gpu::VKTexture2D> m_texture{nullptr};
 

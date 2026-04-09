@@ -39,7 +39,8 @@ namespace toaster
 			m_viewportWidth  = width;
 			m_viewportHeight = height;
 
-			_createAttachmentImages();
+			m_colourAttachmentImage->resize(width, height);
+			m_depthAttachmentImage->resize(width, height);
 		});
 
 		{
@@ -68,7 +69,6 @@ namespace toaster
 			gpu::TextureSpecInfo texture_spec_info{};
 			m_texture = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info, "../resources/textures/Peeber.png");
 
-
 			m_geometryPass = make_reference<gpu::VKRenderPass>(ctx, m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_ubos);
 			m_geometryPass->setInput("u_Texture", m_texture);
@@ -78,7 +78,22 @@ namespace toaster
 		}
 
 		m_mesh = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx");
-		_createAttachmentImages();
+
+		gpu::ImageCreateInfo colour_attachment_image_create_info{};
+		colour_attachment_image_create_info.width       = window_width;
+		colour_attachment_image_create_info.height      = window_height;
+		colour_attachment_image_create_info.format      = swapchain->getSurfaceFormat().format;
+		colour_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
+		colour_attachment_image_create_info.sampleCount = ctx->getMaxUsableSampleCount();
+		m_colourAttachmentImage                         = make_reference<gpu::VKImage2D>(ctx, colour_attachment_image_create_info);
+
+		gpu::ImageCreateInfo depth_attachment_image_create_info{};
+		depth_attachment_image_create_info.width       = window_width;
+		depth_attachment_image_create_info.height      = window_height;
+		depth_attachment_image_create_info.format      = swapchain->getDepthFormat();
+		depth_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment;
+		depth_attachment_image_create_info.sampleCount = ctx->getMaxUsableSampleCount();
+		m_depthAttachmentImage                         = make_reference<gpu::VKImage2D>(ctx, depth_attachment_image_create_info);
 	}
 
 	void ClientLayer::onDestroy()
@@ -113,7 +128,7 @@ namespace toaster
 
 		vk::RenderingAttachmentInfo colour_attachment_info{};
 		colour_attachment_info.clearValue         = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};;
-		colour_attachment_info.imageView          = m_colourAttachmentImageView;
+		colour_attachment_info.imageView          = m_colourAttachmentImage->getImageView();
 		colour_attachment_info.imageLayout        = vk::ImageLayout::eColorAttachmentOptimal;
 		colour_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
 		colour_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
@@ -123,7 +138,7 @@ namespace toaster
 
 		vk::RenderingAttachmentInfo depth_attachment_info{};
 		depth_attachment_info.clearValue         = vk::ClearDepthStencilValue{1.0f, 0u};;
-		depth_attachment_info.imageView          = m_depthAttachmentImageView;
+		depth_attachment_info.imageView          = m_depthAttachmentImage->getImageView();
 		depth_attachment_info.imageLayout        = vk::ImageLayout::eDepthAttachmentOptimal;
 		depth_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
 		depth_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
@@ -167,8 +182,6 @@ namespace toaster
 
 	void ClientLayer::onUIRender()
 	{
-		// ig::Begin("Viewport");
-		// ig::End();
 	}
 
 	bool ClientLayer::onKeyPressEvent(KeyPressEvent &e)
@@ -182,48 +195,5 @@ namespace toaster
 	bool ClientLayer::onWindowResizeEvent(WindowResizeEvent &e)
 	{
 		return false;
-	}
-
-	void ClientLayer::_createAttachmentImages()
-	{
-		m_colourAttachmentImage       = nullptr;
-		m_colourAttachmentImageMemory = nullptr;
-		m_colourAttachmentImageView   = nullptr;
-
-		m_depthAttachmentImage       = nullptr;
-		m_depthAttachmentImageMemory = nullptr;
-		m_depthAttachmentImageView   = nullptr;
-
-		auto &app = getApp();
-		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-		auto  swapchain{app.getWindow().getSwapchain()};
-
-		vk::SampleCountFlagBits sample_count{ctx->getMaxUsableSampleCount()};
-
-		{
-			vk::Format colour_attachment_format{swapchain->getSurfaceFormat().format};
-			ctx->createImage(m_viewportWidth, m_viewportHeight, 1, sample_count, colour_attachment_format, vk::ImageTiling::eOptimal,
-							 vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal,
-							 m_colourAttachmentImage, m_colourAttachmentImageMemory);
-
-			ctx->transitionImageLayout(m_colourAttachmentImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
-									   vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eColorAttachmentOutput, 1,
-									   vk::ImageAspectFlagBits::eColor);
-
-			m_colourAttachmentImageView = ctx->createImageView(m_colourAttachmentImage, colour_attachment_format, vk::ImageAspectFlagBits::eColor, 1);
-		}
-		{
-			vk::Format depth_attachment_format{swapchain->getDepthFormat()};
-			ctx->createImage(m_viewportWidth, m_viewportHeight, 1, sample_count, depth_attachment_format, vk::ImageTiling::eOptimal,
-							 vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal,
-							 m_depthAttachmentImage, m_depthAttachmentImageMemory);
-
-			ctx->transitionImageLayout(m_depthAttachmentImage, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits::eNone,
-									   vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits::eNone,
-									   vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests, 1,
-									   vk::ImageAspectFlagBits::eDepth);
-
-			m_depthAttachmentImageView = ctx->createImageView(m_depthAttachmentImage, depth_attachment_format, vk::ImageAspectFlagBits::eDepth, 1);
-		}
 	}
 }

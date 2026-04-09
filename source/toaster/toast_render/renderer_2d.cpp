@@ -72,14 +72,7 @@ namespace toaster
 
 		uint32 white_image_data{0xFFFFFFFF};
 
-		gpu::ImageCreateInfo image_create_info{};
-		image_create_info.width  = 1;
-		image_create_info.height = 1;
-		image_create_info.format = vk::Format::eR8G8B8A8Unorm;
-		image_create_info.mips   = 1;
-		m_whiteImage             = make_reference<gpu::VKImage2D>(m_ctx, image_create_info);
 
-		m_whiteImage->setData(&white_image_data, 4);
 
 		m_textureSlots[0] = m_whiteImage;
 

@@ -7,6 +7,8 @@ namespace toaster::gpu
 	VKImage2D::VKImage2D(VKGPUContext *p_ctx, const ImageCreateInfo &p_create_info) : m_ctx(p_ctx), m_createInfo(p_create_info)
 	{
 		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+
+		recreate();
 	}
 
 	vk::raii::Image &VKImage2D::getImage()
@@ -24,21 +26,12 @@ namespace toaster::gpu
 		return m_imageView;
 	}
 
-	vk::raii::Sampler &VKImage2D::getSampler()
-	{
-		return m_sampler;
-	}
-
-	vk::DescriptorImageInfo &VKImage2D::getDescriptorInfo()
-	{
-		return m_descriptorImageInfo;
-	}
-
 	const ImageCreateInfo &VKImage2D::getCreateInfo() const
 	{
 		return m_createInfo;
 	}
 
+	#if 0
 	void VKImage2D::setData(void *p_data, uint64 p_size)
 	{
 		TST_ASSERT_MSG(p_data, "p_data is nullptr");
@@ -57,21 +50,21 @@ namespace toaster::gpu
 
 		vk::Format image_format = vk::Format::eR8G8B8A8Unorm;
 
-		m_ctx->createImage(m_createInfo.width, m_createInfo.height, m_createInfo.mips, vk::SampleCountFlagBits::e1, image_format, vk::ImageTiling::eOptimal,
+		m_ctx->createImage(m_createInfo.width, m_createInfo.height, m_createInfo.mipCount, vk::SampleCountFlagBits::e1, image_format, vk::ImageTiling::eOptimal,
 						   vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled,
 						   vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
 
 		m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eNone,
-									 vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, m_createInfo.mips,
-									 vk::ImageAspectFlagBits::eColor);
+									 vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer,
+									 m_createInfo.mipCount, vk::ImageAspectFlagBits::eColor);
 
 		m_ctx->copyBufferToImage(staging_buffer, m_image, m_createInfo.width, m_createInfo.height);
 
 		m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eTransferWrite,
-									 vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, m_createInfo.mips,
-									 vk::ImageAspectFlagBits::eColor);
+									 vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader,
+									 m_createInfo.mipCount, vk::ImageAspectFlagBits::eColor);
 
-		m_imageView = m_ctx->createImageView(m_image, image_format, vk::ImageAspectFlagBits::eColor, m_createInfo.mips);
+		m_imageView = m_ctx->createImageView(m_image, image_format, vk::ImageAspectFlagBits::eColor, m_createInfo.mipCount);
 
 		auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 
@@ -98,6 +91,7 @@ namespace toaster::gpu
 
 		_updateDescriptorInfo();
 	}
+	#endif
 
 	void VKImage2D::resize(uint32 p_width, uint32 p_height)
 	{
@@ -109,12 +103,31 @@ namespace toaster::gpu
 
 	void VKImage2D::recreate()
 	{
-	}
+		m_image       = nullptr;
+		m_imageMemory = nullptr;
+		m_imageView   = nullptr;
 
-	void VKImage2D::_updateDescriptorInfo()
-	{
-		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		m_descriptorImageInfo.imageView   = m_imageView;
-		m_descriptorImageInfo.sampler     = m_sampler;
+		m_ctx->createImage(m_createInfo.width, m_createInfo.height, m_createInfo.mipCount, m_createInfo.sampleCount, m_createInfo.format, vk::ImageTiling::eOptimal,
+						   m_createInfo.usage, vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
+
+		vk::ImageAspectFlags aspect_flags{m_ctx->isDepthFormat(m_createInfo.format) ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor};
+		if (m_ctx->hasStencilComponent(m_createInfo.format))
+			aspect_flags |= vk::ImageAspectFlagBits::eStencil;
+
+		if (m_createInfo.usage & vk::ImageUsageFlagBits::eColorAttachment)
+		{
+			m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
+										 vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eColorAttachmentOutput,
+										 m_createInfo.mipCount, aspect_flags);
+		}
+		else if (m_createInfo.usage & vk::ImageUsageFlagBits::eDepthStencilAttachment)
+		{
+			m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits::eNone,
+										 vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits::eNone,
+										 vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests, m_createInfo.mipCount,
+										 aspect_flags);
+		}
+
+		m_imageView = m_ctx->createImageView(m_image, m_createInfo.format, aspect_flags, m_createInfo.mipCount);
 	}
 }
