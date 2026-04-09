@@ -71,11 +71,13 @@ namespace toaster
 
 			m_geometryPass = make_reference<gpu::VKRenderPass>(ctx, m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_ubos);
-			m_geometryPass->setInput("u_Texture", m_texture);
 
 			m_geometryPass->bake(); // TODO: rename ts to toast
 			//						   Its funny because the engine is called Toaster...
 		}
+
+		m_material = make_reference<gpu::VKMaterial>(ctx, m_geometryShader);
+		m_material->set("u_Texture", m_texture);
 
 		m_mesh = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx");
 
@@ -155,21 +157,10 @@ namespace toaster
 
 		Renderer::beginRendering(rendering_info, command_buffer, frame_index, m_geometryPass);
 
-		TransformCB transform_constant_buffer{};
-		transform_constant_buffer.model = glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{20.0f, 20.0f, 20.0f}), m_time * glm::radians(90.0f),
-													  glm::vec3{0.0f, 0.0f, 1.0f});
-		command_buffer.pushConstants<TransformCB>(m_geometryPipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, transform_constant_buffer);
+		glm::mat4 transform{glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{20.0f, 20.0f, 20.0f}), m_time * glm::radians(90.0f), glm::vec3{0.0f, 0.0f, 1.0f})};
 
-		MaterialCB material_constant_buffer{};
-		material_constant_buffer.roughness = m_mesh->getRoughness();
-		command_buffer.pushConstants<MaterialCB>(m_geometryPipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eFragment, sizeof(TransformCB),
-												 material_constant_buffer);
-
-		m_mesh->getVertexBuffer()->bind(command_buffer);
-		m_mesh->getIndexBuffer()->bind(command_buffer, vk::IndexType::eUint16);
-
-		command_buffer.drawIndexed(m_mesh->getIndices().size(), 1, 0, 0, 0);
-
+		Renderer::renderGeometry(command_buffer, frame_index, m_geometryPipeline, m_mesh->getVertexBuffer(), m_mesh->getIndexBuffer(), m_mesh->getIndices().size(),
+								 m_material, transform);
 		Renderer::endRendering(command_buffer);
 	}
 

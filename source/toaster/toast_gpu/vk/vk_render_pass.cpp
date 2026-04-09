@@ -6,7 +6,7 @@ namespace toaster::gpu
 {
 	VKRenderPass::VKRenderPass(VKGPUContext *p_ctx, const RefPtr<VKPipeline> &p_pipeline) : m_ctx(p_ctx), m_pipeline(p_pipeline)
 	{
-		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_ctx, m_pipeline->getCreateInfo().shader, 0, 3);
+		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_ctx, m_pipeline->getCreateInfo().shader, 1, 3);
 	}
 
 	void VKRenderPass::setInput(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer)
@@ -29,14 +29,29 @@ namespace toaster::gpu
 		m_descriptorSetManager->bakeDescriptors();
 	}
 
+	void VKRenderPass::update(uint32 p_frame_index)
+	{
+		m_descriptorSetManager->updateDescriptors(p_frame_index);
+	}
+
+	const RefPtr<VKPipeline> &VKRenderPass::getPipeline() const
+	{
+		return m_pipeline;
+	}
+
 	std::vector<vk::DescriptorSet> VKRenderPass::getDescriptorSets(uint32 p_frame_index) const
 	{
 		TST_ASSERT_MSG(p_frame_index < VKGPUContext::c_maxFramesInFlight, "Frame index out of bounds");
 		return m_descriptorSetManager->getDescriptorSets(p_frame_index);
 	}
 
-	const RefPtr<VKPipeline> &VKRenderPass::getPipeline() const
+	uint32 VKRenderPass::getStartSetIndex() const
 	{
-		return m_pipeline;
+		return m_descriptorSetManager->getStartSetIndex();
+	}
+
+	uint32 VKRenderPass::getEndSetIndex() const
+	{
+		return m_descriptorSetManager->getEndSetIndex();
 	}
 }

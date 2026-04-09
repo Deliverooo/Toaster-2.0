@@ -15,6 +15,7 @@
 #include "toast_gpu/vk/vk_gpu_context.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
 #include "toast_gpu/vk/vk_index_buffer.hpp"
+#include "toast_gpu/vk/vk_material.hpp"
 #include "toast_gpu/vk/vk_shader.hpp"
 #include "toast_gpu/vk/vk_mesh.hpp"
 #include "toast_gpu/vk/vk_pipeline.hpp"
@@ -68,7 +69,8 @@ namespace toaster
 		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
 		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
 
-		RefPtr<gpu::VKMesh> m_mesh{nullptr};
+		RefPtr<gpu::VKMaterial> m_material{nullptr};
+		RefPtr<gpu::VKMesh>     m_mesh{nullptr};
 
 		struct CameraUB
 		{
@@ -78,15 +80,5 @@ namespace toaster
 
 		RefPtr<gpu::VKUniformBufferPFF> m_ubos;
 		std::vector<void *>             m_mappedUniformBuffers;
-
-		struct MaterialCB
-		{
-			float32 roughness{0.0f};
-		};
-
-		struct TransformCB
-		{
-			glm::mat4 model{1.0f};
-		};
 	};
 }

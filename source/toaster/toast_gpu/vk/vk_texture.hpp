@@ -10,9 +10,9 @@ namespace toaster::gpu
 {
 	struct TextureSpecInfo
 	{
-		uint32       width{0u};
-		uint32       height{0u};
-		EImageFormat format{EImageFormat::eRGBA};
+		uint32     width{0u};
+		uint32     height{0u};
+		vk::Format format{vk::Format::eUndefined};
 
 		bool generateMips{true};
 	};
@@ -23,32 +23,25 @@ namespace toaster::gpu
 		VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
 		VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size);
 
-		vk::raii::Image &       getImage();
-		vk::raii::DeviceMemory &getImageMemory();
-		vk::raii::ImageView &   getImageView();
-		vk::raii::Sampler &     getSampler();
-
-		vk::DescriptorImageInfo &getDescriptorInfo();
-
-		[[nodiscard]] const TextureSpecInfo &getSpecInfo() const;
-
-		const io::filesystem::Path &getPath() const;
+		[[nodiscard]] const TextureSpecInfo &  getSpecInfo() const;
+		const io::filesystem::Path &           getPath() const;
+		[[nodiscard]] uint32                   getMipLevelCount() const;
+		const RefPtr<VKImage2D> &              getImage() const;
+		[[nodiscard]] vk::raii::Sampler &      getSampler();
+		[[nodiscard]] vk::DescriptorImageInfo &getDescriptorInfo();
 
 		[[nodiscard]] EGPUResourceType getResourceType() const override;
 
 	private:
 		VKGPUContext *m_ctx{nullptr};
 
-		TextureSpecInfo m_specInfo{};
-
+		TextureSpecInfo      m_specInfo{};
 		io::filesystem::Path m_path;
 
 		uint32 m_mipLevels{1u};
 
-		vk::raii::Image        m_image{nullptr};
-		vk::raii::DeviceMemory m_imageMemory{nullptr};
-		vk::raii::ImageView    m_imageView{nullptr};
-		vk::raii::Sampler      m_sampler{nullptr};
+		RefPtr<VKImage2D> m_image{nullptr};
+		vk::raii::Sampler m_sampler{nullptr};
 
 		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};
 	};

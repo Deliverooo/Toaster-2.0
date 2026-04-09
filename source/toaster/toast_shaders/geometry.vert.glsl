@@ -9,7 +9,7 @@ layout(location = 4) in vec2 a_TexCoord;
 layout(location = 0) out vec3 v_Colour;
 layout(location = 1) out vec2 v_TexCoord;
 
-layout(std140, binding = 0) uniform Camera
+layout(std140, set = 1, binding = 1) uniform Camera
 {
     mat4 u_View;
     mat4 u_Proj;
