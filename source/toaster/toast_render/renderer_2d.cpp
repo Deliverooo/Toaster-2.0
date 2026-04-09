@@ -128,9 +128,13 @@ namespace toaster
 
 	void Renderer2D::end(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index)
 	{
-		m_ctx->transitionImageLayout(m_renderTargetTexture->getImage()->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
-									 vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eFragmentShader,
-									 vk::PipelineStageFlagBits::eColorAttachmentOutput, 1, vk::ImageAspectFlagBits::eColor);
+		if (m_renderTargetTexture->getCurrentImageLayout() != vk::ImageLayout::eColorAttachmentOptimal)
+		{
+			m_ctx->transitionImageLayout(m_renderTargetTexture->getImage()->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+										 vk::AccessFlagBits::eShaderRead, vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eFragmentShader,
+										 vk::PipelineStageFlagBits::eColorAttachmentOutput, 1, vk::ImageAspectFlagBits::eColor);
+			m_renderTargetTexture->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+		}
 
 		vk::RenderingAttachmentInfo colour_attachment_info{};
 		colour_attachment_info.imageView   = m_renderTargetTexture->getImage()->getImageView();
@@ -177,6 +181,7 @@ namespace toaster
 		m_ctx->transitionImageLayout(m_renderTargetTexture->getImage()->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
 									 vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eColorAttachmentOutput,
 									 vk::PipelineStageFlagBits::eFragmentShader, 1, vk::ImageAspectFlagBits::eColor);
+		m_renderTargetTexture->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 	}
 
 	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)

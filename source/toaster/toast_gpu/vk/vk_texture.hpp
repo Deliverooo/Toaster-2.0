@@ -31,7 +31,9 @@ namespace toaster::gpu
 		const RefPtr<VKImage2D> &              getImage() const;
 		[[nodiscard]] vk::raii::Sampler &      getSampler();
 		[[nodiscard]] vk::DescriptorImageInfo &getDescriptorInfo();
-		vk::ImageLayout                        getCurrentImageLayout() const;
+
+		void            setCurrentImageLayout(vk::ImageLayout p_layout);
+		vk::ImageLayout getCurrentImageLayout() const;
 
 		[[nodiscard]] EGPUResourceType getResourceType() const override;
 

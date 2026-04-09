@@ -20,12 +20,16 @@ namespace toaster::gpu
 		image_create_info.format      = m_specInfo.format;
 		m_image                       = make_reference<VKImage2D>(m_ctx, image_create_info);
 
+		#if 0
+		m_ctx->transitionImageLayout(m_image->getImage(), m_currentImageLayout, vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits::eNone,
+									 vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eFragmentShader, 1,
+									 vk::ImageAspectFlagBits::eColor); m_currentImageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 
-		m_ctx->transitionImageLayout(m_image->getImage(), m_currentImageLayout, vk::ImageLayout::eShaderReadOnlyOptimal,
-									 vk::AccessFlagBits::eNone, vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eTopOfPipe,
-									 vk::PipelineStageFlagBits::eFragmentShader, 1, vk::ImageAspectFlagBits::eColor);
-
-		m_currentImageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		#endif
+		m_ctx->transitionImageLayout(m_image->getImage(), m_currentImageLayout, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
+									 vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eColorAttachmentOutput,
+									 1, vk::ImageAspectFlagBits::eColor);
+		m_currentImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 
 		auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 
@@ -59,7 +63,7 @@ namespace toaster::gpu
 		m_sampler = {m_ctx->getDevice(), sampler_create_info};
 
 		m_descriptorImageInfo             = vk::DescriptorImageInfo{};
-		m_descriptorImageInfo.imageLayout = m_currentImageLayout;
+		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		m_descriptorImageInfo.imageView   = m_image->getImageView();
 		m_descriptorImageInfo.sampler     = m_sampler;
 	}
@@ -236,8 +240,12 @@ namespace toaster::gpu
 
 	void VKTexture2D::resize(uint32 p_width, uint32 p_height)
 	{
-		m_sampler = nullptr;
+		m_sampler             = nullptr;
+		m_descriptorImageInfo = vk::DescriptorImageInfo{};
+
 		m_image->resize(p_width, p_height);
+
+		m_currentImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 
 		auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 
@@ -270,8 +278,7 @@ namespace toaster::gpu
 
 		m_sampler = {m_ctx->getDevice(), sampler_create_info};
 
-		m_descriptorImageInfo             = vk::DescriptorImageInfo{};
-		m_descriptorImageInfo.imageLayout = m_currentImageLayout;
+		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		m_descriptorImageInfo.imageView   = m_image->getImageView();
 		m_descriptorImageInfo.sampler     = m_sampler;
 	}
@@ -304,6 +311,11 @@ namespace toaster::gpu
 	vk::DescriptorImageInfo &VKTexture2D::getDescriptorInfo()
 	{
 		return m_descriptorImageInfo;
+	}
+
+	void VKTexture2D::setCurrentImageLayout(vk::ImageLayout p_layout)
+	{
+		m_currentImageLayout = p_layout;
 	}
 
 	vk::ImageLayout VKTexture2D::getCurrentImageLayout() const
