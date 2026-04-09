@@ -10,10 +10,12 @@ namespace toaster::gpu
 {
 	struct TextureSpecInfo
 	{
-		uint32     width{0u};
-		uint32     height{0u};
-		vk::Format format{vk::Format::eUndefined};
-		bool       generateMips{true};
+		uint32                  width{0u};
+		uint32                  height{0u};
+		vk::Format              format{vk::Format::eUndefined};
+		vk::SampleCountFlagBits sampleCount{vk::SampleCountFlagBits::e1};
+
+		bool generateMips{true};
 	};
 
 	class VKTexture2D final : public IGPUResource

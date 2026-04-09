@@ -74,9 +74,6 @@ namespace toaster
 
 		RefPtr<gpu::VKImage2D> m_colourAttachmentImage{nullptr};
 		RefPtr<gpu::VKImage2D> m_depthAttachmentImage{nullptr};
-
-		// vk::raii::DescriptorPool             m_descriptorPool{nullptr};
-		// std::vector<vk::raii::DescriptorSet> m_compositeDescriptorSets;
 		#pragma  endregion
 
 		RefPtr<Scene>               m_scene;

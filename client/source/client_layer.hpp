@@ -47,16 +47,36 @@ namespace toaster
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
 
+		#pragma region fullscreen pass
+		gpu::VertexBufferLayout   m_compositeVertexBufferLayout;
+		RefPtr<gpu::VKShader>     m_compositeShader{nullptr};
+		RefPtr<gpu::VKPipeline>   m_compositePipeline{nullptr};
+		RefPtr<gpu::VKRenderPass> m_fullscreenPass{nullptr};
+
+		RefPtr<gpu::VKMaterial> m_fullscreenMaterial{nullptr};
+
+		RefPtr<gpu::VKVertexBuffer> m_fullscreenQuadVertexBuffer{nullptr};
+		RefPtr<gpu::VKIndexBuffer>  m_fullscreenQuadIndexBuffer{nullptr};
+
+		struct FullscreenQuadVertex
+		{
+			glm::vec3 positon;
+			glm::vec2 texCoord;
+		};
+
+		std::vector<FullscreenQuadVertex> m_fullscreenQuadVertices;
+		std::vector<uint16>               m_fullscreenQuadIndices;
+
+		RefPtr<gpu::VKImage2D> m_MSAAColourAttachmentImage{nullptr};
+		RefPtr<gpu::VKImage2D> m_MSAADepthAttachmentImage{nullptr};
+		#pragma  endregion
+
 		RefPtr<gpu::VKShader>     m_geometryShader{nullptr}; // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
 		RefPtr<gpu::VKPipeline>   m_geometryPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_geometryPass{nullptr};
 
-		gpu::VertexBufferLayout m_quadVertexBufferLayout;
-		RefPtr<gpu::VKShader>   m_quadShader{nullptr};
-		RefPtr<gpu::VKPipeline> m_quadPipeline{nullptr};
-
-		RefPtr<gpu::VKImage2D> m_colourAttachmentImage{nullptr};
-		RefPtr<gpu::VKImage2D> m_depthAttachmentImage{nullptr};
+		RefPtr<gpu::VKTexture2D> m_geometryColourAttachmentTexture{nullptr};
+		RefPtr<gpu::VKImage2D>   m_geometryDepthAttachmentImage{nullptr};
 
 		RefPtr<gpu::VKMesh> m_mesh{nullptr};
 		RefPtr<gpu::VKMesh> m_mesh2{nullptr};

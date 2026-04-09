@@ -10,12 +10,16 @@ namespace toaster::gpu
 	{
 		// The only reason to create an image without providing it with any data is to use it as an attachment...
 
+		vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled};
+		if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
+			usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
+
 		ImageCreateInfo image_create_info{};
 		image_create_info.width       = m_specInfo.width;
 		image_create_info.height      = m_specInfo.height;
-		image_create_info.usage       = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled;
+		image_create_info.usage       = usage_flags;
 		image_create_info.mipCount    = m_mipLevels;
-		image_create_info.sampleCount = vk::SampleCountFlagBits::e1;
+		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = m_specInfo.format;
 		m_image                       = make_reference<VKImage2D>(m_ctx, image_create_info);
 
@@ -92,7 +96,7 @@ namespace toaster::gpu
 		image_create_info.height      = m_specInfo.height;
 		image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 		image_create_info.mipCount    = m_mipLevels;
-		image_create_info.sampleCount = vk::SampleCountFlagBits::e1;
+		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = vk::Format::eR8G8B8A8Srgb;
 		m_image                       = make_reference<VKImage2D>(m_ctx, image_create_info);
 
@@ -164,7 +168,7 @@ namespace toaster::gpu
 		image_create_info.height      = m_specInfo.height;
 		image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 		image_create_info.mipCount    = m_mipLevels;
-		image_create_info.sampleCount = vk::SampleCountFlagBits::e1;
+		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = vk::Format::eR8G8B8A8Unorm;
 		m_image                       = make_reference<VKImage2D>(m_ctx, image_create_info);
 
