@@ -4,12 +4,13 @@
 
 #include "input.hpp"
 #include "toast_lib/logging.hpp"
-// #include "toast_render/globals.hpp"
+#include "toast_render/globals.hpp"
 #include "toast_render/render_command.hpp"
 
 #include <algorithm>
 #include <GLFW/glfw3.h>
 
+#include "toast_gpu/vk/vk_gpu_context.hpp"
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
 namespace toaster
@@ -34,7 +35,7 @@ namespace toaster
 			});
 		});
 
-		// Globals::init();
+		Globals::init(dynamic_cast<gpu::VKGPUContext *>(m_window->getGPUContext()));
 		// RenderCommand::init();
 
 		input::setCurrentWindowContext(m_window->getNativeWindow());
@@ -46,7 +47,7 @@ namespace toaster
 			removeLayer(layer);
 		m_layers.clear();
 
-		// Globals::shutdown();
+		Globals::shutdown();
 
 		delete m_window;
 		Window::shutdownWindowingAPI();

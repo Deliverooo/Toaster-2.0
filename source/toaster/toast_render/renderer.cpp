@@ -1,4 +1,6 @@
 #include "renderer.hpp"
+
+#include "globals.hpp"
 #include "toast_gpu/vk/vk_gpu_context.hpp"
 
 namespace toaster
@@ -40,9 +42,35 @@ namespace toaster
 				info.imageLayout = rendering_attachment.imageLayout;
 			}
 
-			info.resolveMode        = rendering_attachment.resolveMode;
-			info.resolveImageView   = rendering_attachment.resolveImageView;
-			info.resolveImageLayout = rendering_attachment.resolveImageLayout;
+			if (rendering_attachment.resolveImage != nullptr)
+			{
+				info.resolveImageView   = rendering_attachment.resolveImage->getImageView();
+				info.resolveImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+
+				// Perform the layout transition on sampled attachment images
+				if ((rendering_attachment.resolveImage->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
+						rendering_attachment.resolveImage->getCurrentImageLayout() != vk::ImageLayout::eColorAttachmentOptimal))
+				{
+					rendering_attachment.resolveImage->getContext()->transitionImageLayout(rendering_attachment.resolveImage->getImage(),
+																						   vk::ImageLayout::eShaderReadOnlyOptimal,
+																						   vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eShaderRead,
+																						   vk::AccessFlagBits::eColorAttachmentWrite,
+																						   vk::PipelineStageFlagBits::eFragmentShader,
+																						   vk::PipelineStageFlagBits::eColorAttachmentOutput,
+																						   rendering_attachment.resolveImage->getCreateInfo().mipCount,
+																						   vk::ImageAspectFlagBits::eColor);
+					rendering_attachment.resolveImage->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+				}
+			}
+			else
+			{
+				info.resolveImageView   = rendering_attachment.imageView;
+				info.resolveImageLayout = rendering_attachment.imageLayout;
+			}
+
+			info.resolveMode = rendering_attachment.resolveMode;
+			// info.resolveImageView   = rendering_attachment.resolveImageView;
+			// info.resolveImageLayout = rendering_attachment.resolveImageLayout;
 
 			info.loadOp     = rendering_attachment.loadOp;
 			info.storeOp    = rendering_attachment.storeOp;
@@ -63,9 +91,20 @@ namespace toaster
 				depth_attachment_info.imageLayout = p_rendering_info.pDepthAttachment->imageLayout;
 			}
 
-			depth_attachment_info.resolveMode        = p_rendering_info.pDepthAttachment->resolveMode;
-			depth_attachment_info.resolveImageView   = p_rendering_info.pDepthAttachment->resolveImageView;
-			depth_attachment_info.resolveImageLayout = p_rendering_info.pDepthAttachment->resolveImageLayout;
+			if (p_rendering_info.pDepthAttachment->resolveImage != nullptr)
+			{
+				depth_attachment_info.resolveImageView   = p_rendering_info.pDepthAttachment->resolveImage->getImageView();
+				depth_attachment_info.resolveImageLayout = p_rendering_info.pDepthAttachment->resolveImage->getCurrentImageLayout();
+			}
+			else
+			{
+				depth_attachment_info.resolveImageView   = p_rendering_info.pDepthAttachment->resolveImageView;
+				depth_attachment_info.resolveImageLayout = p_rendering_info.pDepthAttachment->resolveImageLayout;
+			}
+
+			depth_attachment_info.resolveMode = p_rendering_info.pDepthAttachment->resolveMode;
+			// depth_attachment_info.resolveImageView   = p_rendering_info.pDepthAttachment->resolveImageView;
+			// depth_attachment_info.resolveImageLayout = p_rendering_info.pDepthAttachment->resolveImageLayout;
 
 			depth_attachment_info.loadOp     = p_rendering_info.pDepthAttachment->loadOp;
 			depth_attachment_info.storeOp    = p_rendering_info.pDepthAttachment->storeOp;
@@ -86,9 +125,20 @@ namespace toaster
 				stencil_attachment_info.imageLayout = p_rendering_info.pStencilAttachment->imageLayout;
 			}
 
-			stencil_attachment_info.resolveMode        = p_rendering_info.pStencilAttachment->resolveMode;
-			stencil_attachment_info.resolveImageView   = p_rendering_info.pStencilAttachment->resolveImageView;
-			stencil_attachment_info.resolveImageLayout = p_rendering_info.pStencilAttachment->resolveImageLayout;
+			if (p_rendering_info.pStencilAttachment->resolveImage != nullptr)
+			{
+				stencil_attachment_info.resolveImageView   = p_rendering_info.pStencilAttachment->resolveImage->getImageView();
+				stencil_attachment_info.resolveImageLayout = p_rendering_info.pStencilAttachment->resolveImage->getCurrentImageLayout();
+			}
+			else
+			{
+				stencil_attachment_info.resolveImageView   = p_rendering_info.pStencilAttachment->resolveImageView;
+				stencil_attachment_info.resolveImageLayout = p_rendering_info.pStencilAttachment->resolveImageLayout;
+			}
+
+			stencil_attachment_info.resolveMode = p_rendering_info.pStencilAttachment->resolveMode;
+			// stencil_attachment_info.resolveImageView   = p_rendering_info.pStencilAttachment->resolveImageView;
+			// stencil_attachment_info.resolveImageLayout = p_rendering_info.pStencilAttachment->resolveImageLayout;
 
 			stencil_attachment_info.loadOp     = p_rendering_info.pStencilAttachment->loadOp;
 			stencil_attachment_info.storeOp    = p_rendering_info.pStencilAttachment->storeOp;
@@ -132,6 +182,17 @@ namespace toaster
 																				rendering_attachment.image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eColor);
 				rendering_attachment.image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 			}
+			if ((rendering_attachment.resolveImage != nullptr) && (rendering_attachment.resolveImage->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled))
+			{
+				rendering_attachment.resolveImage->getContext()->transitionImageLayout(rendering_attachment.resolveImage->getImage(),
+																					   vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+																					   vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead,
+																					   vk::PipelineStageFlagBits::eColorAttachmentOutput,
+																					   vk::PipelineStageFlagBits::eFragmentShader,
+																					   rendering_attachment.resolveImage->getCreateInfo().mipCount,
+																					   vk::ImageAspectFlagBits::eColor);
+				rendering_attachment.resolveImage->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+			}
 		}
 	}
 
@@ -154,5 +215,25 @@ namespace toaster
 
 		// Finally, draw indexed :)
 		p_command_buffer.drawIndexed(p_index_count, 1, 0, 0, 0);
+	}
+
+	void Renderer::renderFullscreenQuad(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
+										const RefPtr<gpu::VKMaterial> &p_material)
+	{
+		// Push the constants
+		p_command_buffer.pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, glm::mat4{1.0f});
+
+		if (p_material->hasDescriptorSets())
+		{
+			// Bind the material descriptor set (0)
+			vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(p_frame_index)};
+			p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0, material_descriptor_set, {});
+		}
+		// Bind the vertex and index buffers
+		Globals::getFullscreenQuadVertexBuffer()->bind(p_command_buffer);
+		Globals::getFullscreenQuadIndexBuffer()->bind(p_command_buffer, vk::IndexType::eUint16);
+
+		// Finally, draw indexed :)
+		p_command_buffer.drawIndexed(Globals::getFullscreenQuadIndices().size(), 1, 0, 0, 0);
 	}
 }

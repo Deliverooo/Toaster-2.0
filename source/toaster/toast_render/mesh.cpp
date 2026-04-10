@@ -155,7 +155,7 @@ namespace toaster
 				auto ai_material      = scene->mMaterials[i];
 				auto ai_material_name = ai_material->GetName();
 
-				auto material = Material::create(Globals::shaderLibrary()->get("Mesh"), ai_material_name.data);
+				auto material = Material::create(nullptr, ai_material_name.data);
 
 				LOG_TRACE("\t{} (Index = {})", ai_material_name.data, i);
 

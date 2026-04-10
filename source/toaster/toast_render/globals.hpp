@@ -3,16 +3,27 @@
 #include "toast_gpu/vertex_array.hpp"
 #include "toast_render/shader_library.hpp"
 
+#include "toast_gpu/vk/vk_index_buffer.hpp"
+#include "toast_gpu/vk/vk_vertex_buffer.hpp"
+
 namespace toaster
 {
 	class Globals final
 	{
 	public:
-		static void init();
+		struct QuadVertex
+		{
+			glm::vec3 position;
+			glm::vec2 texCoord;
+		};
+
+		static void init(gpu::VKGPUContext *p_ctx);
 		static void shutdown();
 
-		static const RefPtr<ShaderLibrary> &shaderLibrary();
+		static const RefPtr<gpu::VKVertexBuffer> &getFullscreenQuadVertexBuffer();
+		static const RefPtr<gpu::VKIndexBuffer> & getFullscreenQuadIndexBuffer();
 
-		static RefPtr<gpu::IVertexArray> quadVertexArray();
+		static const std::vector<QuadVertex> &getFullscreenQuadVertices();
+		static const std::vector<uint16> &    getFullscreenQuadIndices();
 	};
 }

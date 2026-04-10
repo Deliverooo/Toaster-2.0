@@ -6,80 +6,64 @@ namespace toaster
 {
 	struct GlobalData
 	{
-		RefPtr<ShaderLibrary> g_shaderLibrary;
+		gpu::VKGPUContext *ctx{nullptr};
 
-		struct
-		{
-			RefPtr<gpu::IVertexBuffer> vertexBuffer;
-			RefPtr<gpu::IIndexBuffer>  indexBuffer;
-			RefPtr<gpu::IVertexArray>  vertexArray;
-		} g_quad;
-	};
+		RefPtr<gpu::VKVertexBuffer> quadVertexBuffer{nullptr};
+		RefPtr<gpu::VKIndexBuffer>  quadIndexBuffer{nullptr};
 
-	struct QuadVertex
-	{
-		glm::vec3 position;
-		glm::vec2 texCoord;
+		std::vector<Globals::QuadVertex> quadVertices;
+		std::vector<uint16>              quadIndices;
 	};
 
 	static GlobalData *s_globalData = nullptr;
 
-	void Globals::init()
+	void Globals::init(gpu::VKGPUContext *p_ctx)
 	{
-		s_globalData = new GlobalData{};
+		s_globalData      = new GlobalData{};
+		s_globalData->ctx = p_ctx;
 
 		const io::filesystem::Path shader_dir = "../source/toaster/toast_shaders/";
 
 		TST_ASSERT_MSG(io::filesystem::exists(shader_dir),
 					   "You probably set the working directory before creating the application, or the .exe is not in the bin directory");
 
-		s_globalData->g_shaderLibrary = make_reference<ShaderLibrary>();
+		s_globalData->quadVertices.emplace_back(QuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
+		s_globalData->quadVertices.emplace_back(QuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});
+		s_globalData->quadVertices.emplace_back(QuadVertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}});
+		s_globalData->quadVertices.emplace_back(QuadVertex{{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}});
 
-		const auto quad_shader = gpu::IShader::create("Quad", {
-														  {gpu::EShaderType::eVertex, io::filesystem::readFile(shader_dir / "quad.vert.glsl").c_str()},
-														  {gpu::EShaderType::ePixel, io::filesystem::readFile(shader_dir / "quad.pixel.glsl").c_str()}
-													  });
-		s_globalData->g_shaderLibrary->add("Quad", quad_shader);
+		s_globalData->quadIndices = {0, 1, 3, 1, 2, 3};
 
-		// auto mesh_shader = gpu::IShader::create("Mesh", {
-													// {gpu::EShaderType::eVertex, io::filesystem::readFile(shader_dir / "mesh.vert.glsl").c_str()},
-													// {gpu::EShaderType::ePixel, io::filesystem::readFile(shader_dir / "mesh.pixel.glsl").c_str()}
-												// });
-		// s_globalData->g_shaderLibrary->add("Mesh", mesh_shader);
+		vk::DeviceSize vbo_size{s_globalData->quadVertices.size() * sizeof(QuadVertex)};
+		s_globalData->quadVertexBuffer = make_reference<gpu::VKVertexBuffer>(s_globalData->ctx, s_globalData->quadVertices.data(), vbo_size);
 
-		{
-			std::vector<QuadVertex> vertices = {
-				{{0.5f, 0.5f, 0.0f}, {1.0f, 1.0f}},
-				{{0.5f, -0.5f, 0.0f}, {1.0f, 0.0f}},
-				{{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f}},
-				{{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f}},
-			};
-			std::vector<uint32> indices = {0, 1, 3, 1, 2, 3};
-
-			s_globalData->g_quad.vertexBuffer = gpu::IVertexBuffer::create(vertices.data(), vertices.size() * sizeof(QuadVertex));
-			const auto vbl                    = gpu::VertexBufferLayout{{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
-			s_globalData->g_quad.vertexBuffer->setLayout(vbl);
-
-			s_globalData->g_quad.indexBuffer = gpu::IIndexBuffer::create(indices.data(), indices.size());
-
-			s_globalData->g_quad.vertexArray = gpu::IVertexArray::create();
-			s_globalData->g_quad.vertexArray->addVertexBuffer(s_globalData->g_quad.vertexBuffer);
-			s_globalData->g_quad.vertexArray->setIndexBuffer(s_globalData->g_quad.indexBuffer);
-		}
-	}
-
-	const RefPtr<ShaderLibrary> &Globals::shaderLibrary()
-	{
-		return s_globalData->g_shaderLibrary;
+		vk::DeviceSize ibo_size{s_globalData->quadIndices.size() * sizeof(uint16)};
+		s_globalData->quadIndexBuffer = make_reference<gpu::VKIndexBuffer>(s_globalData->ctx, s_globalData->quadIndices.data(), ibo_size);
 	}
 
 	void Globals::shutdown()
 	{
+		s_globalData->ctx = nullptr;
 		delete s_globalData;
 	}
 
-	RefPtr<gpu::IVertexArray> Globals::quadVertexArray()
+	const RefPtr<gpu::VKVertexBuffer> &Globals::getFullscreenQuadVertexBuffer()
 	{
-		return s_globalData->g_quad.vertexArray;
+		return s_globalData->quadVertexBuffer;
+	}
+
+	const RefPtr<gpu::VKIndexBuffer> &Globals::getFullscreenQuadIndexBuffer()
+	{
+		return s_globalData->quadIndexBuffer;
+	}
+
+	const std::vector<Globals::QuadVertex> &Globals::getFullscreenQuadVertices()
+	{
+		return s_globalData->quadVertices;
+	}
+
+	const std::vector<uint16> &Globals::getFullscreenQuadIndices()
+	{
+		return s_globalData->quadIndices;
 	}
 }

@@ -133,7 +133,7 @@ namespace toaster
 
 		gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
 		colour_attachment_info.image      = m_renderTargetTexture->getImage();
-		colour_attachment_info.clearValue = vk::ClearColorValue{0.0f, 1.0f, 0.0f, 1.0f};
+		colour_attachment_info.clearValue = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
 		colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
 		colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 
