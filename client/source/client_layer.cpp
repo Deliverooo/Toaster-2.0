@@ -122,14 +122,13 @@ namespace toaster
 		camera_ub.proj = glm::perspective(glm::radians(45.0f), static_cast<float32>(swapchain_extent.width) / static_cast<float32>(swapchain_extent.height), 0.1f, 10.0f);
 		camera_ub.proj[1][1] *= -1.0f;
 
-		m_renderer2D->begin(command_buffer, frame_index, camera_ub.view, camera_ub.proj);
-		m_renderer2D->submitQuad({0.0f, 0.0f}, glm::vec2{10.0f, 10.0f}, glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
-		m_renderer2D->submitQuad(m_meshTranslation, glm::vec2{10.0f, 10.0f}, glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
-		m_renderer2D->end(command_buffer, frame_index);
+		// m_renderer2D->begin(command_buffer, frame_index, camera_ub.view, camera_ub.proj);
+		// m_renderer2D->submitQuad({0.0f, 0.0f}, glm::vec2{10.0f, 10.0f}, glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
+		// m_renderer2D->submitQuad(m_meshTranslation, glm::vec2{10.0f, 10.0f}, glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
+		// m_renderer2D->end(command_buffer, frame_index);
 
 		m_sceneRenderer->begin(command_buffer, frame_index, camera_ub.view, camera_ub.proj);
-		m_sceneRenderer->renderMesh(m_mesh, glm::translate(glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{10.0f, 10.0f, 10.0f}), m_time * glm::radians(90.0f),
-																	   glm::vec3{0.0f, 0.0f, 1.0f}), m_meshTranslation));
+		m_sceneRenderer->renderMesh(m_mesh, glm::translate(glm::scale(glm::mat4{1.0f}, glm::vec3{10.0f, 10.0f, 10.0f}), m_meshTranslation));
 		m_sceneRenderer->end(command_buffer, frame_index);
 
 		{

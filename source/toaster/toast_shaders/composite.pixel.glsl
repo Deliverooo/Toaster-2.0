@@ -37,5 +37,6 @@ void main()
         col += vec3(texture(u_Texture, v_TexCoord + offsets[i])) * kernel[i];
     }
 
-    o_Colour = vec4(col, 1.0f);
+    o_Colour = texture(u_Texture, v_TexCoord);
+//    o_Colour = vec4(col, 1.0f);
 }
