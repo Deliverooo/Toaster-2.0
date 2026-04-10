@@ -7,7 +7,8 @@ namespace toaster::gpu
 		eUnknown,
 		eUniformBuffer,
 		eUniformBufferPFF,
-		eTexture2D
+		eTexture2D,
+		eTexture3D
 	};
 
 	class IGPUResource

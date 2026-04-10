@@ -24,7 +24,7 @@ namespace toaster::gpu
 		vk::PolygonMode       polygonMode{vk::PolygonMode::eFill};
 		vk::CullModeFlags     cullMode{vk::CullModeFlagBits::eBack};
 
-		bool multisample{true};
+		bool multisample{false}; // This should not be enabled by default
 	};
 
 	class VKPipeline

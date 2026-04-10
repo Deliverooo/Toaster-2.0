@@ -4,9 +4,8 @@
 
 namespace toaster
 {
-	EditorApplication::EditorApplication(const ApplicationCreateInfo& p_create_info) : Application(p_create_info)
+	EditorApplication::EditorApplication(const ApplicationCreateInfo &p_create_info) : Application(p_create_info)
 	{
-
 		addLayer(IAppLayer::alloc<EditorLayer>(this));
 
 		m_imGuiLayer = IAppLayer::alloc<ImGuiLayer>(this);

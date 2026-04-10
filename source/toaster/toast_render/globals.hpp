@@ -1,10 +1,11 @@
 #pragma once
 
-#include "toast_gpu/vertex_array.hpp"
-#include "toast_render/shader_library.hpp"
+#include "shader_library.hpp"
 
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
+
+#include <glm/glm.hpp>
 
 namespace toaster
 {
@@ -19,6 +20,8 @@ namespace toaster
 
 		static void init(gpu::VKGPUContext *p_ctx);
 		static void shutdown();
+
+		static const ShaderLibrary &getShaderLibrary();
 
 		static const RefPtr<gpu::VKVertexBuffer> &getFullscreenQuadVertexBuffer();
 		static const RefPtr<gpu::VKIndexBuffer> & getFullscreenQuadIndexBuffer();

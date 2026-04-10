@@ -23,6 +23,7 @@
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_gpu/vk/vk_uniform_buffer.hpp"
 #include "toast_gpu/vk/vk_render_attachment.hpp"
+#include "toast_scene/scene_renderer.hpp"
 
 namespace toaster
 {
@@ -48,8 +49,6 @@ namespace toaster
 		uint32 m_viewportHeight{0u};
 
 		#pragma region fullscreen pass
-		gpu::VertexBufferLayout   m_compositeVertexBufferLayout;
-		RefPtr<gpu::VKShader>     m_compositeShader{nullptr};
 		RefPtr<gpu::VKPipeline>   m_compositePipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_fullscreenPass{nullptr};
 
@@ -59,12 +58,6 @@ namespace toaster
 		RefPtr<gpu::VKImage2D> m_MSAADepthAttachmentImage{nullptr};
 		#pragma  endregion
 
-		RefPtr<gpu::VKShader>     m_geometryShader{nullptr}; // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
-		RefPtr<gpu::VKPipeline>   m_geometryPipeline{nullptr};
-		RefPtr<gpu::VKRenderPass> m_geometryPass{nullptr};
-
-		RefPtr<gpu::VKTexture2D> m_geometryColourAttachmentTexture{nullptr};
-		RefPtr<gpu::VKImage2D>   m_geometryDepthAttachmentImage{nullptr};
 
 		RefPtr<gpu::VKMesh> m_mesh{nullptr};
 		RefPtr<gpu::VKMesh> m_mesh2{nullptr};
@@ -79,7 +72,7 @@ namespace toaster
 			glm::mat4 proj;
 		};
 
-		RefPtr<gpu::VKUniformBufferPFF> m_ubos;
-		std::vector<void *>             m_mappedUniformBuffers;
+
+		RefPtr<SceneRenderer> m_sceneRenderer{nullptr};
 	};
 }

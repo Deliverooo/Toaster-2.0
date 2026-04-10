@@ -319,4 +319,38 @@ namespace toaster::gpu
 	{
 		return EGPUResourceType::eTexture2D;
 	}
+
+	VKTexture3D::VKTexture3D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size) : m_ctx(p_ctx), m_specInfo(p_spec_info)
+	{
+	}
+
+	VKGPUContext *VKTexture3D::getContext() const
+	{
+		return m_ctx;
+	}
+
+	const TextureSpecInfo &VKTexture3D::getSpecInfo() const
+	{
+		return m_specInfo;
+	}
+
+	vk::raii::Image &VKTexture3D::getImage()
+	{
+		return m_image;
+	}
+
+	vk::raii::ImageView &VKTexture3D::getImageView()
+	{
+		return m_imageView;
+	}
+
+	vk::DescriptorImageInfo &VKTexture3D::getDescriptorInfo()
+	{
+		return m_descriptorImageInfo;
+	}
+
+	EGPUResourceType VKTexture3D::getResourceType() const
+	{
+		return EGPUResourceType::eTexture3D;
+	}
 }

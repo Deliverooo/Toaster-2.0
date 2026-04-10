@@ -64,13 +64,11 @@ namespace toaster
 			}
 			else
 			{
-				info.resolveImageView   = rendering_attachment.imageView;
-				info.resolveImageLayout = rendering_attachment.imageLayout;
+				info.resolveImageView   = rendering_attachment.resolveImageView;
+				info.resolveImageLayout = rendering_attachment.resolveImageLayout;
 			}
 
 			info.resolveMode = rendering_attachment.resolveMode;
-			// info.resolveImageView   = rendering_attachment.resolveImageView;
-			// info.resolveImageLayout = rendering_attachment.resolveImageLayout;
 
 			info.loadOp     = rendering_attachment.loadOp;
 			info.storeOp    = rendering_attachment.storeOp;
@@ -103,8 +101,6 @@ namespace toaster
 			}
 
 			depth_attachment_info.resolveMode = p_rendering_info.pDepthAttachment->resolveMode;
-			// depth_attachment_info.resolveImageView   = p_rendering_info.pDepthAttachment->resolveImageView;
-			// depth_attachment_info.resolveImageLayout = p_rendering_info.pDepthAttachment->resolveImageLayout;
 
 			depth_attachment_info.loadOp     = p_rendering_info.pDepthAttachment->loadOp;
 			depth_attachment_info.storeOp    = p_rendering_info.pDepthAttachment->storeOp;
@@ -137,8 +133,6 @@ namespace toaster
 			}
 
 			stencil_attachment_info.resolveMode = p_rendering_info.pStencilAttachment->resolveMode;
-			// stencil_attachment_info.resolveImageView   = p_rendering_info.pStencilAttachment->resolveImageView;
-			// stencil_attachment_info.resolveImageLayout = p_rendering_info.pStencilAttachment->resolveImageLayout;
 
 			stencil_attachment_info.loadOp     = p_rendering_info.pStencilAttachment->loadOp;
 			stencil_attachment_info.storeOp    = p_rendering_info.pStencilAttachment->storeOp;

@@ -57,65 +57,56 @@ namespace toaster
 			m_windowWidth  = width;
 			m_windowHeight = height;
 
-			m_colourAttachmentImage->resize(width, height);
-			m_depthAttachmentImage->resize(width, height);
-
 			m_editorCamera.setViewportSize(static_cast<float32>(m_windowWidth), static_cast<float32>(m_windowHeight));
+			m_MSAAColourAttachmentImage->resize(width, height);
+			m_MSAADepthAttachmentImage->resize(width, height);
+
 			m_scene->setViewportSize(m_windowWidth, m_windowHeight);
 			m_renderer2D->onResize(width, height);
 		});
 
-		m_compositeVertexBufferLayout = {{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
+		{
+			m_compositeVertexBufferLayout = {{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
 
-		gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/composite.vert.glsl.spv");
-		gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/composite.pixel.glsl.spv");
-		gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
-		m_compositeShader = make_reference<gpu::VKShader>(ctx, shader_bytecode_map);
+			gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/composite.vert.glsl.spv");
+			gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/composite.pixel.glsl.spv");
+			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
+			m_compositeShader = make_reference<gpu::VKShader>(ctx, shader_bytecode_map);
 
-		gpu::PipelineCreateInfo pipeline_create_info{};
-		pipeline_create_info.vertexBufferLayout = m_compositeVertexBufferLayout;
-		pipeline_create_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
-		pipeline_create_info.depthFormat        = {swapchain->getDepthFormat()};
-		pipeline_create_info.shader             = m_compositeShader;
-		m_compositePipeline                     = make_reference<gpu::VKPipeline>(ctx, pipeline_create_info);
+			gpu::PipelineCreateInfo pipeline_create_info{};
+			pipeline_create_info.vertexBufferLayout = m_compositeVertexBufferLayout;
+			pipeline_create_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
+			pipeline_create_info.depthFormat        = {swapchain->getDepthFormat()};
+			pipeline_create_info.shader             = m_compositeShader;
+			pipeline_create_info.multisample        = true;
+			m_compositePipeline                     = make_reference<gpu::VKPipeline>(ctx, pipeline_create_info);
 
-		m_fullscreenPass = make_reference<gpu::VKRenderPass>(ctx, m_compositePipeline);
-		m_fullscreenPass->bake();
+			m_fullscreenPass = make_reference<gpu::VKRenderPass>(ctx, m_compositePipeline);
+			m_fullscreenPass->bake();
 
-		m_fullscreenMaterial = make_reference<gpu::VKMaterial>(ctx, m_compositeShader);
+			m_fullscreenMaterial = make_reference<gpu::VKMaterial>(ctx, m_compositeShader);
 
-		m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
-		m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});
-		m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}});
-		m_fullscreenQuadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}});
-		m_fullscreenQuadIndices = {0, 1, 3, 1, 2, 3};
+			gpu::ImageCreateInfo colour_attachment_image_create_info{};
+			colour_attachment_image_create_info.width       = window_width;
+			colour_attachment_image_create_info.height      = window_height;
+			colour_attachment_image_create_info.format      = swapchain->getSurfaceFormat().format;
+			colour_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
+			colour_attachment_image_create_info.sampleCount = ctx->getMaxUsableSampleCount();
+			m_MSAAColourAttachmentImage                     = make_reference<gpu::VKImage2D>(ctx, colour_attachment_image_create_info);
 
-		vk::DeviceSize vbo_size{m_fullscreenQuadVertices.size() * sizeof(FullscreenQuadVertex)};
-		m_fullscreenQuadVertexBuffer = make_reference<gpu::VKVertexBuffer>(ctx, m_fullscreenQuadVertices.data(), vbo_size);
-
-		vk::DeviceSize ibo_size{m_fullscreenQuadIndices.size() * sizeof(uint16)};
-		m_fullscreenQuadIndexBuffer = make_reference<gpu::VKIndexBuffer>(ctx, m_fullscreenQuadIndices.data(), ibo_size);
+			gpu::ImageCreateInfo depth_attachment_image_create_info{};
+			depth_attachment_image_create_info.width       = window_width;
+			depth_attachment_image_create_info.height      = window_height;
+			depth_attachment_image_create_info.format      = swapchain->getDepthFormat();
+			depth_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment;
+			depth_attachment_image_create_info.sampleCount = ctx->getMaxUsableSampleCount();
+			m_MSAADepthAttachmentImage                     = make_reference<gpu::VKImage2D>(ctx, depth_attachment_image_create_info);
+		}
 
 		Renderer2DCreateInfo renderer_2d_create_info{};
 		renderer_2d_create_info.renderTargetWidth  = m_windowWidth;
 		renderer_2d_create_info.renderTargetHeight = m_windowHeight;
 		m_renderer2D                               = make_reference<Renderer2D>(ctx, renderer_2d_create_info);
-
-		gpu::ImageCreateInfo colour_attachment_image_create_info{};
-		colour_attachment_image_create_info.width       = window_width;
-		colour_attachment_image_create_info.height      = window_height;
-		colour_attachment_image_create_info.format      = swapchain->getSurfaceFormat().format;
-		colour_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
-		colour_attachment_image_create_info.sampleCount = ctx->getMaxUsableSampleCount();
-		m_colourAttachmentImage                         = make_reference<gpu::VKImage2D>(ctx, colour_attachment_image_create_info);
-
-		gpu::ImageCreateInfo depth_attachment_image_create_info{};
-		depth_attachment_image_create_info.width       = window_width;
-		depth_attachment_image_create_info.height      = window_height;
-		depth_attachment_image_create_info.format      = swapchain->getDepthFormat();
-		depth_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment;
-		depth_attachment_image_create_info.sampleCount = ctx->getMaxUsableSampleCount();
-		m_depthAttachmentImage                         = make_reference<gpu::VKImage2D>(ctx, depth_attachment_image_create_info);
 
 		m_initialWindowTitle = app.getWindow().getTitle();
 		app.getWindow().setTitle(m_initialWindowTitle + " -> " + m_scene->getName());
@@ -143,7 +134,8 @@ namespace toaster
 		uint32 frame_index{swapchain->getFrameIndex()};
 		uint32 image_index{swapchain->getImageIndex()};
 
-		auto &command_buffer = swapchain->getCurrentCommandBuffer();
+		vk::Extent2D swapchain_extent{swapchain->getExtent()};
+		auto &       command_buffer = swapchain->getCurrentCommandBuffer();
 
 		// if (m_viewportFocused)
 		m_editorCamera.onUpdate(p_dt);
@@ -154,37 +146,32 @@ namespace toaster
 		m_fullscreenPass->setInput("u_Texture", m_renderer2D->getColourOutput());
 
 		{
-			vk::RenderingAttachmentInfo colour_attachment_info{};
-			colour_attachment_info.clearValue         = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};;
-			colour_attachment_info.imageView          = m_colourAttachmentImage->getImageView();
-			colour_attachment_info.imageLayout        = vk::ImageLayout::eColorAttachmentOptimal;
+			gpu::RenderingInfo rendering_info{};
+			rendering_info.renderArea = vk::Rect2D{{0, 0}, swapchain_extent};
+			rendering_info.layerCount = 1;
+
+			gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
+			colour_attachment_info.clearValue         = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};
+			colour_attachment_info.image              = m_MSAAColourAttachmentImage;
 			colour_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
 			colour_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
-			colour_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eAverage;
-			colour_attachment_info.resolveImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 			colour_attachment_info.resolveImageView   = swapchain->getImageView(image_index);
+			colour_attachment_info.resolveImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			colour_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eAverage;
 
-			vk::RenderingAttachmentInfo depth_attachment_info{};
-			depth_attachment_info.clearValue         = vk::ClearDepthStencilValue{1.0f, 0u};;
-			depth_attachment_info.imageView          = m_depthAttachmentImage->getImageView();
-			depth_attachment_info.imageLayout        = vk::ImageLayout::eDepthAttachmentOptimal;
+			gpu::RenderingAttachmentInfo depth_attachment_info{};
+			depth_attachment_info.clearValue         = vk::ClearDepthStencilValue{1.0f, 0u};
+			depth_attachment_info.image              = m_MSAADepthAttachmentImage;
 			depth_attachment_info.loadOp             = vk::AttachmentLoadOp::eClear;
 			depth_attachment_info.storeOp            = vk::AttachmentStoreOp::eStore;
-			depth_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eMin;
-			depth_attachment_info.resolveImageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 			depth_attachment_info.resolveImageView   = swapchain->getDepthImageView();
-
-			vk::RenderingInfo rendering_info{};
-			rendering_info.renderArea           = vk::Rect2D{{0, 0}, vk::Extent2D{m_windowWidth, m_windowHeight}};
-			rendering_info.layerCount           = 1;
-			rendering_info.colorAttachmentCount = 1;
-			rendering_info.pColorAttachments    = &colour_attachment_info;
-			rendering_info.pDepthAttachment     = &depth_attachment_info;
+			depth_attachment_info.resolveImageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+			depth_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eMin;
+			rendering_info.pDepthAttachment          = &depth_attachment_info;
 
 			Renderer::beginRendering(rendering_info, command_buffer, frame_index, m_fullscreenPass);
-			Renderer::renderGeometry(command_buffer, frame_index, m_compositePipeline, m_fullscreenQuadVertexBuffer, m_fullscreenQuadIndexBuffer,
-									 m_fullscreenQuadIndices.size(), m_fullscreenMaterial, glm::mat4{1.0f});
-			Renderer::endRendering(command_buffer);
+			Renderer::renderFullscreenQuad(command_buffer, frame_index, m_fullscreenPass->getPipeline(), m_fullscreenMaterial);
+			Renderer::endRendering(rendering_info, command_buffer);
 		}
 	}
 

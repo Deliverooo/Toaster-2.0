@@ -100,7 +100,7 @@ namespace toaster
 	void EditorCamera::_updateProjection()
 	{
 		m_aspectRatio = m_viewportWidth / m_viewportHeight;
-		m_projection  = glm::perspective(glm::radians(m_fov), m_aspectRatio, m_zNear, m_zFar);
+		m_projection  = glm::perspectiveFov(glm::radians(m_fov), m_viewportWidth, m_viewportHeight, m_zNear, m_zFar);
 	}
 
 	void EditorCamera::_updateView()
@@ -109,6 +109,7 @@ namespace toaster
 
 		m_viewMatrix       = glm::translate(glm::mat4{1.0f}, m_position) * glm::toMat4(getOrientation());
 		m_viewMatrix       = glm::inverse(m_viewMatrix);
+		m_viewMatrix[1][1] *= -1.0f;
 	}
 
 	bool EditorCamera::_onMouseScrollEvent(MouseScrollEvent &p_event)

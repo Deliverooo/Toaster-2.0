@@ -8,6 +8,8 @@ namespace toaster
 	{
 		gpu::VKGPUContext *ctx{nullptr};
 
+		ShaderLibrary shaderLibrary;
+
 		RefPtr<gpu::VKVertexBuffer> quadVertexBuffer{nullptr};
 		RefPtr<gpu::VKIndexBuffer>  quadIndexBuffer{nullptr};
 
@@ -22,10 +24,20 @@ namespace toaster
 		s_globalData      = new GlobalData{};
 		s_globalData->ctx = p_ctx;
 
-		const io::filesystem::Path shader_dir = "../source/toaster/toast_shaders/";
-
-		TST_ASSERT_MSG(io::filesystem::exists(shader_dir),
-					   "You probably set the working directory before creating the application, or the .exe is not in the bin directory");
+		{
+			gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/geometry.vert.glsl.spv");
+			gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/geometry.pixel.glsl.spv");
+			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
+			const auto                 geometry_shader{make_reference<gpu::VKShader>(s_globalData->ctx, shader_bytecode_map)};
+			s_globalData->shaderLibrary.add("Geometry", geometry_shader); // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
+		}
+		{
+			gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/composite.vert.glsl.spv");
+			gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/composite.pixel.glsl.spv");
+			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
+			const auto                 composite_shader{make_reference<gpu::VKShader>(s_globalData->ctx, shader_bytecode_map)};
+			s_globalData->shaderLibrary.add("Composite", composite_shader);
+		}
 
 		s_globalData->quadVertices.emplace_back(QuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
 		s_globalData->quadVertices.emplace_back(QuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});
@@ -45,6 +57,11 @@ namespace toaster
 	{
 		s_globalData->ctx = nullptr;
 		delete s_globalData;
+	}
+
+	const ShaderLibrary &Globals::getShaderLibrary()
+	{
+		return s_globalData->shaderLibrary;
 	}
 
 	const RefPtr<gpu::VKVertexBuffer> &Globals::getFullscreenQuadVertexBuffer()

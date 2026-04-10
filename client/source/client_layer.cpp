@@ -44,41 +44,11 @@ namespace toaster
 			m_MSAAColourAttachmentImage->resize(width, height);
 			m_MSAADepthAttachmentImage->resize(width, height);
 
-			m_geometryColourAttachmentTexture->resize(width, height);
-			m_geometryDepthAttachmentImage->resize(width, height);
-
 			m_renderer2D->onResize(width, height);
+			m_sceneRenderer->onResize(width, height);
 		});
 
 		{
-			gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/geometry.vert.glsl.spv");
-			gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/geometry.pixel.glsl.spv");
-			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
-			m_geometryShader = make_reference<gpu::VKShader>(ctx, shader_bytecode_map);
-
-			gpu::PipelineCreateInfo pipeline_create_info{};
-			pipeline_create_info.vertexBufferLayout = {
-				{gpu::EShaderDataType::eFloat3, "a_Position"},
-				{gpu::EShaderDataType::eFloat3, "a_Normal"},
-				{gpu::EShaderDataType::eFloat3, "a_Tangent"},
-				{gpu::EShaderDataType::eFloat3, "a_Bitangent"},
-				{gpu::EShaderDataType::eFloat2, "a_TexCoord"}
-			};
-			pipeline_create_info.colourAttachments = {swapchain->getSurfaceFormat().format};
-			pipeline_create_info.depthFormat       = {swapchain->getDepthFormat()};
-			pipeline_create_info.shader            = m_geometryShader;
-			m_geometryPipeline                     = make_reference<gpu::VKPipeline>(ctx, pipeline_create_info);
-
-			constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
-			m_ubos                 = make_reference<gpu::VKUniformBufferPFF>(ctx, ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
-			m_mappedUniformBuffers = m_ubos->mapMemory(ubo_size, 0);
-
-			m_geometryPass = make_reference<gpu::VKRenderPass>(ctx, m_geometryPipeline);
-			m_geometryPass->setInput("Camera", m_ubos);
-
-			m_geometryPass->bake(); // TODO: rename ts to toast
-			//						   Its funny because the engine is called Toaster...
-
 			gpu::ImageCreateInfo colour_attachment_image_create_info{};
 			colour_attachment_image_create_info.width       = window_width;
 			colour_attachment_image_create_info.height      = window_height;
@@ -96,53 +66,38 @@ namespace toaster
 			m_MSAADepthAttachmentImage                     = make_reference<gpu::VKImage2D>(ctx, depth_attachment_image_create_info);
 		}
 		{
-			m_compositeVertexBufferLayout = {{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
-
-			gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/composite.vert.glsl.spv");
-			gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/composite.pixel.glsl.spv");
-			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
-			m_compositeShader = make_reference<gpu::VKShader>(ctx, shader_bytecode_map);
-
+			auto                    composite_shader{Globals::getShaderLibrary().get("Composite")};
 			gpu::PipelineCreateInfo pipeline_create_info{};
-			pipeline_create_info.vertexBufferLayout = m_compositeVertexBufferLayout;
+			pipeline_create_info.vertexBufferLayout = {{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
 			pipeline_create_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
 			pipeline_create_info.depthFormat        = {swapchain->getDepthFormat()};
-			pipeline_create_info.shader             = m_compositeShader;
-			pipeline_create_info.multisample        = false;
+			pipeline_create_info.shader             = composite_shader;
 			m_compositePipeline                     = make_reference<gpu::VKPipeline>(ctx, pipeline_create_info);
 
 			m_fullscreenPass = make_reference<gpu::VKRenderPass>(ctx, m_compositePipeline);
 			m_fullscreenPass->bake();
 
-			m_fullscreenMaterial = make_reference<gpu::VKMaterial>(ctx, m_compositeShader);
-
-			gpu::TextureSpecInfo colour_attachment_texture_spec_info{};
-			colour_attachment_texture_spec_info.width  = window_width;
-			colour_attachment_texture_spec_info.height = window_height;
-			colour_attachment_texture_spec_info.format = swapchain->getSurfaceFormat().format;
-			m_geometryColourAttachmentTexture          = make_reference<gpu::VKTexture2D>(ctx, colour_attachment_texture_spec_info);
-
-			gpu::ImageCreateInfo depth_attachment_image_create_info{};
-			depth_attachment_image_create_info.width  = window_width;
-			depth_attachment_image_create_info.height = window_height;
-			depth_attachment_image_create_info.format = swapchain->getDepthFormat();
-			depth_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-			m_geometryDepthAttachmentImage            = make_reference<gpu::VKImage2D>(ctx, depth_attachment_image_create_info);
+			m_fullscreenMaterial = make_reference<gpu::VKMaterial>(ctx, composite_shader);
 		}
 
-		m_mesh  = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx", m_geometryShader);
-		m_mesh2 = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/DJT_sculpt.fbx", m_geometryShader);
+		auto geometry_shader{Globals::getShaderLibrary().get("Geometry")};
+		m_mesh  = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/Orbo.fbx", geometry_shader);
+		m_mesh2 = make_reference<gpu::VKMesh>(ctx, "../resources/meshes/DJT_sculpt.fbx", geometry_shader);
 
 		Renderer2DCreateInfo renderer_2d_create_info{};
 		renderer_2d_create_info.renderTargetWidth  = window_width;
 		renderer_2d_create_info.renderTargetHeight = window_height;
 		m_renderer2D                               = make_reference<Renderer2D>(ctx, renderer_2d_create_info);
+
+		SceneRendererSpecInfo scene_renderer_spec_info{};
+		scene_renderer_spec_info.viewportWidth  = m_viewportWidth;
+		scene_renderer_spec_info.viewportHeight = m_viewportHeight;
+		scene_renderer_spec_info.scene          = nullptr;
+		m_sceneRenderer                         = make_reference<SceneRenderer>(ctx, scene_renderer_spec_info);
 	}
 
 	void ClientLayer::onDestroy()
 	{
-		m_ubos->unmapMemory();
-
 		auto &app = getApp();
 		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 		ctx->getDevice().waitIdle();
@@ -168,50 +123,17 @@ namespace toaster
 		camera_ub.proj[1][1] *= -1.0f;
 
 		m_renderer2D->begin(command_buffer, frame_index, camera_ub.view, camera_ub.proj);
-		m_renderer2D->submitQuad(m_meshTranslation, glm::vec2{109.0f, 109.0f}, glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
+		m_renderer2D->submitQuad({0.0f, 0.0f}, glm::vec2{10.0f, 10.0f}, glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
+		m_renderer2D->submitQuad(m_meshTranslation, glm::vec2{10.0f, 10.0f}, glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});
 		m_renderer2D->end(command_buffer, frame_index);
 
-		m_geometryPass->setInput("u_2D", m_renderer2D->getColourOutput());
-
-		std::memcpy(m_mappedUniformBuffers[frame_index], &camera_ub, sizeof(CameraUB));
+		m_sceneRenderer->begin(command_buffer, frame_index, camera_ub.view, camera_ub.proj);
+		m_sceneRenderer->renderMesh(m_mesh, glm::translate(glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{10.0f, 10.0f, 10.0f}), m_time * glm::radians(90.0f),
+																	   glm::vec3{0.0f, 0.0f, 1.0f}), m_meshTranslation));
+		m_sceneRenderer->end(command_buffer, frame_index);
 
 		{
-			gpu::RenderingInfo rendering_info{};
-			rendering_info.renderArea = vk::Rect2D{{0, 0}, swapchain_extent};
-			rendering_info.layerCount = 1;
-
-			gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-			colour_attachment_info.clearValue   = vk::ClearColorValue{0.005f, 0.005f, 0.005f, 1.0f};
-			colour_attachment_info.image        = m_MSAAColourAttachmentImage;
-			colour_attachment_info.loadOp       = vk::AttachmentLoadOp::eClear;
-			colour_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
-			colour_attachment_info.resolveImage = m_geometryColourAttachmentTexture->getImage();
-			colour_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eAverage;
-
-			gpu::RenderingAttachmentInfo depth_attachment_info{};
-			depth_attachment_info.clearValue   = vk::ClearDepthStencilValue{1.0f, 0u};
-			depth_attachment_info.image        = m_MSAADepthAttachmentImage;
-			depth_attachment_info.loadOp       = vk::AttachmentLoadOp::eClear;
-			depth_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
-			depth_attachment_info.resolveImage = m_geometryDepthAttachmentImage;
-			depth_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eMin;
-			rendering_info.pDepthAttachment    = &depth_attachment_info;
-
-			Renderer::beginRendering(rendering_info, command_buffer, frame_index, m_geometryPass);
-			glm::mat4 transform{glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{20.0f, 20.0f, 20.0f}), m_time * glm::radians(90.0f), glm::vec3{0.0f, 0.0f, 1.0f})};
-			glm::mat4 transform2{
-				glm::translate(glm::rotate(glm::scale(glm::mat4{1.0f}, glm::vec3{10.0f, 10.0f, 10.0f}), m_time * glm::radians(90.0f), glm::vec3{0.0f, 0.0f, 1.0f}),
-							   m_meshTranslation)
-			};
-
-			Renderer::renderGeometry(command_buffer, frame_index, m_geometryPipeline, m_mesh->getVertexBuffer(), m_mesh->getIndexBuffer(), m_mesh->getIndices().size(),
-									 m_mesh->getMaterial(), transform);
-			Renderer::renderGeometry(command_buffer, frame_index, m_geometryPipeline, m_mesh2->getVertexBuffer(), m_mesh2->getIndexBuffer(), m_mesh2->getIndices().size(),
-									 m_mesh2->getMaterial(), transform2);
-			Renderer::endRendering(rendering_info, command_buffer);
-		}
-		{
-			m_fullscreenPass->setInput("u_Texture", m_geometryColourAttachmentTexture);
+			m_fullscreenPass->setInput("u_Texture", m_sceneRenderer->getOutputColourTexture());
 
 			gpu::RenderingInfo rendering_info{};
 			rendering_info.renderArea = vk::Rect2D{{0, 0}, swapchain_extent};

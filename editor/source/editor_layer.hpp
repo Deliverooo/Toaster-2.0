@@ -60,20 +60,8 @@ namespace toaster
 
 		RefPtr<gpu::VKMaterial> m_fullscreenMaterial{nullptr};
 
-		RefPtr<gpu::VKVertexBuffer> m_fullscreenQuadVertexBuffer{nullptr};
-		RefPtr<gpu::VKIndexBuffer>  m_fullscreenQuadIndexBuffer{nullptr};
-
-		struct FullscreenQuadVertex
-		{
-			glm::vec3 positon;
-			glm::vec2 texCoord;
-		};
-
-		std::vector<FullscreenQuadVertex> m_fullscreenQuadVertices;
-		std::vector<uint16>               m_fullscreenQuadIndices;
-
-		RefPtr<gpu::VKImage2D> m_colourAttachmentImage{nullptr};
-		RefPtr<gpu::VKImage2D> m_depthAttachmentImage{nullptr};
+		RefPtr<gpu::VKImage2D> m_MSAAColourAttachmentImage{nullptr};
+		RefPtr<gpu::VKImage2D> m_MSAADepthAttachmentImage{nullptr};
 		#pragma  endregion
 
 		RefPtr<Scene>               m_scene;

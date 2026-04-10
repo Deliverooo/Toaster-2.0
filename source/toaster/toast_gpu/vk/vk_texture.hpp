@@ -50,4 +50,29 @@ namespace toaster::gpu
 
 		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};
 	};
+
+	class VKTexture3D final : public IGPUResource
+	{
+	public:
+		VKTexture3D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size);
+		VKGPUContext *getContext() const;
+
+		[[nodiscard]] const TextureSpecInfo &  getSpecInfo() const;
+		[[nodiscard]] vk::raii::Image &        getImage();
+		[[nodiscard]] vk::raii::ImageView &    getImageView();
+		[[nodiscard]] vk::DescriptorImageInfo &getDescriptorInfo();
+
+		[[nodiscard]] EGPUResourceType getResourceType() const override;
+
+	private:
+		VKGPUContext *m_ctx{nullptr};
+
+		TextureSpecInfo m_specInfo{};
+
+		vk::raii::Image        m_image{nullptr};
+		vk::raii::DeviceMemory m_imageMemory{nullptr};
+		vk::raii::ImageView    m_imageView{nullptr};
+
+		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};
+	};
 }
