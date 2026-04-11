@@ -95,6 +95,11 @@ namespace toaster::gpu
 		return m_reflectionData.pushConstantRanges;
 	}
 
+	const std::unordered_map<String, PushConstantBuffer> &VKShader::getReflectedPushConstantBuffers() const
+	{
+		return m_reflectionData.pushConstantBuffers;
+	}
+
 	const std::vector<vk::DescriptorPoolSize> &VKShader::getDescriptorPoolSizes(uint32 p_set_index) const
 	{
 		TST_ASSERT_MSG(m_poolSizes.contains(p_set_index), "Set index out of bounds");
@@ -193,6 +198,19 @@ namespace toaster::gpu
 			push_constant_range.stage              = p_stage;
 			push_constant_range.offset             = offset;
 			push_constant_range.size               = size;
+
+			PushConstantBuffer &push_constant_buffer = m_reflectionData.pushConstantBuffers[name];
+			push_constant_buffer.name                = name;
+			push_constant_buffer.size                = size - offset;
+			for (uint32 i{0u}; i < member_count; ++i)
+			{
+				auto        type{compiler.get_type(buffer_type.member_types[i])};
+				const auto &member_name{compiler.get_member_name(buffer_type.self, i)};
+				auto        member_size{compiler.get_declared_struct_member_size(buffer_type, i)};
+				auto        member_offset{compiler.type_struct_member_offset(buffer_type, i) - offset};
+
+				push_constant_buffer.pushConstants[fmt::format("{}.{}", name, member_name)] = {member_name, static_cast<uint32>(member_size), member_offset};
+			}
 
 			LOG_TRACE("\t{}", name);
 			LOG_TRACE("\t\tMember count: {}", member_count);

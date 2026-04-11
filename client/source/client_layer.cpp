@@ -18,7 +18,7 @@ namespace ig = ImGui;
 
 namespace toaster
 {
-	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app)
+	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app), m_editorCamera(90.0f, 1.777, 0.1f, 100.0f)
 	{
 	}
 
@@ -46,6 +46,7 @@ namespace toaster
 
 			m_renderer2D->onResize(width, height);
 			m_sceneRenderer->onResize(width, height);
+			m_editorCamera.setViewportSize(width, height);
 		});
 
 		{
@@ -117,10 +118,14 @@ namespace toaster
 		vk::Extent2D swapchain_extent{swapchain->getExtent()};
 		auto &       command_buffer = swapchain->getCurrentCommandBuffer();
 
+		m_editorCamera.onUpdate(p_dt);
+
 		CameraUB camera_ub{};
-		camera_ub.view = glm::lookAt(glm::vec3{2.0f, 2.0f, 2.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
-		camera_ub.proj = glm::perspective(glm::radians(45.0f), static_cast<float32>(swapchain_extent.width) / static_cast<float32>(swapchain_extent.height), 0.1f, 10.0f);
-		camera_ub.proj[1][1] *= -1.0f;
+		camera_ub.view = m_editorCamera.getViewMatrix();
+		camera_ub.proj = m_editorCamera.getProjectionMatrix();
+		// camera_ub.view = glm::lookAt(glm::vec3{2.0f, 2.0f, 2.0f}, glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.0f, 0.0f, 1.0f});
+		// camera_ub.proj = glm::perspective(glm::radians(45.0f), static_cast<float32>(swapchain_extent.width) / static_cast<float32>(swapchain_extent.height), 0.1f, 10.0f);
+		// camera_ub.proj[1][1] *= -1.0f;
 
 		// m_renderer2D->begin(command_buffer, frame_index, camera_ub.view, camera_ub.proj);
 		// m_renderer2D->submitQuad({0.0f, 0.0f}, glm::vec2{10.0f, 10.0f}, glm::vec4{1.0f, 1.0f, 1.0f, 1.0f});

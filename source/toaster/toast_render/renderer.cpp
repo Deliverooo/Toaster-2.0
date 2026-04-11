@@ -197,11 +197,26 @@ namespace toaster
 		// Push the constants
 		p_command_buffer.pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
-		if (p_material->hasDescriptorSets())
+		if (p_material)
 		{
-			// Bind the material descriptor set (0)
-			vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(p_frame_index)};
-			p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0, material_descriptor_set, {});
+			if (p_material->hasDescriptorSets())
+			{
+				// Bind the material descriptor set (0)
+				vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(p_frame_index)};
+				p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0, material_descriptor_set, {});
+			}
+
+			const auto &push_constants{p_material->getPushConstantStorageBuffer()};
+			if (push_constants.size() > 0)
+			{
+				vk::PushConstantsInfo push_constants_info{};
+				push_constants_info.layout     = p_pipeline->getPipelineLayout();
+				push_constants_info.stageFlags = vk::ShaderStageFlagBits::eFragment;
+				push_constants_info.size       = push_constants.size();
+				push_constants_info.offset     = sizeof(glm::mat4);
+				push_constants_info.pValues    = push_constants.data();
+				p_command_buffer.pushConstants2(push_constants_info);
+			}
 		}
 		// Bind the vertex and index buffers
 		p_vertex_buffer->bind(p_command_buffer);
@@ -214,14 +229,26 @@ namespace toaster
 	void Renderer::renderFullscreenQuad(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
 										const RefPtr<gpu::VKMaterial> &p_material)
 	{
-		// Push the constants
-		p_command_buffer.pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, glm::mat4{1.0f});
-
-		if (p_material->hasDescriptorSets())
+		if (p_material) // You technically don't need to use a material if you don't want to
 		{
-			// Bind the material descriptor set (0)
-			vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(p_frame_index)};
-			p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0, material_descriptor_set, {});
+			if (p_material->hasDescriptorSets())
+			{
+				// Bind the material descriptor set (0)
+				vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(p_frame_index)};
+				p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0, material_descriptor_set, {});
+			}
+
+			const auto &push_constants{p_material->getPushConstantStorageBuffer()};
+			if (push_constants.size() > 0)
+			{
+				vk::PushConstantsInfo push_constants_info{};
+				push_constants_info.layout     = p_pipeline->getPipelineLayout();
+				push_constants_info.stageFlags = vk::ShaderStageFlagBits::eFragment;
+				push_constants_info.size       = push_constants.size();
+				push_constants_info.offset     = 0u;
+				push_constants_info.pValues    = push_constants.data();
+				p_command_buffer.pushConstants2(push_constants_info);
+			}
 		}
 		// Bind the vertex and index buffers
 		Globals::getFullscreenQuadVertexBuffer()->bind(p_command_buffer);

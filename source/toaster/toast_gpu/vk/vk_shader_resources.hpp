@@ -42,6 +42,20 @@ namespace toaster::gpu
 		uint32                  size{0u};
 	};
 
+	struct PushConstant
+	{
+		String name{};
+		uint32 size{0u};
+		uint32 offset{0u};
+	};
+
+	struct PushConstantBuffer
+	{
+		std::unordered_map<String, PushConstant> pushConstants;
+		String                                   name{};
+		uint32                                   size{0u};
+	};
+
 	// A "Resource" is basically just another way of saying anything like a texture, sampler or combined image sampler
 	struct ShaderResource
 	{

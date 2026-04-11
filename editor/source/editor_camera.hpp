@@ -18,55 +18,47 @@ namespace toaster
 
 		void setViewportSize(float32 p_width, float32 p_height);
 
-		void setDistance(float32 p_distance);
-
 		[[nodiscard]] const glm::mat4 &getViewMatrix() const;
 		[[nodiscard]] glm::mat4        getViewProjection() const;
 
-		[[nodiscard]] glm::vec3 getUpDirection() const;
-		[[nodiscard]] glm::vec3 getRightDirection() const;
-		[[nodiscard]] glm::vec3 getForwardDirection() const;
-		[[nodiscard]] glm::vec3 getPosition() const;
-		[[nodiscard]] glm::quat getOrientation() const;
+		[[nodiscard]] const glm::vec3 &getUpDirection() const;
+		[[nodiscard]] const glm::vec3 &getRightDirection() const;
+		[[nodiscard]] const glm::vec3 &getForwardDirection() const;
+
+		[[nodiscard]] const glm::vec3 &getPosition() const;
+		[[nodiscard]] glm::quat        getOrientation() const;
 
 		[[nodiscard]] float32 getPitch() const;
 		[[nodiscard]] float32 getYaw() const;
-
-		[[nodiscard]] float32 getDistance() const;
 
 	private:
 		void _updateProjection();
 		void _updateView();
 
 		bool _onMouseScrollEvent(MouseScrollEvent &p_event);
-
-		void _mousePan(const glm::vec2 &p_delta);
-		void _mouseRotate(const glm::vec2 &p_delta);
 		void _mouseZoom(float32 p_delta);
 
-		[[nodiscard]] glm::vec2 _panSpeed() const;
-		[[nodiscard]] float32   _rotationSpeed() const;
-		[[nodiscard]] float32   _zoomSpeed() const;
-
-		glm::vec3 _calcPosition();
-
 		glm::mat4 m_viewMatrix{1.0f};
-		glm::vec3 m_position{0.0f, 0.0f, -10.0f};
-		glm::vec3 m_focalPoint{0.0f};
+		glm::vec3 m_position{0.0f, 0.0f, 0.0f};
+
+		glm::vec3 m_forward{0.0f, 0.0f, 1.0f};
+		glm::vec3 m_right{1.0f, 0.0f, 0.0f};
+		glm::vec3 m_up{0.0f, -1.0f, 0.0f};
 
 		glm::vec2 m_initialMousePosition{0.0f};
 
-		float32 m_distance{10.0f};
+		float32 m_yaw{90.0f};
 		float32 m_pitch{0.0f};
-		float32 m_yaw{0.0f};
 
 		float32 m_fov{45.0f};
 		float32 m_aspectRatio{1.0f};
 		float32 m_zNear{0.1f};
 		float32 m_zFar{1000.0f};
 
-		float32 m_viewportWidth{1920u};
-		float32 m_viewportHeight{1080u};
+		float32 m_zoom{1.0f};
+
+		// float32 m_viewportWidth{1920u};
+		// float32 m_viewportHeight{1080u};
 	};
 
 	// enum class CameraMode

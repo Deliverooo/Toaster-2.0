@@ -1,13 +1,18 @@
 #include "scene.hpp"
 #include "entity.hpp"
 #include "components.hpp"
+#include "scene_renderer.hpp"
 
 #include "toast_lib/logging.hpp"
+#include "toast_render/globals.hpp"
 
 namespace toaster
 {
 	Scene::Scene(gpu::VKGPUContext *p_ctx, const String &p_name) : m_ctx(p_ctx), m_name(p_name.empty() ? "Untitled Scene" : p_name)
 	{
+		auto geometry_shader{Globals::getShaderLibrary().get("Geometry")};
+		m_mesh = make_reference<gpu::VKMesh>(p_ctx, "../resources/meshes/Orbo.fbx", geometry_shader);
+
 	}
 
 	Scene::~Scene()
@@ -29,7 +34,7 @@ namespace toaster
 		});
 	}
 
-	void Scene::onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d)
+	void Scene::onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer)
 	{
 
 		Camera *  main_camera{nullptr};
@@ -51,7 +56,7 @@ namespace toaster
 		#if 0
 		if (main_camera)
 		{
-			p_renderer_2d->begin(*main_camera, camera_transform);
+			p_scene_renderer->begin(*main_camera, camera_transform);
 
 			auto group = m_registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
 			for (auto entity: group)
@@ -59,22 +64,20 @@ namespace toaster
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
 				if (sprite.texture)
-					p_renderer_2d->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor);
+					p_scene_renderer->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor);
 				else
-					p_renderer_2d->submitQuad(transform.getTransform(), sprite.colour);
+					p_scene_renderer->submitQuad(transform.getTransform(), sprite.colour);
 			}
 
-			p_renderer_2d->end();
+			p_scene_renderer->end();
 		}
 		#endif
 	}
 
-	void Scene::onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d, const glm::mat4 &p_view,
+	void Scene::onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
 						 const glm::mat4 &        p_projection)
 	{
-		// #if 0
-
-		p_renderer_2d->begin(p_cmd, p_frame_index, p_view, p_projection);
+		p_scene_renderer->begin(p_cmd, p_frame_index, p_view, p_projection);
 
 		auto group = m_registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
 		for (auto entity: group)
@@ -84,12 +87,10 @@ namespace toaster
 			// if (sprite.texture)
 			// p_renderer_2d->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor, static_cast<uint32>(entity));
 			// else
-			p_renderer_2d->submitQuad(transform.getTransform(), sprite.colour);
+			p_scene_renderer->renderMesh(m_mesh, transform.getTransform());
 		}
 
-		p_renderer_2d->end(p_cmd, p_frame_index);
-
-		// #endif
+		p_scene_renderer->end(p_cmd, p_frame_index);
 	}
 
 	void Scene::setViewportSize(uint32 p_width, uint32 p_height)

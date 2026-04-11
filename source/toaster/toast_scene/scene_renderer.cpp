@@ -19,7 +19,7 @@ namespace toaster
 			pipeline_create_info.depthFormat       = {m_ctx->findDepthFormat()};
 			pipeline_create_info.shader            = Globals::getShaderLibrary().get("Geometry");
 			pipeline_create_info.multisample       = true;
-			pipeline_create_info.polygonMode = vk::PolygonMode::eLine;
+			pipeline_create_info.polygonMode       = vk::PolygonMode::eFill;
 			m_geometryPipeline                     = make_reference<gpu::VKPipeline>(m_ctx, pipeline_create_info);
 
 			constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};

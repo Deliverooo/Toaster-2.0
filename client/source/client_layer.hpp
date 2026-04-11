@@ -71,8 +71,8 @@ namespace toaster
 			glm::mat4 view;
 			glm::mat4 proj;
 		};
-
-
 		RefPtr<SceneRenderer> m_sceneRenderer{nullptr};
+
+		EditorCamera m_editorCamera;
 	};
 }

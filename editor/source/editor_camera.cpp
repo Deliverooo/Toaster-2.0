@@ -13,20 +13,33 @@ namespace toaster
 
 	void EditorCamera::onUpdate(float32 p_dt)
 	{
-		if (input::isKeyDown(input::EKeyCode::eLeftAlt))
-		{
-			const glm::vec2 mouse{input::getMouseX(), input::getMouseY()};
-			glm::vec2       delta  = (mouse - m_initialMousePosition) * 0.003f;
-			m_initialMousePosition = mouse;
+		glm::vec3 delta_position{0.0f};
+		if (input::isKeyDown(input::EKeyCode::eW))
+			delta_position += glm::normalize(glm::vec3(m_forward.x, 0.0f, m_forward.z));
+		if (input::isKeyDown(input::EKeyCode::eA))
+			delta_position -= glm::normalize(m_right);
+		if (input::isKeyDown(input::EKeyCode::eS))
+			delta_position -= glm::normalize(glm::vec3(m_forward.x, 0.0f, m_forward.z));
+		if (input::isKeyDown(input::EKeyCode::eD))
+			delta_position += glm::normalize(m_right);
 
-			if (input::isMouseButtonDown(input::EMouseButton::eMiddle))
-				_mousePan(delta);
-			else if (input::isMouseButtonDown(input::EMouseButton::eLeft))
-				_mouseRotate(delta);
-			else if (input::isMouseButtonDown(input::EMouseButton::eRight))
-				_mouseZoom(delta.y);
-		}
+		delta_position = glm::normalize(delta_position) * p_dt;
+		m_position     += delta_position;
+
+		const glm::vec2 mouse{input::getMouseX(), input::getMouseY()};
+		glm::vec2       delta  = (mouse - m_initialMousePosition) * 0.003f;
+		m_yaw                  += delta.x;
+		m_pitch                += delta.y;
+
+		m_initialMousePosition = mouse;
+
 		_updateView();
+
+		// if (input::isKeyDown(input::EKeyCode::eLeftAlt))
+		// {
+
+		// }
+		// _updateView();
 	}
 
 	void EditorCamera::onEvent(Event &p_event)
@@ -37,14 +50,8 @@ namespace toaster
 
 	void EditorCamera::setViewportSize(float32 p_width, float32 p_height)
 	{
-		m_viewportWidth  = p_width;
-		m_viewportHeight = p_height;
+		m_aspectRatio = p_width / p_height;
 		_updateProjection();
-	}
-
-	void EditorCamera::setDistance(float32 p_distance)
-	{
-		m_distance = p_distance;
 	}
 
 	const glm::mat4 &EditorCamera::getViewMatrix() const
@@ -57,22 +64,22 @@ namespace toaster
 		return m_projection * m_viewMatrix;
 	}
 
-	glm::vec3 EditorCamera::getUpDirection() const
+	const glm::vec3 &EditorCamera::getUpDirection() const
 	{
-		return glm::rotate(getOrientation(), {0.0f, 1.0f, 0.0f});
+		return m_up;
 	}
 
-	glm::vec3 EditorCamera::getRightDirection() const
+	const glm::vec3 &EditorCamera::getRightDirection() const
 	{
-		return glm::rotate(getOrientation(), {1.0f, 0.0f, 0.0f});
+		return m_right;
 	}
 
-	glm::vec3 EditorCamera::getForwardDirection() const
+	const glm::vec3 &EditorCamera::getForwardDirection() const
 	{
-		return glm::rotate(getOrientation(), {0.0f, 0.0f, -1.0f});
+		return m_forward;
 	}
 
-	glm::vec3 EditorCamera::getPosition() const
+	const glm::vec3 &EditorCamera::getPosition() const
 	{
 		return m_position;
 	}
@@ -92,23 +99,23 @@ namespace toaster
 		return m_yaw;
 	}
 
-	float32 EditorCamera::getDistance() const
-	{
-		return m_distance;
-	}
-
 	void EditorCamera::_updateProjection()
 	{
-		m_aspectRatio = m_viewportWidth / m_viewportHeight;
-		m_projection  = glm::perspectiveFov(glm::radians(m_fov), m_viewportWidth, m_viewportHeight, m_zNear, m_zFar);
+		m_projection = glm::perspective(glm::radians(m_fov), m_aspectRatio, m_zNear, m_zFar);
 	}
 
 	void EditorCamera::_updateView()
 	{
-		m_position = _calcPosition();
+		glm::vec3 dir{0.0f};
+		dir.x = cos(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
+		dir.y = sin(glm::radians(m_pitch));
+		dir.z = sin(glm::radians(m_yaw)) * cos(glm::radians(m_pitch));
 
-		m_viewMatrix       = glm::translate(glm::mat4{1.0f}, m_position) * glm::toMat4(getOrientation());
-		m_viewMatrix       = glm::inverse(m_viewMatrix);
+		m_forward = glm::normalize(dir);
+		m_right   = glm::normalize(glm::cross(dir, glm::vec3{0.0f, -1.0f, 0.0f}));
+		m_up      = glm::normalize(glm::cross(m_right, m_forward));
+
+		m_viewMatrix       = glm::lookAt(m_position, m_position + m_forward, m_up);
 		m_viewMatrix[1][1] *= -1.0f;
 	}
 
@@ -121,58 +128,9 @@ namespace toaster
 		return false;
 	}
 
-	void EditorCamera::_mousePan(const glm::vec2 &p_delta)
-	{
-		const glm::vec2 pan_speed = _panSpeed();
-		m_focalPoint              += -getRightDirection() * p_delta.x * pan_speed.x * m_distance;
-		m_focalPoint              += getUpDirection() * p_delta.y * pan_speed.y * m_distance;
-	}
-
-	void EditorCamera::_mouseRotate(const glm::vec2 &p_delta)
-	{
-		const float32 yaw_sign = getUpDirection().y < 0 ? -1.0f : 1.0f;
-		m_yaw                  += yaw_sign * p_delta.x * _rotationSpeed();
-		m_pitch                += p_delta.y * _rotationSpeed();
-	}
-
 	void EditorCamera::_mouseZoom(float32 p_delta)
 	{
-		m_distance -= p_delta * _zoomSpeed();
-		if (m_distance < 1.0f)
-		{
-			m_focalPoint += getForwardDirection();
-			m_distance   = 1.0f;
-		}
-	}
-
-	glm::vec2 EditorCamera::_panSpeed() const
-	{
-		float32 x        = glm::min(m_viewportWidth / 1000.0f, 2.4f);
-		float32 x_factor = 0.0366f * (x * x) - 0.1778f * x + 0.3021f;
-
-		float32 y        = glm::min(m_viewportHeight / 1000.0f, 2.4f);
-		float32 y_factor = 0.0366f * (y * y) - 0.1778f * y + 0.3021f;
-
-		return {x_factor, y_factor};
-	}
-
-	float32 EditorCamera::_rotationSpeed() const
-	{
-		return 0.8f;
-	}
-
-	float32 EditorCamera::_zoomSpeed() const
-	{
-		float32 distance = m_distance * 0.2f;
-		distance         = glm::max(distance, 0.0f);
-		float32 speed    = distance * distance;
-		speed            = glm::min(speed, 100.0f);
-		return speed;
-	}
-
-	glm::vec3 EditorCamera::_calcPosition()
-	{
-		return m_focalPoint - getForwardDirection() * m_distance;
+		m_fov += p_delta;
 	}
 
 	// EditorCamera::EditorCamera(const float degFov, const float width, const float height, const float nearP, const float farP)

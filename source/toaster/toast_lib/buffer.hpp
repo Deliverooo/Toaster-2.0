@@ -119,7 +119,7 @@ namespace toaster
 			return static_cast<Type *>(m_data);
 		}
 
-		[[nodiscard]] uint64 size() const { return m_size; }
+		[[nodiscard]] uint32_t size() const { return m_size; }
 		[[nodiscard]] void * data() const { return m_data; }
 
 	private:

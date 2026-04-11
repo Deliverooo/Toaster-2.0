@@ -27,7 +27,7 @@ namespace toaster
 {
 	static bool s_glfwInitialized{false};
 
-	static void glfwErrorCallback(int32 error, CString description)
+	static void _glfwErrorCallback(int32 error, CString description)
 	{
 		LOG_ERROR("GLFW error: ({}): {}", error, description);
 	}
@@ -36,10 +36,10 @@ namespace toaster
 	{
 		if (!s_glfwInitialized)
 		{
-			const bool init_result = glfwInit();
+			const bool init_result {static_cast<bool>(glfwInit())};
 			TST_ASSERT_MSG(init_result, "glfw initialization failed!");
 
-			glfwSetErrorCallback(glfwErrorCallback);
+			glfwSetErrorCallback(_glfwErrorCallback);
 
 			s_glfwInitialized = true;
 		}
@@ -70,16 +70,17 @@ namespace toaster
 		m_gpuContext = gpu::IGPUContext::create(m_window);
 		m_swapchain  = new gpu::VKSwapchain(dynamic_cast<gpu::VKGPUContext *>(m_gpuContext), m_window);
 
-		constexpr BOOL use_dark_mode = TRUE;
-		DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &use_dark_mode, sizeof(use_dark_mode));
+		constexpr BOOL use_dark_mode{TRUE};
+		(void) DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &use_dark_mode, sizeof(use_dark_mode));
 
 		glfwSetWindowUserPointer(m_window, &m_callbackData);
 
+		#define GET_CB_DATA() *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)))
 		glfwSetWindowSizeCallback(m_window, [](GLFWwindow *window, const int32 width, const int32 height)
 		{
-			auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			auto &data{GET_CB_DATA()};
 
-			WindowResizeEvent event(width, height);
+			WindowResizeEvent event{static_cast<uint32>(width), static_cast<uint32>(height)};
 			if (data.eventCallback)
 				data.eventCallback(event);
 			data.width  = width;
@@ -88,36 +89,36 @@ namespace toaster
 
 		glfwSetWindowCloseCallback(m_window, [](GLFWwindow *window)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
-			WindowCloseEvent event;
+			WindowCloseEvent event{};
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
 
 		glfwSetKeyCallback(m_window, [](GLFWwindow *window, int32 key, int32 scancode, int32 action, int32 mods)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
 			switch (action)
 			{
 				case GLFW_PRESS:
 				{
-					KeyPressEvent event(static_cast<input::EKeyCode>(key), 0);
+					KeyPressEvent event{static_cast<input::EKeyCode>(key), 0};
 					if (data.eventCallback)
 						data.eventCallback(event);
 					break;
 				}
 				case GLFW_RELEASE:
 				{
-					KeyReleaseEvent event(static_cast<input::EKeyCode>(key));
+					KeyReleaseEvent event{static_cast<input::EKeyCode>(key)};
 					if (data.eventCallback)
 						data.eventCallback(event);
 					break;
 				}
 				case GLFW_REPEAT:
 				{
-					KeyPressEvent event(static_cast<input::EKeyCode>(key), 1);
+					KeyPressEvent event{static_cast<input::EKeyCode>(key), 1};
 					if (data.eventCallback)
 						data.eventCallback(event);
 					break;
@@ -129,29 +130,29 @@ namespace toaster
 
 		glfwSetCharCallback(m_window, [](GLFWwindow *window, uint32_t codepoint)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
-			KeyTypeEvent event(static_cast<input::EKeyCode>(codepoint));
+			KeyTypeEvent event{static_cast<input::EKeyCode>(codepoint)};
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
 
 		glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int32 button, int32 action, int32 mods)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
 			switch (action)
 			{
 				case GLFW_PRESS:
 				{
-					MouseButtonPressEvent event(static_cast<input::EMouseButton>(button));
+					MouseButtonPressEvent event{static_cast<input::EMouseButton>(button)};
 					if (data.eventCallback)
 						data.eventCallback(event);
 					break;
 				}
 				case GLFW_RELEASE:
 				{
-					MouseButtonReleaseEvent event(static_cast<input::EMouseButton>(button));
+					MouseButtonReleaseEvent event{static_cast<input::EMouseButton>(button)};
 					if (data.eventCallback)
 						data.eventCallback(event);
 					break;
@@ -162,44 +163,46 @@ namespace toaster
 
 		glfwSetScrollCallback(m_window, [](GLFWwindow *window, float64 xOffset, float64 yOffset)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
-			MouseScrollEvent event(static_cast<float32>(xOffset), static_cast<float32>(yOffset));
+			MouseScrollEvent event{static_cast<float32>(xOffset), static_cast<float32>(yOffset)};
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
 
 		glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, float64 x, float64 y)
 		{
-			const auto &   data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
-			MouseMoveEvent event(static_cast<float32>(x), static_cast<float32>(y));
+			const auto &data{GET_CB_DATA()};
+
+			MouseMoveEvent event{static_cast<float32>(x), static_cast<float32>(y)};
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
 
 		glfwSetWindowMaximizeCallback(m_window, [](GLFWwindow *window, int32 maximized)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
-			WindowMaximizeEvent event(static_cast<bool>(maximized));
+			WindowMaximizeEvent event{static_cast<bool>(maximized)};
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
 
 		glfwSetWindowIconifyCallback(m_window, [](GLFWwindow *window, int32 iconified)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
-			WindowMinimizeEvent event(static_cast<bool>(iconified));
+			WindowMinimizeEvent event{static_cast<bool>(iconified)};
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
+		#undef GET_CB_DATA
 
 		if (!p_create_info.iconPath.empty())
 		{
-			GLFWimage window_icon[1];
+			GLFWimage window_icon[1]{};
 
-			int32 nr_channels;
+			int32 nr_channels{};
 			window_icon[0].pixels = stbi_load(p_create_info.iconPath.string().c_str(), &window_icon[0].width, &window_icon[0].height, &nr_channels, 4);
 			if (window_icon[0].pixels)
 			{
@@ -267,9 +270,8 @@ namespace toaster
 
 	void Window::fullscreen()
 	{
-		GLFWmonitor *      monitor = glfwGetPrimaryMonitor();
-		const GLFWvidmode *mode    = glfwGetVideoMode(monitor);
-
+		GLFWmonitor *      monitor{glfwGetPrimaryMonitor()};
+		const GLFWvidmode *mode{glfwGetVideoMode(monitor)};
 		glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
 	}
 

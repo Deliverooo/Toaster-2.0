@@ -4,6 +4,17 @@ namespace toaster::gpu
 {
 	VKMaterial::VKMaterial(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader) : m_ctx(p_ctx), m_shader(p_shader)
 	{
+		const auto &push_constant_buffers{m_shader->getReflectedPushConstantBuffers()};
+		if (push_constant_buffers.size() > 0)
+		{
+			uint32 size{0u};
+			for (auto [name, push_constant]: push_constant_buffers)
+				size += push_constant.size;
+
+			m_pushConstantStorageBuffer.allocate(size);
+			m_pushConstantStorageBuffer.zeroInitialize();
+		}
+
 		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_ctx, m_shader, 0, 0);
 
 		for (const auto &[name, decl]: m_descriptorSetManager->getDescriptorDeclarations())
@@ -20,6 +31,11 @@ namespace toaster::gpu
 			}
 		}
 		m_descriptorSetManager->bakeDescriptors();
+	}
+
+	VKMaterial::~VKMaterial()
+	{
+		m_pushConstantStorageBuffer.release();
 	}
 
 	VKGPUContext *VKMaterial::getContext() const
@@ -51,5 +67,24 @@ namespace toaster::gpu
 	bool VKMaterial::hasDescriptorSets() const
 	{
 		return m_descriptorSetManager->hasDescriptorSets();
+	}
+
+	const Buffer &VKMaterial::getPushConstantStorageBuffer() const
+	{
+		return m_pushConstantStorageBuffer;
+	}
+
+	const PushConstant *VKMaterial::_getPushConstantDeclaration(const String &p_name)
+	{
+		const auto &push_constant_buffers{m_shader->getReflectedPushConstantBuffers()};
+		if (push_constant_buffers.size() > 0)
+		{
+			const PushConstantBuffer &push_constant_buffer{(push_constant_buffers.begin())->second};
+			if (!push_constant_buffer.pushConstants.contains(p_name))
+				return nullptr;
+
+			return &push_constant_buffer.pushConstants.at(p_name);
+		}
+		return nullptr;
 	}
 }

@@ -127,12 +127,24 @@ namespace toaster::gpu
 
 	vk::Image &VKSwapchain::getImage(uint32 p_index)
 	{
+		TST_ASSERT_MSG(p_index < m_swapchainImages.size(), "Out of bounds");
 		return m_swapchainImages[p_index];
 	}
 
 	vk::raii::ImageView &VKSwapchain::getImageView(uint32 p_index)
 	{
+		TST_ASSERT_MSG(p_index < m_swapchainImageViews.size(), "Out of bounds");
 		return m_swapchainImageViews[p_index];
+	}
+
+	vk::Image &VKSwapchain::getCurrentImage()
+	{
+		return m_swapchainImages[m_imageIndex];
+	}
+
+	vk::raii::ImageView &VKSwapchain::getCurrentImageView()
+	{
+		return m_swapchainImageViews[m_imageIndex];
 	}
 
 	vk::raii::Image &VKSwapchain::getDepthImage()

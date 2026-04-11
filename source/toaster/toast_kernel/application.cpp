@@ -19,11 +19,11 @@ namespace toaster
 	{
 		Window::initWindowingAPI();
 
-		m_window = new Window(p_create_info.windowCreateInfo);
+		m_window = new Window{p_create_info.windowCreateInfo};
 
 		m_window->setEventCallback([this](Event &e)
 		{
-			EventDispatcher dispatcher(e);
+			EventDispatcher dispatcher{e};
 			dispatcher.dispatch<WindowCloseEvent>(TST_BIND_EVENT_FN(Application::onWindowCloseEvent));
 			dispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(Application::onWindowResizeEvent));
 
@@ -36,13 +36,15 @@ namespace toaster
 		});
 
 		Globals::init(dynamic_cast<gpu::VKGPUContext *>(m_window->getGPUContext()));
-		// RenderCommand::init();
 
 		input::setCurrentWindowContext(m_window->getNativeWindow());
 	}
 
 	Application::~Application() noexcept
 	{
+		const auto ctx{dynamic_cast<gpu::VKGPUContext *>(m_window->getGPUContext())};
+		ctx->getDevice().waitIdle();
+
 		for (IAppLayer *layer: m_layers)
 			removeLayer(layer);
 		m_layers.clear();
@@ -57,9 +59,9 @@ namespace toaster
 	{
 		while (m_isRunning)
 		{
-			const auto startTime = static_cast<float32>(glfwGetTime());
-			m_deltaTime          = startTime - m_lastFrameTime;
-			m_lastFrameTime      = startTime;
+			const auto startTime{static_cast<float32>(glfwGetTime())};
+			m_deltaTime     = startTime - m_lastFrameTime;
+			m_lastFrameTime = startTime;
 
 			m_window->processEvents();
 
@@ -105,8 +107,8 @@ namespace toaster
 
 	bool Application::onWindowResizeEvent(WindowResizeEvent &p_event)
 	{
-		const uint32 width  = p_event.getWidth();
-		const uint32 height = p_event.getHeight();
+		const uint32 width{p_event.getWidth()};
+		const uint32 height{p_event.getHeight()};
 
 		if (width == 0 || height == 0)
 		{

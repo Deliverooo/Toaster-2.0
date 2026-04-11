@@ -20,10 +20,10 @@ namespace toaster::gpu
 			// Ts just makes it easier to access the shader resources
 			std::unordered_map<String, ShaderResource> resources; // Textures / images
 
-			// // Ts just makes it easier to access the shader push constant buffers
-			// std::unordered_map<String, ShaderResource> pushConstantBuffers;
-
 			std::vector<PushConstantRange> pushConstantRanges;
+
+			// // Ts just makes it easier to access the shader push constant buffers
+			std::unordered_map<String, PushConstantBuffer> pushConstantBuffers;
 		};
 
 		using Bytecode              = std::vector<uint32>;
@@ -43,9 +43,10 @@ namespace toaster::gpu
 		[[nodiscard]] std::vector<vk::DescriptorSetLayout> getDescriptorSetLayouts() const;
 		[[nodiscard]] const vk::raii::DescriptorSetLayout &getDescriptorSetLayout(uint32 p_set_index) const;
 
-		[[nodiscard]] const std::vector<DescriptorSet> &                getReflectedShaderDescriptorSets() const;
-		[[nodiscard]] const std::unordered_map<String, ShaderResource> &getReflectedShaderResources() const;
-		[[nodiscard]] const std::vector<PushConstantRange> &            getReflectedPushConstantRanges() const;
+		[[nodiscard]] const std::vector<DescriptorSet> &                    getReflectedShaderDescriptorSets() const;
+		[[nodiscard]] const std::unordered_map<String, ShaderResource> &    getReflectedShaderResources() const;
+		[[nodiscard]] const std::vector<PushConstantRange> &                getReflectedPushConstantRanges() const;
+		[[nodiscard]] const std::unordered_map<String, PushConstantBuffer> &getReflectedPushConstantBuffers() const;
 
 		[[nodiscard]] const std::vector<vk::DescriptorPoolSize> &getDescriptorPoolSizes(uint32 p_set_index) const;
 

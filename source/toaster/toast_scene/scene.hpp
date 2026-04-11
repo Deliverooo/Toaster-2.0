@@ -5,9 +5,12 @@
 #include "toast_lib/string.hpp"
 #include "toast_render/renderer_2d.hpp"
 
+#include "toast_gpu/vk/vk_mesh.hpp"
+
 namespace toaster
 {
 	class Entity;
+	class SceneRenderer;
 
 	class Scene
 	{
@@ -17,8 +20,8 @@ namespace toaster
 
 		void onUpdate(float32 p_dt);
 
-		void onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d);
-		void onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d, const glm::mat4 &p_view,
+		void onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer);
+		void onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
 					  const glm::mat4 &        p_projection);
 
 		void setViewportSize(uint32 p_width, uint32 p_height);
@@ -48,6 +51,9 @@ namespace toaster
 		uint32 m_viewportHeight{0u};
 
 		uint32 m_newEntityTagCount{0u};
+
+		RefPtr<gpu::VKMesh> m_mesh{nullptr};
+
 		friend class Entity;
 		friend class SceneSerializer;
 		friend class SceneRenderer;

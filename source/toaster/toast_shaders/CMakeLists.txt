@@ -65,8 +65,7 @@ if (${WITH_VULKAN_BACKEND})
 
 		add_custom_command(
 				OUTPUT ${SHADER_FILE_OUT}
-				COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} --target-env vulkan1.4 -S ${SHADER_TYPE} -V "${SHADER_FILE}" -o "${SHADER_FILE_OUT}"
-#				COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} --target-env vulkan1.4 -S ${SHADER_TYPE} -V --vn ${SHADER_VARIABLE_NAME} "${SHADER_FILE}" -o "${SHADER_FILE_OUT}"
+				COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} --target-env vulkan1.4 --invert-y -S ${SHADER_TYPE} -V "${SHADER_FILE}" -o "${SHADER_FILE_OUT}"
 				DEPENDS ${SHADER_FILE}
 				COMMENT "Compiling GLSL to ${SHADER_FILE_OUT}"
 				VERBATIM
@@ -84,8 +83,6 @@ endif ()
 add_custom_target(shader_headers_target DEPENDS "${SHADER_HEADERS_TARGET_SRC}")
 
 add_library(toast_shaders INTERFACE)
-
-#target_include_directories(toast_shaders INTERFACE "${CMAKE_CURRENT_BINARY_DIR}")
 
 add_dependencies(toast_shaders shader_headers_target)
 

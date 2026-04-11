@@ -27,6 +27,9 @@ namespace toaster::gpu
 		[[nodiscard]] vk::Image &          getImage(uint32 p_index);
 		[[nodiscard]] vk::raii::ImageView &getImageView(uint32 p_index);
 
+		[[nodiscard]] vk::Image &          getCurrentImage();
+		[[nodiscard]] vk::raii::ImageView &getCurrentImageView();
+
 		[[nodiscard]] vk::raii::Image &       getDepthImage();
 		[[nodiscard]] vk::raii::ImageView &   getDepthImageView();
 		[[nodiscard]] vk::raii::DeviceMemory &getDepthImageMemory();
