@@ -60,13 +60,26 @@ namespace toaster
 		void reset()
 		{
 			colour       = glm::vec4{1.0f};
-			texture      = nullptr;
+			// texture      = nullptr;
 			tilingFactor = 1.0f;
 		}
 
 		glm::vec4                colour{1.0f};
 		RefPtr<gpu::VKTexture2D> texture{nullptr};
 		float32                  tilingFactor{1.0f};
+	};
+
+	DEFINE_COMPONENT(MeshComponent)
+	{
+		MeshComponent()  = default;
+		~MeshComponent() = default;
+
+		void reset()
+		{
+			// mesh.reset(nullptr);
+		}
+
+		RefPtr<gpu::VKMesh> mesh{nullptr};
 	};
 
 	DEFINE_COMPONENT(CameraComponent)

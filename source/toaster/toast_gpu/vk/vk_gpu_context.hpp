@@ -33,6 +33,7 @@ namespace toaster::gpu
 		VKGPUContext(GLFWwindow *p_window);
 		~VKGPUContext() noexcept override;
 
+
 		[[nodiscard]] vk::raii::Instance &      getVulkanInstance();
 		[[nodiscard]] vk::raii::PhysicalDevice &getPhysicalDevice();
 		[[nodiscard]] vk::raii::Device &        getDevice();

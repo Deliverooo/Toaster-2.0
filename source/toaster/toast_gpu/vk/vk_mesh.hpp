@@ -30,9 +30,6 @@ namespace toaster::gpu
 		const RefPtr<VKIndexBuffer> & getIndexBuffer() const;
 
 		const RefPtr<VKMaterial> &getMaterial() const;
-		// const RefPtr<VKTexture2D> &getAlbedoMap() const;
-
-		// float32 getRoughness() const;
 
 		const std::vector<MeshVertex> &getVertices() const;
 		const std::vector<uint16> &    getIndices() const;

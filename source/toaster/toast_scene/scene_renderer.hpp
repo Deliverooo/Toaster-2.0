@@ -21,7 +21,7 @@ namespace toaster
 		void begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix);
 		void end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index);
 
-		void renderMesh(const RefPtr<gpu::VKMesh> &p_mesh, const glm::mat4 &p_transform);
+		void renderMesh(RefPtr<gpu::VKMesh> p_mesh, const glm::mat4 &p_transform);
 
 		void onResize(uint32 p_width, uint32 p_height);
 

@@ -30,9 +30,9 @@ namespace toaster
 	{
 		IMGUI_CHECKVERSION();
 		ig::CreateContext();
-		ImGuiIO &io = ig::GetIO();
-
+		ImGuiIO &io{ig::GetIO()};
 		(void) io;
+
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
 		// io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
 		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Viewports
@@ -40,8 +40,8 @@ namespace toaster
 		io.FontDefault = io.Fonts->AddFontFromFileTTF("../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
 		io.Fonts->AddFontFromFileTTF("../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Bold.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
 
-		auto &style   = ImGui::GetStyle();
-		auto &colours = ImGui::GetStyle().Colors;
+		auto &style{ImGui::GetStyle()};
+		auto &colours{ImGui::GetStyle().Colors};
 
 		// Headers
 		colours[ImGuiCol_Header]        = ImGui::ColorConvertU32ToFloat4(ui::colours::theme::groupHeader);
@@ -117,25 +117,25 @@ namespace toaster
 		style.FrameBorderSize = 1.0f;
 		style.IndentSpacing   = 11.0f;
 
-		auto &app       = getApp();
-		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-		auto  swapchain = app.getWindow().getSwapchain();
+		const auto &app{getApp()};
+		auto        ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
+		const auto  swapchain{app.getWindow().getSwapchain()};
 
 		std::array pool_sizes = {
-			vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 500},
-			vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 500},
-			vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 256},
-			vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 24},
-			vk::DescriptorPoolSize{vk::DescriptorType::eUniformTexelBuffer, 8},
-			vk::DescriptorPoolSize{vk::DescriptorType::eStorageTexelBuffer, 8},
-			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 32},
-			vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 32},
-			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBufferDynamic, 16},
-			vk::DescriptorPoolSize{vk::DescriptorType::eStorageBufferDynamic, 16},
-			vk::DescriptorPoolSize{vk::DescriptorType::eInputAttachment, 8}
+			vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 500u},
+			vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 500u},
+			vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 256u},
+			vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 24u},
+			vk::DescriptorPoolSize{vk::DescriptorType::eUniformTexelBuffer, 8u},
+			vk::DescriptorPoolSize{vk::DescriptorType::eStorageTexelBuffer, 8u},
+			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 32u},
+			vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 32u},
+			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBufferDynamic, 16u},
+			vk::DescriptorPoolSize{vk::DescriptorType::eStorageBufferDynamic, 16u},
+			vk::DescriptorPoolSize{vk::DescriptorType::eInputAttachment, 8u}
 		};
 
-		uint32_t max_sets = 0;
+		uint32 max_sets{0u};
 		for (const auto &ps: pool_sizes)
 			max_sets += ps.descriptorCount;
 
@@ -144,8 +144,7 @@ namespace toaster
 		descriptor_pool_create_info.poolSizeCount = pool_sizes.size();
 		descriptor_pool_create_info.maxSets       = max_sets;
 		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
-
-		m_descriptorPool = ctx->getDevice().createDescriptorPool(descriptor_pool_create_info);
+		m_descriptorPool                          = {ctx->getDevice(), descriptor_pool_create_info};
 
 		ImGui_ImplGlfw_InitForVulkan(app.getWindow().getNativeWindow(), true);
 
@@ -163,8 +162,8 @@ namespace toaster
 		init_info.CheckVkResultFn = checkVKResult;
 
 		vk::PipelineRenderingCreateInfo rendering_create_info{};
-		rendering_create_info.colorAttachmentCount    = 1;
-		vk::Format colour_attachment_format           = swapchain->getSurfaceFormat().format;
+		rendering_create_info.colorAttachmentCount = 1u;
+		vk::Format colour_attachment_format{swapchain->getSurfaceFormat().format};
 		rendering_create_info.pColorAttachmentFormats = &colour_attachment_format;
 		rendering_create_info.depthAttachmentFormat   = ctx->findDepthFormat();
 
@@ -206,25 +205,22 @@ namespace toaster
 
 	void ImGuiLayer::end()
 	{
-		auto &app       = getApp();
-		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-		auto  swapchain = app.getWindow().getSwapchain();
+		const auto &app{getApp()};
+		const auto  swapchain{app.getWindow().getSwapchain()};
 
 		ig::Render();
 
-		auto &command_buffer = swapchain->getCurrentCommandBuffer();
+		auto &command_buffer{swapchain->getCurrentCommandBuffer()};
 
-		vk::ClearValue              clear_colour = vk::ClearColorValue{0.005f, 0.105f, 0.005f, 0.0f};
 		vk::RenderingAttachmentInfo colour_attachment_info{};
-		colour_attachment_info.clearValue  = clear_colour;
-		colour_attachment_info.imageView   = swapchain->getImageView(swapchain->getImageIndex());
+		colour_attachment_info.clearValue  = vk::ClearColorValue{0.005f, 0.105f, 0.005f, 0.0f};
+		colour_attachment_info.imageView   = swapchain->getCurrentImageView();
 		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eNone;
 		colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
 
-		vk::ClearValue              clear_depth = vk::ClearDepthStencilValue{1.0f, 0u};
 		vk::RenderingAttachmentInfo depth_attachment_info{};
-		depth_attachment_info.clearValue  = clear_depth;
+		depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
 		depth_attachment_info.imageView   = swapchain->getDepthImageView();
 		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eNone;
@@ -237,17 +233,8 @@ namespace toaster
 		rendering_info.pColorAttachments    = &colour_attachment_info;
 		rendering_info.pDepthAttachment     = &depth_attachment_info;
 
-		vk::Viewport viewport{};
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		viewport.x        = 0.0f;
-		viewport.y        = 0.0f;
-		viewport.width    = static_cast<float32>(swapchain->getExtent().width);
-		viewport.height   = static_cast<float32>(swapchain->getExtent().height);
-
-		vk::Rect2D scissor{};
-		scissor.offset = vk::Offset2D{0, 0};
-		scissor.extent = swapchain->getExtent();
+		const vk::Viewport viewport{0.0f, 0.0f, static_cast<float32>(swapchain->getExtent().width), static_cast<float32>(swapchain->getExtent().height), 0.0f, 1.0f};
+		const vk::Rect2D   scissor{vk::Offset2D{0, 0}, swapchain->getExtent()};
 
 		command_buffer.beginRendering(rendering_info);
 

@@ -78,15 +78,16 @@ namespace toaster
 	{
 		p_scene_renderer->begin(p_cmd, p_frame_index, p_view, p_projection);
 
-		auto group = m_registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
+		auto group = m_registry.group<TransformComponent>(entt::get<MeshComponent>);
 		for (auto entity: group)
 		{
-			auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+			auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
 
-			// if (sprite.texture)
-			// p_renderer_2d->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor, static_cast<uint32>(entity));
-			// else
-			p_scene_renderer->renderMesh(m_mesh, transform.getTransform());
+			if (mesh.mesh)
+			{
+				RefPtr<gpu::VKMesh> mesh_ref{mesh.mesh};
+				p_scene_renderer->renderMesh(mesh_ref, transform.getTransform());
+			}
 		}
 
 		p_scene_renderer->end(p_cmd, p_frame_index);
@@ -179,6 +180,12 @@ namespace toaster
 	}
 
 	ON_COMPONENT_ADDED(SpriteRendererComponent)
+	{
+		(void) p_entity;
+		(void) p_component;
+	}
+
+	ON_COMPONENT_ADDED(MeshComponent)
 	{
 		(void) p_entity;
 		(void) p_component;

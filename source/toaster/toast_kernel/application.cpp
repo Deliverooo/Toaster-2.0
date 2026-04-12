@@ -67,6 +67,10 @@ namespace toaster
 			// Example from Hazel, I'm not sure about doing things this way because I don't like any form of static interfaces or coupling
 			// Ref<VulkanTexture2D> instance = this; Renderer::Submit([instance]() mutable { instance->Invalidate(); });
 
+			// Possible idea...
+			// auto ctx{dynamic_cast<gpu::VKGPUContext *>(m_window->getGPUContext())};
+			// ctx->collectGarbage();
+
 			m_window->beginFrame();
 
 			if (!m_minimized)

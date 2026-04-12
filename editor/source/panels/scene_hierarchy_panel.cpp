@@ -7,6 +7,8 @@
 
 #include "../ui/ui_utils.hpp"
 #include "../ui/ui_widgets.hpp"
+#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_render/globals.hpp"
 
 namespace toaster
 {
@@ -32,7 +34,7 @@ namespace toaster
 	}
 
 	template<typename Type, bool Removable = true, typename UIFunc>
-	static void drawComponent(const String &p_name, Entity p_entity, UIFunc p_func)
+	static void drawComponent(const String &p_name, Entity p_entity, UIFunc p_func, void *p_caller_id)
 	{
 		ig::PushID(typeid(Type).hash_code());
 
@@ -75,7 +77,11 @@ namespace toaster
 				}
 
 				if (ig::MenuItem("Reset"))
+				{
+					SceneHierarchyPanel *caller{(SceneHierarchyPanel *) p_caller_id};
+					caller->m_ctx->getDevice().waitIdle();
 					comp.reset();
+				}
 
 				ig::EndPopup();
 			}
@@ -91,7 +97,7 @@ namespace toaster
 		ig::PopID();
 	}
 
-	SceneHierarchyPanel::SceneHierarchyPanel(gpu::VKGPUContext *p_ctx,const RefPtr<Scene> &p_scene) : m_ctx(p_ctx), m_scene(p_scene)
+	SceneHierarchyPanel::SceneHierarchyPanel(gpu::VKGPUContext *p_ctx, const RefPtr<Scene> &p_scene) : m_ctx(p_ctx), m_scene(p_scene)
 	{
 	}
 
@@ -213,6 +219,12 @@ namespace toaster
 				ig::CloseCurrentPopup();
 			}
 
+			if (ig::MenuItem("Mesh"))
+			{
+				m_selectedEntity.addComponent<MeshComponent>();
+				ig::CloseCurrentPopup();
+			}
+
 			if (ig::MenuItem("Camera"))
 			{
 				m_selectedEntity.addComponent<CameraComponent>();
@@ -230,7 +242,7 @@ namespace toaster
 			ig::Separator();
 			drawVec3Ctrl("Scale", &p_comp.scale, glm::vec3{1.0f});
 			ig::Separator();
-		});
+		}, this);
 
 		drawComponent<CameraComponent>("Camera", p_entity, [](CameraComponent &p_comp)
 		{
@@ -289,7 +301,7 @@ namespace toaster
 			ig::PopStyleVar();
 
 			ig::SetItemTooltip("If true, the camera will be used as the main camera to view the scene from.");
-		});
+		}, this);
 
 		drawComponent<SpriteRendererComponent>("Sprite Renderer", p_entity, [this](SpriteRendererComponent &p_comp)
 		{
@@ -299,7 +311,6 @@ namespace toaster
 			ui::dragFloat("Tiling Factor", &p_comp.tilingFactor, "##Tiling_Factor", 0.1f);
 			ig::PopStyleVar();
 
-			// ig::SetNextItemWidth(ig::GetContentRegionAvail().x);
 			if (ig::Button("File", ImVec2{ig::GetContentRegionAvail().x, 0}))
 			{
 				auto path = os::openFileDialog({{"Image", "png,jpg,jpeg"}});
@@ -311,6 +322,21 @@ namespace toaster
 					p_comp.texture = make_reference<gpu::VKTexture2D>(m_ctx, texture_spec, path);
 				}
 			}
-		});
+		}, this);
+
+		drawComponent<MeshComponent>("Mesh", p_entity, [this](MeshComponent &p_comp)
+		{
+			if (ig::Button("File", ImVec2{ig::GetContentRegionAvail().x, 0}))
+			{
+				auto path = os::openFileDialog({{"Mesh", "fbx,obj,glb"}});
+				if (io::filesystem::exists(path))
+				{
+					LOG_INFO("{}", path.string());
+
+					auto geometry_shader{Globals::getShaderLibrary().get("Geometry")};
+					p_comp.mesh = make_reference<gpu::VKMesh>(m_ctx, path, geometry_shader);
+				}
+			}
+		}, this);
 	}
 }

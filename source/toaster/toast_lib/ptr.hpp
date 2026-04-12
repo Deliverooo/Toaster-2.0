@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic> // I am atomic
+#include <functional>
 #include <memory>
 
 namespace toaster
@@ -10,30 +11,33 @@ namespace toaster
 	class RefPtr
 	{
 	public:
-		RefPtr(std::nullptr_t) : m_ptr(nullptr), m_refCount(nullptr)
+		using Deleter = std::function<void(Type *)>;
+
+		RefPtr(std::nullptr_t) : m_ptr(nullptr), m_controlBlock(nullptr)
 		{
 		}
 
-		RefPtr(Type *p_ptr = nullptr) : m_ptr(p_ptr), m_refCount(p_ptr ? new std::atomic_int32_t(1) : nullptr)
+		RefPtr(Type *p_ptr = nullptr, Deleter p_deleter = [](Type *p) { delete p; }) : m_ptr(p_ptr),
+																					   m_controlBlock(p_ptr ? new ControlBlock(1, std::move(p_deleter)) : nullptr)
 		{
 		}
 
-		RefPtr(const RefPtr &p_other) : m_ptr(p_other.m_ptr), m_refCount(p_other.m_refCount)
+		RefPtr(const RefPtr &p_other) : m_ptr(p_other.m_ptr), m_controlBlock(p_other.m_controlBlock)
 		{
 			_incRef();
 		}
 
 		template<typename TOther>
-		RefPtr(const RefPtr<TOther> &p_other) : m_ptr(dynamic_cast<Type *>(p_other.m_ptr)), m_refCount(p_other.m_refCount)
+		RefPtr(const RefPtr<TOther> &p_other) : m_ptr(dynamic_cast<Type *>(p_other.m_ptr)), m_controlBlock(reinterpret_cast<ControlBlock *>(p_other.m_controlBlock))
 		{
 			_incRef();
 		}
 
 		template<typename TOther>
-		RefPtr(RefPtr<TOther> &&p_other) : m_ptr(dynamic_cast<Type *>(p_other.m_ptr)), m_refCount(p_other.m_refCount)
+		RefPtr(RefPtr<TOther> &&p_other) : m_ptr(dynamic_cast<Type *>(p_other.m_ptr)), m_controlBlock(reinterpret_cast<ControlBlock *>(p_other.m_controlBlock))
 		{
-			p_other.m_ptr      = nullptr;
-			p_other.m_refCount = nullptr;
+			p_other.m_ptr          = nullptr;
+			p_other.m_controlBlock = nullptr;
 		}
 
 		~RefPtr() { _release(); }
@@ -50,8 +54,8 @@ namespace toaster
 			if (this != &p_other)
 			{
 				_release();
-				m_ptr      = p_other.m_ptr;
-				m_refCount = p_other.m_refCount;
+				m_ptr          = p_other.m_ptr;
+				m_controlBlock = p_other.m_controlBlock;
 				_incRef();
 			}
 			return *this;
@@ -63,8 +67,8 @@ namespace toaster
 			if (this != &p_other)
 			{
 				_release();
-				m_ptr      = p_other.m_ptr;
-				m_refCount = p_other.m_refCount;
+				m_ptr          = p_other.m_ptr;
+				m_controlBlock = p_other.m_controlBlock;
 				_incRef();
 			}
 			return *this;
@@ -76,10 +80,10 @@ namespace toaster
 			if (this != &p_other)
 			{
 				_release();
-				m_ptr              = p_other.m_ptr;
-				m_refCount         = p_other.m_refCount;
-				p_other.m_ptr      = nullptr;
-				p_other.m_refCount = nullptr;
+				m_ptr                  = p_other.m_ptr;
+				m_controlBlock         = p_other.m_controlBlock;
+				p_other.m_ptr          = nullptr;
+				p_other.m_controlBlock = nullptr;
 			}
 			return *this;
 		}
@@ -93,13 +97,13 @@ namespace toaster
 		Type *      get() { return m_ptr; }
 		const Type *get() const { return m_ptr; }
 
-		void reset(Type *p_ptr = nullptr)
+		void reset(Type *p_ptr = nullptr, Deleter p_deleter = [](Type *p) { delete p; })
 		{
 			if (m_ptr == p_ptr)
 				return;
 			_release();
-			m_ptr      = p_ptr;
-			m_refCount = p_ptr ? new std::atomic_int32_t(1) : nullptr;
+			m_ptr          = p_ptr;
+			m_controlBlock = p_ptr ? new ControlBlock(1, std::move(p_deleter)) : nullptr;
 		}
 
 		template<typename TOther>
@@ -124,26 +128,36 @@ namespace toaster
 	private:
 		void _incRef()
 		{
-			if (m_refCount)
-				++(*m_refCount);
+			if (m_controlBlock)
+				++(m_controlBlock->refCount);
 		}
 
 		void _release()
 		{
-			if (m_refCount)
+			if (m_controlBlock)
 			{
-				if (--(*m_refCount) == 0)
+				if (--(m_controlBlock->refCount) == 0)
 				{
-					delete m_ptr;
-					delete m_refCount;
+					m_controlBlock->deleter(m_ptr);
+					delete m_controlBlock;
 				}
-				m_ptr      = nullptr;
-				m_refCount = nullptr;
+				m_ptr          = nullptr;
+				m_controlBlock = nullptr;
 			}
 		}
 
-		mutable Type *               m_ptr{nullptr};
-		mutable std::atomic_int32_t *m_refCount{nullptr};
+		struct ControlBlock
+		{
+			std::atomic_int32_t refCount;
+			Deleter             deleter;
+
+			ControlBlock(int32_t p_count, Deleter p_deleter) : refCount(p_count), deleter(std::move(p_deleter))
+			{
+			}
+		};
+
+		mutable Type *        m_ptr{nullptr};
+		mutable ControlBlock *m_controlBlock{nullptr};
 
 		template<typename TOther>
 		friend class RefPtr;
@@ -206,6 +220,12 @@ namespace toaster
 	RefPtr<Type> make_reference(TArgs &&... p_args)
 	{
 		return RefPtr<Type>(new Type(std::forward<TArgs>(p_args)...));
+	}
+
+	template<typename Type, typename... TArgs>
+	RefPtr<Type> allocate_reference(typename RefPtr<Type>::Deleter &&p_deleter, TArgs &&... p_args)
+	{
+		return RefPtr<Type>(new Type(std::forward<TArgs>(p_args)...), std::move(p_deleter));
 	}
 
 	template<typename Type, typename... TArgs>

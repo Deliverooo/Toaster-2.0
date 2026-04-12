@@ -109,7 +109,7 @@ namespace toaster
 		m_meshDrawCommands.clear();
 	}
 
-	void SceneRenderer::renderMesh(const RefPtr<gpu::VKMesh> &p_mesh, const glm::mat4 &p_transform)
+	void SceneRenderer::renderMesh(RefPtr<gpu::VKMesh> p_mesh, const glm::mat4 &p_transform)
 	{
 		DrawCommand &draw_command{m_meshDrawCommands.emplace_back()};
 		draw_command.mesh      = p_mesh;
