@@ -79,8 +79,7 @@ namespace toaster::gpu
 		int32  num_channels{0};
 		uint8 *pixels = stbi_load(p_path.string().c_str(), &width, &height, &num_channels, 4);
 
-		bool       loaded{true};
-		vk::Format image_format{vk::Format::eR8G8B8A8Srgb};
+		bool loaded{true};
 		if (!pixels)
 		{
 			loaded = false;
@@ -89,8 +88,8 @@ namespace toaster::gpu
 			width  = 1;
 			height = 1;
 			uint32 fallback_data{0xFFFF00FF};
-			image_format = vk::Format::eR8G8B8A8Unorm;
-			pixels       = reinterpret_cast<uint8 *>(&fallback_data);
+			m_specInfo.format = vk::Format::eR8G8B8A8Unorm;
+			pixels            = reinterpret_cast<uint8 *>(&fallback_data);
 		}
 
 		vk::DeviceSize image_size = width * height * 4;
@@ -108,7 +107,7 @@ namespace toaster::gpu
 		image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
-		image_create_info.format      = image_format;
+		image_create_info.format      = m_specInfo.format;
 		m_image                       = make_reference<VKImage2D>(m_ctx, image_create_info);
 
 		vk::raii::Buffer       staging_buffer{nullptr};

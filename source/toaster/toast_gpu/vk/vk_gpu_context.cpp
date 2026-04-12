@@ -34,15 +34,11 @@ namespace toaster::gpu
 
 	void VKGPUContext::performGarbageCollection()
 	{
-		const uint64 deletion_count = m_pendingDeletions[m_currentFrameIndex].size();
-		if (deletion_count > 0)
+		while (!m_pendingDeletions[m_currentFrameIndex].empty())
 		{
-			while (!m_pendingDeletions[m_currentFrameIndex].empty())
-			{
-				auto deleter = std::move(m_pendingDeletions[m_currentFrameIndex].front());
-				m_pendingDeletions[m_currentFrameIndex].pop_front();
-				deleter();
-			}
+			auto deleter{std::move(m_pendingDeletions[m_currentFrameIndex].front())};
+			m_pendingDeletions[m_currentFrameIndex].pop_front();
+			deleter();
 		}
 	}
 

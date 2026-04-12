@@ -7,6 +7,8 @@
 
 #include <glm/glm.hpp>
 
+#include "toast_gpu/vk/vk_texture.hpp"
+
 namespace toaster
 {
 	class Globals final
@@ -28,5 +30,7 @@ namespace toaster
 
 		static const std::vector<QuadVertex> &getFullscreenQuadVertices();
 		static const std::vector<uint16> &    getFullscreenQuadIndices();
+
+		static const RefPtr<gpu::VKTexture2D>& getWhiteTexture();
 	};
 }

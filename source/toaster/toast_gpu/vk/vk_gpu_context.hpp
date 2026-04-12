@@ -40,9 +40,11 @@ namespace toaster::gpu
 		{
 			return allocate_reference<Type>([this](Type *p_ptr) -> void
 			{
-				auto deleter = [p_ptr]() -> void
-				{
-					delete p_ptr;
+				auto deleter{
+					[p_ptr]() -> void
+					{
+						delete p_ptr;
+					}
 				};
 				m_pendingDeletions[m_currentFrameIndex].emplace_back(std::move(deleter));
 			}, this, std::forward<TArgs>(p_args)...);

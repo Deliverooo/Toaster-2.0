@@ -12,7 +12,7 @@ namespace toaster::gpu
 	{
 		uint32                  width{0u};
 		uint32                  height{0u};
-		vk::Format              format{vk::Format::eUndefined};
+		vk::Format              format{vk::Format::eR8G8B8A8Srgb};
 		vk::SampleCountFlagBits sampleCount{vk::SampleCountFlagBits::e1};
 
 		bool generateMips{true};
