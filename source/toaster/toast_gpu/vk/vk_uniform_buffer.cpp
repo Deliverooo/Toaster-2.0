@@ -64,7 +64,7 @@ namespace toaster::gpu
 		TST_ASSERT_MSG(p_frames_in_flight > 0, "Frames in flight cannot be 0");
 
 		for (uint32 i{0u}; i < m_framesInFlightCount; ++i)
-			m_uniformBuffers.emplace_back(make_reference<VKUniformBuffer>(p_ctx, p_size));
+			m_uniformBuffers.emplace_back(p_ctx->alloc<VKUniformBuffer>(p_size));
 	}
 
 	RefPtr<VKUniformBuffer> VKUniformBufferPFF::getUBO(uint32 p_frame_index)

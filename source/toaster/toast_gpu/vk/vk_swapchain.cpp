@@ -32,6 +32,9 @@ namespace toaster::gpu
 		if (fence_result != vk::Result::eSuccess)
 			TST_ASSERT_MSG(false, "Failed to wait for Fence");
 
+		m_ctx->setCurrentFrameIndex(m_frameIndex);
+		m_ctx->performGarbageCollection();
+
 		// Reset the fence so we can signal it later
 		device.resetFences(*m_inFlightFences[m_frameIndex]);
 

@@ -3,6 +3,7 @@
 #include "../gpu_context.hpp"
 
 #define GLFW_INCLUDE_VULKAN
+#include <deque>
 #include <GLFW/glfw3.h>
 
 #include <vulkan/vulkan.hpp>
@@ -33,6 +34,24 @@ namespace toaster::gpu
 		VKGPUContext(GLFWwindow *p_window);
 		~VKGPUContext() noexcept override;
 
+		// If you care about not getting crashes when allocating gpu objects mid-frame, you should use this instead of make_reference<Type>(ctx, ...)
+		template<typename Type, typename... TArgs>
+		RefPtr<Type> alloc(TArgs &&... p_args)
+		{
+			return allocate_reference<Type>([this](Type *p_ptr) -> void
+			{
+				auto deleter = [p_ptr]() -> void
+				{
+					delete p_ptr;
+				};
+				m_pendingDeletions[m_currentFrameIndex].emplace_back(std::move(deleter));
+			}, this, std::forward<TArgs>(p_args)...);
+		}
+
+		// Only the swapchain should use this, but I don't want to make it private and friend it because "Coupling"...
+		void setCurrentFrameIndex(uint32 p_index);
+
+		void performGarbageCollection();
 
 		[[nodiscard]] vk::raii::Instance &      getVulkanInstance();
 		[[nodiscard]] vk::raii::PhysicalDevice &getPhysicalDevice();
@@ -110,6 +129,9 @@ namespace toaster::gpu
 		static VKAPI_ATTR vk::Bool32 VKAPI_CALL _debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity,
 															   vk::DebugUtilsMessageTypeFlagsEXT             p_message_type,
 															   const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, void *p_user_data);
+
+		std::array<std::deque<std::function<void()> >, c_maxFramesInFlight> m_pendingDeletions;
+		uint32                                                              m_currentFrameIndex{0};
 
 		vk::raii::Context  m_context;
 		vk::raii::Instance m_vulkanInstance{nullptr};

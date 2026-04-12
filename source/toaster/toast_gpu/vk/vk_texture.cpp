@@ -74,13 +74,24 @@ namespace toaster::gpu
 		stbi_set_flip_vertically_on_load(true);
 
 		// Possibly in the future I might look into dynamic colour channels, so the images don't need to be in RGBA
-		int32 width{0};
-		int32 height{0};
-		int32 num_channels{0};
-		auto  pixels = stbi_load(p_path.string().c_str(), &width, &height, &num_channels, 4);
+		int32  width{0};
+		int32  height{0};
+		int32  num_channels{0};
+		uint8 *pixels = stbi_load(p_path.string().c_str(), &width, &height, &num_channels, 4);
 
+		bool       loaded{true};
+		vk::Format image_format{vk::Format::eR8G8B8A8Srgb};
 		if (!pixels)
-			TST_ASSERT_MSG(false, "failed to load texture image");
+		{
+			loaded = false;
+			LOG_ERROR("failed to load texture image: {}", p_path.string());
+
+			width  = 1;
+			height = 1;
+			uint32 fallback_data{0xFFFF00FF};
+			image_format = vk::Format::eR8G8B8A8Unorm;
+			pixels       = reinterpret_cast<uint8 *>(&fallback_data);
+		}
 
 		vk::DeviceSize image_size = width * height * 4;
 		m_specInfo.width          = static_cast<uint32>(width);
@@ -97,7 +108,7 @@ namespace toaster::gpu
 		image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
-		image_create_info.format      = vk::Format::eR8G8B8A8Srgb;
+		image_create_info.format      = image_format;
 		m_image                       = make_reference<VKImage2D>(m_ctx, image_create_info);
 
 		vk::raii::Buffer       staging_buffer{nullptr};
@@ -110,7 +121,8 @@ namespace toaster::gpu
 		std::memcpy(mapped, pixels, image_size);
 		staging_buffer_memory.unmapMemory();
 
-		stbi_image_free(pixels);
+		if (loaded)
+			stbi_image_free(pixels);
 
 		m_ctx->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eNone,
 									 vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, m_mipLevels,

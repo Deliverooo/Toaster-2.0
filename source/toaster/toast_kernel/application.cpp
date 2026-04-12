@@ -49,6 +49,8 @@ namespace toaster
 
 		Globals::shutdown();
 
+		ctx->performGarbageCollection();
+
 		delete m_window;
 		Window::shutdownWindowingAPI();
 	}

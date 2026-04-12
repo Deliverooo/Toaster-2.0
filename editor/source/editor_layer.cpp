@@ -50,18 +50,17 @@ namespace toaster
 			{gpu::EShaderDataType::eFloat3, "a_Position"},
 			{gpu::EShaderDataType::eFloat2, "a_TexCoord"}
 		};
+		m_fullscreenPipeline = ctx->alloc<gpu::VKPipeline>(fullscreen_pipeline_create_info);
+		m_fullscreenPass     = ctx->alloc<gpu::VKRenderPass>(m_fullscreenPipeline);
+		m_fullscreenMaterial = ctx->alloc<gpu::VKMaterial>(fullscreen_shader);
 
-		m_fullscreenPipeline = make_reference<gpu::VKPipeline>(ctx, fullscreen_pipeline_create_info);
-		m_fullscreenPass     = make_reference<gpu::VKRenderPass>(ctx, m_fullscreenPipeline);
-		m_fullscreenMaterial = make_reference<gpu::VKMaterial>(ctx, fullscreen_shader);
-
-		m_frameDataUBOs = make_reference<gpu::VKUniformBufferPFF>(ctx, sizeof(FrameDataUB), gpu::VKGPUContext::c_maxFramesInFlight);
+		m_frameDataUBOs = ctx->alloc<gpu::VKUniformBufferPFF>(sizeof(FrameDataUB), gpu::VKGPUContext::c_maxFramesInFlight);
 		m_fullscreenPass->setInput("FrameData", m_frameDataUBOs);
 
 		gpu::TextureSpecInfo texture_spec_info{};
-		m_texture = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info, "../resources/textures/Peeber.png");
+		m_texture = ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "../resources/textures/Peeber.png");
 		gpu::TextureSpecInfo texture_spec_info2{};
-		m_texture2 = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info2, "../resources/textures/ooorbo.png");
+		m_texture2 = ctx->alloc<gpu::VKTexture2D>(texture_spec_info2, "../resources/textures/ooorbo.png");
 
 		m_fullscreenPass->setInput("u_Texture", m_texture);
 		m_fullscreenPass->bake();
@@ -87,11 +86,7 @@ namespace toaster
 			transform_comp.scale       = {100.0f, 100.0f, 100.0f};
 			transform_comp.translation = {0.0f, 0.0f, 0.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
-			mc.mesh = allocate_reference<gpu::VKMesh>([](gpu::VKMesh *p_ptr)
-			{
-				LOG_TRACE("Hello!");
-				delete p_ptr;
-			}, ctx, "../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
+			mc.mesh = ctx->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
 		}
 	}
 

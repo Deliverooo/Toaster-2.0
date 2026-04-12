@@ -27,6 +27,25 @@ namespace toaster::gpu
 
 	VKGPUContext::~VKGPUContext() noexcept = default;
 
+	void VKGPUContext::setCurrentFrameIndex(uint32 p_index)
+	{
+		m_currentFrameIndex = p_index;
+	}
+
+	void VKGPUContext::performGarbageCollection()
+	{
+		const uint64 deletion_count = m_pendingDeletions[m_currentFrameIndex].size();
+		if (deletion_count > 0)
+		{
+			while (!m_pendingDeletions[m_currentFrameIndex].empty())
+			{
+				auto deleter = std::move(m_pendingDeletions[m_currentFrameIndex].front());
+				m_pendingDeletions[m_currentFrameIndex].pop_front();
+				deleter();
+			}
+		}
+	}
+
 	vk::raii::Instance &VKGPUContext::getVulkanInstance()
 	{
 		return m_vulkanInstance;

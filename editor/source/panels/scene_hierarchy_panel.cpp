@@ -334,7 +334,7 @@ namespace toaster
 					LOG_INFO("{}", path.string());
 
 					auto geometry_shader{Globals::getShaderLibrary().get("Geometry")};
-					p_comp.mesh = make_reference<gpu::VKMesh>(m_ctx, path, geometry_shader);
+					p_comp.mesh = m_ctx->alloc<gpu::VKMesh>(path, geometry_shader);
 				}
 			}
 		}, this);
