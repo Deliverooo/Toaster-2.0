@@ -12,7 +12,6 @@ namespace toaster
 	{
 		auto geometry_shader{Globals::getShaderLibrary().get("Geometry")};
 		m_mesh = make_reference<gpu::VKMesh>(p_ctx, "../resources/meshes/Orbo.fbx", geometry_shader);
-
 	}
 
 	Scene::~Scene()
@@ -34,9 +33,8 @@ namespace toaster
 		});
 	}
 
-	void Scene::onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer)
+	void Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer)
 	{
-
 		Camera *  main_camera{nullptr};
 		glm::mat4 camera_transform{1.0f};
 		{
@@ -53,29 +51,30 @@ namespace toaster
 			}
 		}
 
-		#if 0
 		if (main_camera)
 		{
-			p_scene_renderer->begin(*main_camera, camera_transform);
+			p_scene_renderer->begin(p_cmd, p_frame_index, camera_transform, main_camera->getProjectionMatrix());
 
 			auto group = m_registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
 			for (auto entity: group)
 			{
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
-				if (sprite.texture)
-					p_scene_renderer->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor);
-				else
-					p_scene_renderer->submitQuad(transform.getTransform(), sprite.colour);
+				p_scene_renderer->renderMesh(m_mesh, transform.getTransform());
+				// if (sprite.texture)
+				// p_scene_renderer->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor);
+				// else
+				// p_scene_renderer->submitQuad(transform.getTransform(), sprite.colour);
 			}
 
-			p_scene_renderer->end();
+			p_scene_renderer->end(p_cmd, p_frame_index);
 		}
-		#endif
+		else
+			TST_ASSERT(false);
 	}
 
-	void Scene::onRender(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
-						 const glm::mat4 &        p_projection)
+	void Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer,
+						 const glm::mat4 &              p_view, const glm::mat4 &p_projection)
 	{
 		p_scene_renderer->begin(p_cmd, p_frame_index, p_view, p_projection);
 

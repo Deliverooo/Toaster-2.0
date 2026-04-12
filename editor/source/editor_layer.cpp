@@ -5,10 +5,17 @@
 #include "toast_lib/events/key_event.hpp"
 #include "toast_render/globals.hpp"
 #include "toast_render/renderer.hpp"
+#include "toast_scene/components.hpp"
+#include "toast_scene/entity.hpp"
+#include "toast_scene/scene_renderer.hpp"
+#include "toast_kernel/input.hpp"
+
+#include <imgui.h>
+namespace ig = ImGui;
 
 namespace toaster
 {
-	EditorLayer::EditorLayer(Application *p_app) : IAppLayer(p_app)
+	EditorLayer::EditorLayer(Application *p_app) : IAppLayer(p_app), m_editorCamera(90.0f, 1.777f, 0.1f, 100.0f)
 	{
 	}
 
@@ -21,10 +28,15 @@ namespace toaster
 		m_viewportWidth  = swapchain->getExtent().width;
 		m_viewportHeight = swapchain->getExtent().height;
 
+		m_editorCamera.setViewportSize(static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight));
+
 		swapchain->addResizeCallback([this](const uint32 width, const uint32 height) -> void
 		{
 			m_viewportWidth  = width;
 			m_viewportHeight = height;
+
+			m_sceneRenderer->onResize(width, height);
+			m_editorCamera.setViewportSize(static_cast<float32>(width), static_cast<float32>(height));
 		});
 
 		auto fullscreen_shader{Globals::getShaderLibrary().get("Composite")};
@@ -48,18 +60,46 @@ namespace toaster
 
 		gpu::TextureSpecInfo texture_spec_info{};
 		m_texture = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info, "../resources/textures/Peeber.png");
+		gpu::TextureSpecInfo texture_spec_info2{};
+		m_texture2 = make_reference<gpu::VKTexture2D>(ctx, texture_spec_info2, "../resources/textures/ooorbo.png");
 
 		m_fullscreenPass->setInput("u_Texture", m_texture);
 		m_fullscreenPass->bake();
+
+		m_scene = make_reference<Scene>(ctx, "Main Scene");
+
+		m_sceneHierarchyPanel = make_unique<SceneHierarchyPanel>(ctx, m_scene);
+
+		SceneRendererSpecInfo scene_renderer_spec_info{};
+		scene_renderer_spec_info.viewportWidth  = m_viewportWidth;
+		scene_renderer_spec_info.viewportHeight = m_viewportHeight;
+		scene_renderer_spec_info.scene          = m_scene;
+		m_sceneRenderer                         = make_reference<SceneRenderer>(ctx, scene_renderer_spec_info);
+
+		Renderer2DCreateInfo renderer_2d_create_info{};
+		renderer_2d_create_info.renderTargetWidth  = m_viewportWidth;
+		renderer_2d_create_info.renderTargetHeight = m_viewportHeight;
+		m_renderer2D                               = make_reference<Renderer2D>(ctx, renderer_2d_create_info);
+
+		{
+			Entity orbo_entity{m_scene->createEntity()};
+			auto & transform_comp{orbo_entity.getComponent<TransformComponent>()};
+			transform_comp.scale       = {100.0f, 100.0f, 100.0f};
+			transform_comp.translation = {0.0f, 0.0f, 0.0f};
+			auto &src{orbo_entity.addComponent<SpriteRendererComponent>()};
+		}
 	}
 
 	void EditorLayer::onDestroy()
 	{
 	}
 
-	void EditorLayer::onUpdate(float32 p_dt)
+	void EditorLayer::onUpdate(const float32 p_dt)
 	{
 		m_time += p_dt;
+
+		if (m_viewportFocused)
+			m_editorCamera.onUpdate(p_dt);
 
 		const auto &app{getApp()};
 		auto        ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
@@ -68,13 +108,20 @@ namespace toaster
 		const auto & cmd_buf{swapchain->getCurrentCommandBuffer()};
 		const uint32 frame_index{swapchain->getFrameIndex()};
 
-		FrameDataUB frame_data{};
-		frame_data.res.x = static_cast<float32>(m_viewportWidth);
-		frame_data.res.y = static_cast<float32>(m_viewportHeight);
-		frame_data.time  = m_time;
-		m_frameDataUBOs->getUBO(frame_index)->setData(&frame_data, sizeof(FrameDataUB), 0u);
+		m_scene->onUpdate(p_dt);
+		m_scene->onRender(cmd_buf, frame_index, p_dt, m_sceneRenderer, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
 
-		m_fullscreenMaterial->set("u_Constants.intensity", glm::abs(glm::sin(m_time)));
+		m_fullscreenPass->setInput("u_Texture", m_sceneRenderer->getOutputColourTexture());
+
+		{
+			FrameDataUB frame_data{};
+			frame_data.res.x = static_cast<float32>(m_viewportWidth);
+			frame_data.res.y = static_cast<float32>(m_viewportHeight);
+			frame_data.time  = m_time;
+			m_frameDataUBOs->getUBO(frame_index)->setData(&frame_data, sizeof(FrameDataUB), 0u);
+
+			m_fullscreenMaterial->set("u_Constants.intensity", glm::abs(glm::sin(m_time)));
+		}
 
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_viewportWidth, m_viewportHeight}};
@@ -114,9 +161,20 @@ namespace toaster
 			}
 			return false;
 		});
+		m_editorCamera.onEvent(p_event);
 	}
 
 	void EditorLayer::onUIRender()
 	{
+		ig::Begin("Properties");
+
+		if (ig::IsWindowFocused() || ig::IsWindowHovered())
+			m_viewportFocused = false;
+		else
+			m_viewportFocused = true;
+
+		ig::End();
+
+		m_sceneHierarchyPanel->onUIRender();
 	}
 }

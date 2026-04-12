@@ -1,26 +1,29 @@
 #pragma once
 
-#include "toast_gpu/framebuffer.hpp"
-#include "toast_gpu/texture.hpp"
-#include "toast_gpu/vertex_array.hpp"
-#include "toast_gpu/vk/vk_gpu_context.hpp"
-
-#include "toast_lib/camera.hpp"
+#include "toast_gpu/vertex_buffer_layout.hpp"
+#include "toast_lib/ptr.hpp"
 #include "toast_lib/math/math_vector.hpp"
 
 #include <array>
-
-#include "toast_gpu/vk/vk_image.hpp"
-#include "toast_gpu/vk/vk_pipeline.hpp"
-#include "toast_gpu/vk/vk_vertex_buffer.hpp"
-#include "toast_gpu/vk/vk_index_buffer.hpp"
-#include "toast_gpu/vk/vk_material.hpp"
-#include "toast_gpu/vk/vk_render_pass.hpp"
-#include "toast_gpu/vk/vk_texture.hpp"
-#include "toast_gpu/vk/vk_uniform_buffer.hpp"
+#include <vulkan/vulkan_raii.hpp>
 
 namespace toaster
 {
+	namespace gpu
+	{
+		class VKGPUContext;
+		class VKPipeline;
+		class VKRenderPass;
+		class VKMaterial;
+		class VKTexture2D;
+		class VKImage2D;
+		class VKUniformBuffer;
+		class VKUniformBufferPFF;
+		class VKVertexBuffer;
+		class VKIndexBuffer;
+		class VKShader;
+	}
+
 	struct Renderer2DCreateInfo
 	{
 		uint32 maxQuads{10000u};
@@ -40,8 +43,8 @@ namespace toaster
 		explicit Renderer2D(gpu::VKGPUContext *p_ctx, const Renderer2DCreateInfo &p_create_info);
 		~Renderer2D();
 
-		void begin(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix);
-		void end(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index);
+		void begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix);
+		void end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index);
 
 		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
 		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);

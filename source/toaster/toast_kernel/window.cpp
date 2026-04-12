@@ -36,7 +36,7 @@ namespace toaster
 	{
 		if (!s_glfwInitialized)
 		{
-			const bool init_result {static_cast<bool>(glfwInit())};
+			const bool init_result{static_cast<bool>(glfwInit())};
 			TST_ASSERT_MSG(init_result, "glfw initialization failed!");
 
 			glfwSetErrorCallback(_glfwErrorCallback);
@@ -96,7 +96,7 @@ namespace toaster
 				data.eventCallback(event);
 		});
 
-		glfwSetKeyCallback(m_window, [](GLFWwindow *window, int32 key, int32 scancode, int32 action, int32 mods)
+		glfwSetKeyCallback(m_window, [](GLFWwindow *window, int32 key, [[maybe_unused]] int32 scancode, const int32 action, [[maybe_unused]] int32 mods)
 		{
 			const auto &data{GET_CB_DATA()};
 
@@ -137,7 +137,7 @@ namespace toaster
 				data.eventCallback(event);
 		});
 
-		glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int32 button, int32 action, int32 mods)
+		glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int32 button, int32 action, [[maybe_unused]] int32 mods)
 		{
 			const auto &data{GET_CB_DATA()};
 

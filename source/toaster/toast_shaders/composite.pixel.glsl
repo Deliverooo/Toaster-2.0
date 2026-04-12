@@ -356,13 +356,14 @@ vec3 getSample2(vec2 p, float time) {
 void main()
 {
 
-    vec2 q = v_TexCoord;
-    vec2 p = -1.0 + 2.0*q;
-    p.x *= u_Res.x/u_Res.y;
+//    vec2 q = v_TexCoord;
+//    vec2 p = -1.0 + 2.0*q;
+//    p.x *= u_Res.x/u_Res.y;
 
-    vec3 col = getSample1(p, u_Time);
+//    vec3 col = getSample1(p, u_Time);
 
 
-    o_Colour = vec4(col, 1.0f);
-    o_Colour = mix(o_Colour, texture(u_Texture, v_TexCoord), u_Constants.intensity);
+//        o_Colour = vec4(col, 1.0f);
+//        o_Colour = mix(o_Colour, texture(u_Texture, v_TexCoord), u_Constants.intensity);
+    o_Colour = texture(u_Texture, v_TexCoord);
 }

@@ -2,8 +2,7 @@
 
 #include "globals.hpp"
 #include "renderer.hpp"
-#include "render_command.hpp"
-#include "assimp/Vertex.h"
+#include "toast_gpu/vk/vk_gpu_context.hpp"
 
 namespace toaster
 {
@@ -11,8 +10,6 @@ namespace toaster
 																								  m_maxVertices(p_create_info.maxQuads * 4u),
 																								  m_maxIndices(p_create_info.maxQuads * 6u)
 	{
-		auto &device = m_ctx->getDevice();
-
 		m_quadVertexBufferLayout = gpu::VertexBufferLayout{
 			{gpu::EShaderDataType::eFloat4, "a_Position"},
 			{gpu::EShaderDataType::eFloat4, "a_Colour"},
@@ -109,7 +106,8 @@ namespace toaster
 		delete[] m_quadVertexBase;
 	}
 
-	void Renderer2D::begin(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix)
+	void Renderer2D::begin([[maybe_unused]] const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix,
+						   const tsm::float4x4 &                           p_proj_matrix)
 	{
 		CameraUB ubo{};
 		ubo.view = p_view_matrix;
@@ -125,7 +123,7 @@ namespace toaster
 		m_stats.quadCount = 0u;
 	}
 
-	void Renderer2D::end(vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index)
+	void Renderer2D::end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index)
 	{
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight}};
@@ -165,11 +163,6 @@ namespace toaster
 		}
 
 		Renderer::endRendering(rendering_info, p_cmd);
-
-		// m_ctx->transitionImageLayout(m_renderTargetTexture->getImage()->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-									 // vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eColorAttachmentOutput,
-									 // vk::PipelineStageFlagBits::eFragmentShader, 1, vk::ImageAspectFlagBits::eColor);
-		// m_renderTargetTexture->getImage()->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 	}
 
 	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)

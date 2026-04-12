@@ -8,6 +8,9 @@ namespace toaster
 	void Renderer::beginRendering(const gpu::RenderingInfo &       p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index,
 								  const RefPtr<gpu::VKRenderPass> &p_render_pass)
 	{
+		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
+		TST_ASSERT_MSG(p_render_pass, "Render pass is null");
+
 		const vk::Extent2D rendering_extent{p_rendering_info.renderArea.extent};
 
 		const vk::Viewport viewport{0.0f, 0.0f, static_cast<float32>(rendering_extent.width), static_cast<float32>(rendering_extent.height), 0.0f, 1.0f};
@@ -20,12 +23,11 @@ namespace toaster
 
 			if (rendering_attachment.image != nullptr)
 			{
-				info.imageView   = rendering_attachment.image->getImageView();
-				info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+				info.imageView = rendering_attachment.image->getImageView();
 
 				// Perform the layout transition on sampled attachment images
 				if ((rendering_attachment.image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
-						rendering_attachment.image->getCurrentImageLayout() != vk::ImageLayout::eColorAttachmentOptimal))
+						rendering_attachment.image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
 					rendering_attachment.image->getContext()->transitionImageLayout(rendering_attachment.image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
 																					vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eShaderRead,
@@ -35,6 +37,7 @@ namespace toaster
 																					vk::ImageAspectFlagBits::eColor);
 					rendering_attachment.image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 				}
+				info.imageLayout = rendering_attachment.image->getCurrentImageLayout();
 			}
 			else
 			{
@@ -44,12 +47,11 @@ namespace toaster
 
 			if (rendering_attachment.resolveImage != nullptr)
 			{
-				info.resolveImageView   = rendering_attachment.resolveImage->getImageView();
-				info.resolveImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+				info.resolveImageView = rendering_attachment.resolveImage->getImageView();
 
 				// Perform the layout transition on sampled attachment images
 				if ((rendering_attachment.resolveImage->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
-						rendering_attachment.resolveImage->getCurrentImageLayout() != vk::ImageLayout::eColorAttachmentOptimal))
+						rendering_attachment.resolveImage->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
 					rendering_attachment.resolveImage->getContext()->transitionImageLayout(rendering_attachment.resolveImage->getImage(),
 																						   vk::ImageLayout::eShaderReadOnlyOptimal,
@@ -61,6 +63,7 @@ namespace toaster
 																						   vk::ImageAspectFlagBits::eColor);
 					rendering_attachment.resolveImage->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 				}
+				info.resolveImageLayout = rendering_attachment.resolveImage->getCurrentImageLayout();
 			}
 			else
 			{
@@ -162,6 +165,8 @@ namespace toaster
 
 	void Renderer::endRendering(const gpu::RenderingInfo &p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer)
 	{
+		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
+
 		p_command_buffer.endRendering();
 
 		// Perform the layout transition on sampled attachment images
@@ -207,7 +212,7 @@ namespace toaster
 			}
 
 			const auto &push_constants{p_material->getPushConstantStorageBuffer()};
-			if (push_constants.size() > 0)
+			if (push_constants.size() > 64)
 			{
 				vk::PushConstantsInfo push_constants_info{};
 				push_constants_info.layout     = p_pipeline->getPipelineLayout();
@@ -229,6 +234,8 @@ namespace toaster
 	void Renderer::renderFullscreenQuad(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
 										const RefPtr<gpu::VKMaterial> &p_material)
 	{
+		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
+
 		if (p_material) // You technically don't need to use a material if you don't want to
 		{
 			if (p_material->hasDescriptorSets())

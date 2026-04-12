@@ -13,8 +13,8 @@ add_subdirectory(nativefiledialog-extended)
 add_subdirectory(yaml-cpp)
 if (MSVC)
 	# Something to do with stl base classes not being exported to the dll. Not important.
-	target_compile_options(yaml-cpp PRIVATE /wd4251)
-	target_compile_options(yaml-cpp PRIVATE /wd4275)
+	target_compile_options(yaml-cpp PUBLIC /wd4251)
+	target_compile_options(yaml-cpp PUBLIC /wd4275)
 endif ()
 
 add_subdirectory(glm)

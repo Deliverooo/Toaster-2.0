@@ -218,7 +218,7 @@ namespace toaster
 		return true;
 	}
 
-	void SceneSerializer::serializeEntity(YAML::Emitter &p_out, Entity p_entity, const RefPtr<Scene> &p_scene)
+	void SceneSerializer::serializeEntity(YAML::Emitter &p_out, Entity p_entity, [[maybe_unused]] const RefPtr<Scene> &p_scene)
 	{
 		p_out << YAML::BeginMap;
 		p_out << YAML::Key << "Entity" << YAML::Value << "67676767";
@@ -288,6 +288,7 @@ namespace toaster
 		for (auto entity: p_entities)
 		{
 			uint64 uuid = entity["Entity"].as<uint64>();
+			(void) uuid;
 
 			String entity_name;
 			auto   tag_comp = entity["TagComponent"];

@@ -1,9 +1,11 @@
 #pragma once
 
+#include <atomic> // I am atomic
 #include <memory>
 
 namespace toaster
 {
+	// Literally a better std::shared_ptr
 	template<typename Type>
 	class RefPtr
 	{

@@ -34,8 +34,8 @@ namespace toaster
 
 		(void) io;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Viewports
+		// io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
+		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Viewports
 
 		io.FontDefault = io.Fonts->AddFontFromFileTTF("../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
 		io.Fonts->AddFontFromFileTTF("../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Bold.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
@@ -121,18 +121,18 @@ namespace toaster
 		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 		auto  swapchain = app.getWindow().getSwapchain();
 
-		vk::DescriptorPoolSize pool_sizes[] = {
-			{vk::DescriptorType::eSampler, 500},
-			{vk::DescriptorType::eCombinedImageSampler, 500},
-			{vk::DescriptorType::eSampledImage, 256},
-			{vk::DescriptorType::eStorageImage, 24},
-			{vk::DescriptorType::eUniformTexelBuffer, 8},
-			{vk::DescriptorType::eStorageTexelBuffer, 8},
-			{vk::DescriptorType::eUniformBuffer, 32},
-			{vk::DescriptorType::eStorageBuffer, 32},
-			{vk::DescriptorType::eUniformBufferDynamic, 16},
-			{vk::DescriptorType::eStorageBufferDynamic, 16},
-			{vk::DescriptorType::eInputAttachment, 8}
+		std::array pool_sizes = {
+			vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 500},
+			vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 500},
+			vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 256},
+			vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 24},
+			vk::DescriptorPoolSize{vk::DescriptorType::eUniformTexelBuffer, 8},
+			vk::DescriptorPoolSize{vk::DescriptorType::eStorageTexelBuffer, 8},
+			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 32},
+			vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 32},
+			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBufferDynamic, 16},
+			vk::DescriptorPoolSize{vk::DescriptorType::eStorageBufferDynamic, 16},
+			vk::DescriptorPoolSize{vk::DescriptorType::eInputAttachment, 8}
 		};
 
 		uint32_t max_sets = 0;
@@ -140,8 +140,8 @@ namespace toaster
 			max_sets += ps.descriptorCount;
 
 		vk::DescriptorPoolCreateInfo descriptor_pool_create_info{};
-		descriptor_pool_create_info.pPoolSizes    = pool_sizes;
-		descriptor_pool_create_info.poolSizeCount = IM_ARRAYSIZE(pool_sizes);
+		descriptor_pool_create_info.pPoolSizes    = pool_sizes.data();
+		descriptor_pool_create_info.poolSizeCount = pool_sizes.size();
 		descriptor_pool_create_info.maxSets       = max_sets;
 		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 
@@ -191,6 +191,7 @@ namespace toaster
 		if (m_blockEvents)
 		{
 			ImGuiIO &io = ig::GetIO();
+			(void) io;
 			p_event.setHandled(p_event.isHandled() | (p_event.inCategory(EventCategory_Mouse) & io.WantCaptureMouse));
 			p_event.setHandled(p_event.isHandled() | (p_event.inCategory(EventCategory_Keyboard) & io.WantCaptureKeyboard));
 		}

@@ -6,7 +6,6 @@
 
 #include "toaster/toast_gpu/shader.hpp"
 #include "toaster/toast_gpu/texture.hpp"
-#include "toaster/toast_kernel/ortho_camera_controller.hpp"
 
 #include "toaster/toast_lib/events/key_event.hpp"
 #include "toaster/toast_lib/events/mouse_event.hpp"

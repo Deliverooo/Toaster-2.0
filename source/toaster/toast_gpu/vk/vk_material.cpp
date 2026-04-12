@@ -1,14 +1,16 @@
 #include "vk_material.hpp"
 
+#include <ranges>
+
 namespace toaster::gpu
 {
 	VKMaterial::VKMaterial(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader) : m_ctx(p_ctx), m_shader(p_shader)
 	{
 		const auto &push_constant_buffers{m_shader->getReflectedPushConstantBuffers()};
-		if (push_constant_buffers.size() > 0)
+		if (!push_constant_buffers.empty())
 		{
 			uint32 size{0u};
-			for (auto [name, push_constant]: push_constant_buffers)
+			for (const auto &push_constant: push_constant_buffers | std::views::values)
 				size += push_constant.size;
 
 			m_pushConstantStorageBuffer.allocate(size);

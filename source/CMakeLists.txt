@@ -14,3 +14,5 @@ target_link_libraries(Toaster PRIVATE yaml-cpp::yaml-cpp)
 if (WIN32)
 	target_link_libraries(Toaster PRIVATE dwmapi) # For window colour
 endif ()
+
+set_target_properties(Toaster PROPERTIES COMPILE_WARNING_AS_ERROR ON)

@@ -746,7 +746,7 @@ namespace toaster::gpu
 			src_offsets[1] = vk::Offset3D{mip_width, mip_height, 1};
 
 			dst_offsets[0] = vk::Offset3D{0, 0, 0};
-			dst_offsets[1] = vk::Offset3D{mip_width > 1 ? mip_width / 2 : 1, mip_width > 1 ? mip_width / 2 : 1, 1};
+			dst_offsets[1] = vk::Offset3D{mip_width > 1 ? mip_width / 2 : 1, mip_height > 1 ? mip_height / 2 : 1, 1};
 
 			vk::ImageBlit image_blit{};
 			image_blit.srcOffsets     = src_offsets;

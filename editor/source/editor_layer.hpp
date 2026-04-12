@@ -1,14 +1,30 @@
 #pragma once
 
 #include "toast_kernel/application.hpp"
+#include "toast_lib/ptr.hpp"
 
-#include "toast_gpu/vk/vk_image.hpp"
-#include "toast_gpu/vk/vk_mesh.hpp"
-#include "toast_gpu/vk/vk_render_pass.hpp"
-#include "toast_gpu/vk/vk_texture.hpp"
+#include <glm/glm.hpp>
+
+#include "editor_camera.hpp"
+#include "panels/scene_hierarchy_panel.hpp"
 
 namespace toaster
 {
+	namespace gpu
+	{
+		class VKPipeline;
+		class VKRenderPass;
+		class VKMaterial;
+		class VKTexture2D;
+		class VKImage2D;
+		class VKUniformBuffer;
+		class VKUniformBufferPFF;
+	}
+
+	class Renderer2D;
+	class SceneRenderer;
+	class Scene;
+
 	class EditorLayer final : public IAppLayer
 	{
 	public:
@@ -30,6 +46,7 @@ namespace toaster
 		RefPtr<gpu::VKMaterial>   m_fullscreenMaterial{nullptr};
 
 		RefPtr<gpu::VKTexture2D> m_texture{nullptr};
+		RefPtr<gpu::VKTexture2D> m_texture2{nullptr};
 
 		float32 m_time{0.0f};
 
@@ -40,5 +57,15 @@ namespace toaster
 		};
 
 		RefPtr<gpu::VKUniformBufferPFF> m_frameDataUBOs{nullptr};
+
+		RefPtr<Scene>                  m_scene{nullptr};
+		UniquePtr<SceneHierarchyPanel> m_sceneHierarchyPanel{nullptr};
+		RefPtr<SceneRenderer>          m_sceneRenderer{nullptr};
+
+		RefPtr<Renderer2D> m_renderer2D{nullptr};
+
+		EditorCamera m_editorCamera;
+
+		bool m_viewportFocused{true};
 	};
 }

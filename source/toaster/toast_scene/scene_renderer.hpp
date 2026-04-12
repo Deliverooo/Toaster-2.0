@@ -31,13 +31,20 @@ namespace toaster
 		const RefPtr<gpu::VKImage2D> &  getOutputDepthImage() const;
 
 	private:
+		void _renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index);
 		void _renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index);
 
 		gpu::VKGPUContext *m_ctx{nullptr};
 
 		SceneRendererSpecInfo m_specInfo{};
+
 		RefPtr<gpu::VKPipeline>   m_geometryPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_geometryPass{nullptr};
+
+		RefPtr<gpu::VKPipeline>   m_skyboxPipeline{nullptr};
+		RefPtr<gpu::VKRenderPass> m_skyboxPass{nullptr};
+		RefPtr<gpu::VKMaterial>   m_skyboxMaterial{nullptr};
+		RefPtr<gpu::VKTexture2D>  m_skyboxTexture{nullptr};
 
 		RefPtr<gpu::VKImage2D> m_MSAAColourAttachmentImage{nullptr};
 		RefPtr<gpu::VKImage2D> m_MSAADepthAttachmentImage{nullptr};

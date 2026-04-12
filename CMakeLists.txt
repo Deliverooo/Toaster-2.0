@@ -34,7 +34,6 @@ message(STATUS "DEBUG: WITH_VULKAN_BACKEND is set to: '${WITH_VULKAN_BACKEND}'")
 message(STATUS "DEBUG: WITH_OPENGL_BACKEND is set to: '${WITH_OPENGL_BACKEND}'")
 
 
-#if (WITH_VULKAN_BACKEND)
 find_package(Vulkan REQUIRED COMPONENTS glslangValidator shaderc_combined SPIRV-Tools)
 
 if (NOT ${Vulkan_FOUND} OR NOT ${Vulkan_glslangValidator_FOUND} OR NOT ${Vulkan_shaderc_combined_FOUND} OR NOT ${Vulkan_SPIRV-Tools_FOUND})
@@ -44,8 +43,6 @@ if (NOT ${Vulkan_FOUND} OR NOT ${Vulkan_glslangValidator_FOUND} OR NOT ${Vulkan_
 else ()
 	message(NOTICE "Found Vulkan :)")
 endif ()
-
-#endif ()
 
 # C/C++ flags
 set(PLATFORM_CFLAGS)
@@ -91,6 +88,7 @@ if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 			"/wd4996"  # identifier was declared deprecated
 			"/wd4661"  # no suitable definition provided for explicit template instantiation request
 			"/wd4848"  # 'no_unique_address' is a vendor extension in C++17
+			"/wd4251"
 			# errors:
 			"/we4013"  # 'function' undefined; assuming extern returning int
 			"/we4133"  # incompatible pointer types

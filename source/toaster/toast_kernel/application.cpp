@@ -3,9 +3,7 @@
 #include "toast_lib/events/window_event.hpp"
 
 #include "input.hpp"
-#include "toast_lib/logging.hpp"
 #include "toast_render/globals.hpp"
-#include "toast_render/render_command.hpp"
 
 #include <algorithm>
 #include <GLFW/glfw3.h>

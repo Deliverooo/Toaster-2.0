@@ -25,18 +25,28 @@ namespace toaster
 		s_globalData->ctx = p_ctx;
 
 		{
-			gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/geometry.vert.glsl.spv");
-			gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/geometry.pixel.glsl.spv");
+			gpu::VKShader::Bytecode vs_bytecode = io::filesystem::readBinary("shaders/geometry.vert.glsl.spv");
+			gpu::VKShader::Bytecode ps_bytecode = io::filesystem::readBinary("shaders/geometry.pixel.glsl.spv");
+			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
 			const auto                 geometry_shader{make_reference<gpu::VKShader>(s_globalData->ctx, shader_bytecode_map)};
 			s_globalData->shaderLibrary.add("Geometry", geometry_shader); // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
 		}
 		{
-			gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/composite.vert.glsl.spv");
-			gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/composite.pixel.glsl.spv");
+			gpu::VKShader::Bytecode vs_bytecode = io::filesystem::readBinary("shaders/composite.vert.glsl.spv");
+			gpu::VKShader::Bytecode ps_bytecode = io::filesystem::readBinary("shaders/composite.pixel.glsl.spv");
+			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
 			const auto                 composite_shader{make_reference<gpu::VKShader>(s_globalData->ctx, shader_bytecode_map)};
 			s_globalData->shaderLibrary.add("Composite", composite_shader);
+		}
+		{
+			gpu::VKShader::Bytecode vs_bytecode = io::filesystem::readBinary("shaders/skybox.vert.glsl.spv");
+			gpu::VKShader::Bytecode ps_bytecode = io::filesystem::readBinary("shaders/skybox.pixel.glsl.spv");
+			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
+			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
+			const auto                 skybox_shader{make_reference<gpu::VKShader>(s_globalData->ctx, shader_bytecode_map)};
+			s_globalData->shaderLibrary.add("Skybox", skybox_shader);
 		}
 
 		s_globalData->quadVertices.emplace_back(QuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
