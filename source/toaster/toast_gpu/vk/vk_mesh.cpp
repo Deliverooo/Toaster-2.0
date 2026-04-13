@@ -18,7 +18,7 @@ namespace toaster::gpu
 												| aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights
 												// If more than N (=4) bone weights, discard least influencing bones and renormalise sum to 1
 												| aiProcess_ValidateDataStructure // Validation
-												| aiProcess_GlobalScale           // e.g. convert cm to m for fbx import (and other formats where cm is native)
+												| aiProcess_GlobalScale          // e.g. convert cm to m for fbx import (and other formats where cm is native)
 	;
 
 	auto mat4FromAIMatrix4x4(const aiMatrix4x4 &matrix) -> glm::mat4
@@ -119,7 +119,7 @@ namespace toaster::gpu
 			{
 				auto  ai_material      = scene->mMaterials[i];
 				auto  ai_material_name = ai_material->GetName();
-				auto &material{m_materials.emplace_back(m_ctx->alloc<VKMaterial>(p_shader))};
+				auto &material{m_materials.emplace_back(m_ctx->alloc<VKMaterial>(p_shader, ai_material_name.data))};
 
 				aiString ai_tex_path;
 
@@ -127,7 +127,7 @@ namespace toaster::gpu
 				aiColor3D ai_colour;
 				if (ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS)
 					albedo_colour = {ai_colour.r, ai_colour.g, ai_colour.b};
-				material->set("u_Material.albedoColour", albedo_colour);
+				// material->set("u_Material.albedoColour", albedo_colour);
 
 				float32 roughness;
 				if (ai_material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) != aiReturn_SUCCESS)
@@ -165,8 +165,8 @@ namespace toaster::gpu
 
 					TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					material->set("u_Texture", m_ctx->alloc<VKTexture2D>(texture_spec_info, texture_path));
-					material->set("u_Material.albedoColour", glm::vec3{1.0f});
+					material->set("u_AlbedoTexture", m_ctx->alloc<VKTexture2D>(texture_spec_info, texture_path));
+					// material->set("u_Material.albedoColour", glm::vec3{1.0f});
 				}
 				else
 					LOG_WARN("Mesh material does not have an albedo map");
@@ -176,10 +176,10 @@ namespace toaster::gpu
 			m_materials.emplace_back(m_ctx->alloc<VKMaterial>(p_shader));
 
 		const vk::DeviceSize vertex_buffer_size{sizeof(MeshVertex) * m_vertices.size()};
-		m_vertexBuffer = make_reference<VKVertexBuffer>(m_ctx, (void *) m_vertices.data(), vertex_buffer_size);
+		m_vertexBuffer = m_ctx->alloc<VKVertexBuffer>((void *) m_vertices.data(), vertex_buffer_size);
 
 		const vk::DeviceSize index_buffer_size{sizeof(uint16) * m_indices.size()};
-		m_indexBuffer = make_reference<VKIndexBuffer>(m_ctx, (void *) m_indices.data(), index_buffer_size);
+		m_indexBuffer = m_ctx->alloc<VKIndexBuffer>((void *) m_indices.data(), index_buffer_size);
 	}
 
 	auto VKMesh::getContext() const -> VKGPUContext *

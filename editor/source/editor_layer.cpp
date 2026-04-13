@@ -84,8 +84,9 @@ namespace toaster
 		{
 			Entity orbo_entity{m_scene->createEntity()};
 			auto & transform_comp{orbo_entity.getComponent<TransformComponent>()};
-			transform_comp.scale       = {100.0f, 100.0f, 100.0f};
 			transform_comp.translation = {0.0f, 0.0f, 0.0f};
+			transform_comp.rotation    = {0.0f, 0.0f, glm::radians(180.9f)};
+			transform_comp.scale       = {1.0f, 1.0f, 1.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
 			mc.mesh = ctx->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
 		}
@@ -103,7 +104,6 @@ namespace toaster
 			m_editorCamera.onUpdate(p_dt);
 
 		const auto &app{getApp()};
-		// auto        ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
 		const auto  swapchain{app.getWindow().getSwapchain()};
 
 		const auto & cmd_buf{swapchain->getCurrentCommandBuffer()};
@@ -164,24 +164,21 @@ namespace toaster
 			}
 			return false;
 		});
-		m_editorCamera.onEvent(p_event);
+		if (m_viewportFocused)
+			m_editorCamera.onEvent(p_event);
 	}
 
 	auto EditorLayer::onUIRender() -> void
 	{
 		const auto &app{getApp()};
-		auto        ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
+		const auto  swapchain{app.getWindow().getSwapchain()};
+		const auto  ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
 
 		ig::Begin("Properties");
 
-		if (ig::IsWindowFocused() || ig::IsWindowHovered())
-			m_viewportFocused = false;
-		else
-			m_viewportFocused = true;
-
 		ig::End();
 
-		m_sceneHierarchyPanel->onUIRender();
+		m_sceneHierarchyPanel->onUIRender(swapchain->getFrameIndex());
 
 		ig::Begin("Renderer settings");
 
@@ -199,5 +196,10 @@ namespace toaster
 		}
 
 		ig::End();
+
+		if (ig::IsWindowFocused(ImGuiFocusedFlags_AnyWindow) || ig::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
+			m_viewportFocused = false;
+		else
+			m_viewportFocused = true;
 	}
 }

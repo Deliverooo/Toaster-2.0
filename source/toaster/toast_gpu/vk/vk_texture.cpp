@@ -21,7 +21,7 @@ namespace toaster::gpu
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = m_specInfo.format;
-		m_image                       = make_reference<VKImage2D>(m_ctx, image_create_info);
+		m_image                       = m_ctx->alloc<VKImage2D>(image_create_info);
 
 		m_ctx->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
 									 vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eColorAttachmentOutput,
@@ -108,7 +108,7 @@ namespace toaster::gpu
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = m_specInfo.format;
-		m_image                       = make_reference<VKImage2D>(m_ctx, image_create_info);
+		m_image                       = m_ctx->alloc<VKImage2D>(image_create_info);
 
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
@@ -181,7 +181,7 @@ namespace toaster::gpu
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = vk::Format::eR8G8B8A8Unorm;
-		m_image                       = make_reference<VKImage2D>(m_ctx, image_create_info);
+		m_image                       = m_ctx->alloc<VKImage2D>(image_create_info);
 
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};

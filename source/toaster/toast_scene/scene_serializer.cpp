@@ -10,6 +10,7 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "toast_gpu/vk/vk_gpu_context.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
 
 inline auto operator<<(YAML::Emitter &out, const glm::vec2 &v) -> YAML::Emitter &
@@ -316,7 +317,7 @@ namespace toaster
 				{
 					gpu::TextureSpecInfo texture_spec{};
 					texture_spec.generateMips = false;
-					src.texture               = make_reference<gpu::VKTexture2D>(p_scene->m_ctx, texture_spec, texture_path);
+					src.texture               = p_scene->m_ctx->alloc<gpu::VKTexture2D>(texture_spec, texture_path);
 				}
 				else
 					src.texture = nullptr;

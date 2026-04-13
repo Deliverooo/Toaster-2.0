@@ -18,6 +18,8 @@ namespace toaster
 			if (input::getCursorMode() != input::ECursorMode::eDisabled)
 				input::setCursorMode(input::ECursorMode::eDisabled);
 
+			float32 speed{input::isKeyDown(input::EKeyCode::eLeftControl) ? 30.0f : 10.0f};
+
 			glm::vec3 delta_position{0.0f};
 			if (input::isKeyDown(input::EKeyCode::eW))
 				delta_position -= c_forwardDir;
@@ -29,11 +31,11 @@ namespace toaster
 				delta_position += c_rightDir;
 
 			delta_position = ((glm::length(delta_position) == 0.0f) ? glm::vec3{0.0f} : glm::normalize(delta_position)) * p_dt;
-			m_position     += glm::vec3{getRotationMatrix() * glm::vec4{delta_position, 0.0f}} * 10.0f;
+			m_position     += glm::vec3{getRotationMatrix() * glm::vec4{delta_position, 0.0f}} * speed;
 			if (input::isKeyDown(input::EKeyCode::eSpace))
-				m_position += c_upDir * p_dt * 10.0f;
+				m_position += c_upDir * p_dt * speed;
 			if (input::isKeyDown(input::EKeyCode::eLeftShift))
-				m_position -= c_upDir * p_dt * 10.0f;
+				m_position -= c_upDir * p_dt * speed;
 
 			const glm::vec2 mouse{input::getMouseX(), input::getMouseY()};
 			const glm::vec2 delta{(mouse - m_initialMousePosition) * 0.002f};

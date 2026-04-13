@@ -102,8 +102,7 @@ namespace toaster
 	{
 	}
 
-	SceneHierarchyPanel::~SceneHierarchyPanel()
-	= default;
+	SceneHierarchyPanel::~SceneHierarchyPanel() = default;
 
 	auto SceneHierarchyPanel::setScene(const RefPtr<Scene> &p_scene) -> void
 	{
@@ -111,7 +110,7 @@ namespace toaster
 		m_selectedEntity = {};
 	}
 
-	auto SceneHierarchyPanel::onUIRender() -> void
+	auto SceneHierarchyPanel::onUIRender(uint32 p_frame_index) -> void
 	{
 		ig::Begin("Scene Hierarchy");
 
@@ -120,7 +119,7 @@ namespace toaster
 		for (auto e: reg.view<entt::entity>())
 		{
 			Entity entity = {e, m_scene.get()};
-			_drawEntityNode(entity);
+			_drawEntityNode(entity, p_frame_index);
 		}
 
 		if (ig::IsMouseDown(ImGuiMouseButton_Left) && ig::IsWindowHovered())
@@ -141,7 +140,7 @@ namespace toaster
 
 		if (m_selectedEntity)
 		{
-			_drawComponents(m_selectedEntity);
+			_drawComponents(m_selectedEntity, p_frame_index);
 		}
 
 		ig::End();
@@ -157,7 +156,7 @@ namespace toaster
 		m_selectedEntity = p_entity;
 	}
 
-	auto SceneHierarchyPanel::_drawEntityNode(Entity p_entity) -> void
+	auto SceneHierarchyPanel::_drawEntityNode(Entity p_entity, uint32 p_frame_index) -> void
 	{
 		auto &tag_comp = p_entity.getComponent<TagComponent>();
 
@@ -191,7 +190,7 @@ namespace toaster
 		}
 	}
 
-	auto SceneHierarchyPanel::_drawComponents(Entity p_entity) -> void
+	auto SceneHierarchyPanel::_drawComponents(Entity p_entity, uint32 p_frame_index) -> void
 	{
 		{
 			auto &tag_comp = p_entity.getComponent<TagComponent>();
@@ -318,14 +317,14 @@ namespace toaster
 				{
 					LOG_INFO("{}", path.string());
 					gpu::TextureSpecInfo texture_spec{};
-
-					p_comp.texture = make_reference<gpu::VKTexture2D>(m_ctx, texture_spec, path);
+					p_comp.texture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec, path);
 				}
 			}
 		}, this);
 
-		drawComponent<MeshComponent>("Mesh", p_entity, [this](MeshComponent &p_comp)
+		drawComponent<MeshComponent>("Mesh", p_entity, [this,p_frame_index](MeshComponent &p_comp)
 		{
+			ig::Text("Mesh source file:");
 			if (ig::Button("File", ImVec2{ig::GetContentRegionAvail().x, 0}))
 			{
 				auto path = os::openFileDialog({{"Mesh", "fbx,obj,glb"}});
@@ -337,9 +336,41 @@ namespace toaster
 					p_comp.mesh = m_ctx->alloc<gpu::VKMesh>(path, geometry_shader);
 				}
 			}
-			glm::vec3 &colour{p_comp.mesh->getMaterials()[0]->get<glm::vec3>("u_Material.albedoColour")};
-			if (ui::colourEdit3("Colour", glm::value_ptr(colour)))
-				p_comp.mesh->getMaterials()[0]->set("u_Material.albedoColour", colour);
+
+			if (p_comp.mesh)
+			{
+				for (auto &mat: p_comp.mesh->getMaterials())
+					_drawMaterial(p_frame_index, mat);
+			}
+			// ig::Separator();
+			// glm::vec3 &colour{p_comp.mesh->getMaterials()[0]->get<glm::vec3>("u_Material.albedoColour")};
+			// if (ui::colourEdit3("Colour", glm::value_ptr(colour)))
+			// p_comp.mesh->getMaterials()[0]->set("u_Material.albedoColour", colour);
 		}, this);
+	}
+
+	auto SceneHierarchyPanel::_drawMaterial(uint32 p_frame_index, const RefPtr<gpu::VKMaterial> &p_mat) -> void
+	{
+		ig::PushID(p_mat->getName().c_str());
+		ig::Text("Material: %s", p_mat->getName().c_str());
+
+		if (ig::Button("Albedo texture", ImVec2{ig::GetContentRegionAvail().x, 0}))
+		{
+			auto path = os::openFileDialog({{"Mesh", "png,jpg,bmp"}});
+			if (io::filesystem::exists(path))
+			{
+				LOG_INFO("{}", path.string());
+				gpu::TextureSpecInfo texture_spec{};
+				p_mat->set("u_AlbedoTexture", m_ctx->alloc<gpu::VKTexture2D>(texture_spec, path));
+			}
+		}
+		auto albedo_map{p_mat->getResource<gpu::VKTexture2D>("u_AlbedoTexture")};
+		if (albedo_map)
+		{
+			ig::Image(ImTextureRef(p_mat->getDescriptorSet(p_frame_index)), ImVec2{100, 100}, ImVec2{0, 1}, ImVec2{1, 0});
+		}
+
+		ig::Separator();
+		ig::PopID();
 	}
 }

@@ -18,10 +18,10 @@ namespace toaster
 			{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
 		};
 
-		gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/quad.vert.glsl.spv");
-		gpu::VKShader::Bytecode    ps_bytecode = io::filesystem::readBinary("shaders/quad.pixel.glsl.spv");
+		gpu::VKShader::Bytecode    vs_bytecode{io::filesystem::readBinary("shaders/quad.vert.glsl.spv")};
+		gpu::VKShader::Bytecode    ps_bytecode{io::filesystem::readBinary("shaders/quad.pixel.glsl.spv")};
 		gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
-		m_quadShader = make_reference<gpu::VKShader>(m_ctx, shader_bytecode_map);
+		m_quadShader = m_ctx->alloc<gpu::VKShader>(shader_bytecode_map);
 
 		gpu::PipelineCreateInfo pipeline_create_info{};
 		pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
@@ -30,36 +30,36 @@ namespace toaster
 		pipeline_create_info.shader             = m_quadShader;
 		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
 		pipeline_create_info.multisample        = false;
-		m_quadPipeline                          = make_reference<gpu::VKPipeline>(m_ctx, pipeline_create_info);
+		m_quadPipeline                          = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
 
 		constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
-		m_cameraUBs       = make_reference<gpu::VKUniformBufferPFF>(m_ctx, ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
+		m_cameraUBs       = m_ctx->alloc<gpu::VKUniformBufferPFF>(ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
 		m_mappedCameraUBs = m_cameraUBs->mapMemory(ubo_size, 0);
 
-		m_quadRenderPass = make_reference<gpu::VKRenderPass>(m_ctx, m_quadPipeline);
+		m_quadRenderPass = m_ctx->alloc<gpu::VKRenderPass>(m_quadPipeline);
 		m_quadRenderPass->setInput("Camera", m_cameraUBs);
 		m_quadRenderPass->bake();
 
-		m_quadMaterial = make_reference<gpu::VKMaterial>(m_ctx, m_quadShader);
+		m_quadMaterial = m_ctx->alloc<gpu::VKMaterial>(m_quadShader);
 
 		gpu::TextureSpecInfo colour_attachment_texture_spec_info{};
 		colour_attachment_texture_spec_info.width  = m_createInfo.renderTargetWidth;
 		colour_attachment_texture_spec_info.height = m_createInfo.renderTargetHeight;
 		colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
-		m_renderTargetTexture                      = make_reference<gpu::VKTexture2D>(m_ctx, colour_attachment_texture_spec_info);
+		m_renderTargetTexture                      = m_ctx->alloc<gpu::VKTexture2D>(colour_attachment_texture_spec_info);
 
 		gpu::ImageCreateInfo depth_attachment_image_create_info{};
 		depth_attachment_image_create_info.width  = m_createInfo.renderTargetWidth;
 		depth_attachment_image_create_info.height = m_createInfo.renderTargetHeight;
 		depth_attachment_image_create_info.format = m_ctx->findDepthFormat();
 		depth_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-		m_renderTargetDepthImage                  = make_reference<gpu::VKImage2D>(m_ctx, depth_attachment_image_create_info);
+		m_renderTargetDepthImage                  = m_ctx->alloc<gpu::VKImage2D>(depth_attachment_image_create_info);
 
 		vk::DeviceSize quad_vertex_buffer_size{sizeof(QuadVertex) * m_maxVertices};
-		m_quadVertexBuffer = make_reference<gpu::VKVertexBuffer>(m_ctx, quad_vertex_buffer_size);
+		m_quadVertexBuffer = m_ctx->alloc<gpu::VKVertexBuffer>(quad_vertex_buffer_size);
 		m_quadVertexBase   = new QuadVertex[m_maxVertices];
 
-		auto * quad_indices = new uint16[m_maxIndices];
+		auto * quad_indices{new uint16[m_maxIndices]};
 		uint32 offset{0u};
 		for (uint32 i{0u}; i < m_maxIndices; i += 6u)
 		{
@@ -75,7 +75,7 @@ namespace toaster
 		}
 
 		vk::DeviceSize index_buffer_size{m_maxIndices * sizeof(uint16)};
-		m_quadIndexBuffer = make_reference<gpu::VKIndexBuffer>(m_ctx, quad_indices, index_buffer_size);
+		m_quadIndexBuffer = m_ctx->alloc<gpu::VKIndexBuffer>(quad_indices, index_buffer_size);
 
 		delete[] quad_indices;
 
@@ -88,16 +88,8 @@ namespace toaster
 
 		m_quadVertexTexCoords = {tsm::float2{0.0f, 0.0f}, tsm::float2{1.0f, 0.0f}, tsm::float2{1.0f, 1.0f}, tsm::float2{0.0f, 1.0f}};
 
-		uint32               white_image_data{0xFFFFFFFF};
-		gpu::TextureSpecInfo white_texture_spec_info{};
-		white_texture_spec_info.width        = 1;
-		white_texture_spec_info.height       = 1;
-		white_texture_spec_info.format       = vk::Format::eR8G8B8A8Unorm;
-		white_texture_spec_info.generateMips = false;
-		m_whiteTexture                       = make_reference<gpu::VKTexture2D>(m_ctx, white_texture_spec_info, &white_image_data, sizeof(uint32));
-
 		for (uint32 i{0u}; i < 32; ++i)
-			m_textureSlots[i] = m_whiteTexture;
+			m_textureSlots[i] = Globals::getWhiteTexture();
 	}
 
 	Renderer2D::~Renderer2D()
@@ -156,7 +148,7 @@ namespace toaster
 				// m_quadMaterial->set("u_Textures", m_textureSlots[i], i);
 				// else
 				// m_quadMaterial->set("u_Textures", m_whiteTexture, i);
-				m_quadMaterial->set("u_WhiteTexture", m_whiteTexture);
+				m_quadMaterial->set("u_WhiteTexture", Globals::getWhiteTexture());
 			}
 
 			Renderer::renderGeometry(p_cmd, p_frame_index, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, glm::mat4{1.0f});
@@ -167,17 +159,15 @@ namespace toaster
 
 	auto Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void
 	{
-		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f});
+		const tsm::float4x4 transform{glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f})};
 		submitQuad(transform, p_colour);
 	}
 
 	auto Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void
 	{
-		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, tsm::float3{p_position.x, p_position.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, {
-																																		p_scale.x,
-																																		p_scale.y,
-																																		1.0f
-																																	});
+		const tsm::float4x4 transform{
+			glm::translate(glm::mat4{1.0f}, tsm::float3{p_position.x, p_position.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f})
+		};
 		submitQuad(transform, p_colour);
 	}
 

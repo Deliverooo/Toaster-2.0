@@ -4,7 +4,7 @@
 
 namespace toaster::gpu
 {
-	VKMaterial::VKMaterial(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader) : m_ctx(p_ctx), m_shader(p_shader)
+	VKMaterial::VKMaterial(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader, const String &p_name) : m_ctx(p_ctx), m_shader(p_shader), m_name(p_name)
 	{
 		const auto &push_constant_buffers{m_shader->getReflectedPushConstantBuffers()};
 		if (!push_constant_buffers.empty())
@@ -74,6 +74,11 @@ namespace toaster::gpu
 	auto VKMaterial::getPushConstantStorageBuffer() const -> const Buffer &
 	{
 		return m_pushConstantStorageBuffer;
+	}
+
+	auto VKMaterial::getName() const -> String
+	{
+		return m_name;
 	}
 
 	auto VKMaterial::_getPushConstantDeclaration(const String &p_name) -> const PushConstant *

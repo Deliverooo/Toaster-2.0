@@ -103,7 +103,6 @@ namespace toaster
 		RefPtr<gpu::VKUniformBufferPFF> m_cameraUBs{nullptr};
 		std::vector<void *>             m_mappedCameraUBs;
 
-		RefPtr<gpu::VKTexture2D>                  m_whiteTexture{nullptr};
 		std::array<RefPtr<gpu::VKTexture2D>, 32u> m_textureSlots;
 		uint32                                    m_textureSlotIndex{1u};
 

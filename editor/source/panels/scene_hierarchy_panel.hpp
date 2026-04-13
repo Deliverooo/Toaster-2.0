@@ -13,14 +13,15 @@ namespace toaster
 
 		auto setScene(const RefPtr<Scene> &p_scene) -> void;
 
-		auto onUIRender() -> void;
+		auto onUIRender(uint32 p_frame_index) -> void;
 
 		auto getSelectedEntity() const -> Entity;
 		auto setSelectedEntity(Entity p_entity) -> void;
 
 	private:
-		auto _drawEntityNode(Entity p_entity) -> void;
-		auto _drawComponents(Entity p_entity) -> void;
+		auto _drawEntityNode(Entity p_entity, uint32 p_frame_index) -> void;
+		auto _drawComponents(Entity p_entity, uint32 p_frame_index) -> void;
+		auto _drawMaterial(uint32 p_frame_index,const RefPtr<gpu::VKMaterial> &p_mat) -> void;
 
 		gpu::VKGPUContext *m_ctx{nullptr};
 

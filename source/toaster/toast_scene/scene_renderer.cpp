@@ -9,11 +9,11 @@ namespace toaster
 	SceneRenderer::SceneRenderer(gpu::VKGPUContext *p_ctx, const SceneRendererSpecInfo &p_spec_info) : m_ctx(p_ctx), m_specInfo(p_spec_info)
 	{
 		constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
-		m_cameraUBOs       = make_reference<gpu::VKUniformBufferPFF>(m_ctx, ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
+		m_cameraUBOs       = m_ctx->alloc<gpu::VKUniformBufferPFF>(ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
 		m_mappedCameraUBOs = m_cameraUBOs->mapMemory(ubo_size, 0);
 
 		gpu::TextureSpecInfo texture_spec_info{};
-		m_skyboxTexture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "../resources/textures/Peeber.png");
+		m_skyboxTexture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "../resources/environments/'Environment_map'.jpg");
 
 		{
 			gpu::PipelineCreateInfo pipeline_create_info{};
@@ -22,15 +22,15 @@ namespace toaster
 			pipeline_create_info.shader             = Globals::getShaderLibrary().get("Skybox");
 			pipeline_create_info.polygonMode        = vk::PolygonMode::eFill;
 			pipeline_create_info.multisample        = true;
-			m_skyboxPipeline                        = make_reference<gpu::VKPipeline>(m_ctx, pipeline_create_info);
+			m_skyboxPipeline                        = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
 
-			m_skyboxPass = make_reference<gpu::VKRenderPass>(m_ctx, m_skyboxPipeline);
+			m_skyboxPass = m_ctx->alloc<gpu::VKRenderPass>(m_skyboxPipeline);
 			m_skyboxPass->setInput("Camera", m_cameraUBOs);
 
 			m_skyboxPass->bake(); // TODO: rename ts to toast
 			//						   Its funny because the engine is called Toaster...
 
-			m_skyboxMaterial = make_reference<gpu::VKMaterial>(m_ctx, Globals::getShaderLibrary().get("Skybox"));
+			m_skyboxMaterial = m_ctx->alloc<gpu::VKMaterial>(Globals::getShaderLibrary().get("Skybox"));
 		}
 		{
 			gpu::PipelineCreateInfo pipeline_create_info{};
@@ -46,9 +46,9 @@ namespace toaster
 			pipeline_create_info.shader            = Globals::getShaderLibrary().get("Geometry");
 			pipeline_create_info.multisample       = true;
 			pipeline_create_info.polygonMode       = vk::PolygonMode::eFill;
-			m_geometryPipeline                     = make_reference<gpu::VKPipeline>(m_ctx, pipeline_create_info);
+			m_geometryPipeline                     = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
 
-			m_geometryPass = make_reference<gpu::VKRenderPass>(m_ctx, m_geometryPipeline);
+			m_geometryPass = m_ctx->alloc<gpu::VKRenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs);
 
 			m_geometryPass->bake(); // TODO: rename ts to toast
@@ -61,7 +61,7 @@ namespace toaster
 		msaa_colour_attachment_image_create_info.format      = vk::Format::eR8G8B8A8Srgb;
 		msaa_colour_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
 		msaa_colour_attachment_image_create_info.sampleCount = m_ctx->getMaxUsableSampleCount();
-		m_MSAAColourAttachmentImage                          = make_reference<gpu::VKImage2D>(m_ctx, msaa_colour_attachment_image_create_info);
+		m_MSAAColourAttachmentImage                          = m_ctx->alloc<gpu::VKImage2D>(msaa_colour_attachment_image_create_info);
 
 		gpu::ImageCreateInfo msaa_depth_attachment_image_create_info{};
 		msaa_depth_attachment_image_create_info.width       = m_specInfo.viewportWidth;
@@ -69,20 +69,20 @@ namespace toaster
 		msaa_depth_attachment_image_create_info.format      = m_ctx->findDepthFormat();
 		msaa_depth_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment;
 		msaa_depth_attachment_image_create_info.sampleCount = m_ctx->getMaxUsableSampleCount();
-		m_MSAADepthAttachmentImage                          = make_reference<gpu::VKImage2D>(m_ctx, msaa_depth_attachment_image_create_info);
+		m_MSAADepthAttachmentImage                          = m_ctx->alloc<gpu::VKImage2D>(msaa_depth_attachment_image_create_info);
 
 		gpu::TextureSpecInfo resolve_colour_attachment_texture_spec_info{};
 		resolve_colour_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
 		resolve_colour_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
 		resolve_colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
-		m_resolveOutputColourTexture                       = make_reference<gpu::VKTexture2D>(m_ctx, resolve_colour_attachment_texture_spec_info);
+		m_resolveOutputColourTexture                       = m_ctx->alloc<gpu::VKTexture2D>(resolve_colour_attachment_texture_spec_info);
 
 		gpu::ImageCreateInfo resolve_depth_attachment_image_create_info{};
 		resolve_depth_attachment_image_create_info.width  = m_specInfo.viewportWidth;
 		resolve_depth_attachment_image_create_info.height = m_specInfo.viewportHeight;
 		resolve_depth_attachment_image_create_info.format = m_ctx->findDepthFormat();
 		resolve_depth_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-		m_resolveOutputDepthImage                         = make_reference<gpu::VKImage2D>(m_ctx, resolve_depth_attachment_image_create_info);
+		m_resolveOutputDepthImage                         = m_ctx->alloc<gpu::VKImage2D>(resolve_depth_attachment_image_create_info);
 	}
 
 	SceneRenderer::~SceneRenderer()
@@ -195,7 +195,10 @@ namespace toaster
 
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
-			Renderer::renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, 0, m_geometryPipeline, draw_cmd.transform);
+			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
+			{
+				Renderer::renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_geometryPipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform);
+			}
 		}
 
 		Renderer::endRendering(rendering_info, p_cmd);

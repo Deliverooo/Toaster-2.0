@@ -15,7 +15,7 @@ namespace toaster::gpu
 		texture_spec_info.generateMips = false;
 
 		uint32 texture_data{0xFFFFFFFF};
-		m_whiteTexture = make_reference<VKTexture2D>(m_ctx, texture_spec_info, &texture_data, sizeof(uint32));
+		m_whiteTexture = m_ctx->alloc<VKTexture2D>(texture_spec_info, &texture_data, sizeof(uint32));
 
 		const auto &descriptor_sets{m_shader->getReflectedShaderDescriptorSets()};
 		m_writeDescriptorMap.resize(VKGPUContext::c_maxFramesInFlight);

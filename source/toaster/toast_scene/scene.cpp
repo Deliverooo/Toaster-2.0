@@ -2,6 +2,7 @@
 #include "entity.hpp"
 #include "components.hpp"
 #include "scene_renderer.hpp"
+#include "toast_gpu/vk/vk_gpu_context.hpp"
 
 #include "toast_lib/logging.hpp"
 #include "toast_render/globals.hpp"
@@ -11,7 +12,7 @@ namespace toaster
 	Scene::Scene(gpu::VKGPUContext *p_ctx, const String &p_name) : m_ctx(p_ctx), m_name(p_name.empty() ? "Untitled Scene" : p_name)
 	{
 		auto geometry_shader{Globals::getShaderLibrary().get("Geometry")};
-		m_mesh = make_reference<gpu::VKMesh>(p_ctx, "../resources/meshes/Orbo.fbx", geometry_shader);
+		m_mesh = m_ctx->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", geometry_shader);
 	}
 
 	Scene::~Scene()
@@ -81,12 +82,9 @@ namespace toaster
 		auto group = m_registry.group<TransformComponent>(entt::get<MeshComponent>);
 		for (auto entity: group)
 		{
-			auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
-
-			if (mesh.mesh)
+			if (auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity); mesh.mesh)
 			{
-				RefPtr<gpu::VKMesh> mesh_ref{mesh.mesh};
-				p_scene_renderer->renderMesh(mesh_ref, transform.getTransform());
+				p_scene_renderer->renderMesh(mesh.mesh, transform.getTransform());
 			}
 		}
 

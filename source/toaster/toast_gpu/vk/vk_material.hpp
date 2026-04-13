@@ -11,7 +11,7 @@ namespace toaster::gpu
 	class VKMaterial
 	{
 	public:
-		VKMaterial(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader);
+		VKMaterial(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader, const String &p_name = "Unknown?");
 		~VKMaterial();
 		auto getContext() const -> VKGPUContext *;
 
@@ -39,7 +39,7 @@ namespace toaster::gpu
 		{
 			auto decl = _getPushConstantDeclaration(p_name);
 			TST_ASSERT_MSG(decl, "Could not find uniform!");
-			return (Type&)m_pushConstantStorageBuffer.read<Type>(decl->offset);
+			return (Type &) m_pushConstantStorageBuffer.read<Type>(decl->offset);
 		}
 
 		template<GPUResource_c TResource>
@@ -50,12 +50,15 @@ namespace toaster::gpu
 
 		auto getPushConstantStorageBuffer() const -> const Buffer &;
 
+		auto getName() const -> String;
+
 	private:
 		auto _getPushConstantDeclaration(const String &p_name) -> const PushConstant *;
 
 		VKGPUContext *m_ctx{nullptr};
 
 		RefPtr<VKShader> m_shader{nullptr};
+		String           m_name{};
 
 		UniquePtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};
 
