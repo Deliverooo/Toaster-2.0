@@ -125,7 +125,11 @@ namespace toaster
 
 	bool EditorCamera::_onMouseScrollEvent(MouseScrollEvent &p_event)
 	{
-		m_zoom -= p_event.getScrollY() * 0.04f;
+		m_zoom -= p_event.getScrollY() * 0.02f;
+		if (m_zoom < glm::radians(1.0f))
+			m_zoom = glm::radians(1.0f);
+		if (m_zoom > glm::radians(89.0f))
+			m_zoom = glm::radians(89.0f);
 		_updateProjection();
 
 		return false;

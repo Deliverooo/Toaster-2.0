@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <unordered_map>
 #include <vulkan/vulkan_raii.hpp>
 
@@ -27,8 +28,8 @@ namespace toaster::gpu
 		};
 
 		using Bytecode              = std::vector<uint32>;
-		using PipelineCreateInfoMap = std::unordered_map<vk::ShaderStageFlagBits, vk::PipelineShaderStageCreateInfo>;
-		using BytecodeMap           = std::unordered_map<vk::ShaderStageFlagBits, Bytecode>;
+		using PipelineCreateInfoMap = std::map<vk::ShaderStageFlagBits, vk::PipelineShaderStageCreateInfo>;
+		using BytecodeMap           = std::map<vk::ShaderStageFlagBits, Bytecode>;
 
 		VKShader(VKGPUContext *p_ctx, const BytecodeMap &p_bytecode_map);
 		VKGPUContext *getContext() const;

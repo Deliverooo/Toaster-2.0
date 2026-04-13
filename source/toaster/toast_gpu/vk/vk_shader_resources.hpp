@@ -37,9 +37,9 @@ namespace toaster::gpu
 
 	struct PushConstantRange
 	{
-		vk::ShaderStageFlagBits stage{vk::ShaderStageFlagBits::eAll};
-		uint32                  offset{0u};
-		uint32                  size{0u};
+		vk::ShaderStageFlags stage{vk::ShaderStageFlagBits::eAll};
+		uint32               offset{0u};
+		uint32               size{0u};
 	};
 
 	struct PushConstant

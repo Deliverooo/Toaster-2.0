@@ -192,28 +192,26 @@ namespace toaster::gpu
 
 			uint32 offset{0u};
 			if (!m_reflectionData.pushConstantRanges.empty())
-				offset = m_reflectionData.pushConstantRanges.back().offset + m_reflectionData.pushConstantRanges.back().size;
+				if (m_reflectionData.pushConstantRanges.back().stage & p_stage)
+					offset = m_reflectionData.pushConstantRanges.back().offset + m_reflectionData.pushConstantRanges.back().size;
 
 			LOG_INFO("Buffer offset: {}", offset);
 
 			PushConstantRange &push_constant_range{m_reflectionData.pushConstantRanges.emplace_back()};
 			push_constant_range.stage  = p_stage;
-			push_constant_range.size   = size - offset;
+			push_constant_range.size   = size;
 			push_constant_range.offset = offset;
-
-			// if (name.empty())
-			// continue;
 
 			PushConstantBuffer &push_constant_buffer{m_reflectionData.pushConstantBuffers[name]};
 			push_constant_buffer.name = name;
-			push_constant_buffer.size = size - offset;
+			push_constant_buffer.size = size;
 
 			for (uint32 i{0u}; i < member_count; ++i)
 			{
 				auto        type{compiler.get_type(buffer_type.member_types[i])};
 				const auto &member_name{compiler.get_member_name(buffer_type.self, i)};
 				auto        member_size{compiler.get_declared_struct_member_size(buffer_type, i)};
-				auto        member_offset{compiler.type_struct_member_offset(buffer_type, i) };
+				auto        member_offset{compiler.type_struct_member_offset(buffer_type, i)};
 
 				LOG_INFO("Member offset: {}", member_offset);
 				LOG_INFO("Member offset2: {}", compiler.type_struct_member_offset(buffer_type, i));

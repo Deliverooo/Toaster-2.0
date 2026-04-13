@@ -122,6 +122,8 @@ namespace toaster
 			frame_data.time  = m_time;
 			m_frameDataUBOs->getUBO(frame_index)->setData(&frame_data, sizeof(FrameDataUB), 0u);
 
+			// Meaningless...
+			m_fullscreenMaterial->set("u_Constants.tint", glm::vec3{0.5f, 1.0f, 0.5f});
 			m_fullscreenMaterial->set("u_Constants.intensity", glm::abs(glm::sin(m_time)));
 		}
 

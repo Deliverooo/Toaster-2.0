@@ -46,7 +46,6 @@ namespace toaster::gpu
 
 		std::vector<vk::VertexInputAttributeDescription> vertex_input_attribute_descriptions;
 		vertex_input_attribute_descriptions.resize(m_createInfo.vertexBufferLayout.getElements().size());
-
 		uint32 location{0u};
 		for (const auto &element: m_createInfo.vertexBufferLayout)
 		{
@@ -56,7 +55,6 @@ namespace toaster::gpu
 			vertex_input_attribute_descriptions[location].offset   = element.offset;
 			++location;
 		}
-
 		vertex_input_state_create_info.pVertexAttributeDescriptions    = vertex_input_attribute_descriptions.data();
 		vertex_input_state_create_info.vertexAttributeDescriptionCount = static_cast<uint32>(vertex_input_attribute_descriptions.size());
 
