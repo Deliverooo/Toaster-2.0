@@ -9,36 +9,36 @@
 
 namespace toaster::io
 {
-	class FileStreamReader : public StreamReader
+	class FileStreamReader final : public StreamReader
 	{
 	public:
-		FileStreamReader(filesystem::Path p_path);
-		~FileStreamReader() override;
+		explicit FileStreamReader(filesystem::Path p_path);
+		virtual  ~FileStreamReader() override;
 
-		[[nodiscard]] bool isGood() const override;
+		[[nodiscard]] virtual auto isGood() const -> bool override;
 
-		[[nodiscard]] uint64 getStreamPos() const override;
-		void                 setStreamPos(uint64 p_stream_pos) override;
+		[[nodiscard]] virtual auto getStreamPos() const -> uint64 override;
+		virtual auto               setStreamPos(uint64 p_stream_pos) -> void override;
 
-		bool readData(uint8 *p_dst, uint64 p_size) override;
+		virtual auto readData(uint8 *p_dst, uint64 p_size) -> bool override;
 
 	private:
 		mutable std::ifstream m_fileStream;
 		filesystem::Path      m_path;
 	};
 
-	class FileStreamWriter : public StreamWriter
+	class FileStreamWriter final : public StreamWriter
 	{
 	public:
-		FileStreamWriter(filesystem::Path p_path);
-		~FileStreamWriter() override;
+		explicit FileStreamWriter(filesystem::Path p_path);
+		virtual  ~FileStreamWriter() override;
 
-		[[nodiscard]] bool isGood() const override;
+		[[nodiscard]] virtual auto isGood() const -> bool override;
 
-		[[nodiscard]] uint64 getStreamPos() const override;
-		void                 setStreamPos(uint64 p_stream_pos) override;
+		[[nodiscard]] virtual auto getStreamPos() const -> uint64 override;
+		virtual auto               setStreamPos(uint64 p_stream_pos) -> void override;
 
-		bool writeData(const uint8 *p_data, uint64 p_size) override;
+		virtual auto writeData(const uint8 *p_data, uint64 p_size) -> bool override;
 
 	private:
 		mutable std::ofstream m_fileStream;

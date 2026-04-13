@@ -48,15 +48,15 @@ namespace toaster::gpu
 	{
 	public:
 		VKDescriptorSetManager(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader, uint32 p_start_set, uint32 p_end_set);
-		VKGPUContext *getContext() const;
+		auto getContext() const -> VKGPUContext *;
 
-		void setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer);
-		void setDescriptor(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff);
-		void setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d);
-		void setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index);
+		auto setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
+		auto setDescriptor(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void;
+		auto setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void;
+		auto setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void;
 
 		template<GPUResource_c TResource>
-		RefPtr<TResource> getDescriptor(const String &p_name)
+		auto getDescriptor(const String &p_name) -> RefPtr<TResource>
 		{
 			if (const auto decl{getDescriptorDeclaration(p_name)})
 				if (const auto set_it{m_descriptorResources.find(decl->set)}; set_it != m_descriptorResources.end())
@@ -66,25 +66,24 @@ namespace toaster::gpu
 		}
 
 		// Only call when you have set all your required descriptors :)
-		void bakeDescriptors();
+		auto bakeDescriptors() -> void;
+		auto updateDescriptors(uint32 p_frame_index) -> void;
 
-		void updateDescriptors(uint32 p_frame_index);
+		[[nodiscard]] auto getDescriptorSets(uint32 p_frame_index) const -> std::vector<vk::DescriptorSet>;
 
-		[[nodiscard]] std::vector<vk::DescriptorSet> getDescriptorSets(uint32 p_frame_index) const;
+		auto getDescriptorDeclaration(const String &p_name) const -> const DescriptorDeclaration *;
+		auto getDescriptorDeclarations() const -> const std::unordered_map<String, DescriptorDeclaration> &;
 
-		const DescriptorDeclaration *                            getDescriptorDeclaration(const String &p_name) const;
-		const std::unordered_map<String, DescriptorDeclaration> &getDescriptorDeclarations() const;
+		auto getWhiteTexture() const -> const RefPtr<VKTexture2D> &;
 
-		const RefPtr<VKTexture2D> &getWhiteTexture() const;
+		auto hasDescriptorSets() const -> bool;
 
-		bool hasDescriptorSets() const;
-
-		uint32 getStartSetIndex() const;
-		uint32 getEndSetIndex() const;
+		auto getStartSetIndex() const -> uint32;
+		auto getEndSetIndex() const -> uint32;
 
 	private:
-		EDescriptorType  _getDescriptorType(vk::DescriptorType p_type) const;
-		EGPUResourceType _getResourceType(vk::DescriptorType p_type) const;
+		auto _getDescriptorType(vk::DescriptorType p_type) const -> EDescriptorType;
+		auto _getResourceType(vk::DescriptorType p_type) const -> EGPUResourceType;
 
 		VKGPUContext *m_ctx{nullptr};
 

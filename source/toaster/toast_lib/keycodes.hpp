@@ -187,13 +187,13 @@ namespace toaster
 		Middle  = Button2
 	};
 
-	inline std::ostream &operator<<(std::ostream &os, KeyCode keyCode)
+	inline auto operator<<(std::ostream &os, KeyCode keyCode) -> std::ostream &
 	{
 		os << static_cast<int32>(keyCode);
 		return os;
 	}
 
-	inline std::ostream &operator<<(std::ostream &os, MouseButton button)
+	inline auto operator<<(std::ostream &os, MouseButton button) -> std::ostream &
 	{
 		os << static_cast<int32>(button);
 		return os;

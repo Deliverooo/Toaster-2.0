@@ -20,32 +20,32 @@ namespace toaster
 		RefPtr<gpu::VKTexture2D> whiteTexture{nullptr};
 	};
 
-	static GlobalData *s_globalData = nullptr;
+	static GlobalData *s_globalData{nullptr};
 
-	void Globals::init(gpu::VKGPUContext *p_ctx)
+	auto Globals::init(gpu::VKGPUContext *p_ctx) -> void
 	{
 		s_globalData      = new GlobalData{};
 		s_globalData->ctx = p_ctx;
 
 		{
-			gpu::VKShader::Bytecode vs_bytecode = io::filesystem::readBinary("shaders/geometry.vert.glsl.spv");
-			gpu::VKShader::Bytecode ps_bytecode = io::filesystem::readBinary("shaders/geometry.pixel.glsl.spv");
+			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary("shaders/geometry.vert.glsl.spv")};
+			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/geometry.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
 			const auto                 geometry_shader{s_globalData->ctx->alloc<gpu::VKShader>(shader_bytecode_map)};
 			s_globalData->shaderLibrary.add("Geometry", geometry_shader); // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
 		}
 		{
-			gpu::VKShader::Bytecode vs_bytecode = io::filesystem::readBinary("shaders/composite.vert.glsl.spv");
-			gpu::VKShader::Bytecode ps_bytecode = io::filesystem::readBinary("shaders/composite.pixel.glsl.spv");
+			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary("shaders/composite.vert.glsl.spv")};
+			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/composite.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
 			const auto                 composite_shader{s_globalData->ctx->alloc<gpu::VKShader>(shader_bytecode_map)};
 			s_globalData->shaderLibrary.add("Composite", composite_shader);
 		}
 		{
-			gpu::VKShader::Bytecode vs_bytecode = io::filesystem::readBinary("shaders/skybox.vert.glsl.spv");
-			gpu::VKShader::Bytecode ps_bytecode = io::filesystem::readBinary("shaders/skybox.pixel.glsl.spv");
+			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary("shaders/skybox.vert.glsl.spv")};
+			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/skybox.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
 			const auto                 skybox_shader{s_globalData->ctx->alloc<gpu::VKShader>(shader_bytecode_map)};
@@ -73,38 +73,38 @@ namespace toaster
 		s_globalData->whiteTexture = s_globalData->ctx->alloc<gpu::VKTexture2D>(white_texture_spec_info, &white_texture_data, sizeof(uint32));
 	}
 
-	void Globals::shutdown()
+	auto Globals::shutdown() -> void
 	{
 		s_globalData->ctx = nullptr;
 		delete s_globalData;
 	}
 
-	const ShaderLibrary &Globals::getShaderLibrary()
+	auto Globals::getShaderLibrary() -> const ShaderLibrary &
 	{
 		return s_globalData->shaderLibrary;
 	}
 
-	const RefPtr<gpu::VKVertexBuffer> &Globals::getFullscreenQuadVertexBuffer()
+	auto Globals::getFullscreenQuadVertexBuffer() -> const RefPtr<gpu::VKVertexBuffer> &
 	{
 		return s_globalData->quadVertexBuffer;
 	}
 
-	const RefPtr<gpu::VKIndexBuffer> &Globals::getFullscreenQuadIndexBuffer()
+	auto Globals::getFullscreenQuadIndexBuffer() -> const RefPtr<gpu::VKIndexBuffer> &
 	{
 		return s_globalData->quadIndexBuffer;
 	}
 
-	const std::vector<Globals::QuadVertex> &Globals::getFullscreenQuadVertices()
+	auto Globals::getFullscreenQuadVertices() -> const std::vector<QuadVertex> &
 	{
 		return s_globalData->quadVertices;
 	}
 
-	const std::vector<uint16> &Globals::getFullscreenQuadIndices()
+	auto Globals::getFullscreenQuadIndices() -> const std::vector<uint16> &
 	{
 		return s_globalData->quadIndices;
 	}
 
-	const RefPtr<gpu::VKTexture2D> &Globals::getWhiteTexture()
+	auto Globals::getWhiteTexture() -> const RefPtr<gpu::VKTexture2D> &
 	{
 		return s_globalData->whiteTexture;
 	}

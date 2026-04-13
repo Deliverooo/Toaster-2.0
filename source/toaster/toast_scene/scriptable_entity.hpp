@@ -10,18 +10,18 @@ namespace toaster
 		ScriptableEntity()          = default;
 		virtual ~ScriptableEntity() = default;
 
-		virtual void onCreate() = 0;
-		virtual void onUpdate(float32 p_dt) = 0;
-		virtual void onDestroy() = 0;
+		virtual auto onCreate() -> void = 0;
+		virtual auto onUpdate(float32 p_dt) -> void = 0;
+		virtual auto onDestroy() -> void = 0;
 
 		template<typename Type>
-		Type &getComponent()
+		auto getComponent() -> Type &
 		{
 			return m_entity.getComponent<Type>();
 		}
 
 		template<typename Type>
-		const Type &getComponent() const
+		auto getComponent() const -> const Type &
 		{
 			return m_entity.getComponent<Type>();
 		}

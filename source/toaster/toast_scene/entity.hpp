@@ -17,7 +17,7 @@ namespace toaster
 		~Entity() = default;
 
 		template<typename Type, typename... TArgs>
-		Type &addComponent(TArgs &&... p_args)
+		auto addComponent(TArgs &&... p_args) -> Type &
 		{
 			TST_ASSERT_MSG(!hasComponent<Type>(), "Entity already has component!");
 			Type &comp = m_scene->m_registry.emplace<Type>(m_handle, std::forward<TArgs>(p_args)...);
@@ -26,14 +26,14 @@ namespace toaster
 		}
 
 		template<typename Type>
-		Type &getComponent()
+		auto getComponent() -> Type &
 		{
 			TST_ASSERT_MSG(hasComponent<Type>(), "Entity doesn't have component!");
 			return m_scene->m_registry.get<Type>(m_handle);
 		}
 
 		template<typename Type>
-		const Type &getComponent() const
+		auto getComponent() const -> const Type &
 		{
 			TST_ASSERT_MSG(hasComponent<Type>(), "Entity doesn't have component!");
 			return m_scene->m_registry.get<Type>(m_handle);
@@ -41,51 +41,51 @@ namespace toaster
 
 		// returns nullptr if entity does not have the requested component type
 		template<typename Type>
-		Type *tryGetComponent()
+		auto tryGetComponent() -> Type *
 		{
 			return m_scene->m_registry.try_get<Type>(m_handle);
 		}
 
 		// returns nullptr if entity does not have the requested component type
 		template<typename Type>
-		const Type *tryGetComponent() const
+		auto tryGetComponent() const -> const Type *
 		{
 			return m_scene->m_registry.try_get<Type>(m_handle);
 		}
 
 		template<typename... Type>
-		bool hasComponent()
+		auto hasComponent() -> bool
 		{
 			return m_scene->m_registry.all_of<Type...>(m_handle);
 		}
 
 		template<typename... Type>
-		[[nodiscard]] bool hasComponent() const
+		[[nodiscard]] auto hasComponent() const -> bool
 		{
 			return m_scene->m_registry.all_of<Type...>(m_handle);
 		}
 
 		template<typename... Type>
-		bool hasAny()
+		auto hasAny() -> bool
 		{
 			return m_scene->m_registry.any_of<Type...>(m_handle);
 		}
 
 		template<typename... Type>
-		[[nodiscard]] bool hasAny() const
+		[[nodiscard]] auto hasAny() const -> bool
 		{
 			return m_scene->m_registry.any_of<Type...>(m_handle);
 		}
 
 		template<typename Type>
-		void removeComponent()
+		auto removeComponent() -> void
 		{
 			TST_ASSERT_MSG(hasComponent<Type>(), "Entity doesn't have component!");
 			m_scene->m_registry.remove<Type>(m_handle);
 		}
 
 		template<typename Type>
-		void removeComponentIfExists()
+		auto removeComponentIfExists() -> void
 		{
 			if (hasComponent<Type>())
 				m_scene->m_registry.remove<Type>(m_handle);
@@ -95,7 +95,7 @@ namespace toaster
 		operator uint32() const { return static_cast<uint32>(m_handle); }
 		operator entt::entity() const { return m_handle; }
 
-		bool operator==(Entity p_entity) const { return m_handle == p_entity.m_handle; }
+		auto operator==(Entity p_entity) const -> bool { return m_handle == p_entity.m_handle; }
 
 	private:
 		entt::entity m_handle{entt::null};

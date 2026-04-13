@@ -12,14 +12,14 @@ namespace toaster::gpu
 	public:
 		VKVertexBuffer(VKGPUContext *p_ctx, void *p_data, uint64 p_size);
 		VKVertexBuffer(VKGPUContext *p_ctx, uint64 p_size);
-		VKGPUContext *getContext() const;
+		auto getContext() const -> VKGPUContext *;
 
-		vk::raii::Buffer &      getBuffer();
-		vk::raii::DeviceMemory &getBufferMemory();
+		auto getBuffer() -> vk::raii::Buffer &;
+		auto getBufferMemory() -> vk::raii::DeviceMemory &;
 
-		void setData(void *p_data, uint64 p_size, uint64 p_offset);
+		auto setData(void *p_data, uint64 p_size, uint64 p_offset) -> void;
 
-		void bind(const vk::raii::CommandBuffer &p_command_buffer);
+		auto bind(const vk::raii::CommandBuffer &p_command_buffer) -> void;
 
 	private:
 		VKGPUContext *m_ctx{nullptr};

@@ -14,46 +14,65 @@ namespace toaster::gpu
 		_createGraphicsPipeline();
 	}
 
-	VKGPUContext *VKPipeline::getContext() const
+	auto VKPipeline::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	vk::raii::Pipeline &VKPipeline::getPipeline()
+	auto VKPipeline::getPipeline() -> vk::raii::Pipeline &
 	{
 		return m_graphicsPipeline;
 	}
 
-	vk::raii::PipelineLayout &VKPipeline::getPipelineLayout()
+	auto VKPipeline::getPipelineLayout() -> vk::raii::PipelineLayout &
 	{
 		return m_pipelineLayout;
 	}
 
-	const PipelineCreateInfo &VKPipeline::getCreateInfo() const
+	auto VKPipeline::getCreateInfo() const -> const PipelineCreateInfo &
 	{
 		return m_createInfo;
 	}
 
-	void VKPipeline::_createGraphicsPipeline()
+	auto VKPipeline::_createGraphicsPipeline() -> void
 	{
 		vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
-		vk::VertexInputBindingDescription      vertex_input_binding_description{};
-		vertex_input_binding_description.binding                     = 0;
-		vertex_input_binding_description.stride                      = m_createInfo.vertexBufferLayout.getStride();
-		vertex_input_binding_description.inputRate                   = vk::VertexInputRate::eVertex;
-		vertex_input_state_create_info.pVertexBindingDescriptions    = &vertex_input_binding_description;
-		vertex_input_state_create_info.vertexBindingDescriptionCount = 1;
+
+		std::vector<vk::VertexInputBindingDescription> vertex_input_binding_descriptions;
+
+		{
+			vk::VertexInputBindingDescription &vertex_input_binding_description{vertex_input_binding_descriptions.emplace_back()};
+			vertex_input_binding_description.binding   = 0;
+			vertex_input_binding_description.stride    = m_createInfo.vertexBufferLayout.getStride();
+			vertex_input_binding_description.inputRate = vk::VertexInputRate::eVertex;
+		}
+
+		if (m_createInfo.instanceLayout.getElements().size())
+		{
+			vk::VertexInputBindingDescription &vertex_input_binding_description{vertex_input_binding_descriptions.emplace_back()};
+			vertex_input_binding_description.binding   = 1;
+			vertex_input_binding_description.stride    = m_createInfo.instanceLayout.getStride();
+			vertex_input_binding_description.inputRate = vk::VertexInputRate::eInstance;
+		}
+		vertex_input_state_create_info.pVertexBindingDescriptions    = vertex_input_binding_descriptions.data();
+		vertex_input_state_create_info.vertexBindingDescriptionCount = vertex_input_binding_descriptions.size();
 
 		std::vector<vk::VertexInputAttributeDescription> vertex_input_attribute_descriptions;
-		vertex_input_attribute_descriptions.resize(m_createInfo.vertexBufferLayout.getElements().size());
+		vertex_input_attribute_descriptions.resize(m_createInfo.vertexBufferLayout.getElements().size() + m_createInfo.instanceLayout.getElements().size());
+
+		uint32 binding{0u};
 		uint32 location{0u};
-		for (const auto &element: m_createInfo.vertexBufferLayout)
+		for (const auto &layout: {m_createInfo.vertexBufferLayout, m_createInfo.instanceLayout})
 		{
-			vertex_input_attribute_descriptions[location].binding  = 0;
-			vertex_input_attribute_descriptions[location].format   = _getVulkanAttribType(element.type);
-			vertex_input_attribute_descriptions[location].location = location;
-			vertex_input_attribute_descriptions[location].offset   = element.offset;
-			++location;
+			for (const auto &element: layout)
+			{
+				vertex_input_attribute_descriptions[location].binding  = binding;
+				vertex_input_attribute_descriptions[location].format   = _getVulkanAttribType(element.type);
+				vertex_input_attribute_descriptions[location].location = location;
+				vertex_input_attribute_descriptions[location].offset   = element.offset;
+				++location;
+			}
+			++binding;
 		}
 		vertex_input_state_create_info.pVertexAttributeDescriptions    = vertex_input_attribute_descriptions.data();
 		vertex_input_state_create_info.vertexAttributeDescriptionCount = static_cast<uint32>(vertex_input_attribute_descriptions.size());
@@ -163,21 +182,21 @@ namespace toaster::gpu
 		m_graphicsPipeline = {m_ctx->getDevice(), nullptr, graphics_pipeline_create_info};
 	}
 
-	vk::Format VKPipeline::_getVulkanAttribType(EShaderDataType p_type)
+	auto VKPipeline::_getVulkanAttribType(EBufferDataType p_type) -> vk::Format
 	{
 		switch (p_type)
 		{
-			case EShaderDataType::eFloat: return vk::Format::eR32Sfloat;
-			case EShaderDataType::eFloat2: return vk::Format::eR32G32Sfloat;
-			case EShaderDataType::eFloat3: return vk::Format::eR32G32B32Sfloat;
-			case EShaderDataType::eFloat4: return vk::Format::eR32G32B32A32Sfloat;
-			case EShaderDataType::eMat3: return vk::Format::eR32G32B32A32Sfloat; // TODO: If I ever want to do instanced rendering, I will need to look into ts
-			case EShaderDataType::eMat4: return vk::Format::eR32G32B32A32Sfloat;
-			case EShaderDataType::eInt: return vk::Format::eR32Sint;
-			case EShaderDataType::eInt2: return vk::Format::eR32G32Sint;
-			case EShaderDataType::eInt3: return vk::Format::eR32G32B32Sint;
-			case EShaderDataType::eInt4: return vk::Format::eR32G32B32A32Sint;
-			case EShaderDataType::eBool: return vk::Format::eR32Sint;
+			case EBufferDataType::eFloat: return vk::Format::eR32Sfloat;
+			case EBufferDataType::eFloat2: return vk::Format::eR32G32Sfloat;
+			case EBufferDataType::eFloat3: return vk::Format::eR32G32B32Sfloat;
+			case EBufferDataType::eFloat4: return vk::Format::eR32G32B32A32Sfloat;
+			case EBufferDataType::eMat3: return vk::Format::eR32G32B32A32Sfloat; // TODO: If I ever want to do instanced rendering, I will need to look into ts
+			case EBufferDataType::eMat4: return vk::Format::eR32G32B32A32Sfloat;
+			case EBufferDataType::eInt: return vk::Format::eR32Sint;
+			case EBufferDataType::eInt2: return vk::Format::eR32G32Sint;
+			case EBufferDataType::eInt3: return vk::Format::eR32G32B32Sint;
+			case EBufferDataType::eInt4: return vk::Format::eR32G32B32A32Sint;
+			case EBufferDataType::eBool: return vk::Format::eR32Sint;
 			default: return vk::Format::eUndefined;
 		}
 		TST_ASSERT_MSG(false, "Unsupported shader data type");

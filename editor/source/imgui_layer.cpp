@@ -14,7 +14,7 @@
 
 namespace toaster
 {
-	static void checkVKResult(VkResult p_result)
+	static auto checkVKResult(VkResult p_result) -> void
 	{
 		if (p_result != VK_SUCCESS)
 		{
@@ -26,7 +26,7 @@ namespace toaster
 	{
 	}
 
-	void ImGuiLayer::onInit()
+	auto ImGuiLayer::onInit() -> void
 	{
 		IMGUI_CHECKVERSION();
 		ig::CreateContext();
@@ -174,18 +174,18 @@ namespace toaster
 		ImGui_ImplVulkan_Init(&init_info);
 	}
 
-	void ImGuiLayer::onDestroy()
+	auto ImGuiLayer::onDestroy() -> void
 	{
 		ImGui_ImplVulkan_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ig::DestroyContext();
 	}
 
-	void ImGuiLayer::onUpdate(float32 p_dt)
+	auto ImGuiLayer::onUpdate(float32 p_dt) -> void
 	{
 	}
 
-	void ImGuiLayer::onEvent(Event &p_event)
+	auto ImGuiLayer::onEvent(Event &p_event) -> void
 	{
 		if (m_blockEvents)
 		{
@@ -196,14 +196,14 @@ namespace toaster
 		}
 	}
 
-	void ImGuiLayer::begin()
+	auto ImGuiLayer::begin() -> void
 	{
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ig::NewFrame();
 	}
 
-	void ImGuiLayer::end()
+	auto ImGuiLayer::end() -> void
 	{
 		const auto &app{getApp()};
 		const auto  swapchain{app.getWindow().getSwapchain()};
@@ -257,7 +257,7 @@ namespace toaster
 		}
 	}
 
-	void ImGuiLayer::setBlockEvents(bool p_block)
+	auto ImGuiLayer::setBlockEvents(bool p_block) -> void
 	{
 		m_blockEvents = p_block;
 	}

@@ -13,8 +13,8 @@
 
 namespace toaster
 {
-	static void drawVec3Ctrl(const String &p_label, glm::vec3 *p_vec, const glm::vec3 &p_reset = glm::vec3{1.0f}, const char *p_vec1_label = "X",
-							 const char *  p_vec2_label                                        = "Y", const char *            p_vec3_label = "Z")
+	static auto drawVec3Ctrl(const String &p_label, glm::vec3 *p_vec, const glm::vec3 &p_reset = glm::vec3{1.0f}, const char *p_vec1_label = "X",
+							 const char *  p_vec2_label                                        = "Y", const char *            p_vec3_label = "Z") -> void
 	{
 		const String vec1_str_id = String("##") + p_vec1_label;
 		const String vec2_str_id = String("##") + p_vec2_label;
@@ -35,7 +35,7 @@ namespace toaster
 	}
 
 	template<typename Type, bool Removable = true, typename UIFunc>
-	static void drawComponent(const String &p_name, Entity p_entity, UIFunc p_func, void *p_caller_id)
+	static auto drawComponent(const String &p_name, Entity p_entity, UIFunc p_func, void *p_caller_id) -> void
 	{
 		ig::PushID(typeid(Type).hash_code());
 
@@ -103,16 +103,15 @@ namespace toaster
 	}
 
 	SceneHierarchyPanel::~SceneHierarchyPanel()
-	{
-	}
+	= default;
 
-	void SceneHierarchyPanel::setScene(const RefPtr<Scene> &p_scene)
+	auto SceneHierarchyPanel::setScene(const RefPtr<Scene> &p_scene) -> void
 	{
 		m_scene          = p_scene;
 		m_selectedEntity = {};
 	}
 
-	void SceneHierarchyPanel::onUIRender()
+	auto SceneHierarchyPanel::onUIRender() -> void
 	{
 		ig::Begin("Scene Hierarchy");
 
@@ -148,17 +147,17 @@ namespace toaster
 		ig::End();
 	}
 
-	Entity SceneHierarchyPanel::getSelectedEntity() const
+	auto SceneHierarchyPanel::getSelectedEntity() const -> Entity
 	{
 		return m_selectedEntity;
 	}
 
-	void SceneHierarchyPanel::setSelectedEntity(Entity p_entity)
+	auto SceneHierarchyPanel::setSelectedEntity(Entity p_entity) -> void
 	{
 		m_selectedEntity = p_entity;
 	}
 
-	void SceneHierarchyPanel::_drawEntityNode(Entity p_entity)
+	auto SceneHierarchyPanel::_drawEntityNode(Entity p_entity) -> void
 	{
 		auto &tag_comp = p_entity.getComponent<TagComponent>();
 
@@ -192,7 +191,7 @@ namespace toaster
 		}
 	}
 
-	void SceneHierarchyPanel::_drawComponents(Entity p_entity)
+	auto SceneHierarchyPanel::_drawComponents(Entity p_entity) -> void
 	{
 		{
 			auto &tag_comp = p_entity.getComponent<TagComponent>();

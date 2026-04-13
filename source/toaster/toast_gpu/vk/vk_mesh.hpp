@@ -48,19 +48,20 @@ namespace toaster::gpu
 	{
 	public:
 		VKMesh(VKGPUContext *p_ctx, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader); // Shader is temp until I move mesh to the Renderer folder
-		VKGPUContext *getContext() const;
+		auto getContext() const -> VKGPUContext *;
 
-		const RefPtr<VKVertexBuffer> &getVertexBuffer() const;
-		const RefPtr<VKIndexBuffer> & getIndexBuffer() const;
+		auto getVertexBuffer() const -> const RefPtr<VKVertexBuffer> &;
+		auto getIndexBuffer() const -> const RefPtr<VKIndexBuffer> &;
 
-		const std::vector<RefPtr<VKMaterial> > &getMaterials() const;
-		const std::vector<Submesh> &            getSubmeshes() const;
+		auto getMaterials() const -> const std::vector<RefPtr<VKMaterial> > &;
+		auto getSubmeshes() const -> const std::vector<Submesh> &;
 
-		const std::vector<MeshVertex> &getVertices() const;
-		const std::vector<uint16> &    getIndices() const;
+		auto getVertices() const -> const std::vector<MeshVertex> &;
+		auto getIndices() const -> const std::vector<uint16> &;
 
 	private:
-		void          _traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level);
+		auto _traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void;
+
 		VKGPUContext *m_ctx{nullptr};
 
 		io::filesystem::Path m_path;

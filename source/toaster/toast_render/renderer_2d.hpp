@@ -1,6 +1,6 @@
 #pragma once
 
-#include "toast_gpu/vertex_buffer_layout.hpp"
+#include "toast_gpu/buffer_layout.hpp"
 #include "toast_lib/ptr.hpp"
 #include "toast_lib/math/math_vector.hpp"
 
@@ -43,20 +43,20 @@ namespace toaster
 		explicit Renderer2D(gpu::VKGPUContext *p_ctx, const Renderer2DCreateInfo &p_create_info);
 		~Renderer2D();
 
-		void begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix);
-		void end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index);
+		auto begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void;
+		auto end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 
-		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
-		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour);
-		void submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour);
+		auto submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
+		auto submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
+		auto submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour) -> void;
 
-		void onResize(uint32 p_width, uint32 p_height);
+		auto onResize(uint32 p_width, uint32 p_height) -> void;
 
-		const RefPtr<gpu::VKTexture2D> &getColourOutput() const;
-		[[nodiscard]] const Stats &     getStats() const;
+		auto               getColourOutput() const -> const RefPtr<gpu::VKTexture2D> &;
+		[[nodiscard]] auto getStats() const -> const Stats &;
 
 	private:
-		void _beginNewBatch();
+		auto _beginNewBatch() -> void;
 
 		gpu::VKGPUContext *m_ctx;
 
@@ -73,7 +73,7 @@ namespace toaster
 			float32     tilingFactor;
 		};
 
-		gpu::VertexBufferLayout m_quadVertexBufferLayout;
+		gpu::BufferLayout m_quadVertexBufferLayout;
 
 		RefPtr<gpu::VKTexture2D> m_renderTargetTexture{nullptr};
 		RefPtr<gpu::VKImage2D>   m_renderTargetDepthImage{nullptr};

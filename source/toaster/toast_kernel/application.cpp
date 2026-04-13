@@ -55,7 +55,7 @@ namespace toaster
 		Window::shutdownWindowingAPI();
 	}
 
-	void Application::run()
+	auto Application::run() -> void
 	{
 		while (m_isRunning)
 		{
@@ -89,23 +89,23 @@ namespace toaster
 		}
 	}
 
-	void Application::close() noexcept
+	auto Application::close() noexcept -> void
 	{
 		m_isRunning = false;
 	}
 
-	Window &Application::getWindow() const noexcept
+	auto Application::getWindow() const noexcept -> Window &
 	{
 		return *m_window;
 	}
 
-	bool Application::onWindowCloseEvent([[maybe_unused]] WindowCloseEvent &p_event)
+	auto Application::onWindowCloseEvent([[maybe_unused]] WindowCloseEvent &p_event) -> bool
 	{
 		m_isRunning = false;
 		return true;
 	}
 
-	bool Application::onWindowResizeEvent(WindowResizeEvent &p_event)
+	auto Application::onWindowResizeEvent(WindowResizeEvent &p_event) -> bool
 	{
 		const uint32 width{p_event.getWidth()};
 		const uint32 height{p_event.getHeight()};
@@ -122,25 +122,25 @@ namespace toaster
 		return false;
 	}
 
-	void Application::addLayer(IAppLayer *p_layer)
+	auto Application::addLayer(IAppLayer *p_layer) -> void
 	{
 		m_layers.push_back(p_layer);
 		p_layer->onInit();
 	}
 
-	void Application::removeLayer(IAppLayer *p_layer)
+	auto Application::removeLayer(IAppLayer *p_layer) -> void
 	{
 		p_layer->onDestroy();
 		m_layers.erase(std::ranges::find(m_layers, p_layer));
 		delete p_layer;
 	}
 
-	void Application::setBeginUIRenderCallback(const std::function<void()> &p_cb_begin_ui_render)
+	auto Application::setBeginUIRenderCallback(const std::function<void()> &p_cb_begin_ui_render) -> void
 	{
 		m_cbBeginUIRender = p_cb_begin_ui_render;
 	}
 
-	void Application::setEndUIRenderCallback(const std::function<void()> &p_cb_end_ui_render)
+	auto Application::setEndUIRenderCallback(const std::function<void()> &p_cb_end_ui_render) -> void
 	{
 		m_cbEndUIRender = p_cb_end_ui_render;
 	}

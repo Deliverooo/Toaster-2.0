@@ -11,7 +11,7 @@
 
 namespace toaster::gpu
 {
-	IGPUContext *IGPUContext::create(GLFWwindow *p_window)
+	auto IGPUContext::create(GLFWwindow *p_window) -> IGPUContext *
 	{
 		return new VKGPUContext(p_window);
 	}

@@ -28,14 +28,14 @@ namespace toaster
 	class EditorLayer final : public IAppLayer
 	{
 	public:
-		EditorLayer(Application *p_app);
+		explicit EditorLayer(Application *p_app);
 
-		void onInit() override;
-		void onDestroy() override;
-		void onUpdate(float32 p_dt) override;
-		void onEvent(Event &p_event) override;
+		virtual auto onInit() -> void override;
+		virtual auto onDestroy() -> void override;
+		virtual auto onUpdate(float32 p_dt) -> void override;
+		virtual auto onEvent(Event &p_event) -> void override;
 
-		void onUIRender() override;
+		virtual auto onUIRender() -> void override;
 
 	private:
 		uint32 m_viewportWidth{0u};

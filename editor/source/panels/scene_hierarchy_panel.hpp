@@ -11,16 +11,16 @@ namespace toaster
 		SceneHierarchyPanel(gpu::VKGPUContext *p_ctx, const RefPtr<Scene> &p_scene);
 		~SceneHierarchyPanel();
 
-		void setScene(const RefPtr<Scene> &p_scene);
+		auto setScene(const RefPtr<Scene> &p_scene) -> void;
 
-		void onUIRender();
+		auto onUIRender() -> void;
 
-		Entity getSelectedEntity() const;
-		void   setSelectedEntity(Entity p_entity);
+		auto getSelectedEntity() const -> Entity;
+		auto setSelectedEntity(Entity p_entity) -> void;
 
 	private:
-		void _drawEntityNode(Entity p_entity);
-		void _drawComponents(Entity p_entity);
+		auto _drawEntityNode(Entity p_entity) -> void;
+		auto _drawComponents(Entity p_entity) -> void;
 
 		gpu::VKGPUContext *m_ctx{nullptr};
 
@@ -29,6 +29,6 @@ namespace toaster
 		Entity m_selectedEntity;
 
 		template<typename Type, bool Removable, typename UIFunc>
-		friend void drawComponent(const String &p_name, Entity p_entity, UIFunc p_func, void *p_caller_id);
+		friend auto drawComponent(const String &p_name, Entity p_entity, UIFunc p_func, void *p_caller_id) -> void;
 	};
 }

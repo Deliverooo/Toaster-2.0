@@ -12,9 +12,9 @@ namespace toaster::io
 		virtual ~Serializable() = default;
 
 		// See stream_writer.hpp
-		virtual void serialize(StreamWriter *writer) const = 0;
+		virtual auto serialize(StreamWriter *writer) const -> void = 0;
 
 		// See stream_reader.hpp
-		virtual void deserialize(StreamReader *reader) = 0;
+		virtual auto deserialize(StreamReader *reader) -> void = 0;
 	};
 }

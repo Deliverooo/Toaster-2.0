@@ -34,7 +34,7 @@ namespace toaster
 	{
 	public:
 		template<typename TLayer> requires std::derived_from<TLayer, IAppLayer>
-		static TLayer *alloc(Application *p_app)
+		static auto alloc(Application *p_app) -> TLayer *
 		{
 			return new TLayer(p_app);
 		}
@@ -45,17 +45,17 @@ namespace toaster
 
 		virtual ~IAppLayer() = default;
 
-		virtual void onInit() = 0;
-		virtual void onDestroy() = 0;
+		virtual auto onInit() -> void = 0;
+		virtual auto onDestroy() -> void = 0;
 
-		virtual void onUpdate(float32 p_dt) = 0;
-		virtual void onEvent(Event &p_event) = 0;
+		virtual auto onUpdate(float32 p_dt) -> void = 0;
+		virtual auto onEvent(Event &p_event) -> void = 0;
 
-		virtual void onUIRender()
+		virtual auto onUIRender() -> void
 		{
 		}
 
-		virtual Application &getApp() { return *m_appParent; }
+		virtual auto getApp() -> Application & { return *m_appParent; }
 
 	private:
 		Application *m_appParent{nullptr};

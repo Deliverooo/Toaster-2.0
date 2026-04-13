@@ -9,15 +9,15 @@ struct GLFWwindow;
 
 namespace toaster::input
 {
-	void setCurrentWindowContext(GLFWwindow *p_window_ctx);
+	auto setCurrentWindowContext(GLFWwindow *p_window_ctx) -> void;
 
-	void        setCursorMode(ECursorMode p_mode);
-	ECursorMode getCursorMode();
+	auto setCursorMode(ECursorMode p_mode) -> void;
+	auto getCursorMode() -> ECursorMode;
 
-	float32                     getMouseX();
-	float32                     getMouseY();
-	std::pair<float32, float32> getMousePos();
+	auto getMouseX() -> float32;
+	auto getMouseY() -> float32;
+	auto getMousePos() -> std::pair<float32, float32>;
 
-	bool isMouseButtonDown(EMouseButton p_button);
-	bool isKeyDown(EKeyCode p_key_code);
+	auto isMouseButtonDown(EMouseButton p_button) -> bool;
+	auto isKeyDown(EKeyCode p_key_code) -> bool;
 }

@@ -25,19 +25,19 @@ namespace toaster::gpu
 	{
 	public:
 		VKImage2D(VKGPUContext *p_ctx, const ImageCreateInfo &p_create_info);
-		VKGPUContext *getContext() const;
+		auto getContext() const -> VKGPUContext *;
 
-		vk::raii::Image &       getImage();
-		vk::raii::DeviceMemory &getImageMemory();
-		vk::raii::ImageView &   getImageView();
+		auto getImage() -> vk::raii::Image &;
+		auto getImageMemory() -> vk::raii::DeviceMemory &;
+		auto getImageView() -> vk::raii::ImageView &;
 
-		[[nodiscard]] const ImageCreateInfo &getCreateInfo() const;
+		[[nodiscard]] auto getCreateInfo() const -> const ImageCreateInfo &;
 
-		void            setCurrentImageLayout(vk::ImageLayout p_layout);
-		vk::ImageLayout getCurrentImageLayout() const;
+		auto setCurrentImageLayout(vk::ImageLayout p_layout) -> void;
+		auto getCurrentImageLayout() const -> vk::ImageLayout;
 
-		void resize(uint32 p_width, uint32 p_height);
-		void recreate();
+		auto resize(uint32 p_width, uint32 p_height) -> void;
+		auto recreate() -> void;
 
 	private:
 		VKGPUContext *m_ctx{nullptr};

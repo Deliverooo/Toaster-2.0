@@ -18,23 +18,20 @@ namespace toaster
 		SceneRenderer(gpu::VKGPUContext *p_ctx, const SceneRendererSpecInfo &p_spec_info);
 		~SceneRenderer();
 
-		void begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix);
-		void end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index);
+		auto begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix) -> void;
+		auto end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto renderMesh(RefPtr<gpu::VKMesh> p_mesh, const glm::mat4 &p_transform) -> void;
 
-		void renderMesh(RefPtr<gpu::VKMesh> p_mesh, const glm::mat4 &p_transform);
+		auto getSpecInfo() const -> const SceneRendererSpecInfo &;
+		auto getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &;
+		auto getOutputDepthImage() const -> const RefPtr<gpu::VKImage2D> &;
 
-		void onResize(uint32 p_width, uint32 p_height);
-
-		void setEnvironmentBackground(RefPtr<gpu::VKTexture2D> p_texture);
-
-		const SceneRendererSpecInfo &getSpecInfo() const;
-
-		const RefPtr<gpu::VKTexture2D> &getOutputColourTexture() const;
-		const RefPtr<gpu::VKImage2D> &  getOutputDepthImage() const;
+		auto onResize(uint32 p_width, uint32 p_height) -> void;
+		auto setEnvironmentBackground(RefPtr<gpu::VKTexture2D> p_texture) -> void;
 
 	private:
-		void _renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index);
-		void _renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index);
+		auto _renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 
 		gpu::VKGPUContext *m_ctx{nullptr};
 

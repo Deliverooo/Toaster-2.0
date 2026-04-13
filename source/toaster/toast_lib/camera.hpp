@@ -16,10 +16,10 @@ namespace toaster
 
 		virtual ~Camera() = default;
 
-		void                               setProjectionMatrix(const tsm::float4x4 &p_projection) { m_projection = p_projection; }
-		[[nodiscard]] const tsm::float4x4 &getProjectionMatrix() const { return m_projection; }
+		auto               setProjectionMatrix(const tsm::float4x4 &p_projection) -> void { m_projection = p_projection; }
+		[[nodiscard]] auto getProjectionMatrix() const -> const tsm::float4x4 & { return m_projection; }
 
-		void setPerspective(float32 p_fov, float32 p_aspect, float32 p_z_near, float32 p_z_far)
+		auto setPerspective(float32 p_fov, float32 p_aspect, float32 p_z_near, float32 p_z_far) -> void
 		{
 			m_projection = glm::perspective(p_fov, p_aspect, p_z_near, p_z_far);
 		}

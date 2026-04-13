@@ -5,8 +5,8 @@
 
 namespace toaster
 {
-	void Renderer::beginRendering(const gpu::RenderingInfo &       p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index,
-								  const RefPtr<gpu::VKRenderPass> &p_render_pass)
+	auto Renderer::beginRendering(const gpu::RenderingInfo &       p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index,
+								  const RefPtr<gpu::VKRenderPass> &p_render_pass) -> void
 	{
 		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
 		TST_ASSERT_MSG(p_render_pass, "Render pass is null");
@@ -163,7 +163,7 @@ namespace toaster
 											descriptor_sets, nullptr);
 	}
 
-	void Renderer::endRendering(const gpu::RenderingInfo &p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer)
+	auto Renderer::endRendering(const gpu::RenderingInfo &p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer) -> void
 	{
 		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
 
@@ -195,9 +195,9 @@ namespace toaster
 		}
 	}
 
-	void Renderer::renderGeometry(const vk::raii::CommandBuffer &    p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
+	auto Renderer::renderGeometry(const vk::raii::CommandBuffer &    p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
 								  const RefPtr<gpu::VKVertexBuffer> &p_vertex_buffer, const RefPtr<gpu::VKIndexBuffer> &p_index_buffer, uint32 p_index_count,
-								  const RefPtr<gpu::VKMaterial> &    p_material, const glm::mat4 &p_transform)
+								  const RefPtr<gpu::VKMaterial> &    p_material, const glm::mat4 &p_transform) -> void
 	{
 		// Push the constants
 		p_command_buffer.pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
@@ -231,8 +231,8 @@ namespace toaster
 		p_command_buffer.drawIndexed(p_index_count, 1, 0, 0, 0);
 	}
 
-	void Renderer::renderFullscreenQuad(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
-										const RefPtr<gpu::VKMaterial> &p_material)
+	auto Renderer::renderFullscreenQuad(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
+										const RefPtr<gpu::VKMaterial> &p_material) -> void
 	{
 		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
 
@@ -265,8 +265,8 @@ namespace toaster
 		p_command_buffer.drawIndexed(Globals::getFullscreenQuadIndices().size(), 1, 0, 0, 0);
 	}
 
-	void Renderer::renderMesh(const vk::raii::CommandBuffer &p_command_buffer, uint32     p_frame_index, const RefPtr<gpu::VKMesh> &p_mesh, uint32 p_submesh_index,
-							  const RefPtr<gpu::VKPipeline> &p_pipeline, const glm::mat4 &p_transform)
+	auto Renderer::renderMesh(const vk::raii::CommandBuffer &p_command_buffer, uint32     p_frame_index, const RefPtr<gpu::VKMesh> &p_mesh, uint32 p_submesh_index,
+							  const RefPtr<gpu::VKPipeline> &p_pipeline, const glm::mat4 &p_transform) -> void
 	{
 		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
 

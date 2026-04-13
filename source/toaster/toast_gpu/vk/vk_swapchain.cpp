@@ -18,12 +18,12 @@ namespace toaster::gpu
 		_createDepthResources();
 	}
 
-	VKGPUContext *VKSwapchain::getContext() const
+	auto VKSwapchain::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	void VKSwapchain::beginFrame()
+	auto VKSwapchain::beginFrame() -> void
 	{
 		auto &device = m_ctx->getDevice();
 
@@ -68,7 +68,7 @@ namespace toaster::gpu
 									 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, vk::ImageAspectFlagBits::eDepth);
 	}
 
-	void VKSwapchain::endFrame()
+	auto VKSwapchain::endFrame() -> void
 	{
 		auto &command_buffer = m_commandBuffers[m_frameIndex];
 
@@ -119,105 +119,105 @@ namespace toaster::gpu
 		m_frameIndex = (m_frameIndex + 1) % VKGPUContext::c_maxFramesInFlight;
 	}
 
-	uint32 VKSwapchain::getFrameIndex() const
+	auto VKSwapchain::getFrameIndex() const -> uint32
 	{
 		return m_frameIndex;
 	}
 
-	uint32 VKSwapchain::getImageIndex() const
+	auto VKSwapchain::getImageIndex() const -> uint32
 	{
 		return m_imageIndex;
 	}
 
-	vk::Image &VKSwapchain::getImage(uint32 p_index)
+	auto VKSwapchain::getImage(uint32 p_index) -> vk::Image &
 	{
 		TST_ASSERT_MSG(p_index < m_swapchainImages.size(), "Out of bounds");
 		return m_swapchainImages[p_index];
 	}
 
-	vk::raii::ImageView &VKSwapchain::getImageView(uint32 p_index)
+	auto VKSwapchain::getImageView(uint32 p_index) -> vk::raii::ImageView &
 	{
 		TST_ASSERT_MSG(p_index < m_swapchainImageViews.size(), "Out of bounds");
 		return m_swapchainImageViews[p_index];
 	}
 
-	vk::Image &VKSwapchain::getCurrentImage()
+	auto VKSwapchain::getCurrentImage() -> vk::Image &
 	{
 		return m_swapchainImages[m_imageIndex];
 	}
 
-	vk::raii::ImageView &VKSwapchain::getCurrentImageView()
+	auto VKSwapchain::getCurrentImageView() -> vk::raii::ImageView &
 	{
 		return m_swapchainImageViews[m_imageIndex];
 	}
 
-	vk::raii::Image &VKSwapchain::getDepthImage()
+	auto VKSwapchain::getDepthImage() -> vk::raii::Image &
 	{
 		return m_depthImage;
 	}
 
-	vk::raii::ImageView &VKSwapchain::getDepthImageView()
+	auto VKSwapchain::getDepthImageView() -> vk::raii::ImageView &
 	{
 		return m_depthImageView;
 	}
 
-	vk::raii::DeviceMemory &VKSwapchain::getDepthImageMemory()
+	auto VKSwapchain::getDepthImageMemory() -> vk::raii::DeviceMemory &
 	{
 		return m_depthImageMemory;
 	}
 
-	vk::raii::CommandBuffer &VKSwapchain::getCommandBuffer(uint32 p_frame_index)
+	auto VKSwapchain::getCommandBuffer(uint32 p_frame_index) -> vk::raii::CommandBuffer &
 	{
 		return m_commandBuffers[p_frame_index];
 	}
 
-	vk::raii::CommandBuffer &VKSwapchain::getCurrentCommandBuffer()
+	auto VKSwapchain::getCurrentCommandBuffer() -> vk::raii::CommandBuffer &
 	{
 		return m_commandBuffers[m_frameIndex];
 	}
 
-	vk::Extent2D VKSwapchain::getExtent() const
+	auto VKSwapchain::getExtent() const -> vk::Extent2D
 	{
 		return m_swapchainExtent;
 	}
 
-	vk::SurfaceFormatKHR VKSwapchain::getSurfaceFormat() const
+	auto VKSwapchain::getSurfaceFormat() const -> vk::SurfaceFormatKHR
 	{
 		return m_swapchainSurfaceFormat;
 	}
 
-	vk::Format VKSwapchain::getDepthFormat() const
+	auto VKSwapchain::getDepthFormat() const -> vk::Format
 	{
 		return m_ctx->findDepthFormat();
 	}
 
-	uint32 VKSwapchain::getMinImageCount() const
+	auto VKSwapchain::getMinImageCount() const -> uint32
 	{
 		return m_minImageCount;
 	}
 
-	uint32 VKSwapchain::getImageCount() const
+	auto VKSwapchain::getImageCount() const -> uint32
 	{
 		return m_swapchainImages.size();
 	}
 
-	void VKSwapchain::setFramebufferResized(bool p_resized)
+	auto VKSwapchain::setFramebufferResized(bool p_resized) -> void
 	{
 		m_framebufferResized = p_resized;
 	}
 
-	void VKSwapchain::addResizeCallback(const ResizeCB &p_resize_cb)
+	auto VKSwapchain::addResizeCallback(const ResizeCB &p_resize_cb) -> void
 	{
 		m_resizeCallbacks.emplace_back(p_resize_cb);
 	}
 
-	void VKSwapchain::_createImageViews()
+	auto VKSwapchain::_createImageViews() -> void
 	{
 		for (auto &img: m_swapchainImages)
 			m_swapchainImageViews.emplace_back(m_ctx->createImageView(img, m_swapchainSurfaceFormat.format, vk::ImageAspectFlagBits::eColor, 1));
 	}
 
-	void VKSwapchain::_createDepthResources()
+	auto VKSwapchain::_createDepthResources() -> void
 	{
 		vk::Format depth_format = m_ctx->findDepthFormat();
 		m_ctx->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, vk::SampleCountFlagBits::e1, depth_format, vk::ImageTiling::eOptimal,
@@ -225,7 +225,7 @@ namespace toaster::gpu
 		m_depthImageView = m_ctx->createImageView(m_depthImage, depth_format, vk::ImageAspectFlagBits::eDepth, 1);
 	}
 
-	void VKSwapchain::_createSyncObjects()
+	auto VKSwapchain::_createSyncObjects() -> void
 	{
 		auto &device = m_ctx->getDevice();
 		for (uint32 i{0u}; i < VKGPUContext::c_maxFramesInFlight; ++i)
@@ -241,7 +241,7 @@ namespace toaster::gpu
 		}
 	}
 
-	void VKSwapchain::_createCommandBuffers()
+	auto VKSwapchain::_createCommandBuffers() -> void
 	{
 		auto &device = m_ctx->getDevice();
 
@@ -253,7 +253,7 @@ namespace toaster::gpu
 		m_commandBuffers = vk::raii::CommandBuffers{device, command_buffer_allocate_info};
 	}
 
-	void VKSwapchain::_create()
+	auto VKSwapchain::_create() -> void
 	{
 		auto &                     physical_device = m_ctx->getPhysicalDevice();
 		auto &                     surface         = m_ctx->getSurface();
@@ -291,7 +291,7 @@ namespace toaster::gpu
 		m_swapchainImages = m_swapchain.getImages();
 	}
 
-	void VKSwapchain::_recreateSwapchain()
+	auto VKSwapchain::_recreateSwapchain() -> void
 	{
 		// Blocks execution until the window is a valid size (for minimisation)
 		int32 width;
@@ -318,7 +318,7 @@ namespace toaster::gpu
 		m_ctx->getDevice().waitIdle();
 	}
 
-	vk::SurfaceFormatKHR VKSwapchain::_chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const
+	auto VKSwapchain::_chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const -> vk::SurfaceFormatKHR
 	{
 		TST_ASSERT(!p_available_formats.empty());
 		// According to my expert research, the most aesthetically pleasing image format is RGBA in the SRGB colour space.
@@ -330,7 +330,7 @@ namespace toaster::gpu
 		return format_it == p_available_formats.end() ? p_available_formats[0] : *format_it;
 	}
 
-	vk::PresentModeKHR VKSwapchain::_chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes) const
+	auto VKSwapchain::_chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes) const -> vk::PresentModeKHR
 	{
 		// The ideal present mode would be mailbox because it is the fastest.
 		// However, not every device supports it. But Fifo is guaranteed to be supported, so that is the fallback option
@@ -343,7 +343,7 @@ namespace toaster::gpu
 				   : vk::PresentModeKHR::eFifo;
 	}
 
-	vk::Extent2D VKSwapchain::_chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const
+	auto VKSwapchain::_chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const -> vk::Extent2D
 	{
 		// If the current extent is UINT32_MAX, it means that we can choose our own custom extent
 		if (p_surface_capabilities.currentExtent.width != UINT32_MAX)
@@ -362,7 +362,7 @@ namespace toaster::gpu
 		};
 	}
 
-	uint32 VKSwapchain::_chooseSwapchainMinImageCount(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const
+	auto VKSwapchain::_chooseSwapchainMinImageCount(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const -> uint32
 	{
 		// Ideally, we want the min image count to be at least 3. However, if your GPU is bad, it might not be able to handle that many images.
 		// So if 3 is greater than the max image count, we fall back to the max image count as the min image count... I don't know if that made sense...

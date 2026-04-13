@@ -11,7 +11,7 @@ namespace toaster
 	{
 	}
 
-	void EditorCamera::onUpdate(float32 p_dt)
+	auto EditorCamera::onUpdate(float32 p_dt) -> void
 	{
 		if (input::isMouseButtonDown(input::EMouseButton::eRight))
 		{
@@ -56,26 +56,26 @@ namespace toaster
 		}
 	}
 
-	void EditorCamera::onEvent(Event &p_event)
+	auto EditorCamera::onEvent(Event &p_event) -> void
 	{
 		EventDispatcher dispatcher{p_event};
 		dispatcher.dispatch<MouseScrollEvent>(TST_BIND_EVENT_FN(EditorCamera::_onMouseScrollEvent));
 	}
 
-	void EditorCamera::setViewportSize(float32 p_width, float32 p_height)
+	auto EditorCamera::setViewportSize(float32 p_width, float32 p_height) -> void
 	{
 		m_aspectRatio = p_width / p_height;
 		_updateProjection();
 	}
 
-	glm::mat4 EditorCamera::getViewMatrix() const
+	auto EditorCamera::getViewMatrix() const -> glm::mat4
 	{
 		const glm::mat4 cameraTranslation{glm::translate(glm::mat4{1.0f}, m_position)};
 		const glm::mat4 cameraRotation{getRotationMatrix()};
 		return glm::inverse(cameraTranslation * cameraRotation);
 	}
 
-	glm::mat4 EditorCamera::getRotationMatrix() const
+	auto EditorCamera::getRotationMatrix() const -> glm::mat4
 	{
 		glm::quat pitchRotation{glm::angleAxis(m_pitch, glm::vec3{1.f, 0.f, 0.f})};
 		glm::quat yawRotation{glm::angleAxis(m_yaw, glm::vec3{0.f, -1.f, 0.f})};
@@ -83,47 +83,47 @@ namespace toaster
 		return glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);
 	}
 
-	glm::mat4 EditorCamera::getViewProjection() const
+	auto EditorCamera::getViewProjection() const -> glm::mat4
 	{
 		return m_projection * getViewMatrix();
 	}
 
-	glm::vec3 EditorCamera::getForwardDirection() const
+	auto EditorCamera::getForwardDirection() const -> glm::vec3
 	{
 		return getRotationMatrix() * glm::vec4{c_forwardDir, 0.0f};
 	}
 
-	glm::vec3 EditorCamera::getRightDirection() const
+	auto EditorCamera::getRightDirection() const -> glm::vec3
 	{
 		return getRotationMatrix() * glm::vec4{c_rightDir, 0.0f};
 	}
 
-	glm::vec3 EditorCamera::getUpDirection() const
+	auto EditorCamera::getUpDirection() const -> glm::vec3
 	{
 		return getRotationMatrix() * glm::vec4{c_upDir, 0.0f};
 	}
 
-	const glm::vec3 &EditorCamera::getPosition() const
+	auto EditorCamera::getPosition() const -> const glm::vec3 &
 	{
 		return m_position;
 	}
 
-	float32 EditorCamera::getPitch() const
+	auto EditorCamera::getPitch() const -> float32
 	{
 		return m_pitch;
 	}
 
-	float32 EditorCamera::getYaw() const
+	auto EditorCamera::getYaw() const -> float32
 	{
 		return m_yaw;
 	}
 
-	void EditorCamera::_updateProjection()
+	auto EditorCamera::_updateProjection() -> void
 	{
 		m_projection = glm::perspective(glm::radians(m_fov) * m_zoom, m_aspectRatio, m_zNear, m_zFar);
 	}
 
-	bool EditorCamera::_onMouseScrollEvent(MouseScrollEvent &p_event)
+	auto EditorCamera::_onMouseScrollEvent(MouseScrollEvent &p_event) -> bool
 	{
 		m_zoom -= p_event.getScrollY() * 0.02f;
 		if (m_zoom < glm::radians(1.0f))

@@ -13,27 +13,27 @@ namespace toaster
 		EditorCamera() = default;
 		EditorCamera(float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far);
 
-		void onUpdate(float32 p_dt);
-		void onEvent(Event &p_event);
+		auto onUpdate(float32 p_dt) -> void;
+		auto onEvent(Event &p_event) -> void;
 
-		void setViewportSize(float32 p_width, float32 p_height);
+		auto setViewportSize(float32 p_width, float32 p_height) -> void;
 
-		[[nodiscard]] glm::mat4 getViewMatrix() const;
-		[[nodiscard]] glm::mat4 getRotationMatrix() const; // Thank you very much -> https://vkguide.dev/docs/new_chapter_5/interactive_camera/
-		[[nodiscard]] glm::mat4 getViewProjection() const;
+		[[nodiscard]] auto getViewMatrix() const -> glm::mat4;
+		[[nodiscard]] auto getRotationMatrix() const -> glm::mat4; // Thank you very much -> https://vkguide.dev/docs/new_chapter_5/interactive_camera/
+		[[nodiscard]] auto getViewProjection() const -> glm::mat4;
 
-		[[nodiscard]] glm::vec3 getForwardDirection() const;
-		[[nodiscard]] glm::vec3 getRightDirection() const;
-		[[nodiscard]] glm::vec3 getUpDirection() const;
+		[[nodiscard]] auto getForwardDirection() const -> glm::vec3;
+		[[nodiscard]] auto getRightDirection() const -> glm::vec3;
+		[[nodiscard]] auto getUpDirection() const -> glm::vec3;
 
-		[[nodiscard]] const glm::vec3 &getPosition() const;
+		[[nodiscard]] auto getPosition() const -> const glm::vec3 &;
 
-		[[nodiscard]] float32 getPitch() const;
-		[[nodiscard]] float32 getYaw() const;
+		[[nodiscard]] auto getPitch() const -> float32;
+		[[nodiscard]] auto getYaw() const -> float32;
 
 	private:
-		void _updateProjection();
-		bool _onMouseScrollEvent(MouseScrollEvent &p_event);
+		auto _updateProjection() -> void;
+		auto _onMouseScrollEvent(MouseScrollEvent &p_event) -> bool;
 
 		glm::vec3 m_position{2.0f, 2.0f, 2.0f};
 

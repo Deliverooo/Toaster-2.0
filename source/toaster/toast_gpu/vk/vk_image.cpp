@@ -11,43 +11,43 @@ namespace toaster::gpu
 		recreate();
 	}
 
-	VKGPUContext *VKImage2D::getContext() const
+	auto VKImage2D::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	vk::raii::Image &VKImage2D::getImage()
+	auto VKImage2D::getImage() -> vk::raii::Image &
 	{
 		return m_image;
 	}
 
-	vk::raii::DeviceMemory &VKImage2D::getImageMemory()
+	auto VKImage2D::getImageMemory() -> vk::raii::DeviceMemory &
 	{
 		return m_imageMemory;
 	}
 
-	vk::raii::ImageView &VKImage2D::getImageView()
+	auto VKImage2D::getImageView() -> vk::raii::ImageView &
 	{
 		return m_imageView;
 	}
 
-	const ImageCreateInfo &VKImage2D::getCreateInfo() const
+	auto VKImage2D::getCreateInfo() const -> const ImageCreateInfo &
 	{
 		return m_createInfo;
 	}
 
-	void VKImage2D::setCurrentImageLayout(vk::ImageLayout p_layout)
+	auto VKImage2D::setCurrentImageLayout(vk::ImageLayout p_layout) -> void
 	{
 		m_currentImageLayout = p_layout;
 	}
 
-	vk::ImageLayout VKImage2D::getCurrentImageLayout() const
+	auto VKImage2D::getCurrentImageLayout() const -> vk::ImageLayout
 	{
 		return m_currentImageLayout;
 	}
 
 	#if 0
-	void VKImage2D::setData(void *p_data, uint64 p_size)
+	auto VKImage2D::setData(void *p_data, uint64 p_size) -> void
 	{
 		TST_ASSERT_MSG(p_data, "p_data is nullptr");
 
@@ -108,7 +108,7 @@ namespace toaster::gpu
 	}
 	#endif
 
-	void VKImage2D::resize(uint32 p_width, uint32 p_height)
+	auto VKImage2D::resize(uint32 p_width, uint32 p_height) -> void
 	{
 		m_createInfo.width  = p_width;
 		m_createInfo.height = p_height;
@@ -116,7 +116,7 @@ namespace toaster::gpu
 		recreate();
 	}
 
-	void VKImage2D::recreate()
+	auto VKImage2D::recreate() -> void
 	{
 		m_image       = nullptr;
 		m_imageMemory = nullptr;

@@ -3,30 +3,9 @@ set(GPU_SRC
 		gpu_context.cpp
 		gpu_context.hpp
 
-		shader_common.hpp
-
-		shader.cpp
-		shader.hpp
-
-		texture.hpp
-		texture.cpp
-
 		image.hpp
-
-		framebuffer.cpp
-		framebuffer.hpp
-
-		gpu_api.hpp
-		gpu_api.cpp
-
-		vertex_array.cpp
-		vertex_array.hpp
-
-		vertex_buffer.cpp
-		vertex_buffer.hpp
-
-		index_buffer.cpp
-		index_buffer.hpp
+		resource.hpp
+		buffer_layout.hpp
 )
 
 if (${WITH_OPENGL_BACKEND})

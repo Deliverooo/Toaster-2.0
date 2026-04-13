@@ -31,17 +31,17 @@ namespace toaster::gpu
 		_createDescriptors();
 	}
 
-	VKGPUContext *VKShader::getContext() const
+	auto VKShader::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	const VKShader::PipelineCreateInfoMap &VKShader::getPipelineShaderStageCreateInfoMap() const
+	auto VKShader::getPipelineShaderStageCreateInfoMap() const -> const PipelineCreateInfoMap &
 	{
 		return m_shaderCreateInfos;
 	}
 
-	std::vector<vk::PipelineShaderStageCreateInfo> VKShader::getPipelineShaderStageCreateInfos() const
+	auto VKShader::getPipelineShaderStageCreateInfos() const -> std::vector<vk::PipelineShaderStageCreateInfo>
 	{
 		std::vector<vk::PipelineShaderStageCreateInfo> result;
 		for (const auto &info: m_shaderCreateInfos | std::views::values)
@@ -49,24 +49,24 @@ namespace toaster::gpu
 		return result;
 	}
 
-	const vk::PipelineShaderStageCreateInfo &VKShader::getPipelineShaderStageCreateInfo(vk::ShaderStageFlagBits p_stage) const
+	auto VKShader::getPipelineShaderStageCreateInfo(vk::ShaderStageFlagBits p_stage) const -> const vk::PipelineShaderStageCreateInfo &
 	{
 		TST_ASSERT_MSG(m_shaderCreateInfos.contains(p_stage), "Stage is not present in shader create infos map");
 		return m_shaderCreateInfos.at(p_stage);
 	}
 
-	const VKShader::BytecodeMap &VKShader::getShaderBytecodeMap() const
+	auto VKShader::getShaderBytecodeMap() const -> const BytecodeMap &
 	{
 		return m_shaderBytecodeMap;
 	}
 
-	const VKShader::Bytecode &VKShader::getShaderBytecode(vk::ShaderStageFlagBits p_stage) const
+	auto VKShader::getShaderBytecode(vk::ShaderStageFlagBits p_stage) const -> const Bytecode &
 	{
 		TST_ASSERT_MSG(m_shaderBytecodeMap.contains(p_stage), "Stage is not present in bytecode map");
 		return m_shaderBytecodeMap.at(p_stage);
 	}
 
-	std::vector<vk::DescriptorSetLayout> VKShader::getDescriptorSetLayouts() const
+	auto VKShader::getDescriptorSetLayouts() const -> std::vector<vk::DescriptorSetLayout>
 	{
 		std::vector<vk::DescriptorSetLayout> result;
 		for (const auto &layout: m_descriptorSetLayouts)
@@ -74,39 +74,39 @@ namespace toaster::gpu
 		return result;
 	}
 
-	const vk::raii::DescriptorSetLayout &VKShader::getDescriptorSetLayout(uint32 p_set_index) const
+	auto VKShader::getDescriptorSetLayout(uint32 p_set_index) const -> const vk::raii::DescriptorSetLayout &
 	{
 		TST_ASSERT_MSG(p_set_index < m_descriptorSetLayouts.size(), "Set index out of bounds");
 		return m_descriptorSetLayouts.at(p_set_index);
 	}
 
-	const std::vector<DescriptorSet> &VKShader::getReflectedShaderDescriptorSets() const
+	auto VKShader::getReflectedShaderDescriptorSets() const -> const std::vector<DescriptorSet> &
 	{
 		return m_reflectionData.descriptorSets;
 	}
 
-	const std::unordered_map<String, ShaderResource> &VKShader::getReflectedShaderResources() const
+	auto VKShader::getReflectedShaderResources() const -> const std::unordered_map<String, ShaderResource> &
 	{
 		return m_reflectionData.resources;
 	}
 
-	const std::vector<PushConstantRange> &VKShader::getReflectedPushConstantRanges() const
+	auto VKShader::getReflectedPushConstantRanges() const -> const std::vector<PushConstantRange> &
 	{
 		return m_reflectionData.pushConstantRanges;
 	}
 
-	const std::unordered_map<String, PushConstantBuffer> &VKShader::getReflectedPushConstantBuffers() const
+	auto VKShader::getReflectedPushConstantBuffers() const -> const std::unordered_map<String, PushConstantBuffer> &
 	{
 		return m_reflectionData.pushConstantBuffers;
 	}
 
-	const std::vector<vk::DescriptorPoolSize> &VKShader::getDescriptorPoolSizes(uint32 p_set_index) const
+	auto VKShader::getDescriptorPoolSizes(uint32 p_set_index) const -> const std::vector<vk::DescriptorPoolSize> &
 	{
 		TST_ASSERT_MSG(m_poolSizes.contains(p_set_index), "Set index out of bounds");
 		return m_poolSizes.at(p_set_index);
 	}
 
-	void VKShader::_reflect(vk::ShaderStageFlagBits p_stage, Bytecode p_bytecode)
+	auto VKShader::_reflect(vk::ShaderStageFlagBits p_stage, Bytecode p_bytecode) -> void
 	{
 		const Bytecode            copy = {p_bytecode.begin(), p_bytecode.end()};
 		spirv_cross::CompilerGLSL compiler{copy};
@@ -224,7 +224,7 @@ namespace toaster::gpu
 		}
 	}
 
-	void VKShader::_createDescriptors()
+	auto VKShader::_createDescriptors() -> void
 	{
 		for (uint32 set{0u}; set < m_reflectionData.descriptorSets.size(); ++set)
 		{

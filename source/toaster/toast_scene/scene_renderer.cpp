@@ -17,7 +17,7 @@ namespace toaster
 
 		{
 			gpu::PipelineCreateInfo pipeline_create_info{};
-			pipeline_create_info.vertexBufferLayout = {{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
+			pipeline_create_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
 			pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
 			pipeline_create_info.shader             = Globals::getShaderLibrary().get("Skybox");
 			pipeline_create_info.polygonMode        = vk::PolygonMode::eFill;
@@ -35,11 +35,11 @@ namespace toaster
 		{
 			gpu::PipelineCreateInfo pipeline_create_info{};
 			pipeline_create_info.vertexBufferLayout = {
-				{gpu::EShaderDataType::eFloat3, "a_Position"},
-				{gpu::EShaderDataType::eFloat3, "a_Normal"},
-				{gpu::EShaderDataType::eFloat3, "a_Tangent"},
-				{gpu::EShaderDataType::eFloat3, "a_Bitangent"},
-				{gpu::EShaderDataType::eFloat2, "a_TexCoord"}
+				{gpu::EBufferDataType::eFloat3, "a_Position"},
+				{gpu::EBufferDataType::eFloat3, "a_Normal"},
+				{gpu::EBufferDataType::eFloat3, "a_Tangent"},
+				{gpu::EBufferDataType::eFloat3, "a_Bitangent"},
+				{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
 			};
 			pipeline_create_info.colourAttachments = {vk::Format::eR8G8B8A8Srgb};
 			pipeline_create_info.depthFormat       = {m_ctx->findDepthFormat()};
@@ -90,8 +90,8 @@ namespace toaster
 		m_cameraUBOs->unmapMemory();
 	}
 
-	void SceneRenderer::begin([[maybe_unused]] const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const glm::mat4 &p_view_matrix,
-							  const glm::mat4 &                               p_projection_matrix)
+	auto SceneRenderer::begin([[maybe_unused]] const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const glm::mat4 &p_view_matrix,
+							  const glm::mat4 &                               p_projection_matrix) -> void
 	{
 		CameraUB camera_ub{};
 		camera_ub.view       = p_view_matrix;
@@ -101,7 +101,7 @@ namespace toaster
 		std::memcpy(m_mappedCameraUBOs[p_frame_index], &camera_ub, sizeof(CameraUB));
 	}
 
-	void SceneRenderer::end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index)
+	auto SceneRenderer::end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
 		_renderSkyboxPass(p_cmd, p_frame_index);
 		_renderGeometryPass(p_cmd, p_frame_index);
@@ -109,14 +109,29 @@ namespace toaster
 		m_meshDrawCommands.clear();
 	}
 
-	void SceneRenderer::renderMesh(RefPtr<gpu::VKMesh> p_mesh, const glm::mat4 &p_transform)
+	auto SceneRenderer::renderMesh(RefPtr<gpu::VKMesh> p_mesh, const glm::mat4 &p_transform) -> void
 	{
 		DrawCommand &draw_command{m_meshDrawCommands.emplace_back()};
 		draw_command.mesh      = p_mesh;
 		draw_command.transform = p_transform;
 	}
 
-	void SceneRenderer::onResize(uint32 p_width, uint32 p_height)
+	auto SceneRenderer::getSpecInfo() const -> const SceneRendererSpecInfo &
+	{
+		return m_specInfo;
+	}
+
+	auto SceneRenderer::getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &
+	{
+		return m_resolveOutputColourTexture;
+	}
+
+	auto SceneRenderer::getOutputDepthImage() const -> const RefPtr<gpu::VKImage2D> &
+	{
+		return m_resolveOutputDepthImage;
+	}
+
+	auto SceneRenderer::onResize(uint32 p_width, uint32 p_height) -> void
 	{
 		m_specInfo.viewportWidth  = p_width;
 		m_specInfo.viewportHeight = p_height;
@@ -127,27 +142,12 @@ namespace toaster
 		m_resolveOutputDepthImage->resize(p_width, p_height);
 	}
 
-	void SceneRenderer::setEnvironmentBackground(RefPtr<gpu::VKTexture2D> p_texture)
+	auto SceneRenderer::setEnvironmentBackground(RefPtr<gpu::VKTexture2D> p_texture) -> void
 	{
 		m_skyboxTexture = p_texture;
 	}
 
-	const SceneRendererSpecInfo &SceneRenderer::getSpecInfo() const
-	{
-		return m_specInfo;
-	}
-
-	const RefPtr<gpu::VKTexture2D> &SceneRenderer::getOutputColourTexture() const
-	{
-		return m_resolveOutputColourTexture;
-	}
-
-	const RefPtr<gpu::VKImage2D> &SceneRenderer::getOutputDepthImage() const
-	{
-		return m_resolveOutputDepthImage;
-	}
-
-	void SceneRenderer::_renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index)
+	auto SceneRenderer::_renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
 		m_skyboxMaterial->set("u_Texture", m_skyboxTexture);
 
@@ -168,7 +168,7 @@ namespace toaster
 		Renderer::endRendering(rendering_info, p_cmd);
 	}
 
-	void SceneRenderer::_renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index)
+	auto SceneRenderer::_renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};

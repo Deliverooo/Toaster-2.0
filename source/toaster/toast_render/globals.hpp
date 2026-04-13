@@ -20,17 +20,17 @@ namespace toaster
 			glm::vec2 texCoord;
 		};
 
-		static void init(gpu::VKGPUContext *p_ctx);
-		static void shutdown();
+		static auto init(gpu::VKGPUContext *p_ctx) -> void;
+		static auto shutdown() -> void;
 
-		static const ShaderLibrary &getShaderLibrary();
+		static auto getShaderLibrary() -> const ShaderLibrary &;
 
-		static const RefPtr<gpu::VKVertexBuffer> &getFullscreenQuadVertexBuffer();
-		static const RefPtr<gpu::VKIndexBuffer> & getFullscreenQuadIndexBuffer();
+		static auto getFullscreenQuadVertexBuffer() -> const RefPtr<gpu::VKVertexBuffer> &;
+		static auto getFullscreenQuadIndexBuffer() -> const RefPtr<gpu::VKIndexBuffer> &;
 
-		static const std::vector<QuadVertex> &getFullscreenQuadVertices();
-		static const std::vector<uint16> &    getFullscreenQuadIndices();
+		static auto getFullscreenQuadVertices() -> const std::vector<QuadVertex> &;
+		static auto getFullscreenQuadIndices() -> const std::vector<uint16> &;
 
-		static const RefPtr<gpu::VKTexture2D>& getWhiteTexture();
+		static auto getWhiteTexture() -> const RefPtr<gpu::VKTexture2D> &;
 	};
 }

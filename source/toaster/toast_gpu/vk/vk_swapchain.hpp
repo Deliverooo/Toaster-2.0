@@ -16,55 +16,55 @@ namespace toaster::gpu
 		using ResizeCB = std::function<void(uint32, uint32)>;
 
 		VKSwapchain(VKGPUContext *p_ctx, GLFWwindow *p_window);
-		VKGPUContext *getContext() const;
+		auto getContext() const -> VKGPUContext *;
 
-		void beginFrame();
-		void endFrame();
+		auto beginFrame() -> void;
+		auto endFrame() -> void;
 
-		[[nodiscard]] uint32 getFrameIndex() const;
-		[[nodiscard]] uint32 getImageIndex() const;
+		[[nodiscard]] auto getFrameIndex() const -> uint32;
+		[[nodiscard]] auto getImageIndex() const -> uint32;
 
-		[[nodiscard]] vk::Image &          getImage(uint32 p_index);
-		[[nodiscard]] vk::raii::ImageView &getImageView(uint32 p_index);
+		[[nodiscard]] auto getImage(uint32 p_index) -> vk::Image &;
+		[[nodiscard]] auto getImageView(uint32 p_index) -> vk::raii::ImageView &;
 
-		[[nodiscard]] vk::Image &          getCurrentImage();
-		[[nodiscard]] vk::raii::ImageView &getCurrentImageView();
+		[[nodiscard]] auto getCurrentImage() -> vk::Image &;
+		[[nodiscard]] auto getCurrentImageView() -> vk::raii::ImageView &;
 
-		[[nodiscard]] vk::raii::Image &       getDepthImage();
-		[[nodiscard]] vk::raii::ImageView &   getDepthImageView();
-		[[nodiscard]] vk::raii::DeviceMemory &getDepthImageMemory();
+		[[nodiscard]] auto getDepthImage() -> vk::raii::Image &;
+		[[nodiscard]] auto getDepthImageView() -> vk::raii::ImageView &;
+		[[nodiscard]] auto getDepthImageMemory() -> vk::raii::DeviceMemory &;
 
-		[[nodiscard]] vk::raii::CommandBuffer &getCommandBuffer(uint32 p_frame_index);
-		[[nodiscard]] vk::raii::CommandBuffer &getCurrentCommandBuffer();
+		[[nodiscard]] auto getCommandBuffer(uint32 p_frame_index) -> vk::raii::CommandBuffer &;
+		[[nodiscard]] auto getCurrentCommandBuffer() -> vk::raii::CommandBuffer &;
 
-		[[nodiscard]] vk::Extent2D         getExtent() const;
-		[[nodiscard]] vk::SurfaceFormatKHR getSurfaceFormat() const;
-		[[nodiscard]] vk::Format           getDepthFormat() const;
+		[[nodiscard]] auto getExtent() const -> vk::Extent2D;
+		[[nodiscard]] auto getSurfaceFormat() const -> vk::SurfaceFormatKHR;
+		[[nodiscard]] auto getDepthFormat() const -> vk::Format;
 
-		[[nodiscard]] uint32 getMinImageCount() const;
-		[[nodiscard]] uint32 getImageCount() const;
+		[[nodiscard]] auto getMinImageCount() const -> uint32;
+		[[nodiscard]] auto getImageCount() const -> uint32;
 
 		// Only use within the windowing API. E.g. when you set the glfwFramebufferResize callback
-		void setFramebufferResized(bool p_resized);
+		auto setFramebufferResized(bool p_resized) -> void;
 
-		void addResizeCallback(const ResizeCB &p_resize_cb);
+		auto addResizeCallback(const ResizeCB &p_resize_cb) -> void;
 
 	private:
-		void _createImageViews();
-		void _createSyncObjects();
-		void _createCommandBuffers();
-		void _createDepthResources();
+		auto _createImageViews() -> void;
+		auto _createSyncObjects() -> void;
+		auto _createCommandBuffers() -> void;
+		auto _createDepthResources() -> void;
 
-		void _create();
-		void _recreateSwapchain();
+		auto _create() -> void;
+		auto _recreateSwapchain() -> void;
+
+		[[nodiscard]] auto _chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const -> vk::SurfaceFormatKHR;
+		[[nodiscard]] auto _chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes) const -> vk::PresentModeKHR;
+		[[nodiscard]] auto _chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const -> vk::Extent2D;
+		[[nodiscard]] auto _chooseSwapchainMinImageCount(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const -> uint32;
 
 		VKGPUContext *m_ctx{nullptr};
 		GLFWwindow *  m_window{nullptr};
-
-		[[nodiscard]] vk::SurfaceFormatKHR _chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const;
-		[[nodiscard]] vk::PresentModeKHR   _chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes) const;
-		[[nodiscard]] vk::Extent2D         _chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const;
-		[[nodiscard]] uint32               _chooseSwapchainMinImageCount(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const;
 
 		vk::raii::SwapchainKHR           m_swapchain{nullptr};
 		std::vector<vk::Image>           m_swapchainImages;

@@ -10,7 +10,7 @@ namespace toaster
 	public:
 		EVENT_CLASS_CATEGORY(EventCategory_Input | EventCategory_Keyboard)
 
-		[[nodiscard]] input::EKeyCode getKeyCode() const { return m_keyCode; }
+		[[nodiscard]] auto getKeyCode() const -> input::EKeyCode { return m_keyCode; }
 
 	protected:
 		explicit KeyEvent(const input::EKeyCode p_keycode) : m_keyCode(p_keycode)
@@ -27,13 +27,13 @@ namespace toaster
 		{
 		}
 
-		EVENT_CLASS_TYPE(KeyPressed)
+		EVENT_CLASS_TYPE(eKeyPressed)
 
-		[[nodiscard]] int32 getRepeatCount() const { return m_repeatCount; }
+		[[nodiscard]] auto getRepeatCount() const -> int32 { return m_repeatCount; }
 
-		[[nodiscard]] String toStr() const override
+		[[nodiscard]] virtual auto toStr() const -> String override
 		{
-			return "KeyPressedEvent: " +to_string(static_cast<int32>(m_keyCode)) + "/" + to_string(m_repeatCount);
+			return "KeyPressedEvent: " + to_string(static_cast<int32>(m_keyCode)) + "/" + to_string(m_repeatCount);
 		}
 
 	private:
@@ -47,9 +47,9 @@ namespace toaster
 		{
 		}
 
-		EVENT_CLASS_TYPE(KeyTyped)
+		EVENT_CLASS_TYPE(eKeyTyped)
 
-		[[nodiscard]] String toStr() const override
+		[[nodiscard]] virtual auto toStr() const -> String override
 		{
 			return "KeyTypedEvent: " + to_string(static_cast<int32>(m_keyCode));
 		}
@@ -62,9 +62,9 @@ namespace toaster
 		{
 		}
 
-		EVENT_CLASS_TYPE(KeyReleased)
+		EVENT_CLASS_TYPE(eKeyReleased)
 
-		[[nodiscard]] String toStr() const override
+		[[nodiscard]] virtual auto toStr() const -> String override
 		{
 			return "KeyReleasedEvent: " + to_string(static_cast<int32>(m_keyCode));
 		}

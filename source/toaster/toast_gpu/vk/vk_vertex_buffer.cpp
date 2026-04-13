@@ -29,29 +29,29 @@ namespace toaster::gpu
 							m_vertexBuffer, m_vertexBufferMemory);
 	}
 
-	VKGPUContext *VKVertexBuffer::getContext() const
+	auto VKVertexBuffer::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	vk::raii::Buffer &VKVertexBuffer::getBuffer()
+	auto VKVertexBuffer::getBuffer() -> vk::raii::Buffer &
 	{
 		return m_vertexBuffer;
 	}
 
-	vk::raii::DeviceMemory &VKVertexBuffer::getBufferMemory()
+	auto VKVertexBuffer::getBufferMemory() -> vk::raii::DeviceMemory &
 	{
 		return m_vertexBufferMemory;
 	}
 
-	void VKVertexBuffer::setData(void *p_data, uint64 p_size, uint64 p_offset)
+	auto VKVertexBuffer::setData(void *p_data, uint64 p_size, uint64 p_offset) -> void
 	{
 		void *mapped = m_vertexBufferMemory.mapMemory(p_offset, p_size, {});
 		std::memcpy(mapped, p_data, p_size);
 		m_vertexBufferMemory.unmapMemory();
 	}
 
-	void VKVertexBuffer::bind(const vk::raii::CommandBuffer &p_command_buffer)
+	auto VKVertexBuffer::bind(const vk::raii::CommandBuffer &p_command_buffer) -> void
 	{
 		p_command_buffer.bindVertexBuffers(0, *m_vertexBuffer, {0});
 	}

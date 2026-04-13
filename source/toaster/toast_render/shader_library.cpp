@@ -4,7 +4,7 @@
 
 namespace toaster
 {
-	void ShaderLibrary::add(const std::string &p_name, const RefPtr<gpu::VKShader> &p_shader)
+	auto ShaderLibrary::add(const String &p_name, const RefPtr<gpu::VKShader> &p_shader) -> void
 	{
 		if (!m_shaders.contains(p_name))
 			m_shaders[p_name] = p_shader;
@@ -12,7 +12,7 @@ namespace toaster
 			LOG_ERROR("Attempted to add shader to library already containing one of that name {}", p_name);
 	}
 
-	RefPtr<gpu::VKShader> ShaderLibrary::get(const std::string &p_name) const
+	auto ShaderLibrary::get(const String &p_name) const -> RefPtr<gpu::VKShader>
 	{
 		if (m_shaders.contains(p_name))
 			return m_shaders.at(p_name);

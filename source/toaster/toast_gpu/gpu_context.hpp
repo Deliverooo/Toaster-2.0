@@ -10,7 +10,7 @@ namespace toaster::gpu
 	class IGPUContext
 	{
 	public:
-		static IGPUContext *create(GLFWwindow *p_window);
-		virtual             ~IGPUContext() noexcept = default;
+		static auto create(GLFWwindow *p_window) -> IGPUContext *;
+		virtual     ~IGPUContext() noexcept = default;
 	};
 }

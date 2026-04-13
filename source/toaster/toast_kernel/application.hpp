@@ -22,28 +22,20 @@ namespace toaster
 		Application(const ApplicationCreateInfo &p_create_info);
 		~Application() noexcept;
 
-		void run();
-		void close() noexcept;
+		auto run() -> void;
+		auto close() noexcept -> void;
 
-		[[nodiscard]] Window &getWindow() const noexcept;
+		[[nodiscard]] auto getWindow() const noexcept -> Window &;
 
 	private:
-		bool onWindowCloseEvent(WindowCloseEvent &p_event);
-		bool onWindowResizeEvent(WindowResizeEvent &p_event);
+		auto onWindowCloseEvent(WindowCloseEvent &p_event) -> bool;
+		auto onWindowResizeEvent(WindowResizeEvent &p_event) -> bool;
 
 		ApplicationCreateInfo m_createInfo{};
 		Window *              m_window{nullptr};
 
 		std::vector<IAppLayer *> m_layers;
 
-	protected:
-		void addLayer(IAppLayer *p_layer);
-		void removeLayer(IAppLayer *p_layer);
-
-		void setBeginUIRenderCallback(const std::function<void()> &p_cb_begin_ui_render);
-		void setEndUIRenderCallback(const std::function<void()> &p_cb_end_ui_render);
-
-	private:
 		std::function<void()> m_cbBeginUIRender{nullptr};
 		std::function<void()> m_cbEndUIRender{nullptr};
 
@@ -52,5 +44,12 @@ namespace toaster
 
 		bool m_minimized{false};
 		bool m_isRunning{true};
+
+	protected:
+		auto addLayer(IAppLayer *p_layer) -> void;
+		auto removeLayer(IAppLayer *p_layer) -> void;
+
+		auto setBeginUIRenderCallback(const std::function<void()> &p_cb_begin_ui_render) -> void;
+		auto setEndUIRenderCallback(const std::function<void()> &p_cb_end_ui_render) -> void;
 	};
 }

@@ -18,28 +18,28 @@ namespace toaster
 		Scene(gpu::VKGPUContext *p_ctx, const String &p_name = "");
 		~Scene();
 
-		void onUpdate(float32 p_dt);
+		auto onUpdate(float32 p_dt) -> void;
 
-		void onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer);
-		void onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
-					  const glm::mat4 &        p_projection);
+		auto onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void;
+		auto onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
+					  const glm::mat4 &              p_projection) -> void;
 
-		void setViewportSize(uint32 p_width, uint32 p_height);
+		auto setViewportSize(uint32 p_width, uint32 p_height) -> void;
 
-		Entity createEntity(const String &p_name = "");
-		void   destroyEntity(Entity p_entity);
+		auto createEntity(const String &p_name = "") -> Entity;
+		auto destroyEntity(Entity p_entity) -> void;
 
-		Entity getMainCameraEntity();
+		auto getMainCameraEntity() -> Entity;
 
-		entt::registry &                    getRegistry();
-		[[nodiscard]] const entt::registry &getRegistry() const;
+		auto               getRegistry() -> entt::registry &;
+		[[nodiscard]] auto getRegistry() const -> const entt::registry &;
 
-		void                 setName(const String &p_name);
-		[[nodiscard]] String getName() const;
+		auto               setName(const String &p_name) -> void;
+		[[nodiscard]] auto getName() const -> String;
 
 	private:
 		template<typename Type>
-		void onComponentAdded(Entity p_entity, Type &p_component);
+		auto onComponentAdded(Entity p_entity, Type &p_component) -> void;
 
 		gpu::VKGPUContext *m_ctx{nullptr};
 

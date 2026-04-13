@@ -21,7 +21,7 @@ namespace toaster::gpu
 												| aiProcess_GlobalScale           // e.g. convert cm to m for fbx import (and other formats where cm is native)
 	;
 
-	glm::mat4 mat4FromAIMatrix4x4(const aiMatrix4x4 &matrix)
+	auto mat4FromAIMatrix4x4(const aiMatrix4x4 &matrix) -> glm::mat4
 	{
 		glm::mat4 result;
 		result[0][0] = matrix.a1;
@@ -182,42 +182,42 @@ namespace toaster::gpu
 		m_indexBuffer = make_reference<VKIndexBuffer>(m_ctx, (void *) m_indices.data(), index_buffer_size);
 	}
 
-	VKGPUContext *VKMesh::getContext() const
+	auto VKMesh::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	const RefPtr<VKVertexBuffer> &VKMesh::getVertexBuffer() const
+	auto VKMesh::getVertexBuffer() const -> const RefPtr<VKVertexBuffer> &
 	{
 		return m_vertexBuffer;
 	}
 
-	const RefPtr<VKIndexBuffer> &VKMesh::getIndexBuffer() const
+	auto VKMesh::getIndexBuffer() const -> const RefPtr<VKIndexBuffer> &
 	{
 		return m_indexBuffer;
 	}
 
-	const std::vector<RefPtr<VKMaterial> > &VKMesh::getMaterials() const
+	auto VKMesh::getMaterials() const -> const std::vector<RefPtr<VKMaterial> > &
 	{
 		return m_materials;
 	}
 
-	const std::vector<Submesh> &VKMesh::getSubmeshes() const
+	auto VKMesh::getSubmeshes() const -> const std::vector<Submesh> &
 	{
 		return m_submeshes;
 	}
 
-	const std::vector<MeshVertex> &VKMesh::getVertices() const
+	auto VKMesh::getVertices() const -> const std::vector<MeshVertex> &
 	{
 		return m_vertices;
 	}
 
-	const std::vector<uint16> &VKMesh::getIndices() const
+	auto VKMesh::getIndices() const -> const std::vector<uint16> &
 	{
 		return m_indices;
 	}
 
-	void VKMesh::_traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level)
+	auto VKMesh::_traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void
 	{
 		auto ai_node = static_cast<aiNode *>(p_assimp_node);
 

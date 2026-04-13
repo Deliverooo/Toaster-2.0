@@ -8,7 +8,6 @@
 #include "toast_scene/components.hpp"
 #include "toast_scene/entity.hpp"
 #include "toast_scene/scene_renderer.hpp"
-#include "toast_kernel/input.hpp"
 
 #include <imgui.h>
 
@@ -21,7 +20,7 @@ namespace toaster
 	{
 	}
 
-	void EditorLayer::onInit()
+	auto EditorLayer::onInit() -> void
 	{
 		const auto &app{getApp()};
 		auto        ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
@@ -48,9 +47,9 @@ namespace toaster
 		fullscreen_pipeline_create_info.depthFormat        = swapchain->getDepthFormat();
 		fullscreen_pipeline_create_info.shader             = fullscreen_shader;
 		fullscreen_pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone; // We don't want to cull our viewport
-		fullscreen_pipeline_create_info.vertexBufferLayout = gpu::VertexBufferLayout{
-			{gpu::EShaderDataType::eFloat3, "a_Position"},
-			{gpu::EShaderDataType::eFloat2, "a_TexCoord"}
+		fullscreen_pipeline_create_info.vertexBufferLayout = gpu::BufferLayout{
+			{gpu::EBufferDataType::eFloat3, "a_Position"},
+			{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
 		};
 		m_fullscreenPipeline = ctx->alloc<gpu::VKPipeline>(fullscreen_pipeline_create_info);
 		m_fullscreenPass     = ctx->alloc<gpu::VKRenderPass>(m_fullscreenPipeline);
@@ -92,11 +91,11 @@ namespace toaster
 		}
 	}
 
-	void EditorLayer::onDestroy()
+	auto EditorLayer::onDestroy() -> void
 	{
 	}
 
-	void EditorLayer::onUpdate(const float32 p_dt)
+	auto EditorLayer::onUpdate(const float32 p_dt) -> void
 	{
 		m_time += p_dt;
 
@@ -104,7 +103,7 @@ namespace toaster
 			m_editorCamera.onUpdate(p_dt);
 
 		const auto &app{getApp()};
-		auto        ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
+		// auto        ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
 		const auto  swapchain{app.getWindow().getSwapchain()};
 
 		const auto & cmd_buf{swapchain->getCurrentCommandBuffer()};
@@ -151,7 +150,7 @@ namespace toaster
 		Renderer::endRendering(rendering_info, cmd_buf);
 	}
 
-	void EditorLayer::onEvent(Event &p_event)
+	auto EditorLayer::onEvent(Event &p_event) -> void
 	{
 		auto &app{getApp()};
 
@@ -168,7 +167,7 @@ namespace toaster
 		m_editorCamera.onEvent(p_event);
 	}
 
-	void EditorLayer::onUIRender()
+	auto EditorLayer::onUIRender() -> void
 	{
 		const auto &app{getApp()};
 		auto        ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};

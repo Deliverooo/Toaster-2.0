@@ -1,9 +1,7 @@
 #pragma once
 
 #include "vk_shader.hpp"
-#include "../vertex_buffer_layout.hpp"
-
-#include "toast_lib/core_basic.hpp"
+#include "../buffer_layout.hpp"
 
 namespace toaster::gpu
 {
@@ -12,6 +10,7 @@ namespace toaster::gpu
 	struct PipelineCreateInfo
 	{
 		VertexBufferLayout vertexBufferLayout;
+		InstanceLayout     instanceLayout;
 
 		// Thanks to Vulkan 1.3's dynamic rendering, when creating a pipeline, you only need to specify the formats for your rendering attachments
 		// This is very helpful because I hate framebuffers and Vulkan render passes.
@@ -31,17 +30,17 @@ namespace toaster::gpu
 	{
 	public:
 		VKPipeline(VKGPUContext *p_ctx, const PipelineCreateInfo &p_create_info);
-		VKGPUContext *getContext() const;
+		auto getContext() const -> VKGPUContext *;
 
-		[[nodiscard]] vk::raii::Pipeline &      getPipeline();
-		[[nodiscard]] vk::raii::PipelineLayout &getPipelineLayout();
+		[[nodiscard]] auto getPipeline() -> vk::raii::Pipeline &;
+		[[nodiscard]] auto getPipelineLayout() -> vk::raii::PipelineLayout &;
 
-		[[nodiscard]] const PipelineCreateInfo &getCreateInfo() const;
+		[[nodiscard]] auto getCreateInfo() const -> const PipelineCreateInfo &;
 
 	private:
-		void _createGraphicsPipeline();
+		auto _createGraphicsPipeline() -> void;
 
-		static vk::Format _getVulkanAttribType(EShaderDataType p_type);
+		auto _getVulkanAttribType(EBufferDataType p_type) -> vk::Format;
 
 		VKGPUContext *m_ctx{nullptr};
 

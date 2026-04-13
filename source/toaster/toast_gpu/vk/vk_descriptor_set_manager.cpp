@@ -53,12 +53,12 @@ namespace toaster::gpu
 		}
 	}
 
-	VKGPUContext *VKDescriptorSetManager::getContext() const
+	auto VKDescriptorSetManager::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	void VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer)
+	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void
 	{
 		if (const auto decl{getDescriptorDeclaration(p_name)})
 			m_descriptorResources.at(decl->set)[decl->binding] = p_uniform_buffer;
@@ -66,7 +66,7 @@ namespace toaster::gpu
 			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
 
-	void VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff)
+	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void
 	{
 		if (const auto decl{getDescriptorDeclaration(p_name)})
 			m_descriptorResources.at(decl->set)[decl->binding] = p_uniform_buffer_pff;
@@ -74,7 +74,7 @@ namespace toaster::gpu
 			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
 
-	void VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d)
+	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void
 	{
 		if (const auto decl{getDescriptorDeclaration(p_name)})
 			m_descriptorResources.at(decl->set)[decl->binding] = p_texture_2d;
@@ -82,7 +82,7 @@ namespace toaster::gpu
 			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
 
-	void VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index)
+	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void
 	{
 		// TODO: texture arrays
 		if (const auto decl{getDescriptorDeclaration(p_name)})
@@ -91,7 +91,7 @@ namespace toaster::gpu
 			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
 
-	void VKDescriptorSetManager::bakeDescriptors()
+	auto VKDescriptorSetManager::bakeDescriptors() -> void
 	{
 		std::array<vk::DescriptorPoolSize, 2> descriptor_pool_sizes{
 			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 100},
@@ -189,7 +189,7 @@ namespace toaster::gpu
 		}
 	}
 
-	void VKDescriptorSetManager::updateDescriptors(uint32 p_frame_index)
+	auto VKDescriptorSetManager::updateDescriptors(uint32 p_frame_index) -> void
 	{
 		for (const auto &[set, resources]: m_descriptorResources)
 		{
@@ -280,7 +280,7 @@ namespace toaster::gpu
 		m_invalidDescriptorResources.clear();
 	}
 
-	std::vector<vk::DescriptorSet> VKDescriptorSetManager::getDescriptorSets(uint32 p_frame_index) const
+	auto VKDescriptorSetManager::getDescriptorSets(uint32 p_frame_index) const -> std::vector<vk::DescriptorSet>
 	{
 		TST_ASSERT_MSG(p_frame_index < VKGPUContext::c_maxFramesInFlight, "Frame index out of bounds");
 		TST_ASSERT(!m_descriptorSets.empty());
@@ -291,39 +291,39 @@ namespace toaster::gpu
 		return result;
 	}
 
-	const DescriptorDeclaration *VKDescriptorSetManager::getDescriptorDeclaration(const String &p_name) const
+	auto VKDescriptorSetManager::getDescriptorDeclaration(const String &p_name) const -> const DescriptorDeclaration *
 	{
 		if (!m_descriptorDeclarations.contains(p_name))
 			return nullptr;
 		return &m_descriptorDeclarations.at(p_name);
 	}
 
-	const std::unordered_map<String, DescriptorDeclaration> &VKDescriptorSetManager::getDescriptorDeclarations() const
+	auto VKDescriptorSetManager::getDescriptorDeclarations() const -> const std::unordered_map<String, DescriptorDeclaration> &
 	{
 		return m_descriptorDeclarations;
 	}
 
-	const RefPtr<VKTexture2D> &VKDescriptorSetManager::getWhiteTexture() const
+	auto VKDescriptorSetManager::getWhiteTexture() const -> const RefPtr<VKTexture2D> &
 	{
 		return m_whiteTexture;
 	}
 
-	bool VKDescriptorSetManager::hasDescriptorSets() const
+	auto VKDescriptorSetManager::hasDescriptorSets() const -> bool
 	{
 		return !m_descriptorSets.empty() && !m_descriptorSets[0].empty();
 	}
 
-	uint32 VKDescriptorSetManager::getStartSetIndex() const
+	auto VKDescriptorSetManager::getStartSetIndex() const -> uint32
 	{
 		return m_startSet;
 	}
 
-	uint32 VKDescriptorSetManager::getEndSetIndex() const
+	auto VKDescriptorSetManager::getEndSetIndex() const -> uint32
 	{
 		return m_endSet;
 	}
 
-	EDescriptorType VKDescriptorSetManager::_getDescriptorType(vk::DescriptorType p_type) const
+	auto VKDescriptorSetManager::_getDescriptorType(vk::DescriptorType p_type) const -> EDescriptorType
 	{
 		switch (p_type)
 		{
@@ -336,7 +336,7 @@ namespace toaster::gpu
 		return EDescriptorType::eUnknown;
 	}
 
-	EGPUResourceType VKDescriptorSetManager::_getResourceType(vk::DescriptorType p_type) const
+	auto VKDescriptorSetManager::_getResourceType(vk::DescriptorType p_type) const -> EGPUResourceType
 	{
 		switch (p_type)
 		{

@@ -17,7 +17,7 @@ namespace toaster
 
 	EditorApplication::~EditorApplication() = default;
 
-	void EditorApplication::setBlockUIEvents(bool p_block_ui_events)
+	auto EditorApplication::setBlockUIEvents(bool p_block_ui_events) const -> void
 	{
 		m_imGuiLayer->setBlockEvents(p_block_ui_events);
 	}

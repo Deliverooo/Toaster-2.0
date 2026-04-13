@@ -18,7 +18,7 @@ namespace toaster
 	{
 	}
 
-	void Scene::onUpdate(float32 p_dt)
+	auto Scene::onUpdate(float32 p_dt) -> void
 	{
 		m_registry.view<NativeScriptComponent>().each([this, p_dt](auto p_entity, auto &p_script)
 		{
@@ -33,7 +33,7 @@ namespace toaster
 		});
 	}
 
-	void Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer)
+	auto Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void
 	{
 		Camera *  main_camera{nullptr};
 		glm::mat4 camera_transform{1.0f};
@@ -73,8 +73,8 @@ namespace toaster
 			TST_ASSERT(false);
 	}
 
-	void Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer,
-						 const glm::mat4 &              p_view, const glm::mat4 &p_projection)
+	auto Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer,
+						 const glm::mat4 &              p_view, const glm::mat4 &p_projection) -> void
 	{
 		p_scene_renderer->begin(p_cmd, p_frame_index, p_view, p_projection);
 
@@ -93,7 +93,7 @@ namespace toaster
 		p_scene_renderer->end(p_cmd, p_frame_index);
 	}
 
-	void Scene::setViewportSize(uint32 p_width, uint32 p_height)
+	auto Scene::setViewportSize(uint32 p_width, uint32 p_height) -> void
 	{
 		m_viewportWidth  = p_width;
 		m_viewportHeight = p_height;
@@ -106,7 +106,7 @@ namespace toaster
 		}
 	}
 
-	Entity Scene::createEntity(const String &p_name)
+	auto Scene::createEntity(const String &p_name) -> Entity
 	{
 		auto entity = Entity{m_registry.create(), this};
 
@@ -121,12 +121,12 @@ namespace toaster
 		return entity;
 	}
 
-	void Scene::destroyEntity(Entity p_entity)
+	auto Scene::destroyEntity(Entity p_entity) -> void
 	{
 		m_registry.destroy(p_entity);
 	}
 
-	Entity Scene::getMainCameraEntity()
+	auto Scene::getMainCameraEntity() -> Entity
 	{
 		auto view = m_registry.view<CameraComponent>();
 		for (auto entity: view)
@@ -138,34 +138,34 @@ namespace toaster
 		return {};
 	}
 
-	entt::registry &Scene::getRegistry()
+	auto Scene::getRegistry() -> entt::registry &
 	{
 		return m_registry;
 	}
 
-	const entt::registry &Scene::getRegistry() const
+	auto Scene::getRegistry() const -> const entt::registry &
 	{
 		return m_registry;
 	}
 
-	void Scene::setName(const String &p_name)
+	auto Scene::setName(const String &p_name) -> void
 	{
 		m_name = p_name;
 	}
 
-	String Scene::getName() const
+	auto Scene::getName() const -> String
 	{
 		return m_name;
 	}
 
 	template<typename Type>
-	void Scene::onComponentAdded([[maybe_unused]] Entity p_entity, [[maybe_unused]] Type &p_component)
+	auto Scene::onComponentAdded([[maybe_unused]] Entity p_entity, [[maybe_unused]] Type &p_component) -> void
 	{
 		TST_ASSERT(false);
 	}
 
 	#define ON_COMPONENT_ADDED(__type)	template<>\
-										void Scene::onComponentAdded<__type>([[maybe_unused]] Entity p_entity, __type &p_component)
+										auto Scene::onComponentAdded<__type>([[maybe_unused]] Entity p_entity, __type &p_component) -> void
 
 	ON_COMPONENT_ADDED(TagComponent)
 	{

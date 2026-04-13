@@ -27,12 +27,12 @@ namespace toaster
 {
 	static bool s_glfwInitialized{false};
 
-	static void _glfwErrorCallback(int32 error, CString description)
+	static auto _glfwErrorCallback(int32 error, CString description) -> void
 	{
 		LOG_ERROR("GLFW error: ({}): {}", error, description);
 	}
 
-	void Window::initWindowingAPI()
+	auto Window::initWindowingAPI() -> void
 	{
 		if (!s_glfwInitialized)
 		{
@@ -45,7 +45,7 @@ namespace toaster
 		}
 	}
 
-	void Window::shutdownWindowingAPI()
+	auto Window::shutdownWindowingAPI() -> void
 	{
 		TST_ASSERT_MSG(s_glfwInitialized, "Attempted to shutdown windowing API before initializing it!");
 
@@ -228,100 +228,100 @@ namespace toaster
 		glfwDestroyWindow(m_window);
 	}
 
-	void Window::beginFrame()
+	auto Window::beginFrame() -> void
 	{
 		m_swapchain->beginFrame();
 	}
 
-	void Window::processEvents()
+	auto Window::processEvents() -> void
 	{
 		glfwPollEvents();
 	}
 
-	void Window::endFrame()
+	auto Window::endFrame() -> void
 	{
 		m_swapchain->endFrame();
 	}
 
-	void Window::showWindow()
+	auto Window::showWindow() -> void
 	{
 		glfwShowWindow(m_window);
 	}
 
-	void Window::hideWindow()
+	auto Window::hideWindow() -> void
 	{
 		glfwHideWindow(m_window);
 	}
 
-	void Window::maximize()
+	auto Window::maximize() -> void
 	{
 		glfwMaximizeWindow(m_window);
 	}
 
-	void Window::minimize()
+	auto Window::minimize() -> void
 	{
 		glfwIconifyWindow(m_window);
 	}
 
-	void Window::restore()
+	auto Window::restore() -> void
 	{
 		glfwRestoreWindow(m_window);
 	}
 
-	void Window::fullscreen()
+	auto Window::fullscreen() -> void
 	{
 		GLFWmonitor *      monitor{glfwGetPrimaryMonitor()};
 		const GLFWvidmode *mode{glfwGetVideoMode(monitor)};
 		glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
 	}
 
-	void Window::setEventCallback(const EventCallbackFn &p_callback)
+	auto Window::setEventCallback(const EventCallbackFn &p_callback) -> void
 	{
 		m_callbackData.eventCallback = p_callback;
 	}
 
-	uint32 Window::getWidth() const
+	auto Window::getWidth() const -> uint32
 	{
 		return m_callbackData.width;
 	}
 
-	float32 Window::getAspect() const
+	auto Window::getAspect() const -> float32
 	{
 		return static_cast<float32>(m_callbackData.height) / static_cast<float32>(m_callbackData.width);
 	}
 
-	std::pair<float32, float32> Window::getCenter() const
+	auto Window::getCenter() const -> std::pair<float32, float32>
 	{
 		return {static_cast<float32>(m_callbackData.width) / 2.0f, static_cast<float32>(m_callbackData.height) / 2.0f};
 	}
 
-	uint32 Window::getHeight() const
+	auto Window::getHeight() const -> uint32
 	{
 		return m_callbackData.height;
 	}
 
-	const std::string &Window::getTitle() const
+	auto Window::getTitle() const -> const std::string &
 	{
 		return m_callbackData.title;
 	}
 
-	void Window::setTitle(const std::string &p_title)
+	auto Window::setTitle(const std::string &p_title) -> void
 	{
 		m_callbackData.title = p_title;
 		glfwSetWindowTitle(m_window, p_title.c_str());
 	}
 
-	gpu::IGPUContext *Window::getGPUContext() const
+	auto Window::getGPUContext() const -> gpu::IGPUContext *
 	{
 		return m_gpuContext;
 	}
 
-	GLFWwindow *Window::getNativeWindow() const
+	auto Window::getNativeWindow() const -> GLFWwindow *
 	{
 		return m_window;
 	}
 
-	gpu::VKSwapchain *Window::getSwapchain() const
+	auto Window::getSwapchain() const -> gpu::VKSwapchain *
 	{
 		return m_swapchain;
 	}

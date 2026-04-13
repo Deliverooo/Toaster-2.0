@@ -13,12 +13,12 @@ namespace toaster
 		}
 
 		EVENT_CLASS_CATEGORY(EventCategory_Input | EventCategory_Mouse)
-		EVENT_CLASS_TYPE(MouseMoved)
+		EVENT_CLASS_TYPE(eMouseMoved)
 
-		[[nodiscard]] float32 getMouseX() const { return m_mouseX; }
-		[[nodiscard]] float32 getMouseY() const { return m_mouseY; }
+		[[nodiscard]] auto getMouseX() const -> float32 { return m_mouseX; }
+		[[nodiscard]] auto getMouseY() const -> float32 { return m_mouseY; }
 
-		[[nodiscard]] String toStr() const override
+		[[nodiscard]] virtual auto toStr() const -> String override
 		{
 			return "Mouse Move Event -> [" + to_string(m_mouseX) + "," + to_string(m_mouseY) + "]";
 		}
@@ -36,12 +36,12 @@ namespace toaster
 		}
 
 		EVENT_CLASS_CATEGORY(EventCategory_Input | EventCategory_Mouse)
-		EVENT_CLASS_TYPE(MouseScrolled)
+		EVENT_CLASS_TYPE(eMouseScrolled)
 
-		[[nodiscard]] float32 getScrollX() const { return m_scrollX; }
-		[[nodiscard]] float32 getScrollY() const { return m_scrollY; }
+		[[nodiscard]] auto getScrollX() const -> float32 { return m_scrollX; }
+		[[nodiscard]] auto getScrollY() const -> float32 { return m_scrollY; }
 
-		[[nodiscard]] String toStr() const override
+		[[nodiscard]] virtual auto toStr() const -> String override
 		{
 			return "Mouse Scroll Event -> [" + to_string(m_scrollX) + "," + to_string(m_scrollY) + "]";
 		}
@@ -56,7 +56,7 @@ namespace toaster
 	public:
 		EVENT_CLASS_CATEGORY(EventCategory_Input | EventCategory_Mouse)
 
-		[[nodiscard]] input::EMouseButton getMouseButton() const { return m_mouseButton; }
+		[[nodiscard]] auto getMouseButton() const -> input::EMouseButton { return m_mouseButton; }
 
 	protected:
 		explicit MouseButtonEvent(const input::EMouseButton button) : m_mouseButton(button)
@@ -73,9 +73,9 @@ namespace toaster
 		{
 		}
 
-		EVENT_CLASS_TYPE(MouseButtonPressed)
+		EVENT_CLASS_TYPE(eMouseButtonPressed)
 
-		[[nodiscard]] String toStr() const override
+		[[nodiscard]] virtual auto toStr() const -> String override
 		{
 			return "Mouse Button Pressed Event -> [" + to_string(static_cast<uint16>(m_mouseButton)) + "]";
 		}
@@ -88,9 +88,9 @@ namespace toaster
 		{
 		}
 
-		EVENT_CLASS_TYPE(MouseButtonReleased)
+		EVENT_CLASS_TYPE(eMouseButtonReleased)
 
-		[[nodiscard]] String toStr() const override
+		[[nodiscard]] virtual auto toStr() const -> String override
 		{
 			return "Mouse Button Released Event -> [" + to_string(static_cast<uint16>(m_mouseButton)) + "]";
 		}

@@ -10,12 +10,12 @@ namespace toaster
 																								  m_maxVertices(p_create_info.maxQuads * 4u),
 																								  m_maxIndices(p_create_info.maxQuads * 6u)
 	{
-		m_quadVertexBufferLayout = gpu::VertexBufferLayout{
-			{gpu::EShaderDataType::eFloat4, "a_Position"},
-			{gpu::EShaderDataType::eFloat4, "a_Colour"},
-			{gpu::EShaderDataType::eFloat2, "a_TexCoord"},
-			{gpu::EShaderDataType::eFloat, "a_TexIndex"},
-			{gpu::EShaderDataType::eFloat, "a_TilingFactor"},
+		m_quadVertexBufferLayout = gpu::BufferLayout{
+			{gpu::EBufferDataType::eFloat4, "a_Position"},
+			{gpu::EBufferDataType::eFloat4, "a_Colour"},
+			{gpu::EBufferDataType::eFloat2, "a_TexCoord"},
+			{gpu::EBufferDataType::eFloat, "a_TexIndex"},
+			{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
 		};
 
 		gpu::VKShader::Bytecode    vs_bytecode = io::filesystem::readBinary("shaders/quad.vert.glsl.spv");
@@ -106,8 +106,8 @@ namespace toaster
 		delete[] m_quadVertexBase;
 	}
 
-	void Renderer2D::begin([[maybe_unused]] const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix,
-						   const tsm::float4x4 &                           p_proj_matrix)
+	auto Renderer2D::begin([[maybe_unused]] const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix,
+						   const tsm::float4x4 &                           p_proj_matrix) -> void
 	{
 		CameraUB ubo{};
 		ubo.view = p_view_matrix;
@@ -123,7 +123,7 @@ namespace toaster
 		m_stats.quadCount = 0u;
 	}
 
-	void Renderer2D::end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index)
+	auto Renderer2D::end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight}};
@@ -165,13 +165,13 @@ namespace toaster
 		Renderer::endRendering(rendering_info, p_cmd);
 	}
 
-	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)
+	auto Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void
 	{
 		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f});
 		submitQuad(transform, p_colour);
 	}
 
-	void Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour)
+	auto Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void
 	{
 		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, tsm::float3{p_position.x, p_position.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, {
 																																		p_scale.x,
@@ -181,7 +181,7 @@ namespace toaster
 		submitQuad(transform, p_colour);
 	}
 
-	void Renderer2D::submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour)
+	auto Renderer2D::submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour) -> void
 	{
 		if (m_quadIndexCount >= m_maxIndices)
 			_beginNewBatch();
@@ -197,17 +197,17 @@ namespace toaster
 		m_stats.quadCount++;
 	}
 
-	const Renderer2D::Stats &Renderer2D::getStats() const
+	auto Renderer2D::getStats() const -> const Stats &
 	{
 		return m_stats;
 	}
 
-	const RefPtr<gpu::VKTexture2D> &Renderer2D::getColourOutput() const
+	auto Renderer2D::getColourOutput() const -> const RefPtr<gpu::VKTexture2D> &
 	{
 		return m_renderTargetTexture;
 	}
 
-	void Renderer2D::onResize(uint32 p_width, uint32 p_height)
+	auto Renderer2D::onResize(uint32 p_width, uint32 p_height) -> void
 	{
 		m_createInfo.renderTargetWidth  = p_width;
 		m_createInfo.renderTargetHeight = p_height;
@@ -216,7 +216,7 @@ namespace toaster
 		m_renderTargetDepthImage->resize(p_width, p_height);
 	}
 
-	void Renderer2D::_beginNewBatch()
+	auto Renderer2D::_beginNewBatch() -> void
 	{
 		// end();
 

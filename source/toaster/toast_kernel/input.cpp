@@ -6,24 +6,24 @@ namespace toaster::input
 {
 	static GLFWwindow *s_currentWindow{nullptr};
 
-	void setCurrentWindowContext(GLFWwindow *p_window_ctx)
+	auto setCurrentWindowContext(GLFWwindow *p_window_ctx) -> void
 	{
 		s_currentWindow = p_window_ctx;
 	}
 
-	float32 getMouseX()
+	auto getMouseX() -> float32
 	{
 		auto [x, y] = getMousePos();
 		return x;
 	}
 
-	float32 getMouseY()
+	auto getMouseY() -> float32
 	{
 		auto [x, y] = getMousePos();
 		return y;
 	}
 
-	std::pair<float32, float32> getMousePos()
+	auto getMousePos() -> std::pair<float32, float32>
 	{
 		float64 x{0.0f};
 		float64 y{0.0f};
@@ -31,19 +31,19 @@ namespace toaster::input
 		return std::make_pair(static_cast<float32>(x), static_cast<float32>(y));
 	}
 
-	bool isMouseButtonDown(EMouseButton p_button)
+	auto isMouseButtonDown(EMouseButton p_button) -> bool
 	{
 		const auto state = glfwGetMouseButton(s_currentWindow, static_cast<int32>(p_button));
 		return state == GLFW_PRESS;
 	}
 
-	bool isKeyDown(EKeyCode p_key_code)
+	auto isKeyDown(EKeyCode p_key_code) -> bool
 	{
 		const auto state = glfwGetKey(s_currentWindow, static_cast<int32>(p_key_code));
 		return state == GLFW_PRESS || state == GLFW_REPEAT;
 	}
 
-	std::pair<float32, float32> getMousePosition()
+	auto getMousePosition() -> std::pair<float32, float32>
 	{
 		float64 x{0.0f};
 		float64 y{0.0f};
@@ -51,12 +51,12 @@ namespace toaster::input
 		return {static_cast<float32>(x), static_cast<float32>(y)};
 	}
 
-	void setCursorMode(ECursorMode p_mode)
+	auto setCursorMode(ECursorMode p_mode) -> void
 	{
 		glfwSetInputMode(s_currentWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL + static_cast<int32>(p_mode));
 	}
 
-	ECursorMode getCursorMode()
+	auto getCursorMode() -> ECursorMode
 	{
 		return static_cast<ECursorMode>(glfwGetInputMode(s_currentWindow, GLFW_CURSOR) - GLFW_CURSOR_NORMAL);
 	}

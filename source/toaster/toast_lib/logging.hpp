@@ -14,10 +14,10 @@ namespace toaster::log
 		eFatal
 	};
 
-	template<ELogLevel log_level, typename... Args>
-	void printMessage(fmt::format_string<Args...> format, Args &&... args)
+	template<ELogLevel log_level, typename... TArgs>
+	auto printMessage(fmt::format_string<TArgs...> format, TArgs &&... args) -> void
 	{
-		std::string formatted = fmt::format(format, std::forward<Args>(args)...);
+		std::string formatted = fmt::format(format, std::forward<TArgs>(args)...);
 		if constexpr (log_level == ELogLevel::eTrace)
 		{
 			fmt::print(fmt::fg(fmt::terminal_color::cyan), "{}\n", formatted);

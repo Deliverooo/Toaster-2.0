@@ -29,29 +29,29 @@ namespace toaster::gpu
 							m_indexBuffer, m_indexBufferMemory);
 	}
 
-	VKGPUContext *VKIndexBuffer::getContext() const
+	auto VKIndexBuffer::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	vk::raii::Buffer &VKIndexBuffer::getBuffer()
+	auto VKIndexBuffer::getBuffer() -> vk::raii::Buffer &
 	{
 		return m_indexBuffer;
 	}
 
-	vk::raii::DeviceMemory &VKIndexBuffer::getBufferMemory()
+	auto VKIndexBuffer::getBufferMemory() -> vk::raii::DeviceMemory &
 	{
 		return m_indexBufferMemory;
 	}
 
-	void VKIndexBuffer::setData(void *p_data, uint64 p_size, uint64 p_offset)
+	auto VKIndexBuffer::setData(void *p_data, uint64 p_size, uint64 p_offset) -> void
 	{
 		void *mapped = m_indexBufferMemory.mapMemory(p_offset, p_size, {});
 		std::memcpy(mapped, p_data, p_size);
 		m_indexBufferMemory.unmapMemory();
 	}
 
-	void VKIndexBuffer::bind(const vk::raii::CommandBuffer &p_command_buffer, vk::IndexType p_index_type)
+	auto VKIndexBuffer::bind(const vk::raii::CommandBuffer &p_command_buffer, vk::IndexType p_index_type) -> void
 	{
 		p_command_buffer.bindIndexBuffer(m_indexBuffer, 0, p_index_type);
 	}

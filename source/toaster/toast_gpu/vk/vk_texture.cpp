@@ -246,12 +246,12 @@ namespace toaster::gpu
 		m_descriptorImageInfo.sampler     = m_sampler;
 	}
 
-	VKGPUContext *VKTexture2D::getContext() const
+	auto VKTexture2D::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	void VKTexture2D::resize(uint32 p_width, uint32 p_height)
+	auto VKTexture2D::resize(uint32 p_width, uint32 p_height) -> void
 	{
 		m_sampler             = nullptr;
 		m_descriptorImageInfo = vk::DescriptorImageInfo{};
@@ -296,37 +296,37 @@ namespace toaster::gpu
 		m_descriptorImageInfo.sampler     = m_sampler;
 	}
 
-	const TextureSpecInfo &VKTexture2D::getSpecInfo() const
+	auto VKTexture2D::getSpecInfo() const -> const TextureSpecInfo &
 	{
 		return m_specInfo;
 	}
 
-	const io::filesystem::Path &VKTexture2D::getPath() const
+	auto VKTexture2D::getPath() const -> const io::filesystem::Path &
 	{
 		return m_path;
 	}
 
-	uint32 VKTexture2D::getMipLevelCount() const
+	auto VKTexture2D::getMipLevelCount() const -> uint32
 	{
 		return m_mipLevels;
 	}
 
-	const RefPtr<VKImage2D> &VKTexture2D::getImage() const
+	auto VKTexture2D::getImage() const -> const RefPtr<VKImage2D> &
 	{
 		return m_image;
 	}
 
-	vk::raii::Sampler &VKTexture2D::getSampler()
+	auto VKTexture2D::getSampler() -> vk::raii::Sampler &
 	{
 		return m_sampler;
 	}
 
-	vk::DescriptorImageInfo &VKTexture2D::getDescriptorInfo()
+	auto VKTexture2D::getDescriptorInfo() -> vk::DescriptorImageInfo &
 	{
 		return m_descriptorImageInfo;
 	}
 
-	EGPUResourceType VKTexture2D::getResourceType() const
+	auto VKTexture2D::getResourceType() const -> EGPUResourceType
 	{
 		return EGPUResourceType::eTexture2D;
 	}
@@ -335,32 +335,32 @@ namespace toaster::gpu
 	{
 	}
 
-	VKGPUContext *VKTexture3D::getContext() const
+	auto VKTexture3D::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	const TextureSpecInfo &VKTexture3D::getSpecInfo() const
+	auto VKTexture3D::getSpecInfo() const -> const TextureSpecInfo &
 	{
 		return m_specInfo;
 	}
 
-	vk::raii::Image &VKTexture3D::getImage()
+	auto VKTexture3D::getImage() -> vk::raii::Image &
 	{
 		return m_image;
 	}
 
-	vk::raii::ImageView &VKTexture3D::getImageView()
+	auto VKTexture3D::getImageView() -> vk::raii::ImageView &
 	{
 		return m_imageView;
 	}
 
-	vk::DescriptorImageInfo &VKTexture3D::getDescriptorInfo()
+	auto VKTexture3D::getDescriptorInfo() -> vk::DescriptorImageInfo &
 	{
 		return m_descriptorImageInfo;
 	}
 
-	EGPUResourceType VKTexture3D::getResourceType() const
+	auto VKTexture3D::getResourceType() const -> EGPUResourceType
 	{
 		return EGPUResourceType::eTexture3D;
 	}

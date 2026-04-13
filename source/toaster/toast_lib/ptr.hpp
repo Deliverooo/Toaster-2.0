@@ -107,7 +107,7 @@ namespace toaster
 		}
 
 		template<typename TOther>
-		RefPtr<TOther> as() const
+		auto as() const -> RefPtr<TOther>
 		{
 			return RefPtr<TOther>(*this);
 		}

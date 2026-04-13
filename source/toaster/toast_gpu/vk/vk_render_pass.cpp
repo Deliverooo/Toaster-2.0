@@ -9,53 +9,53 @@ namespace toaster::gpu
 		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_ctx, m_pipeline->getCreateInfo().shader, 1, 3);
 	}
 
-	VKGPUContext *VKRenderPass::getContext() const
+	auto VKRenderPass::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	void VKRenderPass::setInput(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer)
+	auto VKRenderPass::setInput(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_uniform_buffer);
 	}
 
-	void VKRenderPass::setInput(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff)
+	auto VKRenderPass::setInput(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_uniform_buffer_pff);
 	}
 
-	void VKRenderPass::setInput(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d)
+	auto VKRenderPass::setInput(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);
 	}
 
-	void VKRenderPass::bake()
+	auto VKRenderPass::bake() -> void
 	{
 		m_descriptorSetManager->bakeDescriptors();
 	}
 
-	void VKRenderPass::update(uint32 p_frame_index)
+	auto VKRenderPass::update(uint32 p_frame_index) -> void
 	{
 		m_descriptorSetManager->updateDescriptors(p_frame_index);
 	}
 
-	const RefPtr<VKPipeline> &VKRenderPass::getPipeline() const
+	auto VKRenderPass::getPipeline() const -> const RefPtr<VKPipeline> &
 	{
 		return m_pipeline;
 	}
 
-	std::vector<vk::DescriptorSet> VKRenderPass::getDescriptorSets(uint32 p_frame_index) const
+	auto VKRenderPass::getDescriptorSets(uint32 p_frame_index) const -> std::vector<vk::DescriptorSet>
 	{
 		TST_ASSERT_MSG(p_frame_index < VKGPUContext::c_maxFramesInFlight, "Frame index out of bounds");
 		return m_descriptorSetManager->getDescriptorSets(p_frame_index);
 	}
 
-	uint32 VKRenderPass::getStartSetIndex() const
+	auto VKRenderPass::getStartSetIndex() const -> uint32
 	{
 		return m_descriptorSetManager->getStartSetIndex();
 	}
 
-	uint32 VKRenderPass::getEndSetIndex() const
+	auto VKRenderPass::getEndSetIndex() const -> uint32
 	{
 		return m_descriptorSetManager->getEndSetIndex();
 	}

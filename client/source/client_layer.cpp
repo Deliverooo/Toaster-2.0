@@ -69,7 +69,7 @@ namespace toaster
 		{
 			auto                    composite_shader{Globals::getShaderLibrary().get("Composite")};
 			gpu::PipelineCreateInfo pipeline_create_info{};
-			pipeline_create_info.vertexBufferLayout = {{gpu::EShaderDataType::eFloat3, "a_Position"}, {gpu::EShaderDataType::eFloat2, "a_TexCoord"}};
+			pipeline_create_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
 			pipeline_create_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
 			pipeline_create_info.depthFormat        = {swapchain->getDepthFormat()};
 			pipeline_create_info.shader             = composite_shader;

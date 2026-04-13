@@ -35,12 +35,12 @@ namespace toaster
 		{
 		}
 
-		[[nodiscard]] glm::mat4 getTransform() const
+		[[nodiscard]] auto getTransform() const -> glm::mat4
 		{
 			return glm::translate(glm::mat4{1.0f}, translation) * glm::toMat4(glm::quat{rotation}) * glm::scale(glm::mat4{1.0f}, scale);
 		}
 
-		void reset()
+		auto reset() -> void
 		{
 			translation = glm::vec3{0.0f, 0.0f, 0.0f};
 			rotation    = glm::vec3{0.0f, 0.0f, 0.0f};
@@ -57,10 +57,10 @@ namespace toaster
 		SpriteRendererComponent()  = default;
 		~SpriteRendererComponent() = default;
 
-		void reset()
+		auto reset() -> void
 		{
 			colour       = glm::vec4{1.0f};
-			// texture      = nullptr;
+			texture      = nullptr;
 			tilingFactor = 1.0f;
 		}
 
@@ -74,9 +74,9 @@ namespace toaster
 		MeshComponent()  = default;
 		~MeshComponent() = default;
 
-		void reset()
+		auto reset() -> void
 		{
-			// mesh.reset(nullptr);
+			mesh.reset(nullptr);
 		}
 
 		RefPtr<gpu::VKMesh> mesh{nullptr};
@@ -87,7 +87,7 @@ namespace toaster
 		CameraComponent()  = default;
 		~CameraComponent() = default;
 
-		void reset()
+		auto reset() -> void
 		{
 			camera         = SceneCamera{};
 			projectionType = SceneCamera::EProjectionType::eOrthographic;
@@ -110,7 +110,7 @@ namespace toaster
 		DestroyFn destroyFn{nullptr};
 
 		template<c_ScriptableEntity Type>
-		void bind()
+		auto bind() -> void
 		{
 			instantiateFn = []() -> ScriptableEntity * { return static_cast<ScriptableEntity *>(new Type()); };
 			destroyFn     = [](NativeScriptComponent *p_ncs) -> void

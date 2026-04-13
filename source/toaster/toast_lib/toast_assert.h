@@ -2,22 +2,22 @@
 
 #include <cstdlib> // Silences a warning saying that stdlib.h is deprecated when using with c++
 
-void printAssertFailed(const char *file, int line, const char *function, const char *expression);
-void printAssertFailedMsg(const char *file, int line, const char *function, const char *expression, const char *message);
+auto printAssertFailed(const char *file, int line, const char *function, const char *expression) -> void;
+auto printAssertFailedMsg(const char *file, int line, const char *function, const char *expression, const char *message) -> void;
 
 #ifndef NDEBUG
 
-#define TST_ASSERT(_expr)\
-	do { if(!(_expr))\
+#define TST_ASSERT(__expr)\
+	do { if(!(__expr))\
 	{\
-		printAssertFailed(__FILE__, __LINE__, __func__, #_expr);\
+		printAssertFailed(__FILE__, __LINE__, __func__, #__expr);\
 		__debugbreak();\
 	} } while(false)
 
-#define TST_ASSERT_MSG(_expr, _msg)\
-	do { if(!(_expr))\
+#define TST_ASSERT_MSG(__expr, __msg)\
+	do { if(!(__expr))\
 	{\
-		printAssertFailedMsg(__FILE__, __LINE__, __func__, #_expr, _msg);\
+		printAssertFailedMsg(__FILE__, __LINE__, __func__, #__expr, __msg);\
 		__debugbreak();\
 	} } while(false)
 

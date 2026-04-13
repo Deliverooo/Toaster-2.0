@@ -44,44 +44,44 @@ namespace toaster
 		 *
 		 * @details Called once before window creation in the Application class
 		 */
-		static void initWindowingAPI();
+		static auto initWindowingAPI() -> void;
 		/*!
 		 * @brief Shuts down the windowing API (GLFW)
 		 *
  		 * @details Called once after window destruction in the Application class
  		 */
-		static void shutdownWindowingAPI();
+		static auto shutdownWindowingAPI() -> void;
 
 		Window(const WindowCreateInfo &p_create_info);
 		~Window();
 
-		void beginFrame();
-		void processEvents();
-		void endFrame();
+		auto beginFrame() -> void;
+		auto processEvents() -> void;
+		auto endFrame() -> void;
 
-		void showWindow();
-		void hideWindow();
+		auto showWindow() -> void;
+		auto hideWindow() -> void;
 
-		void maximize();
-		void minimize();
-		void restore();
+		auto maximize() -> void;
+		auto minimize() -> void;
+		auto restore() -> void;
 
-		void fullscreen();
+		auto fullscreen() -> void;
 
-		void setEventCallback(const EventCallbackFn &p_callback);
+		auto setEventCallback(const EventCallbackFn &p_callback) -> void;
 
-		[[nodiscard]] uint32                      getWidth() const;
-		[[nodiscard]] uint32                      getHeight() const;
-		[[nodiscard]] float32                     getAspect() const;
-		[[nodiscard]] std::pair<float32, float32> getCenter() const;
-		[[nodiscard]] const String &              getTitle() const;
+		[[nodiscard]] auto getWidth() const -> uint32;
+		[[nodiscard]] auto getHeight() const -> uint32;
+		[[nodiscard]] auto getAspect() const -> float32;
+		[[nodiscard]] auto getCenter() const -> std::pair<float32, float32>;
+		[[nodiscard]] auto getTitle() const -> const String &;
 
-		void setTitle(const String &p_title);
+		auto setTitle(const String &p_title) -> void;
 
-		[[nodiscard]] gpu::IGPUContext *getGPUContext() const;
+		[[nodiscard]] auto getGPUContext() const -> gpu::IGPUContext *;
 
-		[[nodiscard]] GLFWwindow *      getNativeWindow() const;
-		[[nodiscard]] gpu::VKSwapchain *getSwapchain() const;
+		[[nodiscard]] auto getNativeWindow() const -> GLFWwindow *;
+		[[nodiscard]] auto getSwapchain() const -> gpu::VKSwapchain *;
 
 	private:
 		gpu::IGPUContext *m_gpuContext{nullptr};
