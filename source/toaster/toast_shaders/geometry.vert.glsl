@@ -17,12 +17,12 @@ layout(std140, set = 1, binding = 1) uniform Camera
 
 layout (push_constant) uniform Transform
 {
-    mat4 model;
-} u_Transform;
+    mat4 u_Model;
+};
 
 void main()
 {
-    gl_Position = u_Proj * u_View * u_Transform.model * vec4(a_Position, 1.0f);
+    gl_Position = u_Proj * u_View * u_Model * vec4(a_Position, 1.0f);
 
     v_Colour = a_Normal;
     v_TexCoord = a_TexCoord;

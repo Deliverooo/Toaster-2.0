@@ -20,6 +20,30 @@ namespace toaster::gpu
 		glm::vec2 texCoord;
 	};
 
+	struct Submesh
+	{
+		String name{};
+
+		glm::mat4 transform{1.0f};
+		glm::mat4 localTransform{1.0f};
+
+		uint32 baseVertex{0u};
+		uint32 baseIndex{0u};
+		uint32 materialIndex{0u};
+		uint32 indexCount{0u};
+		uint32 vertexCount{0u};
+	};
+
+	struct MeshNode
+	{
+		String    name{};
+		glm::mat4 localTransform{1.0f};
+
+		std::vector<uint32> children;
+		std::vector<uint32> submeshes;
+		uint32              parent{UINT32_MAX};
+	};
+
 	class VKMesh
 	{
 	public:
@@ -29,15 +53,20 @@ namespace toaster::gpu
 		const RefPtr<VKVertexBuffer> &getVertexBuffer() const;
 		const RefPtr<VKIndexBuffer> & getIndexBuffer() const;
 
-		const RefPtr<VKMaterial> &getMaterial() const;
+		const std::vector<RefPtr<VKMaterial> > &getMaterials() const;
+		const std::vector<Submesh> &            getSubmeshes() const;
 
 		const std::vector<MeshVertex> &getVertices() const;
 		const std::vector<uint16> &    getIndices() const;
 
 	private:
+		void          _traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level);
 		VKGPUContext *m_ctx{nullptr};
 
 		io::filesystem::Path m_path;
+
+		std::vector<Submesh>  m_submeshes;
+		std::vector<MeshNode> m_nodes;
 
 		std::vector<MeshVertex> m_vertices;
 		std::vector<uint16>     m_indices;
@@ -45,9 +74,6 @@ namespace toaster::gpu
 		RefPtr<VKVertexBuffer> m_vertexBuffer{nullptr};
 		RefPtr<VKIndexBuffer>  m_indexBuffer{nullptr};
 
-		RefPtr<VKMaterial> m_material{nullptr};
-
-		RefPtr<VKTexture2D> m_albedoMap{nullptr};
-		// float32             m_roughness{0.0f};
+		std::vector<RefPtr<VKMaterial> > m_materials;
 	};
 }

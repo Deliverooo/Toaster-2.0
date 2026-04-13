@@ -11,14 +11,14 @@ namespace toaster
 	class RefPtr
 	{
 	public:
-		using Deleter = std::function<void(Type *)>;
+		using DeleterFn = std::function<void(Type *)>;
 
 		RefPtr(std::nullptr_t) : m_ptr(nullptr), m_controlBlock(nullptr)
 		{
 		}
 
-		RefPtr(Type *p_ptr = nullptr, Deleter p_deleter = [](Type *p) { delete p; }) : m_ptr(p_ptr),
-																					   m_controlBlock(p_ptr ? new ControlBlock(1, std::move(p_deleter)) : nullptr)
+		RefPtr(Type *p_ptr = nullptr, DeleterFn p_deleter = [](Type *p) { delete p; }) : m_ptr(p_ptr),
+																						 m_controlBlock(p_ptr ? new ControlBlock(1, std::move(p_deleter)) : nullptr)
 		{
 		}
 
@@ -42,14 +42,14 @@ namespace toaster
 
 		~RefPtr() { _release(); }
 
-		RefPtr &operator=(std::nullptr_t)
+		auto operator=(std::nullptr_t) -> RefPtr &
 		{
 			_release();
 			m_ptr = nullptr;
 			return *this;
 		}
 
-		RefPtr &operator=(const RefPtr &p_other)
+		auto operator=(const RefPtr &p_other) -> RefPtr &
 		{
 			if (this != &p_other)
 			{
@@ -62,7 +62,7 @@ namespace toaster
 		}
 
 		template<typename TOther>
-		RefPtr &operator=(const RefPtr<TOther> &p_other)
+		auto operator=(const RefPtr<TOther> &p_other) -> RefPtr &
 		{
 			if (this != &p_other)
 			{
@@ -75,7 +75,7 @@ namespace toaster
 		}
 
 		template<typename TOther>
-		RefPtr &operator=(RefPtr<TOther> &&p_other) noexcept
+		auto operator=(RefPtr<TOther> &&p_other) noexcept -> RefPtr &
 		{
 			if (this != &p_other)
 			{
@@ -88,16 +88,16 @@ namespace toaster
 			return *this;
 		}
 
-		Type &operator*() { return *m_ptr; }
-		Type *operator->() { return m_ptr; }
+		auto operator*() -> Type & { return *m_ptr; }
+		auto operator->() -> Type * { return m_ptr; }
 
-		Type &operator*() const { return *m_ptr; }
-		Type *operator->() const { return m_ptr; }
+		auto operator*() const -> Type & { return *m_ptr; }
+		auto operator->() const -> Type * { return m_ptr; }
 
-		Type *      get() { return m_ptr; }
-		const Type *get() const { return m_ptr; }
+		auto get() -> Type * { return m_ptr; }
+		auto get() const -> const Type * { return m_ptr; }
 
-		void reset(Type *p_ptr = nullptr, Deleter p_deleter = [](Type *p) { delete p; })
+		auto reset(Type *p_ptr = nullptr, DeleterFn p_deleter = [](Type *p) { delete p; }) -> void
 		{
 			if (m_ptr == p_ptr)
 				return;
@@ -112,12 +112,12 @@ namespace toaster
 			return RefPtr<TOther>(*this);
 		}
 
-		bool operator==(const RefPtr &p_other) const
+		auto operator==(const RefPtr &p_other) const -> bool
 		{
 			return m_ptr == p_other.m_ptr;
 		}
 
-		bool operator!=(const RefPtr &p_other) const
+		auto operator!=(const RefPtr &p_other) const -> bool
 		{
 			return m_ptr != p_other.m_ptr;
 		}
@@ -126,13 +126,13 @@ namespace toaster
 		operator bool() const { return m_ptr != nullptr; }
 
 	private:
-		void _incRef()
+		auto _incRef() -> void
 		{
 			if (m_controlBlock)
 				++(m_controlBlock->refCount);
 		}
 
-		void _release()
+		auto _release() -> void
 		{
 			if (m_controlBlock)
 			{
@@ -149,9 +149,9 @@ namespace toaster
 		struct ControlBlock
 		{
 			std::atomic_int32_t refCount;
-			Deleter             deleter;
+			DeleterFn           deleter;
 
-			ControlBlock(int32_t p_count, Deleter p_deleter) : refCount(p_count), deleter(std::move(p_deleter))
+			ControlBlock(int32_t p_count, DeleterFn p_deleter) : refCount(p_count), deleter(std::move(p_deleter))
 			{
 			}
 		};
@@ -179,16 +179,16 @@ namespace toaster
 			m_ptr = p_ptr;
 		}
 
-		Type &operator*() { return *m_ptr; }
-		Type *operator->() { return m_ptr; }
+		auto operator*() -> Type & { return *m_ptr; }
+		auto operator->() -> Type * { return m_ptr; }
 
-		Type &operator*() const { return *m_ptr; }
-		Type *operator->() const { return m_ptr; }
+		auto operator*() const -> Type & { return *m_ptr; }
+		auto operator->() const -> Type * { return m_ptr; }
 
 		operator bool() const { return false; } // TODO: ts
 
 		template<typename TOther>
-		WeakRefPtr<TOther> as() const
+		auto as() const -> WeakRefPtr<TOther>
 		{
 			return WeakRefPtr<TOther>(dynamic_cast<TOther *>(m_ptr));
 		}
@@ -197,39 +197,23 @@ namespace toaster
 		Type *m_ptr{nullptr};
 	};
 
-	#if 0
-	template<typename Type>
-	class UniquePtr
-	{
-	public:
-		UniquePtr ~UniquePtr()
-		{
-			delete m_ptr;
-		}
-
-	private:
-		Type *m_ptr{nullptr};
-	};
-
-	#endif
-
-	template<typename Type>
-	using UniquePtr = std::unique_ptr<Type>;
-
 	template<typename Type, typename... TArgs>
-	RefPtr<Type> make_reference(TArgs &&... p_args)
+	auto make_reference(TArgs &&... p_args) -> RefPtr<Type>
 	{
 		return RefPtr<Type>(new Type(std::forward<TArgs>(p_args)...));
 	}
 
 	template<typename Type, typename... TArgs>
-	RefPtr<Type> allocate_reference(typename RefPtr<Type>::Deleter &&p_deleter, TArgs &&... p_args)
+	auto allocate_reference(typename RefPtr<Type>::DeleterFn &&p_deleter, TArgs &&... p_args) -> RefPtr<Type>
 	{
 		return RefPtr<Type>(new Type(std::forward<TArgs>(p_args)...), std::move(p_deleter));
 	}
 
+	template<typename Type>
+	using UniquePtr = std::unique_ptr<Type>;
+
 	template<typename Type, typename... TArgs>
-	UniquePtr<Type> make_unique(TArgs &&... p_args)
+	auto make_unique(TArgs &&... p_args) -> UniquePtr<Type>
 	{
 		return std::make_unique<Type>(std::forward<TArgs>(p_args)...);
 	}

@@ -36,7 +36,7 @@ namespace toaster::gpu
 
 		// If you care about not getting crashes when allocating gpu objects mid-frame, you should use this instead of make_reference<Type>(ctx, ...)
 		template<typename Type, typename... TArgs>
-		RefPtr<Type> alloc(TArgs &&... p_args)
+		auto alloc(TArgs &&... p_args) -> RefPtr<Type>
 		{
 			return allocate_reference<Type>([this](Type *p_ptr) -> void
 			{
@@ -51,86 +51,86 @@ namespace toaster::gpu
 		}
 
 		// Only the swapchain should use this, but I don't want to make it private and friend it because "Coupling"...
-		void setCurrentFrameIndex(uint32 p_index);
+		auto setCurrentFrameIndex(uint32 p_index) -> void;
 
-		void performGarbageCollection();
+		auto performGarbageCollection() -> void;
 
-		[[nodiscard]] vk::raii::Instance &      getVulkanInstance();
-		[[nodiscard]] vk::raii::PhysicalDevice &getPhysicalDevice();
-		[[nodiscard]] vk::raii::Device &        getDevice();
-		[[nodiscard]] vk::raii::Queue &         getGraphicsQueue();
-		[[nodiscard]] vk::raii::Queue &         getTransferQueue();
-		[[nodiscard]] vk::raii::Queue &         getComputeQueue();
-		[[nodiscard]] const QueueFamilyIndices &getQueueFamilyIndices() const;
-		[[nodiscard]] vk::raii::SurfaceKHR &    getSurface();
+		[[nodiscard]] auto getVulkanInstance() -> vk::raii::Instance &;
+		[[nodiscard]] auto getPhysicalDevice() -> vk::raii::PhysicalDevice &;
+		[[nodiscard]] auto getDevice() -> vk::raii::Device &;
+		[[nodiscard]] auto getGraphicsQueue() -> vk::raii::Queue &;
+		[[nodiscard]] auto getTransferQueue() -> vk::raii::Queue &;
+		[[nodiscard]] auto getComputeQueue() -> vk::raii::Queue &;
+		[[nodiscard]] auto getQueueFamilyIndices() const -> const QueueFamilyIndices &;
+		[[nodiscard]] auto getSurface() -> vk::raii::SurfaceKHR &;
 
-		[[nodiscard]] vk::raii::CommandPool &getGraphicsCommandPool();
-		[[nodiscard]] vk::raii::CommandPool &getTransferCommandPool();
-		[[nodiscard]] vk::raii::CommandPool &getComputeCommandPool();
+		[[nodiscard]] auto getGraphicsCommandPool() -> vk::raii::CommandPool &;
+		[[nodiscard]] auto getTransferCommandPool() -> vk::raii::CommandPool &;
+		[[nodiscard]] auto getComputeCommandPool() -> vk::raii::CommandPool &;
 
-		vk::raii::ShaderModule createShaderModule(const std::vector<uint8> &p_code);
-		vk::raii::ShaderModule createShaderModule(const std::vector<uint32> &p_code);
+		auto createShaderModule(const std::vector<uint8> &p_code) -> vk::raii::ShaderModule;
+		auto createShaderModule(const std::vector<uint32> &p_code) -> vk::raii::ShaderModule;
 
-		[[nodiscard]] uint32 findMemoryType(uint32 p_type_filter, vk::MemoryPropertyFlags p_properties) const;
+		[[nodiscard]] auto findMemoryType(uint32 p_type_filter, vk::MemoryPropertyFlags p_properties) const -> uint32;
 
-		void createBuffer(vk::DeviceSize          p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Buffer &p_out_buffer,
-						  vk::raii::DeviceMemory &p_out_memory) const;
+		auto createBuffer(vk::DeviceSize          p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Buffer &p_out_buffer,
+						  vk::raii::DeviceMemory &p_out_memory) const -> void;
 
-		void copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) const;
+		auto copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) const -> void;
 
-		void createImage(uint32 p_width, uint32 p_height, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count, vk::Format p_format,
+		auto createImage(uint32 p_width, uint32 p_height, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count, vk::Format p_format,
 						 vk::ImageTiling p_image_tiling, vk::ImageUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Image &p_out_image,
-						 vk::raii::DeviceMemory &p_out_memory) const;
+						 vk::raii::DeviceMemory &p_out_memory) const -> void;
 
-		void transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::Image &          p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
+		auto transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::Image &          p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2    p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-								   vk::PipelineStageFlags2  p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags);
+								   vk::PipelineStageFlags2  p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags) -> void;
 
-		void transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::raii::Image &    p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
+		auto transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::raii::Image &    p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2    p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-								   vk::PipelineStageFlags2  p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags);
+								   vk::PipelineStageFlags2  p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags) -> void;
 
-		void transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags p_src_access_mask,
+		auto transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags p_src_access_mask,
 								   vk::AccessFlags  p_dst_access_mask, vk::PipelineStageFlags p_src_stage_mask, vk::PipelineStageFlags p_dst_stage_mask,
-								   uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) const;
+								   uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) const -> void;
 
-		void copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, uint32 p_width, uint32 p_height) const;
+		auto copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, uint32 p_width, uint32 p_height) const -> void;
 
-		[[nodiscard]] vk::raii::ImageView createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags,
-														  uint32           p_mip_levels) const;
-		[[nodiscard]] vk::raii::ImageView createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_mip_levels) const;
+		[[nodiscard]] auto createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags,
+										   uint32           p_mip_levels) const -> vk::raii::ImageView;
+		[[nodiscard]] auto createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags,
+										   uint32     p_mip_levels) const -> vk::raii::ImageView;
 
-		void generateMipmaps(vk::raii::Image &p_src_image, vk::Format p_format, uint32 p_width, uint32 p_height, uint32 p_mip_levels) const;
+		auto generateMipmaps(vk::raii::Image &p_src_image, vk::Format p_format, uint32 p_width, uint32 p_height, uint32 p_mip_levels) const -> void;
 
-		[[nodiscard]] vk::raii::CommandBuffer beginSingleTimeCommandsTransfer() const;
-		void                                  endSingleTimeCommandsTransfer(vk::raii::CommandBuffer &p_command_buffer) const;
+		[[nodiscard]] auto beginSingleTimeCommandsTransfer() const -> vk::raii::CommandBuffer;
+		auto               endSingleTimeCommandsTransfer(vk::raii::CommandBuffer &p_command_buffer) const -> void;
 
-		[[nodiscard]] vk::raii::CommandBuffer beginSingleTimeCommandsGraphics() const;
-		void                                  endSingleTimeCommandsGraphics(vk::raii::CommandBuffer &p_command_buffer) const;
+		[[nodiscard]] auto beginSingleTimeCommandsGraphics() const -> vk::raii::CommandBuffer;
+		auto               endSingleTimeCommandsGraphics(vk::raii::CommandBuffer &p_command_buffer) const -> void;
 
-		[[nodiscard]] vk::Format findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling,
-													 vk::FormatFeatureFlags         p_feature_flags) const;
-		[[nodiscard]] vk::Format findDepthFormat() const;
-		[[nodiscard]] bool       hasStencilComponent(vk::Format p_format) const;
-		[[nodiscard]] bool       isDepthFormat(vk::Format p_format) const;
+		[[nodiscard]] auto findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling,
+											   vk::FormatFeatureFlags         p_feature_flags) const -> vk::Format;
+		[[nodiscard]] auto findDepthFormat() const -> vk::Format;
+		[[nodiscard]] auto hasStencilComponent(vk::Format p_format) const -> bool;
+		[[nodiscard]] auto isDepthFormat(vk::Format p_format) const -> bool;
 
-		[[nodiscard]] vk::SampleCountFlagBits getMaxUsableSampleCount() const;
+		[[nodiscard]] auto getMaxUsableSampleCount() const -> vk::SampleCountFlagBits;
 
 	private:
-		void _createInstance();
-		void _createDebugMessenger();
-		void _createSurface();
-		void _pickPhysicalDevice();
-		void _createLogicalDevice();
-		void _createCommandPools();
+		auto _createInstance() -> void;
+		auto _createDebugMessenger() -> void;
+		auto _createSurface() -> void;
+		auto _pickPhysicalDevice() -> void;
+		auto _createLogicalDevice() -> void;
+		auto _createCommandPools() -> void;
 
-		[[nodiscard]] bool _isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const;
+		[[nodiscard]] auto _isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const -> bool;
 
-		[[nodiscard]] std::vector<CString> _getRequiredInstanceExtensions() const;
+		[[nodiscard]] auto _getRequiredInstanceExtensions() const -> std::vector<CString>;
 
-		static VKAPI_ATTR vk::Bool32 VKAPI_CALL _debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity,
-															   vk::DebugUtilsMessageTypeFlagsEXT             p_message_type,
-															   const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, void *p_user_data);
+		static VKAPI_ATTR auto VKAPI_CALL _debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,
+														 const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, void *p_user_data) -> vk::Bool32;
 
 		std::array<std::deque<std::function<void()> >, c_maxFramesInFlight> m_pendingDeletions;
 		uint32                                                              m_currentFrameIndex{0};

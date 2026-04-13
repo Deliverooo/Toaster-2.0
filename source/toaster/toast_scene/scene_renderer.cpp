@@ -13,7 +13,7 @@ namespace toaster
 		m_mappedCameraUBOs = m_cameraUBOs->mapMemory(ubo_size, 0);
 
 		gpu::TextureSpecInfo texture_spec_info{};
-		m_skyboxTexture = make_reference<gpu::VKTexture2D>(m_ctx, texture_spec_info, "../resources/textures/Peeber.png");
+		m_skyboxTexture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "../resources/textures/Peeber.png");
 
 		{
 			gpu::PipelineCreateInfo pipeline_create_info{};
@@ -127,6 +127,11 @@ namespace toaster
 		m_resolveOutputDepthImage->resize(p_width, p_height);
 	}
 
+	void SceneRenderer::setEnvironmentBackground(RefPtr<gpu::VKTexture2D> p_texture)
+	{
+		m_skyboxTexture = p_texture;
+	}
+
 	const SceneRendererSpecInfo &SceneRenderer::getSpecInfo() const
 	{
 		return m_specInfo;
@@ -190,8 +195,7 @@ namespace toaster
 
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
-			Renderer::renderGeometry(p_cmd, p_frame_index, m_geometryPipeline, draw_cmd.mesh->getVertexBuffer(), draw_cmd.mesh->getIndexBuffer(),
-									 draw_cmd.mesh->getIndices().size(), draw_cmd.mesh->getMaterial(), draw_cmd.transform);
+			Renderer::renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, 0, m_geometryPipeline, draw_cmd.transform);
 		}
 
 		Renderer::endRendering(rendering_info, p_cmd);

@@ -25,6 +25,8 @@ namespace toaster
 
 		void onResize(uint32 p_width, uint32 p_height);
 
+		void setEnvironmentBackground(RefPtr<gpu::VKTexture2D> p_texture);
+
 		const SceneRendererSpecInfo &getSpecInfo() const;
 
 		const RefPtr<gpu::VKTexture2D> &getOutputColourTexture() const;

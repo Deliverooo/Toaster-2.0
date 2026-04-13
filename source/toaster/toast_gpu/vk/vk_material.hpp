@@ -13,13 +13,13 @@ namespace toaster::gpu
 	public:
 		VKMaterial(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader);
 		~VKMaterial();
-		VKGPUContext *getContext() const;
+		auto getContext() const -> VKGPUContext *;
 
-		void set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d);
-		void set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index);
+		auto set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void;
+		auto set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void;
 
 		template<typename Type>
-		void set(const String &p_name, const Type &p_type)
+		auto set(const String &p_name, const Type &p_type) -> void
 		{
 			auto decl = _getPushConstantDeclaration(p_name);
 			TST_ASSERT_MSG(decl, "Could not find uniform!");
@@ -29,21 +29,29 @@ namespace toaster::gpu
 			m_pushConstantStorageBuffer.write(&p_type, decl->size, decl->offset);
 		}
 
-		void update(uint32 p_frame_index);
+		auto update(uint32 p_frame_index) -> void;
 
-		vk::DescriptorSet getDescriptorSet(uint32 p_frame_index);
-		bool              hasDescriptorSets() const;
+		auto getDescriptorSet(uint32 p_frame_index) -> vk::DescriptorSet;
+		auto hasDescriptorSets() const -> bool;
+
+		template<typename Type>
+		auto get(const String &p_name) -> Type &
+		{
+			auto decl = _getPushConstantDeclaration(p_name);
+			TST_ASSERT_MSG(decl, "Could not find uniform!");
+			return (Type&)m_pushConstantStorageBuffer.read<Type>(decl->offset);
+		}
 
 		template<GPUResource_c TResource>
-		RefPtr<TResource> get(const String &p_name)
+		auto getResource(const String &p_name) -> RefPtr<TResource>
 		{
 			return m_descriptorSetManager->getDescriptor<TResource>(p_name);
 		}
 
-		const Buffer &getPushConstantStorageBuffer() const;
+		auto getPushConstantStorageBuffer() const -> const Buffer &;
 
 	private:
-		const PushConstant *_getPushConstantDeclaration(const String &p_name);
+		auto _getPushConstantDeclaration(const String &p_name) -> const PushConstant *;
 
 		VKGPUContext *m_ctx{nullptr};
 

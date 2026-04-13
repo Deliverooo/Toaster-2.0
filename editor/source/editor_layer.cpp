@@ -11,6 +11,8 @@
 #include "toast_kernel/input.hpp"
 
 #include <imgui.h>
+
+#include "toast_lib/os/file_dialog.hpp"
 namespace ig = ImGui;
 
 namespace toaster
@@ -166,6 +168,9 @@ namespace toaster
 
 	void EditorLayer::onUIRender()
 	{
+		const auto &app{getApp()};
+		auto        ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
+
 		ig::Begin("Properties");
 
 		if (ig::IsWindowFocused() || ig::IsWindowHovered())
@@ -176,5 +181,22 @@ namespace toaster
 		ig::End();
 
 		m_sceneHierarchyPanel->onUIRender();
+
+		ig::Begin("Renderer settings");
+
+		ig::Text("Scene renderer background");
+		if (ig::Button("File", ImVec2{ig::GetContentRegionAvail().x, 0}))
+		{
+			auto path = os::openFileDialog({{"Texture", "png,jpg,bmp"}});
+			if (io::filesystem::exists(path))
+			{
+				LOG_INFO("{}", path.string());
+
+				gpu::TextureSpecInfo texture_spec_info{};
+				m_sceneRenderer->setEnvironmentBackground(ctx->alloc<gpu::VKTexture2D>(texture_spec_info, path));
+			}
+		}
+
+		ig::End();
 	}
 }

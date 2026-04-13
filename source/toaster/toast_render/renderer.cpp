@@ -264,4 +264,44 @@ namespace toaster
 		// Finally, draw indexed :)
 		p_command_buffer.drawIndexed(Globals::getFullscreenQuadIndices().size(), 1, 0, 0, 0);
 	}
+
+	void Renderer::renderMesh(const vk::raii::CommandBuffer &p_command_buffer, uint32     p_frame_index, const RefPtr<gpu::VKMesh> &p_mesh, uint32 p_submesh_index,
+							  const RefPtr<gpu::VKPipeline> &p_pipeline, const glm::mat4 &p_transform)
+	{
+		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
+
+		// Push the constants
+		p_command_buffer.pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
+
+		const auto &submesh{p_mesh->getSubmeshes()[p_submesh_index]};
+		auto        material{p_mesh->getMaterials()[submesh.materialIndex]};
+
+		if (material) // You technically don't need to use a material if you don't want to
+		{
+			if (material->hasDescriptorSets())
+			{
+				// Bind the material descriptor set (0)
+				vk::DescriptorSet material_descriptor_set{material->getDescriptorSet(p_frame_index)};
+				p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0, material_descriptor_set, {});
+			}
+
+			const auto &push_constants{material->getPushConstantStorageBuffer()};
+			if (push_constants.size() > 0)
+			{
+				vk::PushConstantsInfo push_constants_info{};
+				push_constants_info.layout     = p_pipeline->getPipelineLayout();
+				push_constants_info.stageFlags = vk::ShaderStageFlagBits::eFragment;
+				push_constants_info.size       = push_constants.size();
+				push_constants_info.offset     = sizeof(glm::mat4);
+				push_constants_info.pValues    = push_constants.data();
+				p_command_buffer.pushConstants2(push_constants_info);
+			}
+		}
+		// Bind the vertex and index buffers
+		p_mesh->getVertexBuffer()->bind(p_command_buffer);
+		p_mesh->getIndexBuffer()->bind(p_command_buffer, vk::IndexType::eUint16);
+
+		// Finally, draw indexed :)
+		p_command_buffer.drawIndexed(submesh.indexCount, 1, submesh.baseIndex, submesh.baseVertex, 0);
+	}
 }

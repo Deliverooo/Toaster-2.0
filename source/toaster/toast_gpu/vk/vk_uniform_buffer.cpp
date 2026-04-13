@@ -16,44 +16,44 @@ namespace toaster::gpu
 		m_descriptorInfo.range  = p_size;
 	}
 
-	VKGPUContext *VKUniformBuffer::getContext() const
+	auto VKUniformBuffer::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	vk::raii::Buffer &VKUniformBuffer::getBuffer()
+	auto VKUniformBuffer::getBuffer() -> vk::raii::Buffer &
 	{
 		return m_buffer;
 	}
 
-	vk::raii::DeviceMemory &VKUniformBuffer::getBufferMemory()
+	auto VKUniformBuffer::getBufferMemory() -> vk::raii::DeviceMemory &
 	{
 		return m_bufferMemory;
 	}
 
-	const vk::DescriptorBufferInfo &VKUniformBuffer::getDescriptorInfo() const
+	auto VKUniformBuffer::getDescriptorInfo() const -> const vk::DescriptorBufferInfo &
 	{
 		return m_descriptorInfo;
 	}
 
-	void VKUniformBuffer::setData(void *p_data, uint64 p_size, uint64 p_offset)
+	auto VKUniformBuffer::setData(void *p_data, uint64 p_size, uint64 p_offset) -> void
 	{
 		void *mapped = m_bufferMemory.mapMemory(p_offset, p_size);
 		std::memcpy(mapped, p_data, p_size);
 		m_bufferMemory.unmapMemory();
 	}
 
-	void *VKUniformBuffer::mapMemory(uint64 p_size, uint64 p_offset)
+	auto VKUniformBuffer::mapMemory(uint64 p_size, uint64 p_offset) -> void *
 	{
 		return m_bufferMemory.mapMemory(p_offset, p_size);
 	}
 
-	void VKUniformBuffer::unmapMemory()
+	auto VKUniformBuffer::unmapMemory() -> void
 	{
 		m_bufferMemory.unmapMemory();
 	}
 
-	EGPUResourceType VKUniformBuffer::getResourceType() const
+	auto VKUniformBuffer::getResourceType() const -> EGPUResourceType
 	{
 		return EGPUResourceType::eUniformBuffer;
 	}
@@ -67,34 +67,34 @@ namespace toaster::gpu
 			m_uniformBuffers.emplace_back(p_ctx->alloc<VKUniformBuffer>(p_size));
 	}
 
-	RefPtr<VKUniformBuffer> VKUniformBufferPFF::getUBO(uint32 p_frame_index)
+	auto VKUniformBufferPFF::getUBO(uint32 p_frame_index) -> RefPtr<VKUniformBuffer>
 	{
 		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Out of range");
 		return m_uniformBuffers[p_frame_index];
 	}
 
-	void VKUniformBufferPFF::setUBO(uint32 p_frame_index, const RefPtr<VKUniformBuffer> &p_uniform_buffer)
+	auto VKUniformBufferPFF::setUBO(uint32 p_frame_index, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void
 	{
 		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Out of range");
 		m_uniformBuffers[p_frame_index] = p_uniform_buffer;
 	}
 
-	std::vector<RefPtr<VKUniformBuffer> >::iterator VKUniformBufferPFF::begin()
+	auto VKUniformBufferPFF::begin() -> std::vector<RefPtr<VKUniformBuffer> >::iterator
 	{
 		return m_uniformBuffers.begin();
 	}
 
-	std::vector<RefPtr<VKUniformBuffer> >::iterator VKUniformBufferPFF::end()
+	auto VKUniformBufferPFF::end() -> std::vector<RefPtr<VKUniformBuffer> >::iterator
 	{
 		return m_uniformBuffers.end();
 	}
 
-	EGPUResourceType VKUniformBufferPFF::getResourceType() const
+	auto VKUniformBufferPFF::getResourceType() const -> EGPUResourceType
 	{
 		return EGPUResourceType::eUniformBufferPFF;
 	}
 
-	std::vector<void *> VKUniformBufferPFF::mapMemory(uint64 p_size, uint64 p_offset)
+	auto VKUniformBufferPFF::mapMemory(uint64 p_size, uint64 p_offset) -> std::vector<void *>
 	{
 		std::vector<void *> mapped{};
 		for (auto &ubo: m_uniformBuffers)
@@ -102,7 +102,7 @@ namespace toaster::gpu
 		return mapped;
 	}
 
-	void VKUniformBufferPFF::unmapMemory()
+	auto VKUniformBufferPFF::unmapMemory() -> void
 	{
 		for (auto &ubo: m_uniformBuffers)
 			ubo->unmapMemory();

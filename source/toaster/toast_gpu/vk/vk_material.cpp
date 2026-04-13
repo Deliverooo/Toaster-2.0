@@ -40,52 +40,52 @@ namespace toaster::gpu
 		m_pushConstantStorageBuffer.release();
 	}
 
-	VKGPUContext *VKMaterial::getContext() const
+	auto VKMaterial::getContext() const -> VKGPUContext *
 	{
 		return m_ctx;
 	}
 
-	void VKMaterial::set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d)
+	auto VKMaterial::set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);
 	}
 
-	void VKMaterial::set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index)
+	auto VKMaterial::set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d, p_array_index);
 	}
 
-	void VKMaterial::update(uint32 p_frame_index)
+	auto VKMaterial::update(uint32 p_frame_index) -> void
 	{
 		m_descriptorSetManager->updateDescriptors(p_frame_index);
 	}
 
-	vk::DescriptorSet VKMaterial::getDescriptorSet(uint32 p_frame_index)
+	auto VKMaterial::getDescriptorSet(uint32 p_frame_index) -> vk::DescriptorSet
 	{
 		update(p_frame_index);
 		return m_descriptorSetManager->getDescriptorSets(p_frame_index)[0];
 	}
 
-	bool VKMaterial::hasDescriptorSets() const
+	auto VKMaterial::hasDescriptorSets() const -> bool
 	{
 		return m_descriptorSetManager->hasDescriptorSets();
 	}
 
-	const Buffer &VKMaterial::getPushConstantStorageBuffer() const
+	auto VKMaterial::getPushConstantStorageBuffer() const -> const Buffer &
 	{
 		return m_pushConstantStorageBuffer;
 	}
 
-	const PushConstant *VKMaterial::_getPushConstantDeclaration(const String &p_name)
+	auto VKMaterial::_getPushConstantDeclaration(const String &p_name) -> const PushConstant *
 	{
 		const auto &push_constant_buffers{m_shader->getReflectedPushConstantBuffers()};
 		if (push_constant_buffers.size() > 0)
 		{
-			const PushConstantBuffer &push_constant_buffer{(push_constant_buffers.begin())->second};
-			if (!push_constant_buffer.pushConstants.contains(p_name))
-				return nullptr;
-
-			return &push_constant_buffer.pushConstants.at(p_name);
+			for (const auto &[name, pcb]: push_constant_buffers)
+			{
+				if (pcb.pushConstants.contains(p_name))
+					return &push_constant_buffers.at(name).pushConstants.at(p_name);
+			}
 		}
 		return nullptr;
 	}

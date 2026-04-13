@@ -27,12 +27,12 @@ namespace toaster::gpu
 
 	VKGPUContext::~VKGPUContext() noexcept = default;
 
-	void VKGPUContext::setCurrentFrameIndex(uint32 p_index)
+	auto VKGPUContext::setCurrentFrameIndex(uint32 p_index) -> void
 	{
 		m_currentFrameIndex = p_index;
 	}
 
-	void VKGPUContext::performGarbageCollection()
+	auto VKGPUContext::performGarbageCollection() -> void
 	{
 		while (!m_pendingDeletions[m_currentFrameIndex].empty())
 		{
@@ -42,62 +42,62 @@ namespace toaster::gpu
 		}
 	}
 
-	vk::raii::Instance &VKGPUContext::getVulkanInstance()
+	auto VKGPUContext::getVulkanInstance() -> vk::raii::Instance &
 	{
 		return m_vulkanInstance;
 	}
 
-	vk::raii::PhysicalDevice &VKGPUContext::getPhysicalDevice()
+	auto VKGPUContext::getPhysicalDevice() -> vk::raii::PhysicalDevice &
 	{
 		return m_currentPhysicalDevice;
 	}
 
-	vk::raii::Device &VKGPUContext::getDevice()
+	auto VKGPUContext::getDevice() -> vk::raii::Device &
 	{
 		return m_device;
 	}
 
-	vk::raii::Queue &VKGPUContext::getGraphicsQueue()
+	auto VKGPUContext::getGraphicsQueue() -> vk::raii::Queue &
 	{
 		return m_graphicsQueue;
 	}
 
-	vk::raii::Queue &VKGPUContext::getTransferQueue()
+	auto VKGPUContext::getTransferQueue() -> vk::raii::Queue &
 	{
 		return m_transferQueue;
 	}
 
-	vk::raii::Queue &VKGPUContext::getComputeQueue()
+	auto VKGPUContext::getComputeQueue() -> vk::raii::Queue &
 	{
 		return m_computeQueue;
 	}
 
-	const VKGPUContext::QueueFamilyIndices &VKGPUContext::getQueueFamilyIndices() const
+	auto VKGPUContext::getQueueFamilyIndices() const -> const QueueFamilyIndices &
 	{
 		return m_queueFamilyIndices;
 	}
 
-	vk::raii::SurfaceKHR &VKGPUContext::getSurface()
+	auto VKGPUContext::getSurface() -> vk::raii::SurfaceKHR &
 	{
 		return m_surface;
 	}
 
-	vk::raii::CommandPool &VKGPUContext::getGraphicsCommandPool()
+	auto VKGPUContext::getGraphicsCommandPool() -> vk::raii::CommandPool &
 	{
 		return m_graphicsCommandPool;
 	}
 
-	vk::raii::CommandPool &VKGPUContext::getTransferCommandPool()
+	auto VKGPUContext::getTransferCommandPool() -> vk::raii::CommandPool &
 	{
 		return m_transferCommandPool;
 	}
 
-	vk::raii::CommandPool &VKGPUContext::getComputeCommandPool()
+	auto VKGPUContext::getComputeCommandPool() -> vk::raii::CommandPool &
 	{
 		return m_computeCommandPool;
 	}
 
-	void VKGPUContext::_createInstance()
+	auto VKGPUContext::_createInstance() -> void
 	{
 		vk::ApplicationInfo app_info{};
 		app_info.pApplicationName = "Toaster - Vulkan"; // The app and engine name for this can be completely arbitrary
@@ -190,7 +190,7 @@ namespace toaster::gpu
 		m_vulkanInstance = vk::raii::Instance{m_context, instance_create_info};
 	}
 
-	void VKGPUContext::_createDebugMessenger()
+	auto VKGPUContext::_createDebugMessenger() -> void
 	{
 		if (!c_enableValidationLayers)
 			return;
@@ -209,7 +209,7 @@ namespace toaster::gpu
 		m_debugUtilsMessenger = m_vulkanInstance.createDebugUtilsMessengerEXT(debug_messenger_create_info);
 	}
 
-	void VKGPUContext::_createSurface()
+	auto VKGPUContext::_createSurface() -> void
 	{
 		VkSurfaceKHR surface;
 		if (glfwCreateWindowSurface(*m_vulkanInstance, m_window, nullptr, &surface) != VK_SUCCESS)
@@ -220,7 +220,7 @@ namespace toaster::gpu
 		m_surface = {m_vulkanInstance, surface};
 	}
 
-	void VKGPUContext::_pickPhysicalDevice()
+	auto VKGPUContext::_pickPhysicalDevice() -> void
 	{
 		auto physical_devices = m_vulkanInstance.enumeratePhysicalDevices();
 		if (physical_devices.empty())
@@ -276,7 +276,7 @@ namespace toaster::gpu
 		#endif
 	}
 
-	void VKGPUContext::_createLogicalDevice()
+	auto VKGPUContext::_createLogicalDevice() -> void
 	{
 		auto queue_family_props = m_currentPhysicalDevice.getQueueFamilyProperties();
 
@@ -390,7 +390,7 @@ namespace toaster::gpu
 		#endif
 	}
 
-	void VKGPUContext::_createCommandPools()
+	auto VKGPUContext::_createCommandPools() -> void
 	{
 		// Graphics
 		vk::CommandPoolCreateInfo graphics_command_pool_create_info{};
@@ -414,7 +414,7 @@ namespace toaster::gpu
 		m_computeCommandPool = {m_device, compute_command_pool_create_info};
 	}
 
-	bool VKGPUContext::_isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const
+	auto VKGPUContext::_isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const -> bool
 	{
 		auto props              = p_physical_device.getProperties();
 		bool vulkan_1_3_support = props.apiVersion >= vk::ApiVersion13;
@@ -456,7 +456,7 @@ namespace toaster::gpu
 		return vulkan_1_3_support && supports_graphics && supports_compute && supports_all_required_device_extensions && supports_required_features;
 	}
 
-	std::vector<CString> VKGPUContext::_getRequiredInstanceExtensions() const
+	auto VKGPUContext::_getRequiredInstanceExtensions() const -> std::vector<CString>
 	{
 		// Gets all the possible platform-specific extension names that glfw needs to create a window.
 		// For windows, one of them will be VK_KHR_win32_surface extension
@@ -476,8 +476,8 @@ namespace toaster::gpu
 		return required_extensions;
 	}
 
-	vk::Bool32 VKGPUContext::_debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,
-											const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, void *                               p_user_data)
+	auto VKGPUContext::_debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,
+									  const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, [[maybe_unused]] void *              p_user_data) -> vk::Bool32
 	{
 		switch (p_message_severity)
 		{
@@ -498,9 +498,9 @@ namespace toaster::gpu
 		return vk::False;
 	}
 
-	void VKGPUContext::transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
+	auto VKGPUContext::transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 											 vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-											 vk::PipelineStageFlags2  p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags)
+											 vk::PipelineStageFlags2  p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags) -> void
 	{
 		vk::ImageMemoryBarrier2 image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;
@@ -521,9 +521,10 @@ namespace toaster::gpu
 		p_command_buffer.pipelineBarrier2(dependency_info);
 	}
 
-	void VKGPUContext::transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::raii::Image &       p_image, vk::ImageLayout               p_old_layout,
-											 vk::ImageLayout          p_new_layout, vk::AccessFlags2            p_src_access_mask, vk::AccessFlags2    p_dst_access_mask,
-											 vk::PipelineStageFlags2  p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask, vk::ImageAspectFlags p_aspect_flags)
+	auto VKGPUContext::transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::raii::Image &       p_image, vk::ImageLayout            p_old_layout,
+											 vk::ImageLayout          p_new_layout, vk::AccessFlags2            p_src_access_mask, vk::AccessFlags2 p_dst_access_mask,
+											 vk::PipelineStageFlags2  p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask,
+											 vk::ImageAspectFlags     p_aspect_flags) -> void
 	{
 		vk::ImageMemoryBarrier2 image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;
@@ -544,7 +545,7 @@ namespace toaster::gpu
 		p_command_buffer.pipelineBarrier2(dependency_info);
 	}
 
-	vk::raii::ShaderModule VKGPUContext::createShaderModule(const std::vector<uint8> &p_code)
+	auto VKGPUContext::createShaderModule(const std::vector<uint8> &p_code) -> vk::raii::ShaderModule
 	{
 		vk::ShaderModuleCreateInfo shader_module_create_info{};
 		shader_module_create_info.codeSize = p_code.size();
@@ -553,7 +554,7 @@ namespace toaster::gpu
 		return {m_device, shader_module_create_info};
 	}
 
-	vk::raii::ShaderModule VKGPUContext::createShaderModule(const std::vector<uint32> &p_code)
+	auto VKGPUContext::createShaderModule(const std::vector<uint32> &p_code) -> vk::raii::ShaderModule
 	{
 		vk::ShaderModuleCreateInfo shader_module_create_info{};
 		shader_module_create_info.codeSize = p_code.size() * sizeof(uint32);
@@ -562,7 +563,7 @@ namespace toaster::gpu
 		return {m_device, shader_module_create_info};
 	}
 
-	uint32 VKGPUContext::findMemoryType(uint32 p_type_filter, vk::MemoryPropertyFlags p_properties) const
+	auto VKGPUContext::findMemoryType(uint32 p_type_filter, vk::MemoryPropertyFlags p_properties) const -> uint32
 	{
 		vk::PhysicalDeviceMemoryProperties memory_properties = m_currentPhysicalDevice.getMemoryProperties();
 		for (uint32 i{0u}; i < memory_properties.memoryTypeCount; i++)
@@ -576,8 +577,8 @@ namespace toaster::gpu
 		return UINT32_MAX;
 	}
 
-	void VKGPUContext::createBuffer(vk::DeviceSize    p_size, vk::BufferUsageFlags          p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
-									vk::raii::Buffer &p_out_buffer, vk::raii::DeviceMemory &p_out_memory) const
+	auto VKGPUContext::createBuffer(vk::DeviceSize    p_size, vk::BufferUsageFlags          p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
+									vk::raii::Buffer &p_out_buffer, vk::raii::DeviceMemory &p_out_memory) const -> void
 	{
 		vk::BufferCreateInfo buffer_create_info{};
 		buffer_create_info.size        = p_size;
@@ -600,7 +601,7 @@ namespace toaster::gpu
 		p_out_buffer.bindMemory(p_out_memory, 0u);
 	}
 
-	void VKGPUContext::copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) const
+	auto VKGPUContext::copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) const -> void
 	{
 		vk::BufferCopy buffer_copy{};
 		buffer_copy.size      = static_cast<uint32>(p_size);
@@ -612,9 +613,9 @@ namespace toaster::gpu
 		endSingleTimeCommandsTransfer(cmd);
 	}
 
-	void VKGPUContext::createImage(uint32           p_width, uint32 p_height, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count, vk::Format p_format,
+	auto VKGPUContext::createImage(uint32           p_width, uint32 p_height, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count, vk::Format p_format,
 								   vk::ImageTiling  p_image_tiling, vk::ImageUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
-								   vk::raii::Image &p_out_image, vk::raii::DeviceMemory &p_out_memory) const
+								   vk::raii::Image &p_out_image, vk::raii::DeviceMemory &p_out_memory) const -> void
 	{
 		vk::ImageCreateInfo image_create_info{};
 		image_create_info.extent.width  = p_width;
@@ -646,9 +647,9 @@ namespace toaster::gpu
 		p_out_image.bindMemory(p_out_memory, 0u);
 	}
 
-	void VKGPUContext::transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags p_src_access_mask,
+	auto VKGPUContext::transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags p_src_access_mask,
 											 vk::AccessFlags  p_dst_access_mask, vk::PipelineStageFlags p_src_stage_mask, vk::PipelineStageFlags p_dst_stage_mask,
-											 uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) const
+											 uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) const -> void
 	{
 		vk::ImageMemoryBarrier image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;
@@ -665,7 +666,7 @@ namespace toaster::gpu
 		endSingleTimeCommandsGraphics(cmd);
 	}
 
-	void VKGPUContext::copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, uint32 p_width, uint32 p_height) const
+	auto VKGPUContext::copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, uint32 p_width, uint32 p_height) const -> void
 	{
 		vk::BufferImageCopy image_copy{};
 		image_copy.bufferOffset      = 0;
@@ -680,7 +681,8 @@ namespace toaster::gpu
 		endSingleTimeCommandsTransfer(cmd);
 	}
 
-	vk::raii::ImageView VKGPUContext::createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_mip_levels) const
+	auto VKGPUContext::createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags,
+									   uint32           p_mip_levels) const -> vk::raii::ImageView
 	{
 		vk::ImageViewCreateInfo image_view_create_info{};
 		image_view_create_info.viewType   = vk::ImageViewType::e2D;
@@ -697,7 +699,7 @@ namespace toaster::gpu
 		return {m_device, image_view_create_info};
 	}
 
-	vk::raii::ImageView VKGPUContext::createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_mip_levels) const
+	auto VKGPUContext::createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_mip_levels) const -> vk::raii::ImageView
 	{
 		vk::ImageViewCreateInfo image_view_create_info{};
 		image_view_create_info.viewType   = vk::ImageViewType::e2D;
@@ -714,7 +716,7 @@ namespace toaster::gpu
 		return {m_device, image_view_create_info};
 	}
 
-	void VKGPUContext::generateMipmaps(vk::raii::Image &p_src_image, vk::Format p_format, uint32 p_width, uint32 p_height, uint32 p_mip_levels) const
+	auto VKGPUContext::generateMipmaps(vk::raii::Image &p_src_image, vk::Format p_format, uint32 p_width, uint32 p_height, uint32 p_mip_levels) const -> void
 	{
 		vk::ImageMemoryBarrier memory_barrier{};
 		memory_barrier.image                           = p_src_image;
@@ -808,7 +810,7 @@ namespace toaster::gpu
 			TST_ASSERT_MSG(false, "Failed to wait for Fence");
 	}
 
-	vk::raii::CommandBuffer VKGPUContext::beginSingleTimeCommandsTransfer() const
+	auto VKGPUContext::beginSingleTimeCommandsTransfer() const -> vk::raii::CommandBuffer
 	{
 		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
 		command_buffer_allocate_info.commandBufferCount = 1;
@@ -824,7 +826,7 @@ namespace toaster::gpu
 		return command_buffer;
 	}
 
-	void VKGPUContext::endSingleTimeCommandsTransfer(vk::raii::CommandBuffer &p_command_buffer) const
+	auto VKGPUContext::endSingleTimeCommandsTransfer(vk::raii::CommandBuffer &p_command_buffer) const -> void
 	{
 		p_command_buffer.end();
 
@@ -841,7 +843,7 @@ namespace toaster::gpu
 			TST_ASSERT_MSG(false, "Failed to wait for Fence");
 	}
 
-	vk::raii::CommandBuffer VKGPUContext::beginSingleTimeCommandsGraphics() const
+	auto VKGPUContext::beginSingleTimeCommandsGraphics() const -> vk::raii::CommandBuffer
 	{
 		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
 		command_buffer_allocate_info.commandBufferCount = 1;
@@ -857,7 +859,7 @@ namespace toaster::gpu
 		return command_buffer;
 	}
 
-	void VKGPUContext::endSingleTimeCommandsGraphics(vk::raii::CommandBuffer &p_command_buffer) const
+	auto VKGPUContext::endSingleTimeCommandsGraphics(vk::raii::CommandBuffer &p_command_buffer) const -> void
 	{
 		p_command_buffer.end();
 
@@ -874,8 +876,8 @@ namespace toaster::gpu
 			TST_ASSERT_MSG(false, "Failed to wait for Fence");
 	}
 
-	vk::Format VKGPUContext::findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling,
-												 vk::FormatFeatureFlags         p_feature_flags) const
+	auto VKGPUContext::findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling,
+										   vk::FormatFeatureFlags         p_feature_flags) const -> vk::Format
 	{
 		for (const auto &format: p_supported_formats)
 		{
@@ -890,23 +892,23 @@ namespace toaster::gpu
 		return vk::Format::eUndefined;
 	}
 
-	vk::Format VKGPUContext::findDepthFormat() const
+	auto VKGPUContext::findDepthFormat() const -> vk::Format
 	{
 		return m_depthFormat;
 	}
 
-	bool VKGPUContext::hasStencilComponent(vk::Format p_format) const
+	auto VKGPUContext::hasStencilComponent(vk::Format p_format) const -> bool
 	{
 		return p_format == vk::Format::eD32SfloatS8Uint || p_format == vk::Format::eD24UnormS8Uint;
 	}
 
-	bool VKGPUContext::isDepthFormat(vk::Format p_format) const
+	auto VKGPUContext::isDepthFormat(vk::Format p_format) const -> bool
 	{
 		return p_format == vk::Format::eD16Unorm || p_format == vk::Format::eD16UnormS8Uint || p_format == vk::Format::eD24UnormS8Uint || p_format ==
 			   vk::Format::eD32Sfloat || p_format == vk::Format::eD32SfloatS8Uint;
 	}
 
-	vk::SampleCountFlagBits VKGPUContext::getMaxUsableSampleCount() const
+	auto VKGPUContext::getMaxUsableSampleCount() const -> vk::SampleCountFlagBits
 	{
 		return m_maxUsableSampleCount;
 	}

@@ -7,6 +7,7 @@
 
 #include "../ui/ui_utils.hpp"
 #include "../ui/ui_widgets.hpp"
+#include "glm/gtc/type_ptr.hpp"
 #include "toast_gpu/vk/vk_gpu_context.hpp"
 #include "toast_render/globals.hpp"
 
@@ -337,6 +338,9 @@ namespace toaster
 					p_comp.mesh = m_ctx->alloc<gpu::VKMesh>(path, geometry_shader);
 				}
 			}
+			// glm::vec3 &colour{p_comp.mesh->getMaterials()[0]->get<glm::vec3>("u_Material.albedoColour")};
+			// if (ui::colourEdit3("Colour", glm::value_ptr(colour)))
+				// p_comp.mesh->getMaterials()[0]->set("u_Material.albedoColour", colour);
 		}, this);
 	}
 }

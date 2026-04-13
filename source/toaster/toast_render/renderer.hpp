@@ -8,6 +8,8 @@
 
 #include <glm/glm.hpp>
 
+#include "toast_gpu/vk/vk_mesh.hpp"
+
 namespace toaster
 {
 	// Static interface class
@@ -24,5 +26,8 @@ namespace toaster
 
 		static void renderFullscreenQuad(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
 										 const RefPtr<gpu::VKMaterial> &p_material);
+
+		static void renderMesh(const vk::raii::CommandBuffer &p_command_buffer, uint32     p_frame_index, const RefPtr<gpu::VKMesh> &p_mesh, uint32 p_submesh_index,
+							   const RefPtr<gpu::VKPipeline> &p_pipeline, const glm::mat4 &p_transform);
 	};
 }

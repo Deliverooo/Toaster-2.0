@@ -12,19 +12,19 @@ namespace toaster::gpu
 	{
 	public:
 		VKUniformBuffer(VKGPUContext *p_ctx, uint64 p_size);
-		VKGPUContext *getContext() const;
+		[[nodiscard]] auto getContext() const -> VKGPUContext *;
 
-		vk::raii::Buffer &      getBuffer();
-		vk::raii::DeviceMemory &getBufferMemory();
+		auto getBuffer() -> vk::raii::Buffer &;
+		auto getBufferMemory() -> vk::raii::DeviceMemory &;
 
-		const vk::DescriptorBufferInfo &getDescriptorInfo() const;
+		[[nodiscard]] auto getDescriptorInfo() const -> const vk::DescriptorBufferInfo &;
 
-		void setData(void *p_data, uint64 p_size, uint64 p_offset);
+		auto setData(void *p_data, uint64 p_size, uint64 p_offset) -> void;
 
-		void *mapMemory(uint64 p_size, uint64 p_offset);
-		void  unmapMemory();
+		auto mapMemory(uint64 p_size, uint64 p_offset) -> void *;
+		auto unmapMemory() -> void;
 
-		EGPUResourceType getResourceType() const override;
+		[[nodiscard]] auto getResourceType() const -> EGPUResourceType override;
 
 	private:
 		VKGPUContext *m_ctx{nullptr};
@@ -42,16 +42,16 @@ namespace toaster::gpu
 	public:
 		VKUniformBufferPFF(VKGPUContext *p_ctx, uint64 p_size, uint32 p_frames_in_flight);
 
-		RefPtr<VKUniformBuffer> getUBO(uint32 p_frame_index);
-		void                    setUBO(uint32 p_frame_index, const RefPtr<VKUniformBuffer> &p_uniform_buffer);
+		auto getUBO(uint32 p_frame_index) -> RefPtr<VKUniformBuffer>;
+		auto setUBO(uint32 p_frame_index, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
 
-		std::vector<RefPtr<VKUniformBuffer> >::iterator begin();
-		std::vector<RefPtr<VKUniformBuffer> >::iterator end();
+		auto begin() -> std::vector<RefPtr<VKUniformBuffer> >::iterator;
+		auto end() -> std::vector<RefPtr<VKUniformBuffer> >::iterator;
 
-		EGPUResourceType getResourceType() const override;
+		[[nodiscard]] auto getResourceType() const -> EGPUResourceType override;
 
-		std::vector<void *> mapMemory(uint64 p_size, uint64 p_offset);
-		void                unmapMemory();
+		auto mapMemory(uint64 p_size, uint64 p_offset) -> std::vector<void *>;
+		auto unmapMemory() -> void;
 
 	private:
 		std::vector<RefPtr<VKUniformBuffer> > m_uniformBuffers;
