@@ -11,6 +11,7 @@
 
 #include <imgui.h>
 
+#include "backends/imgui_impl_vulkan.h"
 #include "toast_lib/os/file_dialog.hpp"
 namespace ig = ImGui;
 
@@ -36,7 +37,17 @@ namespace toaster
 			m_viewportWidth  = width;
 			m_viewportHeight = height;
 
+			// m_finalColourTexture->resize(width, height);
+			// m_finalDepthImage->resize(width, height);
+
+			if (m_imguiSceneRendererDescriptorSet)
+				ImGui_ImplVulkan_RemoveTexture(m_imguiSceneRendererDescriptorSet);
+
 			m_sceneRenderer->onResize(width, height);
+			m_imguiSceneRendererDescriptorSet = ImGui_ImplVulkan_AddTexture(*m_sceneRenderer->getOutputColourTexture()->getSampler(),
+																			*m_sceneRenderer->getOutputColourTexture()->getImage()->getImageView(),
+																			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 			m_editorCamera.setViewportSize(static_cast<float32>(width), static_cast<float32>(height));
 		});
 
@@ -66,6 +77,18 @@ namespace toaster
 		m_fullscreenPass->setInput("u_Texture", m_texture);
 		m_fullscreenPass->bake();
 
+		// gpu::TextureSpecInfo final_colour_texture_spec_info{};
+		// final_colour_texture_spec_info.width  = m_viewportWidth;
+		// final_colour_texture_spec_info.height = m_viewportHeight;
+		// final_colour_texture_spec_info.format = swapchain->getSurfaceFormat().format;
+		// m_finalColourTexture                  = ctx->alloc<gpu::VKTexture2D>(final_colour_texture_spec_info);
+		//
+		// gpu::ImageCreateInfo final_depth_image_create_info{};
+		// final_depth_image_create_info.width   = m_viewportWidth;
+		// final_depth_image_create_info.height  = m_viewportHeight;
+		// final_colour_texture_spec_info.format = swapchain->getDepthFormat();
+		// m_finalDepthImage                     = ctx->alloc<gpu::VKImage2D>(final_depth_image_create_info);
+
 		m_scene = make_reference<Scene>(ctx, "Main Scene");
 
 		m_sceneHierarchyPanel = make_unique<SceneHierarchyPanel>(ctx, m_scene);
@@ -85,7 +108,7 @@ namespace toaster
 			Entity orbo_entity{m_scene->createEntity()};
 			auto & transform_comp{orbo_entity.getComponent<TransformComponent>()};
 			transform_comp.translation = {0.0f, 0.0f, 0.0f};
-			transform_comp.rotation    = {0.0f, 0.0f, glm::radians(180.9f)};
+			transform_comp.rotation    = {0.0f, 0.0f, glm::radians(180.0f)};
 			transform_comp.scale       = {1.0f, 1.0f, 1.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
 			mc.mesh = ctx->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
@@ -100,7 +123,7 @@ namespace toaster
 	{
 		m_time += p_dt;
 
-		if (m_viewportFocused)
+		if (m_canOperateCamera)
 			m_editorCamera.onUpdate(p_dt);
 
 		const auto &app{getApp()};
@@ -164,7 +187,7 @@ namespace toaster
 			}
 			return false;
 		});
-		if (m_viewportFocused)
+		if (m_canOperateCamera)
 			m_editorCamera.onEvent(p_event);
 	}
 
@@ -173,6 +196,11 @@ namespace toaster
 		const auto &app{getApp()};
 		const auto  swapchain{app.getWindow().getSwapchain()};
 		const auto  ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
+
+		if (!m_imguiSceneRendererDescriptorSet)
+			m_imguiSceneRendererDescriptorSet = ImGui_ImplVulkan_AddTexture(*m_sceneRenderer->getOutputColourTexture()->getSampler(),
+																			*m_sceneRenderer->getOutputColourTexture()->getImage()->getImageView(),
+																			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		ig::Begin("Properties");
 
@@ -194,12 +222,13 @@ namespace toaster
 				m_sceneRenderer->setEnvironmentBackground(ctx->alloc<gpu::VKTexture2D>(texture_spec_info, path));
 			}
 		}
+		// ig::Image(m_imguiSceneRendererDescriptorSet, ImVec2{(float32) m_viewportWidth / 2.0f, (float32) m_viewportHeight / 2.0f});
 
 		ig::End();
 
 		if (ig::IsWindowFocused(ImGuiFocusedFlags_AnyWindow) || ig::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
-			m_viewportFocused = false;
+			m_canOperateCamera = false;
 		else
-			m_viewportFocused = true;
+			m_canOperateCamera = true;
 	}
 }

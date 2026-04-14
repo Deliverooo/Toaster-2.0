@@ -41,6 +41,9 @@ namespace toaster
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
 
+		// RefPtr<gpu::VKTexture2D> m_finalColourTexture{nullptr};
+		// RefPtr<gpu::VKImage2D>   m_finalDepthImage{nullptr};
+
 		RefPtr<gpu::VKPipeline>   m_fullscreenPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_fullscreenPass{nullptr};
 		RefPtr<gpu::VKMaterial>   m_fullscreenMaterial{nullptr};
@@ -62,10 +65,12 @@ namespace toaster
 		UniquePtr<SceneHierarchyPanel> m_sceneHierarchyPanel{nullptr};
 		RefPtr<SceneRenderer>          m_sceneRenderer{nullptr};
 
+		VkDescriptorSet m_imguiSceneRendererDescriptorSet{nullptr};
+
 		RefPtr<Renderer2D> m_renderer2D{nullptr};
 
 		EditorCamera m_editorCamera;
 
-		bool m_viewportFocused{true};
+		bool m_canOperateCamera{true};
 	};
 }

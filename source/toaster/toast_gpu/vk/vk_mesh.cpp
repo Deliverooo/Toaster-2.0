@@ -176,7 +176,7 @@ namespace toaster::gpu
 			m_materials.emplace_back(m_ctx->alloc<VKMaterial>(p_shader));
 
 		const vk::DeviceSize vertex_buffer_size{sizeof(MeshVertex) * m_vertices.size()};
-		m_vertexBuffer = m_ctx->alloc<VKVertexBuffer>((void *) m_vertices.data(), vertex_buffer_size);
+		m_vertexBuffer = m_ctx->alloc<VKVertexBuffer>(static_cast<void *>(m_vertices.data()), vertex_buffer_size);
 
 		const vk::DeviceSize index_buffer_size{sizeof(uint16) * m_indices.size()};
 		m_indexBuffer = m_ctx->alloc<VKIndexBuffer>((void *) m_indices.data(), index_buffer_size);
