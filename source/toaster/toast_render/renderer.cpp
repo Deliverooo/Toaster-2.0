@@ -273,9 +273,6 @@ namespace toaster
 		// Push the constants
 		p_command_buffer.pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
-		// glm::vec3 test{1.0f};
-		// p_command_buffer.pushConstants<glm::vec3>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eFragment, 64, test);
-
 		const auto &submesh{p_mesh->getSubmeshes()[p_submesh_index]};
 		auto        material{p_mesh->getMaterials()[submesh.materialIndex]};
 
@@ -294,15 +291,9 @@ namespace toaster
 				vk::PushConstantsInfo push_constants_info{};
 				push_constants_info.layout     = p_pipeline->getPipelineLayout();
 				push_constants_info.stageFlags = vk::ShaderStageFlagBits::eFragment;
-				push_constants_info.size       = 12;
-				push_constants_info.offset     = 64;
+				push_constants_info.size       = push_constants.size();
+				push_constants_info.offset     = sizeof(glm::mat4);
 				push_constants_info.pValues    = push_constants.data();
-				// vk::PushConstantsInfo push_constants_info{};
-				// push_constants_info.layout     = p_pipeline->getPipelineLayout();
-				// push_constants_info.stageFlags = vk::ShaderStageFlagBits::eFragment;
-				// push_constants_info.size       = push_constants.size();
-				// push_constants_info.offset     = sizeof(glm::mat4);
-				// push_constants_info.pValues    = push_constants.data();
 
 				p_command_buffer.pushConstants2(push_constants_info);
 			}

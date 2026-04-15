@@ -179,7 +179,7 @@ namespace toaster::gpu
 		m_vertexBuffer = m_ctx->alloc<VKVertexBuffer>(static_cast<void *>(m_vertices.data()), vertex_buffer_size);
 
 		const vk::DeviceSize index_buffer_size{sizeof(uint16) * m_indices.size()};
-		m_indexBuffer = m_ctx->alloc<VKIndexBuffer>((void *) m_indices.data(), index_buffer_size);
+		m_indexBuffer = m_ctx->alloc<VKIndexBuffer>(static_cast<void *>(m_indices.data()), index_buffer_size);
 	}
 
 	auto VKMesh::getContext() const -> VKGPUContext *
