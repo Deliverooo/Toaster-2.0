@@ -10,7 +10,7 @@
 
 namespace toaster::gpu
 {
-	VKShader::VKShader(VKGPUContext *p_ctx, const BytecodeMap &p_bytecode_map) : m_ctx(p_ctx), m_shaderBytecodeMap(p_bytecode_map)
+	VKShader::VKShader(VKGPUContext *p_ctx, const BytecodeMap &p_bytecode_map, const String &p_name) : m_ctx(p_ctx), m_name(p_name), m_shaderBytecodeMap(p_bytecode_map)
 	{
 		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
 
@@ -25,8 +25,10 @@ namespace toaster::gpu
 			create_info.pName                              = "main";
 		}
 
+		LOG_TRACE("Shader: {} [", m_name);
 		for (auto &[stage, code]: p_bytecode_map)
 			_reflect(stage, code);
+		LOG_TRACE("]");
 
 		_createDescriptors();
 	}
@@ -114,8 +116,7 @@ namespace toaster::gpu
 
 		LOG_INFO("Shader stage: {}\n", vk::to_string(p_stage));
 
-		if (!resources.uniform_buffers.empty())
-			LOG_INFO("Uniform buffers:");
+		LOG_INFO("Uniform buffers:");
 		for (const auto &resource: resources.uniform_buffers)
 		{
 			const String &name = resource.name;
@@ -143,10 +144,8 @@ namespace toaster::gpu
 			LOG_TRACE("\t\tMember count: {}", member_count);
 			LOG_TRACE("\t\tSize: {}", size);
 		}
-		LOG_INFO("");
 
-		if (!resources.sampled_images.empty())
-			LOG_INFO("Combined image samplers:");
+		LOG_INFO("Combined image samplers:");
 		for (const auto &resource: resources.sampled_images)
 		{
 			const String &name = resource.name;
@@ -178,12 +177,12 @@ namespace toaster::gpu
 			LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
 			LOG_TRACE("\t\tArray size: {}", array_size);
 		}
-		LOG_INFO("");
 
-		if (!resources.push_constant_buffers.empty())
-			LOG_INFO("Push constant buffers:");
+		LOG_INFO("Push constant buffers:");
 		for (const auto &resource: resources.push_constant_buffers)
 		{
+			LOG_TRACE("Stage: {}", vk::to_string((p_stage)));
+
 			const String &name = resource.name;
 
 			auto & buffer_type  = compiler.get_type(resource.base_type_id);
@@ -192,15 +191,17 @@ namespace toaster::gpu
 
 			uint32 offset{0u};
 			if (!m_reflectionData.pushConstantRanges.empty())
-				if (m_reflectionData.pushConstantRanges.back().stage & p_stage)
-					offset = m_reflectionData.pushConstantRanges.back().offset + m_reflectionData.pushConstantRanges.back().size;
-
-			LOG_INFO("Buffer offset: {}", offset);
+				offset = m_reflectionData.pushConstantRanges.back().offset + m_reflectionData.pushConstantRanges.back().size;
 
 			PushConstantRange &push_constant_range{m_reflectionData.pushConstantRanges.emplace_back()};
 			push_constant_range.stage  = p_stage;
 			push_constant_range.size   = size;
 			push_constant_range.offset = offset;
+
+			LOG_TRACE("PCR: Name: {} | Size: {} | Offset: {}", name, size, offset);
+
+			if (name.starts_with("_"))
+				continue;
 
 			PushConstantBuffer &push_constant_buffer{m_reflectionData.pushConstantBuffers[name]};
 			push_constant_buffer.name = name;
@@ -208,19 +209,18 @@ namespace toaster::gpu
 
 			for (uint32 i{0u}; i < member_count; ++i)
 			{
-				auto        type{compiler.get_type(buffer_type.member_types[i])};
+				auto &      type{compiler.get_type(buffer_type.member_types[i])};
 				const auto &member_name{compiler.get_member_name(buffer_type.self, i)};
 				auto        member_size{compiler.get_declared_struct_member_size(buffer_type, i)};
 				auto        member_offset{compiler.type_struct_member_offset(buffer_type, i)};
 
-				LOG_INFO("Member offset: {}", member_offset);
-				LOG_INFO("Member offset2: {}", compiler.type_struct_member_offset(buffer_type, i));
+				member_offset -= offset;
+
+				LOG_TRACE("Member size: {}", member_size);
+				LOG_TRACE("Member offset: {}", member_offset);
+
 				push_constant_buffer.pushConstants[fmt::format("{}.{}", name, member_name)] = PushConstant{member_name, static_cast<uint32>(member_size), member_offset};
 			}
-
-			LOG_TRACE("\t{}", name);
-			LOG_TRACE("\t\tMember count: {}", member_count);
-			LOG_TRACE("\t\tSize: {}", size);
 		}
 	}
 

@@ -84,7 +84,7 @@ namespace toaster::gpu
 	auto VKMaterial::_getPushConstantDeclaration(const String &p_name) -> const PushConstant *
 	{
 		const auto &push_constant_buffers{m_shader->getReflectedPushConstantBuffers()};
-		if (push_constant_buffers.size() > 0)
+		if (!push_constant_buffers.empty())
 		{
 			for (const auto &[name, pcb]: push_constant_buffers)
 			{
@@ -92,6 +92,7 @@ namespace toaster::gpu
 					return &push_constant_buffers.at(name).pushConstants.at(p_name);
 			}
 		}
+		TST_ASSERT(false);
 		return nullptr;
 	}
 }

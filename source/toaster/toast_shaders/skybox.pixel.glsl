@@ -8,6 +8,5 @@ layout(set = 0, binding = 0) uniform sampler2D u_Texture;
 
 void main()
 {
-
     o_Colour = texture(u_Texture, v_TexCoord);
 }

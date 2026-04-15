@@ -30,8 +30,8 @@ namespace toaster::gpu
 		using PipelineCreateInfoMap = std::map<vk::ShaderStageFlagBits, vk::PipelineShaderStageCreateInfo>;
 		using BytecodeMap           = std::map<vk::ShaderStageFlagBits, Bytecode>;
 
-		VKShader(VKGPUContext *p_ctx, const BytecodeMap &p_bytecode_map);
-		auto getContext() const -> VKGPUContext *;
+		VKShader(VKGPUContext *p_ctx, const BytecodeMap &p_bytecode_map, const String &p_name = "Unknown");
+		[[nodiscard]] auto getContext() const -> VKGPUContext *;
 
 		[[nodiscard]] auto getPipelineShaderStageCreateInfoMap() const -> const PipelineCreateInfoMap &;
 		[[nodiscard]] auto getPipelineShaderStageCreateInfos() const -> std::vector<vk::PipelineShaderStageCreateInfo>;
@@ -55,6 +55,8 @@ namespace toaster::gpu
 		auto _createDescriptors() -> void;
 
 		VKGPUContext *m_ctx{nullptr};
+
+		String m_name;
 
 		// Useful for the pipeline to use to access shader modules
 		PipelineCreateInfoMap m_shaderCreateInfos;

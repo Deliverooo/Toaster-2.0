@@ -9,6 +9,8 @@
 #include "toast_scene/entity.hpp"
 #include "toast_scene/scene_renderer.hpp"
 
+#include "toast_asset/asset_manager.hpp"
+
 #include <imgui.h>
 
 #include "backends/imgui_impl_vulkan.h"

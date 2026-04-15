@@ -17,11 +17,11 @@ layout (std140, set = 1, binding = 0) uniform Camera
 layout (push_constant) uniform Transform
 {
     mat4 model;
-} u_Transform;
+} _Transform_;
 
 void main()
 {
     v_Colour = a_Colour;
     v_TexCoords = a_TexCoords;
-    gl_Position = u_Proj * u_View * a_Position;
+    gl_Position = u_Proj * u_View * _Transform_.model * a_Position;
 }

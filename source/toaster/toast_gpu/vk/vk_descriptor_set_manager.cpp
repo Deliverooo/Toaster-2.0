@@ -182,7 +182,6 @@ namespace toaster::gpu
 
 				if (!write_descriptors.empty())
 				{
-					LOG_INFO("Num descriptors: {} | Set: {}", write_descriptors.size(), set);
 					m_ctx->getDevice().updateDescriptorSets(write_descriptors, {});
 				}
 			}
@@ -274,7 +273,6 @@ namespace toaster::gpu
 
 				write_descriptor_sets.emplace_back(write_descriptor.wds);
 			}
-			LOG_INFO("Descriptor count: {} | Set: {}", write_descriptor_sets.size(), set);
 			m_ctx->getDevice().updateDescriptorSets(write_descriptor_sets, {});
 		}
 		m_invalidDescriptorResources.clear();

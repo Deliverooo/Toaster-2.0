@@ -7,16 +7,16 @@ layout(location = 0) out vec4 o_Colour;
 
 layout(set = 0, binding = 0) uniform sampler2D u_AlbedoTexture;
 
-//layout(push_constant) uniform Material
-//{
-//    vec3 albedoColour;
-//} u_Material;
+layout(push_constant) uniform Material
+{
+    layout(offset = 64) vec3 albedoColour;
+} u_Material;
 
 void main()
 {
     vec3 col = texture(u_AlbedoTexture, v_TexCoord).rgb;
 
-//    col *= u_Material.albedoColour;
+    col *= u_Material.albedoColour;
 
     o_Colour = vec4(col, 1.0f);
 }
