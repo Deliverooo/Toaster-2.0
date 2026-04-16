@@ -60,13 +60,19 @@ namespace toaster
 		RefPtr<gpu::VKUniformBufferPFF> m_cameraUBOs;
 		std::vector<void *>             m_mappedCameraUBOs;
 
-		// struct TransformBuffer
-		// {
-		// 	RefPtr<gpu::VKVertexBuffer> vertexBuffer;
-		// 	std::array<glm::mat4, 3> *  data{nullptr};
-		// };
-		//
-		// std::vector<TransformBuffer> m_meshTransformBuffers;
+		struct PointLight
+		{
+			glm::vec3 position{0.0f};
+		};
+
+		struct PointLightUB
+		{
+			uint32     count{0u};
+			PointLight pointLights[64]{};
+		};
+
+		RefPtr<gpu::VKUniformBufferPFF> m_pointLightUBOs;
+		std::vector<void *>             m_mappedPointLightUBOs;
 
 		struct DrawCommand
 		{

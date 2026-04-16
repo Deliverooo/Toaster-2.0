@@ -3,6 +3,9 @@
  */
 #pragma once
 
+#include <sstream>
+#include <vector>
+
 #include "event.hpp"
 
 namespace toaster
@@ -85,5 +88,34 @@ namespace toaster
 
 	private:
 		bool m_maximized{true};
+	};
+
+	class WindowFileDropEvent final : public Event
+	{
+	public:
+		WindowFileDropEvent(const std::vector<String> &p_filepaths) : m_filepaths(p_filepaths)
+		{
+		}
+
+		EVENT_CLASS_CATEGORY(EventCategory_Application)
+		EVENT_CLASS_TYPE(eWindowFileDrop)
+
+		[[nodiscard]] auto getFilepaths() const -> const std::vector<String> & { return m_filepaths; }
+
+		[[nodiscard]] virtual auto toStr() const -> String override
+		{
+			std::ostringstream oss;
+			for (uint32 i{0u}; i < m_filepaths.size(); ++i)
+			{
+				oss << m_filepaths[i];
+				if (i != m_filepaths.size() - 1)
+					oss << " | ";
+			}
+
+			return "Window File Drop Event -> [" + oss.str() + "]";
+		}
+
+	private:
+		std::vector<String> m_filepaths;
 	};
 }

@@ -21,6 +21,7 @@ namespace toaster
 		eWindowFocus,
 		eWindowLostFocus,
 		eWindowMoved,
+		eWindowFileDrop,
 		eAppTick,
 		eAppUpdate,
 		eAppRender,

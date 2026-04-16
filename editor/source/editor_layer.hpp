@@ -7,6 +7,7 @@
 
 #include "editor_camera.hpp"
 #include "panels/scene_hierarchy_panel.hpp"
+#include "toast_lib/events/window_event.hpp"
 
 namespace toaster
 {
@@ -38,6 +39,8 @@ namespace toaster
 		virtual auto onUIRender() -> void override;
 
 	private:
+		auto   _onWindowFileDropEvent(WindowFileDropEvent &p_event) -> bool;
+
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
 

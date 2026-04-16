@@ -196,6 +196,22 @@ namespace toaster
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
+
+		glfwSetDropCallback(m_window, [](GLFWwindow *window, int32 path_count, CString paths[])
+		{
+			const auto &data{GET_CB_DATA()};
+
+			std::vector<String> filepaths{static_cast<std::vector<String>::size_type>(path_count)};
+			for (uint32 i{0u}; i < path_count; ++i)
+			{
+				LOG_INFO("File received: {}", paths[i]);
+				filepaths[i] = paths[i];
+			}
+			WindowFileDropEvent event{filepaths};
+
+			if (data.eventCallback)
+				data.eventCallback(event);
+		});
 		#undef GET_CB_DATA
 
 		if (!p_create_info.iconPath.empty())

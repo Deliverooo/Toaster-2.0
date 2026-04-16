@@ -189,6 +189,9 @@ namespace toaster
 			}
 			return false;
 		});
+
+		event_dispatcher.dispatch<WindowFileDropEvent>(TST_BIND_EVENT_FN(EditorLayer::_onWindowFileDropEvent));
+
 		if (m_canOperateCamera)
 			m_editorCamera.onEvent(p_event);
 	}
@@ -232,5 +235,12 @@ namespace toaster
 			m_canOperateCamera = false;
 		else
 			m_canOperateCamera = true;
+	}
+
+	auto EditorLayer::_onWindowFileDropEvent(WindowFileDropEvent &p_event) -> bool
+	{
+		LOG_INFO("{}", p_event.toStr());
+
+		return false;
 	}
 }

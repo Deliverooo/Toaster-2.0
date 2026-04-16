@@ -354,6 +354,12 @@ namespace toaster
 		ig::PushID(p_mat->getName().c_str());
 		ig::Text("Material: %s", p_mat->getName().c_str());
 
+		auto albedo_map{p_mat->getResource<gpu::VKTexture2D>("u_AlbedoTexture")};
+		if (albedo_map)
+		{
+			ig::Image(ImTextureRef(p_mat->getDescriptorSet(p_frame_index)), ImVec2{100, 100}, ImVec2{0, 1}, ImVec2{1, 0});
+		}
+
 		if (ig::Button("Albedo texture", ImVec2{ig::GetContentRegionAvail().x, 0}))
 		{
 			auto path = os::openFileDialog({{"Mesh", "png,jpg,bmp"}});
@@ -364,11 +370,7 @@ namespace toaster
 				p_mat->set("u_AlbedoTexture", m_ctx->alloc<gpu::VKTexture2D>(texture_spec, path));
 			}
 		}
-		auto albedo_map{p_mat->getResource<gpu::VKTexture2D>("u_AlbedoTexture")};
-		if (albedo_map)
-		{
-			ig::Image(ImTextureRef(p_mat->getDescriptorSet(p_frame_index)), ImVec2{100, 100}, ImVec2{0, 1}, ImVec2{1, 0});
-		}
+
 
 		ig::Separator();
 		ig::PopID();
