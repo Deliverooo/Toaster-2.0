@@ -11,8 +11,6 @@ namespace toaster
 {
 	Scene::Scene(gpu::VKGPUContext *p_ctx, const String &p_name) : m_ctx(p_ctx), m_name(p_name.empty() ? "Untitled Scene" : p_name)
 	{
-		auto geometry_shader{Globals::getShaderLibrary().get("Geometry")};
-		m_mesh = m_ctx->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", geometry_shader);
 	}
 
 	Scene::~Scene()
@@ -61,7 +59,6 @@ namespace toaster
 			{
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
-				p_scene_renderer->renderMesh(m_mesh, transform.getTransform());
 				// if (sprite.texture)
 				// p_scene_renderer->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor);
 				// else
@@ -77,11 +74,54 @@ namespace toaster
 	auto Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer,
 						 const glm::mat4 &              p_view, const glm::mat4 &p_projection) -> void
 	{
+		m_lightEnvironment.pointLights.clear();
+
+		{
+			for (const auto group{m_registry.group<TransformComponent>(entt::get<DirectionalLightComponent>)}; const auto entity: group)
+			{
+				auto [transform, directional_light]{group.get<TransformComponent, DirectionalLightComponent>(entity)};
+
+				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
+																	  -glm::normalize(glm::mat3{transform.getTransform()} * glm::vec3{1.0f}),
+																	  directional_light.radiance,
+																	  directional_light.multiplier
+																  });
+			}
+		}
+		{
+			for (const auto view{m_registry.view<TransformComponent, PointLightComponent>()}; const auto entity: view)
+			{
+				auto [transform, point_light]{view.get<TransformComponent, PointLightComponent>(entity)};
+
+				m_lightEnvironment.pointLights.emplace_back(PointLight{
+																transform.translation,
+																point_light.radiance,
+																point_light.radius,
+																point_light.falloff,
+																point_light.multiplier
+															});
+			}
+		}
+		{
+			for (const auto view{m_registry.view<TransformComponent, SpotLightComponent>()}; const auto entity: view)
+			{
+				auto [transform, spot_light]{view.get<TransformComponent, SpotLightComponent>(entity)};
+
+				m_lightEnvironment.spotLights.emplace_back(SpotLight{
+															   transform.translation,
+															   spot_light.radiance,
+															   spot_light.falloff,
+															   spot_light.multiplier,
+															   spot_light.angle,
+															   spot_light.range
+														   });
+			}
+		}
 		{
 			p_scene_renderer->begin(p_cmd, p_frame_index, p_view, p_projection);
-			for (const auto group{m_registry.group<TransformComponent>(entt::get<MeshComponent>)}; const auto entity: group)
+			for (const auto view{m_registry.view<TransformComponent, MeshComponent>()}; const auto entity: view)
 			{
-				if (auto [transform, mesh]{group.get<TransformComponent, MeshComponent>(entity)}; mesh.mesh)
+				if (auto [transform, mesh]{view.get<TransformComponent, MeshComponent>(entity)}; mesh.mesh)
 				{
 					p_scene_renderer->renderMesh(mesh.mesh, transform.getTransform());
 				}
@@ -183,6 +223,11 @@ namespace toaster
 		return m_name;
 	}
 
+	auto Scene::getLightEnvironment() const -> const SceneLightEnvironment &
+	{
+		return m_lightEnvironment;
+	}
+
 	template<typename Type>
 	auto Scene::onComponentAdded([[maybe_unused]] Entity p_entity, [[maybe_unused]] Type &p_component) -> void
 	{
@@ -223,6 +268,24 @@ namespace toaster
 	}
 
 	ON_COMPONENT_ADDED(NativeScriptComponent)
+	{
+		(void) p_entity;
+		(void) p_component;
+	}
+
+	ON_COMPONENT_ADDED(DirectionalLightComponent)
+	{
+		(void) p_entity;
+		(void) p_component;
+	}
+
+	ON_COMPONENT_ADDED(PointLightComponent)
+	{
+		(void) p_entity;
+		(void) p_component;
+	}
+
+	ON_COMPONENT_ADDED(SpotLightComponent)
 	{
 		(void) p_entity;
 		(void) p_component;

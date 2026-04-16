@@ -234,6 +234,24 @@ namespace toaster
 				ig::CloseCurrentPopup();
 			}
 
+			if (ig::MenuItem("Directional Light"))
+			{
+				m_selectedEntity.addComponent<DirectionalLightComponent>();
+				ig::CloseCurrentPopup();
+			}
+
+			if (ig::MenuItem("Point Light"))
+			{
+				m_selectedEntity.addComponent<PointLightComponent>();
+				ig::CloseCurrentPopup();
+			}
+
+			if (ig::MenuItem("Spot Light"))
+			{
+				m_selectedEntity.addComponent<SpotLightComponent>();
+				ig::CloseCurrentPopup();
+			}
+
 			ig::EndPopup();
 		}
 
@@ -352,6 +370,31 @@ namespace toaster
 			// glm::vec3 &colour{p_comp.mesh->getMaterials()[0]->get<glm::vec3>("u_Material.albedoColour")};
 			// if (ui::colourEdit3("Colour", glm::value_ptr(colour)))
 			// p_comp.mesh->getMaterials()[0]->set("u_Material.albedoColour", colour);
+		}, this);
+
+		drawComponent<DirectionalLightComponent>("Directional Light", p_entity, [](DirectionalLightComponent &p_comp)
+		{
+			ui::colourEdit3("Radiance", glm::value_ptr(p_comp.radiance));
+			ui::dragFloat("Multiplier", &p_comp.multiplier, "##Multiplier", 0.01f);
+		}, this);
+
+		drawComponent<PointLightComponent>("Point Light", p_entity, [](PointLightComponent &p_comp)
+		{
+			ui::colourEdit3("Radiance", glm::value_ptr(p_comp.radiance));
+			ui::dragFloat("Multiplier", &p_comp.multiplier, "##Multiplier", 0.01f);
+			ig::Separator();
+			ui::dragFloat("Radius", &p_comp.radius, "##Radius", 0.05f);
+			ui::dragFloat("Falloff", &p_comp.falloff, "##Falloff", 0.05f);
+		}, this);
+
+		drawComponent<SpotLightComponent>("Spot Light", p_entity, [](SpotLightComponent &p_comp)
+		{
+			ui::colourEdit3("Radiance", glm::value_ptr(p_comp.radiance));
+			ui::dragFloat("Multiplier", &p_comp.multiplier, "##Multiplier", 0.01f);
+			ig::Separator();
+			ui::dragFloat("Angle", &p_comp.angle, "##Angle", 0.05f);
+			ui::dragFloat("Range", &p_comp.range, "##Range", 0.05f);
+			ui::dragFloat("Falloff", &p_comp.falloff, "##Falloff", 0.05f);
 		}, this);
 	}
 

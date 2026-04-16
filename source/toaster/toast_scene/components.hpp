@@ -99,6 +99,52 @@ namespace toaster
 		bool                         primary{false};
 	};
 
+	DEFINE_COMPONENT(DirectionalLightComponent)
+	{
+		glm::vec3 radiance{1.0f};
+		float32   multiplier{1.0f};
+
+		auto reset() -> void
+		{
+			radiance   = glm::vec3{1.0f};
+			multiplier = 1.0f;
+		}
+	};
+
+	DEFINE_COMPONENT(PointLightComponent)
+	{
+		glm::vec3 radiance{1.0f};
+		float32   radius{1.0f};
+		float32   falloff{1.0f};
+		float32   multiplier{1.0f};
+
+		auto reset() -> void
+		{
+			radiance   = glm::vec3{1.0f};
+			radius     = 1.0f;
+			falloff    = 1.0f;
+			multiplier = 1.0f;
+		}
+	};
+
+	DEFINE_COMPONENT(SpotLightComponent)
+	{
+		glm::vec3 radiance{1.0f};
+		float32   falloff{1.0f};
+		float32   multiplier{1.0f};
+		float32   angle{67.0f};
+		float32   range{12.0f};
+
+		auto reset() -> void
+		{
+			radiance   = glm::vec3{1.0f};
+			falloff    = 1.0f;
+			multiplier = 1.0f;
+			angle      = 67.0f;
+			range      = 12.0f;
+		}
+	};
+
 	DEFINE_COMPONENT(NativeScriptComponent)
 	{
 		ScriptableEntity *instance{nullptr};

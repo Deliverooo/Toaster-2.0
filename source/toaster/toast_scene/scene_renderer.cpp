@@ -1,5 +1,6 @@
 #include "scene_renderer.hpp"
 #include "scene_renderer.hpp"
+#include "scene_renderer.hpp"
 #include "toast_render/globals.hpp"
 #include "toast_render/renderer.hpp"
 
@@ -9,6 +10,7 @@ namespace toaster
 {
 	SceneRenderer::SceneRenderer(gpu::VKGPUContext *p_ctx, const SceneRendererSpecInfo &p_spec_info) : m_ctx(p_ctx), m_specInfo(p_spec_info)
 	{
+		TST_ASSERT_MSG(m_specInfo.scene, "This is called SceneRenderer, please provide a scene!");
 		{
 			constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
 			m_cameraUBOs       = m_ctx->alloc<gpu::VKUniformBufferPFF>(ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
@@ -18,6 +20,11 @@ namespace toaster
 			constexpr vk::DeviceSize ubo_size{sizeof(PointLightUB)};
 			m_pointLightUBOs       = m_ctx->alloc<gpu::VKUniformBufferPFF>(ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
 			m_mappedPointLightUBOs = m_pointLightUBOs->mapMemory(ubo_size, 0);
+		}
+		{
+			constexpr vk::DeviceSize ubo_size{sizeof(SceneDataUB)};
+			m_sceneDataUBOs       = m_ctx->alloc<gpu::VKUniformBufferPFF>(ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
+			m_mappedSceneDataUBOs = m_sceneDataUBOs->mapMemory(ubo_size, 0);
 		}
 
 		gpu::TextureSpecInfo texture_spec_info{};
@@ -59,6 +66,7 @@ namespace toaster
 			m_geometryPass = m_ctx->alloc<gpu::VKRenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs);
 			m_geometryPass->setInput("PointLightData", m_pointLightUBOs);
+			m_geometryPass->setInput("SceneData", m_sceneDataUBOs);
 
 			m_geometryPass->bake(); // TODO: rename ts to toast
 			//						   Its funny because the engine is called Toaster...
@@ -102,6 +110,7 @@ namespace toaster
 
 	SceneRenderer::~SceneRenderer()
 	{
+		m_sceneDataUBOs->unmapMemory();
 		m_pointLightUBOs->unmapMemory();
 		m_cameraUBOs->unmapMemory();
 	}
@@ -115,10 +124,23 @@ namespace toaster
 		camera_ub.proj[1][1] *= -1.0f;
 		std::memcpy(m_mappedCameraUBOs[p_frame_index], &camera_ub, sizeof(CameraUB));
 
+		const SceneLightEnvironment &light_environment{m_specInfo.scene->getLightEnvironment()};
+
 		PointLightUB point_light_ub{};
-		point_light_ub.count          = 1;
-		point_light_ub.pointLights[0] = PointLight{{0.0f, -1.0f, 0.0f}};
+		point_light_ub.count = light_environment.pointLights.size();
+		for (uint32 i{0u}; i < PointLightUB::c_maxPointLights && i < light_environment.pointLights.size(); ++i)
+		{
+			point_light_ub.pointLights[i].position   = light_environment.pointLights[i].position;
+			point_light_ub.pointLights[i].radiance   = light_environment.pointLights[i].radiance;
+			point_light_ub.pointLights[i].radius     = light_environment.pointLights[i].radius;
+			point_light_ub.pointLights[i].falloff    = light_environment.pointLights[i].falloff;
+			point_light_ub.pointLights[i].multiplier = light_environment.pointLights[i].multiplier;
+		}
 		std::memcpy(m_mappedPointLightUBOs[p_frame_index], &point_light_ub, sizeof(PointLightUB));
+
+		SceneDataUB scene_data_ub{};
+		scene_data_ub.cameraPos = glm::inverse(p_view_matrix)[3];
+		std::memcpy(m_mappedSceneDataUBOs[p_frame_index], &scene_data_ub, sizeof(SceneDataUB));
 	}
 
 	auto SceneRenderer::end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void

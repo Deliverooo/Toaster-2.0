@@ -12,6 +12,39 @@ namespace toaster
 	class Entity;
 	class SceneRenderer;
 
+	struct DirectionalLight
+	{
+		glm::vec3 direction{0.0f};
+		glm::vec3 radiance{1.0f};
+		float32   multiplier{1.0f};
+	};
+
+	struct PointLight
+	{
+		glm::vec3 position{0.0f};
+		glm::vec3 radiance{1.0f};
+		float32   radius{25.0f};
+		float32   falloff{1.0f};
+		float32   multiplier{1.0f};
+	};
+
+	struct SpotLight
+	{
+		glm::vec3 position{0.0f};
+		glm::vec3 radiance{1.0f};
+		float32   falloff{1.0f};
+		float32   multiplier{1.0f};
+		float32   angle{67.0f};
+		float32   range{12.0f};
+	};
+
+	struct SceneLightEnvironment
+	{
+		std::vector<DirectionalLight> directionalLights;
+		std::vector<PointLight>       pointLights;
+		std::vector<SpotLight>        spotLights;
+	};
+
 	class Scene
 	{
 	public:
@@ -37,6 +70,8 @@ namespace toaster
 		auto               setName(const String &p_name) -> void;
 		[[nodiscard]] auto getName() const -> String;
 
+		auto getLightEnvironment() const -> const SceneLightEnvironment &;
+
 	private:
 		template<typename Type>
 		auto onComponentAdded(Entity p_entity, Type &p_component) -> void;
@@ -52,7 +87,7 @@ namespace toaster
 
 		uint32 m_newEntityTagCount{0u};
 
-		RefPtr<gpu::VKMesh> m_mesh{nullptr};
+		SceneLightEnvironment m_lightEnvironment;
 
 		friend class Entity;
 		friend class SceneSerializer;
