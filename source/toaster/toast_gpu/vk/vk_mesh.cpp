@@ -8,18 +8,10 @@
 
 namespace toaster::gpu
 {
-	static constexpr uint32 s_MeshImportFlags = aiProcess_CalcTangentSpace // Create binormals/tangents just in case
-												| aiProcess_Triangulate    // Make sure we're triangles
-												| aiProcess_SortByPType    // Split meshes by primitive type
-												| aiProcess_GenNormals     // Make sure we have legit normals
-												| aiProcess_GenUVCoords    // Convert UVs if required
-												//		| aiProcess_OptimizeGraph
-												| aiProcess_OptimizeMeshes // Batch draws where possible
-												| aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights
-												// If more than N (=4) bone weights, discard least influencing bones and renormalise sum to 1
-												| aiProcess_ValidateDataStructure // Validation
-												| aiProcess_GlobalScale           // e.g. convert cm to m for fbx import (and other formats where cm is native)
-	;
+	static constexpr uint32 s_MeshImportFlags{
+		aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_GenNormals | aiProcess_GenUVCoords | aiProcess_OptimizeMeshes |
+		aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights | aiProcess_ValidateDataStructure | aiProcess_GlobalScale
+	};
 
 	auto mat4FromAIMatrix4x4(const aiMatrix4x4 &matrix) -> glm::mat4
 	{
@@ -82,30 +74,31 @@ namespace toaster::gpu
 					continue;
 
 				vertex_count += ai_mesh->mNumVertices;
-				index_count  += skip ? 0 : ai_mesh->mNumFaces * 3;
+				index_count  += submesh.indexCount;
 
-				for (uint32 j{0u}; j < ai_mesh->mNumVertices; ++j)
+				for (uint32 i{0u}; i < ai_mesh->mNumVertices; ++i)
 				{
 					MeshVertex vertex{};
-					vertex.position = {ai_mesh->mVertices[j].x, ai_mesh->mVertices[j].y, ai_mesh->mVertices[j].z};
-					vertex.normal   = {ai_mesh->mNormals[j].x, ai_mesh->mNormals[j].y, ai_mesh->mNormals[j].z};
+					vertex.position = {ai_mesh->mVertices[i].x, ai_mesh->mVertices[i].y, ai_mesh->mVertices[i].z};
+					vertex.normal   = {ai_mesh->mNormals[i].x, ai_mesh->mNormals[i].y, ai_mesh->mNormals[i].z};
 
 					if (ai_mesh->HasTangentsAndBitangents())
 					{
-						vertex.tangent   = {ai_mesh->mTangents[j].x, ai_mesh->mTangents[j].y, ai_mesh->mTangents[j].z};
-						vertex.bitangent = {ai_mesh->mBitangents[j].x, ai_mesh->mBitangents[j].y, ai_mesh->mBitangents[j].z};
+						vertex.tangent   = {ai_mesh->mTangents[i].x, ai_mesh->mTangents[i].y, ai_mesh->mTangents[i].z};
+						vertex.bitangent = {ai_mesh->mBitangents[i].x, ai_mesh->mBitangents[i].y, ai_mesh->mBitangents[i].z};
 					}
 					if (ai_mesh->HasTextureCoords(0))
-						vertex.texCoord = {ai_mesh->mTextureCoords[0][j].x, ai_mesh->mTextureCoords[0][j].y};
+						vertex.texCoord = {ai_mesh->mTextureCoords[0][i].x, ai_mesh->mTextureCoords[0][i].y};
 
 					m_vertices.emplace_back(vertex);
 				}
 
-				for (uint32 j{0u}; j < ai_mesh->mNumFaces; ++j)
+				for (uint32 i{0u}; i < ai_mesh->mNumFaces; ++i)
 				{
-					m_indices.emplace_back(ai_mesh->mFaces[j].mIndices[0]);
-					m_indices.emplace_back(ai_mesh->mFaces[j].mIndices[1]);
-					m_indices.emplace_back(ai_mesh->mFaces[j].mIndices[2]);
+					TST_ASSERT_MSG(ai_mesh->mFaces[i].mNumIndices == 3, "Must have 3 indices!");
+					m_indices.emplace_back(ai_mesh->mFaces[i].mIndices[0]);
+					m_indices.emplace_back(ai_mesh->mFaces[i].mIndices[1]);
+					m_indices.emplace_back(ai_mesh->mFaces[i].mIndices[2]);
 				}
 			}
 
@@ -178,7 +171,7 @@ namespace toaster::gpu
 		const vk::DeviceSize vertex_buffer_size{sizeof(MeshVertex) * m_vertices.size()};
 		m_vertexBuffer = m_ctx->alloc<VKVertexBuffer>(static_cast<void *>(m_vertices.data()), vertex_buffer_size);
 
-		const vk::DeviceSize index_buffer_size{sizeof(uint16) * m_indices.size()};
+		const vk::DeviceSize index_buffer_size{sizeof(uint32) * m_indices.size()};
 		m_indexBuffer = m_ctx->alloc<VKIndexBuffer>(static_cast<void *>(m_indices.data()), index_buffer_size);
 	}
 
@@ -212,7 +205,7 @@ namespace toaster::gpu
 		return m_vertices;
 	}
 
-	auto VKMesh::getIndices() const -> const std::vector<uint16> &
+	auto VKMesh::getIndices() const -> const std::vector<uint32> &
 	{
 		return m_indices;
 	}

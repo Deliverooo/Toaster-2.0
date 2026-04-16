@@ -42,6 +42,12 @@ namespace toaster::gpu
 		DescriptorResource(const RefPtr<VKTexture2D> &p_texture_2d) : resources(std::vector<RefPtr<IGPUResource> >(1, p_texture_2d)), type(EGPUResourceType::eTexture2D)
 		{
 		}
+
+		auto set(const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_index) -> void
+		{
+			type               = EGPUResourceType::eTexture2D;
+			resources[p_index] = p_texture_2d.as<IGPUResource>();
+		}
 	};
 
 	class VKDescriptorSetManager

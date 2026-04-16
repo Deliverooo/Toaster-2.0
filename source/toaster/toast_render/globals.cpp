@@ -15,7 +15,7 @@ namespace toaster
 		RefPtr<gpu::VKIndexBuffer>  quadIndexBuffer{nullptr};
 
 		std::vector<Globals::QuadVertex> quadVertices;
-		std::vector<uint16>              quadIndices;
+		std::vector<uint32>              quadIndices;
 
 		RefPtr<gpu::VKTexture2D> whiteTexture{nullptr};
 	};
@@ -62,7 +62,7 @@ namespace toaster
 		vk::DeviceSize vbo_size{s_globalData->quadVertices.size() * sizeof(QuadVertex)};
 		s_globalData->quadVertexBuffer = s_globalData->ctx->alloc<gpu::VKVertexBuffer>(s_globalData->quadVertices.data(), vbo_size);
 
-		vk::DeviceSize ibo_size{s_globalData->quadIndices.size() * sizeof(uint16)};
+		vk::DeviceSize ibo_size{s_globalData->quadIndices.size() * sizeof(uint32)};
 		s_globalData->quadIndexBuffer = s_globalData->ctx->alloc<gpu::VKIndexBuffer>(s_globalData->quadIndices.data(), ibo_size);
 
 		gpu::TextureSpecInfo white_texture_spec_info{};
@@ -99,7 +99,7 @@ namespace toaster
 		return s_globalData->quadVertices;
 	}
 
-	auto Globals::getFullscreenQuadIndices() -> const std::vector<uint16> &
+	auto Globals::getFullscreenQuadIndices() -> const std::vector<uint32> &
 	{
 		return s_globalData->quadIndices;
 	}

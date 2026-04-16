@@ -29,7 +29,7 @@ namespace toaster
 		static auto getFullscreenQuadIndexBuffer() -> const RefPtr<gpu::VKIndexBuffer> &;
 
 		static auto getFullscreenQuadVertices() -> const std::vector<QuadVertex> &;
-		static auto getFullscreenQuadIndices() -> const std::vector<uint16> &;
+		static auto getFullscreenQuadIndices() -> const std::vector<uint32> &;
 
 		static auto getWhiteTexture() -> const RefPtr<gpu::VKTexture2D> &;
 	};

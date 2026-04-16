@@ -310,14 +310,16 @@ namespace toaster
 			ui::dragFloat("Tiling Factor", &p_comp.tilingFactor, "##Tiling_Factor", 0.1f);
 			ig::PopStyleVar();
 
+			ig::Text("Texture:");
 			if (ig::Button("File", ImVec2{ig::GetContentRegionAvail().x, 0}))
 			{
-				auto path = os::openFileDialog({{"Image", "png,jpg,jpeg"}});
+				auto path = os::openFileDialog({{"Texture", "png,jpg,jpeg"}});
 				if (io::filesystem::exists(path))
 				{
 					LOG_INFO("{}", path.string());
-					gpu::TextureSpecInfo texture_spec{};
-					p_comp.texture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec, path);
+
+					gpu::TextureSpecInfo texture_spec_info{};
+					p_comp.texture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, path);
 				}
 			}
 		}, this);

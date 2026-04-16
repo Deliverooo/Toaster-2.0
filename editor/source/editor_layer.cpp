@@ -26,8 +26,8 @@ namespace toaster
 	auto EditorLayer::onInit() -> void
 	{
 		const auto &app{getApp()};
-		auto        ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
-		const auto  swapchain{app.getWindow().getSwapchain()};
+		m_ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		const auto swapchain{app.getWindow().getSwapchain()};
 
 		m_viewportWidth  = swapchain->getExtent().width;
 		m_viewportHeight = swapchain->getExtent().height;
@@ -64,47 +64,35 @@ namespace toaster
 			{gpu::EBufferDataType::eFloat3, "a_Position"},
 			{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
 		};
-		m_fullscreenPipeline = ctx->alloc<gpu::VKPipeline>(fullscreen_pipeline_create_info);
-		m_fullscreenPass     = ctx->alloc<gpu::VKRenderPass>(m_fullscreenPipeline);
-		m_fullscreenMaterial = ctx->alloc<gpu::VKMaterial>(fullscreen_shader);
+		m_fullscreenPipeline = m_ctx->alloc<gpu::VKPipeline>(fullscreen_pipeline_create_info);
+		m_fullscreenPass     = m_ctx->alloc<gpu::VKRenderPass>(m_fullscreenPipeline);
+		m_fullscreenMaterial = m_ctx->alloc<gpu::VKMaterial>(fullscreen_shader);
 
-		m_frameDataUBOs = ctx->alloc<gpu::VKUniformBufferPFF>(sizeof(FrameDataUB), gpu::VKGPUContext::c_maxFramesInFlight);
+		m_frameDataUBOs = m_ctx->alloc<gpu::VKUniformBufferPFF>(sizeof(FrameDataUB), gpu::VKGPUContext::c_maxFramesInFlight);
 		m_fullscreenPass->setInput("FrameData", m_frameDataUBOs);
 
 		gpu::TextureSpecInfo texture_spec_info{};
-		m_texture = ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "../resources/textures/Peeber.png");
+		m_texture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "../resources/textures/Peeber.png");
 		gpu::TextureSpecInfo texture_spec_info2{};
-		m_texture2 = ctx->alloc<gpu::VKTexture2D>(texture_spec_info2, "../resources/textures/ooorbo.png");
+		m_texture2 = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info2, "../resources/textures/ooorbo.png");
 
 		m_fullscreenPass->setInput("u_Texture", m_texture);
 		m_fullscreenPass->bake();
 
-		// gpu::TextureSpecInfo final_colour_texture_spec_info{};
-		// final_colour_texture_spec_info.width  = m_viewportWidth;
-		// final_colour_texture_spec_info.height = m_viewportHeight;
-		// final_colour_texture_spec_info.format = swapchain->getSurfaceFormat().format;
-		// m_finalColourTexture                  = ctx->alloc<gpu::VKTexture2D>(final_colour_texture_spec_info);
-		//
-		// gpu::ImageCreateInfo final_depth_image_create_info{};
-		// final_depth_image_create_info.width   = m_viewportWidth;
-		// final_depth_image_create_info.height  = m_viewportHeight;
-		// final_colour_texture_spec_info.format = swapchain->getDepthFormat();
-		// m_finalDepthImage                     = ctx->alloc<gpu::VKImage2D>(final_depth_image_create_info);
+		m_scene = make_reference<Scene>(m_ctx, "Main Scene");
 
-		m_scene = make_reference<Scene>(ctx, "Main Scene");
-
-		m_sceneHierarchyPanel = make_unique<SceneHierarchyPanel>(ctx, m_scene);
+		m_sceneHierarchyPanel = make_unique<SceneHierarchyPanel>(m_ctx, m_scene);
 
 		SceneRendererSpecInfo scene_renderer_spec_info{};
 		scene_renderer_spec_info.viewportWidth  = m_viewportWidth;
 		scene_renderer_spec_info.viewportHeight = m_viewportHeight;
 		scene_renderer_spec_info.scene          = m_scene;
-		m_sceneRenderer                         = make_reference<SceneRenderer>(ctx, scene_renderer_spec_info);
+		m_sceneRenderer                         = make_reference<SceneRenderer>(m_ctx, scene_renderer_spec_info);
 
 		Renderer2DCreateInfo renderer_2d_create_info{};
 		renderer_2d_create_info.renderTargetWidth  = m_viewportWidth;
 		renderer_2d_create_info.renderTargetHeight = m_viewportHeight;
-		m_renderer2D                               = make_reference<Renderer2D>(ctx, renderer_2d_create_info);
+		m_renderer2D                               = make_reference<Renderer2D>(m_ctx, renderer_2d_create_info);
 
 		{
 			Entity orbo_entity{m_scene->createEntity()};
@@ -113,7 +101,10 @@ namespace toaster
 			transform_comp.rotation    = {0.0f, 0.0f, glm::radians(180.0f)};
 			transform_comp.scale       = {1.0f, 1.0f, 1.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
-			mc.mesh = ctx->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
+			mc.mesh = m_ctx->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
+
+			// auto &src{orbo_entity.addComponent<SpriteRendererComponent>()};
+			// src.texture = m_texture;
 		}
 	}
 
@@ -200,7 +191,6 @@ namespace toaster
 	{
 		const auto &app{getApp()};
 		const auto  swapchain{app.getWindow().getSwapchain()};
-		const auto  ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
 
 		if (!m_imguiSceneRendererDescriptorSet)
 			m_imguiSceneRendererDescriptorSet = ImGui_ImplVulkan_AddTexture(*m_sceneRenderer->getOutputColourTexture()->getSampler(),
@@ -224,7 +214,7 @@ namespace toaster
 				LOG_INFO("{}", path.string());
 
 				gpu::TextureSpecInfo texture_spec_info{};
-				m_sceneRenderer->setEnvironmentBackground(ctx->alloc<gpu::VKTexture2D>(texture_spec_info, path));
+				m_sceneRenderer->setEnvironmentBackground(m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, path));
 			}
 		}
 		// ig::Image(m_imguiSceneRendererDescriptorSet, ImVec2{(float32) m_viewportWidth / 2.0f, (float32) m_viewportHeight / 2.0f});
@@ -241,6 +231,15 @@ namespace toaster
 	{
 		LOG_INFO("{}", p_event.toStr());
 
+		for (const auto &path: p_event.getFilepaths())
+		{
+			if (path.ends_with(".fbx") || path.ends_with(".obj"))
+			{
+				Entity e{m_scene->createEntity()};
+				auto & mc{e.addComponent<MeshComponent>()};
+				mc.mesh = m_ctx->alloc<gpu::VKMesh>(path, Globals::getShaderLibrary().get("Geometry"));
+			}
+		}
 		return false;
 	}
 }

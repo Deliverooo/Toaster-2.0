@@ -152,8 +152,8 @@ namespace toaster::gpu
 
 			uint32 binding    = compiler.get_decoration(resource.id, spv::DecorationBinding);
 			uint32 set        = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
-			auto & type       = compiler.get_type(resource.base_type_id);
-			uint32 array_size = type.array.empty() ? 1 : type.array[0];
+			auto & type       = compiler.get_type(resource.type_id);
+			uint32 array_size = type.array.size() > 0 ? type.array[0] : 1;
 			if (array_size == 0)
 				array_size = 1;
 

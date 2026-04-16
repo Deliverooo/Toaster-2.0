@@ -7,6 +7,8 @@
 #include <array>
 #include <vulkan/vulkan_raii.hpp>
 
+#include "toast_gpu/vk/vk_render_attachment.hpp"
+
 namespace toaster
 {
 	namespace gpu
@@ -30,6 +32,8 @@ namespace toaster
 
 		uint32 renderTargetWidth{1920u};
 		uint32 renderTargetHeight{1080u};
+
+		bool overrideAttachments{false};
 	};
 
 	class Renderer2D final
@@ -44,11 +48,13 @@ namespace toaster
 		~Renderer2D();
 
 		auto begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void;
-		auto end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
+				 gpu::RenderingAttachmentInfo * p_override_depth_attachment                                                             = nullptr) -> void;
 
 		auto submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
 		auto submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
 		auto submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour) -> void;
+		auto submitQuad(const tsm::float4x4 &p_transform, const RefPtr<gpu::VKTexture2D> &p_texture, const tsm::float4 &p_colour) -> void;
 
 		auto onResize(uint32 p_width, uint32 p_height) -> void;
 
@@ -57,6 +63,7 @@ namespace toaster
 
 	private:
 		auto _beginNewBatch() -> void;
+		auto _getTextureSlotIndex(const RefPtr<gpu::VKTexture2D> &p_texture) -> uint32;
 
 		gpu::VKGPUContext *m_ctx;
 
@@ -66,11 +73,11 @@ namespace toaster
 
 		struct QuadVertex
 		{
-			tsm::float4 position;
-			tsm::float4 colour;
-			tsm::float2 texCoord;
-			float32     texIndex;
-			float32     tilingFactor;
+			tsm::float4 position{0.0f};
+			tsm::float4 colour{1.0f};
+			tsm::float2 texCoord{0.0f};
+			float32     texIndex{0u};
+			float32     tilingFactor{1.0f};
 		};
 
 		gpu::BufferLayout m_quadVertexBufferLayout;

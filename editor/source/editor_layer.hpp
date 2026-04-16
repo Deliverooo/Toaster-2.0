@@ -39,7 +39,9 @@ namespace toaster
 		virtual auto onUIRender() -> void override;
 
 	private:
-		auto   _onWindowFileDropEvent(WindowFileDropEvent &p_event) -> bool;
+		auto _onWindowFileDropEvent(WindowFileDropEvent &p_event) -> bool;
+
+		gpu::VKGPUContext *m_ctx{nullptr};
 
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};

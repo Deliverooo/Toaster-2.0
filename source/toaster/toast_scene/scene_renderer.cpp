@@ -92,6 +92,12 @@ namespace toaster
 		resolve_depth_attachment_image_create_info.format = m_ctx->findDepthFormat();
 		resolve_depth_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
 		m_resolveOutputDepthImage                         = m_ctx->alloc<gpu::VKImage2D>(resolve_depth_attachment_image_create_info);
+
+		Renderer2DCreateInfo renderer_2d_create_info{};
+		renderer_2d_create_info.renderTargetWidth   = m_specInfo.viewportWidth;
+		renderer_2d_create_info.renderTargetHeight  = m_specInfo.viewportHeight;
+		renderer_2d_create_info.overrideAttachments = true;
+		m_renderer2D                                = make_reference<Renderer2D>(m_ctx, renderer_2d_create_info);
 	}
 
 	SceneRenderer::~SceneRenderer()
@@ -145,6 +151,11 @@ namespace toaster
 		return m_resolveOutputDepthImage;
 	}
 
+	auto SceneRenderer::getRenderer2D() -> RefPtr<Renderer2D>
+	{
+		return m_renderer2D;
+	}
+
 	auto SceneRenderer::onResize(uint32 p_width, uint32 p_height) -> void
 	{
 		m_specInfo.viewportWidth  = p_width;
@@ -154,6 +165,7 @@ namespace toaster
 		m_MSAADepthAttachmentImage->resize(p_width, p_height);
 		m_resolveOutputColourTexture->resize(p_width, p_height);
 		m_resolveOutputDepthImage->resize(p_width, p_height);
+		m_renderer2D->onResize(p_width, p_height);
 	}
 
 	auto SceneRenderer::setEnvironmentBackground(RefPtr<gpu::VKTexture2D> p_texture) -> void

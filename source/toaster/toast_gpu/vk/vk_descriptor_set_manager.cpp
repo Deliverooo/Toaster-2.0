@@ -84,9 +84,10 @@ namespace toaster::gpu
 
 	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void
 	{
-		// TODO: texture arrays
-		if (const auto decl{getDescriptorDeclaration(p_name)})
-			m_descriptorResources.at(decl->set)[decl->binding] = p_texture_2d;
+		const auto decl{getDescriptorDeclaration(p_name)};
+		TST_ASSERT_MSG(p_array_index < decl->arraySize, "Out of bounds");
+		if (decl)
+			m_descriptorResources.at(decl->set)[decl->binding].set(p_texture_2d, p_array_index);
 		else
 			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
@@ -127,7 +128,9 @@ namespace toaster::gpu
 					m_descriptorSets[frame_index].emplace_back(std::move(m_ctx->getDevice().allocateDescriptorSets(descriptor_set_allocate_info).front()))
 				};
 
-				auto &write_descriptor_sets{m_writeDescriptorMap[frame_index].at(set)};
+				auto &                                             write_descriptor_sets{m_writeDescriptorMap[frame_index].at(set)};
+				std::vector<std::vector<vk::DescriptorImageInfo> > descriptor_image_infos;
+				uint32                                             descriptor_image_info_index{0u};
 				for (const auto &[binding, resource]: resources)
 				{
 					auto &stored_write_descriptor{write_descriptor_sets.at(binding)};
@@ -160,9 +163,20 @@ namespace toaster::gpu
 						}
 						case EGPUResourceType::eTexture2D:
 						{
-							auto texture_2d{resource.resources[0].as<VKTexture2D>()};
-							TST_ASSERT(texture_2d);
-							write_descriptor.pImageInfo                = &texture_2d->getDescriptorInfo();
+							if (resource.resources.size() > 1)
+							{
+								descriptor_image_infos.emplace_back(resource.resources.size());
+								for (uint32 i{0u}; i < resource.resources.size(); ++i)
+									descriptor_image_infos[descriptor_image_info_index][i] = resource.resources[0].as<VKTexture2D>()->getDescriptorInfo();
+								write_descriptor.pImageInfo = descriptor_image_infos[descriptor_image_info_index].data();
+								++descriptor_image_info_index;
+							}
+							else
+							{
+								auto texture_2d{resource.resources[0].as<VKTexture2D>()};
+								write_descriptor.pImageInfo = &texture_2d->getDescriptorInfo();
+							}
+
 							stored_write_descriptor.resourceHandles[0] = write_descriptor.pImageInfo->imageView;
 
 							if (!write_descriptor.pImageInfo->imageView)
@@ -218,10 +232,13 @@ namespace toaster::gpu
 							if (!texture_2d)
 								texture_2d = m_whiteTexture;
 							const auto &image_info{texture_2d->getDescriptorInfo()};
-							if (image_info.imageView != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
+							if (image_info.imageView != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[i])
+							{
 								m_invalidDescriptorResources[set][binding] = resource;
-							break;
+								break;
+							}
 						}
+						break;
 					}
 					default: break;
 				}
@@ -235,6 +252,8 @@ namespace toaster::gpu
 		{
 			std::vector<vk::WriteDescriptorSet> write_descriptor_sets;
 			write_descriptor_sets.reserve(resources.size());
+			std::vector<std::vector<vk::DescriptorImageInfo> > descriptor_image_infos;
+			uint32                                             descriptor_image_info_index{0u};
 
 			for (const auto &[binding, resource]: resources)
 			{
@@ -260,6 +279,18 @@ namespace toaster::gpu
 					{
 						if (resource.resources.size() > 1)
 						{
+							descriptor_image_infos.emplace_back(resource.resources.size());
+							for (uint32 i{0u}; i < resource.resources.size(); ++i)
+							{
+								auto texture_2d{resource.resources[i].as<VKTexture2D>()};
+								descriptor_image_infos[descriptor_image_info_index][i] = texture_2d->getDescriptorInfo();
+								write_descriptor.resourceHandles[i]                    = descriptor_image_infos[descriptor_image_info_index][i].imageView;
+								LOG_INFO("Index: {} | Texture: {}", i, texture_2d->getPath().string());
+							}
+							write_descriptor.wds.pImageInfo = descriptor_image_infos[descriptor_image_info_index].data();
+							++descriptor_image_info_index;
+
+							LOG_INFO("Updating texture array");
 						}
 						else
 						{
@@ -267,6 +298,7 @@ namespace toaster::gpu
 							write_descriptor.wds.pImageInfo     = &texture_2d->getDescriptorInfo();
 							write_descriptor.resourceHandles[0] = texture_2d->getDescriptorInfo().imageView;
 						}
+						break;
 					}
 					default: break;
 				}

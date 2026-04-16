@@ -77,18 +77,45 @@ namespace toaster
 	auto Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer,
 						 const glm::mat4 &              p_view, const glm::mat4 &p_projection) -> void
 	{
-		p_scene_renderer->begin(p_cmd, p_frame_index, p_view, p_projection);
-
-		auto group = m_registry.group<TransformComponent>(entt::get<MeshComponent>);
-		for (auto entity: group)
 		{
-			if (auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity); mesh.mesh)
+			p_scene_renderer->begin(p_cmd, p_frame_index, p_view, p_projection);
+			for (const auto group{m_registry.group<TransformComponent>(entt::get<MeshComponent>)}; const auto entity: group)
 			{
-				p_scene_renderer->renderMesh(mesh.mesh, transform.getTransform());
+				if (auto [transform, mesh]{group.get<TransformComponent, MeshComponent>(entity)}; mesh.mesh)
+				{
+					p_scene_renderer->renderMesh(mesh.mesh, transform.getTransform());
+				}
 			}
+			p_scene_renderer->end(p_cmd, p_frame_index);
 		}
 
-		p_scene_renderer->end(p_cmd, p_frame_index);
+		{
+			auto renderer_2d{p_scene_renderer->getRenderer2D()};
+			renderer_2d->begin(p_cmd, p_frame_index, p_view, p_projection);
+
+			for (const auto view{m_registry.view<TransformComponent, SpriteRendererComponent>()}; const auto entity: view)
+			{
+				auto [transform, src]{view.get<TransformComponent, SpriteRendererComponent>(entity)};
+				if (src.texture)
+					renderer_2d->submitQuad(transform.getTransform(), src.texture, src.colour);
+				else
+					renderer_2d->submitQuad(transform.getTransform(), src.colour);
+			}
+
+			gpu::RenderingAttachmentInfo colour_attachment_info{};
+			colour_attachment_info.clearValue = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
+			colour_attachment_info.image      = p_scene_renderer->getOutputColourTexture()->getImage();
+			colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eNone;
+			colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+
+			gpu::RenderingAttachmentInfo depth_attachment_info{};
+			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
+			depth_attachment_info.image      = p_scene_renderer->getOutputDepthImage();
+			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eNone;
+			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+
+			renderer_2d->end(p_cmd, p_frame_index, &colour_attachment_info, &depth_attachment_info);
+		}
 	}
 
 	auto Scene::setViewportSize(uint32 p_width, uint32 p_height) -> void
@@ -96,10 +123,10 @@ namespace toaster
 		m_viewportWidth  = p_width;
 		m_viewportHeight = p_height;
 
-		auto view = m_registry.view<CameraComponent>();
+		auto view{m_registry.view<CameraComponent>()};
 		for (auto entity: view)
 		{
-			auto &cameraComponent = view.get<CameraComponent>(entity);
+			auto &cameraComponent{view.get<CameraComponent>(entity)};
 			cameraComponent.camera.setViewportSize(p_width, p_height);
 		}
 	}

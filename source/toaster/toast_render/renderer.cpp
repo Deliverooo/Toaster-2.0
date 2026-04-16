@@ -212,7 +212,7 @@ namespace toaster
 			}
 
 			const auto &push_constants{p_material->getPushConstantStorageBuffer()};
-			if (push_constants.size() > 64)
+			if (push_constants.size() > 0)
 			{
 				vk::PushConstantsInfo push_constants_info{};
 				push_constants_info.layout     = p_pipeline->getPipelineLayout();
@@ -220,12 +220,13 @@ namespace toaster
 				push_constants_info.size       = push_constants.size();
 				push_constants_info.offset     = sizeof(glm::mat4);
 				push_constants_info.pValues    = push_constants.data();
+
 				p_command_buffer.pushConstants2(push_constants_info);
 			}
 		}
 		// Bind the vertex and index buffers
 		p_vertex_buffer->bind(p_command_buffer);
-		p_index_buffer->bind(p_command_buffer, vk::IndexType::eUint16);
+		p_index_buffer->bind(p_command_buffer, vk::IndexType::eUint32);
 
 		// Finally, draw indexed :)
 		p_command_buffer.drawIndexed(p_index_count, 1, 0, 0, 0);
@@ -259,7 +260,7 @@ namespace toaster
 		}
 		// Bind the vertex and index buffers
 		Globals::getFullscreenQuadVertexBuffer()->bind(p_command_buffer);
-		Globals::getFullscreenQuadIndexBuffer()->bind(p_command_buffer, vk::IndexType::eUint16);
+		Globals::getFullscreenQuadIndexBuffer()->bind(p_command_buffer, vk::IndexType::eUint32);
 
 		// Finally, draw indexed :)
 		p_command_buffer.drawIndexed(Globals::getFullscreenQuadIndices().size(), 1, 0, 0, 0);
@@ -300,7 +301,7 @@ namespace toaster
 		}
 		// Bind the vertex and index buffers
 		p_mesh->getVertexBuffer()->bind(p_command_buffer);
-		p_mesh->getIndexBuffer()->bind(p_command_buffer, vk::IndexType::eUint16);
+		p_mesh->getIndexBuffer()->bind(p_command_buffer, vk::IndexType::eUint32);
 
 		// Finally, draw indexed :)
 		p_command_buffer.drawIndexed(submesh.indexCount, 1, submesh.baseIndex, submesh.baseVertex, 0);

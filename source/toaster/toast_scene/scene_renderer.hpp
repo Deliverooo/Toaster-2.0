@@ -26,6 +26,8 @@ namespace toaster
 		auto getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 		auto getOutputDepthImage() const -> const RefPtr<gpu::VKImage2D> &;
 
+		auto getRenderer2D() -> RefPtr<Renderer2D>;
+
 		auto onResize(uint32 p_width, uint32 p_height) -> void;
 		auto setEnvironmentBackground(RefPtr<gpu::VKTexture2D> p_texture) -> void;
 
@@ -36,6 +38,8 @@ namespace toaster
 		gpu::VKGPUContext *m_ctx{nullptr};
 
 		SceneRendererSpecInfo m_specInfo{};
+
+		RefPtr<Renderer2D> m_renderer2D{nullptr};
 
 		RefPtr<gpu::VKPipeline>   m_geometryPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_geometryPass{nullptr};

@@ -57,7 +57,7 @@ namespace toaster::gpu
 		auto getSubmeshes() const -> const std::vector<Submesh> &;
 
 		auto getVertices() const -> const std::vector<MeshVertex> &;
-		auto getIndices() const -> const std::vector<uint16> &;
+		auto getIndices() const -> const std::vector<uint32> &;
 
 	private:
 		auto _traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void;
@@ -70,7 +70,7 @@ namespace toaster::gpu
 		std::vector<MeshNode> m_nodes;
 
 		std::vector<MeshVertex> m_vertices;
-		std::vector<uint16>     m_indices;
+		std::vector<uint32>     m_indices;
 
 		RefPtr<VKVertexBuffer> m_vertexBuffer{nullptr};
 		RefPtr<VKIndexBuffer>  m_indexBuffer{nullptr};
