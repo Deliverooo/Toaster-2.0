@@ -85,7 +85,6 @@ namespace toaster
 		RefPtr<gpu::VKTexture2D> m_renderTargetTexture{nullptr};
 		RefPtr<gpu::VKImage2D>   m_renderTargetDepthImage{nullptr};
 
-		RefPtr<gpu::VKShader>     m_quadShader{nullptr};
 		RefPtr<gpu::VKPipeline>   m_quadPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_quadRenderPass{nullptr};
 		RefPtr<gpu::VKMaterial>   m_quadMaterial{nullptr};

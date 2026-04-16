@@ -18,16 +18,12 @@ namespace toaster
 			{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
 		};
 
-		gpu::VKShader::Bytecode    vs_bytecode{io::filesystem::readBinary("shaders/quad.vert.glsl.spv")};
-		gpu::VKShader::Bytecode    ps_bytecode{io::filesystem::readBinary("shaders/quad.pixel.glsl.spv")};
-		gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
-		m_quadShader = m_ctx->alloc<gpu::VKShader>(shader_bytecode_map, "Quad");
-
+		auto                    quad_shader{Globals::getShaderLibrary().get("Quad")};
 		gpu::PipelineCreateInfo pipeline_create_info{};
 		pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
 		pipeline_create_info.depthFormat        = m_ctx->findDepthFormat();
 		pipeline_create_info.vertexBufferLayout = m_quadVertexBufferLayout;
-		pipeline_create_info.shader             = m_quadShader;
+		pipeline_create_info.shader             = quad_shader;
 		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
 		pipeline_create_info.multisample        = false;
 		m_quadPipeline                          = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
@@ -40,7 +36,7 @@ namespace toaster
 		m_quadRenderPass->setInput("Camera", m_cameraUBs);
 		m_quadRenderPass->bake();
 
-		m_quadMaterial = m_ctx->alloc<gpu::VKMaterial>(m_quadShader);
+		m_quadMaterial = m_ctx->alloc<gpu::VKMaterial>(quad_shader);
 
 		if (!m_createInfo.overrideAttachments)
 		{
@@ -88,13 +84,13 @@ namespace toaster
 		delete[] quad_indices;
 
 		m_quadVertexPositions = {
-			tsm::float4{-0.5f, -0.5f, 0.0f, 1.0f},
-			tsm::float4{0.5f, -0.5f, 0.0f, 1.0f},
 			tsm::float4{0.5f, 0.5f, 0.0f, 1.0f},
+			tsm::float4{0.5f, -0.5f, 0.0f, 1.0f},
+			tsm::float4{-0.5f, -0.5f, 0.0f, 1.0f},
 			tsm::float4{-0.5f, 0.5f, 0.0f, 1.0f}
 		};
 
-		m_quadVertexTexCoords = {tsm::float2{0.0f, 0.0f}, tsm::float2{1.0f, 0.0f}, tsm::float2{1.0f, 1.0f}, tsm::float2{0.0f, 1.0f}};
+		m_quadVertexTexCoords = {tsm::float2{1.0f, 1.0f}, tsm::float2{1.0f, 0.0f}, tsm::float2{0.0f, 0.0f}, tsm::float2{0.0f, 1.0f}};
 
 		m_textureSlots[0] = Globals::getWhiteTexture();
 	}

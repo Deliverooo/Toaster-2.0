@@ -285,12 +285,9 @@ namespace toaster::gpu
 								auto texture_2d{resource.resources[i].as<VKTexture2D>()};
 								descriptor_image_infos[descriptor_image_info_index][i] = texture_2d->getDescriptorInfo();
 								write_descriptor.resourceHandles[i]                    = descriptor_image_infos[descriptor_image_info_index][i].imageView;
-								LOG_INFO("Index: {} | Texture: {}", i, texture_2d->getPath().string());
 							}
 							write_descriptor.wds.pImageInfo = descriptor_image_infos[descriptor_image_info_index].data();
 							++descriptor_image_info_index;
-
-							LOG_INFO("Updating texture array");
 						}
 						else
 						{

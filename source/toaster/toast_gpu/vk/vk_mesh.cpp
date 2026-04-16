@@ -10,7 +10,7 @@ namespace toaster::gpu
 {
 	static constexpr uint32 s_MeshImportFlags{
 		aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_GenNormals | aiProcess_GenUVCoords | aiProcess_OptimizeMeshes |
-		aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights | aiProcess_ValidateDataStructure | aiProcess_GlobalScale
+		aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights | aiProcess_ValidateDataStructure | aiProcess_GlobalScale | aiProcess_FlipUVs
 	};
 
 	auto mat4FromAIMatrix4x4(const aiMatrix4x4 &matrix) -> glm::mat4

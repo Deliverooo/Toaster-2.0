@@ -51,6 +51,14 @@ namespace toaster
 			const auto                 skybox_shader{s_globalData->ctx->alloc<gpu::VKShader>(shader_bytecode_map, "Skybox")};
 			s_globalData->shaderLibrary.add("Skybox", skybox_shader);
 		}
+		{
+			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary("shaders/quad.vert.glsl.spv")};
+			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/quad.pixel.glsl.spv")};
+			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
+			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
+			const auto                 quad_shader{s_globalData->ctx->alloc<gpu::VKShader>(shader_bytecode_map, "Quad")};
+			s_globalData->shaderLibrary.add("Quad", quad_shader);
+		}
 
 		s_globalData->quadVertices.emplace_back(QuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
 		s_globalData->quadVertices.emplace_back(QuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});

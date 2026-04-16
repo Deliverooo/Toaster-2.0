@@ -14,7 +14,7 @@
 namespace toaster
 {
 	static auto drawVec3Ctrl(const String &p_label, glm::vec3 *p_vec, const glm::vec3 &p_reset = glm::vec3{1.0f}, const char *p_vec1_label = "X",
-							 const char *  p_vec2_label                                        = "Y", const char *            p_vec3_label = "Z") -> void
+							 const char *  p_vec2_label                                        = "Y", const char *            p_vec3_label = "Z") -> bool
 	{
 		const String vec1_str_id = String("##") + p_vec1_label;
 		const String vec2_str_id = String("##") + p_vec2_label;
@@ -23,15 +23,19 @@ namespace toaster
 		ImGuiIO &io        = ig::GetIO();
 		auto     bold_font = io.Fonts->Fonts[1];
 
+		bool ret{false};
+
 		ig::PushID(p_label.c_str());
 
 		ig::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.5f);
-		ui::dragFloatWithReset(p_label + " " + p_vec1_label, &p_vec->x, vec1_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.x);
-		ui::dragFloatWithReset(p_vec2_label, &p_vec->y, vec2_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.y);
-		ui::dragFloatWithReset(p_vec3_label, &p_vec->z, vec3_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.z);
+		ret |= ui::dragFloatWithReset(p_label + " " + p_vec1_label, &p_vec->x, vec1_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.x);
+		ret |= ui::dragFloatWithReset(p_vec2_label, &p_vec->y, vec2_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.y);
+		ret |= ui::dragFloatWithReset(p_vec3_label, &p_vec->z, vec3_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.z);
 		ig::PopStyleVar();
 
 		ig::PopID();
+
+		return ret;
 	}
 
 	template<typename Type, bool Removable = true, typename UIFunc>
@@ -359,7 +363,7 @@ namespace toaster
 		auto albedo_map{p_mat->getResource<gpu::VKTexture2D>("u_AlbedoTexture")};
 		if (albedo_map)
 		{
-			ig::Image(ImTextureRef(p_mat->getDescriptorSet(p_frame_index)), ImVec2{100, 100}, ImVec2{0, 1}, ImVec2{1, 0});
+			ig::Image(ImTextureRef(p_mat->getDescriptorSet(p_frame_index)), ImVec2{100, 100}, ImVec2{0, 0}, ImVec2{1, 1});
 		}
 
 		if (ig::Button("Albedo texture", ImVec2{ig::GetContentRegionAvail().x, 0}))
@@ -372,7 +376,6 @@ namespace toaster
 				p_mat->set("u_AlbedoTexture", m_ctx->alloc<gpu::VKTexture2D>(texture_spec, path));
 			}
 		}
-
 
 		ig::Separator();
 		ig::PopID();

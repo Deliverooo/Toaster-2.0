@@ -98,7 +98,6 @@ namespace toaster
 			Entity orbo_entity{m_scene->createEntity()};
 			auto & transform_comp{orbo_entity.getComponent<TransformComponent>()};
 			transform_comp.translation = {0.0f, 0.0f, 0.0f};
-			transform_comp.rotation    = {0.0f, 0.0f, glm::radians(180.0f)};
 			transform_comp.scale       = {1.0f, 1.0f, 1.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
 			mc.mesh = m_ctx->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));

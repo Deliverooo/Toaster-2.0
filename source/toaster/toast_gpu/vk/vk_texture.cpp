@@ -71,7 +71,7 @@ namespace toaster::gpu
 		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
 
 		// Ts is somewhat necessary
-		stbi_set_flip_vertically_on_load(true);
+		// stbi_set_flip_vertically_on_load(true);
 
 		// Possibly in the future I might look into dynamic colour channels, so the images don't need to be in RGBA
 		int32  width{0};
