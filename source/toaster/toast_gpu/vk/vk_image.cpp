@@ -133,16 +133,16 @@ namespace toaster::gpu
 
 		if (m_createInfo.usage & vk::ImageUsageFlagBits::eColorAttachment)
 		{
-			m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
-										 vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eNone, vk::PipelineStageFlagBits::eColorAttachmentOutput,
-										 m_createInfo.mipCount, aspect_flags);
+			m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone,
+										 vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eNone,
+										 vk::PipelineStageFlagBits2::eColorAttachmentOutput, m_createInfo.mipCount, aspect_flags);
 			m_currentImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		}
 		else if (m_createInfo.usage & vk::ImageUsageFlagBits::eDepthStencilAttachment)
 		{
-			m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits::eNone,
-										 vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits::eNone,
-										 vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests, m_createInfo.mipCount,
+			m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone,
+										 vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eNone,
+										 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, m_createInfo.mipCount,
 										 aspect_flags);
 			m_currentImageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		}

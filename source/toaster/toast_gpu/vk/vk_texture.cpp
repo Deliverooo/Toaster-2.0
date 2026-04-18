@@ -10,23 +10,47 @@ namespace toaster::gpu
 	{
 		// The only reason to create an image without providing it with any data is to use it as an attachment...
 
-		vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled};
-		if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
-			usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
+		if (!m_ctx->isDepthFormat(m_specInfo.format))
+		{
+			vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled};
+			if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
+				usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
 
-		ImageCreateInfo image_create_info{};
-		image_create_info.width       = m_specInfo.width;
-		image_create_info.height      = m_specInfo.height;
-		image_create_info.usage       = usage_flags;
-		image_create_info.mipCount    = m_mipLevels;
-		image_create_info.sampleCount = m_specInfo.sampleCount;
-		image_create_info.format      = m_specInfo.format;
-		m_image                       = m_ctx->alloc<VKImage2D>(image_create_info);
+			ImageCreateInfo image_create_info{};
+			image_create_info.width       = m_specInfo.width;
+			image_create_info.height      = m_specInfo.height;
+			image_create_info.usage       = usage_flags;
+			image_create_info.mipCount    = m_mipLevels;
+			image_create_info.sampleCount = m_specInfo.sampleCount;
+			image_create_info.format      = m_specInfo.format;
+			m_image                       = m_ctx->alloc<VKImage2D>(image_create_info);
 
-		m_ctx->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits::eNone,
-									 vk::AccessFlagBits::eColorAttachmentWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eColorAttachmentOutput,
-									 1, vk::ImageAspectFlagBits::eColor);
-		m_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+			m_ctx->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone,
+										 vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
+										 vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1, vk::ImageAspectFlagBits::eColor);
+			m_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+		}
+		else
+		{
+			vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled};
+			if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
+				usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
+
+			ImageCreateInfo image_create_info{};
+			image_create_info.width       = m_specInfo.width;
+			image_create_info.height      = m_specInfo.height;
+			image_create_info.usage       = usage_flags;
+			image_create_info.mipCount    = m_mipLevels;
+			image_create_info.sampleCount = m_specInfo.sampleCount;
+			image_create_info.format      = m_specInfo.format;
+			m_image                       = m_ctx->alloc<VKImage2D>(image_create_info);
+
+			m_ctx->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone,
+										 vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
+										 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, 1,
+										 vk::ImageAspectFlagBits::eDepth);
+			m_image->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
+		}
 
 		const auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 
@@ -123,8 +147,8 @@ namespace toaster::gpu
 		if (loaded)
 			stbi_image_free(pixels);
 
-		m_ctx->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eNone,
-									 vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, m_mipLevels,
+		m_ctx->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eNone,
+									 vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eTransfer, m_mipLevels,
 									 vk::ImageAspectFlagBits::eColor);
 
 		m_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
@@ -195,8 +219,8 @@ namespace toaster::gpu
 		std::memcpy(mapped, p_data, image_size);
 		staging_buffer_memory.unmapMemory();
 
-		m_ctx->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits::eNone,
-									 vk::AccessFlagBits::eTransferWrite, vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eTransfer, 1,
+		m_ctx->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eNone,
+									 vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eTransfer, 1,
 									 vk::ImageAspectFlagBits::eColor);
 
 		m_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
@@ -204,8 +228,8 @@ namespace toaster::gpu
 		m_ctx->copyBufferToImage(staging_buffer, m_image->getImage(), p_spec_info.width, p_spec_info.height);
 
 		m_ctx->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-									 vk::AccessFlagBits::eTransferWrite, vk::AccessFlagBits::eShaderRead, vk::PipelineStageFlagBits::eTransfer,
-									 vk::PipelineStageFlagBits::eFragmentShader, 1, vk::ImageAspectFlagBits::eColor);
+									 vk::AccessFlagBits2::eTransferWrite, vk::AccessFlagBits2::eShaderRead, vk::PipelineStageFlagBits2::eTransfer,
+									 vk::PipelineStageFlagBits2::eFragmentShader, 1, vk::ImageAspectFlagBits::eColor);
 
 		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
@@ -258,7 +282,10 @@ namespace toaster::gpu
 
 		m_image->resize(p_width, p_height);
 
-		m_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+		if (m_ctx->isDepthFormat(m_specInfo.format))
+			m_image->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
+		else
+			m_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
 		const auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
 

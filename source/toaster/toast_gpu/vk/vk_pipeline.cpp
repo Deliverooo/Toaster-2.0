@@ -126,18 +126,25 @@ namespace toaster::gpu
 			multisample_state_create_info.sampleShadingEnable  = false;
 		}
 
-		TST_ASSERT(!m_createInfo.colourAttachments.empty());
 		vk::PipelineRenderingCreateInfo rendering_create_info{};
-		rendering_create_info.colorAttachmentCount    = m_createInfo.colourAttachments.size();
-		rendering_create_info.pColorAttachmentFormats = m_createInfo.colourAttachments.data();
-		rendering_create_info.depthAttachmentFormat   = m_ctx->findDepthFormat();
+		if (!m_createInfo.colourAttachments.empty())
+		{
+			rendering_create_info.colorAttachmentCount    = m_createInfo.colourAttachments.size();
+			rendering_create_info.pColorAttachmentFormats = m_createInfo.colourAttachments.data();
+		}
+		else
+		{
+			rendering_create_info.colorAttachmentCount    = 0u;
+			rendering_create_info.pColorAttachmentFormats = nullptr;
+		}
+		rendering_create_info.depthAttachmentFormat = m_createInfo.depthFormat;
 
 		vk::PipelineDepthStencilStateCreateInfo depth_stencil_state_create_info{};
 		if (m_createInfo.depthFormat != vk::Format::eUndefined)
 		{
 			depth_stencil_state_create_info.depthTestEnable       = true;
-			depth_stencil_state_create_info.depthWriteEnable      = true;
-			depth_stencil_state_create_info.depthCompareOp        = vk::CompareOp::eLess;
+			depth_stencil_state_create_info.depthWriteEnable      = m_createInfo.depthWrite;
+			depth_stencil_state_create_info.depthCompareOp        = m_createInfo.depthCompare;
 			depth_stencil_state_create_info.depthBoundsTestEnable = false;
 			depth_stencil_state_create_info.stencilTestEnable     = false;
 		}

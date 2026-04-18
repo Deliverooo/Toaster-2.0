@@ -28,6 +28,14 @@ namespace toaster
 		s_globalData->ctx = p_ctx;
 
 		{
+			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary("shaders/depth-pre.vert.glsl.spv")};
+			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/depth-pre.pixel.glsl.spv")};
+			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
+			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
+			const auto                 depth_pre_shader{s_globalData->ctx->alloc<gpu::VKShader>(shader_bytecode_map, "Depth-Pre")};
+			s_globalData->shaderLibrary.add("Depth-Pre", depth_pre_shader); // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
+		}
+		{
 			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary("shaders/geometry.vert.glsl.spv")};
 			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/geometry.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");

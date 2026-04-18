@@ -33,7 +33,10 @@ namespace toaster::gpu
 		uint32             layerCount{1u};
 
 		std::vector<RenderingAttachmentInfo> colourAttachments;
-		RenderingAttachmentInfo *            pDepthAttachment{nullptr};
-		RenderingAttachmentInfo *            pStencilAttachment{nullptr};
+
+		RenderingAttachmentInfo *pDepthAttachment{nullptr};
+		bool                     depthReadOnly{false};
+		RenderingAttachmentInfo *pStencilAttachment{nullptr};
+		bool                     stencilReadOnly{false};
 	};
 }

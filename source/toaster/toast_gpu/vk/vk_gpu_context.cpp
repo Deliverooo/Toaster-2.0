@@ -660,22 +660,28 @@ namespace toaster::gpu
 		p_out_image.bindMemory(p_out_memory, 0u);
 	}
 
-	auto VKGPUContext::transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags p_src_access_mask,
-											 vk::AccessFlags  p_dst_access_mask, vk::PipelineStageFlags p_src_stage_mask, vk::PipelineStageFlags p_dst_stage_mask,
+	auto VKGPUContext::transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
+											 vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask,
 											 uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) const -> void
 	{
-		vk::ImageMemoryBarrier image_memory_barrier{};
+		vk::ImageMemoryBarrier2 image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;
 		image_memory_barrier.newLayout           = p_new_layout;
 		image_memory_barrier.srcAccessMask       = p_src_access_mask;
 		image_memory_barrier.dstAccessMask       = p_dst_access_mask;
+		image_memory_barrier.srcStageMask        = p_src_stage_mask;
+		image_memory_barrier.dstStageMask        = p_dst_stage_mask;
 		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.image               = p_image;
 		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, 1};
 
+		vk::DependencyInfo dependency_info{};
+		dependency_info.imageMemoryBarrierCount = 1;
+		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
+
 		vk::raii::CommandBuffer cmd = beginSingleTimeCommandsGraphics();
-		cmd.pipelineBarrier(p_src_stage_mask, p_dst_stage_mask, {}, {}, {}, image_memory_barrier);
+		cmd.pipelineBarrier2(dependency_info);
 		endSingleTimeCommandsGraphics(cmd);
 	}
 

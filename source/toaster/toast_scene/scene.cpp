@@ -7,6 +7,8 @@
 #include "toast_lib/logging.hpp"
 #include "toast_render/globals.hpp"
 
+#define TST_ENABLE_2D_SCENE_RENDERING 1
+
 namespace toaster
 {
 	Scene::Scene(gpu::VKGPUContext *p_ctx, const String &p_name) : m_ctx(p_ctx), m_name(p_name.empty() ? "Untitled Scene" : p_name)
@@ -128,7 +130,7 @@ namespace toaster
 			}
 			p_scene_renderer->end(p_cmd, p_frame_index);
 		}
-
+		#if TST_ENABLE_2D_SCENE_RENDERING
 		{
 			auto renderer_2d{p_scene_renderer->getRenderer2D()};
 			renderer_2d->begin(p_cmd, p_frame_index, p_view, p_projection);
@@ -151,11 +153,12 @@ namespace toaster
 			gpu::RenderingAttachmentInfo depth_attachment_info{};
 			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
 			depth_attachment_info.image      = p_scene_renderer->getOutputDepthImage();
-			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eNone;
+			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eLoad;
 			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 
 			renderer_2d->end(p_cmd, p_frame_index, &colour_attachment_info, &depth_attachment_info);
 		}
+		#endif
 	}
 
 	auto Scene::setViewportSize(uint32 p_width, uint32 p_height) -> void

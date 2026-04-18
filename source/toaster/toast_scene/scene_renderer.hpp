@@ -24,6 +24,7 @@ namespace toaster
 
 		auto getSpecInfo() const -> const SceneRendererSpecInfo &;
 		auto getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &;
+		auto getOutputDepthTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 		auto getOutputDepthImage() const -> const RefPtr<gpu::VKImage2D> &;
 
 		auto getRenderer2D() -> RefPtr<Renderer2D>;
@@ -32,6 +33,7 @@ namespace toaster
 		auto setEnvironmentBackground(RefPtr<gpu::VKTexture2D> p_texture) -> void;
 
 	private:
+		auto _renderDepthPrePass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 		auto _renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 		auto _renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 
@@ -41,6 +43,15 @@ namespace toaster
 
 		RefPtr<Renderer2D> m_renderer2D{nullptr};
 
+		#pragma region depth-pre
+		RefPtr<gpu::VKPipeline>   m_depthPrePipeline{nullptr};
+		RefPtr<gpu::VKRenderPass> m_depthPrePass{nullptr};
+
+		RefPtr<gpu::VKTexture2D> m_resolveDepthPreAttachmentTexture{nullptr};
+
+		RefPtr<gpu::VKImage2D> m_depthPreAttachmentImage{nullptr};
+		#pragma endregion
+
 		RefPtr<gpu::VKPipeline>   m_skyboxPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_skyboxPass{nullptr};
 		RefPtr<gpu::VKMaterial>   m_skyboxMaterial{nullptr};
@@ -49,17 +60,10 @@ namespace toaster
 		RefPtr<gpu::VKPipeline>   m_geometryPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_geometryPass{nullptr};
 
-		RefPtr<gpu::VKImage2D>   m_MSAAGeometryPositionsAttachmentImage{nullptr};
-		RefPtr<gpu::VKTexture2D> m_resolveGeometryPositionsAttachmentTexture{nullptr};
+		RefPtr<gpu::VKTexture2D> m_geometryPositionsAttachmentTexture{nullptr};
+		RefPtr<gpu::VKTexture2D> m_geometryNormalsAttachmentTexture{nullptr};
 
-		RefPtr<gpu::VKImage2D>   m_MSAAGeometryNormalsAttachmentImage{nullptr};
-		RefPtr<gpu::VKTexture2D> m_resolveGeometryNormalsAttachmentTexture{nullptr};
-
-		RefPtr<gpu::VKImage2D>   m_MSAAColourAttachmentImage{nullptr};
-		RefPtr<gpu::VKTexture2D> m_resolveOutputColourTexture{nullptr};
-
-		RefPtr<gpu::VKImage2D> m_MSAADepthAttachmentImage{nullptr};
-		RefPtr<gpu::VKImage2D> m_resolveOutputDepthImage{nullptr};
+		RefPtr<gpu::VKTexture2D> m_outputColourTexture{nullptr};
 
 		struct CameraUB
 		{

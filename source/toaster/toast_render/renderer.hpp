@@ -29,5 +29,8 @@ namespace toaster
 
 		static auto renderMesh(const vk::raii::CommandBuffer &p_command_buffer, uint32     p_frame_index, const RefPtr<gpu::VKMesh> &p_mesh, uint32 p_submesh_index,
 							   const RefPtr<gpu::VKPipeline> &p_pipeline, const glm::mat4 &p_transform) -> void;
+
+		static auto renderMesh(const vk::raii::CommandBuffer &p_command_buffer, uint32     p_frame_index, const RefPtr<gpu::VKMesh> &  p_mesh, uint32 p_submesh_index,
+							   const RefPtr<gpu::VKPipeline> &p_pipeline, const glm::mat4 &p_transform, const RefPtr<gpu::VKMaterial> &p_override_material) -> void;
 	};
 }
