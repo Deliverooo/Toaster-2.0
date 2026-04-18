@@ -56,12 +56,16 @@ namespace toaster
 				{gpu::EBufferDataType::eFloat3, "a_Bitangent"},
 				{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
 			};
-			pipeline_create_info.colourAttachments = {vk::Format::eR8G8B8A8Srgb};
-			pipeline_create_info.depthFormat       = {m_ctx->findDepthFormat()};
-			pipeline_create_info.shader            = Globals::getShaderLibrary().get("Geometry");
-			pipeline_create_info.multisample       = true;
-			pipeline_create_info.polygonMode       = vk::PolygonMode::eFill;
-			m_geometryPipeline                     = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
+			pipeline_create_info.colourAttachments = {
+				vk::Format::eR8G8B8A8Srgb,
+				vk::Format::eR16G16B16A16Sfloat /*Positions*/,
+				vk::Format::eR16G16B16A16Sfloat /*Normals*/
+			};
+			pipeline_create_info.depthFormat = {m_ctx->findDepthFormat()};
+			pipeline_create_info.shader      = Globals::getShaderLibrary().get("Geometry");
+			pipeline_create_info.multisample = true;
+			pipeline_create_info.polygonMode = vk::PolygonMode::eFill;
+			m_geometryPipeline               = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
 
 			m_geometryPass = m_ctx->alloc<gpu::VKRenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs);
@@ -72,35 +76,68 @@ namespace toaster
 			//						   Its funny because the engine is called Toaster...
 		}
 
-		gpu::ImageCreateInfo msaa_colour_attachment_image_create_info{};
-		msaa_colour_attachment_image_create_info.width       = m_specInfo.viewportWidth;
-		msaa_colour_attachment_image_create_info.height      = m_specInfo.viewportHeight;
-		msaa_colour_attachment_image_create_info.format      = vk::Format::eR8G8B8A8Srgb;
-		msaa_colour_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
-		msaa_colour_attachment_image_create_info.sampleCount = m_ctx->getMaxUsableSampleCount();
-		m_MSAAColourAttachmentImage                          = m_ctx->alloc<gpu::VKImage2D>(msaa_colour_attachment_image_create_info);
+		{
+			gpu::ImageCreateInfo msaa_positions_attachment_image_create_info{};
+			msaa_positions_attachment_image_create_info.width       = m_specInfo.viewportWidth;
+			msaa_positions_attachment_image_create_info.height      = m_specInfo.viewportHeight;
+			msaa_positions_attachment_image_create_info.format      = vk::Format::eR16G16B16A16Sfloat;
+			msaa_positions_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
+			msaa_positions_attachment_image_create_info.sampleCount = m_ctx->getMaxUsableSampleCount();
+			m_MSAAGeometryPositionsAttachmentImage                  = m_ctx->alloc<gpu::VKImage2D>(msaa_positions_attachment_image_create_info);
 
-		gpu::ImageCreateInfo msaa_depth_attachment_image_create_info{};
-		msaa_depth_attachment_image_create_info.width       = m_specInfo.viewportWidth;
-		msaa_depth_attachment_image_create_info.height      = m_specInfo.viewportHeight;
-		msaa_depth_attachment_image_create_info.format      = m_ctx->findDepthFormat();
-		msaa_depth_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment;
-		msaa_depth_attachment_image_create_info.sampleCount = m_ctx->getMaxUsableSampleCount();
-		m_MSAADepthAttachmentImage                          = m_ctx->alloc<gpu::VKImage2D>(msaa_depth_attachment_image_create_info);
+			gpu::TextureSpecInfo geometry_positions_attachment_texture_spec_info{};
+			geometry_positions_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
+			geometry_positions_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
+			geometry_positions_attachment_texture_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+			m_resolveGeometryPositionsAttachmentTexture            = m_ctx->alloc<gpu::VKTexture2D>(geometry_positions_attachment_texture_spec_info);
+		}
 
-		gpu::TextureSpecInfo resolve_colour_attachment_texture_spec_info{};
-		resolve_colour_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
-		resolve_colour_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
-		resolve_colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
-		m_resolveOutputColourTexture                       = m_ctx->alloc<gpu::VKTexture2D>(resolve_colour_attachment_texture_spec_info);
+		{
+			gpu::ImageCreateInfo msaa_normals_attachment_image_create_info{};
+			msaa_normals_attachment_image_create_info.width       = m_specInfo.viewportWidth;
+			msaa_normals_attachment_image_create_info.height      = m_specInfo.viewportHeight;
+			msaa_normals_attachment_image_create_info.format      = vk::Format::eR16G16B16A16Sfloat;
+			msaa_normals_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
+			msaa_normals_attachment_image_create_info.sampleCount = m_ctx->getMaxUsableSampleCount();
+			m_MSAAGeometryNormalsAttachmentImage                  = m_ctx->alloc<gpu::VKImage2D>(msaa_normals_attachment_image_create_info);
 
-		gpu::ImageCreateInfo resolve_depth_attachment_image_create_info{};
-		resolve_depth_attachment_image_create_info.width  = m_specInfo.viewportWidth;
-		resolve_depth_attachment_image_create_info.height = m_specInfo.viewportHeight;
-		resolve_depth_attachment_image_create_info.format = m_ctx->findDepthFormat();
-		resolve_depth_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-		m_resolveOutputDepthImage                         = m_ctx->alloc<gpu::VKImage2D>(resolve_depth_attachment_image_create_info);
+			gpu::TextureSpecInfo geometry_normals_attachment_texture_spec_info{};
+			geometry_normals_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
+			geometry_normals_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
+			geometry_normals_attachment_texture_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+			m_resolveGeometryNormalsAttachmentTexture            = m_ctx->alloc<gpu::VKTexture2D>(geometry_normals_attachment_texture_spec_info);
+		}
+		{
+			gpu::ImageCreateInfo msaa_colour_attachment_image_create_info{};
+			msaa_colour_attachment_image_create_info.width       = m_specInfo.viewportWidth;
+			msaa_colour_attachment_image_create_info.height      = m_specInfo.viewportHeight;
+			msaa_colour_attachment_image_create_info.format      = vk::Format::eR8G8B8A8Srgb;
+			msaa_colour_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
+			msaa_colour_attachment_image_create_info.sampleCount = m_ctx->getMaxUsableSampleCount();
+			m_MSAAColourAttachmentImage                          = m_ctx->alloc<gpu::VKImage2D>(msaa_colour_attachment_image_create_info);
 
+			gpu::ImageCreateInfo msaa_depth_attachment_image_create_info{};
+			msaa_depth_attachment_image_create_info.width       = m_specInfo.viewportWidth;
+			msaa_depth_attachment_image_create_info.height      = m_specInfo.viewportHeight;
+			msaa_depth_attachment_image_create_info.format      = m_ctx->findDepthFormat();
+			msaa_depth_attachment_image_create_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment;
+			msaa_depth_attachment_image_create_info.sampleCount = m_ctx->getMaxUsableSampleCount();
+			m_MSAADepthAttachmentImage                          = m_ctx->alloc<gpu::VKImage2D>(msaa_depth_attachment_image_create_info);
+		}
+		{
+			gpu::TextureSpecInfo resolve_colour_attachment_texture_spec_info{};
+			resolve_colour_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
+			resolve_colour_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
+			resolve_colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
+			m_resolveOutputColourTexture                       = m_ctx->alloc<gpu::VKTexture2D>(resolve_colour_attachment_texture_spec_info);
+
+			gpu::ImageCreateInfo resolve_depth_attachment_image_create_info{};
+			resolve_depth_attachment_image_create_info.width  = m_specInfo.viewportWidth;
+			resolve_depth_attachment_image_create_info.height = m_specInfo.viewportHeight;
+			resolve_depth_attachment_image_create_info.format = m_ctx->findDepthFormat();
+			resolve_depth_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+			m_resolveOutputDepthImage                         = m_ctx->alloc<gpu::VKImage2D>(resolve_depth_attachment_image_create_info);
+		}
 		Renderer2DCreateInfo renderer_2d_create_info{};
 		renderer_2d_create_info.renderTargetWidth   = m_specInfo.viewportWidth;
 		renderer_2d_create_info.renderTargetHeight  = m_specInfo.viewportHeight;
@@ -165,7 +202,7 @@ namespace toaster
 
 	auto SceneRenderer::getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &
 	{
-		return m_resolveOutputColourTexture;
+		return m_resolveGeometryNormalsAttachmentTexture;
 	}
 
 	auto SceneRenderer::getOutputDepthImage() const -> const RefPtr<gpu::VKImage2D> &
@@ -182,6 +219,12 @@ namespace toaster
 	{
 		m_specInfo.viewportWidth  = p_width;
 		m_specInfo.viewportHeight = p_height;
+
+		m_MSAAGeometryPositionsAttachmentImage->resize(p_width, p_height);
+		m_resolveGeometryPositionsAttachmentTexture->resize(p_width, p_height);
+
+		m_MSAAGeometryNormalsAttachmentImage->resize(p_width, p_height);
+		m_resolveGeometryNormalsAttachmentTexture->resize(p_width, p_height);
 
 		m_MSAAColourAttachmentImage->resize(p_width, p_height);
 		m_MSAADepthAttachmentImage->resize(p_width, p_height);
@@ -230,6 +273,24 @@ namespace toaster
 		colour_attachment_info.resolveImage = m_resolveOutputColourTexture->getImage();
 		colour_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eAverage;
 
+		{
+			gpu::RenderingAttachmentInfo &positions_attachment_info{rendering_info.colourAttachments.emplace_back()};
+			positions_attachment_info.clearValue   = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
+			positions_attachment_info.image        = m_MSAAGeometryPositionsAttachmentImage;
+			positions_attachment_info.loadOp       = vk::AttachmentLoadOp::eClear;
+			positions_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
+			positions_attachment_info.resolveImage = m_resolveGeometryPositionsAttachmentTexture->getImage();
+			positions_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eAverage;
+		}
+		{
+			gpu::RenderingAttachmentInfo &normals_attachment_info{rendering_info.colourAttachments.emplace_back()};
+			normals_attachment_info.clearValue   = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
+			normals_attachment_info.image        = m_MSAAGeometryNormalsAttachmentImage;
+			normals_attachment_info.loadOp       = vk::AttachmentLoadOp::eClear;
+			normals_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
+			normals_attachment_info.resolveImage = m_resolveGeometryNormalsAttachmentTexture->getImage();
+			normals_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eAverage;
+		}
 		gpu::RenderingAttachmentInfo depth_attachment_info{};
 		depth_attachment_info.clearValue   = vk::ClearDepthStencilValue{1.0f, 0u};
 		depth_attachment_info.image        = m_MSAADepthAttachmentImage;

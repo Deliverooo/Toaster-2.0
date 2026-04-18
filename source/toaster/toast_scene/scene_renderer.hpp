@@ -41,19 +41,25 @@ namespace toaster
 
 		RefPtr<Renderer2D> m_renderer2D{nullptr};
 
-		RefPtr<gpu::VKPipeline>   m_geometryPipeline{nullptr};
-		RefPtr<gpu::VKRenderPass> m_geometryPass{nullptr};
-
 		RefPtr<gpu::VKPipeline>   m_skyboxPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_skyboxPass{nullptr};
 		RefPtr<gpu::VKMaterial>   m_skyboxMaterial{nullptr};
 		RefPtr<gpu::VKTexture2D>  m_skyboxTexture{nullptr};
 
-		RefPtr<gpu::VKImage2D> m_MSAAColourAttachmentImage{nullptr};
-		RefPtr<gpu::VKImage2D> m_MSAADepthAttachmentImage{nullptr};
+		RefPtr<gpu::VKPipeline>   m_geometryPipeline{nullptr};
+		RefPtr<gpu::VKRenderPass> m_geometryPass{nullptr};
 
+		RefPtr<gpu::VKImage2D>   m_MSAAGeometryPositionsAttachmentImage{nullptr};
+		RefPtr<gpu::VKTexture2D> m_resolveGeometryPositionsAttachmentTexture{nullptr};
+
+		RefPtr<gpu::VKImage2D>   m_MSAAGeometryNormalsAttachmentImage{nullptr};
+		RefPtr<gpu::VKTexture2D> m_resolveGeometryNormalsAttachmentTexture{nullptr};
+
+		RefPtr<gpu::VKImage2D>   m_MSAAColourAttachmentImage{nullptr};
 		RefPtr<gpu::VKTexture2D> m_resolveOutputColourTexture{nullptr};
-		RefPtr<gpu::VKImage2D>   m_resolveOutputDepthImage{nullptr};
+
+		RefPtr<gpu::VKImage2D> m_MSAADepthAttachmentImage{nullptr};
+		RefPtr<gpu::VKImage2D> m_resolveOutputDepthImage{nullptr};
 
 		struct CameraUB
 		{

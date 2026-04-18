@@ -145,14 +145,8 @@ namespace toaster::gpu
 
 		vk::raii::PhysicalDevice m_currentPhysicalDevice{nullptr};
 
-		const std::array<CString, 6> m_requiredDeviceExtensions{
-			vk::KHRSwapchainExtensionName,
-			vk::KHRDynamicRenderingExtensionName,
-			vk::KHRTimelineSemaphoreExtensionName,
-			vk::EXTCustomBorderColorExtensionName,
-			vk::KHRMaintenance6ExtensionName,
-			vk::KHRLoadStoreOpNoneExtensionName
-		};
+		std::vector<CString> m_requiredDeviceExtensions;
+
 		vk::raii::Device m_device{nullptr};
 
 		vk::raii::Queue    m_graphicsQueue{nullptr};

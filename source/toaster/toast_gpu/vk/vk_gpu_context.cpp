@@ -222,6 +222,16 @@ namespace toaster::gpu
 
 	auto VKGPUContext::_pickPhysicalDevice() -> void
 	{
+		m_requiredDeviceExtensions = {
+			vk::KHRSwapchainExtensionName,
+			vk::KHRDynamicRenderingExtensionName,
+			vk::KHRTimelineSemaphoreExtensionName,
+			vk::EXTCustomBorderColorExtensionName,
+			vk::KHRMaintenance6ExtensionName,
+			vk::KHRLoadStoreOpNoneExtensionName,
+			vk::NVFramebufferMixedSamplesExtensionName
+		};
+
 		auto physical_devices = m_vulkanInstance.enumeratePhysicalDevices();
 		if (physical_devices.empty())
 		{
@@ -431,17 +441,20 @@ namespace toaster::gpu
 		});
 
 		// For the moment, the only required extension is the swapchain one.
-		std::vector required_device_extensions{vk::KHRSwapchainExtensionName, vk::KHRDynamicRenderingExtensionName, vk::KHRTimelineSemaphoreExtensionName};
+		// std::vector required_device_extensions{vk::KHRSwapchainExtensionName, vk::KHRDynamicRenderingExtensionName, vk::KHRTimelineSemaphoreExtensionName};
 
 		// Checks if all the required extensions are present in the available_device_extensions vector.
 		auto available_device_extensions             = p_physical_device.enumerateDeviceExtensionProperties();
-		bool supports_all_required_device_extensions = std::ranges::all_of(required_device_extensions, [available_device_extensions](const auto &required_ext)
+		bool supports_all_required_device_extensions = std::ranges::all_of(m_requiredDeviceExtensions, [available_device_extensions](const auto &required_ext)
 		{
 			return std::ranges::any_of(available_device_extensions, [&required_ext](const auto &available_ext)
 			{
 				return std::strcmp(available_ext.extensionName, required_ext) == 0;
 			});
 		});
+
+		for (const auto &ext: available_device_extensions)
+			LOG_TRACE("{}", ext.extensionName.data());
 
 		auto features = p_physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
 			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
