@@ -178,7 +178,7 @@ namespace toaster::gpu
 		instance_create_info.pApplicationInfo        = &app_info;
 		instance_create_info.enabledExtensionCount   = required_extensions.size();
 		instance_create_info.ppEnabledExtensionNames = required_extensions.data();
-		instance_create_info.flags                   = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
+		// instance_create_info.flags                   = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
 
 		if (c_enableValidationLayers)
 		{
@@ -215,6 +215,7 @@ namespace toaster::gpu
 		if (glfwCreateWindowSurface(*m_vulkanInstance, m_window, nullptr, &surface) != VK_SUCCESS)
 		{
 			LOG_ERROR("Failed to create window surface");
+			system("pause");
 			TST_ASSERT(false);
 		}
 		m_surface = {m_vulkanInstance, surface};
@@ -227,9 +228,8 @@ namespace toaster::gpu
 			vk::KHRDynamicRenderingExtensionName,
 			vk::KHRTimelineSemaphoreExtensionName,
 			vk::EXTCustomBorderColorExtensionName,
-			vk::KHRMaintenance6ExtensionName,
-			vk::KHRLoadStoreOpNoneExtensionName,
-			vk::NVFramebufferMixedSamplesExtensionName
+			// vk::KHRMaintenance6ExtensionName,
+			vk::KHRLoadStoreOpNoneExtensionName
 		};
 
 		auto physical_devices = m_vulkanInstance.enumeratePhysicalDevices();
@@ -237,6 +237,7 @@ namespace toaster::gpu
 		{
 			// If your gpu does not have Vulkan support, we can't use Vulkan
 			LOG_ERROR("Failed to find physical devices with Vulkan support");
+			system("pause");
 			TST_ASSERT(false);
 		}
 
@@ -247,6 +248,7 @@ namespace toaster::gpu
 		if (device_it == physical_devices.end())
 		{
 			LOG_ERROR("Failed to find suitable physical device");
+			system("pause");
 			TST_ASSERT(false);
 		}
 
@@ -481,7 +483,7 @@ namespace toaster::gpu
 		for (uint32 i{0u}; i < glfw_extension_count; ++i)
 			required_extensions[i] = glfw_extensions[i];
 
-		required_extensions.emplace_back(vk::KHRPortabilityEnumerationExtensionName);
+		// required_extensions.emplace_back(vk::KHRPortabilityEnumerationExtensionName);
 
 		if (c_enableValidationLayers)
 			required_extensions.emplace_back(vk::EXTDebugUtilsExtensionName);
@@ -616,13 +618,19 @@ namespace toaster::gpu
 
 	auto VKGPUContext::copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) const -> void
 	{
-		vk::BufferCopy buffer_copy{};
+		vk::BufferCopy2 buffer_copy{};
 		buffer_copy.size      = static_cast<uint32>(p_size);
 		buffer_copy.srcOffset = 0;
 		buffer_copy.dstOffset = 0;
 
+		vk::CopyBufferInfo2 copy_info{};
+		copy_info.srcBuffer   = p_src_buffer;
+		copy_info.dstBuffer   = p_dst_buffer;
+		copy_info.regionCount = 1;
+		copy_info.pRegions    = &buffer_copy;
+
 		vk::raii::CommandBuffer cmd = beginSingleTimeCommandsTransfer();
-		cmd.copyBuffer(p_src_buffer, p_dst_buffer, buffer_copy);
+		cmd.copyBuffer2(copy_info);
 		endSingleTimeCommandsTransfer(cmd);
 	}
 
@@ -648,8 +656,7 @@ namespace toaster::gpu
 		uint32 qfi[]                            = {m_queueFamilyIndices.graphics, m_queueFamilyIndices.transfer};
 		image_create_info.pQueueFamilyIndices   = qfi;
 
-		p_out_image = {m_device, image_create_info};
-
+		p_out_image                                = {m_device, image_create_info};
 		vk::MemoryRequirements memory_requirements = p_out_image.getMemoryRequirements();
 		vk::MemoryAllocateInfo memory_allocate_info{};
 		memory_allocate_info.allocationSize  = memory_requirements.size;
@@ -687,7 +694,7 @@ namespace toaster::gpu
 
 	auto VKGPUContext::copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, uint32 p_width, uint32 p_height) const -> void
 	{
-		vk::BufferImageCopy image_copy{};
+		vk::BufferImageCopy2 image_copy{};
 		image_copy.bufferOffset      = 0;
 		image_copy.bufferRowLength   = 0;
 		image_copy.bufferImageHeight = 0;
@@ -695,8 +702,15 @@ namespace toaster::gpu
 		image_copy.imageExtent       = vk::Extent3D{p_width, p_height, 1};
 		image_copy.imageSubresource  = {vk::ImageAspectFlagBits::eColor, 0, 0, 1};
 
+		vk::CopyBufferToImageInfo2 buffer_image_copy{};
+		buffer_image_copy.srcBuffer      = p_src_buffer;
+		buffer_image_copy.dstImage       = p_dst_image;
+		buffer_image_copy.dstImageLayout = vk::ImageLayout::eTransferDstOptimal;
+		buffer_image_copy.regionCount    = 1;
+		buffer_image_copy.pRegions       = &image_copy;
+
 		vk::raii::CommandBuffer cmd = beginSingleTimeCommandsTransfer();
-		cmd.copyBufferToImage(p_src_buffer, p_dst_image, vk::ImageLayout::eTransferDstOptimal, image_copy);
+		cmd.copyBufferToImage2(buffer_image_copy);
 		endSingleTimeCommandsTransfer(cmd);
 	}
 
@@ -737,12 +751,12 @@ namespace toaster::gpu
 
 	auto VKGPUContext::generateMipmaps(vk::raii::Image &p_src_image, vk::Format p_format, uint32 p_width, uint32 p_height, uint32 p_mip_levels) const -> void
 	{
-		vk::ImageMemoryBarrier memory_barrier{};
+		vk::ImageMemoryBarrier2 memory_barrier{};
 		memory_barrier.image                           = p_src_image;
 		memory_barrier.oldLayout                       = vk::ImageLayout::eTransferDstOptimal;
 		memory_barrier.newLayout                       = vk::ImageLayout::eTransferSrcOptimal;
-		memory_barrier.srcAccessMask                   = vk::AccessFlagBits::eTransferWrite;
-		memory_barrier.dstAccessMask                   = vk::AccessFlagBits::eTransferRead;
+		memory_barrier.srcAccessMask                   = vk::AccessFlagBits2::eTransferWrite;
+		memory_barrier.dstAccessMask                   = vk::AccessFlagBits2::eTransferRead;
 		memory_barrier.srcQueueFamilyIndex             = vk::QueueFamilyIgnored;
 		memory_barrier.dstQueueFamilyIndex             = vk::QueueFamilyIgnored;
 		memory_barrier.subresourceRange.aspectMask     = vk::ImageAspectFlagBits::eColor;
@@ -770,10 +784,18 @@ namespace toaster::gpu
 			memory_barrier.subresourceRange.baseMipLevel = i - 1;
 			memory_barrier.oldLayout                     = vk::ImageLayout::eTransferDstOptimal;
 			memory_barrier.newLayout                     = vk::ImageLayout::eTransferSrcOptimal;
-			memory_barrier.srcAccessMask                 = vk::AccessFlagBits::eTransferWrite;
-			memory_barrier.dstAccessMask                 = vk::AccessFlagBits::eTransferRead;
+			memory_barrier.srcAccessMask                 = vk::AccessFlagBits2::eTransferWrite;
+			memory_barrier.dstAccessMask                 = vk::AccessFlagBits2::eTransferRead;
 
-			command_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eTransfer, {}, {}, {}, memory_barrier);
+			{
+				memory_barrier.srcStageMask = vk::PipelineStageFlagBits2::eTransfer;
+				memory_barrier.dstStageMask = vk::PipelineStageFlagBits2::eTransfer;
+
+				vk::DependencyInfo dependency_info{};
+				dependency_info.imageMemoryBarrierCount = 1;
+				dependency_info.pImageMemoryBarriers    = &memory_barrier;
+				command_buffer.pipelineBarrier2(dependency_info);
+			}
 
 			std::array<vk::Offset3D, 2> src_offsets;
 			std::array<vk::Offset3D, 2> dst_offsets;
@@ -784,21 +806,36 @@ namespace toaster::gpu
 			dst_offsets[0] = vk::Offset3D{0, 0, 0};
 			dst_offsets[1] = vk::Offset3D{mip_width > 1 ? mip_width / 2 : 1, mip_height > 1 ? mip_height / 2 : 1, 1};
 
-			vk::ImageBlit image_blit{};
+			vk::ImageBlit2 image_blit{};
 			image_blit.srcOffsets     = src_offsets;
 			image_blit.dstOffsets     = dst_offsets;
 			image_blit.srcSubresource = vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, i - 1, 0, 1};
 			image_blit.dstSubresource = vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, i, 0, 1};
 
-			command_buffer.blitImage(p_src_image, vk::ImageLayout::eTransferSrcOptimal, p_src_image, vk::ImageLayout::eTransferDstOptimal, {image_blit},
-									 vk::Filter::eLinear);
+			vk::BlitImageInfo2 blit_info{};
+			blit_info.srcImage       = p_src_image;
+			blit_info.dstImage       = p_src_image;
+			blit_info.srcImageLayout = vk::ImageLayout::eTransferSrcOptimal;
+			blit_info.dstImageLayout = vk::ImageLayout::eTransferDstOptimal;
+			blit_info.regionCount    = 1;
+			blit_info.pRegions       = &image_blit;
+			blit_info.filter         = vk::Filter::eLinear;
+			command_buffer.blitImage2(blit_info);
 
 			memory_barrier.oldLayout     = vk::ImageLayout::eTransferSrcOptimal;
 			memory_barrier.newLayout     = vk::ImageLayout::eShaderReadOnlyOptimal;
-			memory_barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
-			memory_barrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
+			memory_barrier.srcAccessMask = vk::AccessFlagBits2::eTransferRead;
+			memory_barrier.dstAccessMask = vk::AccessFlagBits2::eShaderRead;
 
-			command_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {}, memory_barrier);
+			{
+				memory_barrier.srcStageMask = vk::PipelineStageFlagBits2::eTransfer;
+				memory_barrier.dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader;
+
+				vk::DependencyInfo dependency_info{};
+				dependency_info.imageMemoryBarrierCount = 1;
+				dependency_info.pImageMemoryBarriers    = &memory_barrier;
+				command_buffer.pipelineBarrier2(dependency_info);
+			}
 
 			if (mip_width > 1)
 				mip_width /= 2;
@@ -809,20 +846,31 @@ namespace toaster::gpu
 		memory_barrier.subresourceRange.baseMipLevel = p_mip_levels - 1;
 		memory_barrier.oldLayout                     = vk::ImageLayout::eTransferDstOptimal;
 		memory_barrier.newLayout                     = vk::ImageLayout::eShaderReadOnlyOptimal;
-		memory_barrier.srcAccessMask                 = vk::AccessFlagBits::eTransferWrite;
-		memory_barrier.dstAccessMask                 = vk::AccessFlagBits::eShaderRead;
+		memory_barrier.srcAccessMask                 = vk::AccessFlagBits2::eTransferWrite;
+		memory_barrier.dstAccessMask                 = vk::AccessFlagBits2::eShaderRead;
 
-		command_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eFragmentShader, {}, {}, {}, memory_barrier);
+		{
+			memory_barrier.srcStageMask = vk::PipelineStageFlagBits2::eTransfer;
+			memory_barrier.dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader;
+
+			vk::DependencyInfo dependency_info{};
+			dependency_info.imageMemoryBarrierCount = 1;
+			dependency_info.pImageMemoryBarriers    = &memory_barrier;
+			command_buffer.pipelineBarrier2(dependency_info);
+		}
 
 		command_buffer.end();
 
 		vk::FenceCreateInfo fence_create_info{};
 		vk::raii::Fence     wait_fence{m_device, fence_create_info};
 
-		vk::SubmitInfo submit_info{};
-		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers    = &*command_buffer;
-		m_graphicsQueue.submit(submit_info, *wait_fence);
+		vk::CommandBufferSubmitInfo command_buffer_submit_info{};
+		command_buffer_submit_info.commandBuffer = *command_buffer;
+
+		vk::SubmitInfo2 submit_info{};
+		submit_info.commandBufferInfoCount = 1;
+		submit_info.pCommandBufferInfos    = &command_buffer_submit_info;
+		m_graphicsQueue.submit2(submit_info, *wait_fence);
 
 		vk::Result res = m_device.waitForFences(*wait_fence, true, UINT64_MAX);
 		if (res != vk::Result::eSuccess)
@@ -852,10 +900,13 @@ namespace toaster::gpu
 		vk::FenceCreateInfo fence_create_info{};
 		vk::raii::Fence     wait_fence{m_device, fence_create_info};
 
-		vk::SubmitInfo submit_info{};
-		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers    = &*p_command_buffer;
-		m_transferQueue.submit(submit_info, *wait_fence);
+		vk::CommandBufferSubmitInfo command_buffer_submit_info{};
+		command_buffer_submit_info.commandBuffer = *p_command_buffer;
+
+		vk::SubmitInfo2 submit_info{};
+		submit_info.commandBufferInfoCount = 1;
+		submit_info.pCommandBufferInfos    = &command_buffer_submit_info;
+		m_transferQueue.submit2(submit_info, *wait_fence);
 
 		vk::Result res = m_device.waitForFences(*wait_fence, true, UINT64_MAX);
 		if (res != vk::Result::eSuccess)
@@ -885,10 +936,13 @@ namespace toaster::gpu
 		vk::FenceCreateInfo fence_create_info{};
 		vk::raii::Fence     wait_fence{m_device, fence_create_info};
 
-		vk::SubmitInfo submit_info{};
-		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers    = &*p_command_buffer;
-		m_graphicsQueue.submit(submit_info, *wait_fence);
+		vk::CommandBufferSubmitInfo command_buffer_submit_info{};
+		command_buffer_submit_info.commandBuffer = *p_command_buffer;
+
+		vk::SubmitInfo2 submit_info{};
+		submit_info.commandBufferInfoCount = 1;
+		submit_info.pCommandBufferInfos    = &command_buffer_submit_info;
+		m_graphicsQueue.submit2(submit_info, *wait_fence);
 
 		vk::Result res = m_device.waitForFences(*wait_fence, true, UINT64_MAX);
 		if (res != vk::Result::eSuccess)

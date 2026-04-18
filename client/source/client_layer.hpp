@@ -4,9 +4,6 @@
 #include "toaster/toast_kernel/layer.hpp"
 #include "toaster/toast_render/renderer_2d.hpp"
 
-#include "toaster/toast_gpu/shader.hpp"
-#include "toaster/toast_gpu/texture.hpp"
-
 #include "toaster/toast_lib/events/key_event.hpp"
 #include "toaster/toast_lib/events/mouse_event.hpp"
 #include "toaster/toast_lib/events/window_event.hpp"
@@ -31,47 +28,22 @@ namespace toaster
 	public:
 		ClientLayer(Application *p_app);
 
-		void onInit() override;
-		void onDestroy() override;
-		void onUpdate(float32 p_dt) override;
-		void onEvent(Event &p_event) override;
+		auto onInit() -> void override;
+		auto onDestroy() -> void override;
+		auto onUpdate(float32 p_dt) -> void override;
+		auto onEvent(Event &p_event) -> void override;
 
-		void onUIRender() override;
+		auto onUIRender() -> void override;
 
 	private:
-		bool onKeyPressEvent(KeyPressEvent &e);
-		bool onWindowResizeEvent(WindowResizeEvent &e);
+		auto _onKeyPressEvent(KeyPressEvent &e) -> bool;
+		auto _onWindowResizeEvent(WindowResizeEvent &e) -> bool;
 
 		float32 m_time{0.0f};
 
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
 
-		#pragma region fullscreen pass
-		RefPtr<gpu::VKPipeline>   m_compositePipeline{nullptr};
-		RefPtr<gpu::VKRenderPass> m_fullscreenPass{nullptr};
-
-		RefPtr<gpu::VKMaterial> m_fullscreenMaterial{nullptr};
-
-		RefPtr<gpu::VKImage2D> m_MSAAColourAttachmentImage{nullptr};
-		RefPtr<gpu::VKImage2D> m_MSAADepthAttachmentImage{nullptr};
-		#pragma  endregion
-
-
-		RefPtr<gpu::VKMesh> m_mesh{nullptr};
-		RefPtr<gpu::VKMesh> m_mesh2{nullptr};
-
 		RefPtr<Renderer2D> m_renderer2D{nullptr};
-
-		glm::vec3 m_meshTranslation{0.0f};
-
-		struct CameraUB
-		{
-			glm::mat4 view;
-			glm::mat4 proj;
-		};
-		RefPtr<SceneRenderer> m_sceneRenderer{nullptr};
-
-		EditorCamera m_editorCamera;
 	};
 }

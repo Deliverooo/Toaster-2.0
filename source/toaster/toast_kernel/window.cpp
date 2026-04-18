@@ -36,7 +36,7 @@ namespace toaster
 	{
 		if (!s_glfwInitialized)
 		{
-			const bool init_result{static_cast<bool>(glfwInit())};
+			const bool init_result{static_cast<bool>(glfwInit())};(void)init_result;
 			TST_ASSERT_MSG(init_result, "glfw initialization failed!");
 
 			glfwSetErrorCallback(_glfwErrorCallback);

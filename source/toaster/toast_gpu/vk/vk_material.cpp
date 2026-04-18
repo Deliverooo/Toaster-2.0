@@ -92,7 +92,7 @@ namespace toaster::gpu
 					return &push_constant_buffers.at(name).pushConstants.at(p_name);
 			}
 		}
-		TST_ASSERT(false);
+		TST_ASSERT_MSG(false, "Failed to find push constant definition");
 		return nullptr;
 	}
 }

@@ -126,7 +126,9 @@ namespace toaster
 						 gpu::RenderingAttachmentInfo * p_override_depth_attachment) -> void
 	{
 		if (m_createInfo.overrideAttachments && !p_override_colour_attachment && !p_override_depth_attachment)
+		{
 			TST_ASSERT_MSG(false, "Please provide the attachment infos...");
+		}
 
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight}};

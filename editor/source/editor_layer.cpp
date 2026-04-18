@@ -72,9 +72,9 @@ namespace toaster
 		m_fullscreenPass->setInput("FrameData", m_frameDataUBOs);
 
 		gpu::TextureSpecInfo texture_spec_info{};
-		m_texture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "../resources/textures/Peeber.png");
+		m_texture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "C:/dev/Toaster-2.0-vulkan/resources/textures/Peeber.png");
 		gpu::TextureSpecInfo texture_spec_info2{};
-		m_texture2 = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info2, "../resources/textures/ooorbo.png");
+		m_texture2 = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info2, "C:/dev/Toaster-2.0-vulkan/resources/textures/ooorbo.png");
 
 		m_fullscreenPass->setInput("u_Texture", m_texture);
 		m_fullscreenPass->bake();
@@ -100,7 +100,7 @@ namespace toaster
 			transform_comp.translation = {0.0f, 0.0f, 0.0f};
 			transform_comp.scale       = {1.0f, 1.0f, 1.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
-			mc.mesh = m_ctx->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
+			// mc.mesh = m_ctx->alloc<gpu::VKMesh>("C:/dev/Toaster-2.0-vulkan/resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
 
 			// auto &src{orbo_entity.addComponent<SpriteRendererComponent>()};
 			// src.texture = m_texture;

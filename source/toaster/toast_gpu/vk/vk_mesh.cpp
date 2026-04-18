@@ -42,7 +42,7 @@ namespace toaster::gpu
 		const aiScene *scene = importer.ReadFile(p_path.string(), s_MeshImportFlags);
 		if (!scene)
 		{
-			LOG_ERROR("Mesh", "Failed to load mesh file: {0}", p_path.string());
+			LOG_ERROR("Failed to load mesh file: {0}", p_path.string());
 			TST_ASSERT(false);
 		}
 

@@ -25,7 +25,7 @@ namespace toaster
 		auto getSpecInfo() const -> const SceneRendererSpecInfo &;
 		auto getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 		auto getOutputDepthTexture() const -> const RefPtr<gpu::VKTexture2D> &;
-		auto getOutputDepthImage() const -> const RefPtr<gpu::VKImage2D> &;
+		// auto getOutputDepthImage() const -> const RefPtr<gpu::VKImage2D> &;
 
 		auto getRenderer2D() -> RefPtr<Renderer2D>;
 
@@ -47,9 +47,7 @@ namespace toaster
 		RefPtr<gpu::VKPipeline>   m_depthPrePipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_depthPrePass{nullptr};
 
-		RefPtr<gpu::VKTexture2D> m_resolveDepthPreAttachmentTexture{nullptr};
-
-		RefPtr<gpu::VKImage2D> m_depthPreAttachmentImage{nullptr};
+		RefPtr<gpu::VKTexture2D> m_depthPreAttachmentTexture{nullptr};
 		#pragma endregion
 
 		RefPtr<gpu::VKPipeline>   m_skyboxPipeline{nullptr};

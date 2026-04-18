@@ -152,7 +152,7 @@ namespace toaster
 
 			gpu::RenderingAttachmentInfo depth_attachment_info{};
 			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
-			depth_attachment_info.image      = p_scene_renderer->getOutputDepthImage();
+			depth_attachment_info.image      = p_scene_renderer->getOutputDepthTexture()->getImage();
 			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eLoad;
 			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 

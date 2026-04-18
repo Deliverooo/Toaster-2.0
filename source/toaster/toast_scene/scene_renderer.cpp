@@ -30,13 +30,11 @@ namespace toaster
 		gpu::TextureSpecInfo texture_spec_info{};
 		m_skyboxTexture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "../resources/environments/'Environment_map'.jpg");
 
-		vk::Format depth_format{m_ctx->findDepthFormat()};
-
 		#pragma region depth-pre
 		{
 			gpu::PipelineCreateInfo depth_pre_pipeline_create_info{};
 			depth_pre_pipeline_create_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}};
-			depth_pre_pipeline_create_info.depthFormat        = depth_format;
+			depth_pre_pipeline_create_info.depthFormat        = vk::Format::eD32Sfloat;
 			depth_pre_pipeline_create_info.shader             = Globals::getShaderLibrary().get("Depth-Pre");
 			m_depthPrePipeline                                = m_ctx->alloc<gpu::VKPipeline>(depth_pre_pipeline_create_info);
 
@@ -49,15 +47,8 @@ namespace toaster
 			gpu::TextureSpecInfo depth_pre_attachment_texture_spec_info{};
 			depth_pre_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
 			depth_pre_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
-			depth_pre_attachment_texture_spec_info.format = depth_format;
-			m_resolveDepthPreAttachmentTexture            = m_ctx->alloc<gpu::VKTexture2D>(depth_pre_attachment_texture_spec_info);
-
-			gpu::ImageCreateInfo depth_pre_attachment_image_create_info{};
-			depth_pre_attachment_image_create_info.width  = m_specInfo.viewportWidth;
-			depth_pre_attachment_image_create_info.height = m_specInfo.viewportHeight;
-			depth_pre_attachment_image_create_info.format = depth_format;
-			depth_pre_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-			m_depthPreAttachmentImage                     = m_ctx->alloc<gpu::VKImage2D>(depth_pre_attachment_image_create_info);
+			depth_pre_attachment_texture_spec_info.format = vk::Format::eD32Sfloat;
+			m_depthPreAttachmentTexture                   = m_ctx->alloc<gpu::VKTexture2D>(depth_pre_attachment_texture_spec_info);
 		}
 		#pragma endregion
 
@@ -96,12 +87,8 @@ namespace toaster
 				vk::Format::eR16G16B16A16Sfloat /*Positions*/,
 				vk::Format::eR16G16B16A16Sfloat /*Normals*/
 			};
-			pipeline_create_info.depthFormat = {depth_format};
-			// pipeline_create_info.depthCompare = vk::CompareOp::eEqual;
-			// pipeline_create_info.depthWrite   = false;
+			pipeline_create_info.depthFormat = {vk::Format::eD32Sfloat};
 			pipeline_create_info.shader      = Globals::getShaderLibrary().get("Geometry");
-			pipeline_create_info.multisample = false;
-			pipeline_create_info.polygonMode = vk::PolygonMode::eFill;
 			m_geometryPipeline               = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
 
 			m_geometryPass = m_ctx->alloc<gpu::VKRenderPass>(m_geometryPipeline);
@@ -178,7 +165,7 @@ namespace toaster
 
 	auto SceneRenderer::end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
-		_renderDepthPrePass(p_cmd, p_frame_index);
+		// _renderDepthPrePass(p_cmd, p_frame_index);
 		_renderSkyboxPass(p_cmd, p_frame_index);
 		_renderGeometryPass(p_cmd, p_frame_index);
 
@@ -204,12 +191,7 @@ namespace toaster
 
 	auto SceneRenderer::getOutputDepthTexture() const -> const RefPtr<gpu::VKTexture2D> &
 	{
-		return m_resolveDepthPreAttachmentTexture;
-	}
-
-	auto SceneRenderer::getOutputDepthImage() const -> const RefPtr<gpu::VKImage2D> &
-	{
-		return m_depthPreAttachmentImage;
+		return m_depthPreAttachmentTexture;
 	}
 
 	auto SceneRenderer::getRenderer2D() -> RefPtr<Renderer2D>
@@ -226,8 +208,7 @@ namespace toaster
 		m_geometryNormalsAttachmentTexture->resize(p_width, p_height);
 		m_outputColourTexture->resize(p_width, p_height);
 
-		m_resolveDepthPreAttachmentTexture->resize(p_width, p_height);
-		m_depthPreAttachmentImage->resize(p_width, p_height);
+		m_depthPreAttachmentTexture->resize(p_width, p_height);
 
 		m_renderer2D->onResize(p_width, p_height);
 	}
@@ -243,20 +224,11 @@ namespace toaster
 		if (m_depthPreAttachmentImage->getCurrentImageLayout() == vk::ImageLayout::eDepthReadOnlyOptimal)
 		{
 			m_ctx->transitionImageLayout(m_depthPreAttachmentImage->getImage(), m_depthPreAttachmentImage->getCurrentImageLayout(),
-										 vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits::eDepthStencilAttachmentRead,
-										 vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits::eEarlyFragmentTests,
-										 vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests, 1,
+										 vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eDepthStencilAttachmentRead,
+										 vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eEarlyFragmentTests,
+										 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, 1,
 										 vk::ImageAspectFlagBits::eDepth);
 			m_depthPreAttachmentImage->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
-		}
-		else
-		{
-			// m_ctx->transitionImageLayout(m_depthPreAttachmentImage->getImage(), m_depthPreAttachmentImage->getCurrentImageLayout(),
-			// vk::ImageLayout::eDepthReadOnlyOptimal, vk::AccessFlagBits::eDepthStencilAttachmentWrite,
-			// vk::AccessFlagBits::eDepthStencilAttachmentRead,
-			// vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
-			// vk::PipelineStageFlagBits::eEarlyFragmentTests, 1, vk::ImageAspectFlagBits::eDepth);
-			// m_depthPreAttachmentImage->setCurrentImageLayout(vk::ImageLayout::eDepthReadOnlyOptimal);
 		}
 		#endif
 
@@ -266,7 +238,7 @@ namespace toaster
 
 		gpu::RenderingAttachmentInfo depth_attachment_info{};
 		depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
-		depth_attachment_info.image      = m_depthPreAttachmentImage;
+		depth_attachment_info.image      = m_depthPreAttachmentTexture->getImage();
 		depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
 		depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 		rendering_info.pDepthAttachment  = &depth_attachment_info;
@@ -285,11 +257,10 @@ namespace toaster
 		Renderer::endRendering(rendering_info, p_cmd);
 
 		#if 0
-		m_ctx->transitionImageLayout(m_depthPreAttachmentImage->getImage(), m_depthPreAttachmentImage->getCurrentImageLayout(), vk::ImageLayout::eDepthReadOnlyOptimal,
-									 vk::AccessFlagBits::eDepthStencilAttachmentWrite, vk::AccessFlagBits::eDepthStencilAttachmentRead,
-									 vk::PipelineStageFlagBits::eEarlyFragmentTests | vk::PipelineStageFlagBits::eLateFragmentTests,
-									 vk::PipelineStageFlagBits::eEarlyFragmentTests, 1, vk::ImageAspectFlagBits::eDepth);
-		m_depthPreAttachmentImage->setCurrentImageLayout(vk::ImageLayout::eDepthReadOnlyOptimal);
+		m_ctx->transitionImageLayout(m_depthPreAttachmentTexture->getImage()->getImage(), m_depthPreAttachmentTexture->getImage()->getCurrentImageLayout(),
+									 m_depthPreAttachmentTexture->getImage()->getCurrentImageLayout(), vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+									 vk::AccessFlagBits2::eDepthStencilAttachmentRead, vk::PipelineStageFlagBits2::eLateFragmentTests,
+									 vk::PipelineStageFlagBits2::eEarlyFragmentTests, 1, vk::ImageAspectFlagBits::eDepth);
 		#endif
 	}
 
@@ -338,7 +309,7 @@ namespace toaster
 
 		gpu::RenderingAttachmentInfo depth_attachment_info{};
 		depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
-		depth_attachment_info.image      = m_depthPreAttachmentImage;
+		depth_attachment_info.image      = m_depthPreAttachmentTexture->getImage();
 		depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
 		depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 		rendering_info.pDepthAttachment  = &depth_attachment_info;
@@ -354,5 +325,12 @@ namespace toaster
 		}
 
 		Renderer::endRendering(rendering_info, p_cmd);
+
+		#if 0
+		m_ctx->transitionImageLayout(m_depthPreAttachmentTexture->getImage()->getImage(), m_depthPreAttachmentTexture->getImage()->getCurrentImageLayout(),
+									 m_depthPreAttachmentTexture->getImage()->getCurrentImageLayout(), vk::AccessFlagBits2::eDepthStencilAttachmentRead,
+									 vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eEarlyFragmentTests,
+									 vk::PipelineStageFlagBits2::eLateFragmentTests, 1, vk::ImageAspectFlagBits::eDepth);
+		#endif
 	}
 }

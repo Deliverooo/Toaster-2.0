@@ -142,7 +142,7 @@ namespace toaster::gpu
 		vk::PipelineDepthStencilStateCreateInfo depth_stencil_state_create_info{};
 		if (m_createInfo.depthFormat != vk::Format::eUndefined)
 		{
-			depth_stencil_state_create_info.depthTestEnable       = true;
+			depth_stencil_state_create_info.depthTestEnable       = m_createInfo.depthTest;
 			depth_stencil_state_create_info.depthWriteEnable      = m_createInfo.depthWrite;
 			depth_stencil_state_create_info.depthCompareOp        = m_createInfo.depthCompare;
 			depth_stencil_state_create_info.depthBoundsTestEnable = false;
@@ -180,7 +180,7 @@ namespace toaster::gpu
 		graphics_pipeline_create_info.pRasterizationState = &rasterization_state_create_info;
 		graphics_pipeline_create_info.pViewportState      = &viewport_state_create_info;
 		graphics_pipeline_create_info.pMultisampleState   = &multisample_state_create_info;
-		graphics_pipeline_create_info.pColorBlendState    = &colour_blend_state_create_info;
+		graphics_pipeline_create_info.pColorBlendState    = m_createInfo.colourAttachments.empty() ? nullptr : &colour_blend_state_create_info;
 		graphics_pipeline_create_info.pDynamicState       = &dynamic_state_create_info;
 		graphics_pipeline_create_info.pDepthStencilState  = &depth_stencil_state_create_info;
 		graphics_pipeline_create_info.layout              = m_pipelineLayout;

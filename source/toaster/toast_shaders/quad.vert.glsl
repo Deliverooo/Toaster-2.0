@@ -20,6 +20,7 @@ layout (push_constant) uniform Transform
     mat4 model;
 } _Transform_;
 
+invariant gl_Position;
 void main()
 {
     gl_Position = u_Proj * u_View * _Transform_.model * a_Position;

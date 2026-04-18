@@ -15,9 +15,10 @@ namespace toaster::gpu
 		// Thanks to Vulkan 1.3's dynamic rendering, when creating a pipeline, you only need to specify the formats for your rendering attachments
 		// This is very helpful because I hate framebuffers and Vulkan render passes.
 		std::vector<vk::Format> colourAttachments;
-		vk::Format              depthFormat{vk::Format::eUndefined};
 
+		vk::Format    depthFormat{vk::Format::eUndefined};
 		vk::CompareOp depthCompare{vk::CompareOp::eLess};
+		bool          depthTest{true};
 		bool          depthWrite{true};
 
 		RefPtr<VKShader> shader{nullptr};
