@@ -33,10 +33,16 @@ namespace toaster
 		#pragma region depth-pre
 		{
 			gpu::PipelineCreateInfo depth_pre_pipeline_create_info{};
-			depth_pre_pipeline_create_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}};
-			depth_pre_pipeline_create_info.depthFormat        = vk::Format::eD32Sfloat;
-			depth_pre_pipeline_create_info.shader             = Globals::getShaderLibrary().get("Depth-Pre");
-			m_depthPrePipeline                                = m_ctx->alloc<gpu::VKPipeline>(depth_pre_pipeline_create_info);
+			depth_pre_pipeline_create_info.vertexBufferLayout = {
+				{gpu::EBufferDataType::eFloat3, "a_Position"},
+				{gpu::EBufferDataType::eFloat3, "a_Normal"},
+				{gpu::EBufferDataType::eFloat3, "a_Tangent"},
+				{gpu::EBufferDataType::eFloat3, "a_Bitangent"},
+				{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
+			};
+			depth_pre_pipeline_create_info.depthFormat = vk::Format::eD32Sfloat;
+			depth_pre_pipeline_create_info.shader      = Globals::getShaderLibrary().get("Depth-Pre");
+			m_depthPrePipeline                         = m_ctx->alloc<gpu::VKPipeline>(depth_pre_pipeline_create_info);
 
 			m_depthPrePass = m_ctx->alloc<gpu::VKRenderPass>(m_depthPrePipeline);
 			m_depthPrePass->setInput("Camera", m_cameraUBOs);
@@ -88,6 +94,8 @@ namespace toaster
 				vk::Format::eR16G16B16A16Sfloat /*Normals*/
 			};
 			pipeline_create_info.depthFormat = {vk::Format::eD32Sfloat};
+			pipeline_create_info.depthWrite = false;
+			pipeline_create_info.depthCompare = vk::CompareOp::eEqual;
 			pipeline_create_info.shader      = Globals::getShaderLibrary().get("Geometry");
 			m_geometryPipeline               = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
 
@@ -165,7 +173,7 @@ namespace toaster
 
 	auto SceneRenderer::end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
-		// _renderDepthPrePass(p_cmd, p_frame_index);
+		_renderDepthPrePass(p_cmd, p_frame_index);
 		_renderSkyboxPass(p_cmd, p_frame_index);
 		_renderGeometryPass(p_cmd, p_frame_index);
 
@@ -310,8 +318,8 @@ namespace toaster
 		gpu::RenderingAttachmentInfo depth_attachment_info{};
 		depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
 		depth_attachment_info.image      = m_depthPreAttachmentTexture->getImage();
-		depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
-		depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+		depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eLoad;
+		depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eDontCare;
 		rendering_info.pDepthAttachment  = &depth_attachment_info;
 
 		Renderer::beginRendering(rendering_info, p_cmd, p_frame_index, m_geometryPass);
