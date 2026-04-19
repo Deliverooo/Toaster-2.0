@@ -114,16 +114,16 @@ namespace toaster
 	DEFINE_COMPONENT(PointLightComponent)
 	{
 		glm::vec3 radiance{1.0f};
+		float32   multiplier{1.0f};
 		float32   radius{1.0f};
 		float32   falloff{1.0f};
-		float32   multiplier{1.0f};
 
 		auto reset() -> void
 		{
 			radiance   = glm::vec3{1.0f};
+			multiplier = 1.0f;
 			radius     = 1.0f;
 			falloff    = 1.0f;
-			multiplier = 1.0f;
 		}
 	};
 

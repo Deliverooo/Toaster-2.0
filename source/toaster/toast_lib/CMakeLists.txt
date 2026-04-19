@@ -24,6 +24,7 @@ set(SRC
 		math/math_vector.hpp
 		math/math_constants.hpp
 		math/math_matrix.hpp
+		math/colours.hpp
 
 		util_defines.hpp
 

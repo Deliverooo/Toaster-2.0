@@ -3,6 +3,7 @@
 #include <entt/entt.hpp>
 
 #include "toast_lib/string.hpp"
+#include "toast_lib/math/colours.hpp"
 #include "toast_render/renderer_2d.hpp"
 
 #include "toast_gpu/vk/vk_mesh.hpp"
@@ -14,18 +15,16 @@ namespace toaster
 
 	struct DirectionalLight
 	{
-		glm::vec3 direction{0.0f};
-		glm::vec3 radiance{1.0f};
-		float32   multiplier{1.0f};
+		glm::vec4 direction{0.0f};
+		glm::vec4 radiance{1.0f};
 	};
 
 	struct PointLight
 	{
-		glm::vec3 position{0.0f};
-		glm::vec3 radiance{1.0f};
-		float32   radius{25.0f};
-		float32   falloff{1.0f};
-		float32   multiplier{1.0f};
+		glm::vec4 position{0.0f};
+		glm::vec4 radiance{1.0f};
+		float32 radius{25.0f};
+		float32 falloff{1.0f};
 	};
 
 	struct SpotLight
@@ -42,7 +41,7 @@ namespace toaster
 	{
 		std::vector<DirectionalLight> directionalLights;
 		std::vector<PointLight>       pointLights;
-		std::vector<SpotLight>        spotLights;
+		// std::vector<SpotLight>        spotLights;
 	};
 
 	class Scene

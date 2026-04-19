@@ -18,23 +18,20 @@ layout(push_constant) uniform Material
     layout(offset = 64) vec3 albedoColour;
 } u_Material;
 
-struct PointLight
+struct DirectionalLight
 {
-    vec3 position;
+    vec4 direction;
     vec3 radiance;
-
-    float radius;
-    float falloff;
     float multiplier;
 };
 
-layout(set = 1, binding = 2) uniform PointLightData
+layout(set = 1, binding = 2) uniform DirectionalLightData
 {
     uint count;
-    PointLight lights[128];
-} u_PointLights;
+    DirectionalLight lights[4];
+} u_DirectionalLights;
 
-layout(set = 1, binding = 3) uniform SceneData
+layout(set = 1, binding = 4) uniform SceneData
 {
     vec3 cameraPos;
 } u_SceneData;
@@ -51,6 +48,20 @@ struct PBRGlobals
     float nDotV;
 } params;
 
+vec3 calcDirectionalLights()
+{
+    vec3 result = vec3(0.0f);
+
+    for (uint i = 0; i < u_DirectionalLights.count; i++)
+    {
+        DirectionalLight light = u_DirectionalLights.lights[i];
+
+
+    }
+
+    return result;
+}
+
 void main()
 {
     o_Position = vec4(v_Position, 1.0f);
@@ -58,6 +69,7 @@ void main()
 
     vec4 albedo_texture_colour = texture(u_AlbedoTexture, v_TexCoord);
     params.albedo = albedo_texture_colour.rgb * u_Material.albedoColour;
+
     params.roughness = 1.0f;
     params.metalness = 0.0f;
 
@@ -66,9 +78,9 @@ void main()
     params.view = normalize(u_SceneData.cameraPos - v_Position);
     params.nDotV = max(dot(params.normal, params.view), 0.0);
 
-    vec3 light_contribution = params.albedo;
+    vec3 final_colour = vec3(params.albedo);
 
-    vec3 ambient = params.albedo * 0.2f;
+    final_colour += calcDirectionalLights();
 
-    o_Colour = vec4(light_contribution, 1.0f);
+    o_Colour = vec4(final_colour, 1.0f);
 }

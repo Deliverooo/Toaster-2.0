@@ -7,6 +7,7 @@
 
 #include "editor_camera.hpp"
 #include "panels/scene_hierarchy_panel.hpp"
+#include "toast_lib/events/key_event.hpp"
 #include "toast_lib/events/window_event.hpp"
 
 namespace toaster
@@ -40,6 +41,7 @@ namespace toaster
 
 	private:
 		auto _onWindowFileDropEvent(WindowFileDropEvent &p_event) -> bool;
+		auto _onKeyPressEvent(KeyPressEvent &p_event) -> bool;
 
 		gpu::VKGPUContext *m_ctx{nullptr};
 
@@ -55,14 +57,6 @@ namespace toaster
 
 		float32 m_time{0.0f};
 
-		struct FrameDataUB
-		{
-			glm::vec2 res{1.0f};
-			float32   time{0.0f};
-		};
-
-		RefPtr<gpu::VKUniformBufferPFF> m_frameDataUBOs{nullptr};
-
 		RefPtr<Scene>                  m_scene{nullptr};
 		UniquePtr<SceneHierarchyPanel> m_sceneHierarchyPanel{nullptr};
 		RefPtr<SceneRenderer>          m_sceneRenderer{nullptr};
@@ -72,6 +66,9 @@ namespace toaster
 		RefPtr<Renderer2D> m_renderer2D{nullptr};
 
 		EditorCamera m_editorCamera;
+
+		int32 m_gizmoType{-1}; // Translate, rotate or scale
+		int32 m_gizmoMode{0};  // 0 For local, 1 for world space
 
 		bool m_canOperateCamera{true};
 	};

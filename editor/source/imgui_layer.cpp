@@ -12,6 +12,10 @@
 #include "toast_gpu/vk/vk_swapchain.hpp"
 #include "ui/colours.hpp"
 
+
+#include <ImGuizmo.h>
+namespace igz = ImGuizmo;
+
 namespace toaster
 {
 	static auto checkVKResult(VkResult p_result) -> void
@@ -172,6 +176,7 @@ namespace toaster
 		init_info.PipelineInfoMain.PipelineRenderingCreateInfo = rendering_create_info;
 
 		ImGui_ImplVulkan_Init(&init_info);
+
 	}
 
 	auto ImGuiLayer::onDestroy() -> void
@@ -201,6 +206,7 @@ namespace toaster
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ig::NewFrame();
+		igz::BeginFrame();
 	}
 
 	auto ImGuiLayer::end() -> void

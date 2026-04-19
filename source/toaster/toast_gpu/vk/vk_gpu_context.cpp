@@ -338,15 +338,17 @@ namespace toaster::gpu
 		}
 
 		vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
-			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT> feature_chain{{}, {}, {}, {}, {}};
-		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                 = true;
-		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                 = true;
-		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                  = true;
-		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                   = true;
-		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                    = true;
-		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                    = true;
-		feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState = true;
-		feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors      = true;
+			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
+			vk::PhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT> feature_chain{{}, {}, {}, {}, {}, {}};
+		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                                           = true;
+		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                                           = true;
+		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                                            = true;
+		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                                             = true;
+		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                                              = true;
+		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                                              = true;
+		feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState                           = true;
+		feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors                                = true;
+		feature_chain.get<vk::PhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT>().dynamicRenderingUnusedAttachments = true;
 
 		std::vector<vk::DeviceQueueCreateInfo> queue_create_infos{};
 

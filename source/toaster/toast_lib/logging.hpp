@@ -2,6 +2,49 @@
 
 #include <fmt/color.h>
 #include <fmt/format.h>
+#include <glm/glm.hpp>
+
+template<>
+struct fmt::formatter<glm::vec2>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const glm::vec2 &v, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "({}, {})", v.x, v.y);
+	}
+};
+
+template<>
+struct fmt::formatter<glm::vec3>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const glm::vec3 &v, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "({}, {}, {})", v.x, v.y, v.z);
+	}
+};
+
+template<>
+struct fmt::formatter<glm::vec4>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const glm::vec4 &v, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "({}, {}, {}, {})", v.x, v.y, v.z, v.w);
+	}
+};
 
 namespace toaster::log
 {

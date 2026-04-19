@@ -13,9 +13,16 @@
 
 #include <imgui.h>
 
-#include "backends/imgui_impl_vulkan.h"
-#include "toast_lib/os/file_dialog.hpp"
+#include "glm/gtc/type_ptr.hpp"
+#include "toast_kernel/input.hpp"
 namespace ig = ImGui;
+
+#include <ImGuizmo.h>
+namespace igz = ImGuizmo;
+
+#include "backends/imgui_impl_vulkan.h"
+#include "toast_lib/math/math_matrix.hpp"
+#include "toast_lib/os/file_dialog.hpp"
 
 namespace toaster
 {
@@ -68,9 +75,6 @@ namespace toaster
 		m_fullscreenPass     = m_ctx->alloc<gpu::VKRenderPass>(m_fullscreenPipeline);
 		m_fullscreenMaterial = m_ctx->alloc<gpu::VKMaterial>(fullscreen_shader);
 
-		m_frameDataUBOs = m_ctx->alloc<gpu::VKUniformBufferPFF>(sizeof(FrameDataUB), gpu::VKGPUContext::c_maxFramesInFlight);
-		m_fullscreenPass->setInput("FrameData", m_frameDataUBOs);
-
 		gpu::TextureSpecInfo texture_spec_info{};
 		m_texture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "C:/dev/Toaster-2.0-vulkan/resources/textures/Peeber.png");
 		gpu::TextureSpecInfo texture_spec_info2{};
@@ -104,6 +108,15 @@ namespace toaster
 			auto &src{orbo_entity.addComponent<SpriteRendererComponent>()};
 			src.texture = m_texture;
 		}
+		{
+			Entity point_light_entity{m_scene->createEntity()};
+			auto & transform_comp{point_light_entity.getComponent<TransformComponent>()};
+			transform_comp.translation = {0.0f, 0.5f, -1.0f};
+			auto &src{point_light_entity.addComponent<SpriteRendererComponent>()};
+			src.colour = tsm::colours::red;
+			auto &plc{point_light_entity.addComponent<PointLightComponent>()};
+			plc.radiance = xyz(tsm::colours::green);
+		}
 	}
 
 	auto EditorLayer::onDestroy() -> void
@@ -127,18 +140,6 @@ namespace toaster
 		m_scene->onRender(cmd_buf, frame_index, p_dt, m_sceneRenderer, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
 
 		m_fullscreenPass->setInput("u_Texture", m_sceneRenderer->getOutputColourTexture());
-
-		{
-			FrameDataUB frame_data{};
-			frame_data.res.x = static_cast<float32>(m_viewportWidth);
-			frame_data.res.y = static_cast<float32>(m_viewportHeight);
-			frame_data.time  = m_time;
-			m_frameDataUBOs->getUBO(frame_index)->setData(&frame_data, sizeof(FrameDataUB), 0u);
-
-			// Meaningless...
-			m_fullscreenMaterial->set("u_Constants.tint", glm::vec3{0.5f, 1.0f, 0.5f});
-			m_fullscreenMaterial->set("u_Constants.intensity", glm::abs(glm::sin(m_time)));
-		}
 
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_viewportWidth, m_viewportHeight}};
@@ -169,16 +170,7 @@ namespace toaster
 		auto &app{getApp()};
 
 		EventDispatcher event_dispatcher{p_event};
-		event_dispatcher.dispatch<KeyPressEvent>([&app](const KeyPressEvent &e) -> bool
-		{
-			switch (e.getKeyCode())
-			{
-				case input::EKeyCode::eEscape: app.close();
-				default: break;
-			}
-			return false;
-		});
-
+		event_dispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(EditorLayer::_onKeyPressEvent));
 		event_dispatcher.dispatch<WindowFileDropEvent>(TST_BIND_EVENT_FN(EditorLayer::_onWindowFileDropEvent));
 
 		if (m_canOperateCamera)
@@ -201,6 +193,45 @@ namespace toaster
 
 		m_sceneHierarchyPanel->onUIRender(swapchain->getFrameIndex());
 
+		Entity selected_entity = m_sceneHierarchyPanel->getSelectedEntity();
+
+		// ig::Begin("Transform", nullptr, ImGuiWindowFlags_NoMove);
+		if (selected_entity && m_gizmoType != -1)
+		{
+			auto w = ig::GetWindowWidth();
+			auto h = ig::GetWindowHeight();
+
+			igz::SetOrthographic(false);
+			igz::SetDrawlist(ig::GetForegroundDrawList());         // Draw to the main surface
+			igz::SetRect(0, 0, m_viewportWidth, m_viewportHeight); // Full window area
+
+			bool snap_transform = input::isKeyDown(input::EKeyCode::eLeftControl);
+
+			auto &    tc               = selected_entity.getComponent<TransformComponent>();
+			glm::mat4 entity_transform = tc.getTransform();
+			float32   snap_value{0.5f};
+			if (m_gizmoType == igz::OPERATION::ROTATE)
+				snap_value = 45.0f;
+			const float32 snap_values[3] = {snap_value, snap_value, snap_value};
+
+			igz::Manipulate(glm::value_ptr(m_editorCamera.getViewMatrix()), glm::value_ptr(m_editorCamera.getProjectionMatrix()),
+							static_cast<igz::OPERATION>(m_gizmoType), static_cast<igz::MODE>(m_gizmoMode), glm::value_ptr(entity_transform), nullptr,
+							snap_transform ? snap_values : nullptr);
+			if (igz::IsUsing())
+			{
+				glm::vec3 translation;
+				glm::quat rotation;
+				glm::vec3 scale;
+
+				tsm::decomposeTransform(entity_transform, translation, rotation, scale);
+
+				const glm::vec3 delta_rotation = glm::eulerAngles(rotation) - tc.rotation;
+				tc.translation                 = translation;
+				tc.rotation                    += delta_rotation;
+				tc.scale                       = scale;
+			}
+		}
+
 		ig::Begin("Renderer settings");
 
 		ig::Text("Scene renderer background");
@@ -215,7 +246,6 @@ namespace toaster
 				m_sceneRenderer->setEnvironmentBackground(m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, path));
 			}
 		}
-		// ig::Image(m_imguiSceneRendererDescriptorSet, ImVec2{(float32) m_viewportWidth / 2.0f, (float32) m_viewportHeight / 2.0f});
 
 		ig::End();
 
@@ -238,6 +268,44 @@ namespace toaster
 				mc.mesh = m_ctx->alloc<gpu::VKMesh>(path, Globals::getShaderLibrary().get("Geometry"));
 			}
 		}
+		return false;
+	}
+
+	auto EditorLayer::_onKeyPressEvent(KeyPressEvent &p_event) -> bool
+	{
+		if (!m_canOperateCamera)
+		{
+			switch (p_event.getKeyCode())
+			{
+				case input::EKeyCode::eQ:
+					m_gizmoType = -1;
+					break;
+				case input::EKeyCode::eW:
+					m_gizmoType = igz::OPERATION::TRANSLATE;
+					break;
+				case input::EKeyCode::eE:
+					m_gizmoType = igz::OPERATION::ROTATE;
+					break;
+				case input::EKeyCode::eR:
+					m_gizmoType = igz::OPERATION::SCALE;
+					break;
+				case input::EKeyCode::eL:
+				{
+					// Switch between world and local space transforming for the gizmos
+					if (input::isKeyDown(input::EKeyCode::eLeftAlt))
+					{
+						if (m_gizmoMode == igz::MODE::LOCAL)
+							m_gizmoMode = igz::MODE::WORLD;
+						else
+							m_gizmoMode = igz::MODE::LOCAL;
+					}
+					break;
+				}
+				default: break;
+			}
+		}
+		if (p_event.getKeyCode() == input::EKeyCode::eEscape)
+			getApp().close();
 		return false;
 	}
 }

@@ -34,10 +34,11 @@ namespace toaster
 		});
 	}
 
-	auto Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void
+	auto Scene::onRender([[maybe_unused]] const vk::raii::CommandBuffer &p_cmd, [[maybe_unused]] uint32 p_frame_index, [[maybe_unused]] float32 p_dt,
+						 [[maybe_unused]] const RefPtr<SceneRenderer> &  p_scene_renderer) -> void
 	{
-		Camera *  main_camera{nullptr};
-		glm::mat4 camera_transform{1.0f};
+		#if 0
+		Camera *main_camera{nullptr}; glm::mat4 camera_transform{1.0f};
 		{
 			auto view = m_registry.view<TransformComponent, CameraComponent>();
 			for (auto entity: view)
@@ -50,9 +51,7 @@ namespace toaster
 					break;
 				}
 			}
-		}
-
-		if (main_camera)
+		} if (main_camera)
 		{
 			p_scene_renderer->begin(p_cmd, p_frame_index, camera_transform, main_camera->getProjectionMatrix());
 
@@ -71,6 +70,7 @@ namespace toaster
 		}
 		else
 			TST_ASSERT(false);
+		#endif
 	}
 
 	auto Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer,
@@ -84,9 +84,8 @@ namespace toaster
 				auto [transform, directional_light]{group.get<TransformComponent, DirectionalLightComponent>(entity)};
 
 				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
-																	  -glm::normalize(glm::mat3{transform.getTransform()} * glm::vec3{1.0f}),
-																	  directional_light.radiance,
-																	  directional_light.multiplier
+																	  glm::vec4(glm::normalize(transform.rotation), 1.0f),
+																	  glm::vec4(directional_light.radiance, directional_light.multiplier)
 																  });
 			}
 		}
@@ -96,27 +95,11 @@ namespace toaster
 				auto [transform, point_light]{view.get<TransformComponent, PointLightComponent>(entity)};
 
 				m_lightEnvironment.pointLights.emplace_back(PointLight{
-																transform.translation,
-																point_light.radiance,
+																glm::vec4(transform.translation, 1.0f),
+																glm::vec4(point_light.radiance, point_light.multiplier),
 																point_light.radius,
-																point_light.falloff,
-																point_light.multiplier
+																point_light.falloff
 															});
-			}
-		}
-		{
-			for (const auto view{m_registry.view<TransformComponent, SpotLightComponent>()}; const auto entity: view)
-			{
-				auto [transform, spot_light]{view.get<TransformComponent, SpotLightComponent>(entity)};
-
-				m_lightEnvironment.spotLights.emplace_back(SpotLight{
-															   transform.translation,
-															   spot_light.radiance,
-															   spot_light.falloff,
-															   spot_light.multiplier,
-															   spot_light.angle,
-															   spot_light.range
-														   });
 			}
 		}
 		{

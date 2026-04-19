@@ -1,6 +1,7 @@
 #include "scene_renderer.hpp"
 #include "scene_renderer.hpp"
 #include "scene_renderer.hpp"
+#include "scene_renderer.hpp"
 #include "toast_render/globals.hpp"
 #include "toast_render/renderer.hpp"
 
@@ -17,10 +18,15 @@ namespace toaster
 			m_mappedCameraUBOs = m_cameraUBOs->mapMemory(ubo_size, 0);
 		}
 		{
-			constexpr vk::DeviceSize ubo_size{sizeof(PointLightUB)};
-			m_pointLightUBOs       = m_ctx->alloc<gpu::VKUniformBufferPFF>(ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
-			m_mappedPointLightUBOs = m_pointLightUBOs->mapMemory(ubo_size, 0);
+			constexpr vk::DeviceSize ubo_size{sizeof(DirectionalLightUB)};
+			m_directionalLightUBOs       = m_ctx->alloc<gpu::VKUniformBufferPFF>(ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
+			m_mappedDirectionalLightUBOs = m_directionalLightUBOs->mapMemory(ubo_size, 0);
 		}
+		// {
+		// constexpr vk::DeviceSize ubo_size{sizeof(PointLightUB)};
+		// m_pointLightUBOs       = m_ctx->alloc<gpu::VKUniformBufferPFF>(ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
+		// m_mappedPointLightUBOs = m_pointLightUBOs->mapMemory(ubo_size, 0);
+		// }
 		{
 			constexpr vk::DeviceSize ubo_size{sizeof(SceneDataUB)};
 			m_sceneDataUBOs       = m_ctx->alloc<gpu::VKUniformBufferPFF>(ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
@@ -63,20 +69,20 @@ namespace toaster
 		}
 		#pragma endregion
 
-		#pragma region compute test
+		#pragma region light culling
 		{
 			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary("shaders/test.comp.glsl.spv")};
 			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eCompute, cs_bytecode}};
-			m_computeShader = m_ctx->alloc<gpu::VKShader>(shader_bytecode_map, "Compute-Test");
+			m_lightCullingShader = m_ctx->alloc<gpu::VKShader>(shader_bytecode_map, "Compute-Test");
 
-			m_computePipeline = m_ctx->alloc<gpu::VKComputePipeline>(m_computeShader);
+			m_lightCullingPipeline = m_ctx->alloc<gpu::VKComputePipeline>(m_lightCullingShader);
 
-			m_computePass = m_ctx->alloc<gpu::VKComputePass>(m_computePipeline);
-			m_computePass->setInput("Test", m_computeStorageBuffers);
-			m_computePass->bake();
+			m_lightCullingPass = m_ctx->alloc<gpu::VKComputePass>(m_lightCullingPipeline);
+			m_lightCullingPass->setInput("Test", m_computeStorageBuffers);
+			m_lightCullingPass->bake();
 
-			m_computeMaterial = m_ctx->alloc<gpu::VKMaterial>(m_computeShader);
+			m_lightCullingMaterial = m_ctx->alloc<gpu::VKMaterial>(m_lightCullingShader);
 		}
 		#pragma endregion
 
@@ -112,8 +118,8 @@ namespace toaster
 			};
 			pipeline_create_info.colourAttachments = {
 				vk::Format::eR8G8B8A8Srgb,
-				vk::Format::eR16G16B16A16Sfloat /*Positions*/,
-				vk::Format::eR16G16B16A16Sfloat /*Normals*/
+				vk::Format::eR8G8B8A8Srgb /*Positions*/,
+				vk::Format::eR8G8B8A8Srgb /*Normals*/
 			};
 			pipeline_create_info.depthFormat  = {vk::Format::eD32Sfloat};
 			pipeline_create_info.depthWrite   = false;
@@ -123,7 +129,8 @@ namespace toaster
 
 			m_geometryPass = m_ctx->alloc<gpu::VKRenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs);
-			m_geometryPass->setInput("PointLightData", m_pointLightUBOs);
+			m_geometryPass->setInput("DirectionalLightData", m_directionalLightUBOs);
+			// m_geometryPass->setInput("PointLightData", m_pointLightUBOs);
 			m_geometryPass->setInput("SceneData", m_sceneDataUBOs);
 
 			m_geometryPass->bake(); // TODO: rename ts to toast
@@ -132,13 +139,13 @@ namespace toaster
 			gpu::TextureSpecInfo geometry_positions_attachment_texture_spec_info{};
 			geometry_positions_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
 			geometry_positions_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
-			geometry_positions_attachment_texture_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+			geometry_positions_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
 			m_geometryPositionsAttachmentTexture                   = m_ctx->alloc<gpu::VKTexture2D>(geometry_positions_attachment_texture_spec_info);
 
 			gpu::TextureSpecInfo geometry_normals_attachment_texture_spec_info{};
 			geometry_normals_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
 			geometry_normals_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
-			geometry_normals_attachment_texture_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+			geometry_normals_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
 			m_geometryNormalsAttachmentTexture                   = m_ctx->alloc<gpu::VKTexture2D>(geometry_normals_attachment_texture_spec_info);
 		}
 		#pragma endregion
@@ -161,7 +168,8 @@ namespace toaster
 	SceneRenderer::~SceneRenderer()
 	{
 		m_sceneDataUBOs->unmapMemory();
-		m_pointLightUBOs->unmapMemory();
+		m_directionalLightUBOs->unmapMemory();
+		// m_pointLightUBOs->unmapMemory();
 		m_cameraUBOs->unmapMemory();
 	}
 
@@ -171,22 +179,34 @@ namespace toaster
 		CameraUB camera_ub{};
 		camera_ub.view       = p_view_matrix;
 		camera_ub.proj       = p_projection_matrix;
-		camera_ub.proj[1][1] *= -1.0f;
+		camera_ub.proj[1][1] *= -1.0f; // Silly opengl
 		std::memcpy(m_mappedCameraUBOs[p_frame_index], &camera_ub, sizeof(CameraUB));
 
 		const SceneLightEnvironment &light_environment{m_specInfo.scene->getLightEnvironment()};
-
-		PointLightUB point_light_ub{};
-		point_light_ub.count = light_environment.pointLights.size();
-		for (uint32 i{0u}; i < PointLightUB::c_maxPointLights && i < light_environment.pointLights.size(); ++i)
 		{
-			point_light_ub.pointLights[i].position   = light_environment.pointLights[i].position;
-			point_light_ub.pointLights[i].radiance   = light_environment.pointLights[i].radiance;
-			point_light_ub.pointLights[i].radius     = light_environment.pointLights[i].radius;
-			point_light_ub.pointLights[i].falloff    = light_environment.pointLights[i].falloff;
-			point_light_ub.pointLights[i].multiplier = light_environment.pointLights[i].multiplier;
+			DirectionalLightUB directional_light_ub{};
+			directional_light_ub.count = light_environment.directionalLights.size();
+			for (uint32 i{0u}; i < DirectionalLightUB::c_maxDirectionalLights && i < light_environment.directionalLights.size(); ++i)
+			{
+				directional_light_ub.directionalLights[i].direction = light_environment.directionalLights[i].direction;
+				directional_light_ub.directionalLights[i].radiance  = light_environment.directionalLights[i].radiance;
+			}
+			std::memcpy(m_mappedDirectionalLightUBOs[p_frame_index], &directional_light_ub, sizeof(DirectionalLightUB));
 		}
-		std::memcpy(m_mappedPointLightUBOs[p_frame_index], &point_light_ub, sizeof(PointLightUB));
+		#if 0
+		{
+			PointLightUB point_light_ub{};
+			point_light_ub.count = std::min(static_cast<uint32>(light_environment.pointLights.size()), PointLightUB::c_maxPointLights);
+			for (uint32 i{0u}; i < PointLightUB::c_maxPointLights && i < light_environment.pointLights.size(); ++i)
+			{
+				point_light_ub.pointLights[i].position = light_environment.pointLights[i].position;
+				point_light_ub.pointLights[i].radiance = light_environment.pointLights[i].radiance;
+				point_light_ub.pointLights[i].radius   = light_environment.pointLights[i].radius;
+				point_light_ub.pointLights[i].falloff  = light_environment.pointLights[i].falloff;
+			}
+			std::memcpy(m_mappedPointLightUBOs[p_frame_index], &point_light_ub, sizeof(PointLightUB));
+		}
+		#endif
 
 		SceneDataUB scene_data_ub{};
 		scene_data_ub.cameraPos = glm::inverse(p_view_matrix)[3];
@@ -196,18 +216,17 @@ namespace toaster
 	auto SceneRenderer::end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
 		_renderDepthPrePass(p_cmd, p_frame_index);
-		_renderComputeTestPass(p_cmd, p_frame_index);
+		_renderLightCullingPass(p_cmd, p_frame_index);
 		_renderSkyboxPass(p_cmd, p_frame_index);
 		_renderGeometryPass(p_cmd, p_frame_index);
 
 		m_meshDrawCommands.clear();
 
-		int32 data{0};
-		void *mapped{m_computeStorageBuffers->getSSBO(p_frame_index)->mapMemory(0, sizeof(int32))};
-		std::memcpy(&data, mapped, sizeof(int32));
-		m_computeStorageBuffers->getSSBO(p_frame_index)->unmapMemory();
-
-		LOG_INFO("{}", data);
+		// int32 data{0};
+		// void *mapped{m_computeStorageBuffers->getSSBO(p_frame_index)->mapMemory(0, sizeof(int32))};
+		// std::memcpy(&data, mapped, sizeof(int32));
+		// m_computeStorageBuffers->getSSBO(p_frame_index)->unmapMemory();
+		// LOG_INFO("{}", data);
 	}
 
 	auto SceneRenderer::renderMesh(RefPtr<gpu::VKMesh> p_mesh, const glm::mat4 &p_transform) -> void
@@ -232,6 +251,16 @@ namespace toaster
 		return m_depthPreAttachmentTexture;
 	}
 
+	auto SceneRenderer::getGeometryPositionsTexture() const -> const RefPtr<gpu::VKTexture2D> &
+	{
+		return m_geometryPositionsAttachmentTexture;
+	}
+
+	auto SceneRenderer::getGeometryNormalsTexture() const -> const RefPtr<gpu::VKTexture2D> &
+	{
+		return m_geometryNormalsAttachmentTexture;
+	}
+
 	auto SceneRenderer::getRenderer2D() -> RefPtr<Renderer2D>
 	{
 		return m_renderer2D;
@@ -242,16 +271,16 @@ namespace toaster
 		m_specInfo.viewportWidth  = p_width;
 		m_specInfo.viewportHeight = p_height;
 
+		m_depthPreAttachmentTexture->resize(p_width, p_height);
+
 		m_geometryPositionsAttachmentTexture->resize(p_width, p_height);
 		m_geometryNormalsAttachmentTexture->resize(p_width, p_height);
 		m_outputColourTexture->resize(p_width, p_height);
 
-		m_depthPreAttachmentTexture->resize(p_width, p_height);
-
 		m_renderer2D->onResize(p_width, p_height);
 	}
 
-	auto SceneRenderer::setEnvironmentBackground(RefPtr<gpu::VKTexture2D> p_texture) -> void
+	auto SceneRenderer::setEnvironmentBackground(const RefPtr<gpu::VKTexture2D> &p_texture) -> void
 	{
 		m_skyboxTexture = p_texture;
 	}
@@ -283,13 +312,13 @@ namespace toaster
 		Renderer::endRendering(rendering_info, p_cmd);
 	}
 
-	auto SceneRenderer::_renderComputeTestPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::_renderLightCullingPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
-		Renderer::beginCompute(p_cmd, p_frame_index, m_computePass);
+		Renderer::beginCompute(p_cmd, p_frame_index, m_lightCullingPass);
 
-		Renderer::dispatchCompute(p_cmd, p_frame_index, m_computePass, m_computeMaterial, 1, 1, 1);
+		Renderer::dispatchCompute(p_cmd, p_frame_index, m_lightCullingPass, m_lightCullingMaterial, 1, 1, 1);
 
-		Renderer::endCompute(p_cmd, p_frame_index, m_computePass);
+		Renderer::endCompute(p_cmd, p_frame_index, m_lightCullingPass);
 	}
 
 	auto SceneRenderer::_renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void

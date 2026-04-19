@@ -28,14 +28,17 @@ namespace toaster
 		auto getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 		auto getOutputDepthTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 
+		auto getGeometryPositionsTexture() const -> const RefPtr<gpu::VKTexture2D>&;
+		auto getGeometryNormalsTexture() const -> const RefPtr<gpu::VKTexture2D>&;
+
 		auto getRenderer2D() -> RefPtr<Renderer2D>;
 
 		auto onResize(uint32 p_width, uint32 p_height) -> void;
-		auto setEnvironmentBackground(RefPtr<gpu::VKTexture2D> p_texture) -> void;
+		auto setEnvironmentBackground(const RefPtr<gpu::VKTexture2D> &p_texture) -> void;
 
 	private:
 		auto _renderDepthPrePass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-		auto _renderComputeTestPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderLightCullingPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 		auto _renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 		auto _renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 
@@ -52,11 +55,11 @@ namespace toaster
 		RefPtr<gpu::VKTexture2D> m_depthPreAttachmentTexture{nullptr};
 		#pragma endregion
 
-		#pragma region compute test
-		RefPtr<gpu::VKShader>          m_computeShader{nullptr};
-		RefPtr<gpu::VKComputePipeline> m_computePipeline{nullptr};
-		RefPtr<gpu::VKComputePass>     m_computePass{nullptr};
-		RefPtr<gpu::VKMaterial>        m_computeMaterial{nullptr};
+		#pragma region light culling
+		RefPtr<gpu::VKShader>          m_lightCullingShader{nullptr};
+		RefPtr<gpu::VKComputePipeline> m_lightCullingPipeline{nullptr};
+		RefPtr<gpu::VKComputePass>     m_lightCullingPass{nullptr};
+		RefPtr<gpu::VKMaterial>        m_lightCullingMaterial{nullptr};
 
 		RefPtr<gpu::VKStorageBufferPFF> m_computeStorageBuffers{nullptr};
 		#pragma endregion
@@ -87,17 +90,29 @@ namespace toaster
 		RefPtr<gpu::VKUniformBufferPFF> m_cameraUBOs;
 		std::vector<void *>             m_mappedCameraUBOs;
 
-		struct PointLightUB
+		struct DirectionalLightUB
 		{
-			static constexpr uint32 c_maxPointLights{128u};
+			static constexpr uint32 c_maxDirectionalLights{4u};
 
-			uint32     count{0u};
-			glm::vec3  _padding{0.0f};
-			PointLight pointLights[c_maxPointLights]{};
+			uint32           count{0u};
+			glm::vec3        _padding{0.0f};
+			DirectionalLight directionalLights[c_maxDirectionalLights]{};
 		};
 
-		RefPtr<gpu::VKUniformBufferPFF> m_pointLightUBOs;
-		std::vector<void *>             m_mappedPointLightUBOs;
+		RefPtr<gpu::VKUniformBufferPFF> m_directionalLightUBOs;
+		std::vector<void *>             m_mappedDirectionalLightUBOs;
+
+		// struct PointLightUB
+		// {
+		// static constexpr uint32 c_maxPointLights{128u};
+
+		// uint32     count{0u};
+		// glm::vec3  _padding{0.0f};
+		// PointLight pointLights[c_maxPointLights]{};
+		// };
+
+		// RefPtr<gpu::VKUniformBufferPFF> m_pointLightUBOs;
+		// std::vector<void *>             m_mappedPointLightUBOs;
 
 		struct SceneDataUB
 		{

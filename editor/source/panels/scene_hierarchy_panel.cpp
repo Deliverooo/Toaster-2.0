@@ -374,7 +374,7 @@ namespace toaster
 
 		drawComponent<DirectionalLightComponent>("Directional Light", p_entity, [](DirectionalLightComponent &p_comp)
 		{
-			ui::colourEdit3("Radiance", glm::value_ptr(p_comp.radiance));
+			ui::colourEdit3("Radiance", &p_comp.radiance.x);
 			ui::dragFloat("Multiplier", &p_comp.multiplier, "##Multiplier", 0.01f);
 		}, this);
 
