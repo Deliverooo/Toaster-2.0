@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vk_pipeline.hpp"
+#include "vk_compute_pipeline.hpp"
 #include "vk_uniform_buffer.hpp"
 #include "vk_descriptor_set_manager.hpp"
 #include "vk_texture.hpp"
@@ -9,21 +9,23 @@ namespace toaster::gpu
 {
 	class VKGPUContext;
 
-	class VKRenderPass
+	class VKComputePass
 	{
 	public:
-		VKRenderPass(VKGPUContext *p_ctx, const RefPtr<VKPipeline> &p_pipeline);
+		VKComputePass(VKGPUContext *p_ctx, const RefPtr<VKComputePipeline> &p_pipeline);
 		auto getContext() const -> VKGPUContext *;
 
 		auto setInput(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
 		auto setInput(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void;
+		auto setInput(const String &p_name, const RefPtr<VKStorageBuffer> &p_storage_buffer) -> void;
+		auto setInput(const String &p_name, const RefPtr<VKStorageBufferPFF> &p_storage_buffer_pff) -> void;
 		auto setInput(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void;
 
 		// Only call when you have set all your required inputs :)
 		auto bake() -> void;
 		auto update(uint32 p_frame_index) -> void;
 
-		auto               getPipeline() const -> const RefPtr<VKPipeline> &;
+		auto               getPipeline() const -> const RefPtr<VKComputePipeline> &;
 		[[nodiscard]] auto getDescriptorSets(uint32 p_frame_index) const -> std::vector<vk::DescriptorSet>;
 		[[nodiscard]] auto getStartSetIndex() const -> uint32;
 		[[nodiscard]] auto getEndSetIndex() const -> uint32;
@@ -31,7 +33,7 @@ namespace toaster::gpu
 	private:
 		VKGPUContext *m_ctx{nullptr};
 
-		RefPtr<VKPipeline>                m_pipeline{nullptr};
+		RefPtr<VKComputePipeline>         m_pipeline{nullptr};
 		UniquePtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};
 	};
 }

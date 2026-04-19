@@ -46,9 +46,6 @@ namespace toaster
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
 
-		// RefPtr<gpu::VKTexture2D> m_finalColourTexture{nullptr};
-		// RefPtr<gpu::VKImage2D>   m_finalDepthImage{nullptr};
-
 		RefPtr<gpu::VKPipeline>   m_fullscreenPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_fullscreenPass{nullptr};
 		RefPtr<gpu::VKMaterial>   m_fullscreenMaterial{nullptr};

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vk_shader.hpp"
+#include "vk_storage_buffer.hpp"
 #include "vk_texture.hpp"
 #include "vk_uniform_buffer.hpp"
 
@@ -10,7 +11,10 @@ namespace toaster::gpu
 
 	enum class EDescriptorType
 	{
-		eUnknown, eUniformBuffer, eSampler2D
+		eUnknown,
+		eUniformBuffer,
+		eStorageBuffer,
+		eSampler2D
 	};
 
 	struct DescriptorDeclaration
@@ -39,6 +43,16 @@ namespace toaster::gpu
 		{
 		}
 
+		DescriptorResource(const RefPtr<VKStorageBuffer> &p_storage_buffer) : resources(std::vector<RefPtr<IGPUResource> >(1, p_storage_buffer)),
+																			  type(EGPUResourceType::eStorageBuffer)
+		{
+		}
+
+		DescriptorResource(const RefPtr<VKStorageBufferPFF> &p_storage_buffer_pff) : resources(std::vector<RefPtr<IGPUResource> >(1, p_storage_buffer_pff)),
+																					 type(EGPUResourceType::eStorageBufferPFF)
+		{
+		}
+
 		DescriptorResource(const RefPtr<VKTexture2D> &p_texture_2d) : resources(std::vector<RefPtr<IGPUResource> >(1, p_texture_2d)), type(EGPUResourceType::eTexture2D)
 		{
 		}
@@ -58,6 +72,8 @@ namespace toaster::gpu
 
 		auto setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
 		auto setDescriptor(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void;
+		auto setDescriptor(const String &p_name, const RefPtr<VKStorageBuffer> &p_storage_buffer) -> void;
+		auto setDescriptor(const String &p_name, const RefPtr<VKStorageBufferPFF> &p_storage_buffer_pff) -> void;
 		auto setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void;
 		auto setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void;
 

@@ -7,6 +7,8 @@ namespace toaster::gpu
 		eUnknown,
 		eUniformBuffer,
 		eUniformBufferPFF,
+		eStorageBuffer,
+		eStorageBufferPFF,
 		eTexture2D,
 		eTexture3D
 	};

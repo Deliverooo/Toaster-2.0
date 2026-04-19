@@ -27,6 +27,11 @@ namespace toaster
 			m_mappedSceneDataUBOs = m_sceneDataUBOs->mapMemory(ubo_size, 0);
 		}
 
+		{
+			constexpr vk::DeviceSize ssbo_size{sizeof(int32)};
+			m_computeStorageBuffers = m_ctx->alloc<gpu::VKStorageBufferPFF>(ssbo_size, gpu::VKGPUContext::c_maxFramesInFlight);
+		}
+
 		gpu::TextureSpecInfo texture_spec_info{};
 		m_skyboxTexture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "../resources/environments/'Environment_map'.jpg");
 
@@ -55,6 +60,23 @@ namespace toaster
 			depth_pre_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
 			depth_pre_attachment_texture_spec_info.format = vk::Format::eD32Sfloat;
 			m_depthPreAttachmentTexture                   = m_ctx->alloc<gpu::VKTexture2D>(depth_pre_attachment_texture_spec_info);
+		}
+		#pragma endregion
+
+		#pragma region compute test
+		{
+			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary("shaders/test.comp.glsl.spv")};
+			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
+			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eCompute, cs_bytecode}};
+			m_computeShader = m_ctx->alloc<gpu::VKShader>(shader_bytecode_map, "Compute-Test");
+
+			m_computePipeline = m_ctx->alloc<gpu::VKComputePipeline>(m_computeShader);
+
+			m_computePass = m_ctx->alloc<gpu::VKComputePass>(m_computePipeline);
+			m_computePass->setInput("Test", m_computeStorageBuffers);
+			m_computePass->bake();
+
+			m_computeMaterial = m_ctx->alloc<gpu::VKMaterial>(m_computeShader);
 		}
 		#pragma endregion
 
@@ -93,11 +115,11 @@ namespace toaster
 				vk::Format::eR16G16B16A16Sfloat /*Positions*/,
 				vk::Format::eR16G16B16A16Sfloat /*Normals*/
 			};
-			pipeline_create_info.depthFormat = {vk::Format::eD32Sfloat};
-			pipeline_create_info.depthWrite = false;
+			pipeline_create_info.depthFormat  = {vk::Format::eD32Sfloat};
+			pipeline_create_info.depthWrite   = false;
 			pipeline_create_info.depthCompare = vk::CompareOp::eEqual;
-			pipeline_create_info.shader      = Globals::getShaderLibrary().get("Geometry");
-			m_geometryPipeline               = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
+			pipeline_create_info.shader       = Globals::getShaderLibrary().get("Geometry");
+			m_geometryPipeline                = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
 
 			m_geometryPass = m_ctx->alloc<gpu::VKRenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs);
@@ -174,10 +196,18 @@ namespace toaster
 	auto SceneRenderer::end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
 		_renderDepthPrePass(p_cmd, p_frame_index);
+		_renderComputeTestPass(p_cmd, p_frame_index);
 		_renderSkyboxPass(p_cmd, p_frame_index);
 		_renderGeometryPass(p_cmd, p_frame_index);
 
 		m_meshDrawCommands.clear();
+
+		int32 data{0};
+		void *mapped{m_computeStorageBuffers->getSSBO(p_frame_index)->mapMemory(0, sizeof(int32))};
+		std::memcpy(&data, mapped, sizeof(int32));
+		m_computeStorageBuffers->getSSBO(p_frame_index)->unmapMemory();
+
+		LOG_INFO("{}", data);
 	}
 
 	auto SceneRenderer::renderMesh(RefPtr<gpu::VKMesh> p_mesh, const glm::mat4 &p_transform) -> void
@@ -228,18 +258,6 @@ namespace toaster
 
 	auto SceneRenderer::_renderDepthPrePass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
-		#if 0
-		if (m_depthPreAttachmentImage->getCurrentImageLayout() == vk::ImageLayout::eDepthReadOnlyOptimal)
-		{
-			m_ctx->transitionImageLayout(m_depthPreAttachmentImage->getImage(), m_depthPreAttachmentImage->getCurrentImageLayout(),
-										 vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eDepthStencilAttachmentRead,
-										 vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eEarlyFragmentTests,
-										 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, 1,
-										 vk::ImageAspectFlagBits::eDepth);
-			m_depthPreAttachmentImage->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
-		}
-		#endif
-
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
 		rendering_info.layerCount = 1;
@@ -263,13 +281,15 @@ namespace toaster
 		}
 
 		Renderer::endRendering(rendering_info, p_cmd);
+	}
 
-		#if 0
-		m_ctx->transitionImageLayout(m_depthPreAttachmentTexture->getImage()->getImage(), m_depthPreAttachmentTexture->getImage()->getCurrentImageLayout(),
-									 m_depthPreAttachmentTexture->getImage()->getCurrentImageLayout(), vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-									 vk::AccessFlagBits2::eDepthStencilAttachmentRead, vk::PipelineStageFlagBits2::eLateFragmentTests,
-									 vk::PipelineStageFlagBits2::eEarlyFragmentTests, 1, vk::ImageAspectFlagBits::eDepth);
-		#endif
+	auto SceneRenderer::_renderComputeTestPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
+	{
+		Renderer::beginCompute(p_cmd, p_frame_index, m_computePass);
+
+		Renderer::dispatchCompute(p_cmd, p_frame_index, m_computePass, m_computeMaterial, 1, 1, 1);
+
+		Renderer::endCompute(p_cmd, p_frame_index, m_computePass);
 	}
 
 	auto SceneRenderer::_renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
@@ -333,12 +353,5 @@ namespace toaster
 		}
 
 		Renderer::endRendering(rendering_info, p_cmd);
-
-		#if 0
-		m_ctx->transitionImageLayout(m_depthPreAttachmentTexture->getImage()->getImage(), m_depthPreAttachmentTexture->getImage()->getCurrentImageLayout(),
-									 m_depthPreAttachmentTexture->getImage()->getCurrentImageLayout(), vk::AccessFlagBits2::eDepthStencilAttachmentRead,
-									 vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eEarlyFragmentTests,
-									 vk::PipelineStageFlagBits2::eLateFragmentTests, 1, vk::ImageAspectFlagBits::eDepth);
-		#endif
 	}
 }

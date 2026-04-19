@@ -145,6 +145,34 @@ namespace toaster::gpu
 			LOG_TRACE("\t\tSize: {}", size);
 		}
 
+		LOG_INFO("Storage buffers:");
+		for (const auto &resource: resources.storage_buffers)
+		{
+			const String &name = resource.name;
+
+			auto & buffer_type = compiler.get_type(resource.base_type_id);
+			uint32 size        = compiler.get_declared_struct_size(buffer_type);
+
+			uint32 member_count = buffer_type.member_types.size();
+
+			uint32 binding = compiler.get_decoration(resource.id, spv::DecorationBinding);
+			uint32 set     = compiler.get_decoration(resource.id, spv::DecorationDescriptorSet);
+
+			if (set >= m_reflectionData.descriptorSets.size())
+				m_reflectionData.descriptorSets.resize(set + 1);
+
+			DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
+
+			StorageBuffer &uniform_buffer = descriptorSet.storageBuffers[binding];
+			uniform_buffer.size           = size;
+			uniform_buffer.name           = name;
+			uniform_buffer.binding        = binding;
+
+			LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
+			LOG_TRACE("\t\tMember count: {}", member_count);
+			LOG_TRACE("\t\tSize: {}", size);
+		}
+
 		LOG_INFO("Combined image samplers:");
 		for (const auto &resource: resources.sampled_images)
 		{
@@ -237,6 +265,13 @@ namespace toaster::gpu
 				pool_size.descriptorCount         = descriptor_set.uniformBuffers.size();
 			}
 
+			if (!descriptor_set.storageBuffers.empty())
+			{
+				vk::DescriptorPoolSize &pool_size = m_poolSizes[set].emplace_back();
+				pool_size.type                    = vk::DescriptorType::eStorageBuffer;
+				pool_size.descriptorCount         = descriptor_set.storageBuffers.size();
+			}
+
 			if (!descriptor_set.imageSamplers.empty())
 			{
 				vk::DescriptorPoolSize &pool_size = m_poolSizes[set].emplace_back();
@@ -258,6 +293,22 @@ namespace toaster::gpu
 				write_descriptor                         = vk::WriteDescriptorSet{};
 				write_descriptor.descriptorCount         = 1;
 				write_descriptor.descriptorType          = vk::DescriptorType::eUniformBuffer;
+				write_descriptor.dstBinding              = binding;
+			}
+
+			for (auto &[binding, storage_buffer]: descriptor_set.storageBuffers)
+			{
+				vk::DescriptorSetLayoutBinding &layout_binding = layout_bindings.emplace_back();
+				layout_binding.binding                         = binding;
+				layout_binding.descriptorCount                 = 1;
+				layout_binding.descriptorType                  = vk::DescriptorType::eStorageBuffer;
+				layout_binding.pImmutableSamplers              = nullptr;
+				layout_binding.stageFlags                      = vk::ShaderStageFlagBits::eCompute;
+
+				vk::WriteDescriptorSet &write_descriptor = descriptor_set.writeDescriptorSets[storage_buffer.name];
+				write_descriptor                         = vk::WriteDescriptorSet{};
+				write_descriptor.descriptorCount         = 1;
+				write_descriptor.descriptorType          = vk::DescriptorType::eStorageBuffer;
 				write_descriptor.dstBinding              = binding;
 			}
 

@@ -74,6 +74,22 @@ namespace toaster::gpu
 			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
 
+	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKStorageBuffer> &p_storage_buffer) -> void
+	{
+		if (const auto decl{getDescriptorDeclaration(p_name)})
+			m_descriptorResources.at(decl->set)[decl->binding] = p_storage_buffer;
+		else
+			LOG_WARN("Descriptor was not found: {}", p_name);
+	}
+
+	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKStorageBufferPFF> &p_storage_buffer_pff) -> void
+	{
+		if (const auto decl{getDescriptorDeclaration(p_name)})
+			m_descriptorResources.at(decl->set)[decl->binding] = p_storage_buffer_pff;
+		else
+			LOG_WARN("Descriptor was not found: {}", p_name);
+	}
+
 	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void
 	{
 		if (const auto decl{getDescriptorDeclaration(p_name)})
@@ -94,8 +110,9 @@ namespace toaster::gpu
 
 	auto VKDescriptorSetManager::bakeDescriptors() -> void
 	{
-		std::array<vk::DescriptorPoolSize, 2> descriptor_pool_sizes{
+		std::array<vk::DescriptorPoolSize, 3> descriptor_pool_sizes{
 			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 100},
+			vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 100},
 			vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 100}
 		};
 
@@ -154,7 +171,28 @@ namespace toaster::gpu
 						{
 							auto uniform_buffer{resource.resources[0].as<VKUniformBufferPFF>()};
 							TST_ASSERT(uniform_buffer);
-							write_descriptor.pBufferInfo               = &uniform_buffer->getUBO(frame_index).as<VKUniformBuffer>()->getDescriptorInfo();
+							write_descriptor.pBufferInfo               = &uniform_buffer->getUBO(frame_index)->getDescriptorInfo();
+							stored_write_descriptor.resourceHandles[0] = write_descriptor.pBufferInfo->buffer;
+
+							if (!write_descriptor.pBufferInfo->buffer)
+								TST_ASSERT_MSG(false, "Oh no");
+							break;
+						}
+						case EGPUResourceType::eStorageBuffer:
+						{
+							auto storage_buffer{resource.resources[0].as<VKStorageBuffer>()};
+							write_descriptor.pBufferInfo               = &storage_buffer->getDescriptorInfo();
+							stored_write_descriptor.resourceHandles[0] = write_descriptor.pBufferInfo->buffer;
+
+							if (!write_descriptor.pBufferInfo->buffer)
+								TST_ASSERT_MSG(false, "Oh no");
+							break;
+						}
+						case EGPUResourceType::eStorageBufferPFF:
+						{
+							auto storage_buffer{resource.resources[0].as<VKStorageBufferPFF>()};
+							TST_ASSERT(storage_buffer);
+							write_descriptor.pBufferInfo               = &storage_buffer->getSSBO(frame_index)->getDescriptorInfo();
 							stored_write_descriptor.resourceHandles[0] = write_descriptor.pBufferInfo->buffer;
 
 							if (!write_descriptor.pBufferInfo->buffer)
@@ -224,6 +262,20 @@ namespace toaster::gpu
 							m_invalidDescriptorResources[set][binding] = resource;
 						break;
 					}
+					case EGPUResourceType::eStorageBuffer:
+					{
+						const auto &buffer_info{resource.resources[0].as<VKStorageBuffer>()->getDescriptorInfo()};
+						if (buffer_info.buffer != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
+							m_invalidDescriptorResources[set][binding] = resource;
+						break;
+					}
+					case EGPUResourceType::eStorageBufferPFF:
+					{
+						const auto &buffer_info{resource.resources[0].as<VKStorageBufferPFF>()->getSSBO(p_frame_index)->getDescriptorInfo()};
+						if (buffer_info.buffer != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
+							m_invalidDescriptorResources[set][binding] = resource;
+						break;
+					}
 					case EGPUResourceType::eTexture2D:
 					{
 						for (uint32 i{0u}; i < resource.resources.size(); ++i)
@@ -275,6 +327,20 @@ namespace toaster::gpu
 						write_descriptor.resourceHandles[0] = uniform_buffer->getUBO(p_frame_index)->getDescriptorInfo().buffer;
 						break;
 					}
+					case EGPUResourceType::eStorageBuffer:
+					{
+						auto storage_buffer{resource.resources[0].as<VKStorageBuffer>()};
+						write_descriptor.wds.pBufferInfo    = &storage_buffer->getDescriptorInfo();
+						write_descriptor.resourceHandles[0] = storage_buffer->getDescriptorInfo().buffer;
+						break;
+					}
+					case EGPUResourceType::eStorageBufferPFF:
+					{
+						auto storage_buffer{resource.resources[0].as<VKStorageBufferPFF>()};
+						write_descriptor.wds.pBufferInfo    = &storage_buffer->getSSBO(p_frame_index)->getDescriptorInfo();
+						write_descriptor.resourceHandles[0] = storage_buffer->getSSBO(p_frame_index)->getDescriptorInfo().buffer;
+						break;
+					}
 					case EGPUResourceType::eTexture2D:
 					{
 						if (resource.resources.size() > 1)
@@ -310,11 +376,9 @@ namespace toaster::gpu
 	auto VKDescriptorSetManager::getDescriptorSets(uint32 p_frame_index) const -> std::vector<vk::DescriptorSet>
 	{
 		TST_ASSERT_MSG(p_frame_index < VKGPUContext::c_maxFramesInFlight, "Frame index out of bounds");
-		TST_ASSERT(!m_descriptorSets.empty());
 		std::vector<vk::DescriptorSet> result;
 		for (auto &descriptor_set: m_descriptorSets[p_frame_index])
 			result.emplace_back(*descriptor_set);
-		TST_ASSERT(!result.empty());
 		return result;
 	}
 
@@ -355,6 +419,7 @@ namespace toaster::gpu
 		switch (p_type)
 		{
 			case vk::DescriptorType::eUniformBuffer: return EDescriptorType::eUniformBuffer;
+			case vk::DescriptorType::eStorageBuffer: return EDescriptorType::eStorageBuffer;
 			case vk::DescriptorType::eCombinedImageSampler:
 			case vk::DescriptorType::eSampledImage:
 				return EDescriptorType::eSampler2D;
@@ -368,6 +433,7 @@ namespace toaster::gpu
 		switch (p_type)
 		{
 			case vk::DescriptorType::eUniformBuffer: return EGPUResourceType::eUniformBuffer;
+			case vk::DescriptorType::eStorageBuffer: return EGPUResourceType::eStorageBuffer;
 			case vk::DescriptorType::eCombinedImageSampler:
 			case vk::DescriptorType::eSampledImage:
 				return EGPUResourceType::eTexture2D;

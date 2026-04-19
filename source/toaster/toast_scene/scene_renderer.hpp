@@ -1,6 +1,8 @@
 #pragma once
 
 #include "scene.hpp"
+#include "toast_gpu/vk/vk_compute_pass.hpp"
+#include "toast_gpu/vk/vk_compute_pipeline.hpp"
 #include "toast_gpu/vk/vk_mesh.hpp"
 
 namespace toaster
@@ -25,7 +27,6 @@ namespace toaster
 		auto getSpecInfo() const -> const SceneRendererSpecInfo &;
 		auto getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 		auto getOutputDepthTexture() const -> const RefPtr<gpu::VKTexture2D> &;
-		// auto getOutputDepthImage() const -> const RefPtr<gpu::VKImage2D> &;
 
 		auto getRenderer2D() -> RefPtr<Renderer2D>;
 
@@ -34,6 +35,7 @@ namespace toaster
 
 	private:
 		auto _renderDepthPrePass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderComputeTestPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 		auto _renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 		auto _renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 
@@ -50,16 +52,29 @@ namespace toaster
 		RefPtr<gpu::VKTexture2D> m_depthPreAttachmentTexture{nullptr};
 		#pragma endregion
 
+		#pragma region compute test
+		RefPtr<gpu::VKShader>          m_computeShader{nullptr};
+		RefPtr<gpu::VKComputePipeline> m_computePipeline{nullptr};
+		RefPtr<gpu::VKComputePass>     m_computePass{nullptr};
+		RefPtr<gpu::VKMaterial>        m_computeMaterial{nullptr};
+
+		RefPtr<gpu::VKStorageBufferPFF> m_computeStorageBuffers{nullptr};
+		#pragma endregion
+
+		#pragma region skybox
 		RefPtr<gpu::VKPipeline>   m_skyboxPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_skyboxPass{nullptr};
 		RefPtr<gpu::VKMaterial>   m_skyboxMaterial{nullptr};
 		RefPtr<gpu::VKTexture2D>  m_skyboxTexture{nullptr};
+		#pragma endregion
 
+		#pragma region geometry
 		RefPtr<gpu::VKPipeline>   m_geometryPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_geometryPass{nullptr};
 
 		RefPtr<gpu::VKTexture2D> m_geometryPositionsAttachmentTexture{nullptr};
 		RefPtr<gpu::VKTexture2D> m_geometryNormalsAttachmentTexture{nullptr};
+		#pragma endregion
 
 		RefPtr<gpu::VKTexture2D> m_outputColourTexture{nullptr};
 

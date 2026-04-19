@@ -82,6 +82,15 @@ if (${WITH_VULKAN_BACKEND})
 
 			vk/vk_render_attachment.cpp
 			vk/vk_render_attachment.hpp
+
+			vk/vk_compute_pass.cpp
+			vk/vk_compute_pass.hpp
+
+			vk/vk_compute_pipeline.cpp
+			vk/vk_compute_pipeline.hpp
+
+			vk/vk_storage_buffer.cpp
+			vk/vk_storage_buffer.hpp
 	)
 endif ()
 

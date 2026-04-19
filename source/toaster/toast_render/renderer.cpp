@@ -270,6 +270,34 @@ namespace toaster
 		}
 	}
 
+	auto Renderer::beginCompute(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKComputePass> &p_compute_pass) -> void
+	{
+		p_command_buffer.bindPipeline(vk::PipelineBindPoint::eCompute, p_compute_pass->getPipeline()->getPipeline());
+
+		p_compute_pass->update(p_frame_index);
+
+		const auto descriptor_sets = p_compute_pass->getDescriptorSets(p_frame_index);
+		if (!descriptor_sets.empty())
+			p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, p_compute_pass->getPipeline()->getPipelineLayout(), p_compute_pass->getStartSetIndex(),
+												descriptor_sets, nullptr);
+	}
+
+	auto Renderer::dispatchCompute(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKComputePass> &p_compute_pass,
+								   const RefPtr<gpu::VKMaterial> &p_material, uint32       p_work_group_x, uint32 p_work_group_y, uint32 p_work_group_z) -> void
+	{
+		if (p_material)
+			if (p_material->hasDescriptorSets())
+				if (const auto descriptor_set{p_material->getDescriptorSet(p_frame_index)})
+					p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, p_compute_pass->getPipeline()->getPipelineLayout(), 0, descriptor_set, nullptr);
+
+		p_command_buffer.dispatch(p_work_group_x, p_work_group_y, p_work_group_z);
+	}
+
+	auto Renderer::endCompute([[maybe_unused]] const vk::raii::CommandBuffer &   p_command_buffer, [[maybe_unused]] uint32 p_frame_index,
+							  [[maybe_unused]] const RefPtr<gpu::VKComputePass> &p_compute_pass) -> void
+	{
+	}
+
 	auto Renderer::renderGeometry(const vk::raii::CommandBuffer &    p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
 								  const RefPtr<gpu::VKVertexBuffer> &p_vertex_buffer, const RefPtr<gpu::VKIndexBuffer> &p_index_buffer, uint32 p_index_count,
 								  const RefPtr<gpu::VKMaterial> &    p_material, const glm::mat4 &p_transform) -> void

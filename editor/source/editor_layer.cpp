@@ -100,10 +100,9 @@ namespace toaster
 			transform_comp.translation = {0.0f, 0.0f, 0.0f};
 			transform_comp.scale       = {1.0f, 1.0f, 1.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
-			// mc.mesh = m_ctx->alloc<gpu::VKMesh>("C:/dev/Toaster-2.0-vulkan/resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
-
-			// auto &src{orbo_entity.addComponent<SpriteRendererComponent>()};
-			// src.texture = m_texture;
+			mc.mesh = m_ctx->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
+			auto &src{orbo_entity.addComponent<SpriteRendererComponent>()};
+			src.texture = m_texture;
 		}
 	}
 
