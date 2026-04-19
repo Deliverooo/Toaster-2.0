@@ -63,17 +63,17 @@ namespace toaster
 		m_quadVertexBuffer = m_ctx->alloc<gpu::VKVertexBuffer>(quad_vertex_buffer_size);
 		m_quadVertexBase   = new QuadVertex[m_maxVertices];
 
-		auto * quad_indices{new uint32[m_maxIndices]};
+		auto   quad_indices{new uint32[m_maxIndices]};
 		uint32 offset{0u};
 		for (uint32 i{0u}; i < m_maxIndices; i += 6u)
 		{
-			quad_indices[i]     = offset;
+			quad_indices[i + 0] = offset + 0;
 			quad_indices[i + 1] = offset + 1;
-			quad_indices[i + 2] = offset + 2;
+			quad_indices[i + 2] = offset + 3;
 
-			quad_indices[i + 3] = offset + 2;
-			quad_indices[i + 4] = offset + 3;
-			quad_indices[i + 5] = offset;
+			quad_indices[i + 3] = offset + 1;
+			quad_indices[i + 4] = offset + 2;
+			quad_indices[i + 5] = offset + 3;
 
 			offset += 4u;
 		}
@@ -83,14 +83,15 @@ namespace toaster
 
 		delete[] quad_indices;
 
-		m_quadVertexPositions = {
-			tsm::float4{0.5f, 0.5f, 0.0f, 1.0f},
-			tsm::float4{0.5f, -0.5f, 0.0f, 1.0f},
-			tsm::float4{-0.5f, -0.5f, 0.0f, 1.0f},
-			tsm::float4{-0.5f, 0.5f, 0.0f, 1.0f}
-		};
+		m_quadVertexPositions[0] = {0.5f, 0.5f, 0.0f, 1.0f};
+		m_quadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};
+		m_quadVertexPositions[2] = {-0.5f, -0.5f, 0.0f, 1.0f};
+		m_quadVertexPositions[3] = {-0.5f, 0.5f, 0.0f, 1.0f};
 
-		m_quadVertexTexCoords = {tsm::float2{1.0f, 1.0f}, tsm::float2{1.0f, 0.0f}, tsm::float2{0.0f, 0.0f}, tsm::float2{0.0f, 1.0f}};
+		m_quadVertexTexCoords[0] = {1.0f, 0.0f};
+		m_quadVertexTexCoords[1] = {1.0f, 1.0f};
+		m_quadVertexTexCoords[2] = {0.0f, 1.0f};
+		m_quadVertexTexCoords[3] = {0.0f, 0.0f};
 
 		m_textureSlots[0] = Globals::getWhiteTexture();
 	}
@@ -105,9 +106,8 @@ namespace toaster
 						   const tsm::float4x4 &                           p_proj_matrix) -> void
 	{
 		CameraUB ubo{};
-		ubo.view = p_view_matrix;
-		ubo.proj = p_proj_matrix;
-
+		ubo.view       = p_view_matrix;
+		ubo.proj       = p_proj_matrix;
 		ubo.proj[1][1] *= -1.0f;
 
 		std::memcpy(m_mappedCameraUBs[p_frame_index], &ubo, sizeof(CameraUB));
