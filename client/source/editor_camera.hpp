@@ -13,41 +13,37 @@ namespace toaster
 		EditorCamera() = default;
 		EditorCamera(float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far);
 
-		void onUpdate(float32 p_dt);
-		void onEvent(Event &p_event);
+		auto onUpdate(float32 p_dt) -> void;
+		auto onEvent(Event &p_event) -> void;
 
-		void setViewportSize(float32 p_width, float32 p_height);
+		auto setViewportSize(float32 p_width, float32 p_height) -> void;
 
-		[[nodiscard]] const glm::mat4 &getViewMatrix() const;
-		[[nodiscard]] glm::mat4        getViewProjection() const;
+		[[nodiscard]] auto getViewMatrix() const -> glm::mat4;
+		[[nodiscard]] auto getRotationMatrix() const -> glm::mat4; // Thank you very much -> https://vkguide.dev/docs/new_chapter_5/interactive_camera/
+		[[nodiscard]] auto getViewProjection() const -> glm::mat4;
 
-		[[nodiscard]] const glm::vec3 &getUpDirection() const;
-		[[nodiscard]] const glm::vec3 &getRightDirection() const;
-		[[nodiscard]] const glm::vec3 &getForwardDirection() const;
+		[[nodiscard]] auto getForwardDirection() const -> glm::vec3;
+		[[nodiscard]] auto getRightDirection() const -> glm::vec3;
+		[[nodiscard]] auto getUpDirection() const -> glm::vec3;
 
-		[[nodiscard]] const glm::vec3 &getPosition() const;
-		[[nodiscard]] glm::quat        getOrientation() const;
+		[[nodiscard]] auto getPosition() const -> const glm::vec3 &;
 
-		[[nodiscard]] float32 getPitch() const;
-		[[nodiscard]] float32 getYaw() const;
+		[[nodiscard]] auto getPitch() const -> float32;
+		[[nodiscard]] auto getYaw() const -> float32;
 
 	private:
-		void _updateProjection();
-		void _updateView();
+		auto _updateProjection() -> void;
+		auto _onMouseScrollEvent(MouseScrollEvent &p_event) -> bool;
 
-		bool _onMouseScrollEvent(MouseScrollEvent &p_event);
-		void _mouseZoom(float32 p_delta);
+		glm::vec3 m_position{0.0f, 1.0f, 3.0f};
 
-		glm::mat4 m_viewMatrix{1.0f};
-		glm::vec3 m_position{0.0f, 0.0f, 0.0f};
-
-		glm::vec3 m_forward{0.0f, 0.0f, 1.0f};
-		glm::vec3 m_right{1.0f, 0.0f, 0.0f};
-		glm::vec3 m_up{0.0f, -1.0f, 0.0f};
+		static constexpr glm::vec3 c_forwardDir{0.0f, 0.0f, -1.0f};
+		static constexpr glm::vec3 c_rightDir{1.0f, 0.0f, 0.0f};
+		static constexpr glm::vec3 c_upDir{0.0f, 1.0f, 0.0f};
 
 		glm::vec2 m_initialMousePosition{0.0f};
 
-		float32 m_yaw{90.0f};
+		float32 m_yaw{0.0f};
 		float32 m_pitch{0.0f};
 
 		float32 m_fov{45.0f};
@@ -56,5 +52,6 @@ namespace toaster
 		float32 m_zFar{1000.0f};
 
 		float32 m_zoom{1.0f};
+
 	};
 }

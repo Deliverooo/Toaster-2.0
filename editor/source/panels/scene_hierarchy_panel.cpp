@@ -415,8 +415,7 @@ namespace toaster
 			if (io::filesystem::exists(path))
 			{
 				LOG_INFO("{}", path.string());
-				gpu::TextureSpecInfo texture_spec{};
-				p_mat->set("u_AlbedoTexture", m_ctx->alloc<gpu::VKTexture2D>(texture_spec, path));
+				p_mat->set("u_AlbedoTexture", m_ctx->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
 			}
 		}
 

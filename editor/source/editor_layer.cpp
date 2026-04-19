@@ -75,10 +75,8 @@ namespace toaster
 		m_fullscreenPass     = m_ctx->alloc<gpu::VKRenderPass>(m_fullscreenPipeline);
 		m_fullscreenMaterial = m_ctx->alloc<gpu::VKMaterial>(fullscreen_shader);
 
-		gpu::TextureSpecInfo texture_spec_info{};
-		m_texture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "C:/dev/Toaster-2.0-vulkan/resources/textures/Peeber.png");
-		gpu::TextureSpecInfo texture_spec_info2{};
-		m_texture2 = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info2, "C:/dev/Toaster-2.0-vulkan/resources/textures/ooorbo.png");
+		m_texture  = m_ctx->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, "C:/dev/Toaster-2.0-vulkan/resources/textures/Peeber.png");
+		m_texture2 = m_ctx->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, "C:/dev/Toaster-2.0-vulkan/resources/textures/ooorbo.png");
 
 		m_fullscreenPass->setInput("u_Texture", m_texture);
 		m_fullscreenPass->bake();
@@ -167,8 +165,6 @@ namespace toaster
 
 	auto EditorLayer::onEvent(Event &p_event) -> void
 	{
-		auto &app{getApp()};
-
 		EventDispatcher event_dispatcher{p_event};
 		event_dispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(EditorLayer::_onKeyPressEvent));
 		event_dispatcher.dispatch<WindowFileDropEvent>(TST_BIND_EVENT_FN(EditorLayer::_onWindowFileDropEvent));
@@ -193,10 +189,13 @@ namespace toaster
 
 		m_sceneHierarchyPanel->onUIRender(swapchain->getFrameIndex());
 
-		Entity selected_entity = m_sceneHierarchyPanel->getSelectedEntity();
-
-		// ig::Begin("Transform", nullptr, ImGuiWindowFlags_NoMove);
-		if (selected_entity && m_gizmoType != -1)
+		#if 0
+		ig::Begin("Viewport", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground); if (ig::IsWindowFocused() || ig::IsWindowHovered())
+			m_canOperateCamera = false;
+		else
+			m_canOperateCamera = true; ig::Image((ImTextureRef) m_imguiSceneRendererDescriptorSet,
+												 ImVec2{static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight)}); Entity selected_entity =
+				m_sceneHierarchyPanel->getSelectedEntity(); if (selected_entity && m_gizmoType != -1)
 		{
 			auto w = ig::GetWindowWidth();
 			auto h = ig::GetWindowHeight();
@@ -230,10 +229,10 @@ namespace toaster
 				tc.rotation                    += delta_rotation;
 				tc.scale                       = scale;
 			}
-		}
+		} ig::End();
+		#endif
 
 		ig::Begin("Renderer settings");
-
 		ig::Text("Scene renderer background");
 		if (ig::Button("File", ImVec2{ig::GetContentRegionAvail().x, 0}))
 		{
@@ -249,10 +248,12 @@ namespace toaster
 
 		ig::End();
 
+		#if 1
 		if (ig::IsWindowFocused(ImGuiFocusedFlags_AnyWindow) || ig::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
 			m_canOperateCamera = false;
 		else
 			m_canOperateCamera = true;
+		#endif
 	}
 
 	auto EditorLayer::_onWindowFileDropEvent(WindowFileDropEvent &p_event) -> bool
@@ -261,11 +262,17 @@ namespace toaster
 
 		for (const auto &path: p_event.getFilepaths())
 		{
-			if (path.ends_with(".fbx") || path.ends_with(".obj"))
+			if (path.ends_with(".fbx") || path.ends_with(".obj") || path.ends_with(".glb") || path.ends_with(".gltf"))
 			{
-				Entity e{m_scene->createEntity()};
+				Entity e{m_scene->createEntity(io::filesystem::Path{path}.stem().string())};
 				auto & mc{e.addComponent<MeshComponent>()};
 				mc.mesh = m_ctx->alloc<gpu::VKMesh>(path, Globals::getShaderLibrary().get("Geometry"));
+			}
+			if (path.ends_with(".png") || path.ends_with(".jpg") || path.ends_with(".jpeg") || path.ends_with(".bmp"))
+			{
+				Entity e{m_scene->createEntity(io::filesystem::Path{path}.stem().string())};
+				auto & src{e.addComponent<SpriteRendererComponent>()};
+				src.texture = m_ctx->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path);
 			}
 		}
 		return false;
@@ -273,6 +280,7 @@ namespace toaster
 
 	auto EditorLayer::_onKeyPressEvent(KeyPressEvent &p_event) -> bool
 	{
+		#if 0
 		if (!m_canOperateCamera)
 		{
 			switch (p_event.getKeyCode())
@@ -304,6 +312,7 @@ namespace toaster
 				default: break;
 			}
 		}
+		#endif
 		if (p_event.getKeyCode() == input::EKeyCode::eEscape)
 			getApp().close();
 		return false;

@@ -315,9 +315,7 @@ namespace toaster
 				auto texture_path = sprite_comp["TexturePath"].as<String>();
 				if (texture_path != "Null")
 				{
-					gpu::TextureSpecInfo texture_spec{};
-					texture_spec.generateMips = false;
-					src.texture               = p_scene->m_ctx->alloc<gpu::VKTexture2D>(texture_spec, texture_path);
+					src.texture = p_scene->m_ctx->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, texture_path);
 				}
 				else
 					src.texture = nullptr;

@@ -35,15 +35,15 @@ namespace toaster
 		auto _updateProjection() -> void;
 		auto _onMouseScrollEvent(MouseScrollEvent &p_event) -> bool;
 
-		glm::vec3 m_position{2.0f, 2.0f, 2.0f};
+		glm::vec3 m_position{0.0f, 1.0f, 3.0f};
 
-		static constexpr glm::vec3 c_forwardDir{0.0f, 0.0f, 1.0f};
+		static constexpr glm::vec3 c_forwardDir{0.0f, 0.0f, -1.0f};
 		static constexpr glm::vec3 c_rightDir{1.0f, 0.0f, 0.0f};
-		static constexpr glm::vec3 c_upDir{0.0f, -1.0f, 0.0f};
+		static constexpr glm::vec3 c_upDir{0.0f, 1.0f, 0.0f};
 
 		glm::vec2 m_initialMousePosition{0.0f};
 
-		float32 m_yaw{90.0f};
+		float32 m_yaw{0.0f};
 		float32 m_pitch{0.0f};
 
 		float32 m_fov{45.0f};

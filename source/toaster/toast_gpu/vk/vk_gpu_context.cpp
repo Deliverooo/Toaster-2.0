@@ -19,9 +19,9 @@ namespace toaster::gpu
 			_createLogicalDevice();
 			_createCommandPools();
 		}
-		catch (const vk::SystemError &err)
+		catch (const vk::Error &p_err)
 		{
-			LOG_ERROR("Vulkan error: {}", err.what());
+			LOG_FATAL("Vulkan error: {}", p_err.what());
 		}
 	}
 
@@ -127,14 +127,10 @@ namespace toaster::gpu
 			TST_ASSERT(false);
 		}
 
-		#ifndef NDEBUG
-
 		LOG_INFO("Available instance extensions:");
 		for (auto &prop: extension_props)
 			LOG_INFO("\t{}", prop.extensionName.data());
 		LOG_INFO("");
-
-		#endif
 
 		std::vector<CString> required_validation_layers;
 		if (c_enableValidationLayers)
@@ -275,8 +271,6 @@ namespace toaster::gpu
 		m_depthFormat = findSupportedFormat({vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint}, vk::ImageTiling::eOptimal,
 											vk::FormatFeatureFlagBits::eDepthStencilAttachment);
 
-		#ifndef NDEBUG
-
 		LOG_INFO("Using physical device: {} | Device ID: {}\n", props.deviceName.data(), props.deviceID);
 
 		LOG_INFO("Available device extensions:");
@@ -284,8 +278,6 @@ namespace toaster::gpu
 		for (auto ext: extension_props)
 			LOG_INFO("\t{}", ext.extensionName.data());
 		LOG_INFO("");
-
-		#endif
 	}
 
 	auto VKGPUContext::_createLogicalDevice() -> void
@@ -397,11 +389,9 @@ namespace toaster::gpu
 		if (m_queueFamilyIndices.graphics == m_queueFamilyIndices.compute)
 			m_computeQueue = {m_device, m_queueFamilyIndices.compute, 1};
 
-		#ifndef NDEBUG
 		LOG_TRACE("Graphics queue family index {}", m_queueFamilyIndices.graphics);
 		LOG_TRACE("Transfer queue family index {}", m_queueFamilyIndices.transfer);
 		LOG_TRACE("Compute queue family index {}", m_queueFamilyIndices.compute);
-		#endif
 	}
 
 	auto VKGPUContext::_createCommandPools() -> void
@@ -458,7 +448,9 @@ namespace toaster::gpu
 		});
 
 		for (const auto &ext: available_device_extensions)
+		{
 			LOG_TRACE("{}", ext.extensionName.data());
+		}
 
 		auto features = p_physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
 			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
@@ -951,8 +943,8 @@ namespace toaster::gpu
 			TST_ASSERT_MSG(false, "Failed to wait for Fence");
 	}
 
-	auto VKGPUContext::findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling,
-										   vk::FormatFeatureFlags         p_feature_flags) const -> vk::Format
+	auto VKGPUContext::findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, const vk::ImageTiling p_tiling,
+										   const vk::FormatFeatureFlags   p_feature_flags) const -> vk::Format
 	{
 		for (const auto &format: p_supported_formats)
 		{
@@ -972,12 +964,12 @@ namespace toaster::gpu
 		return m_depthFormat;
 	}
 
-	auto VKGPUContext::hasStencilComponent(vk::Format p_format) const -> bool
+	auto VKGPUContext::hasStencilComponent(const vk::Format p_format) const -> bool
 	{
 		return p_format == vk::Format::eD32SfloatS8Uint || p_format == vk::Format::eD24UnormS8Uint;
 	}
 
-	auto VKGPUContext::isDepthFormat(vk::Format p_format) const -> bool
+	auto VKGPUContext::isDepthFormat(const vk::Format p_format) const -> bool
 	{
 		return p_format == vk::Format::eD16Unorm || p_format == vk::Format::eD16UnormS8Uint || p_format == vk::Format::eD24UnormS8Uint || p_format ==
 			   vk::Format::eD32Sfloat || p_format == vk::Format::eD32SfloatS8Uint;

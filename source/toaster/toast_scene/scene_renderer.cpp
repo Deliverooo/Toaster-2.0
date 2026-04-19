@@ -38,8 +38,7 @@ namespace toaster
 			m_computeStorageBuffers = m_ctx->alloc<gpu::VKStorageBufferPFF>(ssbo_size, gpu::VKGPUContext::c_maxFramesInFlight);
 		}
 
-		gpu::TextureSpecInfo texture_spec_info{};
-		m_skyboxTexture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, "../resources/environments/'Environment_map'.jpg");
+		m_skyboxTexture = m_ctx->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, "../resources/environments/'Environment_map'.jpg");
 
 		#pragma region depth-pre
 		{
@@ -124,6 +123,7 @@ namespace toaster
 			pipeline_create_info.depthFormat  = {vk::Format::eD32Sfloat};
 			pipeline_create_info.depthWrite   = false;
 			pipeline_create_info.depthCompare = vk::CompareOp::eEqual;
+			// pipeline_create_info.polygonMode = vk::PolygonMode::eLine;
 			pipeline_create_info.shader       = Globals::getShaderLibrary().get("Geometry");
 			m_geometryPipeline                = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
 
