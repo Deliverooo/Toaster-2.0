@@ -19,7 +19,7 @@ namespace toaster
 	class Application
 	{
 	public:
-		Application(const ApplicationCreateInfo &p_create_info);
+		Application(const ApplicationCreateInfo &p_create_info, int32 p_argc, char **p_argv);
 		~Application() noexcept;
 
 		auto run() -> void;

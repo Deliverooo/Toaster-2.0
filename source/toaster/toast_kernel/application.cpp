@@ -13,7 +13,7 @@
 
 namespace toaster
 {
-	Application::Application(const ApplicationCreateInfo &p_create_info) : m_createInfo(p_create_info)
+	Application::Application(const ApplicationCreateInfo &p_create_info, [[maybe_unused]] int32 p_argc, [[maybe_unused]] char **p_argv) : m_createInfo(p_create_info)
 	{
 		Window::initWindowingAPI();
 

@@ -21,6 +21,7 @@
 #include "toast_gpu/vk/vk_render_attachment.hpp"
 #include "toast_scene/scene_renderer.hpp"
 
+
 namespace toaster
 {
 	class ClientLayer final : public IAppLayer

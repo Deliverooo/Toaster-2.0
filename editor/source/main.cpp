@@ -4,7 +4,7 @@
 INT WINAPI WinMain([[maybe_unused]] HINSTANCE hInstance, [[maybe_unused]] HINSTANCE hPrevInstance, [[maybe_unused]] LPSTR lpCmdLine, [[maybe_unused]] INT nCmdShow)
 {
 #else
-int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) // Maybe_todo, Forward these parameters to the application for it to handle
+int main(int32 p_argc, char **p_argv) // Maybe_todo, Forward these parameters to the application for it to handle
 {
 	#endif
 
@@ -15,7 +15,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char **argv) // Maybe_todo,
 	app_create_info.windowCreateInfo.iconPath       = "../resources/textures/OrboCloseup.png";
 	app_create_info.windowCreateInfo.startMaximized = true;
 
-	auto *app = new toaster::EditorApplication(app_create_info);
+	auto *app = new toaster::EditorApplication(app_create_info, p_argc, p_argv);
 
 	app->run();
 	delete app;

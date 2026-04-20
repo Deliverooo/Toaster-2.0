@@ -9,12 +9,19 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
+# Enable automatic tool handling
+set(CMAKE_AUTOMOC ON) # Handles signals and slots
+set(CMAKE_AUTOUIC ON) # Handles .ui files
+set(CMAKE_AUTORCC ON) # Handles .qrc resource files
+
 # Prevent in-source builds
 if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 	message(FATAL_ERROR "In-source builds are not allowed. Please create a separate build directory.")
 endif ()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/platform")
+
+list(APPEND CMAKE_PREFIX_PATH "C:/Qt/6.11.0/msvc2022_64")
 
 
 # Project definition
@@ -33,6 +40,8 @@ add_compile_definitions(USE_OPENGL_BACKEND=${WITH_OPENGL_BACKEND})
 message(STATUS "DEBUG: WITH_VULKAN_BACKEND is set to: '${WITH_VULKAN_BACKEND}'")
 message(STATUS "DEBUG: WITH_OPENGL_BACKEND is set to: '${WITH_OPENGL_BACKEND}'")
 
+# Locate Qt components
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
 find_package(Vulkan REQUIRED COMPONENTS glslangValidator shaderc_combined SPIRV-Tools)
 
@@ -43,6 +52,7 @@ if (NOT ${Vulkan_FOUND} OR NOT ${Vulkan_glslangValidator_FOUND} OR NOT ${Vulkan_
 else ()
 	message(NOTICE "Found Vulkan :)")
 endif ()
+
 
 # C/C++ flags
 set(PLATFORM_CFLAGS)

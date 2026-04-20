@@ -9,6 +9,7 @@
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
+#include "vk_instance.hpp"
 #include "toast_lib/core_basic.hpp"
 
 namespace toaster::gpu
@@ -141,6 +142,8 @@ namespace toaster::gpu
 		std::array<std::deque<std::function<void()> >, c_maxFramesInFlight> m_pendingDeletions;
 		std::array<std::deque<std::function<void()> >, c_maxFramesInFlight> m_pendingResourceUpdates;
 		uint32                                                              m_currentFrameIndex{0};
+
+		VKInstance m_instance{};
 
 		vk::raii::Context  m_context;
 		vk::raii::Instance m_vulkanInstance{nullptr};

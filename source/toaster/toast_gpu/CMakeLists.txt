@@ -39,6 +39,9 @@ endif ()
 
 if (${WITH_VULKAN_BACKEND})
 	list(APPEND GPU_SRC
+			vk/vk_instance.hpp
+			vk/vk_instance.cpp
+
 			vk/vk_gpu_context.hpp
 			vk/vk_gpu_context.cpp
 
