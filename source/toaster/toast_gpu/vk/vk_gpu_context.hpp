@@ -50,6 +50,12 @@ namespace toaster::gpu
 			}, this, std::forward<TArgs>(p_args)...);
 		}
 
+		template<typename TLambda>
+		auto submitResourceUpdate(TLambda &&p_func) -> void
+		{
+			m_pendingResourceUpdates[m_currentFrameIndex].emplace_back(p_func);
+		}
+
 		// Only the swapchain should use this, but I don't want to make it private and friend it because "Coupling"...
 		auto setCurrentFrameIndex(uint32 p_index) -> void;
 
@@ -133,6 +139,7 @@ namespace toaster::gpu
 														 const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, void *p_user_data) -> vk::Bool32;
 
 		std::array<std::deque<std::function<void()> >, c_maxFramesInFlight> m_pendingDeletions;
+		std::array<std::deque<std::function<void()> >, c_maxFramesInFlight> m_pendingResourceUpdates;
 		uint32                                                              m_currentFrameIndex{0};
 
 		vk::raii::Context  m_context;

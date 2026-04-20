@@ -12,10 +12,10 @@
 #include "toast_asset/asset_manager.hpp"
 
 #include <imgui.h>
+namespace ig = ImGui;
 
 #include "glm/gtc/type_ptr.hpp"
 #include "toast_kernel/input.hpp"
-namespace ig = ImGui;
 
 #include <ImGuizmo.h>
 namespace igz = ImGuizmo;
@@ -46,16 +46,7 @@ namespace toaster
 			m_viewportWidth  = width;
 			m_viewportHeight = height;
 
-			// m_finalColourTexture->resize(width, height);
-			// m_finalDepthImage->resize(width, height);
-
-			if (m_imguiSceneRendererDescriptorSet)
-				ImGui_ImplVulkan_RemoveTexture(m_imguiSceneRendererDescriptorSet);
-
 			m_sceneRenderer->onResize(width, height);
-			m_imguiSceneRendererDescriptorSet = ImGui_ImplVulkan_AddTexture(*m_sceneRenderer->getOutputColourTexture()->getSampler(),
-																			*m_sceneRenderer->getOutputColourTexture()->getImage()->getImageView(),
-																			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 			m_editorCamera.setViewportSize(static_cast<float32>(width), static_cast<float32>(height));
 		});
@@ -73,13 +64,9 @@ namespace toaster
 		};
 		m_fullscreenPipeline = m_ctx->alloc<gpu::VKPipeline>(fullscreen_pipeline_create_info);
 		m_fullscreenPass     = m_ctx->alloc<gpu::VKRenderPass>(m_fullscreenPipeline);
-		m_fullscreenMaterial = m_ctx->alloc<gpu::VKMaterial>(fullscreen_shader);
-
-		m_texture  = m_ctx->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, "C:/dev/Toaster-2.0-vulkan/resources/textures/Peeber.png");
-		m_texture2 = m_ctx->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, "C:/dev/Toaster-2.0-vulkan/resources/textures/ooorbo.png");
-
-		m_fullscreenPass->setInput("u_Texture", m_texture);
 		m_fullscreenPass->bake();
+
+		m_fullscreenMaterial = m_ctx->alloc<gpu::VKMaterial>(fullscreen_shader);
 
 		m_scene = make_reference<Scene>(m_ctx, "Main Scene");
 
@@ -103,8 +90,6 @@ namespace toaster
 			transform_comp.scale       = {1.0f, 1.0f, 1.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
 			mc.mesh = m_ctx->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
-			auto &src{orbo_entity.addComponent<SpriteRendererComponent>()};
-			src.texture = m_texture;
 		}
 		{
 			Entity point_light_entity{m_scene->createEntity()};
@@ -177,25 +162,38 @@ namespace toaster
 	{
 		const auto &app{getApp()};
 		const auto  swapchain{app.getWindow().getSwapchain()};
-
-		if (!m_imguiSceneRendererDescriptorSet)
-			m_imguiSceneRendererDescriptorSet = ImGui_ImplVulkan_AddTexture(*m_sceneRenderer->getOutputColourTexture()->getSampler(),
-																			*m_sceneRenderer->getOutputColourTexture()->getImage()->getImageView(),
-																			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		uint32      frame_index{swapchain->getFrameIndex()};
 
 		ig::Begin("Properties");
 
 		ig::End();
 
-		m_sceneHierarchyPanel->onUIRender(swapchain->getFrameIndex());
+		m_sceneHierarchyPanel->onUIRender(frame_index);
 
 		#if 0
-		ig::Begin("Viewport", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground); if (ig::IsWindowFocused() || ig::IsWindowHovered())
+		ig::Begin("Viewport", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground); auto viewport_size{ig::GetWindowSize()}; if (
+			viewport_size.x != m_viewportSize.x || viewport_size.y != m_viewportSize.y)
+		{
+			m_viewportSize = viewport_size;
+
+			m_ctx->submitResourceUpdate([this, index = frame_index]() -> void
+			{
+				if (m_imguiSceneRendererDescriptorSets[index])
+					ImGui_ImplVulkan_RemoveTexture(m_imguiSceneRendererDescriptorSets[index]);
+
+				m_sceneRenderer->onResize(m_viewportSize.x, m_viewportSize.y);
+				m_imguiSceneRendererDescriptorSets[index] = ImGui_ImplVulkan_AddTexture(*m_sceneRenderer->getOutputColourTexture()->getSampler(),
+																						*m_sceneRenderer->getOutputColourTexture()->getImage()->getImageView(),
+																						VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			});
+		} if (ig::IsWindowFocused() || ig::IsWindowHovered())
 			m_canOperateCamera = false;
 		else
-			m_canOperateCamera = true; ig::Image((ImTextureRef) m_imguiSceneRendererDescriptorSet,
-												 ImVec2{static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight)}); Entity selected_entity =
-				m_sceneHierarchyPanel->getSelectedEntity(); if (selected_entity && m_gizmoType != -1)
+			m_canOperateCamera = true;
+
+		// if (m_imguiSceneRendererDescriptorSets[frame_index])
+		ig::Image((ImTextureRef) m_imguiSceneRendererDescriptorSets[frame_index], ImVec2{static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight)});
+		Entity selected_entity = m_sceneHierarchyPanel->getSelectedEntity(); if (selected_entity && m_gizmoType != -1)
 		{
 			auto w = ig::GetWindowWidth();
 			auto h = ig::GetWindowHeight();

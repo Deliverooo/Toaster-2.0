@@ -3,12 +3,15 @@
 #include "toast_kernel/application.hpp"
 #include "toast_lib/ptr.hpp"
 
-#include <glm/glm.hpp>
-
 #include "editor_camera.hpp"
 #include "panels/scene_hierarchy_panel.hpp"
 #include "toast_lib/events/key_event.hpp"
 #include "toast_lib/events/window_event.hpp"
+
+#include <imgui.h>
+
+#include "toast_gpu/vk/vk_gpu_context.hpp"
+namespace ig = ImGui;
 
 namespace toaster
 {
@@ -48,20 +51,17 @@ namespace toaster
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
 
+		float32 m_time{0.0f};
+
 		RefPtr<gpu::VKPipeline>   m_fullscreenPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_fullscreenPass{nullptr};
 		RefPtr<gpu::VKMaterial>   m_fullscreenMaterial{nullptr};
-
-		RefPtr<gpu::VKTexture2D> m_texture{nullptr};
-		RefPtr<gpu::VKTexture2D> m_texture2{nullptr};
-
-		float32 m_time{0.0f};
 
 		RefPtr<Scene>                  m_scene{nullptr};
 		UniquePtr<SceneHierarchyPanel> m_sceneHierarchyPanel{nullptr};
 		RefPtr<SceneRenderer>          m_sceneRenderer{nullptr};
 
-		VkDescriptorSet m_imguiSceneRendererDescriptorSet{nullptr};
+		std::array<VkDescriptorSet, gpu::VKGPUContext::c_maxFramesInFlight> m_imguiSceneRendererDescriptorSets{nullptr};
 
 		RefPtr<Renderer2D> m_renderer2D{nullptr};
 

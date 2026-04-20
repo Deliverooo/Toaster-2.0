@@ -124,8 +124,8 @@ namespace toaster
 			pipeline_create_info.depthWrite   = false;
 			pipeline_create_info.depthCompare = vk::CompareOp::eEqual;
 			// pipeline_create_info.polygonMode = vk::PolygonMode::eLine;
-			pipeline_create_info.shader       = Globals::getShaderLibrary().get("Geometry");
-			m_geometryPipeline                = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
+			pipeline_create_info.shader = Globals::getShaderLibrary().get("Geometry");
+			m_geometryPipeline          = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
 
 			m_geometryPass = m_ctx->alloc<gpu::VKRenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs);
@@ -288,7 +288,7 @@ namespace toaster
 	auto SceneRenderer::_renderDepthPrePass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
 		gpu::RenderingInfo rendering_info{};
-		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
+		rendering_info.renderArea = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
 		rendering_info.layerCount = 1;
 
 		gpu::RenderingAttachmentInfo depth_attachment_info{};
@@ -326,7 +326,7 @@ namespace toaster
 		m_skyboxMaterial->set("u_Texture", m_skyboxTexture);
 
 		gpu::RenderingInfo rendering_info{};
-		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
+		rendering_info.renderArea = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
 		rendering_info.layerCount = 1;
 
 		gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
@@ -343,7 +343,7 @@ namespace toaster
 	auto SceneRenderer::_renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
 		gpu::RenderingInfo rendering_info{};
-		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
+		rendering_info.renderArea = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
 		rendering_info.layerCount = 1;
 
 		gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};

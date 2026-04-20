@@ -40,6 +40,13 @@ namespace toaster::gpu
 			m_pendingDeletions[m_currentFrameIndex].pop_front();
 			deleter();
 		}
+
+		while (!m_pendingResourceUpdates[m_currentFrameIndex].empty())
+		{
+			auto func{std::move(m_pendingResourceUpdates[m_currentFrameIndex].front())};
+			m_pendingResourceUpdates[m_currentFrameIndex].pop_front();
+			func();
+		}
 	}
 
 	auto VKGPUContext::getVulkanInstance() -> vk::raii::Instance &

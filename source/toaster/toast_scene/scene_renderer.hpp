@@ -12,6 +12,8 @@ namespace toaster
 		RefPtr<Scene> scene{nullptr};
 		uint32        viewportWidth{0u};
 		uint32        viewportHeight{0u};
+		int32         viewportOffsetX{0u};
+		int32         viewportOffsetY{0u};
 	};
 
 	class SceneRenderer
@@ -28,8 +30,8 @@ namespace toaster
 		auto getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 		auto getOutputDepthTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 
-		auto getGeometryPositionsTexture() const -> const RefPtr<gpu::VKTexture2D>&;
-		auto getGeometryNormalsTexture() const -> const RefPtr<gpu::VKTexture2D>&;
+		auto getGeometryPositionsTexture() const -> const RefPtr<gpu::VKTexture2D> &;
+		auto getGeometryNormalsTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 
 		auto getRenderer2D() -> RefPtr<Renderer2D>;
 

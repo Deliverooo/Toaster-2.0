@@ -11,11 +11,6 @@ namespace toaster
 		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
 		TST_ASSERT_MSG(p_render_pass, "Render pass is null");
 
-		const vk::Extent2D rendering_extent{p_rendering_info.renderArea.extent};
-
-		const vk::Viewport viewport{0.0f, 0.0f, static_cast<float32>(rendering_extent.width), static_cast<float32>(rendering_extent.height), 0.0f, 1.0f};
-		const vk::Rect2D   scissor{vk::Offset2D{0, 0}, rendering_extent};
-
 		std::vector<vk::RenderingAttachmentInfo> colour_rendering_attachment_infos{};
 		for (const auto &rendering_attachment: p_rendering_info.colourAttachments)
 		{
@@ -187,6 +182,19 @@ namespace toaster
 		rendering_info.pColorAttachments    = colour_rendering_attachment_infos.empty() ? nullptr : colour_rendering_attachment_infos.data();
 		rendering_info.pDepthAttachment     = p_rendering_info.pDepthAttachment ? &depth_attachment_info : nullptr;
 		rendering_info.pStencilAttachment   = p_rendering_info.pStencilAttachment ? &stencil_attachment_info : nullptr;
+
+		const vk::Extent2D rendering_extent{p_rendering_info.renderArea.extent};
+		const vk::Offset2D rendering_offset{p_rendering_info.renderArea.offset};
+
+		const vk::Viewport viewport{
+			static_cast<float32>(rendering_offset.x),
+			static_cast<float32>(rendering_offset.y),
+			static_cast<float32>(rendering_extent.width),
+			static_cast<float32>(rendering_extent.height),
+			0.0f,
+			1.0f
+		};
+		const vk::Rect2D scissor{rendering_offset, rendering_extent};
 
 		p_command_buffer.beginRendering(rendering_info);
 		p_command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, p_render_pass->getPipeline()->getPipeline());
