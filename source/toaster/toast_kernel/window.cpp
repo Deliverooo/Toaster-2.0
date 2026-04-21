@@ -1,6 +1,6 @@
 #include "window.hpp"
 
-#include "toast_gpu/gpu_context.hpp"
+#include "toast_gpu/vk/vk_gpu_context.hpp"
 
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -25,6 +25,14 @@
 
 namespace toaster
 {
+	auto cstringArrayToVector(toaster::CString *p_arr, uint32 p_size) -> std::vector<toaster::CString>
+	{
+		std::vector<toaster::CString> vec{p_size};
+		for (uint32 i{0u}; i < p_size; ++i)
+			vec.emplace_back(p_arr[i]);
+		return vec;
+	}
+
 	static bool s_glfwInitialized{false};
 
 	static auto _glfwErrorCallback(int32 error, CString description) -> void
@@ -36,7 +44,8 @@ namespace toaster
 	{
 		if (!s_glfwInitialized)
 		{
-			const bool init_result{static_cast<bool>(glfwInit())};(void)init_result;
+			const bool init_result{static_cast<bool>(glfwInit())};
+			(void) init_result;
 			TST_ASSERT_MSG(init_result, "glfw initialization failed!");
 
 			glfwSetErrorCallback(_glfwErrorCallback);
@@ -67,8 +76,69 @@ namespace toaster
 
 		m_window = glfwCreateWindow(static_cast<int32>(p_create_info.width), static_cast<int32>(p_create_info.height), p_create_info.title.c_str(), nullptr, nullptr);
 
-		m_gpuContext = gpu::IGPUContext::create(m_window);
-		m_swapchain  = new gpu::VKSwapchain(dynamic_cast<gpu::VKGPUContext *>(m_gpuContext), m_window);
+		uint32     glfw_extension_count{0u};
+		const auto glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
+
+		// Inserts the
+		std::vector<CString> required_extensions{glfw_extension_count};
+		for (uint32 i{0u}; i < glfw_extension_count; ++i)
+			required_extensions[i] = glfw_extensions[i];
+
+		required_extensions.emplace_back(vk::EXTDebugUtilsExtensionName);
+
+		gpu::VKInstanceSpecInfo::ExtensionSet instance_extensions{required_extensions.begin(), required_extensions.end()};
+
+		instance_extensions.insert(vk::KHRSurfaceExtensionName);
+		gpu::VKInstanceSpecInfo vk_instance_spec_info{};
+		vk_instance_spec_info.appName            = "Toaster-2.0 -> Vulkan QT";
+		vk_instance_spec_info.requiredExtensions = instance_extensions;
+		m_vkInstance                             = new gpu::VKInstance{vk_instance_spec_info};
+
+		gpu::VKPhysicalDeviceSpecInfo vk_physical_device_spec_info{};
+		vk_physical_device_spec_info.requiredExtensions = {
+			vk::KHRSwapchainExtensionName,
+			vk::KHRDynamicRenderingExtensionName,
+			vk::KHRTimelineSemaphoreExtensionName,
+			vk::EXTCustomBorderColorExtensionName,
+			vk::KHRMaintenance6ExtensionName,
+			vk::KHRLoadStoreOpNoneExtensionName
+		};
+		m_vkPhysicalDevice = new gpu::VKPhysicalDevice{m_vkInstance, vk_physical_device_spec_info};
+
+		VkSurfaceKHR surface;
+		if (auto err = glfwCreateWindowSurface(*m_vkInstance->getVulkanInstance(), m_window, nullptr, &surface); err != VK_SUCCESS)
+		{
+			LOG_ERROR("Failed to create window surface: {}", vk::to_string(static_cast<vk::Result>(err)));
+			TST_ASSERT(false);
+		}
+
+		m_windowSurface = surface;
+		gpu::VKLogicalDeviceSpecInfo vk_logical_device_spec_info{};
+		vk_logical_device_spec_info.surface            = m_windowSurface;
+		vk_logical_device_spec_info.requiredExtensions = {
+			vk::KHRSwapchainExtensionName,
+			vk::KHRDynamicRenderingExtensionName,
+			vk::KHRTimelineSemaphoreExtensionName,
+			vk::EXTCustomBorderColorExtensionName,
+			vk::KHRMaintenance6ExtensionName,
+			vk::KHRLoadStoreOpNoneExtensionName
+		};
+
+		vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
+			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT> feature_chain{{}, {}, {}, {}};
+		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy = true;
+		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading = true;
+		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid = true;
+		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore = true;
+		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering = true;
+		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2 = true;
+		feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState = true;
+		vk_logical_device_spec_info.pNext = feature_chain.get<vk::PhysicalDeviceFeatures2>();
+		m_vkLogicalDevice = new gpu::VKLogicalDevice{m_vkPhysicalDevice, vk_logical_device_spec_info};
+
+		gpu::VKGPUContextSpecInfo spec_info{};
+		m_gpuContext = new gpu::VKGPUContext(m_vkLogicalDevice, spec_info);
+		m_swapchain  = new gpu::VKSwapchain(m_gpuContext, m_window);
 
 		constexpr BOOL use_dark_mode{TRUE};
 		(void) DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &use_dark_mode, sizeof(use_dark_mode));
@@ -237,9 +307,15 @@ namespace toaster
 
 	Window::~Window()
 	{
-		dynamic_cast<gpu::VKGPUContext *>(m_gpuContext)->getDevice().waitIdle();
+		m_gpuContext->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
 		delete m_swapchain;
 		delete m_gpuContext;
+
+		vkDestroySurfaceKHR(*m_vkInstance->getVulkanInstance(), m_windowSurface, nullptr);
+
+		delete m_vkLogicalDevice;
+		delete m_vkPhysicalDevice;
+		delete m_vkInstance;
 
 		glfwDestroyWindow(m_window);
 	}
@@ -327,7 +403,7 @@ namespace toaster
 		glfwSetWindowTitle(m_window, p_title.c_str());
 	}
 
-	auto Window::getGPUContext() const -> gpu::IGPUContext *
+	auto Window::getGPUContext() const -> gpu::VKGPUContext *
 	{
 		return m_gpuContext;
 	}

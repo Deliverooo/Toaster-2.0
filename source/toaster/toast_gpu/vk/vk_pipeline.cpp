@@ -117,7 +117,7 @@ namespace toaster::gpu
 
 		if (m_createInfo.multisample)
 		{
-			multisample_state_create_info.rasterizationSamples = m_ctx->getMaxUsableSampleCount();
+			multisample_state_create_info.rasterizationSamples = m_ctx->getPhysicalDevice()->getMaxUsableSampleCount();
 			multisample_state_create_info.sampleShadingEnable  = true;
 		}
 		else
@@ -168,7 +168,7 @@ namespace toaster::gpu
 		pipeline_layout_create_info.pPushConstantRanges    = vk_push_constant_ranges.data();
 		pipeline_layout_create_info.setLayoutCount         = descriptor_set_layouts.size();
 		pipeline_layout_create_info.pSetLayouts            = descriptor_set_layouts.data();
-		m_pipelineLayout                                   = {m_ctx->getDevice(), pipeline_layout_create_info};
+		m_pipelineLayout                                   = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), pipeline_layout_create_info};
 
 		std::vector<vk::PipelineShaderStageCreateInfo> stage_infos = m_createInfo.shader->getPipelineShaderStageCreateInfos();
 
@@ -187,7 +187,7 @@ namespace toaster::gpu
 		graphics_pipeline_create_info.renderPass          = nullptr;
 		graphics_pipeline_create_info.pNext               = &rendering_create_info;
 
-		m_graphicsPipeline = {m_ctx->getDevice(), nullptr, graphics_pipeline_create_info};
+		m_graphicsPipeline = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), nullptr, graphics_pipeline_create_info};
 	}
 
 	auto VKPipeline::_getVulkanAttribType(EBufferDataType p_type) -> vk::Format

@@ -21,7 +21,7 @@ namespace toaster
 		auto                    quad_shader{Globals::getShaderLibrary().get("Quad")};
 		gpu::PipelineCreateInfo pipeline_create_info{};
 		pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
-		pipeline_create_info.depthFormat        = m_ctx->findDepthFormat();
+		pipeline_create_info.depthFormat        = m_ctx->getPhysicalDevice()->getDepthFormat();
 		pipeline_create_info.vertexBufferLayout = m_quadVertexBufferLayout;
 		pipeline_create_info.shader             = quad_shader;
 		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
@@ -49,7 +49,7 @@ namespace toaster
 			gpu::ImageCreateInfo depth_attachment_image_create_info{};
 			depth_attachment_image_create_info.width  = m_createInfo.renderTargetWidth;
 			depth_attachment_image_create_info.height = m_createInfo.renderTargetHeight;
-			depth_attachment_image_create_info.format = m_ctx->findDepthFormat();
+			depth_attachment_image_create_info.format = m_ctx->getPhysicalDevice()->getDepthFormat();
 			depth_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
 			m_renderTargetDepthImage                  = m_ctx->alloc<gpu::VKImage2D>(depth_attachment_image_create_info);
 		}

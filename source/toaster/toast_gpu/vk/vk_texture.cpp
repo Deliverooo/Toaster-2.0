@@ -52,7 +52,7 @@ namespace toaster::gpu
 			m_image->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
 		}
 
-		const auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
+		const auto physical_device_props = m_ctx->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties();
 
 		vk::SamplerCreateInfo sampler_create_info{};
 		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
@@ -81,7 +81,7 @@ namespace toaster::gpu
 
 		sampler_create_info.pNext = &border_colour_create_info;
 
-		m_sampler = {m_ctx->getDevice(), sampler_create_info};
+		m_sampler = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), sampler_create_info};
 
 		m_descriptorImageInfo             = vk::DescriptorImageInfo{};
 		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -159,7 +159,7 @@ namespace toaster::gpu
 
 		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
-		auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
+		auto physical_device_props = m_ctx->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties();
 
 		vk::SamplerCreateInfo sampler_create_info{};
 		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
@@ -188,7 +188,7 @@ namespace toaster::gpu
 
 		sampler_create_info.pNext = &border_colour_create_info;
 
-		m_sampler = {m_ctx->getDevice(), sampler_create_info};
+		m_sampler = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), sampler_create_info};
 
 		m_descriptorImageInfo             = vk::DescriptorImageInfo{};
 		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -233,7 +233,7 @@ namespace toaster::gpu
 
 		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
-		auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
+		auto physical_device_props = m_ctx->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties();
 
 		vk::SamplerCreateInfo sampler_create_info{};
 		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
@@ -262,7 +262,7 @@ namespace toaster::gpu
 
 		sampler_create_info.pNext = &border_colour_create_info;
 
-		m_sampler = {m_ctx->getDevice(), sampler_create_info};
+		m_sampler = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), sampler_create_info};
 
 		m_descriptorImageInfo             = vk::DescriptorImageInfo{};
 		m_descriptorImageInfo.imageLayout = m_image->getCurrentImageLayout();
@@ -287,7 +287,7 @@ namespace toaster::gpu
 		else
 			m_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
-		const auto physical_device_props = m_ctx->getPhysicalDevice().getProperties();
+		const auto physical_device_props = m_ctx->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties();
 
 		vk::SamplerCreateInfo sampler_create_info{};
 		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
@@ -316,7 +316,7 @@ namespace toaster::gpu
 
 		sampler_create_info.pNext = &border_colour_create_info;
 
-		m_sampler = {m_ctx->getDevice(), sampler_create_info};
+		m_sampler = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), sampler_create_info};
 
 		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		m_descriptorImageInfo.imageView   = m_image->getImageView();

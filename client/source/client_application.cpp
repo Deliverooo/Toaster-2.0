@@ -14,7 +14,7 @@ namespace toaster
 
 		QVulkanWindow   vk_window{};
 		QVulkanInstance vk_instance{};
-		vk_instance.setVkInstance(*dynamic_cast<gpu::VKGPUContext *>(getWindow().getGPUContext())->getVulkanInstance());
+		vk_instance.setVkInstance(*getWindow().getGPUContext()->getPhysicalDevice()->getInstance()->getVulkanInstance());
 		vk_window.setVulkanInstance(&vk_instance);
 
 		vk_window.setTitle("Toaster - QT window test :)");

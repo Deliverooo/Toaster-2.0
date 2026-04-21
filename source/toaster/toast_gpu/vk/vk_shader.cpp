@@ -341,7 +341,7 @@ namespace toaster::gpu
 				}
 			}
 
-			m_descriptorSetLayouts[set] = {m_ctx->getDevice(), descriptor_set_layout_create_info};
+			m_descriptorSetLayouts[set] = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), descriptor_set_layout_create_info};
 		}
 	}
 }

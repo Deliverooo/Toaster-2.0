@@ -84,7 +84,7 @@ namespace toaster
 				if (ig::MenuItem("Reset"))
 				{
 					SceneHierarchyPanel *caller{(SceneHierarchyPanel *) p_caller_id};
-					caller->m_ctx->getDevice().waitIdle();
+					caller->m_ctx->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
 					comp.reset();
 				}
 

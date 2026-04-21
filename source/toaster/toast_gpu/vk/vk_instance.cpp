@@ -5,12 +5,14 @@ namespace toaster::gpu
 	static VKAPI_ATTR auto VKAPI_CALL _debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,
 													 const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, void *p_user_data) -> vk::Bool32;
 
-	VKInstance::VKInstance()
+	VKInstance::VKInstance(const VKInstanceSpecInfo &p_spec_info) : m_specInfo(p_spec_info)
 	{
-	}
+		if (!m_specInfo.debugCallback)
+			m_specInfo.debugCallback = &_debugCallback; // Fallback to the default one :)
 
-	auto VKInstance::create() -> void
-	{
+		if (m_specInfo.enableValidationLayers)
+			m_specInfo.requiredExtensions.emplace(vk::EXTDebugUtilsExtensionName);
+
 		vk::ApplicationInfo app_info{};
 		app_info.pApplicationName = "Toaster - Vulkan"; // The app and engine name for this can be completely arbitrary
 		app_info.pEngineName      = "Toaster";
@@ -19,13 +21,10 @@ namespace toaster::gpu
 		//		 However I don't know if the vk::raii stuff will work with them or not
 		app_info.apiVersion = vk::ApiVersion14;
 
-		if (c_enableValidationLayers)
-			m_requiredExtensions.emplace(vk::EXTDebugUtilsExtensionName);
-
 		auto extension_props = m_context.enumerateInstanceExtensionProperties();
 
 		// Make sure that all the glfw extensions are present in the extension_props vector
-		const auto unsupported_extension = std::ranges::find_if(m_requiredExtensions, [extension_props](const auto &extension)
+		const auto unsupported_extension = std::ranges::find_if(m_specInfo.requiredExtensions, [extension_props](const auto &extension)
 		{
 			// returns true if none of the extensions are present (the strcmp would always evaluate to false)
 			return std::ranges::none_of(extension_props, [ext = extension](const auto &prop)
@@ -34,7 +33,7 @@ namespace toaster::gpu
 			});
 		});
 
-		if (unsupported_extension != m_requiredExtensions.end())
+		if (unsupported_extension != m_specInfo.requiredExtensions.end())
 		{
 			// We can't continue without the required glfw extensions, so terminate the program here
 			LOG_ERROR("Required extension \"{}\" is not supported", *unsupported_extension);
@@ -47,7 +46,7 @@ namespace toaster::gpu
 		LOG_INFO("");
 
 		std::vector<CString> required_validation_layers;
-		if (c_enableValidationLayers)
+		if (m_specInfo.enableValidationLayers)
 			required_validation_layers.emplace_back("VK_LAYER_KHRONOS_validation");
 
 		auto layer_props = m_context.enumerateInstanceLayerProperties();
@@ -69,11 +68,8 @@ namespace toaster::gpu
 			TST_ASSERT(false);
 		}
 
-		if (!m_debugCallback)
-			m_debugCallback = &_debugCallback; // Fallback to the default one :)
-
 		vk::DebugUtilsMessengerCreateInfoEXT debug_messenger_create_info{};
-		if (c_enableValidationLayers)
+		if (m_specInfo.enableValidationLayers)
 		{
 			constexpr vk::DebugUtilsMessageSeverityFlagsEXT severity_flags{
 				vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
@@ -87,13 +83,13 @@ namespace toaster::gpu
 			debug_messenger_create_info.pfnUserCallback = &_debugCallback;
 		}
 
-		const std::vector<CString> required_extensions_vec{m_requiredExtensions.begin(), m_requiredExtensions.end()};
+		const std::vector<CString> required_extensions_vec{m_specInfo.requiredExtensions.begin(), m_specInfo.requiredExtensions.end()};
 		vk::InstanceCreateInfo     instance_create_info{};
 		instance_create_info.pApplicationInfo        = &app_info;
 		instance_create_info.enabledExtensionCount   = required_extensions_vec.size();
 		instance_create_info.ppEnabledExtensionNames = required_extensions_vec.data();
 
-		if (c_enableValidationLayers)
+		if (m_specInfo.enableValidationLayers)
 		{
 			instance_create_info.enabledLayerCount   = required_validation_layers.size();
 			instance_create_info.ppEnabledLayerNames = required_validation_layers.data();
@@ -103,19 +99,14 @@ namespace toaster::gpu
 		m_vulkanInstance = vk::raii::Instance{m_context, instance_create_info};
 	}
 
+	auto VKInstance::getSpecInfo() const -> const VKInstanceSpecInfo &
+	{
+		return m_specInfo;
+	}
+
 	auto VKInstance::getVulkanInstance() -> vk::raii::Instance &
 	{
 		return m_vulkanInstance;
-	}
-
-	auto VKInstance::setRequiredExtensions(const std::unordered_set<CString> &p_extensions) -> void
-	{
-		m_requiredExtensions = p_extensions;
-	}
-
-	auto VKInstance::setDebugCallback(vk::PFN_DebugUtilsMessengerCallbackEXT p_callback) -> void
-	{
-		m_debugCallback = p_callback;
 	}
 
 	auto _debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,

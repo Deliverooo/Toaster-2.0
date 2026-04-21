@@ -12,7 +12,6 @@
 #include "toast_gpu/vk/vk_swapchain.hpp"
 #include "ui/colours.hpp"
 
-
 #include <ImGuizmo.h>
 namespace igz = ImGuizmo;
 
@@ -148,16 +147,16 @@ namespace toaster
 		descriptor_pool_create_info.poolSizeCount = pool_sizes.size();
 		descriptor_pool_create_info.maxSets       = max_sets;
 		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
-		m_descriptorPool                          = {ctx->getDevice(), descriptor_pool_create_info};
+		m_descriptorPool                          = {ctx->getLogicalDevice()->getVulkanLogicalDevice(), descriptor_pool_create_info};
 
 		ImGui_ImplGlfw_InitForVulkan(app.getWindow().getNativeWindow(), true);
 
 		ImGui_ImplVulkan_InitInfo init_info{};
-		init_info.Instance        = *ctx->getVulkanInstance();
-		init_info.PhysicalDevice  = *ctx->getPhysicalDevice();
-		init_info.Device          = *ctx->getDevice();
-		init_info.QueueFamily     = ctx->getQueueFamilyIndices().graphics;
-		init_info.Queue           = *ctx->getGraphicsQueue();
+		init_info.Instance        = *ctx->getPhysicalDevice()->getInstance()->getVulkanInstance();
+		init_info.PhysicalDevice  = *ctx->getPhysicalDevice()->getVulkanPhysicalDevice();
+		init_info.Device          = *ctx->getLogicalDevice()->getVulkanLogicalDevice();
+		init_info.QueueFamily     = ctx->getLogicalDevice()->getQueueFamilyIndices().graphics;
+		init_info.Queue           = *ctx->getLogicalDevice()->getGraphicsQueue();
 		init_info.PipelineCache   = nullptr;
 		init_info.DescriptorPool  = *m_descriptorPool;
 		init_info.Allocator       = nullptr;
@@ -169,14 +168,13 @@ namespace toaster
 		rendering_create_info.colorAttachmentCount = 1u;
 		vk::Format colour_attachment_format{swapchain->getSurfaceFormat().format};
 		rendering_create_info.pColorAttachmentFormats = &colour_attachment_format;
-		rendering_create_info.depthAttachmentFormat   = ctx->findDepthFormat();
+		rendering_create_info.depthAttachmentFormat   = ctx->getPhysicalDevice()->getDepthFormat();
 
 		// Dynamic rendering
 		init_info.UseDynamicRendering                          = true;
 		init_info.PipelineInfoMain.PipelineRenderingCreateInfo = rendering_create_info;
 
 		ImGui_ImplVulkan_Init(&init_info);
-
 	}
 
 	auto ImGuiLayer::onDestroy() -> void

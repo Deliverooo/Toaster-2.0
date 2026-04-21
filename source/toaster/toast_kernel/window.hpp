@@ -4,6 +4,7 @@
 #pragma once
 
 #include <utility> // std::pair
+#include <vulkan/vulkan_raii.hpp>
 
 #include "toast_lib/string.hpp"
 #include "toast_lib/system_types.h"
@@ -16,8 +17,11 @@ namespace toaster
 {
 	namespace gpu
 	{
-		class IGPUContext;
+		class VKGPUContext;
 		class VKSwapchain;
+		class VKInstance;
+		class VKPhysicalDevice;
+		class VKLogicalDevice;
 	}
 
 	struct WindowCreateInfo
@@ -78,13 +82,18 @@ namespace toaster
 
 		auto setTitle(const String &p_title) -> void;
 
-		[[nodiscard]] auto getGPUContext() const -> gpu::IGPUContext *;
+		[[nodiscard]] auto getGPUContext() const -> gpu::VKGPUContext *;
 
 		[[nodiscard]] auto getNativeWindow() const -> GLFWwindow *;
 		[[nodiscard]] auto getSwapchain() const -> gpu::VKSwapchain *;
 
 	private:
-		gpu::IGPUContext *m_gpuContext{nullptr};
+		gpu::VKGPUContext *    m_gpuContext{nullptr};
+		gpu::VKInstance *      m_vkInstance{nullptr};
+		gpu::VKPhysicalDevice *m_vkPhysicalDevice{nullptr};
+		gpu::VKLogicalDevice * m_vkLogicalDevice{nullptr};
+
+		vk::SurfaceKHR m_windowSurface{nullptr};
 
 		GLFWwindow *m_window{nullptr};
 

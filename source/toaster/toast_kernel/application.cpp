@@ -33,15 +33,15 @@ namespace toaster
 			});
 		});
 
-		Globals::init(dynamic_cast<gpu::VKGPUContext *>(m_window->getGPUContext()));
+		Globals::init(m_window->getGPUContext());
 
 		input::setCurrentWindowContext(m_window->getNativeWindow());
 	}
 
 	Application::~Application() noexcept
 	{
-		const auto ctx{dynamic_cast<gpu::VKGPUContext *>(m_window->getGPUContext())};
-		ctx->getDevice().waitIdle();
+		const auto ctx{m_window->getGPUContext()};
+		ctx->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
 
 		for (IAppLayer *layer: m_layers)
 			removeLayer(layer);

@@ -8,24 +8,10 @@
 
 namespace toaster::gpu
 {
-	VKGPUContext::VKGPUContext(GLFWwindow *p_window) : m_window(p_window)
+	VKGPUContext::VKGPUContext(VKLogicalDevice *p_logical_device, const VKGPUContextSpecInfo &p_spec_info) : m_logicalDevice(p_logical_device), m_specInfo(p_spec_info)
 	{
-		try
-		{
-			_createInstance();
-			_createDebugMessenger();
-			_createSurface();
-			_pickPhysicalDevice();
-			_createLogicalDevice();
-			_createCommandPools();
-		}
-		catch (const vk::Error &p_err)
-		{
-			LOG_FATAL("Vulkan error: {}", p_err.what());
-		}
+		TST_ASSERT_MSG(m_logicalDevice, "Logical device is null");
 	}
-
-	VKGPUContext::~VKGPUContext() noexcept = default;
 
 	auto VKGPUContext::setCurrentFrameIndex(uint32 p_index) -> void
 	{
@@ -49,469 +35,24 @@ namespace toaster::gpu
 		}
 	}
 
-	auto VKGPUContext::getVulkanInstance() -> vk::raii::Instance &
+	auto VKGPUContext::getSpecInfo() const -> const VKGPUContextSpecInfo &
 	{
-		return m_vulkanInstance;
+		return m_specInfo;
 	}
 
-	auto VKGPUContext::getPhysicalDevice() -> vk::raii::PhysicalDevice &
+	auto VKGPUContext::getInstance() const -> VKInstance *
 	{
-		return m_currentPhysicalDevice;
+		return m_logicalDevice->getPhysicalDevice()->getInstance();
 	}
 
-	auto VKGPUContext::getDevice() -> vk::raii::Device &
+	auto VKGPUContext::getPhysicalDevice() -> VKPhysicalDevice *
 	{
-		return m_device;
+		return m_logicalDevice->getPhysicalDevice();
 	}
 
-	auto VKGPUContext::getGraphicsQueue() -> vk::raii::Queue &
+	auto VKGPUContext::getLogicalDevice() -> VKLogicalDevice *
 	{
-		return m_graphicsQueue;
-	}
-
-	auto VKGPUContext::getTransferQueue() -> vk::raii::Queue &
-	{
-		return m_transferQueue;
-	}
-
-	auto VKGPUContext::getComputeQueue() -> vk::raii::Queue &
-	{
-		return m_computeQueue;
-	}
-
-	auto VKGPUContext::getQueueFamilyIndices() const -> const QueueFamilyIndices &
-	{
-		return m_queueFamilyIndices;
-	}
-
-	auto VKGPUContext::getSurface() -> vk::raii::SurfaceKHR &
-	{
-		return m_surface;
-	}
-
-	auto VKGPUContext::getGraphicsCommandPool() -> vk::raii::CommandPool &
-	{
-		return m_graphicsCommandPool;
-	}
-
-	auto VKGPUContext::getTransferCommandPool() -> vk::raii::CommandPool &
-	{
-		return m_transferCommandPool;
-	}
-
-	auto VKGPUContext::getComputeCommandPool() -> vk::raii::CommandPool &
-	{
-		return m_computeCommandPool;
-	}
-
-	auto VKGPUContext::_createInstance() -> void
-	{
-		vk::ApplicationInfo app_info{};
-		app_info.pApplicationName = "Toaster - Vulkan"; // The app and engine name for this can be completely arbitrary
-		app_info.pEngineName      = "Toaster";
-		// I want to use the latest vulkan version.
-		// TODO: Think about determining this beforehand to add support for older Vulkan versions.
-		//		 However I don't know if the vk::raii stuff will work with them or not
-		app_info.apiVersion = vk::ApiVersion14;
-
-		auto required_extensions = _getRequiredInstanceExtensions();
-		auto extension_props     = m_context.enumerateInstanceExtensionProperties();
-
-		// Make sure that all the glfw extensions are present in the extension_props vector
-		const auto unsupported_extension = std::ranges::find_if(required_extensions, [extension_props](const auto &extension)
-		{
-			// returns true if none of the extensions are present (the strcmp would always evaluate to false)
-			return std::ranges::none_of(extension_props, [ext = extension](const auto &prop)
-			{
-				return std::strcmp(prop.extensionName.data(), ext) == 0;
-			});
-		});
-
-		if (unsupported_extension != required_extensions.end())
-		{
-			// We can't continue without the required glfw extensions, so terminate the program here
-			LOG_ERROR("Required extension \"{}\" is not supported", *unsupported_extension);
-			TST_ASSERT(false);
-		}
-
-		LOG_INFO("Available instance extensions:");
-		for (auto &prop: extension_props)
-			LOG_INFO("\t{}", prop.extensionName.data());
-		LOG_INFO("");
-
-		std::vector<CString> required_validation_layers;
-		if (c_enableValidationLayers)
-			required_validation_layers.emplace_back("VK_LAYER_KHRONOS_validation");
-
-		auto layer_props = m_context.enumerateInstanceLayerProperties();
-
-		// Finds any layer in required_validation_layers, such that it is also not present in the actual layer_props vector
-		const auto unsupported_layer_it = std::ranges::find_if(required_validation_layers, [layer_props](const auto &layer)
-		{
-			return std::ranges::none_of(layer_props, [layer](const auto &prop)
-			{
-				return std::strcmp(prop.layerName.data(), layer) == 0;
-			});
-		});
-
-		// Check to see if there are any unsupported layers
-		if (unsupported_layer_it != required_validation_layers.end())
-		{
-			// We can't continue without the required validation layers, so terminate the program here
-			LOG_ERROR("Found unsupported validation layer: {}", *unsupported_layer_it);
-			TST_ASSERT(false);
-		}
-
-		vk::DebugUtilsMessengerCreateInfoEXT debug_messenger_create_info{};
-		if (c_enableValidationLayers)
-		{
-			constexpr vk::DebugUtilsMessageSeverityFlagsEXT severity_flags{
-				vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
-				vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
-			};
-			constexpr vk::DebugUtilsMessageTypeFlagsEXT message_type_flags{
-				vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
-			};
-			debug_messenger_create_info.messageSeverity = severity_flags;
-			debug_messenger_create_info.messageType     = message_type_flags;
-			debug_messenger_create_info.pfnUserCallback = &_debugCallback;
-		}
-
-		vk::InstanceCreateInfo instance_create_info{};
-		instance_create_info.pApplicationInfo        = &app_info;
-		instance_create_info.enabledExtensionCount   = required_extensions.size();
-		instance_create_info.ppEnabledExtensionNames = required_extensions.data();
-		// instance_create_info.flags                   = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR;
-
-		if (c_enableValidationLayers)
-		{
-			instance_create_info.enabledLayerCount   = required_validation_layers.size();
-			instance_create_info.ppEnabledLayerNames = required_validation_layers.data();
-			instance_create_info.pNext               = &debug_messenger_create_info;
-		}
-
-		m_vulkanInstance = vk::raii::Instance{m_context, instance_create_info};
-	}
-
-	auto VKGPUContext::_createDebugMessenger() -> void
-	{
-		if (!c_enableValidationLayers)
-			return;
-		constexpr vk::DebugUtilsMessageSeverityFlagsEXT severity_flags{
-			vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
-			vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
-		};
-		constexpr vk::DebugUtilsMessageTypeFlagsEXT message_type_flags{
-			vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
-		};
-		vk::DebugUtilsMessengerCreateInfoEXT debug_messenger_create_info{};
-		debug_messenger_create_info.messageSeverity = severity_flags;
-		debug_messenger_create_info.messageType     = message_type_flags;
-		debug_messenger_create_info.pfnUserCallback = &_debugCallback;
-
-		m_debugUtilsMessenger = m_vulkanInstance.createDebugUtilsMessengerEXT(debug_messenger_create_info);
-	}
-
-	auto VKGPUContext::_createSurface() -> void
-	{
-		VkSurfaceKHR surface;
-		if (glfwCreateWindowSurface(*m_vulkanInstance, m_window, nullptr, &surface) != VK_SUCCESS)
-		{
-			LOG_ERROR("Failed to create window surface");
-			system("pause");
-			TST_ASSERT(false);
-		}
-		m_surface = {m_vulkanInstance, surface};
-	}
-
-	auto VKGPUContext::_pickPhysicalDevice() -> void
-	{
-		m_requiredDeviceExtensions = {
-			vk::KHRSwapchainExtensionName,
-			vk::KHRDynamicRenderingExtensionName,
-			vk::KHRTimelineSemaphoreExtensionName,
-			vk::EXTCustomBorderColorExtensionName,
-			// vk::KHRMaintenance6ExtensionName,
-			vk::KHRLoadStoreOpNoneExtensionName
-		};
-
-		auto physical_devices = m_vulkanInstance.enumeratePhysicalDevices();
-		if (physical_devices.empty())
-		{
-			// If your gpu does not have Vulkan support, we can't use Vulkan
-			LOG_ERROR("Failed to find physical devices with Vulkan support");
-			system("pause");
-			TST_ASSERT(false);
-		}
-
-		const auto device_it = std::ranges::find_if(physical_devices, [this](const auto &device)
-		{
-			return _isDeviceSuitable(device);
-		});
-		if (device_it == physical_devices.end())
-		{
-			LOG_ERROR("Failed to find suitable physical device");
-			system("pause");
-			TST_ASSERT(false);
-		}
-
-		m_currentPhysicalDevice = *device_it;
-
-		vk::PhysicalDeviceProperties props{m_currentPhysicalDevice.getProperties()};
-
-		vk::SampleCountFlags sample_counts{props.limits.framebufferColorSampleCounts & props.limits.framebufferDepthSampleCounts};
-		if (sample_counts & vk::SampleCountFlagBits::e64)
-			m_maxUsableSampleCount = vk::SampleCountFlagBits::e64;
-		else if (sample_counts & vk::SampleCountFlagBits::e32)
-			m_maxUsableSampleCount = vk::SampleCountFlagBits::e32;
-		else if (sample_counts & vk::SampleCountFlagBits::e16)
-			m_maxUsableSampleCount = vk::SampleCountFlagBits::e16;
-		else if (sample_counts & vk::SampleCountFlagBits::e8)
-			m_maxUsableSampleCount = vk::SampleCountFlagBits::e8;
-		else if (sample_counts & vk::SampleCountFlagBits::e4)
-			m_maxUsableSampleCount = vk::SampleCountFlagBits::e4;
-		else if (sample_counts & vk::SampleCountFlagBits::e2)
-			m_maxUsableSampleCount = vk::SampleCountFlagBits::e2;
-		else
-			m_maxUsableSampleCount = vk::SampleCountFlagBits::e1;
-
-		m_depthFormat = findSupportedFormat({vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint}, vk::ImageTiling::eOptimal,
-											vk::FormatFeatureFlagBits::eDepthStencilAttachment);
-
-		LOG_INFO("Using physical device: {} | Device ID: {}\n", props.deviceName.data(), props.deviceID);
-
-		LOG_INFO("Available device extensions:");
-		auto extension_props = m_currentPhysicalDevice.enumerateDeviceExtensionProperties();
-		for (auto ext: extension_props)
-			LOG_INFO("\t{}", ext.extensionName.data());
-		LOG_INFO("");
-	}
-
-	auto VKGPUContext::_createLogicalDevice() -> void
-	{
-		auto queue_family_props = m_currentPhysicalDevice.getQueueFamilyProperties();
-
-		for (uint32 i{0u}; i < queue_family_props.size(); ++i)
-		{
-			if (queue_family_props[i].queueFlags & vk::QueueFlagBits::eGraphics && m_currentPhysicalDevice.getSurfaceSupportKHR(i, m_surface))
-			{
-				m_queueFamilyIndices.graphics = i;
-				break;
-			}
-		}
-		for (uint32 i{0u}; i < queue_family_props.size(); ++i)
-		{
-			if (queue_family_props[i].queueFlags & vk::QueueFlagBits::eCompute && queue_family_props[i].queueFlags & vk::QueueFlagBits::eGraphics)
-			{
-				m_queueFamilyIndices.compute = i;
-				break;
-			}
-		}
-		for (uint32 i{0u}; i < queue_family_props.size(); ++i)
-		{
-			if (queue_family_props[i].queueFlags & vk::QueueFlagBits::eTransfer && (
-					static_cast<uint32>(queue_family_props[i].queueFlags & vk::QueueFlagBits::eGraphics) == 0) && (
-					static_cast<uint32>(queue_family_props[i].queueFlags & vk::QueueFlagBits::eCompute) == 0))
-			{
-				m_queueFamilyIndices.transfer = i;
-				break;
-			}
-		}
-
-		if (m_queueFamilyIndices.graphics == UINT32_MAX)
-		{
-			LOG_ERROR("Failed to find a queue family that supports present");
-			TST_ASSERT(false);
-		}
-
-		if (m_queueFamilyIndices.transfer == UINT32_MAX)
-		{
-			LOG_ERROR("Failed to find a transfer queue family");
-			TST_ASSERT(false);
-		}
-
-		if (m_queueFamilyIndices.compute == UINT32_MAX)
-		{
-			LOG_ERROR("Failed to find a compute queue family");
-			TST_ASSERT(false);
-		}
-
-		vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
-			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
-			vk::PhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT> feature_chain{{}, {}, {}, {}, {}, {}};
-		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                                           = true;
-		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                                           = true;
-		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                                            = true;
-		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                                             = true;
-		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                                              = true;
-		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                                              = true;
-		feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState                           = true;
-		feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors                                = true;
-		feature_chain.get<vk::PhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT>().dynamicRenderingUnusedAttachments = true;
-
-		std::vector<vk::DeviceQueueCreateInfo> queue_create_infos{};
-
-		bool has_separate_compute_queue = m_queueFamilyIndices.graphics != m_queueFamilyIndices.compute;
-
-		// Create the graphics and present queue
-		// The graphics queue should be the same as the present one
-		auto &graphics_queue_create_info            = queue_create_infos.emplace_back();
-		graphics_queue_create_info.queueFamilyIndex = m_queueFamilyIndices.graphics;
-		graphics_queue_create_info.queueCount       = has_separate_compute_queue ? 1 : 2;
-		std::vector<float32> queue_priorities;
-		queue_priorities.emplace_back(1.0f);
-		if (!has_separate_compute_queue)
-			queue_priorities.emplace_back(1.0f);
-		graphics_queue_create_info.pQueuePriorities = queue_priorities.data();
-
-		constexpr float32 queue_priority = 1.0f;
-
-		// Create the transfer queue
-		auto &transfer_queue_create_info            = queue_create_infos.emplace_back();
-		transfer_queue_create_info.queueFamilyIndex = m_queueFamilyIndices.transfer;
-		transfer_queue_create_info.queueCount       = 1;
-		transfer_queue_create_info.pQueuePriorities = &queue_priority;
-
-		if (has_separate_compute_queue)
-		{
-			// Create the compute queue
-			auto &compute_queue_create_info            = queue_create_infos.emplace_back();
-			compute_queue_create_info.queueFamilyIndex = m_queueFamilyIndices.compute;
-			compute_queue_create_info.queueCount       = 1;
-			compute_queue_create_info.pQueuePriorities = &queue_priority;
-		}
-
-		vk::DeviceCreateInfo device_create_info{};
-		device_create_info.enabledExtensionCount   = static_cast<uint32>(m_requiredDeviceExtensions.size());
-		device_create_info.ppEnabledExtensionNames = m_requiredDeviceExtensions.data();
-		device_create_info.queueCreateInfoCount    = queue_create_infos.size();
-		device_create_info.pQueueCreateInfos       = queue_create_infos.data();
-		device_create_info.pNext                   = &feature_chain.get<vk::PhysicalDeviceFeatures2>();
-
-		m_device = {m_currentPhysicalDevice, device_create_info};
-
-		// Create the queues
-		m_graphicsQueue = {m_device, m_queueFamilyIndices.graphics, 0};
-		m_transferQueue = {m_device, m_queueFamilyIndices.transfer, 0};
-		if (m_queueFamilyIndices.graphics == m_queueFamilyIndices.compute)
-			m_computeQueue = {m_device, m_queueFamilyIndices.compute, 1};
-
-		LOG_TRACE("Graphics queue family index {}", m_queueFamilyIndices.graphics);
-		LOG_TRACE("Transfer queue family index {}", m_queueFamilyIndices.transfer);
-		LOG_TRACE("Compute queue family index {}", m_queueFamilyIndices.compute);
-	}
-
-	auto VKGPUContext::_createCommandPools() -> void
-	{
-		// Graphics
-		vk::CommandPoolCreateInfo graphics_command_pool_create_info{};
-		graphics_command_pool_create_info.queueFamilyIndex = m_queueFamilyIndices.graphics;
-		graphics_command_pool_create_info.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-
-		m_graphicsCommandPool = {m_device, graphics_command_pool_create_info};
-
-		// Transfer
-		vk::CommandPoolCreateInfo transfer_command_pool_create_info{};
-		transfer_command_pool_create_info.queueFamilyIndex = m_queueFamilyIndices.transfer;
-		transfer_command_pool_create_info.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-
-		m_transferCommandPool = {m_device, transfer_command_pool_create_info};
-
-		// Compute
-		vk::CommandPoolCreateInfo compute_command_pool_create_info{};
-		compute_command_pool_create_info.queueFamilyIndex = m_queueFamilyIndices.compute;
-		compute_command_pool_create_info.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-
-		m_computeCommandPool = {m_device, compute_command_pool_create_info};
-	}
-
-	auto VKGPUContext::_isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const -> bool
-	{
-		auto props              = p_physical_device.getProperties();
-		bool vulkan_1_3_support = props.apiVersion >= vk::ApiVersion13;
-
-		auto queue_families    = p_physical_device.getQueueFamilyProperties();
-		bool supports_graphics = std::ranges::any_of(queue_families, [](const auto &queue_family)
-		{
-			return !!(queue_family.queueFlags & vk::QueueFlagBits::eGraphics);
-		});
-
-		bool supports_compute = std::ranges::any_of(queue_families, [](const auto &queue_family)
-		{
-			return !!(queue_family.queueFlags & vk::QueueFlagBits::eCompute);
-		});
-
-		// For the moment, the only required extension is the swapchain one.
-		// std::vector required_device_extensions{vk::KHRSwapchainExtensionName, vk::KHRDynamicRenderingExtensionName, vk::KHRTimelineSemaphoreExtensionName};
-
-		// Checks if all the required extensions are present in the available_device_extensions vector.
-		auto available_device_extensions             = p_physical_device.enumerateDeviceExtensionProperties();
-		bool supports_all_required_device_extensions = std::ranges::all_of(m_requiredDeviceExtensions, [available_device_extensions](const auto &required_ext)
-		{
-			return std::ranges::any_of(available_device_extensions, [&required_ext](const auto &available_ext)
-			{
-				return std::strcmp(available_ext.extensionName, required_ext) == 0;
-			});
-		});
-
-		for (const auto &ext: available_device_extensions)
-		{
-			LOG_TRACE("{}", ext.extensionName.data());
-		}
-
-		auto features = p_physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
-			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT>();
-
-		bool supports_required_features = features.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy && features.get<vk::PhysicalDeviceFeatures2>().features.
-										  sampleRateShading && features.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid && features.get<
-											  vk::PhysicalDeviceVulkan12Features>().timelineSemaphore && features.get<vk::PhysicalDeviceVulkan13Features>().
-										  dynamicRendering && features.get<vk::PhysicalDeviceVulkan13Features>().synchronization2 && features.get<
-											  vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState && features.get<
-											  vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors;
-
-		return vulkan_1_3_support && supports_graphics && supports_compute && supports_all_required_device_extensions && supports_required_features;
-	}
-
-	auto VKGPUContext::_getRequiredInstanceExtensions() const -> std::vector<CString>
-	{
-		// Gets all the possible platform-specific extension names that glfw needs to create a window.
-		// For windows, one of them will be VK_KHR_win32_surface extension
-		uint32     glfw_extension_count{0u};
-		const auto glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
-
-		// Inserts the
-		std::vector<CString> required_extensions{glfw_extension_count};
-		for (uint32 i{0u}; i < glfw_extension_count; ++i)
-			required_extensions[i] = glfw_extensions[i];
-
-		// required_extensions.emplace_back(vk::KHRPortabilityEnumerationExtensionName);
-
-		if (c_enableValidationLayers)
-			required_extensions.emplace_back(vk::EXTDebugUtilsExtensionName);
-
-		return required_extensions;
-	}
-
-	auto VKGPUContext::_debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,
-									  const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, [[maybe_unused]] void *              p_user_data) -> vk::Bool32
-	{
-		switch (p_message_severity)
-		{
-			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose: LOG_TRACE("[Verbose] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
-																			   p_callback_data->pMessage);
-				break;
-			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo: LOG_INFO("[Info] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
-																		   p_callback_data->pMessage);
-				break;
-			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning: LOG_WARN("[Warning] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
-																			  p_callback_data->pMessage);
-				break;
-			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError: LOG_ERROR("[Error] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
-																			 p_callback_data->pMessage);
-				break;
-			default: break;
-		}
-		return vk::False;
+		return m_logicalDevice;
 	}
 
 	auto VKGPUContext::transitionImageLayout(vk::raii::CommandBuffer &p_command_buffer, vk::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
@@ -567,7 +108,7 @@ namespace toaster::gpu
 		shader_module_create_info.codeSize = p_code.size();
 		shader_module_create_info.pCode    = reinterpret_cast<const uint32 *>(p_code.data());
 
-		return {m_device, shader_module_create_info};
+		return {m_logicalDevice->getVulkanLogicalDevice(), shader_module_create_info};
 	}
 
 	auto VKGPUContext::createShaderModule(const std::vector<uint32> &p_code) -> vk::raii::ShaderModule
@@ -576,12 +117,12 @@ namespace toaster::gpu
 		shader_module_create_info.codeSize = p_code.size() * sizeof(uint32);
 		shader_module_create_info.pCode    = p_code.data();
 
-		return {m_device, shader_module_create_info};
+		return {m_logicalDevice->getVulkanLogicalDevice(), shader_module_create_info};
 	}
 
 	auto VKGPUContext::findMemoryType(uint32 p_type_filter, vk::MemoryPropertyFlags p_properties) const -> uint32
 	{
-		vk::PhysicalDeviceMemoryProperties memory_properties = m_currentPhysicalDevice.getMemoryProperties();
+		vk::PhysicalDeviceMemoryProperties memory_properties = m_logicalDevice->getPhysicalDevice()->getVulkanPhysicalDevice().getMemoryProperties();
 		for (uint32 i{0u}; i < memory_properties.memoryTypeCount; i++)
 		{
 			if ((p_type_filter & BIT(i)) && (memory_properties.memoryTypes[i].propertyFlags & p_properties) == p_properties)
@@ -601,18 +142,20 @@ namespace toaster::gpu
 		buffer_create_info.usage       = p_usage_flags;
 		buffer_create_info.sharingMode = vk::SharingMode::eConcurrent;
 
+		auto queue_family_indices{m_logicalDevice->getQueueFamilyIndices()};
+
 		buffer_create_info.queueFamilyIndexCount = 2;
-		uint32 qfi[]                             = {m_queueFamilyIndices.graphics, m_queueFamilyIndices.transfer};
+		uint32 qfi[]                             = {queue_family_indices.graphics, queue_family_indices.transfer};
 		buffer_create_info.pQueueFamilyIndices   = qfi;
 
-		p_out_buffer = {m_device, buffer_create_info};
+		p_out_buffer = {m_logicalDevice->getVulkanLogicalDevice(), buffer_create_info};
 
 		vk::MemoryRequirements memory_requirements = p_out_buffer.getMemoryRequirements();
 		vk::MemoryAllocateInfo memory_allocate_info{};
 		memory_allocate_info.memoryTypeIndex = findMemoryType(memory_requirements.memoryTypeBits, p_memory_properties);
 		memory_allocate_info.allocationSize  = memory_requirements.size;
 
-		p_out_memory = {m_device, memory_allocate_info};
+		p_out_memory = {m_logicalDevice->getVulkanLogicalDevice(), memory_allocate_info};
 
 		p_out_buffer.bindMemory(p_out_memory, 0u);
 	}
@@ -653,17 +196,19 @@ namespace toaster::gpu
 		image_create_info.usage         = p_usage_flags;
 		image_create_info.format        = p_format;
 
+		auto queue_family_indices{m_logicalDevice->getQueueFamilyIndices()};
+
 		image_create_info.queueFamilyIndexCount = 2;
-		uint32 qfi[]                            = {m_queueFamilyIndices.graphics, m_queueFamilyIndices.transfer};
+		uint32 qfi[]                            = {queue_family_indices.graphics, queue_family_indices.transfer};
 		image_create_info.pQueueFamilyIndices   = qfi;
 
-		p_out_image                                = {m_device, image_create_info};
+		p_out_image                                = {m_logicalDevice->getVulkanLogicalDevice(), image_create_info};
 		vk::MemoryRequirements memory_requirements = p_out_image.getMemoryRequirements();
 		vk::MemoryAllocateInfo memory_allocate_info{};
 		memory_allocate_info.allocationSize  = memory_requirements.size;
 		memory_allocate_info.memoryTypeIndex = findMemoryType(memory_requirements.memoryTypeBits, p_memory_properties);
 
-		p_out_memory = {m_device, memory_allocate_info};
+		p_out_memory = {m_logicalDevice->getVulkanLogicalDevice(), memory_allocate_info};
 
 		p_out_image.bindMemory(p_out_memory, 0u);
 	}
@@ -730,7 +275,7 @@ namespace toaster::gpu
 		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{p_aspect_flags, 0, p_mip_levels, 0, 1};
 		image_view_create_info.format           = p_format;
 
-		return {m_device, image_view_create_info};
+		return {m_logicalDevice->getVulkanLogicalDevice(), image_view_create_info};
 	}
 
 	auto VKGPUContext::createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_mip_levels) const -> vk::raii::ImageView
@@ -747,7 +292,7 @@ namespace toaster::gpu
 		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{p_aspect_flags, 0, p_mip_levels, 0, 1};
 		image_view_create_info.format           = p_format;
 
-		return {m_device, image_view_create_info};
+		return {m_logicalDevice->getVulkanLogicalDevice(), image_view_create_info};
 	}
 
 	auto VKGPUContext::generateMipmaps(vk::raii::Image &p_src_image, vk::Format p_format, uint32 p_width, uint32 p_height, uint32 p_mip_levels) const -> void
@@ -771,10 +316,10 @@ namespace toaster::gpu
 
 		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
 		command_buffer_allocate_info.commandBufferCount = 1;
-		command_buffer_allocate_info.commandPool        = m_graphicsCommandPool;
+		command_buffer_allocate_info.commandPool        = m_logicalDevice->getGraphicsCommandPool();
 		command_buffer_allocate_info.level              = vk::CommandBufferLevel::ePrimary;
 
-		vk::raii::CommandBuffer command_buffer{std::move(m_device.allocateCommandBuffers(command_buffer_allocate_info).front())};
+		vk::raii::CommandBuffer command_buffer{std::move(m_logicalDevice->getVulkanLogicalDevice().allocateCommandBuffers(command_buffer_allocate_info).front())};
 
 		vk::CommandBufferBeginInfo command_buffer_begin_info{};
 		command_buffer_begin_info.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
@@ -863,7 +408,7 @@ namespace toaster::gpu
 		command_buffer.end();
 
 		vk::FenceCreateInfo fence_create_info{};
-		vk::raii::Fence     wait_fence{m_device, fence_create_info};
+		vk::raii::Fence     wait_fence{m_logicalDevice->getVulkanLogicalDevice(), fence_create_info};
 
 		vk::CommandBufferSubmitInfo command_buffer_submit_info{};
 		command_buffer_submit_info.commandBuffer = *command_buffer;
@@ -871,9 +416,9 @@ namespace toaster::gpu
 		vk::SubmitInfo2 submit_info{};
 		submit_info.commandBufferInfoCount = 1;
 		submit_info.pCommandBufferInfos    = &command_buffer_submit_info;
-		m_graphicsQueue.submit2(submit_info, *wait_fence);
+		m_logicalDevice->getGraphicsQueue().submit2(submit_info, *wait_fence);
 
-		vk::Result res = m_device.waitForFences(*wait_fence, true, UINT64_MAX);
+		vk::Result res = m_logicalDevice->getVulkanLogicalDevice().waitForFences(*wait_fence, true, UINT64_MAX);
 		if (res != vk::Result::eSuccess)
 			TST_ASSERT_MSG(false, "Failed to wait for Fence");
 	}
@@ -882,10 +427,10 @@ namespace toaster::gpu
 	{
 		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
 		command_buffer_allocate_info.commandBufferCount = 1;
-		command_buffer_allocate_info.commandPool        = m_transferCommandPool;
+		command_buffer_allocate_info.commandPool        = m_logicalDevice->getTransferCommandPool();
 		command_buffer_allocate_info.level              = vk::CommandBufferLevel::ePrimary;
 
-		vk::raii::CommandBuffer command_buffer{std::move(m_device.allocateCommandBuffers(command_buffer_allocate_info).front())};
+		vk::raii::CommandBuffer command_buffer{std::move(m_logicalDevice->getVulkanLogicalDevice().allocateCommandBuffers(command_buffer_allocate_info).front())};
 
 		vk::CommandBufferBeginInfo command_buffer_begin_info{};
 		command_buffer_begin_info.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
@@ -899,7 +444,7 @@ namespace toaster::gpu
 		p_command_buffer.end();
 
 		vk::FenceCreateInfo fence_create_info{};
-		vk::raii::Fence     wait_fence{m_device, fence_create_info};
+		vk::raii::Fence     wait_fence{m_logicalDevice->getVulkanLogicalDevice(), fence_create_info};
 
 		vk::CommandBufferSubmitInfo command_buffer_submit_info{};
 		command_buffer_submit_info.commandBuffer = *p_command_buffer;
@@ -907,9 +452,9 @@ namespace toaster::gpu
 		vk::SubmitInfo2 submit_info{};
 		submit_info.commandBufferInfoCount = 1;
 		submit_info.pCommandBufferInfos    = &command_buffer_submit_info;
-		m_transferQueue.submit2(submit_info, *wait_fence);
+		m_logicalDevice->getTransferQueue().submit2(submit_info, *wait_fence);
 
-		vk::Result res = m_device.waitForFences(*wait_fence, true, UINT64_MAX);
+		vk::Result res = m_logicalDevice->getVulkanLogicalDevice().waitForFences(*wait_fence, true, UINT64_MAX);
 		if (res != vk::Result::eSuccess)
 			TST_ASSERT_MSG(false, "Failed to wait for Fence");
 	}
@@ -918,10 +463,10 @@ namespace toaster::gpu
 	{
 		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
 		command_buffer_allocate_info.commandBufferCount = 1;
-		command_buffer_allocate_info.commandPool        = m_graphicsCommandPool;
+		command_buffer_allocate_info.commandPool        = m_logicalDevice->getGraphicsCommandPool();
 		command_buffer_allocate_info.level              = vk::CommandBufferLevel::ePrimary;
 
-		vk::raii::CommandBuffer command_buffer{std::move(m_device.allocateCommandBuffers(command_buffer_allocate_info).front())};
+		vk::raii::CommandBuffer command_buffer{std::move(m_logicalDevice->getVulkanLogicalDevice().allocateCommandBuffers(command_buffer_allocate_info).front())};
 
 		vk::CommandBufferBeginInfo command_buffer_begin_info{};
 		command_buffer_begin_info.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
@@ -935,7 +480,7 @@ namespace toaster::gpu
 		p_command_buffer.end();
 
 		vk::FenceCreateInfo fence_create_info{};
-		vk::raii::Fence     wait_fence{m_device, fence_create_info};
+		vk::raii::Fence     wait_fence{m_logicalDevice->getVulkanLogicalDevice(), fence_create_info};
 
 		vk::CommandBufferSubmitInfo command_buffer_submit_info{};
 		command_buffer_submit_info.commandBuffer = *p_command_buffer;
@@ -943,32 +488,11 @@ namespace toaster::gpu
 		vk::SubmitInfo2 submit_info{};
 		submit_info.commandBufferInfoCount = 1;
 		submit_info.pCommandBufferInfos    = &command_buffer_submit_info;
-		m_graphicsQueue.submit2(submit_info, *wait_fence);
+		m_logicalDevice->getGraphicsQueue().submit2(submit_info, *wait_fence);
 
-		vk::Result res = m_device.waitForFences(*wait_fence, true, UINT64_MAX);
+		vk::Result res = m_logicalDevice->getVulkanLogicalDevice().waitForFences(*wait_fence, true, UINT64_MAX);
 		if (res != vk::Result::eSuccess)
 			TST_ASSERT_MSG(false, "Failed to wait for Fence");
-	}
-
-	auto VKGPUContext::findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, const vk::ImageTiling p_tiling,
-										   const vk::FormatFeatureFlags   p_feature_flags) const -> vk::Format
-	{
-		for (const auto &format: p_supported_formats)
-		{
-			vk::FormatProperties props = m_currentPhysicalDevice.getFormatProperties(format);
-
-			if (p_tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & p_feature_flags) == p_feature_flags)
-				return format;
-			if (p_tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & p_feature_flags) == p_feature_flags)
-				return format;
-		}
-		TST_ASSERT_MSG(false, "Unsupported format");
-		return vk::Format::eUndefined;
-	}
-
-	auto VKGPUContext::findDepthFormat() const -> vk::Format
-	{
-		return m_depthFormat;
 	}
 
 	auto VKGPUContext::hasStencilComponent(const vk::Format p_format) const -> bool
@@ -980,10 +504,5 @@ namespace toaster::gpu
 	{
 		return p_format == vk::Format::eD16Unorm || p_format == vk::Format::eD16UnormS8Uint || p_format == vk::Format::eD24UnormS8Uint || p_format ==
 			   vk::Format::eD32Sfloat || p_format == vk::Format::eD32SfloatS8Uint;
-	}
-
-	auto VKGPUContext::getMaxUsableSampleCount() const -> vk::SampleCountFlagBits
-	{
-		return m_maxUsableSampleCount;
 	}
 }

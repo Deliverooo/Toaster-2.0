@@ -122,7 +122,7 @@ namespace toaster::gpu
 		descriptor_pool_create_info.maxSets       = 10u * VKGPUContext::c_maxFramesInFlight;
 		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 
-		m_descriptorPool = {m_ctx->getDevice(), descriptor_pool_create_info};
+		m_descriptorPool = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), descriptor_pool_create_info};
 
 		if (m_descriptorSets.empty())
 			for (uint32 i{0u}; i < VKGPUContext::c_maxFramesInFlight; ++i)
@@ -142,7 +142,7 @@ namespace toaster::gpu
 				descriptor_set_allocate_info.pSetLayouts        = &*descriptor_set_layout;
 
 				auto &descriptor_set{
-					m_descriptorSets[frame_index].emplace_back(std::move(m_ctx->getDevice().allocateDescriptorSets(descriptor_set_allocate_info).front()))
+					m_descriptorSets[frame_index].emplace_back(std::move(m_ctx->getLogicalDevice()->getVulkanLogicalDevice().allocateDescriptorSets(descriptor_set_allocate_info).front()))
 				};
 
 				auto &                                             write_descriptor_sets{m_writeDescriptorMap[frame_index].at(set)};
@@ -234,7 +234,7 @@ namespace toaster::gpu
 
 				if (!write_descriptors.empty())
 				{
-					m_ctx->getDevice().updateDescriptorSets(write_descriptors, {});
+					m_ctx->getLogicalDevice()->getVulkanLogicalDevice().updateDescriptorSets(write_descriptors, {});
 				}
 			}
 		}
@@ -368,7 +368,7 @@ namespace toaster::gpu
 
 				write_descriptor_sets.emplace_back(write_descriptor.wds);
 			}
-			m_ctx->getDevice().updateDescriptorSets(write_descriptor_sets, {});
+			m_ctx->getLogicalDevice()->getVulkanLogicalDevice().updateDescriptorSets(write_descriptor_sets, {});
 		}
 		m_invalidDescriptorResources.clear();
 	}

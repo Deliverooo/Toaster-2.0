@@ -1,8 +1,5 @@
 set(GPU_SRC
 
-		gpu_context.cpp
-		gpu_context.hpp
-
 		image.hpp
 		resource.hpp
 		buffer_layout.hpp
@@ -41,6 +38,12 @@ if (${WITH_VULKAN_BACKEND})
 	list(APPEND GPU_SRC
 			vk/vk_instance.hpp
 			vk/vk_instance.cpp
+
+			vk/vk_physical_device.hpp
+			vk/vk_physical_device.cpp
+
+			vk/vk_logical_device.hpp
+			vk/vk_logical_device.cpp
 
 			vk/vk_gpu_context.hpp
 			vk/vk_gpu_context.cpp

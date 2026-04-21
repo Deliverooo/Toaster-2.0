@@ -58,8 +58,8 @@ namespace toaster
 	auto ClientLayer::onDestroy() -> void
 	{
 		auto &app = getApp();
-		auto  ctx = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
-		ctx->getDevice().waitIdle();
+		auto  ctx{app.getWindow().getGPUContext()};
+		ctx->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
 	}
 
 	auto ClientLayer::onUpdate(const float32 p_dt) -> void

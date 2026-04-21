@@ -25,7 +25,7 @@ namespace toaster::gpu
 
 	auto VKSwapchain::beginFrame() -> void
 	{
-		auto &device = m_ctx->getDevice();
+		auto &device = m_ctx->getLogicalDevice()->getVulkanLogicalDevice();
 
 		// Wait for the previous frame to be finished before rendering this one
 		auto fence_result = device.waitForFences(*m_inFlightFences[m_frameIndex], true, UINT64_MAX);
@@ -78,7 +78,7 @@ namespace toaster::gpu
 
 		command_buffer.end();
 
-		auto &graphics_queue = m_ctx->getGraphicsQueue();
+		auto &graphics_queue = m_ctx->getLogicalDevice()->getGraphicsQueue();
 
 		// Waits for the image to be acquired before executing
 		// Signals m_renderFinishedSemaphores[m_imageIndex] when finished.
@@ -188,7 +188,7 @@ namespace toaster::gpu
 
 	auto VKSwapchain::getDepthFormat() const -> vk::Format
 	{
-		return m_ctx->findDepthFormat();
+		return m_ctx->getPhysicalDevice()->getDepthFormat();
 	}
 
 	auto VKSwapchain::getMinImageCount() const -> uint32
@@ -219,15 +219,14 @@ namespace toaster::gpu
 
 	auto VKSwapchain::_createDepthResources() -> void
 	{
-		vk::Format depth_format = m_ctx->findDepthFormat();
-		m_ctx->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, vk::SampleCountFlagBits::e1, depth_format, vk::ImageTiling::eOptimal,
+		m_ctx->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, vk::SampleCountFlagBits::e1, getDepthFormat(), vk::ImageTiling::eOptimal,
 						   vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal, m_depthImage, m_depthImageMemory);
-		m_depthImageView = m_ctx->createImageView(m_depthImage, depth_format, vk::ImageAspectFlagBits::eDepth, 1);
+		m_depthImageView = m_ctx->createImageView(m_depthImage, getDepthFormat(), vk::ImageAspectFlagBits::eDepth, 1);
 	}
 
 	auto VKSwapchain::_createSyncObjects() -> void
 	{
-		auto &device = m_ctx->getDevice();
+		auto &device = m_ctx->getLogicalDevice()->getVulkanLogicalDevice();
 		for (uint32 i{0u}; i < VKGPUContext::c_maxFramesInFlight; ++i)
 		{
 			// I don't know why vk::SemaphoreCreateInfo exists, there are no parameters that you can set for it
@@ -243,11 +242,11 @@ namespace toaster::gpu
 
 	auto VKSwapchain::_createCommandBuffers() -> void
 	{
-		auto &device = m_ctx->getDevice();
+		auto &device = m_ctx->getLogicalDevice()->getVulkanLogicalDevice();
 
 		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
 		command_buffer_allocate_info.commandBufferCount = VKGPUContext::c_maxFramesInFlight;
-		command_buffer_allocate_info.commandPool        = m_ctx->getGraphicsCommandPool();
+		command_buffer_allocate_info.commandPool        = m_ctx->getLogicalDevice()->getGraphicsCommandPool();
 		command_buffer_allocate_info.level              = vk::CommandBufferLevel::ePrimary;
 
 		m_commandBuffers = vk::raii::CommandBuffers{device, command_buffer_allocate_info};
@@ -255,12 +254,12 @@ namespace toaster::gpu
 
 	auto VKSwapchain::_create() -> void
 	{
-		auto &                     physical_device = m_ctx->getPhysicalDevice();
-		auto &                     surface         = m_ctx->getSurface();
-		vk::SurfaceCapabilitiesKHR surface_caps    = physical_device.getSurfaceCapabilitiesKHR(surface);
+		auto &                     physical_device = m_ctx->getPhysicalDevice()->getVulkanPhysicalDevice();
+		auto &                     surface         = *m_ctx->getLogicalDevice()->getSpecInfo().surface;
+		vk::SurfaceCapabilitiesKHR surface_caps    = physical_device.getSurfaceCapabilitiesKHR(&surface);
 
-		auto available_surface_formats = physical_device.getSurfaceFormatsKHR(surface);
-		auto available_present_modes   = physical_device.getSurfacePresentModesKHR(surface);
+		auto available_surface_formats = physical_device.getSurfaceFormatsKHR(&surface);
+		auto available_present_modes   = physical_device.getSurfacePresentModesKHR(&surface);
 
 		m_swapchainSurfaceFormat = _chooseSwapchainSurfaceFormat(available_surface_formats);
 		m_swapchainExtent        = _chooseSwapchainExtent(surface_caps);
@@ -268,7 +267,7 @@ namespace toaster::gpu
 		m_minImageCount = _chooseSwapchainMinImageCount(surface_caps);
 
 		vk::SwapchainCreateInfoKHR swapchain_create_info{};
-		swapchain_create_info.surface          = surface;
+		swapchain_create_info.surface          = &surface;
 		swapchain_create_info.minImageCount    = m_minImageCount;
 		swapchain_create_info.imageFormat      = m_swapchainSurfaceFormat.format;
 		swapchain_create_info.imageColorSpace  = m_swapchainSurfaceFormat.colorSpace;
@@ -287,7 +286,7 @@ namespace toaster::gpu
 			swapchain_create_info.oldSwapchain = *m_swapchain;
 		}
 
-		m_swapchain       = {m_ctx->getDevice(), swapchain_create_info};
+		m_swapchain       = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), swapchain_create_info};
 		m_swapchainImages = m_swapchain.getImages();
 	}
 
@@ -304,7 +303,7 @@ namespace toaster::gpu
 		}
 
 		// Wait for the GPU to finish processing anything before recreating, so nothing that depends on the swapchain becomes invalid
-		m_ctx->getDevice().waitIdle();
+		m_ctx->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
 
 		m_swapchainImageViews.clear();
 
@@ -315,7 +314,7 @@ namespace toaster::gpu
 		for (auto &callback: m_resizeCallbacks)
 			callback(m_swapchainExtent.width, m_swapchainExtent.height);
 
-		m_ctx->getDevice().waitIdle();
+		m_ctx->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
 	}
 
 	auto VKSwapchain::_chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const -> vk::SurfaceFormatKHR
