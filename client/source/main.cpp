@@ -1,9 +1,14 @@
-#include <QVulkanWindow>
+#include <iostream>
 
 #include "client_application.hpp"
+#include "toast_gpu/vk/vk_compute_pass.hpp"
+#include "toast_gpu/vk/vk_compute_pipeline.hpp"
 
 #include "toast_gpu/vk/vk_gpu_context.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_gpu/vk/vk_pipeline.hpp"
+#include "toast_gpu/vk/vk_shader.hpp"
+#include "toast_render/renderer.hpp"
 
 auto cstringArrayToVector(toaster::CString *p_arr, uint32 p_size) -> std::vector<toaster::CString>
 {
@@ -20,8 +25,6 @@ INT WINAPI WinMain([[maybe_unused]] HINSTANCE hInstance, [[maybe_unused]] HINSTA
 int32 main(int32 p_argc, char **p_argv) // Maybe_todo, Forward these parameters to the application for it to handle
 {
 	#endif
-
-	QGuiApplication app{p_argc, p_argv};
 
 	uint32                                         extension_count{0u};
 	auto                                           required_extensions{cstringArrayToVector(glfwGetRequiredInstanceExtensions(&extension_count), extension_count)};
@@ -43,15 +46,6 @@ int32 main(int32 p_argc, char **p_argv) // Maybe_todo, Forward these parameters 
 		vk::KHRLoadStoreOpNoneExtensionName
 	};
 	toaster::gpu::VKPhysicalDevice vk_physical_device{&vk_instance, vk_physical_device_spec_info};
-
-	#if 0
-	VkSurfaceKHR surface; if (glfwCreateWindowSurface(*vk_instance.getVulkanInstance(), m_window, nullptr, &surface) != VK_SUCCESS)
-	{
-		LOG_ERROR("Failed to create window surface");
-		system("pause");
-		TST_ASSERT(false);
-	}
-	#endif
 
 	toaster::gpu::VKLogicalDeviceSpecInfo vk_logical_device_spec_info{};
 	vk_logical_device_spec_info.surface            = nullptr;
@@ -76,13 +70,52 @@ int32 main(int32 p_argc, char **p_argv) // Maybe_todo, Forward these parameters 
 	vk_logical_device_spec_info.pNext                                                           = feature_chain.get<vk::PhysicalDeviceFeatures2>();
 	toaster::gpu::VKLogicalDevice vk_logical_device{&vk_physical_device, vk_logical_device_spec_info};
 
-	QVulkanInstance qvk_instance{};
-	qvk_instance.setVkInstance(*vk_instance.getVulkanInstance());
+	toaster::gpu::VKGPUContextSpecInfo gpu_context_spec_info{};
+	toaster::gpu::VKGPUContext         gpu_context{&vk_logical_device, gpu_context_spec_info};
 
-	QVulkanWindow vk_window{};
+	{
+		vk::CommandBufferAllocateInfo cmd_alloc_info{};
+		cmd_alloc_info.commandPool        = vk_logical_device.getComputeCommandPool();
+		cmd_alloc_info.commandBufferCount = 1;
 
-	vk_window.setTitle("Toaster - QT test :)");
-	vk_window.show();
+		vk::raii::CommandBuffer compute_command_buffer{std::move(vk_logical_device.getVulkanLogicalDevice().allocateCommandBuffers(cmd_alloc_info).front())};
 
-	return app.exec();
+		auto storage_buffer{toaster::make_reference<toaster::gpu::VKStorageBuffer>(&gpu_context, sizeof(int32))};
+
+		toaster::gpu::VKShader::Bytecode cs_bytecode{toaster::io::filesystem::readBinary("shaders/test.comp.glsl.spv")};
+		TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
+		toaster::gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eCompute, cs_bytecode}};
+		auto                                compute_shader{toaster::make_reference<toaster::gpu::VKShader>(&gpu_context, shader_bytecode_map, "Compute_Test")};
+		auto                                compute_pipeline{toaster::make_reference<toaster::gpu::VKComputePipeline>(&gpu_context, compute_shader)};
+		auto                                compute_pass{toaster::make_reference<toaster::gpu::VKComputePass>(&gpu_context, compute_pipeline)};
+		compute_pass->setInput("Test", storage_buffer);
+		compute_pass->bake();
+
+		compute_command_buffer.begin({});
+		toaster::Renderer::beginCompute(compute_command_buffer, 0, compute_pass);
+		toaster::Renderer::dispatchCompute(compute_command_buffer, 0, compute_pass, nullptr, 1, 1, 1);
+		toaster::Renderer::endCompute(compute_command_buffer, 0, compute_pass);
+		compute_command_buffer.end();
+
+		vk::FenceCreateInfo fence_create_info{};
+		vk::raii::Fence     wait_fence{vk_logical_device.getVulkanLogicalDevice(), fence_create_info};
+
+		vk::CommandBufferSubmitInfo command_buffer_info{};
+		command_buffer_info.commandBuffer = compute_command_buffer;
+		vk::SubmitInfo2 submit_info{};
+		submit_info.commandBufferInfoCount = 1;
+		submit_info.pCommandBufferInfos    = &command_buffer_info;
+		vk_logical_device.getComputeQueue().submit2(submit_info, wait_fence);
+
+		if (auto fence_result = vk_logical_device.getVulkanLogicalDevice().waitForFences({*wait_fence}, true, UINT64_MAX); fence_result != vk::Result::eSuccess)
+			TST_ASSERT_MSG(false, "Failed to wait for Fence");
+
+		int32 data{0};
+		void *mapped{storage_buffer->mapMemory(0, sizeof(int32))};
+		std::memcpy(&data, mapped, sizeof(int32));
+		storage_buffer->unmapMemory();
+		LOG_INFO("{}", data);
+	}
+
+	std::cin.get();
 }
