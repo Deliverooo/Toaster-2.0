@@ -2,6 +2,8 @@
 
 #include <functional>
 #include <vulkan/vulkan_raii.hpp>
+
+#include "vk_command_buffer.hpp"
 #include "toast_lib/system_types.h"
 
 struct GLFWwindow;
@@ -75,9 +77,7 @@ namespace toaster::gpu
 
 		std::vector<vk::raii::Semaphore> m_imageAvailableSemaphores;
 		std::vector<vk::raii::Semaphore> m_renderFinishedSemaphores;
-		std::vector<vk::raii::Fence>     m_inFlightFences;
-
-		std::vector<vk::raii::CommandBuffer> m_commandBuffers;
+		VKCommandBufferPFF               m_commandBuffers;
 
 		vk::raii::Image        m_depthImage{nullptr};
 		vk::raii::DeviceMemory m_depthImageMemory{nullptr};

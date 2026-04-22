@@ -168,6 +168,28 @@ namespace toaster::gpu
 		return m_computeQueue;
 	}
 
+	auto VKLogicalDevice::getQueue(vk::QueueFlagBits p_queue_type) -> vk::raii::Queue &
+	{
+		switch (p_queue_type)
+		{
+			case vk::QueueFlagBits::eGraphics: return m_graphicsQueue;
+				break;
+			case vk::QueueFlagBits::eCompute: return m_computeQueue;
+				break;
+			case vk::QueueFlagBits::eTransfer: return m_transferQueue;
+				break;
+			// case vk::QueueFlagBits::eSparseBinding:
+			// case vk::QueueFlagBits::eProtected:
+			// case vk::QueueFlagBits::eVideoDecodeKHR:
+			// case vk::QueueFlagBits::eVideoEncodeKHR:
+			// case vk::QueueFlagBits::eOpticalFlowNV:
+			// case vk::QueueFlagBits::eDataGraphARM:
+			default: break;
+		}
+		TST_ASSERT_MSG(false, "Unsupported queue");
+		return m_graphicsQueue;
+	}
+
 	auto VKLogicalDevice::getGraphicsCommandPool() -> vk::raii::CommandPool &
 	{
 		return m_graphicsCommandPool;
@@ -181,6 +203,28 @@ namespace toaster::gpu
 	auto VKLogicalDevice::getComputeCommandPool() -> vk::raii::CommandPool &
 	{
 		return m_computeCommandPool;
+	}
+
+	auto VKLogicalDevice::getCommandPool(vk::QueueFlagBits p_queue_type) -> vk::raii::CommandPool &
+	{
+		switch (p_queue_type)
+		{
+			case vk::QueueFlagBits::eGraphics: return m_graphicsCommandPool;
+				break;
+			case vk::QueueFlagBits::eCompute: return m_computeCommandPool;
+				break;
+			case vk::QueueFlagBits::eTransfer: return m_transferCommandPool;
+				break;
+			// case vk::QueueFlagBits::eSparseBinding:
+			// case vk::QueueFlagBits::eProtected:
+			// case vk::QueueFlagBits::eVideoDecodeKHR:
+			// case vk::QueueFlagBits::eVideoEncodeKHR:
+			// case vk::QueueFlagBits::eOpticalFlowNV:
+			// case vk::QueueFlagBits::eDataGraphARM:
+			default: break;
+		}
+		TST_ASSERT_MSG(false, "Unsupported queue");
+		return m_graphicsCommandPool;
 	}
 
 	auto VKLogicalDevice::waitForFence(const vk::Fence &p_fence, uint64 p_timeout) const -> void

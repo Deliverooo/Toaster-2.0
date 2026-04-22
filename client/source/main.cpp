@@ -97,6 +97,8 @@ int32 main(int32 p_argc, char **p_argv) // Maybe_todo, Forward these parameters 
 		toaster::Renderer::endCompute(command_buffer.getVulkanCommandBuffer(), 0, compute_pass);
 		command_buffer.end();
 		command_buffer.submit();
+		command_buffer.waitForFence();
+		command_buffer.resetFence();
 
 		int32 data{0};
 		void *mapped{storage_buffer->mapMemory(0, sizeof(int32))};

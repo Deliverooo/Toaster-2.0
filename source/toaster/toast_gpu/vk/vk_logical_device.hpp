@@ -37,10 +37,12 @@ namespace toaster::gpu
 		[[nodiscard]] auto getGraphicsQueue() -> vk::raii::Queue &;
 		[[nodiscard]] auto getTransferQueue() -> vk::raii::Queue &;
 		[[nodiscard]] auto getComputeQueue() -> vk::raii::Queue &;
+		[[nodiscard]] auto getQueue(vk::QueueFlagBits p_queue_type) -> vk::raii::Queue &;
 
 		[[nodiscard]] auto getGraphicsCommandPool() -> vk::raii::CommandPool &;
 		[[nodiscard]] auto getTransferCommandPool() -> vk::raii::CommandPool &;
 		[[nodiscard]] auto getComputeCommandPool() -> vk::raii::CommandPool &;
+		[[nodiscard]] auto getCommandPool(vk::QueueFlagBits p_queue_type) -> vk::raii::CommandPool &;
 
 		auto waitForFence(const vk::Fence &p_fence, uint64 p_timeout = UINT64_MAX) const -> void;
 		auto waitForFences(const std::initializer_list<const vk::Fence> &p_fences, bool p_wait_all = true, uint64 p_timeout = UINT64_MAX) const -> void;
