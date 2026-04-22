@@ -26,6 +26,8 @@ namespace toaster::gpu
 		[[nodiscard]] auto findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling,
 											   vk::FormatFeatureFlags         p_feature_flags) const -> vk::Format;
 
+		operator vk::raii::PhysicalDevice &() { return m_physicalDevice; }
+
 	private:
 		[[nodiscard]] auto _isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const -> bool;
 

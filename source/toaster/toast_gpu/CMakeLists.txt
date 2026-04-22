@@ -66,6 +66,9 @@ if (${WITH_VULKAN_BACKEND})
 			vk/vk_shader.cpp
 			vk/vk_shader.hpp
 
+			vk/vk_shader_compiler.cpp
+			vk/vk_shader_compiler.hpp
+
 			vk/vk_material.cpp
 			vk/vk_material.hpp
 

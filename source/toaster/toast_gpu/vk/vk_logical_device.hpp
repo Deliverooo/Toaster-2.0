@@ -42,6 +42,8 @@ namespace toaster::gpu
 		[[nodiscard]] auto getTransferCommandPool() -> vk::raii::CommandPool &;
 		[[nodiscard]] auto getComputeCommandPool() -> vk::raii::CommandPool &;
 
+		operator vk::raii::Device &() { return m_logicalDevice; }
+
 	private:
 		VKPhysicalDevice *m_physicalDevice{nullptr};
 

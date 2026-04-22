@@ -8,6 +8,7 @@
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_pipeline.hpp"
 #include "toast_gpu/vk/vk_shader.hpp"
+#include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_render/renderer.hpp"
 
 auto cstringArrayToVector(toaster::CString *p_arr, uint32 p_size) -> std::vector<toaster::CString>
@@ -82,7 +83,11 @@ int32 main(int32 p_argc, char **p_argv) // Maybe_todo, Forward these parameters 
 
 		auto storage_buffer{toaster::make_reference<toaster::gpu::VKStorageBuffer>(&gpu_context, sizeof(int32))};
 
-		toaster::gpu::VKShader::Bytecode cs_bytecode{toaster::io::filesystem::readBinary("shaders/test.comp.glsl.spv")};
+		auto cs_bytecode{
+			toaster::gpu::VKShaderCompiler::compileToBytecodeFromFilepath("C:\\dev\\Toaster-2.0-vulkan\\source\\toaster\\toast_shaders\\test.comp.glsl",
+																		  vk::ShaderStageFlagBits::eCompute)
+		};
+		// toaster::gpu::VKShader::Bytecode cs_bytecode{toaster::io::filesystem::readBinary("shaders/test.comp.glsl.spv")};
 		TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 		toaster::gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eCompute, cs_bytecode}};
 		auto                                compute_shader{toaster::make_reference<toaster::gpu::VKShader>(&gpu_context, shader_bytecode_map, "Compute_Test")};
@@ -98,7 +103,7 @@ int32 main(int32 p_argc, char **p_argv) // Maybe_todo, Forward these parameters 
 		compute_command_buffer.end();
 
 		vk::FenceCreateInfo fence_create_info{};
-		vk::raii::Fence     wait_fence{vk_logical_device.getVulkanLogicalDevice(), fence_create_info};
+		vk::raii::Fence     wait_fence{vk_logical_device, fence_create_info};
 
 		vk::CommandBufferSubmitInfo command_buffer_info{};
 		command_buffer_info.commandBuffer = compute_command_buffer;

@@ -27,6 +27,8 @@ namespace toaster::gpu
 		auto               getSpecInfo() const -> const VKInstanceSpecInfo &;
 		[[nodiscard]] auto getVulkanInstance() -> vk::raii::Instance &;
 
+		operator vk::raii::Instance &() { return m_vulkanInstance; }
+
 	private:
 		vk::raii::Context  m_context;
 		vk::raii::Instance m_vulkanInstance{nullptr};

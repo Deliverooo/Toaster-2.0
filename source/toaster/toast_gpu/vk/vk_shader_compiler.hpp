@@ -1,0 +1,20 @@
+#pragma once
+
+#include "vk_shader.hpp"
+#include "toast_lib/ptr.hpp"
+
+#include "toast_lib/io/filesystem.hpp"
+
+namespace toaster::gpu
+{
+	class VKShaderCompiler final
+	{
+	public:
+		static auto compileToBytecodeFromString(const String &p_source, vk::ShaderStageFlagBits p_stage) -> VKShader::Bytecode;
+		static auto compileToBytecodeFromFilepath(const io::filesystem::Path &p_path, vk::ShaderStageFlagBits p_stage) -> VKShader::Bytecode;
+
+		static auto compileToShaderFromStrings(VKGPUContext *p_ctx, const std::unordered_map<vk::ShaderStageFlagBits, String> &p_source_map) -> RefPtr<VKShader>;
+		static auto compileToShaderFromPaths(VKGPUContext *                                                           p_ctx,
+											 const std::unordered_map<vk::ShaderStageFlagBits, io::filesystem::Path> &p_path_map) -> RefPtr<VKShader>;
+	};
+}
