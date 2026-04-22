@@ -42,6 +42,9 @@ namespace toaster::gpu
 		[[nodiscard]] auto getTransferCommandPool() -> vk::raii::CommandPool &;
 		[[nodiscard]] auto getComputeCommandPool() -> vk::raii::CommandPool &;
 
+		auto waitForFence(const vk::Fence &p_fence, uint64 p_timeout = UINT64_MAX) const -> void;
+		auto waitForFences(const std::initializer_list<const vk::Fence> &p_fences, bool p_wait_all = true, uint64 p_timeout = UINT64_MAX) const -> void;
+
 		operator vk::raii::Device &() { return m_logicalDevice; }
 
 	private:

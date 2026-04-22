@@ -182,4 +182,20 @@ namespace toaster::gpu
 	{
 		return m_computeCommandPool;
 	}
+
+	auto VKLogicalDevice::waitForFence(const vk::Fence &p_fence, uint64 p_timeout) const -> void
+	{
+		if (const vk::Result fence_result{m_logicalDevice.waitForFences({p_fence}, true, p_timeout)}; fence_result != vk::Result::eSuccess)
+		{
+			TST_ASSERT_MSG(false, "Failed to wait for Fence");
+		}
+	}
+
+	auto VKLogicalDevice::waitForFences(const std::initializer_list<const vk::Fence> &p_fences, bool p_wait_all, uint64 p_timeout) const -> void
+	{
+		if (const vk::Result fence_result{m_logicalDevice.waitForFences({p_fences}, p_wait_all, p_timeout)}; fence_result != vk::Result::eSuccess)
+		{
+			TST_ASSERT_MSG(false, "Failed to wait for Fences");
+		}
+	}
 }

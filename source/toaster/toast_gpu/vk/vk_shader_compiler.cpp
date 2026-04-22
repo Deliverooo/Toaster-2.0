@@ -103,7 +103,8 @@ namespace toaster::gpu
 		return {compilation_result.begin(), compilation_result.end()};
 	}
 
-	auto VKShaderCompiler::compileToShaderFromStrings(VKGPUContext *p_ctx, const std::unordered_map<vk::ShaderStageFlagBits, String> &p_source_map) -> RefPtr<VKShader>
+	auto VKShaderCompiler::compileToShaderFromStrings(VKGPUContext *p_ctx, const std::unordered_map<vk::ShaderStageFlagBits, String> &p_source_map,
+													  const String &p_name) -> RefPtr<VKShader>
 	{
 		VKShader::BytecodeMap bytecode_map;
 		for (const auto &[stage, source]: p_source_map)
@@ -113,11 +114,11 @@ namespace toaster::gpu
 				return nullptr;
 			bytecode_map[stage] = bytecode;
 		}
-		return make_reference<VKShader>(p_ctx, bytecode_map, "Compiled shader");
+		return make_reference<VKShader>(p_ctx, bytecode_map, p_name);
 	}
 
-	auto VKShaderCompiler::compileToShaderFromPaths(VKGPUContext *                                                           p_ctx,
-													const std::unordered_map<vk::ShaderStageFlagBits, io::filesystem::Path> &p_path_map) -> RefPtr<VKShader>
+	auto VKShaderCompiler::compileToShaderFromPaths(VKGPUContext *p_ctx, const std::unordered_map<vk::ShaderStageFlagBits, io::filesystem::Path> &p_path_map,
+													const String &p_name) -> RefPtr<VKShader>
 	{
 		VKShader::BytecodeMap bytecode_map;
 		for (const auto &[stage, path]: p_path_map)
@@ -127,6 +128,6 @@ namespace toaster::gpu
 				return nullptr;
 			bytecode_map[stage] = bytecode;
 		}
-		return make_reference<VKShader>(p_ctx, bytecode_map, "Compiled shader");
+		return make_reference<VKShader>(p_ctx, bytecode_map, p_name);
 	}
 }

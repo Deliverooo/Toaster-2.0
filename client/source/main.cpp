@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "client_application.hpp"
+#include "toast_gpu/vk/vk_command_buffer.hpp"
 #include "toast_gpu/vk/vk_compute_pass.hpp"
 #include "toast_gpu/vk/vk_compute_pipeline.hpp"
 
@@ -75,45 +76,27 @@ int32 main(int32 p_argc, char **p_argv) // Maybe_todo, Forward these parameters 
 	toaster::gpu::VKGPUContext         gpu_context{&vk_logical_device, gpu_context_spec_info};
 
 	{
-		vk::CommandBufferAllocateInfo cmd_alloc_info{};
-		cmd_alloc_info.commandPool        = vk_logical_device.getComputeCommandPool();
-		cmd_alloc_info.commandBufferCount = 1;
-
-		vk::raii::CommandBuffer compute_command_buffer{std::move(vk_logical_device.getVulkanLogicalDevice().allocateCommandBuffers(cmd_alloc_info).front())};
-
 		auto storage_buffer{toaster::make_reference<toaster::gpu::VKStorageBuffer>(&gpu_context, sizeof(int32))};
 
-		auto cs_bytecode{
-			toaster::gpu::VKShaderCompiler::compileToBytecodeFromFilepath("C:\\dev\\Toaster-2.0-vulkan\\source\\toaster\\toast_shaders\\test.comp.glsl",
-																		  vk::ShaderStageFlagBits::eCompute)
+		auto cs_shader{
+			toaster::gpu::VKShaderCompiler::compileToShaderFromPaths(&gpu_context,
+																	 {{vk::ShaderStageFlagBits::eCompute, "../source/toaster/toast_shaders/test.comp.glsl"}},
+																	 "Compute_Test")
 		};
-		// toaster::gpu::VKShader::Bytecode cs_bytecode{toaster::io::filesystem::readBinary("shaders/test.comp.glsl.spv")};
-		TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-		toaster::gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eCompute, cs_bytecode}};
-		auto                                compute_shader{toaster::make_reference<toaster::gpu::VKShader>(&gpu_context, shader_bytecode_map, "Compute_Test")};
-		auto                                compute_pipeline{toaster::make_reference<toaster::gpu::VKComputePipeline>(&gpu_context, compute_shader)};
-		auto                                compute_pass{toaster::make_reference<toaster::gpu::VKComputePass>(&gpu_context, compute_pipeline)};
+
+		auto compute_pipeline{toaster::make_reference<toaster::gpu::VKComputePipeline>(&gpu_context, cs_shader)};
+		auto compute_pass{toaster::make_reference<toaster::gpu::VKComputePass>(&gpu_context, compute_pipeline)};
 		compute_pass->setInput("Test", storage_buffer);
 		compute_pass->bake();
 
-		compute_command_buffer.begin({});
-		toaster::Renderer::beginCompute(compute_command_buffer, 0, compute_pass);
-		toaster::Renderer::dispatchCompute(compute_command_buffer, 0, compute_pass, nullptr, 1, 1, 1);
-		toaster::Renderer::endCompute(compute_command_buffer, 0, compute_pass);
-		compute_command_buffer.end();
+		toaster::gpu::VKCommandBuffer command_buffer{&gpu_context, vk::QueueFlagBits::eCompute};
 
-		vk::FenceCreateInfo fence_create_info{};
-		vk::raii::Fence     wait_fence{vk_logical_device, fence_create_info};
-
-		vk::CommandBufferSubmitInfo command_buffer_info{};
-		command_buffer_info.commandBuffer = compute_command_buffer;
-		vk::SubmitInfo2 submit_info{};
-		submit_info.commandBufferInfoCount = 1;
-		submit_info.pCommandBufferInfos    = &command_buffer_info;
-		vk_logical_device.getComputeQueue().submit2(submit_info, wait_fence);
-
-		if (auto fence_result = vk_logical_device.getVulkanLogicalDevice().waitForFences({*wait_fence}, true, UINT64_MAX); fence_result != vk::Result::eSuccess)
-			TST_ASSERT_MSG(false, "Failed to wait for Fence");
+		command_buffer.begin();
+		toaster::Renderer::beginCompute(command_buffer.getVulkanCommandBuffer(), 0, compute_pass);
+		toaster::Renderer::dispatchCompute(command_buffer.getVulkanCommandBuffer(), 0, compute_pass, nullptr, 1, 1, 1);
+		toaster::Renderer::endCompute(command_buffer.getVulkanCommandBuffer(), 0, compute_pass);
+		command_buffer.end();
+		command_buffer.submit();
 
 		int32 data{0};
 		void *mapped{storage_buffer->mapMemory(0, sizeof(int32))};

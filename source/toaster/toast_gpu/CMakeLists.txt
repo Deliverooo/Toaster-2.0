@@ -48,6 +48,9 @@ if (${WITH_VULKAN_BACKEND})
 			vk/vk_gpu_context.hpp
 			vk/vk_gpu_context.cpp
 
+			vk/vk_command_buffer.hpp
+			vk/vk_command_buffer.cpp
+
 			vk/vk_swapchain.cpp
 			vk/vk_swapchain.hpp
 

@@ -13,8 +13,9 @@ namespace toaster::gpu
 		static auto compileToBytecodeFromString(const String &p_source, vk::ShaderStageFlagBits p_stage) -> VKShader::Bytecode;
 		static auto compileToBytecodeFromFilepath(const io::filesystem::Path &p_path, vk::ShaderStageFlagBits p_stage) -> VKShader::Bytecode;
 
-		static auto compileToShaderFromStrings(VKGPUContext *p_ctx, const std::unordered_map<vk::ShaderStageFlagBits, String> &p_source_map) -> RefPtr<VKShader>;
-		static auto compileToShaderFromPaths(VKGPUContext *                                                           p_ctx,
-											 const std::unordered_map<vk::ShaderStageFlagBits, io::filesystem::Path> &p_path_map) -> RefPtr<VKShader>;
+		static auto compileToShaderFromStrings(VKGPUContext *p_ctx, const std::unordered_map<vk::ShaderStageFlagBits, String> &p_source_map,
+											   const String &p_name = "Compiled shader") -> RefPtr<VKShader>;
+		static auto compileToShaderFromPaths(VKGPUContext *p_ctx, const std::unordered_map<vk::ShaderStageFlagBits, io::filesystem::Path> &p_path_map,
+											 const String &p_name = "Compiled shader") -> RefPtr<VKShader>;
 	};
 }
