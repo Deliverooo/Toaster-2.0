@@ -30,7 +30,7 @@ namespace toaster::gpu
 		bool multisample{false}; // This should not be enabled by default
 	};
 
-	class VKPipeline
+	class TST_GPU_API VKPipeline
 	{
 	public:
 		VKPipeline(VKLogicalDevice *p_device, const PipelineCreateInfo &p_create_info);

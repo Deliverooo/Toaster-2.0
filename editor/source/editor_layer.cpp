@@ -41,7 +41,13 @@ namespace toaster
 
 		m_editorCamera.setViewportSize(static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight));
 
-		swapchain->addResizeCallback([this](const uint32 width, const uint32 height) -> void
+		swapchain->setBeginFrameCallback([](gpu::VKLogicalDevice *device, const uint32 frame_index) -> void
+		{
+			device->setCurrentFrameIndex(frame_index);
+			device->performGarbageCollection();
+		});
+
+		swapchain->setResizeCallback([this](const uint32 width, const uint32 height) -> void
 		{
 			m_viewportWidth  = width;
 			m_viewportHeight = height;
@@ -165,7 +171,8 @@ namespace toaster
 		uint32      frame_index{swapchain->getFrameIndex()};
 
 		ig::Begin("Properties");
-		ig::Image((VkDescriptorSet)m_fullscreenMaterial->getDescriptorSet(frame_index), ImVec2{static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight)});
+		ig::Image((VkDescriptorSet) m_fullscreenMaterial->getDescriptorSet(frame_index),
+				  ImVec2{static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight)});
 		ig::End();
 
 		m_sceneHierarchyPanel->onUIRender(frame_index);

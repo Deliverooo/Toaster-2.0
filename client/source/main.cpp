@@ -51,7 +51,7 @@ int32 main(int32 p_argc, char **p_argv) // Maybe_todo, Forward these parameters 
 	toaster::gpu::VKPhysicalDevice vk_physical_device{&vk_instance, vk_physical_device_spec_info};
 
 	toaster::gpu::VKLogicalDeviceSpecInfo vk_logical_device_spec_info{};
-	vk_logical_device_spec_info.surface            = nullptr;
+	vk_logical_device_spec_info.usePresent         = false;
 	vk_logical_device_spec_info.requiredExtensions = {
 		vk::KHRSwapchainExtensionName,
 		vk::KHRDynamicRenderingExtensionName,

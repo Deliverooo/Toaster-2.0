@@ -2,13 +2,11 @@
 
 #include "vk_logical_device.hpp"
 
-#include <GLFW/glfw3.h>
-
 namespace toaster::gpu
 {
-	VKSwapchain::VKSwapchain(VKLogicalDevice *p_dev, GLFWwindow *p_window) : m_device(p_dev), m_window(p_window),
-																			 m_commandBuffers(p_dev, vk::QueueFlagBits::eGraphics, p_dev->getSpecInfo().maxFramesInFlight,
-																							  true)
+	VKSwapchain::VKSwapchain(VKLogicalDevice *p_dev, vk::SurfaceKHR *p_surface) : m_device(p_dev), m_windowSurface(p_surface),
+																				  m_commandBuffers(p_dev, vk::QueueFlagBits::eGraphics,
+																								   p_dev->getSpecInfo().maxFramesInFlight, true)
 	{
 		TST_ASSERT_MSG(p_dev, "Device cannot be null");
 
@@ -28,8 +26,8 @@ namespace toaster::gpu
 		// Wait for the previous frame to be finished before rendering this one
 		m_commandBuffers.waitForFence(m_frameIndex);
 
-		m_device->setCurrentFrameIndex(m_frameIndex);
-		m_device->performGarbageCollection();
+		if (m_beginFrameCallback)
+			m_beginFrameCallback(m_device, m_frameIndex);
 
 		// Reset the fence so we can signal it later
 		m_commandBuffers.resetFence(m_frameIndex);
@@ -184,9 +182,24 @@ namespace toaster::gpu
 		m_framebufferResized = p_resized;
 	}
 
-	auto VKSwapchain::addResizeCallback(const ResizeCB &p_resize_cb) -> void
+	auto VKSwapchain::setBeginFrameCallback(const BeginFrameCB &p_begin_frame_cb) -> void
 	{
-		m_resizeCallbacks.emplace_back(p_resize_cb);
+		m_beginFrameCallback = p_begin_frame_cb;
+	}
+
+	auto VKSwapchain::setResizeCallback(const ResizeCB &p_resize_cb) -> void
+	{
+		m_resizeCallback = p_resize_cb;
+	}
+
+	auto VKSwapchain::setHandleMinimisationCallback(const HandleMinimisationCB &p_handle_minimisation_callback) -> void
+	{
+		m_handleMinimisationCallback = p_handle_minimisation_callback;
+	}
+
+	auto VKSwapchain::setGetWindowBackBufferSizeCallback(const GetWindowBackBufferSizeCB &p_get_window_back_buffer_size_callback) -> void
+	{
+		m_getWindowBackBufferSizeCallback = p_get_window_back_buffer_size_callback;
 	}
 
 	auto VKSwapchain::_createImageViews() -> void
@@ -216,24 +229,29 @@ namespace toaster::gpu
 	auto VKSwapchain::_create() -> void
 	{
 		auto &                     physical_device = m_device->getPhysicalDevice()->getVulkanPhysicalDevice();
-		auto &                     surface         = *m_device->getSpecInfo().surface;
-		vk::SurfaceCapabilitiesKHR surface_caps    = physical_device.getSurfaceCapabilitiesKHR(&surface);
+		vk::SurfaceCapabilitiesKHR surface_caps    = physical_device.getSurfaceCapabilitiesKHR(*m_windowSurface);
 
-		auto available_surface_formats = physical_device.getSurfaceFormatsKHR(&surface);
-		auto available_present_modes   = physical_device.getSurfacePresentModesKHR(&surface);
+		auto available_surface_formats = physical_device.getSurfaceFormatsKHR(*m_windowSurface);
+		auto available_present_modes   = physical_device.getSurfacePresentModesKHR(*m_windowSurface);
 
-		m_swapchainSurfaceFormat = m_device->getPhysicalDevice()->chooseSwapchainSurfaceFormat(&surface);
+		m_swapchainSurfaceFormat = m_device->getPhysicalDevice()->chooseSwapchainSurfaceFormat(*m_windowSurface);
+
+		uint32 width{0u};
+		uint32 height{0u};
 
 		// The fallback extent will be equal to the back buffer's size
-		int32 width;
-		int32 height;
-		glfwGetFramebufferSize(m_window, &width, &height);
-		m_swapchainExtent = m_device->getPhysicalDevice()->chooseSwapchainExtent(&surface, width, height);
+		if (m_getWindowBackBufferSizeCallback)
+		{
+			const auto [w, h]{m_getWindowBackBufferSizeCallback()};
+			width  = w;
+			height = h;
+		}
+		m_swapchainExtent = m_device->getPhysicalDevice()->chooseSwapchainExtent(*m_windowSurface, width, height);
 
-		m_minImageCount = m_device->getPhysicalDevice()->chooseSwapchainMinImageCount(&surface);
+		m_minImageCount = m_device->getPhysicalDevice()->chooseSwapchainMinImageCount(*m_windowSurface);
 
 		vk::SwapchainCreateInfoKHR swapchain_create_info{};
-		swapchain_create_info.surface          = &surface;
+		swapchain_create_info.surface          = *m_windowSurface;
 		swapchain_create_info.minImageCount    = m_minImageCount;
 		swapchain_create_info.imageFormat      = m_swapchainSurfaceFormat.format;
 		swapchain_create_info.imageColorSpace  = m_swapchainSurfaceFormat.colorSpace;
@@ -243,7 +261,7 @@ namespace toaster::gpu
 		swapchain_create_info.imageSharingMode = vk::SharingMode::eExclusive;
 		swapchain_create_info.preTransform     = surface_caps.currentTransform;
 		swapchain_create_info.compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-		swapchain_create_info.presentMode      = m_device->getPhysicalDevice()->chooseSwapchainPresentMode(&surface);
+		swapchain_create_info.presentMode      = m_device->getPhysicalDevice()->chooseSwapchainPresentMode(*m_windowSurface);
 		swapchain_create_info.clipped          = true;
 
 		if (*m_swapchain)
@@ -259,14 +277,10 @@ namespace toaster::gpu
 	auto VKSwapchain::_recreateSwapchain() -> void
 	{
 		// Blocks execution until the window is a valid size (for minimisation)
-		int32 width;
-		int32 height;
-		glfwGetFramebufferSize(m_window, &width, &height);
-		while (width == 0 || height == 0)
-		{
-			glfwGetWindowSize(m_window, &width, &height);
-			glfwWaitEvents();
-		}
+
+		// I just don't want to get GLFW involved at this point and would like to possibly make ts window api agnostic
+		if (m_handleMinimisationCallback)
+			m_handleMinimisationCallback();
 
 		// Wait for the GPU to finish processing anything before recreating, so nothing that depends on the swapchain becomes invalid
 		m_device->getVulkanLogicalDevice().waitIdle();
@@ -277,8 +291,8 @@ namespace toaster::gpu
 		_createImageViews();
 		_createDepthResources();
 
-		for (auto &callback: m_resizeCallbacks)
-			callback(m_swapchainExtent.width, m_swapchainExtent.height);
+		if (m_resizeCallback)
+			m_resizeCallback(m_swapchainExtent.width, m_swapchainExtent.height);
 
 		m_device->getVulkanLogicalDevice().waitIdle();
 	}

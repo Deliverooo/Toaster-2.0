@@ -7,7 +7,7 @@ namespace toaster::gpu
 {
 	class VKLogicalDevice;
 
-	class VKComputePipeline
+	class  TST_GPU_API VKComputePipeline
 	{
 	public:
 		VKComputePipeline(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader);

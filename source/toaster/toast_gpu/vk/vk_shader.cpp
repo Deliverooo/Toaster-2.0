@@ -1,7 +1,6 @@
 #include "vk_shader.hpp"
 #include "vk_logical_device.hpp"
 
-
 #include <ranges>
 
 #include <shaderc/shaderc.hpp>
@@ -33,6 +32,23 @@ namespace toaster::gpu
 		LOG_TRACE("]");
 
 		_createDescriptors();
+	}
+
+	auto VKShader::operator=(VKShader &&p_other) noexcept -> VKShader &
+	{
+		if (this != &p_other)
+		{
+			m_device               = p_other.m_device;
+			m_name                 = p_other.m_name;
+			m_shaderCreateInfos    = p_other.m_shaderCreateInfos;
+			m_shaderModules        = std::move(p_other.m_shaderModules);
+			m_shaderBytecodeMap    = p_other.m_shaderBytecodeMap;
+			m_descriptorSetLayouts = std::move(p_other.m_descriptorSetLayouts);
+			m_reflectionData       = p_other.m_reflectionData;
+			m_poolSizes            = p_other.m_poolSizes;
+		}
+
+		return *this;
 	}
 
 	auto VKShader::getDevice() const -> VKLogicalDevice *

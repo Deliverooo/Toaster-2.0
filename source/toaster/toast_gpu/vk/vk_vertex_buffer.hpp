@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../toast_gpu.hpp"
+
 #include <vulkan/vulkan_raii.hpp>
 #include "toast_lib/core_basic.hpp"
 
@@ -7,11 +9,11 @@ namespace toaster::gpu
 {
 	class VKLogicalDevice;
 
-	class VKVertexBuffer
+	class TST_GPU_API VKVertexBuffer
 	{
 	public:
-		VKVertexBuffer(VKLogicalDevice* p_device, void *p_data, uint64 p_size);
-		VKVertexBuffer(VKLogicalDevice* p_device, uint64 p_size);
+		VKVertexBuffer(VKLogicalDevice *p_device, void *p_data, uint64 p_size);
+		VKVertexBuffer(VKLogicalDevice *p_device, uint64 p_size);
 		auto getDevice() const -> VKLogicalDevice *;
 
 		auto getBuffer() -> vk::raii::Buffer &;

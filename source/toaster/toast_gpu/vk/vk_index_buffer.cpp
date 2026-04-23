@@ -1,6 +1,6 @@
 #include "vk_index_buffer.hpp"
 
-#include "vk_gpu_context.hpp"
+#include "vk_logical_device.hpp"
 
 namespace toaster::gpu
 {

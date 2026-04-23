@@ -15,7 +15,6 @@
 #include <ImGuizmo.h>
 namespace igz = ImGuizmo;
 
-
 namespace toaster
 {
 	static auto checkVKResult(VkResult p_result) -> void
@@ -154,7 +153,7 @@ namespace toaster
 		ImGui_ImplGlfw_InitForVulkan(app.getWindow().getNativeWindow(), true);
 
 		ImGui_ImplVulkan_InitInfo init_info{};
-		init_info.Instance        = *device->getPhysicalDevice()->getInstance()->getVulkanInstance();
+		init_info.Instance        = static_cast<vk::Instance>(static_cast<vk::raii::Instance &>(*device->getPhysicalDevice()->getInstance()));
 		init_info.PhysicalDevice  = *device->getPhysicalDevice()->getVulkanPhysicalDevice();
 		init_info.Device          = static_cast<vk::Device>(static_cast<vk::raii::Device &>(*device));
 		init_info.QueueFamily     = device->getQueueFamilyIndices().graphics;

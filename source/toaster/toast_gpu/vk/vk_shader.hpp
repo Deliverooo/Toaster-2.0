@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../toast_gpu.hpp"
+
 #include <map>
 #include <unordered_map>
 #include <vulkan/vulkan_raii.hpp>
@@ -10,7 +12,7 @@ namespace toaster::gpu
 {
 	class VKLogicalDevice;
 
-	class VKShader
+	class TST_GPU_API VKShader
 	{
 	public:
 		struct ReflectionData
@@ -31,6 +33,10 @@ namespace toaster::gpu
 		using BytecodeMap           = std::map<vk::ShaderStageFlagBits, Bytecode>;
 
 		VKShader(VKLogicalDevice *p_dev, const BytecodeMap &p_bytecode_map, const String &p_name = "Unknown");
+		VKShader(const VKShader &p_other) = delete;
+		VKShader(VKShader &&p_other)      = delete;
+		auto operator=(VKShader &&p_other) noexcept -> VKShader &;
+
 		[[nodiscard]] auto getDevice() const -> VKLogicalDevice *;
 
 		[[nodiscard]] auto getPipelineShaderStageCreateInfoMap() const -> const PipelineCreateInfoMap &;
@@ -66,7 +72,7 @@ namespace toaster::gpu
 		// Stores the compiled shader code for each stage
 		BytecodeMap m_shaderBytecodeMap;
 
-		std::vector<vk::raii::DescriptorSetLayout> m_descriptorSetLayouts{};
+		std::vector<vk::raii::DescriptorSetLayout> m_descriptorSetLayouts;
 
 		ReflectionData m_reflectionData{};
 

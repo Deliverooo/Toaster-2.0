@@ -95,7 +95,7 @@ namespace toaster::gpu
 		rasterization_state_create_info.lineWidth               = 1.0f;
 
 		std::vector<vk::PipelineColorBlendAttachmentState> colour_blend_attachment_states{};
-		for (vk::Format attachment: m_createInfo.colourAttachments)
+		for ([[maybe_unused]] vk::Format attachment: m_createInfo.colourAttachments)
 		{
 			auto &colour_blend_attachment_state{colour_blend_attachment_states.emplace_back()};
 			colour_blend_attachment_state.blendEnable    = false;

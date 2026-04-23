@@ -23,9 +23,9 @@
 
 namespace toaster
 {
-	auto cstringArrayToVector(toaster::CString *p_arr, uint32 p_size) -> std::vector<toaster::CString>
+	auto cstringArrayToVector(CString *p_arr, uint32 p_size) -> std::vector<CString>
 	{
-		std::vector<toaster::CString> vec{p_size};
+		std::vector<CString> vec{p_size};
 		for (uint32 i{0u}; i < p_size; ++i)
 			vec.emplace_back(p_arr[i]);
 		return vec;
@@ -112,7 +112,7 @@ namespace toaster
 
 		m_windowSurface = surface;
 		gpu::VKLogicalDeviceSpecInfo vk_logical_device_spec_info{};
-		vk_logical_device_spec_info.surface            = m_windowSurface;
+		vk_logical_device_spec_info.usePresent         = true;
 		vk_logical_device_spec_info.requiredExtensions = {
 			vk::KHRSwapchainExtensionName,
 			vk::KHRDynamicRenderingExtensionName,
@@ -124,18 +124,39 @@ namespace toaster
 
 		vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
 			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT> feature_chain{{}, {}, {}, {}, {}};
-		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy = true;
-		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading = true;
-		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid = true;
-		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore = true;
-		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering = true;
-		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2 = true;
+		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                 = true;
+		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                 = true;
+		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                  = true;
+		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                   = true;
+		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                    = true;
+		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                    = true;
 		feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState = true;
-		feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors = true;
-		vk_logical_device_spec_info.pNext = feature_chain.get<vk::PhysicalDeviceFeatures2>();
+		feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors      = true;
+		vk_logical_device_spec_info.pNext                                                           = feature_chain.get<vk::PhysicalDeviceFeatures2>();
+
 		m_vkLogicalDevice = new gpu::VKLogicalDevice{m_vkPhysicalDevice, vk_logical_device_spec_info};
 
-		m_swapchain = new gpu::VKSwapchain(m_vkLogicalDevice, m_window);
+		#pragma region setup swapchain
+		m_swapchain = new gpu::VKSwapchain(m_vkLogicalDevice, &m_windowSurface);
+		m_swapchain->setGetWindowBackBufferSizeCallback([this]()
+		{
+			int32 width;
+			int32 height;
+			glfwGetFramebufferSize(m_window, &width, &height);
+			return std::make_pair(static_cast<uint32>(width), static_cast<uint32>(height));
+		});
+		m_swapchain->setHandleMinimisationCallback([this]() -> void
+		{
+			int32 width;
+			int32 height;
+			glfwGetFramebufferSize(m_window, &width, &height);
+			while (width == 0 || height == 0)
+			{
+				glfwGetFramebufferSize(m_window, &width, &height);
+				glfwWaitEvents();
+			}
+		});
+		#pragma endregion
 
 		constexpr BOOL use_dark_mode{TRUE};
 		(void) DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &use_dark_mode, sizeof(use_dark_mode));

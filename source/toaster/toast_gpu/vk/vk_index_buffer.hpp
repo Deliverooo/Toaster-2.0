@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../toast_gpu.hpp"
+
 #include <vulkan/vulkan_raii.hpp>
 #include "toast_lib/core_basic.hpp"
 
@@ -7,7 +9,7 @@ namespace toaster::gpu
 {
 	class VKLogicalDevice;
 
-	class VKIndexBuffer
+	class TST_GPU_API VKIndexBuffer
 	{
 	public:
 		// Note to self, always remember to upload the indices instead of just passing in the size...

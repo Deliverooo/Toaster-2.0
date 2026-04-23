@@ -44,7 +44,7 @@ namespace toaster::gpu
 		uint32              parent{UINT32_MAX};
 	};
 
-	class VKMesh
+	class TST_GPU_API VKMesh
 	{
 	public:
 		VKMesh(VKLogicalDevice *p_device, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader);

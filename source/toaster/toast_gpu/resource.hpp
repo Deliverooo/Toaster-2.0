@@ -13,7 +13,7 @@ namespace toaster::gpu
 		eTexture3D
 	};
 
-	class IGPUResource
+	class TST_GPU_API IGPUResource
 	{
 	public:
 		virtual ~IGPUResource() = default;

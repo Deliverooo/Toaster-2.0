@@ -2,19 +2,20 @@
 
 #include "vk_command_buffer.hpp"
 
+#include <Windows.h>
+#include <vulkan/vulkan_win32.h>
+
 namespace toaster::gpu
 {
 	VKLogicalDevice::VKLogicalDevice(VKPhysicalDevice *p_physical_device, const VKLogicalDeviceSpecInfo &p_spec_info) : m_physicalDevice(p_physical_device),
 																														m_specInfo(p_spec_info)
 	{
-		const bool using_present{m_specInfo.surface != nullptr};
-
 		const auto queue_family_props = m_physicalDevice->getVulkanPhysicalDevice().getQueueFamilyProperties();
 
 		for (uint32 i{0u}; i < queue_family_props.size(); ++i)
 		{
-			if (queue_family_props[i].queueFlags & vk::QueueFlagBits::eGraphics && using_present
-					? (m_physicalDevice->getVulkanPhysicalDevice().getSurfaceSupportKHR(i, m_specInfo.surface))
+			if (queue_family_props[i].queueFlags & vk::QueueFlagBits::eGraphics && m_specInfo.usePresent
+					? (vkGetPhysicalDeviceWin32PresentationSupportKHR(*m_physicalDevice->getVulkanPhysicalDevice(), i))
 					: true)
 			{
 				m_queueFamilyIndices.graphics = i;

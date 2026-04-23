@@ -1,14 +1,14 @@
 #pragma once
 
+#include "../toast_gpu.hpp"
 #include <vulkan/vulkan_raii.hpp>
-
 #include "toast_lib/system_types.h"
 
 namespace toaster::gpu
 {
 	class VKLogicalDevice;
 
-	class VKCommandBuffer
+	class TST_GPU_API VKCommandBuffer
 	{
 	public:
 		VKCommandBuffer(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, bool p_fence_signaled = false);

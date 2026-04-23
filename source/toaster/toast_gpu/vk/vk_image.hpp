@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vulkan/vulkan_raii.hpp>
+#include "../toast_gpu.hpp"
 
-#include "../image.hpp"
+#include <vulkan/vulkan_raii.hpp>
 #include "toast_lib/core_basic.hpp"
 
 namespace toaster::gpu
@@ -21,7 +21,7 @@ namespace toaster::gpu
 
 	// An "Image" represents a texture without a sampler
 	// You would use this for render attachments
-	class VKImage2D
+	class TST_GPU_API VKImage2D
 	{
 	public:
 		VKImage2D(VKLogicalDevice *p_ctx, const ImageCreateInfo &p_create_info);

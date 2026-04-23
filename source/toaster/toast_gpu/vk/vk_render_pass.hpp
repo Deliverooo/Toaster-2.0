@@ -9,7 +9,7 @@ namespace toaster::gpu
 {
 	class VKLogicalDevice;
 
-	class VKRenderPass
+	class TST_GPU_API VKRenderPass
 	{
 	public:
 		VKRenderPass(VKLogicalDevice *p_device, const RefPtr<VKPipeline> &p_pipeline);

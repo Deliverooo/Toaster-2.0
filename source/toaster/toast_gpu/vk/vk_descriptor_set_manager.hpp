@@ -26,7 +26,7 @@ namespace toaster::gpu
 		EDescriptorType type{EDescriptorType::eUnknown};
 	};
 
-	struct DescriptorResource
+	struct TST_GPU_API DescriptorResource
 	{
 		std::vector<RefPtr<IGPUResource> > resources;
 		EGPUResourceType                   type{EGPUResourceType::eUnknown};
@@ -64,7 +64,7 @@ namespace toaster::gpu
 		}
 	};
 
-	class VKDescriptorSetManager
+	class TST_GPU_API VKDescriptorSetManager
 	{
 	public:
 		VKDescriptorSetManager(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader, uint32 p_start_set, uint32 p_end_set);

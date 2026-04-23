@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../toast_gpu.hpp"
+
 #include "toast_lib/core_basic.hpp"
 
 #include <unordered_set>
@@ -8,7 +10,7 @@
 
 namespace toaster::gpu
 {
-	struct VKInstanceSpecInfo
+	struct TST_GPU_API VKInstanceSpecInfo
 	{
 		using ExtensionSet = std::unordered_set<CString>;
 
@@ -19,12 +21,12 @@ namespace toaster::gpu
 		bool enableValidationLayers{true};
 	};
 
-	class VKInstance
+	class TST_GPU_API VKInstance
 	{
 	public:
 		VKInstance(const VKInstanceSpecInfo &p_spec_info);
 
-		auto               getSpecInfo() const -> const VKInstanceSpecInfo &;
+		[[nodiscard]] auto getSpecInfo() const -> const VKInstanceSpecInfo &;
 		[[nodiscard]] auto getVulkanInstance() -> vk::raii::Instance &;
 
 		operator vk::raii::Instance &() { return m_vulkanInstance; }

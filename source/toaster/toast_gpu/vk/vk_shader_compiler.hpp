@@ -7,7 +7,7 @@
 
 namespace toaster::gpu
 {
-	class VKShaderCompiler final
+	class TST_GPU_API VKShaderCompiler final
 	{
 	public:
 		static auto compileToBytecodeFromString(const String &p_source, vk::ShaderStageFlagBits p_stage) -> VKShader::Bytecode;

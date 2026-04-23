@@ -8,7 +8,7 @@ namespace toaster::gpu
 {
 	class VKLogicalDevice;
 
-	class VKMaterial
+	class TST_GPU_API VKMaterial
 	{
 	public:
 		VKMaterial(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader, const String &p_name = "Unknown?");

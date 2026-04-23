@@ -12,7 +12,7 @@ namespace toaster::gpu
 		ExtensionSet requiredExtensions;
 
 		// Optional :)
-		vk::SurfaceKHR surface{nullptr};
+		bool usePresent{false};
 
 		uint32 maxFramesInFlight{3u};
 
@@ -20,7 +20,7 @@ namespace toaster::gpu
 		void *pNext{nullptr};
 	};
 
-	class VKLogicalDevice
+	class TST_GPU_API VKLogicalDevice
 	{
 	public:
 		struct QueueFamilyIndices

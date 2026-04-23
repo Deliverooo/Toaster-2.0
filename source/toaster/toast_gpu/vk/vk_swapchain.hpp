@@ -6,18 +6,19 @@
 #include "vk_command_buffer.hpp"
 #include "toast_lib/system_types.h"
 
-struct GLFWwindow;
-
 namespace toaster::gpu
 {
 	class VKLogicalDevice;
 
-	class VKSwapchain
+	class TST_GPU_API VKSwapchain
 	{
 	public:
-		using ResizeCB = std::function<void(uint32, uint32)>;
+		using BeginFrameCB              = std::function<void(VKLogicalDevice *, uint32)>;
+		using ResizeCB                  = std::function<void(uint32, uint32)>;
+		using HandleMinimisationCB      = std::function<void()>;
+		using GetWindowBackBufferSizeCB = std::function<std::pair<uint32, uint32>()>;
 
-		VKSwapchain(VKLogicalDevice *p_dev, GLFWwindow *p_window);
+		VKSwapchain(VKLogicalDevice *p_dev, vk::SurfaceKHR *p_surface);
 		[[nodiscard]] auto getDevice() const -> VKLogicalDevice *;
 
 		auto beginFrame() -> void;
@@ -49,7 +50,10 @@ namespace toaster::gpu
 		// Only use within the windowing API. E.g. when you set the glfwFramebufferResize callback
 		auto setFramebufferResized(bool p_resized) -> void;
 
-		auto addResizeCallback(const ResizeCB &p_resize_cb) -> void;
+		auto setBeginFrameCallback(const BeginFrameCB &p_begin_frame_cb) -> void;
+		auto setResizeCallback(const ResizeCB &p_resize_cb) -> void;
+		auto setHandleMinimisationCallback(const HandleMinimisationCB &p_handle_minimisation_callback) -> void;
+		auto setGetWindowBackBufferSizeCallback(const GetWindowBackBufferSizeCB &p_get_window_back_buffer_size_callback) -> void;
 
 	private:
 		auto _createImageViews() -> void;
@@ -61,7 +65,7 @@ namespace toaster::gpu
 
 		VKLogicalDevice *m_device{nullptr};
 
-		GLFWwindow *m_window{nullptr};
+		vk::SurfaceKHR *m_windowSurface{nullptr};
 
 		vk::raii::SwapchainKHR           m_swapchain{nullptr};
 		std::vector<vk::Image>           m_swapchainImages;
@@ -78,7 +82,10 @@ namespace toaster::gpu
 		vk::raii::DeviceMemory m_depthImageMemory{nullptr};
 		vk::raii::ImageView    m_depthImageView{nullptr};
 
-		std::vector<ResizeCB> m_resizeCallbacks;
+		BeginFrameCB              m_beginFrameCallback{nullptr};
+		ResizeCB                  m_resizeCallback{nullptr};
+		HandleMinimisationCB      m_handleMinimisationCallback{nullptr};
+		GetWindowBackBufferSizeCB m_getWindowBackBufferSizeCallback{nullptr};
 
 		uint32 m_frameIndex{0u};
 		uint32 m_imageIndex{0u};

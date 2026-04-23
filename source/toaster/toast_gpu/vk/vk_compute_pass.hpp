@@ -9,7 +9,7 @@ namespace toaster::gpu
 {
 	class VKLogicalDevice;
 
-	class VKComputePass
+	class TST_GPU_API VKComputePass
 	{
 	public:
 		VKComputePass(VKLogicalDevice *p_device, const RefPtr<VKComputePipeline> &p_pipeline);

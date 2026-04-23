@@ -1,5 +1,7 @@
 #pragma once
 
+#include "toast_gpu.hpp"
+
 #include <utility>
 #include <vector>
 
@@ -44,7 +46,7 @@ namespace toaster::gpu
 		return UINT32_MAX;
 	}
 
-	struct BufferElement
+	struct TST_GPU_API BufferElement
 	{
 		String          name{};
 		EBufferDataType type{EBufferDataType::eUnknown};
@@ -79,7 +81,7 @@ namespace toaster::gpu
 		}
 	};
 
-	class BufferLayout
+	class TST_GPU_API BufferLayout
 	{
 	public:
 		BufferLayout() = default;

@@ -18,7 +18,7 @@ namespace toaster::gpu
 		bool generateMips{true};
 	};
 
-	class VKTexture2D final : public IGPUResource
+	class TST_GPU_API VKTexture2D final : public IGPUResource
 	{
 	public:
 		VKTexture2D(VKLogicalDevice *p_dev, const TextureSpecInfo &p_spec_info);
@@ -52,7 +52,7 @@ namespace toaster::gpu
 	};
 
 	// TODO: Actually implement ts... (I am very scared of equirectangular to cubemap conversions...)
-	class VKTexture3D final : public IGPUResource
+	class TST_GPU_API VKTexture3D final : public IGPUResource
 	{
 	public:
 		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size);

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../toast_gpu.hpp"
+
 #include <vulkan/vulkan_raii.hpp>
 #include "toast_lib/core_basic.hpp"
 #include "../resource.hpp"
@@ -8,12 +10,11 @@ namespace toaster::gpu
 {
 	class VKLogicalDevice;
 
-	class VKUniformBuffer final : public IGPUResource
+	class TST_GPU_API VKUniformBuffer final : public IGPUResource
 	{
 	public:
 		VKUniformBuffer(VKLogicalDevice *p_ctx, uint64 p_size);
 		auto getDevice() const -> VKLogicalDevice *;
-
 
 		auto getBuffer() -> vk::raii::Buffer &;
 		auto getBufferMemory() -> vk::raii::DeviceMemory &;
@@ -38,7 +39,7 @@ namespace toaster::gpu
 	// Uniform buffer, but it's per frame in flight
 	// Ts is easier to use than allocating them manually, so it just makes things more manageable
 	// Typically you wouldn't really use a single uniform buffer anyway, so use this instead.
-	class VKUniformBufferPFF final : public IGPUResource
+	class TST_GPU_API VKUniformBufferPFF final : public IGPUResource
 	{
 	public:
 		VKUniformBufferPFF(VKLogicalDevice *p_device, uint64 p_size, uint32 p_frames_in_flight);

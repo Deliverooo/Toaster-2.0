@@ -10,18 +10,18 @@ namespace toaster::gpu
 		ExtensionSet requiredExtensions;
 	};
 
-	class VKPhysicalDevice
+	class TST_GPU_API VKPhysicalDevice
 	{
 	public:
 		VKPhysicalDevice(VKInstance *p_instance, const VKPhysicalDeviceSpecInfo &p_spec_info);
 
-		auto getInstance() const -> VKInstance *;
-		auto getSpecInfo() const -> const VKPhysicalDeviceSpecInfo &;
+		[[nodiscard]] auto getInstance() const -> VKInstance *;
+		[[nodiscard]] auto getSpecInfo() const -> const VKPhysicalDeviceSpecInfo &;
 
 		[[nodiscard]] auto getVulkanPhysicalDevice() -> vk::raii::PhysicalDevice &;
 
-		auto getMaxUsableSampleCount() const -> vk::SampleCountFlagBits;
-		auto getDepthFormat() const -> vk::Format;
+		[[nodiscard]] auto getMaxUsableSampleCount() const -> vk::SampleCountFlagBits;
+		[[nodiscard]] auto getDepthFormat() const -> vk::Format;
 
 		[[nodiscard]] auto findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling,
 											   vk::FormatFeatureFlags         p_feature_flags) const -> vk::Format;
