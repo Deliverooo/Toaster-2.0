@@ -1,7 +1,5 @@
 #include "window.hpp"
 
-#include "toast_gpu/vk/vk_gpu_context.hpp"
-
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <dwmapi.h>
@@ -20,7 +18,7 @@
 #include "toast_lib/events/mouse_event.hpp"
 #include "toast_lib/events/window_event.hpp"
 
-#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
 namespace toaster
@@ -121,11 +119,11 @@ namespace toaster
 			vk::KHRTimelineSemaphoreExtensionName,
 			vk::EXTCustomBorderColorExtensionName,
 			vk::KHRMaintenance6ExtensionName,
-			vk::KHRLoadStoreOpNoneExtensionName
+			vk::KHRLoadStoreOpNoneExtensionName,
 		};
 
 		vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
-			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT> feature_chain{{}, {}, {}, {}};
+			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT> feature_chain{{}, {}, {}, {}, {}};
 		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy = true;
 		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading = true;
 		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid = true;
@@ -133,12 +131,11 @@ namespace toaster
 		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering = true;
 		feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2 = true;
 		feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState = true;
+		feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors = true;
 		vk_logical_device_spec_info.pNext = feature_chain.get<vk::PhysicalDeviceFeatures2>();
 		m_vkLogicalDevice = new gpu::VKLogicalDevice{m_vkPhysicalDevice, vk_logical_device_spec_info};
 
-		gpu::VKGPUContextSpecInfo spec_info{};
-		m_gpuContext = new gpu::VKGPUContext(m_vkLogicalDevice, spec_info);
-		m_swapchain  = new gpu::VKSwapchain(m_gpuContext, m_window);
+		m_swapchain = new gpu::VKSwapchain(m_vkLogicalDevice, m_window);
 
 		constexpr BOOL use_dark_mode{TRUE};
 		(void) DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &use_dark_mode, sizeof(use_dark_mode));
@@ -307,9 +304,8 @@ namespace toaster
 
 	Window::~Window()
 	{
-		m_gpuContext->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
+		m_vkLogicalDevice->getVulkanLogicalDevice().waitIdle();
 		delete m_swapchain;
-		delete m_gpuContext;
 
 		vkDestroySurfaceKHR(*m_vkInstance->getVulkanInstance(), m_windowSurface, nullptr);
 
@@ -403,9 +399,9 @@ namespace toaster
 		glfwSetWindowTitle(m_window, p_title.c_str());
 	}
 
-	auto Window::getGPUContext() const -> gpu::VKGPUContext *
+	auto Window::getLogicalDevice() const -> gpu::VKLogicalDevice *
 	{
-		return m_gpuContext;
+		return m_vkLogicalDevice;
 	}
 
 	auto Window::getNativeWindow() const -> GLFWwindow *

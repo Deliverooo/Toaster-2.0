@@ -5,14 +5,14 @@
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
+	class VKLogicalDevice;
 
 	class VKVertexBuffer
 	{
 	public:
-		VKVertexBuffer(VKGPUContext *p_ctx, void *p_data, uint64 p_size);
-		VKVertexBuffer(VKGPUContext *p_ctx, uint64 p_size);
-		auto getContext() const -> VKGPUContext *;
+		VKVertexBuffer(VKLogicalDevice* p_device, void *p_data, uint64 p_size);
+		VKVertexBuffer(VKLogicalDevice* p_device, uint64 p_size);
+		auto getDevice() const -> VKLogicalDevice *;
 
 		auto getBuffer() -> vk::raii::Buffer &;
 		auto getBufferMemory() -> vk::raii::DeviceMemory &;
@@ -22,7 +22,7 @@ namespace toaster::gpu
 		auto bind(const vk::raii::CommandBuffer &p_command_buffer) -> void;
 
 	private:
-		VKGPUContext *m_ctx{nullptr};
+		VKLogicalDevice *m_device{nullptr};
 
 		vk::raii::Buffer       m_vertexBuffer{nullptr};
 		vk::raii::DeviceMemory m_vertexBufferMemory{nullptr};

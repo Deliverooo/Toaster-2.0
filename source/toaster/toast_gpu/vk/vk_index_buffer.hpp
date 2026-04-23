@@ -5,16 +5,17 @@
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
+	class VKLogicalDevice;
 
 	class VKIndexBuffer
 	{
 	public:
 		// Note to self, always remember to upload the indices instead of just passing in the size...
 		// I'm such a diddyblud
-		VKIndexBuffer(VKGPUContext *p_ctx, void *p_data, uint64 p_size);
-		VKIndexBuffer(VKGPUContext *p_ctx, uint64 p_size);
-		auto getContext() const -> VKGPUContext *;
+		VKIndexBuffer(VKLogicalDevice *p_device, void *p_data, uint64 p_size);
+		VKIndexBuffer(VKLogicalDevice *p_device, uint64 p_size);
+		[[nodiscard]] auto getDevice() const -> VKLogicalDevice *;
+
 
 		auto getBuffer() -> vk::raii::Buffer &;
 		auto getBufferMemory() -> vk::raii::DeviceMemory &;
@@ -24,7 +25,7 @@ namespace toaster::gpu
 		auto bind(const vk::raii::CommandBuffer &p_command_buffer, vk::IndexType p_index_type) -> void;
 
 	private:
-		VKGPUContext *m_ctx{nullptr};
+		VKLogicalDevice *m_device{nullptr};
 
 		vk::raii::Buffer       m_indexBuffer{nullptr};
 		vk::raii::DeviceMemory m_indexBufferMemory{nullptr};

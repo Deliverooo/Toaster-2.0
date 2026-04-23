@@ -1,10 +1,11 @@
 #include "vk_compute_pipeline.hpp"
 
-#include "vk_gpu_context.hpp"
+#include "vk_logical_device.hpp"
+
 
 namespace toaster::gpu
 {
-	VKComputePipeline::VKComputePipeline(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader) : m_ctx(p_ctx), m_shader(p_shader)
+	VKComputePipeline::VKComputePipeline(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader) : m_device(p_device), m_shader(p_shader)
 	{
 		auto descriptor_set_layouts = m_shader->getDescriptorSetLayouts();
 
@@ -24,19 +25,19 @@ namespace toaster::gpu
 		pipeline_layout_create_info.pPushConstantRanges    = vk_push_constant_ranges.data();
 		pipeline_layout_create_info.setLayoutCount         = descriptor_set_layouts.size();
 		pipeline_layout_create_info.pSetLayouts            = descriptor_set_layouts.data();
-		m_pipelineLayout                                   = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), pipeline_layout_create_info};
+		m_pipelineLayout                                   = {m_device->getVulkanLogicalDevice(), pipeline_layout_create_info};
 
 		const std::vector<vk::PipelineShaderStageCreateInfo> stage_infos = m_shader->getPipelineShaderStageCreateInfos();
 		vk::ComputePipelineCreateInfo                        compute_pipeline_create_info{};
 		compute_pipeline_create_info.layout = m_pipelineLayout;
 		compute_pipeline_create_info.stage  = stage_infos[0];
 
-		m_pipeline = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), nullptr, compute_pipeline_create_info};
+		m_pipeline = {m_device->getVulkanLogicalDevice(), nullptr, compute_pipeline_create_info};
 	}
 
-	auto VKComputePipeline::getContext() const -> VKGPUContext *
+	auto VKComputePipeline::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKComputePipeline::getShader() const -> const RefPtr<VKShader> &

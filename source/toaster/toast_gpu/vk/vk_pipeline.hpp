@@ -33,8 +33,8 @@ namespace toaster::gpu
 	class VKPipeline
 	{
 	public:
-		VKPipeline(VKGPUContext *p_ctx, const PipelineCreateInfo &p_create_info);
-		auto getContext() const -> VKGPUContext *;
+		VKPipeline(VKLogicalDevice *p_device, const PipelineCreateInfo &p_create_info);
+		auto getDevice() const -> VKLogicalDevice *;
 
 		[[nodiscard]] auto getPipeline() -> vk::raii::Pipeline &;
 		[[nodiscard]] auto getPipelineLayout() -> vk::raii::PipelineLayout &;
@@ -44,9 +44,9 @@ namespace toaster::gpu
 	private:
 		auto _createGraphicsPipeline() -> void;
 
-		auto _getVulkanAttribType(EBufferDataType p_type) -> vk::Format;
+		static auto _getVulkanAttribType(EBufferDataType p_type) -> vk::Format;
 
-		VKGPUContext *m_ctx{nullptr};
+		VKLogicalDevice *m_device{nullptr};
 
 		PipelineCreateInfo m_createInfo{};
 

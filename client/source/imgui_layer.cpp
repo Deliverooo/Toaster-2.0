@@ -8,7 +8,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
 namespace toaster
@@ -37,7 +37,7 @@ namespace toaster
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Viewports
 
 		auto &app       = getApp();
-		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		auto  device    = app.getWindow().getLogicalDevice();
 		auto  swapchain = app.getWindow().getSwapchain();
 
 		vk::DescriptorPoolSize pool_sizes[] = {
@@ -64,16 +64,16 @@ namespace toaster
 		descriptor_pool_create_info.maxSets       = max_sets;
 		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 
-		m_descriptorPool = ctx->getLogicalDevice()->getVulkanLogicalDevice().createDescriptorPool(descriptor_pool_create_info);
+		m_descriptorPool = device->getVulkanLogicalDevice().createDescriptorPool(descriptor_pool_create_info);
 
 		ImGui_ImplGlfw_InitForVulkan(app.getWindow().getNativeWindow(), true);
 
 		ImGui_ImplVulkan_InitInfo init_info{};
-		init_info.Instance        = *ctx->getPhysicalDevice()->getInstance()->getVulkanInstance();
-		init_info.PhysicalDevice  = *ctx->getPhysicalDevice()->getVulkanPhysicalDevice();
-		init_info.Device          = *ctx->getLogicalDevice()->getVulkanLogicalDevice();
-		init_info.QueueFamily     = ctx->getLogicalDevice()->getQueueFamilyIndices().graphics;
-		init_info.Queue           = *ctx->getLogicalDevice()->getGraphicsQueue();
+		init_info.Instance        = *device->getPhysicalDevice()->getInstance()->getVulkanInstance();
+		init_info.PhysicalDevice  = *device->getPhysicalDevice()->getVulkanPhysicalDevice();
+		init_info.Device          = static_cast<vk::Device>(static_cast<vk::raii::Device &>(*device));
+		init_info.QueueFamily     = device->getQueueFamilyIndices().graphics;
+		init_info.Queue           = *device->getGraphicsQueue();
 		init_info.PipelineCache   = nullptr;
 		init_info.DescriptorPool  = *m_descriptorPool;
 		init_info.Allocator       = nullptr;
@@ -85,7 +85,7 @@ namespace toaster
 		rendering_create_info.colorAttachmentCount    = 1;
 		vk::Format colour_attachment_format           = swapchain->getSurfaceFormat().format;
 		rendering_create_info.pColorAttachmentFormats = &colour_attachment_format;
-		rendering_create_info.depthAttachmentFormat   = ctx->getPhysicalDevice()->getDepthFormat();
+		rendering_create_info.depthAttachmentFormat   = device->getPhysicalDevice()->getDepthFormat();
 
 		// Dynamic rendering
 		init_info.UseDynamicRendering                          = true;
@@ -125,7 +125,6 @@ namespace toaster
 	void ImGuiLayer::end()
 	{
 		auto &app       = getApp();
-		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
 		auto  swapchain = app.getWindow().getSwapchain();
 
 		ig::Render();

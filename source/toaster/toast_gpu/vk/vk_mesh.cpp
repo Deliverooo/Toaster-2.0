@@ -4,7 +4,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
-#include "vk_gpu_context.hpp"
+#include "vk_logical_device.hpp"
 
 namespace toaster::gpu
 {
@@ -35,7 +35,7 @@ namespace toaster::gpu
 		return result;
 	}
 
-	VKMesh::VKMesh(VKGPUContext *p_ctx, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader) : m_ctx(p_ctx), m_path(p_path)
+	VKMesh::VKMesh(VKLogicalDevice* p_dev, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader) : m_device(p_dev), m_path(p_path)
 	{
 		Assimp::Importer importer;
 
@@ -112,7 +112,7 @@ namespace toaster::gpu
 			{
 				auto  ai_material      = scene->mMaterials[i];
 				auto  ai_material_name = ai_material->GetName();
-				auto &material{m_materials.emplace_back(m_ctx->alloc<VKMaterial>(p_shader, ai_material_name.data))};
+				auto &material{m_materials.emplace_back(m_device->alloc<VKMaterial>(p_shader, ai_material_name.data))};
 
 				aiString ai_tex_path;
 
@@ -158,7 +158,7 @@ namespace toaster::gpu
 
 					TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					material->set("u_AlbedoTexture", m_ctx->alloc<VKTexture2D>(texture_spec_info, texture_path));
+					material->set("u_AlbedoTexture", m_device->alloc<VKTexture2D>(texture_spec_info, texture_path));
 					material->set("u_Material.albedoColour", glm::vec3{1.0f});
 				}
 				else
@@ -166,18 +166,18 @@ namespace toaster::gpu
 			}
 		}
 		else
-			m_materials.emplace_back(m_ctx->alloc<VKMaterial>(p_shader));
+			m_materials.emplace_back(m_device->alloc<VKMaterial>(p_shader));
 
 		const vk::DeviceSize vertex_buffer_size{sizeof(MeshVertex) * m_vertices.size()};
-		m_vertexBuffer = m_ctx->alloc<VKVertexBuffer>(static_cast<void *>(m_vertices.data()), vertex_buffer_size);
+		m_vertexBuffer = m_device->alloc<VKVertexBuffer>(static_cast<void *>(m_vertices.data()), vertex_buffer_size);
 
 		const vk::DeviceSize index_buffer_size{sizeof(uint32) * m_indices.size()};
-		m_indexBuffer = m_ctx->alloc<VKIndexBuffer>(static_cast<void *>(m_indices.data()), index_buffer_size);
+		m_indexBuffer = m_device->alloc<VKIndexBuffer>(static_cast<void *>(m_indices.data()), index_buffer_size);
 	}
 
-	auto VKMesh::getContext() const -> VKGPUContext *
+	auto VKMesh::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKMesh::getVertexBuffer() const -> const RefPtr<VKVertexBuffer> &

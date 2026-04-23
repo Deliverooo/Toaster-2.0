@@ -47,7 +47,7 @@ namespace toaster
 	class Scene
 	{
 	public:
-		Scene(gpu::VKGPUContext *p_ctx, const String &p_name = "");
+		Scene(gpu::VKLogicalDevice *p_ctx, const String &p_name = "");
 		~Scene();
 
 		auto onUpdate(float32 p_dt) -> void;
@@ -75,7 +75,7 @@ namespace toaster
 		template<typename Type>
 		auto onComponentAdded(Entity p_entity, Type &p_component) -> void;
 
-		gpu::VKGPUContext *m_ctx{nullptr};
+		gpu::VKLogicalDevice *m_device{nullptr};
 
 		entt::registry m_registry;
 

@@ -5,12 +5,13 @@
 #include "toast_gpu/vk/vk_compute_pass.hpp"
 #include "toast_gpu/vk/vk_compute_pipeline.hpp"
 
-#include "toast_gpu/vk/vk_gpu_context.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_pipeline.hpp"
 #include "toast_gpu/vk/vk_shader.hpp"
 #include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_render/renderer.hpp"
+
+#include <GLFW/glfw3.h>
 
 auto cstringArrayToVector(toaster::CString *p_arr, uint32 p_size) -> std::vector<toaster::CString>
 {
@@ -72,25 +73,21 @@ int32 main(int32 p_argc, char **p_argv) // Maybe_todo, Forward these parameters 
 	vk_logical_device_spec_info.pNext                                                           = feature_chain.get<vk::PhysicalDeviceFeatures2>();
 	toaster::gpu::VKLogicalDevice vk_logical_device{&vk_physical_device, vk_logical_device_spec_info};
 
-	toaster::gpu::VKGPUContextSpecInfo gpu_context_spec_info{};
-	toaster::gpu::VKGPUContext         gpu_context{&vk_logical_device, gpu_context_spec_info};
-
 	{
-		auto storage_buffer{toaster::make_reference<toaster::gpu::VKStorageBuffer>(&gpu_context, sizeof(int32))};
-
 		auto cs_shader{
-			toaster::gpu::VKShaderCompiler::compileToShaderFromPaths(&gpu_context,
+			toaster::gpu::VKShaderCompiler::compileToShaderFromPaths(&vk_logical_device,
 																	 {{vk::ShaderStageFlagBits::eCompute, "../source/toaster/toast_shaders/test.comp.glsl"}},
 																	 "Compute_Test")
 		};
 
-		auto compute_pipeline{toaster::make_reference<toaster::gpu::VKComputePipeline>(&gpu_context, cs_shader)};
-		auto compute_pass{toaster::make_reference<toaster::gpu::VKComputePass>(&gpu_context, compute_pipeline)};
+		auto compute_pipeline{toaster::make_reference<toaster::gpu::VKComputePipeline>(&vk_logical_device, cs_shader)};
+
+		auto storage_buffer{toaster::make_reference<toaster::gpu::VKStorageBuffer>(&vk_logical_device, sizeof(int32))};
+		auto compute_pass{toaster::make_reference<toaster::gpu::VKComputePass>(&vk_logical_device, compute_pipeline)};
 		compute_pass->setInput("Test", storage_buffer);
 		compute_pass->bake();
 
-		toaster::gpu::VKCommandBuffer command_buffer{&gpu_context, vk::QueueFlagBits::eCompute};
-
+		toaster::gpu::VKCommandBuffer command_buffer{&vk_logical_device, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
 		toaster::Renderer::beginCompute(command_buffer.getVulkanCommandBuffer(), 0, compute_pass);
 		toaster::Renderer::dispatchCompute(command_buffer.getVulkanCommandBuffer(), 0, compute_pass, nullptr, 1, 1, 1);
@@ -106,6 +103,8 @@ int32 main(int32 p_argc, char **p_argv) // Maybe_todo, Forward these parameters 
 		storage_buffer->unmapMemory();
 		LOG_INFO("{}", data);
 	}
+
+	vk_logical_device.performGarbageCollection();
 
 	std::cin.get();
 }

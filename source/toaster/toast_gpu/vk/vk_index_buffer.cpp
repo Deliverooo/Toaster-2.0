@@ -4,34 +4,34 @@
 
 namespace toaster::gpu
 {
-	VKIndexBuffer::VKIndexBuffer(VKGPUContext *p_ctx, void *p_data, uint64 p_size) : m_ctx(p_ctx)
+	VKIndexBuffer::VKIndexBuffer(VKLogicalDevice *p_device, void *p_data, uint64 p_size) : m_device(p_device)
 	{
-		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+		TST_ASSERT_MSG(p_device, "Context cannot be null");
 
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
 
-		m_ctx->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
+		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
 							staging_buffer, staging_buffer_memory);
 
 		void *mapped = staging_buffer_memory.mapMemory(0, p_size, {});
 		std::memcpy(mapped, p_data, p_size);
 		staging_buffer_memory.unmapMemory();
 
-		m_ctx->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal,
+		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal,
 							m_indexBuffer, m_indexBufferMemory);
-		m_ctx->copyBuffer(staging_buffer, m_indexBuffer, p_size);
+		m_device->copyBuffer(staging_buffer, m_indexBuffer, p_size);
 	}
 
-	VKIndexBuffer::VKIndexBuffer(VKGPUContext *p_ctx, uint64 p_size) : m_ctx(p_ctx)
+	VKIndexBuffer::VKIndexBuffer(VKLogicalDevice *p_device, uint64 p_size) : m_device(p_device)
 	{
-		m_ctx->createBuffer(p_size, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
+		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
 							m_indexBuffer, m_indexBufferMemory);
 	}
 
-	auto VKIndexBuffer::getContext() const -> VKGPUContext *
+	auto VKIndexBuffer::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKIndexBuffer::getBuffer() -> vk::raii::Buffer &

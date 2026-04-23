@@ -1,14 +1,15 @@
 #include "vk_uniform_buffer.hpp"
 
-#include "vk_gpu_context.hpp"
+#include "vk_logical_device.hpp"
+
 
 namespace toaster::gpu
 {
-	VKUniformBuffer::VKUniformBuffer(VKGPUContext *p_ctx, uint64 p_size) : m_ctx(p_ctx)
+	VKUniformBuffer::VKUniformBuffer(VKLogicalDevice* p_dev, uint64 p_size) : m_device(p_dev)
 	{
-		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+		TST_ASSERT_MSG(p_dev, "Device cannot be null");
 
-		m_ctx->createBuffer(p_size, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
 							m_buffer, m_bufferMemory);
 
 		m_descriptorInfo.buffer = m_buffer;
@@ -16,9 +17,9 @@ namespace toaster::gpu
 		m_descriptorInfo.range  = p_size;
 	}
 
-	auto VKUniformBuffer::getContext() const -> VKGPUContext *
+	auto VKUniformBuffer::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKUniformBuffer::getBuffer() -> vk::raii::Buffer &
@@ -58,13 +59,13 @@ namespace toaster::gpu
 		return EGPUResourceType::eUniformBuffer;
 	}
 
-	VKUniformBufferPFF::VKUniformBufferPFF(VKGPUContext *p_ctx, uint64 p_size, uint32 p_frames_in_flight) : m_framesInFlightCount(p_frames_in_flight)
+	VKUniformBufferPFF::VKUniformBufferPFF(VKLogicalDevice* p_device, uint64 p_size, uint32 p_frames_in_flight) : m_framesInFlightCount(p_frames_in_flight)
 	{
-		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+		TST_ASSERT_MSG(p_device, "Device cannot be null");
 		TST_ASSERT_MSG(p_frames_in_flight > 0, "Frames in flight cannot be 0");
 
 		for (uint32 i{0u}; i < m_framesInFlightCount; ++i)
-			m_uniformBuffers.emplace_back(p_ctx->alloc<VKUniformBuffer>(p_size));
+			m_uniformBuffers.emplace_back(p_device->alloc<VKUniformBuffer>(p_size));
 	}
 
 	auto VKUniformBufferPFF::getUBO(uint32 p_frame_index) -> RefPtr<VKUniformBuffer>

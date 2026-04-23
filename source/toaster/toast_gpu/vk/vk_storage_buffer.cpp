@@ -1,13 +1,14 @@
 #include "vk_storage_buffer.hpp"
-#include "vk_gpu_context.hpp"
+#include "vk_logical_device.hpp"
+
 
 namespace toaster::gpu
 {
-	VKStorageBuffer::VKStorageBuffer(VKGPUContext *p_ctx, uint64 p_size) : m_ctx(p_ctx)
+	VKStorageBuffer::VKStorageBuffer(VKLogicalDevice *p_device, uint64 p_size) : m_device(p_device)
 	{
-		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+		TST_ASSERT_MSG(p_device, "Context cannot be null");
 
-		m_ctx->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer,
+		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer,
 							vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, m_buffer, m_bufferMemory);
 
 		m_descriptorInfo.buffer = m_buffer;
@@ -15,9 +16,9 @@ namespace toaster::gpu
 		m_descriptorInfo.range  = p_size;
 	}
 
-	auto VKStorageBuffer::getContext() const -> VKGPUContext *
+	auto VKStorageBuffer::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKStorageBuffer::getBuffer() -> vk::raii::Buffer &
@@ -50,7 +51,7 @@ namespace toaster::gpu
 		m_buffer         = nullptr;
 		m_descriptorInfo = vk::DescriptorBufferInfo{};
 
-		m_ctx->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer,
+		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer,
 							vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, m_buffer, m_bufferMemory);
 
 		m_descriptorInfo.buffer = m_buffer;
@@ -63,13 +64,13 @@ namespace toaster::gpu
 		return EGPUResourceType::eStorageBuffer;
 	}
 
-	VKStorageBufferPFF::VKStorageBufferPFF(VKGPUContext *p_ctx, uint64 p_size, uint32 p_frames_in_flight) : m_framesInFlightCount(p_frames_in_flight)
+	VKStorageBufferPFF::VKStorageBufferPFF(VKLogicalDevice *p_device, uint64 p_size, uint32 p_frames_in_flight) : m_framesInFlightCount(p_frames_in_flight)
 	{
-		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+		TST_ASSERT_MSG(p_device, "Context cannot be null");
 		TST_ASSERT_MSG(p_frames_in_flight > 0, "Frames in flight cannot be 0");
 
 		for (uint32 i{0u}; i < m_framesInFlightCount; ++i)
-			m_storageBuffers.emplace_back(p_ctx->alloc<VKStorageBuffer>(p_size));
+			m_storageBuffers.emplace_back(p_device->alloc<VKStorageBuffer>(p_size));
 	}
 
 	auto VKStorageBufferPFF::getSSBO(uint32 p_frame_index) -> RefPtr<VKStorageBuffer>

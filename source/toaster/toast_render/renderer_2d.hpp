@@ -13,7 +13,7 @@ namespace toaster
 {
 	namespace gpu
 	{
-		class VKGPUContext;
+		class VKLogicalDevice;
 		class VKPipeline;
 		class VKRenderPass;
 		class VKMaterial;
@@ -44,7 +44,7 @@ namespace toaster
 			uint32 quadCount{0u};
 		};
 
-		explicit Renderer2D(gpu::VKGPUContext *p_ctx, const Renderer2DCreateInfo &p_create_info);
+		explicit Renderer2D(gpu::VKLogicalDevice *p_device, const Renderer2DCreateInfo &p_create_info);
 		~Renderer2D();
 
 		auto begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void;
@@ -65,7 +65,7 @@ namespace toaster
 		auto _beginNewBatch() -> void;
 		auto _getTextureSlotIndex(const RefPtr<gpu::VKTexture2D> &p_texture) -> uint32;
 
-		gpu::VKGPUContext *m_ctx;
+		gpu::VKLogicalDevice *m_device;
 
 		Renderer2DCreateInfo m_createInfo;
 		uint32               m_maxVertices;

@@ -8,7 +8,7 @@
 #include "toaster/toast_lib/events/mouse_event.hpp"
 #include "toaster/toast_lib/events/window_event.hpp"
 
-#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_material.hpp"

@@ -1,19 +1,19 @@
 #include "vk_image.hpp"
 
-#include "vk_gpu_context.hpp"
+#include "vk_logical_device.hpp"
 
 namespace toaster::gpu
 {
-	VKImage2D::VKImage2D(VKGPUContext *p_ctx, const ImageCreateInfo &p_create_info) : m_ctx(p_ctx), m_createInfo(p_create_info)
+	VKImage2D::VKImage2D(VKLogicalDevice *p_dev, const ImageCreateInfo &p_create_info) : m_device(p_dev), m_createInfo(p_create_info)
 	{
-		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+		TST_ASSERT_MSG(p_dev, "Device cannot be null");
 
 		recreate();
 	}
 
-	auto VKImage2D::getContext() const -> VKGPUContext *
+	auto VKImage2D::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKImage2D::getImage() -> vk::raii::Image &
@@ -62,29 +62,29 @@ namespace toaster::gpu
 
 		m_currentImageLayout = vk::ImageLayout::eUndefined;
 
-		m_ctx->createImage(m_createInfo.width, m_createInfo.height, m_createInfo.mipCount, m_createInfo.sampleCount, m_createInfo.format, vk::ImageTiling::eOptimal,
-						   m_createInfo.usage, vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
+		m_device->createImage(m_createInfo.width, m_createInfo.height, m_createInfo.mipCount, m_createInfo.sampleCount, m_createInfo.format, vk::ImageTiling::eOptimal,
+							  m_createInfo.usage, vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
 
-		vk::ImageAspectFlags aspect_flags{m_ctx->isDepthFormat(m_createInfo.format) ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor};
-		if (m_ctx->hasStencilComponent(m_createInfo.format))
+		vk::ImageAspectFlags aspect_flags{m_device->isDepthFormat(m_createInfo.format) ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor};
+		if (m_device->hasStencilComponent(m_createInfo.format))
 			aspect_flags |= vk::ImageAspectFlagBits::eStencil;
 
 		if (m_createInfo.usage & vk::ImageUsageFlagBits::eColorAttachment)
 		{
-			m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone,
-										 vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eNone,
-										 vk::PipelineStageFlagBits2::eColorAttachmentOutput, m_createInfo.mipCount, aspect_flags);
+			m_device->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone,
+											vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eNone,
+											vk::PipelineStageFlagBits2::eColorAttachmentOutput, m_createInfo.mipCount, aspect_flags);
 			m_currentImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		}
 		else if (m_createInfo.usage & vk::ImageUsageFlagBits::eDepthStencilAttachment)
 		{
-			m_ctx->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone,
-										 vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eNone,
-										 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, m_createInfo.mipCount,
-										 aspect_flags);
+			m_device->transitionImageLayout(m_image, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone,
+											vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eNone,
+											vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, m_createInfo.mipCount,
+											aspect_flags);
 			m_currentImageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		}
 
-		m_imageView = m_ctx->createImageView(m_image, m_createInfo.format, aspect_flags, m_createInfo.mipCount);
+		m_imageView = m_device->createImageView(m_image, m_createInfo.format, aspect_flags, m_createInfo.mipCount);
 	}
 }

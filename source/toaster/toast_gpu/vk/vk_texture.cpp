@@ -2,15 +2,15 @@
 
 #include <stb/stb_image.h>
 
-#include "vk_gpu_context.hpp"
+#include "vk_logical_device.hpp"
+
 
 namespace toaster::gpu
 {
-	VKTexture2D::VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info) : m_ctx(p_ctx), m_specInfo(p_spec_info)
+	VKTexture2D::VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info) : m_device(p_device), m_specInfo(p_spec_info)
 	{
 		// The only reason to create an image without providing it with any data is to use it as an attachment...
-
-		if (!m_ctx->isDepthFormat(m_specInfo.format))
+		if (!m_device->isDepthFormat(m_specInfo.format))
 		{
 			vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled};
 			if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
@@ -23,11 +23,11 @@ namespace toaster::gpu
 			image_create_info.mipCount    = m_mipLevels;
 			image_create_info.sampleCount = m_specInfo.sampleCount;
 			image_create_info.format      = m_specInfo.format;
-			m_image                       = m_ctx->alloc<VKImage2D>(image_create_info);
+			m_image                       = m_device->alloc<VKImage2D>(image_create_info);
 
-			m_ctx->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone,
-										 vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
-										 vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1, vk::ImageAspectFlagBits::eColor);
+			m_device->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone,
+											vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
+											vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1, vk::ImageAspectFlagBits::eColor);
 			m_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 		}
 		else
@@ -43,45 +43,16 @@ namespace toaster::gpu
 			image_create_info.mipCount    = m_mipLevels;
 			image_create_info.sampleCount = m_specInfo.sampleCount;
 			image_create_info.format      = m_specInfo.format;
-			m_image                       = m_ctx->alloc<VKImage2D>(image_create_info);
+			m_image                       = m_device->alloc<VKImage2D>(image_create_info);
 
-			m_ctx->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone,
-										 vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
-										 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, 1,
-										 vk::ImageAspectFlagBits::eDepth);
+			m_device->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone,
+											vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
+											vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, 1,
+											vk::ImageAspectFlagBits::eDepth);
 			m_image->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
 		}
 
-		const auto physical_device_props = m_ctx->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties();
-
-		vk::SamplerCreateInfo sampler_create_info{};
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.magFilter               = vk::Filter::eLinear;
-		sampler_create_info.minFilter               = vk::Filter::eLinear;
-		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.mipLodBias              = 0.0f;
-		sampler_create_info.anisotropyEnable        = true;
-		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
-		sampler_create_info.compareEnable           = false;
-		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
-		sampler_create_info.minLod                  = 0.0f;
-		sampler_create_info.maxLod                  = vk::LodClampNone;
-		sampler_create_info.borderColor             = vk::BorderColor::eFloatCustomEXT;
-		sampler_create_info.unnormalizedCoordinates = false;
-
-		// Ts is purely aesthetic
-		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{};
-		border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
-		border_colour_create_info.format            = vk::Format::eR8G8B8A8Srgb;
-
-		sampler_create_info.pNext = &border_colour_create_info;
-
-		m_sampler = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), sampler_create_info};
+		m_sampler = m_device->createSampler();
 
 		m_descriptorImageInfo             = vk::DescriptorImageInfo{};
 		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -89,10 +60,10 @@ namespace toaster::gpu
 		m_descriptorImageInfo.sampler     = m_sampler;
 	}
 
-	VKTexture2D::VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path) : m_ctx(p_ctx), m_specInfo(p_spec_info),
-																															m_path(p_path)
+	VKTexture2D::VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path) : m_device(p_device),
+																																  m_specInfo(p_spec_info), m_path(p_path)
 	{
-		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+		TST_ASSERT_MSG(p_device, "Context cannot be null");
 
 		// Ts is somewhat necessary
 		// stbi_set_flip_vertically_on_load(true);
@@ -132,13 +103,13 @@ namespace toaster::gpu
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = m_specInfo.format;
-		m_image                       = m_ctx->alloc<VKImage2D>(image_create_info);
+		m_image                       = m_device->alloc<VKImage2D>(image_create_info);
 
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
 
-		m_ctx->createBuffer(image_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-							staging_buffer, staging_buffer_memory);
+		m_device->createBuffer(image_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+							   staging_buffer, staging_buffer_memory);
 
 		void *mapped = staging_buffer_memory.mapMemory(0, image_size, {});
 		std::memcpy(mapped, pixels, image_size);
@@ -147,48 +118,16 @@ namespace toaster::gpu
 		if (loaded)
 			stbi_image_free(pixels);
 
-		m_ctx->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eNone,
-									 vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eTransfer, m_mipLevels,
-									 vk::ImageAspectFlagBits::eColor);
+		m_device->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eNone,
+										vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eTransfer, m_mipLevels,
+										vk::ImageAspectFlagBits::eColor);
 
 		m_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
-
-		m_ctx->copyBufferToImage(staging_buffer, m_image->getImage(), m_specInfo.width, m_specInfo.height);
-
-		m_ctx->generateMipmaps(m_image->getImage(), image_create_info.format, m_specInfo.width, m_specInfo.height, m_mipLevels);
-
+		m_device->copyBufferToImage(staging_buffer, m_image->getImage(), m_specInfo.width, m_specInfo.height);
+		m_device->generateMipmaps(m_image->getImage(), m_specInfo.width, m_specInfo.height, m_mipLevels);
 		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
-		auto physical_device_props = m_ctx->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties();
-
-		vk::SamplerCreateInfo sampler_create_info{};
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.magFilter               = vk::Filter::eLinear;
-		sampler_create_info.minFilter               = vk::Filter::eLinear;
-		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.mipLodBias              = 0.0f;
-		sampler_create_info.anisotropyEnable        = true;
-		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
-		sampler_create_info.compareEnable           = false;
-		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
-		sampler_create_info.minLod                  = 0.0f;
-		sampler_create_info.maxLod                  = vk::LodClampNone;
-		sampler_create_info.borderColor             = vk::BorderColor::eFloatCustomEXT;
-		sampler_create_info.unnormalizedCoordinates = false;
-
-		// Ts is purely aesthetic
-		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{};
-		border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
-		border_colour_create_info.format            = vk::Format::eR8G8B8A8Srgb;
-
-		sampler_create_info.pNext = &border_colour_create_info;
-
-		m_sampler = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), sampler_create_info};
+		m_sampler = m_device->createSampler();
 
 		m_descriptorImageInfo             = vk::DescriptorImageInfo{};
 		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -196,7 +135,8 @@ namespace toaster::gpu
 		m_descriptorImageInfo.sampler     = m_sampler;
 	}
 
-	VKTexture2D::VKTexture2D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size) : m_ctx(p_ctx), m_specInfo(p_spec_info), m_path("")
+	VKTexture2D::VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size) : m_device(p_device), m_specInfo(p_spec_info),
+																														   m_path("")
 	{
 		ImageCreateInfo image_create_info{};
 		image_create_info.width       = m_specInfo.width;
@@ -205,64 +145,35 @@ namespace toaster::gpu
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = vk::Format::eR8G8B8A8Unorm;
-		m_image                       = m_ctx->alloc<VKImage2D>(image_create_info);
+		m_image                       = m_device->alloc<VKImage2D>(image_create_info);
 
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
 
 		vk::DeviceSize image_size{p_size}; // 1 Pixel * 1 Pixel * RGBA
 
-		m_ctx->createBuffer(image_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-							staging_buffer, staging_buffer_memory);
+		m_device->createBuffer(image_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+							   staging_buffer, staging_buffer_memory);
 
 		void *mapped = staging_buffer_memory.mapMemory(0, image_size, {});
 		std::memcpy(mapped, p_data, image_size);
 		staging_buffer_memory.unmapMemory();
 
-		m_ctx->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eNone,
-									 vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eTransfer, 1,
-									 vk::ImageAspectFlagBits::eColor);
+		m_device->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eNone,
+										vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eTransfer, 1,
+										vk::ImageAspectFlagBits::eColor);
 
 		m_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
 
-		m_ctx->copyBufferToImage(staging_buffer, m_image->getImage(), p_spec_info.width, p_spec_info.height);
+		m_device->copyBufferToImage(staging_buffer, m_image->getImage(), p_spec_info.width, p_spec_info.height);
 
-		m_ctx->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-									 vk::AccessFlagBits2::eTransferWrite, vk::AccessFlagBits2::eShaderRead, vk::PipelineStageFlagBits2::eTransfer,
-									 vk::PipelineStageFlagBits2::eFragmentShader, 1, vk::ImageAspectFlagBits::eColor);
+		m_device->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+										vk::AccessFlagBits2::eTransferWrite, vk::AccessFlagBits2::eShaderRead, vk::PipelineStageFlagBits2::eTransfer,
+										vk::PipelineStageFlagBits2::eFragmentShader, 1, vk::ImageAspectFlagBits::eColor);
 
 		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
-		auto physical_device_props = m_ctx->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties();
-
-		vk::SamplerCreateInfo sampler_create_info{};
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.magFilter               = vk::Filter::eLinear;
-		sampler_create_info.minFilter               = vk::Filter::eLinear;
-		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.mipLodBias              = 0.0f;
-		sampler_create_info.anisotropyEnable        = true;
-		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
-		sampler_create_info.compareEnable           = false;
-		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
-		sampler_create_info.minLod                  = 0.0f;
-		sampler_create_info.maxLod                  = vk::LodClampNone;
-		sampler_create_info.borderColor             = vk::BorderColor::eIntOpaqueBlack;
-		sampler_create_info.unnormalizedCoordinates = false;
-
-		// Ts is purely aesthetic
-		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{};
-		border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
-		border_colour_create_info.format            = vk::Format::eR8G8B8A8Srgb;
-
-		sampler_create_info.pNext = &border_colour_create_info;
-
-		m_sampler = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), sampler_create_info};
+		m_sampler = m_device->createSampler();
 
 		m_descriptorImageInfo             = vk::DescriptorImageInfo{};
 		m_descriptorImageInfo.imageLayout = m_image->getCurrentImageLayout();
@@ -270,9 +181,9 @@ namespace toaster::gpu
 		m_descriptorImageInfo.sampler     = m_sampler;
 	}
 
-	auto VKTexture2D::getContext() const -> VKGPUContext *
+	auto VKTexture2D::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKTexture2D::resize(uint32 p_width, uint32 p_height) -> void
@@ -282,41 +193,12 @@ namespace toaster::gpu
 
 		m_image->resize(p_width, p_height);
 
-		if (m_ctx->isDepthFormat(m_specInfo.format))
+		if (m_device->isDepthFormat(m_specInfo.format))
 			m_image->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
 		else
 			m_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
-		const auto physical_device_props = m_ctx->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties();
-
-		vk::SamplerCreateInfo sampler_create_info{};
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.magFilter               = vk::Filter::eLinear;
-		sampler_create_info.minFilter               = vk::Filter::eLinear;
-		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.mipLodBias              = 0.0f;
-		sampler_create_info.anisotropyEnable        = true;
-		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
-		sampler_create_info.compareEnable           = false;
-		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
-		sampler_create_info.minLod                  = 0.0f;
-		sampler_create_info.maxLod                  = vk::LodClampNone;
-		sampler_create_info.borderColor             = vk::BorderColor::eFloatCustomEXT;
-		sampler_create_info.unnormalizedCoordinates = false;
-
-		// Ts is purely aesthetic
-		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{};
-		border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
-		border_colour_create_info.format            = vk::Format::eR8G8B8A8Srgb;
-
-		sampler_create_info.pNext = &border_colour_create_info;
-
-		m_sampler = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), sampler_create_info};
+		m_sampler = m_device->createSampler();
 
 		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		m_descriptorImageInfo.imageView   = m_image->getImageView();
@@ -358,13 +240,13 @@ namespace toaster::gpu
 		return EGPUResourceType::eTexture2D;
 	}
 
-	VKTexture3D::VKTexture3D(VKGPUContext *p_ctx, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size) : m_ctx(p_ctx), m_specInfo(p_spec_info)
+	VKTexture3D::VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size) : m_device(p_device), m_specInfo(p_spec_info)
 	{
 	}
 
-	auto VKTexture3D::getContext() const -> VKGPUContext *
+	auto VKTexture3D::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKTexture3D::getSpecInfo() const -> const TextureSpecInfo &

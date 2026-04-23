@@ -9,7 +9,7 @@
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
+	class VKLogicalDevice;
 
 	struct MeshVertex
 	{
@@ -47,8 +47,9 @@ namespace toaster::gpu
 	class VKMesh
 	{
 	public:
-		VKMesh(VKGPUContext *p_ctx, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader); // Shader is temp until I move mesh to the Renderer folder
-		auto getContext() const -> VKGPUContext *;
+		VKMesh(VKLogicalDevice *p_device, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader);
+		// Shader is temp until I move mesh to the Renderer folder
+		auto getDevice() const -> VKLogicalDevice *;
 
 		auto getVertexBuffer() const -> const RefPtr<VKVertexBuffer> &;
 		auto getIndexBuffer() const -> const RefPtr<VKIndexBuffer> &;
@@ -62,7 +63,7 @@ namespace toaster::gpu
 	private:
 		auto _traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void;
 
-		VKGPUContext *m_ctx{nullptr};
+		VKLogicalDevice *m_device{nullptr};
 
 		io::filesystem::Path m_path;
 

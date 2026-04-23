@@ -1,5 +1,6 @@
 #include "vk_shader.hpp"
-#include "vk_gpu_context.hpp"
+#include "vk_logical_device.hpp"
+
 
 #include <ranges>
 
@@ -10,13 +11,14 @@
 
 namespace toaster::gpu
 {
-	VKShader::VKShader(VKGPUContext *p_ctx, const BytecodeMap &p_bytecode_map, const String &p_name) : m_ctx(p_ctx), m_name(p_name), m_shaderBytecodeMap(p_bytecode_map)
+	VKShader::VKShader(VKLogicalDevice *p_dev, const BytecodeMap &p_bytecode_map, const String &p_name) : m_device(p_dev), m_name(p_name),
+																										  m_shaderBytecodeMap(p_bytecode_map)
 	{
-		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+		TST_ASSERT_MSG(p_dev, "Device cannot be null");
 
 		for (auto &[stage, code]: p_bytecode_map)
 		{
-			m_shaderModules.insert({stage, m_ctx->createShaderModule(code)});
+			m_shaderModules.insert({stage, m_device->createShaderModule(code)});
 
 			vk::PipelineShaderStageCreateInfo &create_info = m_shaderCreateInfos[stage];
 			create_info                                    = vk::PipelineShaderStageCreateInfo{};
@@ -33,9 +35,9 @@ namespace toaster::gpu
 		_createDescriptors();
 	}
 
-	auto VKShader::getContext() const -> VKGPUContext *
+	auto VKShader::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKShader::getPipelineShaderStageCreateInfoMap() const -> const PipelineCreateInfoMap &
@@ -341,7 +343,7 @@ namespace toaster::gpu
 				}
 			}
 
-			m_descriptorSetLayouts[set] = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), descriptor_set_layout_create_info};
+			m_descriptorSetLayouts[set] = {*m_device, descriptor_set_layout_create_info};
 		}
 	}
 }

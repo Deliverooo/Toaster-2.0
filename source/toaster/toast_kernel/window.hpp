@@ -17,7 +17,6 @@ namespace toaster
 {
 	namespace gpu
 	{
-		class VKGPUContext;
 		class VKSwapchain;
 		class VKInstance;
 		class VKPhysicalDevice;
@@ -82,13 +81,12 @@ namespace toaster
 
 		auto setTitle(const String &p_title) -> void;
 
-		[[nodiscard]] auto getGPUContext() const -> gpu::VKGPUContext *;
+		[[nodiscard]] auto getLogicalDevice() const -> gpu::VKLogicalDevice *;
 
 		[[nodiscard]] auto getNativeWindow() const -> GLFWwindow *;
 		[[nodiscard]] auto getSwapchain() const -> gpu::VKSwapchain *;
 
 	private:
-		gpu::VKGPUContext *    m_gpuContext{nullptr};
 		gpu::VKInstance *      m_vkInstance{nullptr};
 		gpu::VKPhysicalDevice *m_vkPhysicalDevice{nullptr};
 		gpu::VKLogicalDevice * m_vkLogicalDevice{nullptr};

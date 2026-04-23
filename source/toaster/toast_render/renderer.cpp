@@ -1,7 +1,7 @@
 #include "renderer.hpp"
 
 #include "globals.hpp"
-#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 
 namespace toaster
 {
@@ -24,10 +24,10 @@ namespace toaster
 				// Perform the layout transition on sampled attachment images
 				if ((image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled) && (image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
-					image->getContext()->transitionImageLayout(image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
-															   vk::AccessFlagBits2::eShaderRead, vk::AccessFlagBits2::eColorAttachmentWrite,
-															   vk::PipelineStageFlagBits2::eFragmentShader, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-															   image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+					image->getDevice()->transitionImageLayout(image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+															  vk::AccessFlagBits2::eShaderRead, vk::AccessFlagBits2::eColorAttachmentWrite,
+															  vk::PipelineStageFlagBits2::eFragmentShader, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+															  image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eColor);
 					image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 				}
 				info.imageLayout = image->getCurrentImageLayout();
@@ -47,11 +47,11 @@ namespace toaster
 				if ((resolve_image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
 						resolve_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
-					resolve_image->getContext()->transitionImageLayout(resolve_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
-																	   vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eShaderRead,
-																	   vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eFragmentShader,
-																	   vk::PipelineStageFlagBits2::eColorAttachmentOutput, resolve_image->getCreateInfo().mipCount,
-																	   vk::ImageAspectFlagBits::eColor);
+					resolve_image->getDevice()->transitionImageLayout(resolve_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
+																	  vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eShaderRead,
+																	  vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eFragmentShader,
+																	  vk::PipelineStageFlagBits2::eColorAttachmentOutput, resolve_image->getCreateInfo().mipCount,
+																	  vk::ImageAspectFlagBits::eColor);
 					resolve_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 				}
 				info.resolveImageLayout = resolve_image->getCurrentImageLayout();
@@ -83,20 +83,20 @@ namespace toaster
 				{
 					if (p_rendering_info.depthReadOnly)
 					{
-						depth_image->getContext()->transitionImageLayout(depth_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
-																		 vk::ImageLayout::eDepthReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
-																		 vk::AccessFlagBits2::eDepthStencilAttachmentRead, vk::PipelineStageFlagBits2::eFragmentShader,
-																		 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-																		 depth_image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
+						depth_image->getDevice()->transitionImageLayout(depth_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
+																		vk::ImageLayout::eDepthReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
+																		vk::AccessFlagBits2::eDepthStencilAttachmentRead, vk::PipelineStageFlagBits2::eFragmentShader,
+																		vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+																		depth_image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
 						depth_image->setCurrentImageLayout(vk::ImageLayout::eDepthReadOnlyOptimal);
 					}
 					else
 					{
-						depth_image->getContext()->transitionImageLayout(depth_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
-																		 vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eShaderRead,
-																		 vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eFragmentShader,
-																		 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-																		 depth_image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
+						depth_image->getDevice()->transitionImageLayout(depth_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
+																		vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eShaderRead,
+																		vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eFragmentShader,
+																		vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+																		depth_image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
 						depth_image->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
 					}
 				}
@@ -117,13 +117,13 @@ namespace toaster
 				if ((depth_resolve_image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
 						depth_resolve_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
-					depth_resolve_image->getContext()->transitionImageLayout(depth_resolve_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
-																			 vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eShaderRead,
-																			 vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-																			 vk::PipelineStageFlagBits2::eFragmentShader,
-																			 vk::PipelineStageFlagBits2::eEarlyFragmentTests |
-																			 vk::PipelineStageFlagBits2::eLateFragmentTests,
-																			 depth_resolve_image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
+					depth_resolve_image->getDevice()->transitionImageLayout(depth_resolve_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
+																			vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eShaderRead,
+																			vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+																			vk::PipelineStageFlagBits2::eFragmentShader,
+																			vk::PipelineStageFlagBits2::eEarlyFragmentTests |
+																			vk::PipelineStageFlagBits2::eLateFragmentTests, depth_resolve_image->getCreateInfo().mipCount,
+																			vk::ImageAspectFlagBits::eDepth);
 					depth_resolve_image->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
 				}
 
@@ -204,7 +204,8 @@ namespace toaster
 		p_render_pass->update(p_frame_index);
 
 		const auto descriptor_sets = p_render_pass->getDescriptorSets(p_frame_index);
-		p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_render_pass->getPipeline()->getPipelineLayout(), p_render_pass->getStartSetIndex(),
+		if (!descriptor_sets.empty())
+			p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_render_pass->getPipeline()->getPipelineLayout(), p_render_pass->getStartSetIndex(),
 											descriptor_sets, nullptr);
 	}
 
@@ -220,20 +221,20 @@ namespace toaster
 			auto image{rendering_attachment.image};
 			if ((image != nullptr) && (image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				image->getContext()->transitionImageLayout(image->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-														   vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eShaderRead,
-														   vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eFragmentShader,
-														   image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+				image->getDevice()->transitionImageLayout(image->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+														  vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eShaderRead,
+														  vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eFragmentShader,
+														  image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eColor);
 				image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 			}
 			auto resolve_image{rendering_attachment.resolveImage};
 			if ((resolve_image != nullptr) && (resolve_image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				resolve_image->getContext()->transitionImageLayout(resolve_image->getImage(), vk::ImageLayout::eColorAttachmentOptimal,
-																   vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eColorAttachmentWrite,
-																   vk::AccessFlagBits2::eShaderRead, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-																   vk::PipelineStageFlagBits2::eFragmentShader, resolve_image->getCreateInfo().mipCount,
-																   vk::ImageAspectFlagBits::eColor);
+				resolve_image->getDevice()->transitionImageLayout(resolve_image->getImage(), vk::ImageLayout::eColorAttachmentOptimal,
+																  vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eColorAttachmentWrite,
+																  vk::AccessFlagBits2::eShaderRead, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+																  vk::PipelineStageFlagBits2::eFragmentShader, resolve_image->getCreateInfo().mipCount,
+																  vk::ImageAspectFlagBits::eColor);
 				resolve_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 			}
 		}
@@ -246,33 +247,33 @@ namespace toaster
 			{
 				if (p_rendering_info.depthReadOnly)
 				{
-					depth_image->getContext()->transitionImageLayout(depth_image->getImage(), vk::ImageLayout::eDepthReadOnlyOptimal,
-																	 vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eDepthStencilAttachmentRead,
-																	 vk::AccessFlagBits2::eShaderRead,
-																	 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-																	 vk::PipelineStageFlagBits2::eFragmentShader, depth_image->getCreateInfo().mipCount,
-																	 vk::ImageAspectFlagBits::eDepth);
+					depth_image->getDevice()->transitionImageLayout(depth_image->getImage(), vk::ImageLayout::eDepthReadOnlyOptimal,
+																	vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eDepthStencilAttachmentRead,
+																	vk::AccessFlagBits2::eShaderRead,
+																	vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+																	vk::PipelineStageFlagBits2::eFragmentShader, depth_image->getCreateInfo().mipCount,
+																	vk::ImageAspectFlagBits::eDepth);
 				}
 				else
 				{
-					depth_image->getContext()->transitionImageLayout(depth_image->getImage(), vk::ImageLayout::eDepthAttachmentOptimal,
-																	 vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-																	 vk::AccessFlagBits2::eShaderRead,
-																	 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-																	 vk::PipelineStageFlagBits2::eFragmentShader, depth_image->getCreateInfo().mipCount,
-																	 vk::ImageAspectFlagBits::eDepth);
+					depth_image->getDevice()->transitionImageLayout(depth_image->getImage(), vk::ImageLayout::eDepthAttachmentOptimal,
+																	vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+																	vk::AccessFlagBits2::eShaderRead,
+																	vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+																	vk::PipelineStageFlagBits2::eFragmentShader, depth_image->getCreateInfo().mipCount,
+																	vk::ImageAspectFlagBits::eDepth);
 				}
 				depth_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 			}
 			auto depth_resolve_image{p_rendering_info.pDepthAttachment->resolveImage};
 			if ((depth_resolve_image != nullptr) && (depth_resolve_image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				depth_resolve_image->getContext()->transitionImageLayout(depth_resolve_image->getImage(), vk::ImageLayout::eDepthAttachmentOptimal,
-																		 vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-																		 vk::AccessFlagBits2::eShaderRead,
-																		 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-																		 vk::PipelineStageFlagBits2::eFragmentShader, depth_resolve_image->getCreateInfo().mipCount,
-																		 vk::ImageAspectFlagBits::eDepth);
+				depth_resolve_image->getDevice()->transitionImageLayout(depth_resolve_image->getImage(), vk::ImageLayout::eDepthAttachmentOptimal,
+																		vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+																		vk::AccessFlagBits2::eShaderRead,
+																		vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+																		vk::PipelineStageFlagBits2::eFragmentShader, depth_resolve_image->getCreateInfo().mipCount,
+																		vk::ImageAspectFlagBits::eDepth);
 				depth_resolve_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 			}
 		}

@@ -4,7 +4,7 @@
 
 #include "client_layer.hpp"
 #include "imgui_layer.hpp"
-#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 
 namespace toaster
 {
@@ -14,7 +14,7 @@ namespace toaster
 
 		QVulkanWindow   vk_window{};
 		QVulkanInstance vk_instance{};
-		vk_instance.setVkInstance(*getWindow().getGPUContext()->getPhysicalDevice()->getInstance()->getVulkanInstance());
+		vk_instance.setVkInstance(*getWindow().getLogicalDevice()->getPhysicalDevice()->getInstance()->getVulkanInstance());
 		vk_window.setVulkanInstance(&vk_instance);
 
 		vk_window.setTitle("Toaster - QT window test :)");

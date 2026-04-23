@@ -6,13 +6,14 @@
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
+	class VKLogicalDevice;
 
 	class VKUniformBuffer final : public IGPUResource
 	{
 	public:
-		VKUniformBuffer(VKGPUContext *p_ctx, uint64 p_size);
-		[[nodiscard]] auto getContext() const -> VKGPUContext *;
+		VKUniformBuffer(VKLogicalDevice *p_ctx, uint64 p_size);
+		auto getDevice() const -> VKLogicalDevice *;
+
 
 		auto getBuffer() -> vk::raii::Buffer &;
 		auto getBufferMemory() -> vk::raii::DeviceMemory &;
@@ -27,7 +28,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto getResourceType() const -> EGPUResourceType override;
 
 	private:
-		VKGPUContext *m_ctx{nullptr};
+		VKLogicalDevice *m_device{nullptr};
 
 		vk::raii::Buffer         m_buffer{nullptr};
 		vk::raii::DeviceMemory   m_bufferMemory{nullptr};
@@ -40,7 +41,7 @@ namespace toaster::gpu
 	class VKUniformBufferPFF final : public IGPUResource
 	{
 	public:
-		VKUniformBufferPFF(VKGPUContext *p_ctx, uint64 p_size, uint32 p_frames_in_flight);
+		VKUniformBufferPFF(VKLogicalDevice *p_device, uint64 p_size, uint32 p_frames_in_flight);
 
 		auto getUBO(uint32 p_frame_index) -> RefPtr<VKUniformBuffer>;
 		auto setUBO(uint32 p_frame_index, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;

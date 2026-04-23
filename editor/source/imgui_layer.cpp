@@ -8,7 +8,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_swapchain.hpp"
 #include "ui/colours.hpp"
 
@@ -122,42 +122,43 @@ namespace toaster
 		style.IndentSpacing   = 11.0f;
 
 		const auto &app{getApp()};
-		auto        ctx{dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext())};
+		auto        device{app.getWindow().getLogicalDevice()};
 		const auto  swapchain{app.getWindow().getSwapchain()};
 
-		std::array pool_sizes = {
-			vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 500u},
-			vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 500u},
-			vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 256u},
-			vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 24u},
-			vk::DescriptorPoolSize{vk::DescriptorType::eUniformTexelBuffer, 8u},
-			vk::DescriptorPoolSize{vk::DescriptorType::eStorageTexelBuffer, 8u},
-			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 32u},
-			vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 32u},
-			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBufferDynamic, 16u},
-			vk::DescriptorPoolSize{vk::DescriptorType::eStorageBufferDynamic, 16u},
-			vk::DescriptorPoolSize{vk::DescriptorType::eInputAttachment, 8u}
+		vk::DescriptorPoolSize pool_sizes[] = {
+			{vk::DescriptorType::eSampler, 1000},
+			{vk::DescriptorType::eCombinedImageSampler, 1000},
+			{vk::DescriptorType::eSampledImage, 256},
+			{vk::DescriptorType::eStorageImage, 24},
+			{vk::DescriptorType::eUniformTexelBuffer, 8},
+			{vk::DescriptorType::eStorageTexelBuffer, 8},
+			{vk::DescriptorType::eUniformBuffer, 32},
+			{vk::DescriptorType::eStorageBuffer, 32},
+			{vk::DescriptorType::eUniformBufferDynamic, 16},
+			{vk::DescriptorType::eStorageBufferDynamic, 16},
+			{vk::DescriptorType::eInputAttachment, 8}
 		};
 
-		uint32 max_sets{0u};
+		uint32_t max_sets = 0;
 		for (const auto &ps: pool_sizes)
 			max_sets += ps.descriptorCount;
 
 		vk::DescriptorPoolCreateInfo descriptor_pool_create_info{};
-		descriptor_pool_create_info.pPoolSizes    = pool_sizes.data();
-		descriptor_pool_create_info.poolSizeCount = pool_sizes.size();
+		descriptor_pool_create_info.pPoolSizes    = pool_sizes;
+		descriptor_pool_create_info.poolSizeCount = IM_ARRAYSIZE(pool_sizes);
 		descriptor_pool_create_info.maxSets       = max_sets;
 		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
-		m_descriptorPool                          = {ctx->getLogicalDevice()->getVulkanLogicalDevice(), descriptor_pool_create_info};
+
+		m_descriptorPool = device->getVulkanLogicalDevice().createDescriptorPool(descriptor_pool_create_info);
 
 		ImGui_ImplGlfw_InitForVulkan(app.getWindow().getNativeWindow(), true);
 
 		ImGui_ImplVulkan_InitInfo init_info{};
-		init_info.Instance        = *ctx->getPhysicalDevice()->getInstance()->getVulkanInstance();
-		init_info.PhysicalDevice  = *ctx->getPhysicalDevice()->getVulkanPhysicalDevice();
-		init_info.Device          = *ctx->getLogicalDevice()->getVulkanLogicalDevice();
-		init_info.QueueFamily     = ctx->getLogicalDevice()->getQueueFamilyIndices().graphics;
-		init_info.Queue           = *ctx->getLogicalDevice()->getGraphicsQueue();
+		init_info.Instance        = *device->getPhysicalDevice()->getInstance()->getVulkanInstance();
+		init_info.PhysicalDevice  = *device->getPhysicalDevice()->getVulkanPhysicalDevice();
+		init_info.Device          = static_cast<vk::Device>(static_cast<vk::raii::Device &>(*device));
+		init_info.QueueFamily     = device->getQueueFamilyIndices().graphics;
+		init_info.Queue           = *device->getGraphicsQueue();
 		init_info.PipelineCache   = nullptr;
 		init_info.DescriptorPool  = *m_descriptorPool;
 		init_info.Allocator       = nullptr;
@@ -166,10 +167,10 @@ namespace toaster
 		init_info.CheckVkResultFn = checkVKResult;
 
 		vk::PipelineRenderingCreateInfo rendering_create_info{};
-		rendering_create_info.colorAttachmentCount = 1u;
-		vk::Format colour_attachment_format{swapchain->getSurfaceFormat().format};
+		rendering_create_info.colorAttachmentCount    = 1;
+		vk::Format colour_attachment_format           = swapchain->getSurfaceFormat().format;
 		rendering_create_info.pColorAttachmentFormats = &colour_attachment_format;
-		rendering_create_info.depthAttachmentFormat   = ctx->getPhysicalDevice()->getDepthFormat();
+		rendering_create_info.depthAttachmentFormat   = device->getPhysicalDevice()->getDepthFormat();
 
 		// Dynamic rendering
 		init_info.UseDynamicRendering                          = true;

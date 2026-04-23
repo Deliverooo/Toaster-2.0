@@ -45,9 +45,6 @@ if (${WITH_VULKAN_BACKEND})
 			vk/vk_logical_device.hpp
 			vk/vk_logical_device.cpp
 
-			vk/vk_gpu_context.hpp
-			vk/vk_gpu_context.cpp
-
 			vk/vk_command_buffer.hpp
 			vk/vk_command_buffer.cpp
 

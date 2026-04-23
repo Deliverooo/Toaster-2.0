@@ -5,21 +5,20 @@
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
+	class VKLogicalDevice;
 
 	class VKComputePipeline
 	{
 	public:
-		VKComputePipeline(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader);
-
-		auto getContext() const -> VKGPUContext *;
+		VKComputePipeline(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader);
+		[[nodiscard]] auto getDevice() const -> VKLogicalDevice *;
 
 		auto               getShader() const -> const RefPtr<VKShader> &;
 		[[nodiscard]] auto getPipeline() -> vk::raii::Pipeline &;
 		[[nodiscard]] auto getPipelineLayout() -> vk::raii::PipelineLayout &;
 
 	private:
-		VKGPUContext *m_ctx{nullptr};
+		VKLogicalDevice *m_device{nullptr};
 
 		RefPtr<VKShader> m_shader{nullptr};
 

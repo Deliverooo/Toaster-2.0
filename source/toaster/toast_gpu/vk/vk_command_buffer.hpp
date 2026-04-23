@@ -6,12 +6,12 @@
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
+	class VKLogicalDevice;
 
 	class VKCommandBuffer
 	{
 	public:
-		VKCommandBuffer(VKGPUContext *p_ctx, vk::QueueFlagBits p_queue_type, bool p_fence_signaled = false);
+		VKCommandBuffer(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, bool p_fence_signaled = false);
 
 		auto begin() -> void;
 		auto end() -> void;
@@ -28,7 +28,7 @@ namespace toaster::gpu
 		auto resetCommandBuffer() -> void;
 
 	private:
-		VKGPUContext *m_ctx{nullptr};
+		VKLogicalDevice *m_device{nullptr};
 
 		vk::raii::CommandBuffer m_commandBuffer{nullptr};
 		vk::raii::Fence         m_waitFence{nullptr};
@@ -39,7 +39,7 @@ namespace toaster::gpu
 	class VKCommandBufferPFF
 	{
 	public:
-		VKCommandBufferPFF(VKGPUContext *p_ctx, vk::QueueFlagBits p_queue_type, uint32 p_frames_in_flight, bool p_fence_signaled = false);
+		VKCommandBufferPFF(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, uint32 p_frames_in_flight, bool p_fence_signaled = false);
 
 		auto begin(uint32 p_frame_index) -> void;
 		auto end(uint32 p_frame_index) -> void;
@@ -56,7 +56,7 @@ namespace toaster::gpu
 		auto resetCommandBuffer(uint32 p_frame_index) -> void;
 
 	private:
-		VKGPUContext *m_ctx{nullptr};
+		VKLogicalDevice *m_device{nullptr};
 
 		std::vector<vk::raii::CommandBuffer> m_commandBuffers;
 		std::vector<vk::raii::Fence>         m_waitFences;

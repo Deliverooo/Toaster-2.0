@@ -7,7 +7,7 @@
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
+	class VKLogicalDevice;
 
 	enum class EDescriptorType
 	{
@@ -67,8 +67,8 @@ namespace toaster::gpu
 	class VKDescriptorSetManager
 	{
 	public:
-		VKDescriptorSetManager(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader, uint32 p_start_set, uint32 p_end_set);
-		auto getContext() const -> VKGPUContext *;
+		VKDescriptorSetManager(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader, uint32 p_start_set, uint32 p_end_set);
+		auto getDevice() const -> VKLogicalDevice *;
 
 		auto setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
 		auto setDescriptor(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void;
@@ -107,7 +107,7 @@ namespace toaster::gpu
 		auto _getDescriptorType(vk::DescriptorType p_type) const -> EDescriptorType;
 		auto _getResourceType(vk::DescriptorType p_type) const -> EGPUResourceType;
 
-		VKGPUContext *m_ctx{nullptr};
+		VKLogicalDevice *m_device{nullptr};
 
 		RefPtr<VKShader> m_shader{nullptr};
 		uint32           m_startSet{0u};

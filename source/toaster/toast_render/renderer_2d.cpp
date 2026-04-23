@@ -2,11 +2,11 @@
 
 #include "globals.hpp"
 #include "renderer.hpp"
-#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 
 namespace toaster
 {
-	Renderer2D::Renderer2D(gpu::VKGPUContext *p_ctx, const Renderer2DCreateInfo &p_create_info) : m_ctx(p_ctx), m_createInfo(p_create_info),
+	Renderer2D::Renderer2D(gpu::VKLogicalDevice *p_p_devicectx, const Renderer2DCreateInfo &p_create_info) : m_device(p_p_devicectx), m_createInfo(p_create_info),
 																								  m_maxVertices(p_create_info.maxQuads * 4u),
 																								  m_maxIndices(p_create_info.maxQuads * 6u)
 	{
@@ -21,22 +21,22 @@ namespace toaster
 		auto                    quad_shader{Globals::getShaderLibrary().get("Quad")};
 		gpu::PipelineCreateInfo pipeline_create_info{};
 		pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
-		pipeline_create_info.depthFormat        = m_ctx->getPhysicalDevice()->getDepthFormat();
+		pipeline_create_info.depthFormat        = m_device->getPhysicalDevice()->getDepthFormat();
 		pipeline_create_info.vertexBufferLayout = m_quadVertexBufferLayout;
 		pipeline_create_info.shader             = quad_shader;
 		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
 		pipeline_create_info.multisample        = false;
-		m_quadPipeline                          = m_ctx->alloc<gpu::VKPipeline>(pipeline_create_info);
+		m_quadPipeline                          = m_device->alloc<gpu::VKPipeline>(pipeline_create_info);
 
 		constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
-		m_cameraUBs       = m_ctx->alloc<gpu::VKUniformBufferPFF>(ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
+		m_cameraUBs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size,m_device->getSpecInfo().maxFramesInFlight);
 		m_mappedCameraUBs = m_cameraUBs->mapMemory(ubo_size, 0);
 
-		m_quadRenderPass = m_ctx->alloc<gpu::VKRenderPass>(m_quadPipeline);
+		m_quadRenderPass = m_device->alloc<gpu::VKRenderPass>(m_quadPipeline);
 		m_quadRenderPass->setInput("Camera", m_cameraUBs);
 		m_quadRenderPass->bake();
 
-		m_quadMaterial = m_ctx->alloc<gpu::VKMaterial>(quad_shader);
+		m_quadMaterial = m_device->alloc<gpu::VKMaterial>(quad_shader);
 
 		if (!m_createInfo.overrideAttachments)
 		{
@@ -44,14 +44,14 @@ namespace toaster
 			colour_attachment_texture_spec_info.width  = m_createInfo.renderTargetWidth;
 			colour_attachment_texture_spec_info.height = m_createInfo.renderTargetHeight;
 			colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
-			m_renderTargetTexture                      = m_ctx->alloc<gpu::VKTexture2D>(colour_attachment_texture_spec_info);
+			m_renderTargetTexture                      = m_device->alloc<gpu::VKTexture2D>(colour_attachment_texture_spec_info);
 
 			gpu::ImageCreateInfo depth_attachment_image_create_info{};
 			depth_attachment_image_create_info.width  = m_createInfo.renderTargetWidth;
 			depth_attachment_image_create_info.height = m_createInfo.renderTargetHeight;
-			depth_attachment_image_create_info.format = m_ctx->getPhysicalDevice()->getDepthFormat();
+			depth_attachment_image_create_info.format = m_device->getPhysicalDevice()->getDepthFormat();
 			depth_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-			m_renderTargetDepthImage                  = m_ctx->alloc<gpu::VKImage2D>(depth_attachment_image_create_info);
+			m_renderTargetDepthImage                  = m_device->alloc<gpu::VKImage2D>(depth_attachment_image_create_info);
 		}
 		else
 		{
@@ -60,7 +60,7 @@ namespace toaster
 		}
 
 		vk::DeviceSize quad_vertex_buffer_size{sizeof(QuadVertex) * m_maxVertices};
-		m_quadVertexBuffer = m_ctx->alloc<gpu::VKVertexBuffer>(quad_vertex_buffer_size);
+		m_quadVertexBuffer = m_device->alloc<gpu::VKVertexBuffer>(quad_vertex_buffer_size);
 		m_quadVertexBase   = new QuadVertex[m_maxVertices];
 
 		auto   quad_indices{new uint32[m_maxIndices]};
@@ -79,7 +79,7 @@ namespace toaster
 		}
 
 		vk::DeviceSize index_buffer_size{m_maxIndices * sizeof(uint32)};
-		m_quadIndexBuffer = m_ctx->alloc<gpu::VKIndexBuffer>(quad_indices, index_buffer_size);
+		m_quadIndexBuffer = m_device->alloc<gpu::VKIndexBuffer>(quad_indices, index_buffer_size);
 
 		delete[] quad_indices;
 

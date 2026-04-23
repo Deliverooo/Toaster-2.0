@@ -19,7 +19,7 @@ namespace toaster
 	class SceneRenderer
 	{
 	public:
-		SceneRenderer(gpu::VKGPUContext *p_ctx, const SceneRendererSpecInfo &p_spec_info);
+		SceneRenderer(gpu::VKLogicalDevice *p_device, const SceneRendererSpecInfo &p_spec_info);
 		~SceneRenderer();
 
 		auto begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix) -> void;
@@ -44,7 +44,7 @@ namespace toaster
 		auto _renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 		auto _renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 
-		gpu::VKGPUContext *m_ctx{nullptr};
+		gpu::VKLogicalDevice *m_device{nullptr};
 
 		SceneRendererSpecInfo m_specInfo{};
 

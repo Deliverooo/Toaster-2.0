@@ -10,7 +10,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
 
 inline auto operator<<(YAML::Emitter &out, const glm::vec2 &v) -> YAML::Emitter &
@@ -315,7 +315,7 @@ namespace toaster
 				auto texture_path = sprite_comp["TexturePath"].as<String>();
 				if (texture_path != "Null")
 				{
-					src.texture = p_scene->m_ctx->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, texture_path);
+					src.texture = p_scene->m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, texture_path);
 				}
 				else
 					src.texture = nullptr;

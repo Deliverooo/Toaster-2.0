@@ -8,7 +8,7 @@
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
+	class VKLogicalDevice;
 
 	class VKShader
 	{
@@ -30,8 +30,8 @@ namespace toaster::gpu
 		using PipelineCreateInfoMap = std::map<vk::ShaderStageFlagBits, vk::PipelineShaderStageCreateInfo>;
 		using BytecodeMap           = std::map<vk::ShaderStageFlagBits, Bytecode>;
 
-		VKShader(VKGPUContext *p_ctx, const BytecodeMap &p_bytecode_map, const String &p_name = "Unknown");
-		[[nodiscard]] auto getContext() const -> VKGPUContext *;
+		VKShader(VKLogicalDevice *p_dev, const BytecodeMap &p_bytecode_map, const String &p_name = "Unknown");
+		[[nodiscard]] auto getDevice() const -> VKLogicalDevice *;
 
 		[[nodiscard]] auto getPipelineShaderStageCreateInfoMap() const -> const PipelineCreateInfoMap &;
 		[[nodiscard]] auto getPipelineShaderStageCreateInfos() const -> std::vector<vk::PipelineShaderStageCreateInfo>;
@@ -54,7 +54,7 @@ namespace toaster::gpu
 		auto _reflect(vk::ShaderStageFlagBits p_stage, Bytecode p_bytecode) -> void;
 		auto _createDescriptors() -> void;
 
-		VKGPUContext *m_ctx{nullptr};
+		VKLogicalDevice *m_device{nullptr};
 
 		String m_name;
 

@@ -3,14 +3,14 @@
 
 namespace toaster::gpu
 {
-	VKComputePass::VKComputePass(VKGPUContext *p_ctx, const RefPtr<VKComputePipeline> &p_pipeline) : m_ctx(p_ctx), m_pipeline(p_pipeline)
+	VKComputePass::VKComputePass(VKLogicalDevice *p_device, const RefPtr<VKComputePipeline> &p_pipeline) : m_device(p_device), m_pipeline(p_pipeline)
 	{
-		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_ctx, m_pipeline->getShader(), 1, 3);
+		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_device, m_pipeline->getShader(), 1, 3);
 	}
 
-	auto VKComputePass::getContext() const -> VKGPUContext *
+	auto VKComputePass::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKComputePass::setInput(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void
@@ -55,7 +55,7 @@ namespace toaster::gpu
 
 	auto VKComputePass::getDescriptorSets(uint32 p_frame_index) const -> std::vector<vk::DescriptorSet>
 	{
-		TST_ASSERT_MSG(p_frame_index < VKGPUContext::c_maxFramesInFlight, "Frame index out of bounds");
+		TST_ASSERT_MSG(p_frame_index < m_device->getSpecInfo().maxFramesInFlight, "Frame index out of bounds");
 		return m_descriptorSetManager->getDescriptorSets(p_frame_index);
 	}
 

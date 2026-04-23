@@ -7,13 +7,13 @@
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
+	class VKLogicalDevice;
 
 	class VKRenderPass
 	{
 	public:
-		VKRenderPass(VKGPUContext *p_ctx, const RefPtr<VKPipeline> &p_pipeline);
-		auto getContext() const -> VKGPUContext *;
+		VKRenderPass(VKLogicalDevice *p_device, const RefPtr<VKPipeline> &p_pipeline);
+		[[nodiscard]] auto getDevice() const -> VKLogicalDevice *;
 
 		auto setInput(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
 		auto setInput(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void;
@@ -29,7 +29,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto getEndSetIndex() const -> uint32;
 
 	private:
-		VKGPUContext *m_ctx{nullptr};
+		VKLogicalDevice *m_device{nullptr};
 
 		RefPtr<VKPipeline>                m_pipeline{nullptr};
 		UniquePtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};

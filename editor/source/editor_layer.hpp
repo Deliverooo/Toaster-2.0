@@ -10,7 +10,6 @@
 
 #include <imgui.h>
 
-#include "toast_gpu/vk/vk_gpu_context.hpp"
 namespace ig = ImGui;
 
 namespace toaster
@@ -46,7 +45,7 @@ namespace toaster
 		auto _onWindowFileDropEvent(WindowFileDropEvent &p_event) -> bool;
 		auto _onKeyPressEvent(KeyPressEvent &p_event) -> bool;
 
-		gpu::VKGPUContext *m_ctx{nullptr};
+		gpu::VKLogicalDevice *m_device{nullptr};
 
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
@@ -60,8 +59,6 @@ namespace toaster
 		RefPtr<Scene>                  m_scene{nullptr};
 		UniquePtr<SceneHierarchyPanel> m_sceneHierarchyPanel{nullptr};
 		RefPtr<SceneRenderer>          m_sceneRenderer{nullptr};
-
-		std::array<VkDescriptorSet, gpu::VKGPUContext::c_maxFramesInFlight> m_imguiSceneRendererDescriptorSets{nullptr};
 
 		RefPtr<Renderer2D> m_renderer2D{nullptr};
 

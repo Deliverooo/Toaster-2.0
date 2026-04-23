@@ -1,13 +1,13 @@
 #include "globals.hpp"
 
-#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_lib/io/filesystem.hpp"
 
 namespace toaster
 {
 	struct GlobalData
 	{
-		gpu::VKGPUContext *ctx{nullptr};
+		gpu::VKLogicalDevice *device{nullptr};
 
 		ShaderLibrary shaderLibrary;
 
@@ -22,17 +22,17 @@ namespace toaster
 
 	static GlobalData *s_globalData{nullptr};
 
-	auto Globals::init(gpu::VKGPUContext *p_ctx) -> void
+	auto Globals::init(gpu::VKLogicalDevice *p_device) -> void
 	{
 		s_globalData      = new GlobalData{};
-		s_globalData->ctx = p_ctx;
+		s_globalData->device = p_device;
 
 		{
 			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary("shaders/depth-pre.vert.glsl.spv")};
 			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/depth-pre.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
-			const auto                 depth_pre_shader{s_globalData->ctx->alloc<gpu::VKShader>(shader_bytecode_map, "Depth-Pre")};
+			const auto                 depth_pre_shader{s_globalData->device->alloc<gpu::VKShader>(shader_bytecode_map, "Depth-Pre")};
 			s_globalData->shaderLibrary.add("Depth-Pre", depth_pre_shader); // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
 		}
 		{
@@ -40,7 +40,7 @@ namespace toaster
 			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/geometry.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
-			const auto                 geometry_shader{s_globalData->ctx->alloc<gpu::VKShader>(shader_bytecode_map, "Geometry")};
+			const auto                 geometry_shader{s_globalData->device->alloc<gpu::VKShader>(shader_bytecode_map, "Geometry")};
 			s_globalData->shaderLibrary.add("Geometry", geometry_shader); // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
 		}
 		{
@@ -48,7 +48,7 @@ namespace toaster
 			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/composite.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
-			const auto                 composite_shader{s_globalData->ctx->alloc<gpu::VKShader>(shader_bytecode_map, "Composite")};
+			const auto                 composite_shader{s_globalData->device->alloc<gpu::VKShader>(shader_bytecode_map, "Composite")};
 			s_globalData->shaderLibrary.add("Composite", composite_shader);
 		}
 		{
@@ -56,7 +56,7 @@ namespace toaster
 			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/skybox.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
-			const auto                 skybox_shader{s_globalData->ctx->alloc<gpu::VKShader>(shader_bytecode_map, "Skybox")};
+			const auto                 skybox_shader{s_globalData->device->alloc<gpu::VKShader>(shader_bytecode_map, "Skybox")};
 			s_globalData->shaderLibrary.add("Skybox", skybox_shader);
 		}
 		{
@@ -64,7 +64,7 @@ namespace toaster
 			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/quad.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eVertex, vs_bytecode}, {vk::ShaderStageFlagBits::eFragment, ps_bytecode}};
-			const auto                 quad_shader{s_globalData->ctx->alloc<gpu::VKShader>(shader_bytecode_map, "Quad")};
+			const auto                 quad_shader{s_globalData->device->alloc<gpu::VKShader>(shader_bytecode_map, "Quad")};
 			s_globalData->shaderLibrary.add("Quad", quad_shader);
 		}
 
@@ -76,22 +76,22 @@ namespace toaster
 		s_globalData->quadIndices = {0, 1, 3, 1, 2, 3};
 
 		vk::DeviceSize vbo_size{s_globalData->quadVertices.size() * sizeof(QuadVertex)};
-		s_globalData->quadVertexBuffer = s_globalData->ctx->alloc<gpu::VKVertexBuffer>(s_globalData->quadVertices.data(), vbo_size);
+		s_globalData->quadVertexBuffer = s_globalData->device->alloc<gpu::VKVertexBuffer>(s_globalData->quadVertices.data(), vbo_size);
 
 		vk::DeviceSize ibo_size{s_globalData->quadIndices.size() * sizeof(uint32)};
-		s_globalData->quadIndexBuffer = s_globalData->ctx->alloc<gpu::VKIndexBuffer>(s_globalData->quadIndices.data(), ibo_size);
+		s_globalData->quadIndexBuffer = s_globalData->device->alloc<gpu::VKIndexBuffer>(s_globalData->quadIndices.data(), ibo_size);
 
 		gpu::TextureSpecInfo white_texture_spec_info{};
 		white_texture_spec_info.width  = 1;
 		white_texture_spec_info.height = 1;
 		white_texture_spec_info.format = vk::Format::eR8G8B8A8Unorm;
 		uint32 white_texture_data{0xFFFFFFFF};
-		s_globalData->whiteTexture = s_globalData->ctx->alloc<gpu::VKTexture2D>(white_texture_spec_info, &white_texture_data, sizeof(uint32));
+		s_globalData->whiteTexture = s_globalData->device->alloc<gpu::VKTexture2D>(white_texture_spec_info, &white_texture_data, sizeof(uint32));
 	}
 
 	auto Globals::shutdown() -> void
 	{
-		s_globalData->ctx = nullptr;
+		s_globalData->device = nullptr;
 		delete s_globalData;
 	}
 

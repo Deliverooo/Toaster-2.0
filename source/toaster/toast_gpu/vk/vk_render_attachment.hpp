@@ -1,14 +1,10 @@
 #pragma once
 
 #include <vulkan/vulkan_raii.hpp>
-#include "toast_lib/core_basic.hpp"
-
 #include "vk_texture.hpp"
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
-
 	struct RenderingAttachmentInfo
 	{
 		RefPtr<VKImage2D> image{nullptr};

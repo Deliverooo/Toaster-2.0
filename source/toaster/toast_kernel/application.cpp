@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <GLFW/glfw3.h>
 
-#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
 namespace toaster
@@ -33,15 +33,15 @@ namespace toaster
 			});
 		});
 
-		Globals::init(m_window->getGPUContext());
+		Globals::init(m_window->getLogicalDevice());
 
 		input::setCurrentWindowContext(m_window->getNativeWindow());
 	}
 
 	Application::~Application() noexcept
 	{
-		const auto ctx{m_window->getGPUContext()};
-		ctx->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
+		const auto device{m_window->getLogicalDevice()};
+		device->getVulkanLogicalDevice().waitIdle();
 
 		for (IAppLayer *layer: m_layers)
 			removeLayer(layer);
@@ -49,7 +49,7 @@ namespace toaster
 
 		Globals::shutdown();
 
-		ctx->performGarbageCollection();
+		device->performGarbageCollection();
 
 		delete m_window;
 		Window::shutdownWindowingAPI();

@@ -10,15 +10,15 @@ struct GLFWwindow;
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
+	class VKLogicalDevice;
 
 	class VKSwapchain
 	{
 	public:
 		using ResizeCB = std::function<void(uint32, uint32)>;
 
-		VKSwapchain(VKGPUContext *p_ctx, GLFWwindow *p_window);
-		auto getContext() const -> VKGPUContext *;
+		VKSwapchain(VKLogicalDevice *p_dev, GLFWwindow *p_window);
+		[[nodiscard]] auto getDevice() const -> VKLogicalDevice *;
 
 		auto beginFrame() -> void;
 		auto endFrame() -> void;
@@ -54,19 +54,14 @@ namespace toaster::gpu
 	private:
 		auto _createImageViews() -> void;
 		auto _createSyncObjects() -> void;
-		auto _createCommandBuffers() -> void;
 		auto _createDepthResources() -> void;
 
 		auto _create() -> void;
 		auto _recreateSwapchain() -> void;
 
-		[[nodiscard]] auto _chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const -> vk::SurfaceFormatKHR;
-		[[nodiscard]] auto _chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes) const -> vk::PresentModeKHR;
-		[[nodiscard]] auto _chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const -> vk::Extent2D;
-		[[nodiscard]] auto _chooseSwapchainMinImageCount(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const -> uint32;
+		VKLogicalDevice *m_device{nullptr};
 
-		VKGPUContext *m_ctx{nullptr};
-		GLFWwindow *  m_window{nullptr};
+		GLFWwindow *m_window{nullptr};
 
 		vk::raii::SwapchainKHR           m_swapchain{nullptr};
 		std::vector<vk::Image>           m_swapchainImages;

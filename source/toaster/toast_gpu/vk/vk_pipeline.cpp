@@ -2,21 +2,22 @@
 
 #include "toast_lib/io/filesystem.hpp"
 
-#include "vk_gpu_context.hpp"
+#include "vk_logical_device.hpp"
+
 #include "toast_lib/logging.hpp"
 
 namespace toaster::gpu
 {
-	VKPipeline::VKPipeline(VKGPUContext *p_ctx, const PipelineCreateInfo &p_create_info) : m_ctx(p_ctx), m_createInfo(p_create_info)
+	VKPipeline::VKPipeline(VKLogicalDevice *p_device, const PipelineCreateInfo &p_create_info) : m_device(p_device), m_createInfo(p_create_info)
 	{
-		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+		TST_ASSERT_MSG(m_device, "Context cannot be null");
 
 		_createGraphicsPipeline();
 	}
 
-	auto VKPipeline::getContext() const -> VKGPUContext *
+	auto VKPipeline::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKPipeline::getPipeline() -> vk::raii::Pipeline &
@@ -117,7 +118,7 @@ namespace toaster::gpu
 
 		if (m_createInfo.multisample)
 		{
-			multisample_state_create_info.rasterizationSamples = m_ctx->getPhysicalDevice()->getMaxUsableSampleCount();
+			multisample_state_create_info.rasterizationSamples = m_device->getPhysicalDevice()->getMaxUsableSampleCount();
 			multisample_state_create_info.sampleShadingEnable  = true;
 		}
 		else
@@ -168,7 +169,7 @@ namespace toaster::gpu
 		pipeline_layout_create_info.pPushConstantRanges    = vk_push_constant_ranges.data();
 		pipeline_layout_create_info.setLayoutCount         = descriptor_set_layouts.size();
 		pipeline_layout_create_info.pSetLayouts            = descriptor_set_layouts.data();
-		m_pipelineLayout                                   = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), pipeline_layout_create_info};
+		m_pipelineLayout                                   = {*m_device, pipeline_layout_create_info};
 
 		std::vector<vk::PipelineShaderStageCreateInfo> stage_infos = m_createInfo.shader->getPipelineShaderStageCreateInfos();
 
@@ -187,7 +188,7 @@ namespace toaster::gpu
 		graphics_pipeline_create_info.renderPass          = nullptr;
 		graphics_pipeline_create_info.pNext               = &rendering_create_info;
 
-		m_graphicsPipeline = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), nullptr, graphics_pipeline_create_info};
+		m_graphicsPipeline = {*m_device, nullptr, graphics_pipeline_create_info};
 	}
 
 	auto VKPipeline::_getVulkanAttribType(EBufferDataType p_type) -> vk::Format

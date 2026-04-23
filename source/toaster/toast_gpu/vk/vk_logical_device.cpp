@@ -1,5 +1,7 @@
 #include "vk_logical_device.hpp"
 
+#include "vk_command_buffer.hpp"
+
 namespace toaster::gpu
 {
 	VKLogicalDevice::VKLogicalDevice(VKPhysicalDevice *p_physical_device, const VKLogicalDeviceSpecInfo &p_spec_info) : m_physicalDevice(p_physical_device),
@@ -131,6 +133,8 @@ namespace toaster::gpu
 		m_computeCommandPool = {m_logicalDevice, compute_command_pool_create_info};
 
 		#pragma endregion
+
+		m_pendingDeletions.resize(m_specInfo.maxFramesInFlight);
 	}
 
 	auto VKLogicalDevice::getPhysicalDevice() const -> VKPhysicalDevice *
@@ -241,5 +245,431 @@ namespace toaster::gpu
 		{
 			TST_ASSERT_MSG(false, "Failed to wait for Fences");
 		}
+	}
+
+	auto VKLogicalDevice::setCurrentFrameIndex(const uint32 p_index) -> void
+	{
+		TST_ASSERT_MSG(p_index < m_specInfo.maxFramesInFlight, "Index is out of bounds!");
+		m_currentFrameIndex = p_index;
+	}
+
+	auto VKLogicalDevice::performGarbageCollection() -> void
+	{
+		while (!m_pendingDeletions[m_currentFrameIndex].empty())
+		{
+			auto deleter{std::move(m_pendingDeletions[m_currentFrameIndex].front())};
+			m_pendingDeletions[m_currentFrameIndex].pop_front();
+			deleter();
+		}
+	}
+
+	auto VKLogicalDevice::createShaderModule(const std::vector<uint8> &p_code) -> vk::raii::ShaderModule
+	{
+		vk::ShaderModuleCreateInfo shader_module_create_info{};
+		shader_module_create_info.codeSize = p_code.size();
+		shader_module_create_info.pCode    = reinterpret_cast<const uint32 *>(p_code.data());
+
+		return {m_logicalDevice, shader_module_create_info};
+	}
+
+	auto VKLogicalDevice::createShaderModule(const std::vector<uint32> &p_code) -> vk::raii::ShaderModule
+	{
+		vk::ShaderModuleCreateInfo shader_module_create_info{};
+		shader_module_create_info.codeSize = p_code.size() * sizeof(uint32);
+		shader_module_create_info.pCode    = p_code.data();
+
+		return {m_logicalDevice, shader_module_create_info};
+	}
+
+	auto VKLogicalDevice::createBuffer(vk::DeviceSize    p_size, vk::BufferUsageFlags          p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
+									   vk::raii::Buffer &p_out_buffer, vk::raii::DeviceMemory &p_out_memory) -> void
+	{
+		vk::BufferCreateInfo buffer_create_info{};
+		buffer_create_info.size        = p_size;
+		buffer_create_info.usage       = p_usage_flags;
+		buffer_create_info.sharingMode = vk::SharingMode::eConcurrent;
+
+		buffer_create_info.queueFamilyIndexCount = 2;
+		uint32 qfi[]                             = {m_queueFamilyIndices.graphics, m_queueFamilyIndices.transfer};
+		buffer_create_info.pQueueFamilyIndices   = qfi;
+
+		p_out_buffer = {m_logicalDevice, buffer_create_info};
+
+		vk::MemoryRequirements memory_requirements = p_out_buffer.getMemoryRequirements();
+		vk::MemoryAllocateInfo memory_allocate_info{};
+		memory_allocate_info.memoryTypeIndex = m_physicalDevice->findMemoryType(memory_requirements.memoryTypeBits, p_memory_properties);
+		memory_allocate_info.allocationSize  = memory_requirements.size;
+
+		p_out_memory = {m_logicalDevice, memory_allocate_info};
+
+		p_out_buffer.bindMemory(p_out_memory, 0u);
+	}
+
+	auto VKLogicalDevice::createImage(uint32           p_width, uint32 p_height, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count, vk::Format p_format,
+									  vk::ImageTiling  p_image_tiling, vk::ImageUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
+									  vk::raii::Image &p_out_image, vk::raii::DeviceMemory &p_out_memory) -> void
+	{
+		vk::ImageCreateInfo image_create_info{};
+		image_create_info.extent.width  = p_width;
+		image_create_info.extent.height = p_height;
+		image_create_info.extent.depth  = 1;
+		image_create_info.mipLevels     = p_mip_levels;
+		image_create_info.arrayLayers   = 1;
+		image_create_info.imageType     = vk::ImageType::e2D;
+		image_create_info.samples       = p_sample_count;
+		image_create_info.sharingMode   = vk::SharingMode::eConcurrent;
+		image_create_info.tiling        = p_image_tiling;
+		image_create_info.initialLayout = vk::ImageLayout::eUndefined;
+		image_create_info.usage         = p_usage_flags;
+		image_create_info.format        = p_format;
+
+		image_create_info.queueFamilyIndexCount = 2;
+		uint32 qfi[]                            = {m_queueFamilyIndices.graphics, m_queueFamilyIndices.transfer};
+		image_create_info.pQueueFamilyIndices   = qfi;
+
+		p_out_image                                = {m_logicalDevice, image_create_info};
+		vk::MemoryRequirements memory_requirements = p_out_image.getMemoryRequirements();
+		vk::MemoryAllocateInfo memory_allocate_info{};
+		memory_allocate_info.allocationSize  = memory_requirements.size;
+		memory_allocate_info.memoryTypeIndex = m_physicalDevice->findMemoryType(memory_requirements.memoryTypeBits, p_memory_properties);
+
+		p_out_memory = {m_logicalDevice, memory_allocate_info};
+
+		p_out_image.bindMemory(p_out_memory, 0u);
+	}
+
+	auto VKLogicalDevice::createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags,
+										  uint32           p_mip_levels) -> vk::raii::ImageView
+	{
+		vk::ImageViewCreateInfo image_view_create_info{};
+		image_view_create_info.viewType   = vk::ImageViewType::e2D;
+		image_view_create_info.image      = p_src_image;
+		image_view_create_info.components = {
+			vk::ComponentSwizzle::eIdentity,
+			vk::ComponentSwizzle::eIdentity,
+			vk::ComponentSwizzle::eIdentity,
+			vk::ComponentSwizzle::eIdentity
+		};
+		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{p_aspect_flags, 0, p_mip_levels, 0, 1};
+		image_view_create_info.format           = p_format;
+
+		return {m_logicalDevice, image_view_create_info};
+	}
+
+	auto VKLogicalDevice::createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_mip_levels) -> vk::raii::ImageView
+	{
+		vk::ImageViewCreateInfo image_view_create_info{};
+		image_view_create_info.viewType   = vk::ImageViewType::e2D;
+		image_view_create_info.image      = p_src_image;
+		image_view_create_info.components = {
+			vk::ComponentSwizzle::eIdentity,
+			vk::ComponentSwizzle::eIdentity,
+			vk::ComponentSwizzle::eIdentity,
+			vk::ComponentSwizzle::eIdentity
+		};
+		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{p_aspect_flags, 0, p_mip_levels, 0, 1};
+		image_view_create_info.format           = p_format;
+
+		return {m_logicalDevice, image_view_create_info};
+	}
+
+	auto VKLogicalDevice::createSampler() -> vk::raii::Sampler
+	{
+		const auto physical_device_props = m_physicalDevice->getVulkanPhysicalDevice().getProperties();
+
+		vk::SamplerCreateInfo sampler_create_info{};
+		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.magFilter               = vk::Filter::eLinear;
+		sampler_create_info.minFilter               = vk::Filter::eLinear;
+		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
+		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.mipLodBias              = 0.0f;
+		sampler_create_info.anisotropyEnable        = true;
+		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
+		sampler_create_info.compareEnable           = false;
+		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
+		sampler_create_info.minLod                  = 0.0f;
+		sampler_create_info.maxLod                  = vk::LodClampNone;
+		sampler_create_info.borderColor             = vk::BorderColor::eFloatCustomEXT;
+		sampler_create_info.unnormalizedCoordinates = false;
+
+		// Ts is purely aesthetic
+		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{};
+		border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
+		border_colour_create_info.format            = vk::Format::eR8G8B8A8Srgb;
+
+		sampler_create_info.pNext = &border_colour_create_info;
+
+		return {m_logicalDevice, sampler_create_info};
+	}
+
+	auto VKLogicalDevice::copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) -> void
+	{
+		vk::BufferCopy2 buffer_copy{};
+		buffer_copy.size      = static_cast<uint32>(p_size);
+		buffer_copy.srcOffset = 0;
+		buffer_copy.dstOffset = 0;
+
+		vk::CopyBufferInfo2 copy_info{};
+		copy_info.srcBuffer   = p_src_buffer;
+		copy_info.dstBuffer   = p_dst_buffer;
+		copy_info.regionCount = 1;
+		copy_info.pRegions    = &buffer_copy;
+
+		VKCommandBuffer cmd{this, vk::QueueFlagBits::eTransfer};
+		cmd.begin();
+		cmd.getVulkanCommandBuffer().copyBuffer2(copy_info);
+		cmd.end();
+		cmd.submit();
+		cmd.waitForFence();
+	}
+
+	auto VKLogicalDevice::copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, uint32 p_width, uint32 p_height) -> void
+	{
+		vk::BufferImageCopy2 image_copy{};
+		image_copy.bufferOffset      = 0;
+		image_copy.bufferRowLength   = 0;
+		image_copy.bufferImageHeight = 0;
+		image_copy.imageOffset       = vk::Offset3D{0, 0, 0};
+		image_copy.imageExtent       = vk::Extent3D{p_width, p_height, 1};
+		image_copy.imageSubresource  = {vk::ImageAspectFlagBits::eColor, 0, 0, 1};
+
+		vk::CopyBufferToImageInfo2 buffer_image_copy{};
+		buffer_image_copy.srcBuffer      = p_src_buffer;
+		buffer_image_copy.dstImage       = p_dst_image;
+		buffer_image_copy.dstImageLayout = vk::ImageLayout::eTransferDstOptimal;
+		buffer_image_copy.regionCount    = 1;
+		buffer_image_copy.pRegions       = &image_copy;
+
+		VKCommandBuffer cmd{this, vk::QueueFlagBits::eTransfer};
+		cmd.begin();
+		cmd.getVulkanCommandBuffer().copyBufferToImage2(buffer_image_copy);
+		cmd.end();
+		cmd.submit();
+		cmd.waitForFence();
+	}
+
+	auto VKLogicalDevice::transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
+												vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask,
+												uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void
+	{
+		vk::ImageMemoryBarrier2 image_memory_barrier{};
+		image_memory_barrier.oldLayout           = p_old_layout;
+		image_memory_barrier.newLayout           = p_new_layout;
+		image_memory_barrier.srcAccessMask       = p_src_access_mask;
+		image_memory_barrier.dstAccessMask       = p_dst_access_mask;
+		image_memory_barrier.srcStageMask        = p_src_stage_mask;
+		image_memory_barrier.dstStageMask        = p_dst_stage_mask;
+		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.image               = p_image;
+		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, 1};
+
+		vk::DependencyInfo dependency_info{};
+		dependency_info.imageMemoryBarrierCount = 1;
+		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
+
+		VKCommandBuffer cmd{this, vk::QueueFlagBits::eGraphics};
+		cmd.begin();
+		cmd.getVulkanCommandBuffer().pipelineBarrier2(dependency_info);
+		cmd.end();
+		cmd.submit();
+		cmd.waitForFence();
+	}
+
+	auto VKLogicalDevice::transitionImageLayout(vk::raii::CommandBuffer &p_cmd, vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
+												vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
+												vk::PipelineStageFlags2  p_dst_stage_mask, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void
+	{
+		vk::ImageMemoryBarrier2 image_memory_barrier{};
+		image_memory_barrier.oldLayout           = p_old_layout;
+		image_memory_barrier.newLayout           = p_new_layout;
+		image_memory_barrier.srcAccessMask       = p_src_access_mask;
+		image_memory_barrier.dstAccessMask       = p_dst_access_mask;
+		image_memory_barrier.srcStageMask        = p_src_stage_mask;
+		image_memory_barrier.dstStageMask        = p_dst_stage_mask;
+		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.image               = p_image;
+		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, 1};
+
+		vk::DependencyInfo dependency_info{};
+		dependency_info.imageMemoryBarrierCount = 1;
+		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
+
+		p_cmd.pipelineBarrier2(dependency_info);
+	}
+
+	auto VKLogicalDevice::transitionImageLayout(vk::Image &      p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
+												vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask,
+												uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void
+	{
+		vk::ImageMemoryBarrier2 image_memory_barrier{};
+		image_memory_barrier.oldLayout           = p_old_layout;
+		image_memory_barrier.newLayout           = p_new_layout;
+		image_memory_barrier.srcAccessMask       = p_src_access_mask;
+		image_memory_barrier.dstAccessMask       = p_dst_access_mask;
+		image_memory_barrier.srcStageMask        = p_src_stage_mask;
+		image_memory_barrier.dstStageMask        = p_dst_stage_mask;
+		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.image               = p_image;
+		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, 1};
+
+		vk::DependencyInfo dependency_info{};
+		dependency_info.imageMemoryBarrierCount = 1;
+		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
+
+		VKCommandBuffer cmd{this, vk::QueueFlagBits::eGraphics};
+		cmd.begin();
+		cmd.getVulkanCommandBuffer().pipelineBarrier2(dependency_info);
+		cmd.end();
+		cmd.submit();
+		cmd.waitForFence();
+	}
+
+	auto VKLogicalDevice::transitionImageLayout(vk::raii::CommandBuffer &p_cmd, vk::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
+												vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
+												vk::PipelineStageFlags2  p_dst_stage_mask, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void
+	{
+		vk::ImageMemoryBarrier2 image_memory_barrier{};
+		image_memory_barrier.oldLayout           = p_old_layout;
+		image_memory_barrier.newLayout           = p_new_layout;
+		image_memory_barrier.srcAccessMask       = p_src_access_mask;
+		image_memory_barrier.dstAccessMask       = p_dst_access_mask;
+		image_memory_barrier.srcStageMask        = p_src_stage_mask;
+		image_memory_barrier.dstStageMask        = p_dst_stage_mask;
+		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.image               = p_image;
+		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, 1};
+
+		vk::DependencyInfo dependency_info{};
+		dependency_info.imageMemoryBarrierCount = 1;
+		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
+
+		p_cmd.pipelineBarrier2(dependency_info);
+	}
+
+	auto VKLogicalDevice::generateMipmaps(vk::raii::Image &p_src_image, uint32 p_width, uint32 p_height, uint32 p_mip_levels) -> void
+	{
+		vk::ImageMemoryBarrier2 memory_barrier{};
+		memory_barrier.image                           = p_src_image;
+		memory_barrier.oldLayout                       = vk::ImageLayout::eTransferDstOptimal;
+		memory_barrier.newLayout                       = vk::ImageLayout::eTransferSrcOptimal;
+		memory_barrier.srcAccessMask                   = vk::AccessFlagBits2::eTransferWrite;
+		memory_barrier.dstAccessMask                   = vk::AccessFlagBits2::eTransferRead;
+		memory_barrier.srcQueueFamilyIndex             = vk::QueueFamilyIgnored;
+		memory_barrier.dstQueueFamilyIndex             = vk::QueueFamilyIgnored;
+		memory_barrier.subresourceRange.aspectMask     = vk::ImageAspectFlagBits::eColor;
+		memory_barrier.subresourceRange.baseArrayLayer = 0;
+		memory_barrier.subresourceRange.baseMipLevel   = 0;
+		memory_barrier.subresourceRange.layerCount     = 1;
+		memory_barrier.subresourceRange.levelCount     = 1;
+
+		int32 mip_width{static_cast<int32>(p_width)};
+		int32 mip_height{static_cast<int32>(p_height)};
+
+		VKCommandBuffer cmd{this, vk::QueueFlagBits::eGraphics};
+		cmd.begin();
+
+		for (uint32 i{1u}; i < p_mip_levels; ++i)
+		{
+			memory_barrier.subresourceRange.baseMipLevel = i - 1;
+			memory_barrier.oldLayout                     = vk::ImageLayout::eTransferDstOptimal;
+			memory_barrier.newLayout                     = vk::ImageLayout::eTransferSrcOptimal;
+			memory_barrier.srcAccessMask                 = vk::AccessFlagBits2::eTransferWrite;
+			memory_barrier.dstAccessMask                 = vk::AccessFlagBits2::eTransferRead;
+
+			{
+				memory_barrier.srcStageMask = vk::PipelineStageFlagBits2::eTransfer;
+				memory_barrier.dstStageMask = vk::PipelineStageFlagBits2::eTransfer;
+
+				vk::DependencyInfo dependency_info{};
+				dependency_info.imageMemoryBarrierCount = 1;
+				dependency_info.pImageMemoryBarriers    = &memory_barrier;
+				cmd.getVulkanCommandBuffer().pipelineBarrier2(dependency_info);
+			}
+
+			std::array<vk::Offset3D, 2> src_offsets;
+			std::array<vk::Offset3D, 2> dst_offsets;
+
+			src_offsets[0] = vk::Offset3D{0, 0, 0};
+			src_offsets[1] = vk::Offset3D{mip_width, mip_height, 1};
+
+			dst_offsets[0] = vk::Offset3D{0, 0, 0};
+			dst_offsets[1] = vk::Offset3D{mip_width > 1 ? mip_width / 2 : 1, mip_height > 1 ? mip_height / 2 : 1, 1};
+
+			vk::ImageBlit2 image_blit{};
+			image_blit.srcOffsets     = src_offsets;
+			image_blit.dstOffsets     = dst_offsets;
+			image_blit.srcSubresource = vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, i - 1, 0, 1};
+			image_blit.dstSubresource = vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor, i, 0, 1};
+
+			vk::BlitImageInfo2 blit_info{};
+			blit_info.srcImage       = p_src_image;
+			blit_info.dstImage       = p_src_image;
+			blit_info.srcImageLayout = vk::ImageLayout::eTransferSrcOptimal;
+			blit_info.dstImageLayout = vk::ImageLayout::eTransferDstOptimal;
+			blit_info.regionCount    = 1;
+			blit_info.pRegions       = &image_blit;
+			blit_info.filter         = vk::Filter::eLinear;
+			cmd.getVulkanCommandBuffer().blitImage2(blit_info);
+
+			memory_barrier.oldLayout     = vk::ImageLayout::eTransferSrcOptimal;
+			memory_barrier.newLayout     = vk::ImageLayout::eShaderReadOnlyOptimal;
+			memory_barrier.srcAccessMask = vk::AccessFlagBits2::eTransferRead;
+			memory_barrier.dstAccessMask = vk::AccessFlagBits2::eShaderRead;
+
+			{
+				memory_barrier.srcStageMask = vk::PipelineStageFlagBits2::eTransfer;
+				memory_barrier.dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader;
+
+				vk::DependencyInfo dependency_info{};
+				dependency_info.imageMemoryBarrierCount = 1;
+				dependency_info.pImageMemoryBarriers    = &memory_barrier;
+				cmd.getVulkanCommandBuffer().pipelineBarrier2(dependency_info);
+			}
+
+			if (mip_width > 1)
+				mip_width /= 2;
+			if (mip_height > 1)
+				mip_height /= 2;
+		}
+
+		memory_barrier.subresourceRange.baseMipLevel = p_mip_levels - 1;
+		memory_barrier.oldLayout                     = vk::ImageLayout::eTransferDstOptimal;
+		memory_barrier.newLayout                     = vk::ImageLayout::eShaderReadOnlyOptimal;
+		memory_barrier.srcAccessMask                 = vk::AccessFlagBits2::eTransferWrite;
+		memory_barrier.dstAccessMask                 = vk::AccessFlagBits2::eShaderRead;
+
+		{
+			memory_barrier.srcStageMask = vk::PipelineStageFlagBits2::eTransfer;
+			memory_barrier.dstStageMask = vk::PipelineStageFlagBits2::eFragmentShader;
+
+			vk::DependencyInfo dependency_info{};
+			dependency_info.imageMemoryBarrierCount = 1;
+			dependency_info.pImageMemoryBarriers    = &memory_barrier;
+			cmd.getVulkanCommandBuffer().pipelineBarrier2(dependency_info);
+		}
+
+		cmd.end();
+		cmd.submit();
+		cmd.waitForFence();
+	}
+
+	auto VKLogicalDevice::hasStencilComponent(vk::Format p_format) const -> bool
+	{
+		return p_format == vk::Format::eD32SfloatS8Uint || p_format == vk::Format::eD24UnormS8Uint;
+	}
+
+	auto VKLogicalDevice::isDepthFormat(vk::Format p_format) const -> bool
+	{
+		return p_format == vk::Format::eD16Unorm || p_format == vk::Format::eD16UnormS8Uint || p_format == vk::Format::eD24UnormS8Uint || p_format ==
+			   vk::Format::eD32Sfloat || p_format == vk::Format::eD32SfloatS8Uint;
 	}
 }

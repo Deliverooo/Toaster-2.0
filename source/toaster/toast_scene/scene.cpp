@@ -2,7 +2,7 @@
 #include "entity.hpp"
 #include "components.hpp"
 #include "scene_renderer.hpp"
-#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 
 #include "toast_lib/logging.hpp"
 #include "toast_render/globals.hpp"
@@ -11,7 +11,7 @@
 
 namespace toaster
 {
-	Scene::Scene(gpu::VKGPUContext *p_ctx, const String &p_name) : m_ctx(p_ctx), m_name(p_name.empty() ? "Untitled Scene" : p_name)
+	Scene::Scene(gpu::VKLogicalDevice *p_device, const String &p_name) : m_device(p_device), m_name(p_name.empty() ? "Untitled Scene" : p_name)
 	{
 	}
 

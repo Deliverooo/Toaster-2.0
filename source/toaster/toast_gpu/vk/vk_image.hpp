@@ -7,7 +7,7 @@
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
+	class VKLogicalDevice;
 
 	struct ImageCreateInfo
 	{
@@ -24,8 +24,8 @@ namespace toaster::gpu
 	class VKImage2D
 	{
 	public:
-		VKImage2D(VKGPUContext *p_ctx, const ImageCreateInfo &p_create_info);
-		auto getContext() const -> VKGPUContext *;
+		VKImage2D(VKLogicalDevice *p_ctx, const ImageCreateInfo &p_create_info);
+		[[nodiscard]] auto getDevice() const -> VKLogicalDevice *;
 
 		auto getImage() -> vk::raii::Image &;
 		auto getImageMemory() -> vk::raii::DeviceMemory &;
@@ -40,7 +40,7 @@ namespace toaster::gpu
 		auto recreate() -> void;
 
 	private:
-		VKGPUContext *m_ctx{nullptr};
+		VKLogicalDevice *m_device{nullptr};
 
 		ImageCreateInfo m_createInfo{};
 

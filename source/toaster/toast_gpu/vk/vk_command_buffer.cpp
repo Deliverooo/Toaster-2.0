@@ -1,21 +1,20 @@
 #include "vk_command_buffer.hpp"
 
-#include "vk_gpu_context.hpp"
-
+#include "vk_logical_device.hpp"
 namespace toaster::gpu
 {
-	VKCommandBuffer::VKCommandBuffer(VKGPUContext *p_ctx, vk::QueueFlagBits p_queue_type, bool p_fence_signaled) : m_ctx(p_ctx), m_queueType(p_queue_type)
+	VKCommandBuffer::VKCommandBuffer(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, bool p_fence_signaled) : m_device(p_device), m_queueType(p_queue_type)
 	{
 		vk::CommandBufferAllocateInfo alloc_info{};
 		alloc_info.commandBufferCount = 1;
-		alloc_info.commandPool        = m_ctx->getLogicalDevice()->getCommandPool(m_queueType);
+		alloc_info.commandPool        = m_device->getCommandPool(m_queueType);
 		alloc_info.level              = vk::CommandBufferLevel::ePrimary;
 
-		m_commandBuffer = std::move(m_ctx->getLogicalDevice()->getVulkanLogicalDevice().allocateCommandBuffers(alloc_info).front());
+		m_commandBuffer = std::move(m_device->getVulkanLogicalDevice().allocateCommandBuffers(alloc_info).front());
 
 		vk::FenceCreateInfo fence_create_info{};
 		fence_create_info.flags = p_fence_signaled ? vk::FenceCreateFlagBits::eSignaled : vk::FenceCreateFlagBits{};
-		m_waitFence             = {*m_ctx->getLogicalDevice(), fence_create_info};
+		m_waitFence             = {*m_device, fence_create_info};
 	}
 
 	auto VKCommandBuffer::begin() -> void
@@ -57,7 +56,7 @@ namespace toaster::gpu
 		submit_info.pWaitSemaphoreInfos      = wait_semaphore_infos.data();
 		submit_info.signalSemaphoreInfoCount = signal_semaphore_infos.size();
 		submit_info.pSignalSemaphoreInfos    = signal_semaphore_infos.data();
-		m_ctx->getLogicalDevice()->getQueue(m_queueType).submit2(submit_info, m_waitFence);
+		m_device->getQueue(m_queueType).submit2(submit_info, m_waitFence);
 	}
 
 	auto VKCommandBuffer::getVulkanCommandBuffer() -> vk::raii::CommandBuffer &
@@ -72,12 +71,12 @@ namespace toaster::gpu
 
 	auto VKCommandBuffer::waitForFence() -> void
 	{
-		m_ctx->getLogicalDevice()->waitForFences({*m_waitFence});
+		m_device->waitForFences({*m_waitFence});
 	}
 
 	auto VKCommandBuffer::resetFence() -> void
 	{
-		m_ctx->getLogicalDevice()->getVulkanLogicalDevice().resetFences(*m_waitFence);
+		m_device->getVulkanLogicalDevice().resetFences(*m_waitFence);
 	}
 
 	auto VKCommandBuffer::resetCommandBuffer() -> void
@@ -85,24 +84,24 @@ namespace toaster::gpu
 		m_commandBuffer.reset();
 	}
 
-	VKCommandBufferPFF::VKCommandBufferPFF(VKGPUContext *p_ctx, vk::QueueFlagBits p_queue_type, uint32 p_frames_in_flight, bool p_fence_signaled) : m_ctx(p_ctx),
-																																					m_queueType(p_queue_type),
-																																					m_framesInFlightCount(p_frames_in_flight)
+	VKCommandBufferPFF::VKCommandBufferPFF(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, uint32 p_frames_in_flight, bool p_fence_signaled) : m_device(p_device),
+																																					   m_queueType(p_queue_type),
+																																					   m_framesInFlightCount(p_frames_in_flight)
 	{
 		TST_ASSERT_MSG(m_framesInFlightCount > 0, "Bradar what is dis?!");
 
 		vk::CommandBufferAllocateInfo alloc_info{};
 		alloc_info.commandBufferCount = m_framesInFlightCount;
-		alloc_info.commandPool        = m_ctx->getLogicalDevice()->getCommandPool(m_queueType);
+		alloc_info.commandPool        = m_device->getCommandPool(m_queueType);
 		alloc_info.level              = vk::CommandBufferLevel::ePrimary;
 
-		m_commandBuffers = m_ctx->getLogicalDevice()->getVulkanLogicalDevice().allocateCommandBuffers(alloc_info);
+		m_commandBuffers = m_device->getVulkanLogicalDevice().allocateCommandBuffers(alloc_info);
 
 		for (uint32 i{0u}; i < m_framesInFlightCount; ++i)
 		{
 			vk::FenceCreateInfo fence_create_info{};
 			fence_create_info.flags = p_fence_signaled ? vk::FenceCreateFlagBits::eSignaled : vk::FenceCreateFlagBits{};
-			m_waitFences.emplace_back(std::move<vk::raii::Fence>({*m_ctx->getLogicalDevice(), fence_create_info}));
+			m_waitFences.emplace_back(std::move<vk::raii::Fence>({*m_device, fence_create_info}));
 		}
 	}
 
@@ -151,7 +150,7 @@ namespace toaster::gpu
 		submit_info.pWaitSemaphoreInfos      = wait_semaphore_infos.data();
 		submit_info.signalSemaphoreInfoCount = signal_semaphore_infos.size();
 		submit_info.pSignalSemaphoreInfos    = signal_semaphore_infos.data();
-		m_ctx->getLogicalDevice()->getQueue(m_queueType).submit2(submit_info, m_waitFences[p_frame_index]);
+		m_device->getQueue(m_queueType).submit2(submit_info, m_waitFences[p_frame_index]);
 	}
 
 	auto VKCommandBufferPFF::getVulkanCommandBuffer(uint32 p_frame_index) -> vk::raii::CommandBuffer &
@@ -169,13 +168,13 @@ namespace toaster::gpu
 	auto VKCommandBufferPFF::waitForFence(uint32 p_frame_index) -> void
 	{
 		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Bradar what is dis?!");
-		m_ctx->getLogicalDevice()->waitForFence(*m_waitFences[p_frame_index]);
+		m_device->waitForFence(*m_waitFences[p_frame_index]);
 	}
 
 	auto VKCommandBufferPFF::resetFence(uint32 p_frame_index) -> void
 	{
 		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Bradar what is dis?!");
-		m_ctx->getLogicalDevice()->getVulkanLogicalDevice().resetFences(*m_waitFences[p_frame_index]);
+		m_device->getVulkanLogicalDevice().resetFences(*m_waitFences[p_frame_index]);
 	}
 
 	auto VKCommandBufferPFF::resetCommandBuffer(uint32 p_frame_index) -> void

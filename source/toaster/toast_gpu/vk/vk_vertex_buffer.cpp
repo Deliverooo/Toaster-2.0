@@ -1,37 +1,37 @@
 #include "vk_vertex_buffer.hpp"
 
-#include "vk_gpu_context.hpp"
+#include "vk_logical_device.hpp"
 
 namespace toaster::gpu
 {
-	VKVertexBuffer::VKVertexBuffer(VKGPUContext *p_ctx, void *p_data, uint64 p_size) : m_ctx(p_ctx)
+	VKVertexBuffer::VKVertexBuffer(VKLogicalDevice *p_device, void *p_data, uint64 p_size) : m_device(p_device)
 	{
-		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+		TST_ASSERT_MSG(p_device, "Device cannot be null");
 
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
 
-		m_ctx->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-							staging_buffer, staging_buffer_memory);
+		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
+							   staging_buffer, staging_buffer_memory);
 
 		void *mapped = staging_buffer_memory.mapMemory(0, p_size, {});
 		std::memcpy(mapped, p_data, p_size);
 		staging_buffer_memory.unmapMemory();
 
-		m_ctx->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal,
-							m_vertexBuffer, m_vertexBufferMemory);
-		m_ctx->copyBuffer(staging_buffer, m_vertexBuffer, p_size);
+		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal,
+							   m_vertexBuffer, m_vertexBufferMemory);
+		m_device->copyBuffer(staging_buffer, m_vertexBuffer, p_size);
 	}
 
-	VKVertexBuffer::VKVertexBuffer(VKGPUContext *p_ctx, uint64 p_size) : m_ctx(p_ctx)
+	VKVertexBuffer::VKVertexBuffer(VKLogicalDevice *p_device, uint64 p_size) : m_device(p_device)
 	{
-		m_ctx->createBuffer(p_size, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-							m_vertexBuffer, m_vertexBufferMemory);
+		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
+							   m_vertexBuffer, m_vertexBufferMemory);
 	}
 
-	auto VKVertexBuffer::getContext() const -> VKGPUContext *
+	auto VKVertexBuffer::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKVertexBuffer::getBuffer() -> vk::raii::Buffer &

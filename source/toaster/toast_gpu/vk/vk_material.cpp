@@ -4,7 +4,7 @@
 
 namespace toaster::gpu
 {
-	VKMaterial::VKMaterial(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader, const String &p_name) : m_ctx(p_ctx), m_shader(p_shader), m_name(p_name)
+	VKMaterial::VKMaterial(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader, const String &p_name) : m_device(p_device), m_shader(p_shader), m_name(p_name)
 	{
 		const auto &push_constant_buffers{m_shader->getReflectedPushConstantBuffers()};
 		if (!push_constant_buffers.empty())
@@ -17,7 +17,7 @@ namespace toaster::gpu
 			m_pushConstantStorageBuffer.zeroInitialize();
 		}
 
-		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_ctx, m_shader, 0, 0);
+		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_device, m_shader, 0, 0);
 
 		for (const auto &[name, decl]: m_descriptorSetManager->getDescriptorDeclarations())
 		{
@@ -40,9 +40,9 @@ namespace toaster::gpu
 		m_pushConstantStorageBuffer.release();
 	}
 
-	auto VKMaterial::getContext() const -> VKGPUContext *
+	auto VKMaterial::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKMaterial::set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void

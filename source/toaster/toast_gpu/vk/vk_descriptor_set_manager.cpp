@@ -1,12 +1,13 @@
 #include "vk_descriptor_set_manager.hpp"
-#include "vk_gpu_context.hpp"
+
+#include <ranges>
+
+#include "vk_logical_device.hpp"
 
 namespace toaster::gpu
 {
-	VKDescriptorSetManager::VKDescriptorSetManager(VKGPUContext *p_ctx, const RefPtr<VKShader> &p_shader, uint32 p_start_set, uint32 p_end_set) : m_ctx(p_ctx),
-																																				  m_shader(p_shader),
-																																				  m_startSet(p_start_set),
-																																				  m_endSet(p_end_set)
+	VKDescriptorSetManager::VKDescriptorSetManager(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader, uint32 p_start_set,
+												   uint32           p_end_set) : m_device(p_device), m_shader(p_shader), m_startSet(p_start_set), m_endSet(p_end_set)
 	{
 		TextureSpecInfo texture_spec_info{};
 		texture_spec_info.width        = 1u;
@@ -15,10 +16,10 @@ namespace toaster::gpu
 		texture_spec_info.generateMips = false;
 
 		uint32 texture_data{0xFFFFFFFF};
-		m_whiteTexture = m_ctx->alloc<VKTexture2D>(texture_spec_info, &texture_data, sizeof(uint32));
+		m_whiteTexture = m_device->alloc<VKTexture2D>(texture_spec_info, &texture_data, sizeof(uint32));
 
 		const auto &descriptor_sets{m_shader->getReflectedShaderDescriptorSets()};
-		m_writeDescriptorMap.resize(VKGPUContext::c_maxFramesInFlight);
+		m_writeDescriptorMap.resize(m_device->getSpecInfo().maxFramesInFlight);
 
 		for (uint32 set{m_startSet}; set <= m_endSet; ++set)
 		{
@@ -45,7 +46,7 @@ namespace toaster::gpu
 					for (uint32 i{0u}; i < descriptor_resource.resources.size(); ++i)
 						descriptor_resource.resources[i] = m_whiteTexture.as<IGPUResource>();
 
-				for (uint32 frame_index{0u}; frame_index < VKGPUContext::c_maxFramesInFlight; ++frame_index)
+				for (uint32 frame_index{0u}; frame_index < m_device->getSpecInfo().maxFramesInFlight; ++frame_index)
 					m_writeDescriptorMap[frame_index][set][binding] = {write_descriptor, std::vector<void *>{write_descriptor.descriptorCount}};
 
 				// if (descriptor_set.imageSamplers.contains(binding))
@@ -53,9 +54,9 @@ namespace toaster::gpu
 		}
 	}
 
-	auto VKDescriptorSetManager::getContext() const -> VKGPUContext *
+	auto VKDescriptorSetManager::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void
@@ -119,13 +120,13 @@ namespace toaster::gpu
 		vk::DescriptorPoolCreateInfo descriptor_pool_create_info{};
 		descriptor_pool_create_info.poolSizeCount = descriptor_pool_sizes.size();
 		descriptor_pool_create_info.pPoolSizes    = descriptor_pool_sizes.data();
-		descriptor_pool_create_info.maxSets       = 10u * VKGPUContext::c_maxFramesInFlight;
+		descriptor_pool_create_info.maxSets       = 10u * m_device->getSpecInfo().maxFramesInFlight;
 		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 
-		m_descriptorPool = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), descriptor_pool_create_info};
+		m_descriptorPool = {m_device->getVulkanLogicalDevice(), descriptor_pool_create_info};
 
 		if (m_descriptorSets.empty())
-			for (uint32 i{0u}; i < VKGPUContext::c_maxFramesInFlight; ++i)
+			for (uint32 i{0u}; i < m_device->getSpecInfo().maxFramesInFlight; ++i)
 				m_descriptorSets.emplace_back();
 
 		for (auto &descriptor_set: m_descriptorSets)
@@ -133,7 +134,7 @@ namespace toaster::gpu
 
 		for (const auto &[set, resources]: m_descriptorResources)
 		{
-			for (uint32 frame_index{0u}; frame_index < VKGPUContext::c_maxFramesInFlight; ++frame_index)
+			for (uint32 frame_index{0u}; frame_index < m_device->getSpecInfo().maxFramesInFlight; ++frame_index)
 			{
 				const vk::raii::DescriptorSetLayout &descriptor_set_layout{m_shader->getDescriptorSetLayout(set)};
 				vk::DescriptorSetAllocateInfo        descriptor_set_allocate_info{};
@@ -142,7 +143,7 @@ namespace toaster::gpu
 				descriptor_set_allocate_info.pSetLayouts        = &*descriptor_set_layout;
 
 				auto &descriptor_set{
-					m_descriptorSets[frame_index].emplace_back(std::move(m_ctx->getLogicalDevice()->getVulkanLogicalDevice().allocateDescriptorSets(descriptor_set_allocate_info).front()))
+					m_descriptorSets[frame_index].emplace_back(std::move(m_device->getVulkanLogicalDevice().allocateDescriptorSets(descriptor_set_allocate_info).front()))
 				};
 
 				auto &                                             write_descriptor_sets{m_writeDescriptorMap[frame_index].at(set)};
@@ -227,15 +228,11 @@ namespace toaster::gpu
 				}
 
 				std::vector<vk::WriteDescriptorSet> write_descriptors;
-				for (auto &[binding, write_descriptor]: write_descriptor_sets)
-				{
+				for (auto &write_descriptor: write_descriptor_sets | std::views::values)
 					write_descriptors.emplace_back(write_descriptor.wds);
-				}
 
 				if (!write_descriptors.empty())
-				{
-					m_ctx->getLogicalDevice()->getVulkanLogicalDevice().updateDescriptorSets(write_descriptors, {});
-				}
+					m_device->getVulkanLogicalDevice().updateDescriptorSets(write_descriptors, {});
 			}
 		}
 	}
@@ -368,14 +365,14 @@ namespace toaster::gpu
 
 				write_descriptor_sets.emplace_back(write_descriptor.wds);
 			}
-			m_ctx->getLogicalDevice()->getVulkanLogicalDevice().updateDescriptorSets(write_descriptor_sets, {});
+			m_device->getVulkanLogicalDevice().updateDescriptorSets(write_descriptor_sets, {});
 		}
 		m_invalidDescriptorResources.clear();
 	}
 
 	auto VKDescriptorSetManager::getDescriptorSets(uint32 p_frame_index) const -> std::vector<vk::DescriptorSet>
 	{
-		TST_ASSERT_MSG(p_frame_index < VKGPUContext::c_maxFramesInFlight, "Frame index out of bounds");
+		TST_ASSERT_MSG(p_frame_index < m_device->getSpecInfo().maxFramesInFlight, "Frame index out of bounds");
 		std::vector<vk::DescriptorSet> result;
 		for (auto &descriptor_set: m_descriptorSets[p_frame_index])
 			result.emplace_back(*descriptor_set);

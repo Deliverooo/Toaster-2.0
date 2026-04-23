@@ -8,7 +8,7 @@
 #include "../ui/ui_utils.hpp"
 #include "../ui/ui_widgets.hpp"
 #include "glm/gtc/type_ptr.hpp"
-#include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_render/globals.hpp"
 
 namespace toaster
@@ -84,7 +84,7 @@ namespace toaster
 				if (ig::MenuItem("Reset"))
 				{
 					SceneHierarchyPanel *caller{(SceneHierarchyPanel *) p_caller_id};
-					caller->m_ctx->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
+					caller->m_device->getVulkanLogicalDevice().waitIdle();
 					comp.reset();
 				}
 
@@ -102,7 +102,7 @@ namespace toaster
 		ig::PopID();
 	}
 
-	SceneHierarchyPanel::SceneHierarchyPanel(gpu::VKGPUContext *p_ctx, const RefPtr<Scene> &p_scene) : m_ctx(p_ctx), m_scene(p_scene)
+	SceneHierarchyPanel::SceneHierarchyPanel(gpu::VKLogicalDevice *p_device, const RefPtr<Scene> &p_scene) : m_device(p_device), m_scene(p_scene)
 	{
 	}
 
@@ -341,7 +341,7 @@ namespace toaster
 					LOG_INFO("{}", path.string());
 
 					gpu::TextureSpecInfo texture_spec_info{};
-					p_comp.texture = m_ctx->alloc<gpu::VKTexture2D>(texture_spec_info, path);
+					p_comp.texture = m_device->alloc<gpu::VKTexture2D>(texture_spec_info, path);
 				}
 			}
 		}, this);
@@ -357,7 +357,7 @@ namespace toaster
 					LOG_INFO("{}", path.string());
 
 					auto geometry_shader{Globals::getShaderLibrary().get("Geometry")};
-					p_comp.mesh = m_ctx->alloc<gpu::VKMesh>(path, geometry_shader);
+					p_comp.mesh = m_device->alloc<gpu::VKMesh>(path, geometry_shader);
 				}
 			}
 
@@ -415,7 +415,7 @@ namespace toaster
 			if (io::filesystem::exists(path))
 			{
 				LOG_INFO("{}", path.string());
-				p_mat->set("u_AlbedoTexture", m_ctx->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
+				p_mat->set("u_AlbedoTexture", m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
 			}
 		}
 

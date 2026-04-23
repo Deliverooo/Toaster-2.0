@@ -26,6 +26,13 @@ namespace toaster::gpu
 		[[nodiscard]] auto findSupportedFormat(const std::vector<vk::Format> &p_supported_formats, vk::ImageTiling p_tiling,
 											   vk::FormatFeatureFlags         p_feature_flags) const -> vk::Format;
 
+		[[nodiscard]] auto findMemoryType(uint32 p_type_filter, vk::MemoryPropertyFlags p_properties) const -> uint32;
+
+		[[nodiscard]] auto chooseSwapchainSurfaceFormat(const vk::SurfaceKHR &p_surface) const -> vk::SurfaceFormatKHR;
+		[[nodiscard]] auto chooseSwapchainPresentMode(const vk::SurfaceKHR &p_surface) const -> vk::PresentModeKHR;
+		[[nodiscard]] auto chooseSwapchainExtent(const vk::SurfaceKHR &p_surface, uint32 p_fallback_width, uint32 p_fallback_height) const -> vk::Extent2D;
+		[[nodiscard]] auto chooseSwapchainMinImageCount(const vk::SurfaceKHR &p_surface) const -> uint32;
+
 		operator vk::raii::PhysicalDevice &() { return m_physicalDevice; }
 
 	private:

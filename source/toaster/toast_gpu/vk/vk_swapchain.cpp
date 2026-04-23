@@ -1,17 +1,16 @@
 #include "vk_swapchain.hpp"
 
-#include "vk_gpu_context.hpp"
+#include "vk_logical_device.hpp"
 
-#include "toast_lib/logging.hpp"
-#include "toast_lib/toast_assert.h"
+#include <GLFW/glfw3.h>
 
 namespace toaster::gpu
 {
-	VKSwapchain::VKSwapchain(VKGPUContext *p_ctx, GLFWwindow *p_window) : m_ctx(p_ctx), m_window(p_window),
-																		  m_commandBuffers(p_ctx, vk::QueueFlagBits::eGraphics, VKGPUContext::c_maxFramesInFlight,
+	VKSwapchain::VKSwapchain(VKLogicalDevice *p_dev, GLFWwindow *p_window) : m_device(p_dev), m_window(p_window),
+																			 m_commandBuffers(p_dev, vk::QueueFlagBits::eGraphics, p_dev->getSpecInfo().maxFramesInFlight,
 																							  true)
 	{
-		TST_ASSERT_MSG(p_ctx, "Context cannot be null");
+		TST_ASSERT_MSG(p_dev, "Device cannot be null");
 
 		_create();
 		_createImageViews();
@@ -19,9 +18,9 @@ namespace toaster::gpu
 		_createDepthResources();
 	}
 
-	auto VKSwapchain::getContext() const -> VKGPUContext *
+	auto VKSwapchain::getDevice() const -> VKLogicalDevice *
 	{
-		return m_ctx;
+		return m_device;
 	}
 
 	auto VKSwapchain::beginFrame() -> void
@@ -29,8 +28,8 @@ namespace toaster::gpu
 		// Wait for the previous frame to be finished before rendering this one
 		m_commandBuffers.waitForFence(m_frameIndex);
 
-		m_ctx->setCurrentFrameIndex(m_frameIndex);
-		m_ctx->performGarbageCollection();
+		m_device->setCurrentFrameIndex(m_frameIndex);
+		m_device->performGarbageCollection();
 
 		// Reset the fence so we can signal it later
 		m_commandBuffers.resetFence(m_frameIndex);
@@ -49,30 +48,31 @@ namespace toaster::gpu
 		m_commandBuffers.resetCommandBuffer(m_frameIndex);
 		m_commandBuffers.begin(m_frameIndex);
 
-		m_ctx->transitionImageLayout(m_commandBuffers.getVulkanCommandBuffer(m_frameIndex), m_swapchainImages[m_imageIndex], vk::ImageLayout::eUndefined,
-									 vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eColorAttachmentWrite,
-									 vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-									 vk::ImageAspectFlagBits::eColor);
+		m_device->transitionImageLayout(m_commandBuffers.getVulkanCommandBuffer(m_frameIndex), m_swapchainImages[m_imageIndex], vk::ImageLayout::eUndefined,
+										vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eColorAttachmentWrite,
+										vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1,
+										vk::ImageAspectFlagBits::eColor);
 
-		m_ctx->transitionImageLayout(m_commandBuffers.getVulkanCommandBuffer(m_frameIndex), m_depthImage, vk::ImageLayout::eUndefined,
-									 vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-									 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-									 vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, vk::ImageAspectFlagBits::eDepth);
+		m_device->transitionImageLayout(m_commandBuffers.getVulkanCommandBuffer(m_frameIndex), m_depthImage, vk::ImageLayout::eUndefined,
+										vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
+										vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+										vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, 1,
+										vk::ImageAspectFlagBits::eDepth);
 	}
 
 	auto VKSwapchain::endFrame() -> void
 	{
-		m_ctx->transitionImageLayout(m_commandBuffers.getVulkanCommandBuffer(m_frameIndex), m_swapchainImages[m_imageIndex], vk::ImageLayout::eColorAttachmentOptimal,
-									 vk::ImageLayout::ePresentSrcKHR, vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eNone,
-									 vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-									 vk::ImageAspectFlagBits::eColor);
+		m_device->transitionImageLayout(m_commandBuffers.getVulkanCommandBuffer(m_frameIndex), m_swapchainImages[m_imageIndex], vk::ImageLayout::eColorAttachmentOptimal,
+										vk::ImageLayout::ePresentSrcKHR, vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eNone,
+										vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1,
+										vk::ImageAspectFlagBits::eColor);
 
 		m_commandBuffers.end(m_frameIndex);
 
 		// Waits for the image to be acquired before executing
 		// When we submit the work to the GPU we signal a fence then wait on it before beginning the next frame
 		m_commandBuffers.submit(m_frameIndex, vk::PipelineStageFlagBits2::eColorAttachmentOutput, {*m_imageAvailableSemaphores[m_frameIndex]},
-								   {*m_renderFinishedSemaphores[m_frameIndex]});
+								{*m_renderFinishedSemaphores[m_frameIndex]});
 
 		vk::PresentInfoKHR present_info{};
 		present_info.waitSemaphoreCount = 1;
@@ -83,8 +83,8 @@ namespace toaster::gpu
 
 		// For some reason, Vulkan-hpp classifies vk::Result::eErrorOutOfDateKHR as an error and automatically throws an exception
 		// So this is what I came up with to bypass that :)
-		auto res = static_cast<vk::Result>(m_ctx->getLogicalDevice()->getGraphicsQueue().getDispatcher()->
-			vkQueuePresentKHR(static_cast<VkQueue>(*m_ctx->getLogicalDevice()->getGraphicsQueue()), reinterpret_cast<const VkPresentInfoKHR *>(&present_info)));
+		auto res = static_cast<vk::Result>(m_device->getGraphicsQueue().getDispatcher()->vkQueuePresentKHR(static_cast<VkQueue>(*m_device->getGraphicsQueue()),
+																										   reinterpret_cast<const VkPresentInfoKHR *>(&present_info)));
 
 		if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR || m_framebufferResized)
 		{
@@ -94,7 +94,7 @@ namespace toaster::gpu
 		else if (res != vk::Result::eSuccess)
 			TST_ASSERT_MSG(false, "Failed to present swapchain image!");
 
-		m_frameIndex = (m_frameIndex + 1) % VKGPUContext::c_maxFramesInFlight;
+		m_frameIndex = (m_frameIndex + 1) % m_device->getSpecInfo().maxFramesInFlight;
 	}
 
 	auto VKSwapchain::getFrameIndex() const -> uint32
@@ -166,7 +166,7 @@ namespace toaster::gpu
 
 	auto VKSwapchain::getDepthFormat() const -> vk::Format
 	{
-		return m_ctx->getPhysicalDevice()->getDepthFormat();
+		return m_device->getPhysicalDevice()->getDepthFormat();
 	}
 
 	auto VKSwapchain::getMinImageCount() const -> uint32
@@ -192,53 +192,45 @@ namespace toaster::gpu
 	auto VKSwapchain::_createImageViews() -> void
 	{
 		for (auto &img: m_swapchainImages)
-			m_swapchainImageViews.emplace_back(m_ctx->createImageView(img, m_swapchainSurfaceFormat.format, vk::ImageAspectFlagBits::eColor, 1));
+			m_swapchainImageViews.emplace_back(m_device->createImageView(img, m_swapchainSurfaceFormat.format, vk::ImageAspectFlagBits::eColor, 1));
 	}
 
 	auto VKSwapchain::_createDepthResources() -> void
 	{
-		m_ctx->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, vk::SampleCountFlagBits::e1, getDepthFormat(), vk::ImageTiling::eOptimal,
-						   vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal, m_depthImage, m_depthImageMemory);
-		m_depthImageView = m_ctx->createImageView(m_depthImage, getDepthFormat(), vk::ImageAspectFlagBits::eDepth, 1);
+		m_device->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, vk::SampleCountFlagBits::e1, getDepthFormat(), vk::ImageTiling::eOptimal,
+							  vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal, m_depthImage, m_depthImageMemory);
+		m_depthImageView = m_device->createImageView(m_depthImage, getDepthFormat(), vk::ImageAspectFlagBits::eDepth, 1);
 	}
 
 	auto VKSwapchain::_createSyncObjects() -> void
 	{
-		auto &device = m_ctx->getLogicalDevice()->getVulkanLogicalDevice();
-		for (uint32 i{0u}; i < VKGPUContext::c_maxFramesInFlight; ++i)
+		for (uint32 i{0u}; i < m_device->getSpecInfo().maxFramesInFlight; ++i)
 		{
 			// I don't know why vk::SemaphoreCreateInfo exists, there are no parameters that you can set for it
 			vk::SemaphoreCreateInfo semaphore_create_info{};
-			m_imageAvailableSemaphores.emplace_back(device, semaphore_create_info);
-			m_renderFinishedSemaphores.emplace_back(device, semaphore_create_info);
+			m_imageAvailableSemaphores.emplace_back(m_device->getVulkanLogicalDevice(), semaphore_create_info);
+			m_renderFinishedSemaphores.emplace_back(m_device->getVulkanLogicalDevice(), semaphore_create_info);
 		}
-	}
-
-	auto VKSwapchain::_createCommandBuffers() -> void
-	{
-		auto &device = m_ctx->getLogicalDevice()->getVulkanLogicalDevice();
-
-		vk::CommandBufferAllocateInfo command_buffer_allocate_info{};
-		command_buffer_allocate_info.commandBufferCount = VKGPUContext::c_maxFramesInFlight;
-		command_buffer_allocate_info.commandPool        = m_ctx->getLogicalDevice()->getGraphicsCommandPool();
-		command_buffer_allocate_info.level              = vk::CommandBufferLevel::ePrimary;
-
-		// m_commandBuffers = vk::raii::CommandBuffers{device, command_buffer_allocate_info};
 	}
 
 	auto VKSwapchain::_create() -> void
 	{
-		auto &                     physical_device = m_ctx->getPhysicalDevice()->getVulkanPhysicalDevice();
-		auto &                     surface         = *m_ctx->getLogicalDevice()->getSpecInfo().surface;
+		auto &                     physical_device = m_device->getPhysicalDevice()->getVulkanPhysicalDevice();
+		auto &                     surface         = *m_device->getSpecInfo().surface;
 		vk::SurfaceCapabilitiesKHR surface_caps    = physical_device.getSurfaceCapabilitiesKHR(&surface);
 
 		auto available_surface_formats = physical_device.getSurfaceFormatsKHR(&surface);
 		auto available_present_modes   = physical_device.getSurfacePresentModesKHR(&surface);
 
-		m_swapchainSurfaceFormat = _chooseSwapchainSurfaceFormat(available_surface_formats);
-		m_swapchainExtent        = _chooseSwapchainExtent(surface_caps);
+		m_swapchainSurfaceFormat = m_device->getPhysicalDevice()->chooseSwapchainSurfaceFormat(&surface);
 
-		m_minImageCount = _chooseSwapchainMinImageCount(surface_caps);
+		// The fallback extent will be equal to the back buffer's size
+		int32 width;
+		int32 height;
+		glfwGetFramebufferSize(m_window, &width, &height);
+		m_swapchainExtent = m_device->getPhysicalDevice()->chooseSwapchainExtent(&surface, width, height);
+
+		m_minImageCount = m_device->getPhysicalDevice()->chooseSwapchainMinImageCount(&surface);
 
 		vk::SwapchainCreateInfoKHR swapchain_create_info{};
 		swapchain_create_info.surface          = &surface;
@@ -251,7 +243,7 @@ namespace toaster::gpu
 		swapchain_create_info.imageSharingMode = vk::SharingMode::eExclusive;
 		swapchain_create_info.preTransform     = surface_caps.currentTransform;
 		swapchain_create_info.compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-		swapchain_create_info.presentMode      = _chooseSwapchainPresentMode(available_present_modes);
+		swapchain_create_info.presentMode      = m_device->getPhysicalDevice()->chooseSwapchainPresentMode(&surface);
 		swapchain_create_info.clipped          = true;
 
 		if (*m_swapchain)
@@ -260,7 +252,7 @@ namespace toaster::gpu
 			swapchain_create_info.oldSwapchain = *m_swapchain;
 		}
 
-		m_swapchain       = {m_ctx->getLogicalDevice()->getVulkanLogicalDevice(), swapchain_create_info};
+		m_swapchain       = {m_device->getVulkanLogicalDevice(), swapchain_create_info};
 		m_swapchainImages = m_swapchain.getImages();
 	}
 
@@ -277,7 +269,7 @@ namespace toaster::gpu
 		}
 
 		// Wait for the GPU to finish processing anything before recreating, so nothing that depends on the swapchain becomes invalid
-		m_ctx->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
+		m_device->getVulkanLogicalDevice().waitIdle();
 
 		m_swapchainImageViews.clear();
 
@@ -288,62 +280,6 @@ namespace toaster::gpu
 		for (auto &callback: m_resizeCallbacks)
 			callback(m_swapchainExtent.width, m_swapchainExtent.height);
 
-		m_ctx->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
-	}
-
-	auto VKSwapchain::_chooseSwapchainSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &p_available_formats) const -> vk::SurfaceFormatKHR
-	{
-		TST_ASSERT(!p_available_formats.empty());
-		// According to my expert research, the most aesthetically pleasing image format is RGBA in the SRGB colour space.
-		// If for some reason, your GPU does not support that, then just fall back to the first available format.
-		const auto format_it = std::ranges::find_if(p_available_formats, [](const auto &format)
-		{
-			return format.format == vk::Format::eR8G8B8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
-		});
-		return format_it == p_available_formats.end() ? p_available_formats[0] : *format_it;
-	}
-
-	auto VKSwapchain::_chooseSwapchainPresentMode(const std::vector<vk::PresentModeKHR> &p_available_present_modes) const -> vk::PresentModeKHR
-	{
-		// The ideal present mode would be mailbox because it is the fastest.
-		// However, not every device supports it. But Fifo is guaranteed to be supported, so that is the fallback option
-		TST_ASSERT(!p_available_present_modes.empty());
-		return std::ranges::any_of(p_available_present_modes, [](const auto &present_mode)
-		{
-			return present_mode == vk::PresentModeKHR::eMailbox;
-		})
-				   ? vk::PresentModeKHR::eMailbox
-				   : vk::PresentModeKHR::eFifo;
-	}
-
-	auto VKSwapchain::_chooseSwapchainExtent(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const -> vk::Extent2D
-	{
-		// If the current extent is UINT32_MAX, it means that we can choose our own custom extent
-		if (p_surface_capabilities.currentExtent.width != UINT32_MAX)
-			return p_surface_capabilities.currentExtent;
-
-		// That extent will be equal to the back buffer's size
-		int32 width;
-		int32 height;
-		glfwGetFramebufferSize(m_window, &width, &height);
-
-		// But we still have to make sure that we clamp the extent between the min and max.
-		// I think this probably has to do with certain displays (Apple Retina) having a very high pixel density (DPI).
-		return {
-			std::clamp<uint32>(width, p_surface_capabilities.minImageExtent.width, p_surface_capabilities.maxImageExtent.width),
-			std::clamp<uint32>(height, p_surface_capabilities.minImageExtent.height, p_surface_capabilities.maxImageExtent.height)
-		};
-	}
-
-	auto VKSwapchain::_chooseSwapchainMinImageCount(const vk::SurfaceCapabilitiesKHR &p_surface_capabilities) const -> uint32
-	{
-		// Ideally, we want the min image count to be at least 3. However, if your GPU is bad, it might not be able to handle that many images.
-		// So if 3 is greater than the max image count, we fall back to the max image count as the min image count... I don't know if that made sense...
-		uint32 min_image_count = std::max(3u, p_surface_capabilities.minImageCount);
-
-		// Apparently, if the maxImageCount == 0, then there is no maximum (unlimited).
-		if ((p_surface_capabilities.maxImageCount > 0) && (p_surface_capabilities.maxImageCount < min_image_count))
-			min_image_count = p_surface_capabilities.maxImageCount;
-		return min_image_count;
+		m_device->getVulkanLogicalDevice().waitIdle();
 	}
 }

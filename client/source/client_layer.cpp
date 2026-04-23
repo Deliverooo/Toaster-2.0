@@ -27,7 +27,7 @@ namespace toaster
 	auto ClientLayer::onInit() -> void
 	{
 		auto &app       = getApp();
-		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		auto  device    = app.getWindow().getLogicalDevice();
 		auto  swapchain = app.getWindow().getSwapchain();
 
 		uint32 window_width{swapchain->getExtent().width};
@@ -49,7 +49,7 @@ namespace toaster
 		Renderer2DCreateInfo renderer_2d_create_info{};
 		renderer_2d_create_info.renderTargetWidth  = window_width;
 		renderer_2d_create_info.renderTargetHeight = window_height;
-		m_renderer2D                               = make_reference<Renderer2D>(ctx, renderer_2d_create_info);
+		m_renderer2D                               = make_reference<Renderer2D>(device, renderer_2d_create_info);
 
 		QPushButton button{"Orbo is orbicular!"};
 		button.show();
@@ -58,8 +58,8 @@ namespace toaster
 	auto ClientLayer::onDestroy() -> void
 	{
 		auto &app = getApp();
-		auto  ctx{app.getWindow().getGPUContext()};
-		ctx->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
+		auto  device{app.getWindow().getLogicalDevice()};
+		device->getVulkanLogicalDevice().waitIdle();
 	}
 
 	auto ClientLayer::onUpdate(const float32 p_dt) -> void
@@ -67,7 +67,7 @@ namespace toaster
 		m_time += p_dt;
 
 		auto &app       = getApp();
-		auto  ctx       = dynamic_cast<gpu::VKGPUContext *>(app.getWindow().getGPUContext());
+		auto  device    = app.getWindow().getLogicalDevice();
 		auto  swapchain = app.getWindow().getSwapchain();
 
 		uint32 frame_index{swapchain->getFrameIndex()};
