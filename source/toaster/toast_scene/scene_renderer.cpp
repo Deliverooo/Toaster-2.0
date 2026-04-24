@@ -268,16 +268,21 @@ namespace toaster
 
 	auto SceneRenderer::onResize(uint32 p_width, uint32 p_height) -> void
 	{
-		m_specInfo.viewportWidth  = p_width;
-		m_specInfo.viewportHeight = p_height;
+		TST_ASSERT_MSG(p_width != 0 && p_height != 0, "Cannot resize to 0");
 
-		m_depthPreAttachmentTexture->resize(p_width, p_height);
+		if (m_specInfo.viewportWidth != p_width || m_specInfo.viewportHeight != p_height)
+		{
+			m_specInfo.viewportWidth  = p_width;
+			m_specInfo.viewportHeight = p_height;
 
-		m_geometryPositionsAttachmentTexture->resize(p_width, p_height);
-		m_geometryNormalsAttachmentTexture->resize(p_width, p_height);
-		m_outputColourTexture->resize(p_width, p_height);
+			m_depthPreAttachmentTexture->resize(p_width, p_height);
 
-		m_renderer2D->onResize(p_width, p_height);
+			m_geometryPositionsAttachmentTexture->resize(p_width, p_height);
+			m_geometryNormalsAttachmentTexture->resize(p_width, p_height);
+			m_outputColourTexture->resize(p_width, p_height);
+
+			m_renderer2D->onResize(p_width, p_height);
+		}
 	}
 
 	auto SceneRenderer::setEnvironmentBackground(const RefPtr<gpu::VKTexture2D> &p_texture) -> void

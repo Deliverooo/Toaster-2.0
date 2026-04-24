@@ -16,8 +16,6 @@
 #include "glm/gtc/type_ptr.hpp"
 namespace ig = ImGui;
 
-#include <QtWidgets>
-
 namespace toaster
 {
 	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app)
@@ -36,7 +34,7 @@ namespace toaster
 		m_viewportWidth  = window_width;
 		m_viewportHeight = window_height;
 
-		swapchain->addResizeCallback([this](uint32 width, uint32 height)
+		swapchain->setResizeCallback([this](uint32 width, uint32 height)
 		{
 			LOG_INFO("{}, {}", width, height);
 
@@ -50,9 +48,6 @@ namespace toaster
 		renderer_2d_create_info.renderTargetWidth  = window_width;
 		renderer_2d_create_info.renderTargetHeight = window_height;
 		m_renderer2D                               = make_reference<Renderer2D>(device, renderer_2d_create_info);
-
-		QPushButton button{"Orbo is orbicular!"};
-		button.show();
 	}
 
 	auto ClientLayer::onDestroy() -> void

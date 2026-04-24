@@ -1,8 +1,6 @@
 #pragma once
 #include "toaster/toast_kernel/application.hpp"
 
-#include <qapplication.h>
-
 namespace toaster
 {
 	class ClientApplication : public Application
@@ -13,7 +11,5 @@ namespace toaster
 
 	private:
 		class ImGuiLayer *m_imGuiLayer{nullptr};
-
-		QGuiApplication *m_qApplication{nullptr};
 	};
 }

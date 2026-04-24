@@ -7,6 +7,9 @@ set(SRC
 
 		window.cpp
 		window.hpp
+
+		layer.cpp
+		layer.hpp
 )
 
 list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")

@@ -43,7 +43,7 @@ namespace toaster
 		{
 		}
 
-		virtual ~IAppLayer() = default;
+		virtual ~IAppLayer();
 
 		virtual auto onInit() -> void = 0;
 		virtual auto onDestroy() -> void = 0;

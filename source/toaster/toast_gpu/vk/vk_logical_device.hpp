@@ -67,6 +67,13 @@ namespace toaster::gpu
 			}, this, std::forward<TArgs>(p_args)...);
 		}
 
+		template<typename TFunc>
+		auto submitResourceUpdate(TFunc &&p_func) -> void
+		{
+			auto fn{[p_func]() -> void { p_func(); }};
+			m_pendingResourceUpdates[m_currentFrameIndex].emplace_back(std::move(fn));
+		}
+
 		auto setCurrentFrameIndex(uint32 p_index) -> void;
 		auto performGarbageCollection() -> void;
 
@@ -123,6 +130,7 @@ namespace toaster::gpu
 		vk::raii::CommandPool m_computeCommandPool{nullptr};
 
 		std::vector<std::deque<std::function<void()> > > m_pendingDeletions;
+		std::vector<std::deque<std::function<void()> > > m_pendingResourceUpdates;
 		uint32                                           m_currentFrameIndex{0};
 	};
 }

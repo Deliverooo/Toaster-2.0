@@ -136,6 +136,7 @@ namespace toaster::gpu
 		#pragma endregion
 
 		m_pendingDeletions.resize(m_specInfo.maxFramesInFlight);
+		m_pendingResourceUpdates.resize(m_specInfo.maxFramesInFlight);
 	}
 
 	auto VKLogicalDevice::getPhysicalDevice() const -> VKPhysicalDevice *
@@ -256,6 +257,16 @@ namespace toaster::gpu
 
 	auto VKLogicalDevice::performGarbageCollection() -> void
 	{
+		if (!m_pendingResourceUpdates[m_currentFrameIndex].empty())
+		{
+			m_logicalDevice.waitIdle();
+			while (!m_pendingResourceUpdates[m_currentFrameIndex].empty())
+			{
+				auto func{std::move(m_pendingResourceUpdates[m_currentFrameIndex].front())};
+				m_pendingResourceUpdates[m_currentFrameIndex].pop_front();
+				func();
+			}
+		}
 		while (!m_pendingDeletions[m_currentFrameIndex].empty())
 		{
 			auto deleter{std::move(m_pendingDeletions[m_currentFrameIndex].front())};

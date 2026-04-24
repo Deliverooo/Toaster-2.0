@@ -43,13 +43,13 @@ namespace toaster
 		const auto device{m_window->getLogicalDevice()};
 		device->getVulkanLogicalDevice().waitIdle();
 
+		device->performGarbageCollection(); // Collect the trash from the layers
 		for (IAppLayer *layer: m_layers)
 			removeLayer(layer);
 		m_layers.clear();
 
 		Globals::shutdown();
-
-		device->performGarbageCollection();
+		device->performGarbageCollection(); // Collect the trash from the globals
 
 		delete m_window;
 		Window::shutdownWindowingAPI();

@@ -218,17 +218,17 @@ namespace toaster
 		auto &command_buffer{swapchain->getCurrentCommandBuffer()};
 
 		vk::RenderingAttachmentInfo colour_attachment_info{};
-		colour_attachment_info.clearValue  = vk::ClearColorValue{0.005f, 0.105f, 0.005f, 0.0f};
+		colour_attachment_info.clearValue  = vk::ClearColorValue{0.005f, 0.105f, 0.005f, 1.0f};
 		colour_attachment_info.imageView   = swapchain->getCurrentImageView();
 		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eNone;
+		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
 		colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
 
 		vk::RenderingAttachmentInfo depth_attachment_info{};
 		depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
 		depth_attachment_info.imageView   = swapchain->getDepthImageView();
 		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eNone;
+		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
 		depth_attachment_info.storeOp     = vk::AttachmentStoreOp::eNone;
 
 		vk::RenderingInfo rendering_info{};

@@ -36,8 +36,11 @@ namespace toaster
 		m_device = app.getWindow().getLogicalDevice();
 		const auto swapchain{app.getWindow().getSwapchain()};
 
-		m_viewportWidth  = swapchain->getExtent().width;
-		m_viewportHeight = swapchain->getExtent().height;
+		m_windowWidth  = std::max(swapchain->getExtent().width, 1u);
+		m_windowHeight = std::max(swapchain->getExtent().height, 1u);
+
+		m_viewportWidth  = m_windowWidth;
+		m_viewportHeight = m_windowHeight;
 
 		m_editorCamera.setViewportSize(static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight));
 
@@ -49,19 +52,17 @@ namespace toaster
 
 		swapchain->setResizeCallback([this](const uint32 width, const uint32 height) -> void
 		{
-			m_viewportWidth  = width;
-			m_viewportHeight = height;
+			m_windowWidth  = width;
+			m_windowHeight = height;
 
-			m_sceneRenderer->onResize(width, height);
-
-			m_editorCamera.setViewportSize(static_cast<float32>(width), static_cast<float32>(height));
+			// m_sceneRenderer->onResize(width, height);
 		});
 
 		auto fullscreen_shader{Globals::getShaderLibrary().get("Composite")};
 
 		gpu::PipelineCreateInfo fullscreen_pipeline_create_info{};
-		fullscreen_pipeline_create_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
-		fullscreen_pipeline_create_info.depthFormat        = swapchain->getDepthFormat();
+		fullscreen_pipeline_create_info.colourAttachments = {swapchain->getSurfaceFormat().format};
+		// fullscreen_pipeline_create_info.depthFormat        = swapchain->getDepthFormat();
 		fullscreen_pipeline_create_info.shader             = fullscreen_shader;
 		fullscreen_pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone; // We don't want to cull our viewport
 		fullscreen_pipeline_create_info.vertexBufferLayout = gpu::BufferLayout{
@@ -73,6 +74,13 @@ namespace toaster
 		m_fullscreenPass->bake();
 
 		m_fullscreenMaterial = m_device->alloc<gpu::VKMaterial>(fullscreen_shader);
+
+		gpu::ImageCreateInfo fullscreen_attachment_create_info{};
+		fullscreen_attachment_create_info.width  = m_viewportWidth;
+		fullscreen_attachment_create_info.height = m_viewportHeight;
+		fullscreen_attachment_create_info.usage  = vk::ImageUsageFlagBits::eColorAttachment;
+		fullscreen_attachment_create_info.format = vk::Format::eR8G8B8A8Srgb;
+		m_fullscreenAttachmentImage              = m_device->alloc<gpu::VKImage2D>(fullscreen_attachment_create_info);
 
 		m_scene = make_reference<Scene>(m_device, "Main Scene");
 
@@ -134,20 +142,10 @@ namespace toaster
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_viewportWidth, m_viewportHeight}};
 
 		auto &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		colour_attachment_info.imageView   = swapchain->getCurrentImageView();
-		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
-		colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
-		colour_attachment_info.clearValue  = vk::ClearColorValue{1.0f, 1.0f, 1.0f, 1.0f};
-
-		gpu::RenderingAttachmentInfo depth_attachment_info{};
-		depth_attachment_info.imageView   = swapchain->getDepthImageView();
-		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
-		depth_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
-		depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
-
-		rendering_info.pDepthAttachment = &depth_attachment_info;
+		colour_attachment_info.image      = m_fullscreenAttachmentImage;
+		colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
+		colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+		colour_attachment_info.clearValue = vk::ClearColorValue{1.0f, 1.0f, 1.0f, 1.0f};
 
 		Renderer::beginRendering(rendering_info, cmd_buf, frame_index, m_fullscreenPass);
 		Renderer::renderFullscreenQuad(cmd_buf, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);
@@ -170,37 +168,34 @@ namespace toaster
 		const auto  swapchain{app.getWindow().getSwapchain()};
 		uint32      frame_index{swapchain->getFrameIndex()};
 
-		ig::Begin("Properties");
-		ig::Image((VkDescriptorSet) m_fullscreenMaterial->getDescriptorSet(frame_index),
-				  ImVec2{static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight)});
-		ig::End();
-
 		m_sceneHierarchyPanel->onUIRender(frame_index);
 
-		#if 0
-		ig::Begin("Viewport", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground); auto viewport_size{ig::GetWindowSize()}; if (
-			viewport_size.x != m_viewportSize.x || viewport_size.y != m_viewportSize.y)
+		ig::Begin("Viewport");
+		ImVec2 window_size{ig::GetWindowSize()};
+
+		if (m_viewportWidth != window_size.x || m_viewportHeight != window_size.y)
 		{
-			m_viewportSize = viewport_size;
-
-			m_device->submitResourceUpdate([this, index = frame_index]() -> void
+			LOG_INFO("Resizing viewport");
+			m_device->submitResourceUpdate([this, window_size]() -> void
 			{
-				if (m_imguiSceneRendererDescriptorSets[index])
-					ImGui_ImplVulkan_RemoveTexture(m_imguiSceneRendererDescriptorSets[index]);
+				m_viewportWidth  = window_size.x;
+				m_viewportHeight = window_size.y;
 
-				m_sceneRenderer->onResize(m_viewportSize.x, m_viewportSize.y);
-				m_imguiSceneRendererDescriptorSets[index] = ImGui_ImplVulkan_AddTexture(*m_sceneRenderer->getOutputColourTexture()->getSampler(),
-																						*m_sceneRenderer->getOutputColourTexture()->getImage()->getImageView(),
-																						VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+				m_fullscreenAttachmentImage->resize(static_cast<uint32>(window_size.x), static_cast<uint32>(window_size.y));
+
+				m_sceneRenderer->onResize(static_cast<uint32>(window_size.x), static_cast<uint32>(window_size.y));
+				m_editorCamera.setViewportSize(window_size.x, window_size.y);
 			});
-		} if (ig::IsWindowFocused() || ig::IsWindowHovered())
+		}
+		if (ig::IsWindowFocused() || ig::IsWindowHovered())
 			m_canOperateCamera = false;
 		else
 			m_canOperateCamera = true;
 
 		// if (m_imguiSceneRendererDescriptorSets[frame_index])
-		ig::Image((ImTextureRef) m_imguiSceneRendererDescriptorSets[frame_index], ImVec2{static_cast<float32>(m_viewportWidth), static_cast<float32>(m_viewportHeight)});
-		Entity selected_entity = m_sceneHierarchyPanel->getSelectedEntity(); if (selected_entity && m_gizmoType != -1)
+		ig::Image((VkDescriptorSet) m_fullscreenMaterial->getDescriptorSet(frame_index), window_size);
+		Entity selected_entity = m_sceneHierarchyPanel->getSelectedEntity();
+		if (selected_entity && m_gizmoType != -1)
 		{
 			auto w = ig::GetWindowWidth();
 			auto h = ig::GetWindowHeight();
@@ -234,8 +229,8 @@ namespace toaster
 				tc.rotation                    += delta_rotation;
 				tc.scale                       = scale;
 			}
-		} ig::End();
-		#endif
+		}
+		ig::End();
 
 		ig::Begin("Renderer settings");
 		ig::Text("Scene renderer background");
@@ -285,7 +280,7 @@ namespace toaster
 
 	auto EditorLayer::_onKeyPressEvent(KeyPressEvent &p_event) -> bool
 	{
-		#if 0
+		#if 1
 		if (!m_canOperateCamera)
 		{
 			switch (p_event.getKeyCode())

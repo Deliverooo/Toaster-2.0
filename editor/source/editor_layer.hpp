@@ -47,6 +47,9 @@ namespace toaster
 
 		gpu::VKLogicalDevice *m_device{nullptr};
 
+		uint32 m_windowWidth{0u};
+		uint32 m_windowHeight{0u};
+
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
 
@@ -55,6 +58,8 @@ namespace toaster
 		RefPtr<gpu::VKPipeline>   m_fullscreenPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_fullscreenPass{nullptr};
 		RefPtr<gpu::VKMaterial>   m_fullscreenMaterial{nullptr};
+
+		RefPtr<gpu::VKImage2D> m_fullscreenAttachmentImage{nullptr};
 
 		RefPtr<Scene>                  m_scene{nullptr};
 		UniquePtr<SceneHierarchyPanel> m_sceneHierarchyPanel{nullptr};
