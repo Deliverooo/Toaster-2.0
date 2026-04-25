@@ -1,6 +1,7 @@
 #include "vk_command_buffer.hpp"
 
 #include "vk_logical_device.hpp"
+
 namespace toaster::gpu
 {
 	VKCommandBuffer::VKCommandBuffer(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, bool p_fence_signaled) : m_device(p_device), m_queueType(p_queue_type)
@@ -84,9 +85,8 @@ namespace toaster::gpu
 		m_commandBuffer.reset();
 	}
 
-	VKCommandBufferPFF::VKCommandBufferPFF(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, uint32 p_frames_in_flight, bool p_fence_signaled) : m_device(p_device),
-																																					   m_queueType(p_queue_type),
-																																					   m_framesInFlightCount(p_frames_in_flight)
+	VKCommandBufferPFF::VKCommandBufferPFF(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, uint32 p_frames_in_flight,
+										   bool             p_fence_signaled) : m_device(p_device), m_queueType(p_queue_type), m_framesInFlightCount(p_frames_in_flight)
 	{
 		TST_ASSERT_MSG(m_framesInFlightCount > 0, "Bradar what is dis?!");
 
@@ -182,4 +182,5 @@ namespace toaster::gpu
 		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Bradar what is dis?!");
 		m_commandBuffers[p_frame_index].reset();
 	}
+
 }

@@ -8,7 +8,6 @@ set(SRC
 		imgui_layer.hpp
 		editor_camera.cpp
 		editor_camera.hpp
-
 )
 
 add_executable(toaster_client ${SRC})

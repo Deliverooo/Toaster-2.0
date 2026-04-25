@@ -108,4 +108,5 @@ namespace toaster
 
 		GLFWCallbackData m_callbackData{};
 	};
+
 }

@@ -50,8 +50,8 @@ namespace toaster
 		uint32 m_windowWidth{0u};
 		uint32 m_windowHeight{0u};
 
-		uint32 m_viewportWidth{0u};
-		uint32 m_viewportHeight{0u};
+		// uint32 m_viewportWidth{0u};
+		// uint32 m_viewportHeight{0u};
 
 		float32 m_time{0.0f};
 
@@ -59,7 +59,7 @@ namespace toaster
 		RefPtr<gpu::VKRenderPass> m_fullscreenPass{nullptr};
 		RefPtr<gpu::VKMaterial>   m_fullscreenMaterial{nullptr};
 
-		RefPtr<gpu::VKImage2D> m_fullscreenAttachmentImage{nullptr};
+		// RefPtr<gpu::VKImage2D> m_fullscreenAttachmentImage{nullptr};
 
 		RefPtr<Scene>                  m_scene{nullptr};
 		UniquePtr<SceneHierarchyPanel> m_sceneHierarchyPanel{nullptr};

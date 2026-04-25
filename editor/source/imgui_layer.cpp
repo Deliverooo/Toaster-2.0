@@ -15,6 +15,7 @@
 #include <ImGuizmo.h>
 namespace igz = ImGuizmo;
 
+
 namespace toaster
 {
 	static auto checkVKResult(VkResult p_result) -> void
@@ -37,7 +38,7 @@ namespace toaster
 		(void) io;
 
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-		// io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
 		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Viewports
 
 		io.FontDefault = io.Fonts->AddFontFromFileTTF("../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
@@ -153,7 +154,7 @@ namespace toaster
 		ImGui_ImplGlfw_InitForVulkan(app.getWindow().getNativeWindow(), true);
 
 		ImGui_ImplVulkan_InitInfo init_info{};
-		init_info.Instance        = static_cast<vk::Instance>(static_cast<vk::raii::Instance &>(*device->getPhysicalDevice()->getInstance()));
+		init_info.Instance        = *device->getPhysicalDevice()->getInstance()->getVulkanInstance();
 		init_info.PhysicalDevice  = *device->getPhysicalDevice()->getVulkanPhysicalDevice();
 		init_info.Device          = static_cast<vk::Device>(static_cast<vk::raii::Device &>(*device));
 		init_info.QueueFamily     = device->getQueueFamilyIndices().graphics;
@@ -218,17 +219,17 @@ namespace toaster
 		auto &command_buffer{swapchain->getCurrentCommandBuffer()};
 
 		vk::RenderingAttachmentInfo colour_attachment_info{};
-		colour_attachment_info.clearValue  = vk::ClearColorValue{0.005f, 0.105f, 0.005f, 1.0f};
+		colour_attachment_info.clearValue  = vk::ClearColorValue{0.005f, 0.105f, 0.005f, 0.0f};
 		colour_attachment_info.imageView   = swapchain->getCurrentImageView();
 		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
+		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eNone;
 		colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
 
 		vk::RenderingAttachmentInfo depth_attachment_info{};
 		depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
 		depth_attachment_info.imageView   = swapchain->getDepthImageView();
 		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
+		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eNone;
 		depth_attachment_info.storeOp     = vk::AttachmentStoreOp::eNone;
 
 		vk::RenderingInfo rendering_info{};
