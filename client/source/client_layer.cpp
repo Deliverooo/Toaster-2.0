@@ -25,7 +25,7 @@ namespace toaster
 	auto ClientLayer::onInit() -> void
 	{
 		auto &app       = getApp();
-		auto  device    = app.getWindow().getLogicalDevice();
+		auto  device    = app.getLogicalDevice();
 		auto  swapchain = app.getWindow().getSwapchain();
 
 		uint32 window_width{swapchain->getExtent().width};
@@ -44,7 +44,7 @@ namespace toaster
 			m_renderer2D->onResize(width, height);
 		});
 
-		Renderer2DCreateInfo renderer_2d_create_info{};
+		Renderer2DSpecInfo renderer_2d_create_info{};
 		renderer_2d_create_info.renderTargetWidth  = window_width;
 		renderer_2d_create_info.renderTargetHeight = window_height;
 		m_renderer2D                               = make_reference<Renderer2D>(device, renderer_2d_create_info);
@@ -53,7 +53,7 @@ namespace toaster
 	auto ClientLayer::onDestroy() -> void
 	{
 		auto &app = getApp();
-		auto  device{app.getWindow().getLogicalDevice()};
+		auto  device{app.getLogicalDevice()};
 		device->getVulkanLogicalDevice().waitIdle();
 	}
 
@@ -62,7 +62,7 @@ namespace toaster
 		m_time += p_dt;
 
 		auto &app       = getApp();
-		auto  device    = app.getWindow().getLogicalDevice();
+		auto  device    = app.getLogicalDevice();
 		auto  swapchain = app.getWindow().getSwapchain();
 
 		uint32 frame_index{swapchain->getFrameIndex()};

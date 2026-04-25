@@ -12,7 +12,7 @@ namespace toaster::gpu
 {
 	struct TST_GPU_API VKInstanceSpecInfo
 	{
-		using ExtensionSet = std::unordered_set<CString>;
+		using ExtensionSet = std::unordered_set<String>;
 
 		String                                 appName{};
 		ExtensionSet                           requiredExtensions;

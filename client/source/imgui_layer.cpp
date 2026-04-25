@@ -37,7 +37,7 @@ namespace toaster
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Viewports
 
 		auto &app       = getApp();
-		auto  device    = app.getWindow().getLogicalDevice();
+		auto  device    = app.getLogicalDevice();
 		auto  swapchain = app.getWindow().getSwapchain();
 
 		vk::DescriptorPoolSize pool_sizes[] = {

@@ -189,7 +189,7 @@ namespace toaster::gpu
 		{
 			return std::ranges::any_of(available_device_extensions, [&required_ext](const auto &available_ext)
 			{
-				return std::strcmp(available_ext.extensionName, required_ext) == 0;
+				return std::strcmp(available_ext.extensionName, required_ext.c_str()) == 0;
 			});
 		});
 

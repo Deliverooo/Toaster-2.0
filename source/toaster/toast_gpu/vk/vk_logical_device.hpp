@@ -7,12 +7,31 @@ namespace toaster::gpu
 {
 	struct VKLogicalDeviceSpecInfo
 	{
-		using ExtensionSet = std::unordered_set<CString>;
+		static auto getDefaultFeatures() -> vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
+			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT>
+		{
+			vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
+				vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT> feature_chain{{}, {}, {}, {}, {}};
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                 = true;
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                 = true;
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                  = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                   = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                    = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                    = true;
+			feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState = true;
+			feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors      = true;
+			return feature_chain;
+		}
+
+		using ExtensionSet = std::unordered_set<String>;
 
 		ExtensionSet requiredExtensions;
 
 		// Optional :)
 		bool usePresent{false};
+
+		// Goto vk_shader.cpp #define TST_SHADER_LOG_TRACE for usage... if true, prints shader reflection data
+		bool printShaderDebugInfo{true};
 
 		uint32 maxFramesInFlight{3u};
 

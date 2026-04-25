@@ -17,8 +17,36 @@ namespace toaster
 	{
 		Window::initWindowingAPI();
 
-		m_window = new Window{p_create_info.windowCreateInfo};
+		#pragma region create vulkan objects
+		gpu::VKInstanceSpecInfo vk_instance_spec_info{};
+		vk_instance_spec_info.appName            = "Toaster-2.0 -> Vulkan QT";
+		vk_instance_spec_info.requiredExtensions = Window::getRequiredInstanceExtensions();
+		m_vkInstance                             = new gpu::VKInstance{vk_instance_spec_info};
 
+		std::unordered_set<String> required_device_extensions{
+			vk::KHRSwapchainExtensionName,
+			vk::KHRDynamicRenderingExtensionName,
+			vk::KHRTimelineSemaphoreExtensionName,
+			vk::EXTCustomBorderColorExtensionName,
+			vk::KHRMaintenance6ExtensionName,
+			vk::KHRLoadStoreOpNoneExtensionName
+		};
+		gpu::VKPhysicalDeviceSpecInfo vk_physical_device_spec_info{};
+		vk_physical_device_spec_info.requiredExtensions = required_device_extensions;
+
+		m_vkPhysicalDevice = new gpu::VKPhysicalDevice{m_vkInstance, vk_physical_device_spec_info};
+
+		gpu::VKLogicalDeviceSpecInfo vk_logical_device_spec_info{};
+		vk_logical_device_spec_info.usePresent         = true;
+		vk_logical_device_spec_info.requiredExtensions = required_device_extensions;
+		auto features{gpu::VKLogicalDeviceSpecInfo::getDefaultFeatures()};
+		vk_logical_device_spec_info.pNext = features.get<vk::PhysicalDeviceFeatures2>();
+
+		m_vkLogicalDevice = new gpu::VKLogicalDevice{m_vkPhysicalDevice, vk_logical_device_spec_info};
+		#pragma endregion
+
+		#pragma region create window
+		m_window = new Window{m_vkLogicalDevice, p_create_info.windowCreateInfo};
 		m_window->setEventCallback([this](Event &e)
 		{
 			EventDispatcher dispatcher{e};
@@ -32,27 +60,31 @@ namespace toaster
 				layer->onEvent(e);
 			});
 		});
+		input::setCurrentWindowContext(m_window);
+		#pragma endregion
 
-		Globals::init(m_window->getLogicalDevice());
-
-		input::setCurrentWindowContext(m_window->getNativeWindow());
+		Globals::init(m_vkLogicalDevice);
 	}
 
 	Application::~Application() noexcept
 	{
-		const auto device{m_window->getLogicalDevice()};
-		device->getVulkanLogicalDevice().waitIdle();
+		m_vkLogicalDevice->getVulkanLogicalDevice().waitIdle();
 
-		device->performGarbageCollection(); // Collect the trash from the layers
+		m_vkLogicalDevice->performGarbageCollection(); // Collect the trash from the layers
 		for (IAppLayer *layer: m_layers)
 			removeLayer(layer);
 		m_layers.clear();
 
 		Globals::shutdown();
-		device->performGarbageCollection(); // Collect the trash from the globals
+		m_vkLogicalDevice->performGarbageCollection(); // Collect the trash from the globals
 
 		delete m_window;
 		Window::shutdownWindowingAPI();
+		input::setCurrentWindowContext(nullptr);
+
+		delete m_vkLogicalDevice;
+		delete m_vkPhysicalDevice;
+		delete m_vkInstance;
 	}
 
 	auto Application::run() -> void
@@ -64,11 +96,6 @@ namespace toaster
 			m_lastFrameTime = startTime;
 
 			m_window->processEvents();
-
-			// TODO: Add some kind of callback thing so we can handle the creation and recreation of renderer resources.
-			// Example from Hazel, I'm not sure about doing things this way because I don't like any form of static interfaces or coupling
-			// Ref<VulkanTexture2D> instance = this; Renderer::Submit([instance]() mutable { instance->Invalidate(); });
-
 			m_window->beginFrame();
 
 			if (!m_minimized)
@@ -99,6 +126,11 @@ namespace toaster
 		return *m_window;
 	}
 
+	auto Application::getLogicalDevice() const -> gpu::VKLogicalDevice *
+	{
+		return m_vkLogicalDevice;
+	}
+
 	auto Application::onWindowCloseEvent([[maybe_unused]] WindowCloseEvent &p_event) -> bool
 	{
 		m_isRunning = false;
@@ -115,8 +147,6 @@ namespace toaster
 			m_minimized = true;
 			return false;
 		}
-
-		m_window->getSwapchain()->setFramebufferResized(true);
 
 		m_minimized = false;
 		return false;

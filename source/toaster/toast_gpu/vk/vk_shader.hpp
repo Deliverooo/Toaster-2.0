@@ -32,7 +32,7 @@ namespace toaster::gpu
 		using PipelineCreateInfoMap = std::map<vk::ShaderStageFlagBits, vk::PipelineShaderStageCreateInfo>;
 		using BytecodeMap           = std::map<vk::ShaderStageFlagBits, Bytecode>;
 
-		VKShader(VKLogicalDevice *p_dev, const BytecodeMap &p_bytecode_map, const String &p_name = "Unknown");
+		VKShader(VKLogicalDevice *p_device, const BytecodeMap &p_bytecode_map, const String &p_name = "Unknown");
 		VKShader(const VKShader &p_other) = delete;
 		VKShader(VKShader &&p_other)      = delete;
 		auto operator=(VKShader &&p_other) noexcept -> VKShader &;

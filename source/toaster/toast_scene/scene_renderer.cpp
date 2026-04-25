@@ -158,7 +158,7 @@ namespace toaster
 			m_outputColourTexture                              = m_device->alloc<gpu::VKTexture2D>(resolve_colour_attachment_texture_spec_info);
 		}
 
-		Renderer2DCreateInfo renderer_2d_create_info{};
+		Renderer2DSpecInfo renderer_2d_create_info{};
 		renderer_2d_create_info.renderTargetWidth   = m_specInfo.viewportWidth;
 		renderer_2d_create_info.renderTargetHeight  = m_specInfo.viewportHeight;
 		renderer_2d_create_info.overrideAttachments = true;

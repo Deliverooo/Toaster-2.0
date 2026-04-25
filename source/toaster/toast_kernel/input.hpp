@@ -5,11 +5,11 @@
 #include "toast_lib/input_codes.hpp"
 #include "toast_lib/system_types.h"
 
-struct GLFWwindow;
+class Window;
 
 namespace toaster::input
 {
-	auto setCurrentWindowContext(GLFWwindow *p_window_ctx) -> void;
+	auto setCurrentWindowContext(Window *p_window_ctx) -> void;
 
 	auto setCursorMode(ECursorMode p_mode) -> void;
 	auto getCursorMode() -> ECursorMode;

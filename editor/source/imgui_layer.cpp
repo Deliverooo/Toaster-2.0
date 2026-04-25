@@ -15,7 +15,6 @@
 #include <ImGuizmo.h>
 namespace igz = ImGuizmo;
 
-
 namespace toaster
 {
 	static auto checkVKResult(VkResult p_result) -> void
@@ -122,7 +121,7 @@ namespace toaster
 		style.IndentSpacing   = 11.0f;
 
 		const auto &app{getApp()};
-		auto        device{app.getWindow().getLogicalDevice()};
+		auto        device{app.getLogicalDevice()};
 		const auto  swapchain{app.getWindow().getSwapchain()};
 
 		vk::DescriptorPoolSize pool_sizes[] = {

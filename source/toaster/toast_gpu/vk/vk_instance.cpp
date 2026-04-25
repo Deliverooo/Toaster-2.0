@@ -29,7 +29,7 @@ namespace toaster::gpu
 			// returns true if none of the extensions are present (the strcmp would always evaluate to false)
 			return std::ranges::none_of(extension_props, [ext = extension](const auto &prop)
 			{
-				return std::strcmp(prop.extensionName.data(), ext) == 0;
+				return std::strcmp(prop.extensionName.data(), ext.c_str()) == 0;
 			});
 		});
 
@@ -83,8 +83,10 @@ namespace toaster::gpu
 			debug_messenger_create_info.pfnUserCallback = &_debugCallback;
 		}
 
-		const std::vector<CString> required_extensions_vec{m_specInfo.requiredExtensions.begin(), m_specInfo.requiredExtensions.end()};
-		vk::InstanceCreateInfo     instance_create_info{};
+		std::vector<CString> required_extensions_vec;
+		for (const auto &ext: m_specInfo.requiredExtensions)
+			required_extensions_vec.emplace_back(ext.c_str());
+		vk::InstanceCreateInfo instance_create_info{};
 		instance_create_info.pApplicationInfo        = &app_info;
 		instance_create_info.enabledExtensionCount   = required_extensions_vec.size();
 		instance_create_info.ppEnabledExtensionNames = required_extensions_vec.data();

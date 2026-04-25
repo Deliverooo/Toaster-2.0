@@ -6,9 +6,9 @@
 
 namespace toaster
 {
-	Renderer2D::Renderer2D(gpu::VKLogicalDevice *p_p_devicectx, const Renderer2DCreateInfo &p_create_info) : m_device(p_p_devicectx), m_createInfo(p_create_info),
-																								  m_maxVertices(p_create_info.maxQuads * 4u),
-																								  m_maxIndices(p_create_info.maxQuads * 6u)
+	Renderer2D::Renderer2D(gpu::VKLogicalDevice *p_p_devicectx, const Renderer2DSpecInfo &p_create_info) : m_device(p_p_devicectx), m_createInfo(p_create_info),
+																										   m_maxVertices(p_create_info.maxQuads * 4u),
+																										   m_maxIndices(p_create_info.maxQuads * 6u)
 	{
 		m_quadVertexBufferLayout = gpu::BufferLayout{
 			{gpu::EBufferDataType::eFloat4, "a_Position"},
@@ -29,7 +29,7 @@ namespace toaster
 		m_quadPipeline                          = m_device->alloc<gpu::VKPipeline>(pipeline_create_info);
 
 		constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
-		m_cameraUBs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size,m_device->getSpecInfo().maxFramesInFlight);
+		m_cameraUBs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
 		m_mappedCameraUBs = m_cameraUBs->mapMemory(ubo_size, 0);
 
 		m_quadRenderPass = m_device->alloc<gpu::VKRenderPass>(m_quadPipeline);
@@ -145,17 +145,17 @@ namespace toaster
 			colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 		}
 
+		gpu::RenderingAttachmentInfo depth_attachment_info{};
 		if (p_override_depth_attachment)
-			rendering_info.pDepthAttachment = p_override_depth_attachment;
+			depth_attachment_info = *p_override_depth_attachment;
 		else
 		{
-			gpu::RenderingAttachmentInfo depth_attachment_info{};
 			depth_attachment_info.image      = m_renderTargetDepthImage;
 			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
 			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
-			rendering_info.pDepthAttachment  = &depth_attachment_info;
 		}
+		rendering_info.pDepthAttachment = &depth_attachment_info;
 
 		Renderer::beginRendering(rendering_info, p_cmd, p_frame_index, m_quadRenderPass);
 
@@ -168,7 +168,6 @@ namespace toaster
 			{
 				if (m_textureSlots[i])
 				{
-					// LOG_INFO("Index: {} | Texture: {}", i, m_textureSlots[i]->getPath().string());
 					m_quadMaterial->set("u_Textures", m_textureSlots[i], i);
 				}
 				else

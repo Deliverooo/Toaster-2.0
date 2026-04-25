@@ -26,12 +26,12 @@ namespace toaster
 		class VKShader;
 	}
 
-	struct Renderer2DCreateInfo
+	struct Renderer2DSpecInfo
 	{
-		uint32 maxQuads{10000u};
-
 		uint32 renderTargetWidth{1920u};
 		uint32 renderTargetHeight{1080u};
+
+		uint32 maxQuads{10000u};
 
 		bool overrideAttachments{false};
 	};
@@ -44,7 +44,7 @@ namespace toaster
 			uint32 quadCount{0u};
 		};
 
-		explicit Renderer2D(gpu::VKLogicalDevice *p_device, const Renderer2DCreateInfo &p_create_info);
+		explicit Renderer2D(gpu::VKLogicalDevice *p_device, const Renderer2DSpecInfo &p_create_info);
 		~Renderer2D();
 
 		auto begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void;
@@ -67,9 +67,9 @@ namespace toaster
 
 		gpu::VKLogicalDevice *m_device;
 
-		Renderer2DCreateInfo m_createInfo;
-		uint32               m_maxVertices;
-		uint32               m_maxIndices;
+		Renderer2DSpecInfo m_createInfo;
+		uint32             m_maxVertices;
+		uint32             m_maxIndices;
 
 		struct QuadVertex
 		{

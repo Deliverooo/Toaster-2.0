@@ -161,7 +161,6 @@ namespace toaster::gpu
 			pcr.size       = push_constant_range.size;
 			pcr.offset     = push_constant_range.offset;
 			pcr.stageFlags = push_constant_range.stage;
-			LOG_TRACE("PCR: Size: {} | Offset: {}", pcr.size, pcr.offset);
 		}
 
 		vk::PipelineLayoutCreateInfo pipeline_layout_create_info{};

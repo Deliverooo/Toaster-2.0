@@ -1,12 +1,13 @@
 #include "input.hpp"
 
+#include "window.hpp"
 #include <GLFW/glfw3.h>
 
 namespace toaster::input
 {
-	static GLFWwindow *s_currentWindow{nullptr};
+	static Window *s_currentWindow{nullptr};
 
-	auto setCurrentWindowContext(GLFWwindow *p_window_ctx) -> void
+	auto setCurrentWindowContext(Window *p_window_ctx) -> void
 	{
 		s_currentWindow = p_window_ctx;
 	}
@@ -27,19 +28,19 @@ namespace toaster::input
 	{
 		float64 x{0.0f};
 		float64 y{0.0f};
-		glfwGetCursorPos(s_currentWindow, &x, &y);
+		glfwGetCursorPos(s_currentWindow->getNativeWindow(), &x, &y);
 		return std::make_pair(static_cast<float32>(x), static_cast<float32>(y));
 	}
 
 	auto isMouseButtonDown(EMouseButton p_button) -> bool
 	{
-		const auto state = glfwGetMouseButton(s_currentWindow, static_cast<int32>(p_button));
+		const auto state = glfwGetMouseButton(s_currentWindow->getNativeWindow(), static_cast<int32>(p_button));
 		return state == GLFW_PRESS;
 	}
 
 	auto isKeyDown(EKeyCode p_key_code) -> bool
 	{
-		const auto state = glfwGetKey(s_currentWindow, static_cast<int32>(p_key_code));
+		const auto state = glfwGetKey(s_currentWindow->getNativeWindow(), static_cast<int32>(p_key_code));
 		return state == GLFW_PRESS || state == GLFW_REPEAT;
 	}
 
@@ -47,17 +48,17 @@ namespace toaster::input
 	{
 		float64 x{0.0f};
 		float64 y{0.0f};
-		glfwGetCursorPos(s_currentWindow, &x, &y);
+		glfwGetCursorPos(s_currentWindow->getNativeWindow(), &x, &y);
 		return {static_cast<float32>(x), static_cast<float32>(y)};
 	}
 
 	auto setCursorMode(ECursorMode p_mode) -> void
 	{
-		glfwSetInputMode(s_currentWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL + static_cast<int32>(p_mode));
+		glfwSetInputMode(s_currentWindow->getNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL + static_cast<int32>(p_mode));
 	}
 
 	auto getCursorMode() -> ECursorMode
 	{
-		return static_cast<ECursorMode>(glfwGetInputMode(s_currentWindow, GLFW_CURSOR) - GLFW_CURSOR_NORMAL);
+		return static_cast<ECursorMode>(glfwGetInputMode(s_currentWindow->getNativeWindow(), GLFW_CURSOR) - GLFW_CURSOR_NORMAL);
 	}
 }

@@ -33,7 +33,7 @@ namespace toaster
 	auto EditorLayer::onInit() -> void
 	{
 		const auto &app{getApp()};
-		m_device = app.getWindow().getLogicalDevice();
+		m_device = app.getLogicalDevice();
 		const auto swapchain{app.getWindow().getSwapchain()};
 
 		m_windowWidth  = std::max(swapchain->getExtent().width, 1u);
@@ -83,7 +83,7 @@ namespace toaster
 		scene_renderer_spec_info.scene          = m_scene;
 		m_sceneRenderer                         = make_reference<SceneRenderer>(m_device, scene_renderer_spec_info);
 
-		Renderer2DCreateInfo renderer_2d_create_info{};
+		Renderer2DSpecInfo renderer_2d_create_info{};
 		renderer_2d_create_info.renderTargetWidth  = m_windowWidth;
 		renderer_2d_create_info.renderTargetHeight = m_windowHeight;
 		m_renderer2D                               = make_reference<Renderer2D>(m_device, renderer_2d_create_info);
@@ -124,10 +124,14 @@ namespace toaster
 		const auto & cmd_buf{swapchain->getCurrentCommandBuffer()};
 		const uint32 frame_index{swapchain->getFrameIndex()};
 
+		m_renderer2D->begin(cmd_buf, frame_index, {}, {});
+		m_renderer2D->submitQuad({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f});
+		m_renderer2D->end(cmd_buf, frame_index);
+
 		m_scene->onUpdate(p_dt);
 		m_scene->onRender(cmd_buf, frame_index, p_dt, m_sceneRenderer, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
 
-		m_fullscreenMaterial->set("u_Texture", m_sceneRenderer->getOutputColourTexture());
+		m_fullscreenPass->setInput("u_Texture", m_sceneRenderer->getOutputColourTexture());
 
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_windowWidth, m_windowHeight}};
@@ -149,7 +153,7 @@ namespace toaster
 		rendering_info.pDepthAttachment = &depth_attachment_info;
 
 		Renderer::beginRendering(rendering_info, cmd_buf, frame_index, m_fullscreenPass);
-		Renderer::renderFullscreenQuad(cmd_buf, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);
+		Renderer::renderFullscreenQuad(cmd_buf, frame_index, m_fullscreenPipeline, nullptr);
 		Renderer::endRendering(rendering_info, cmd_buf);
 	}
 

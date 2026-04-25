@@ -3,6 +3,7 @@
  */
 #pragma once
 
+#include <unordered_set>
 #include <utility> // std::pair
 #include <vulkan/vulkan_raii.hpp>
 
@@ -55,7 +56,9 @@ namespace toaster
  		 */
 		static auto shutdownWindowingAPI() -> void;
 
-		Window(const WindowCreateInfo &p_create_info);
+		static auto getRequiredInstanceExtensions() -> std::unordered_set<String>;
+
+		Window(gpu::VKLogicalDevice *p_device, const WindowCreateInfo &p_create_info);
 		~Window();
 
 		auto beginFrame() -> void;
@@ -81,15 +84,11 @@ namespace toaster
 
 		auto setTitle(const String &p_title) -> void;
 
-		[[nodiscard]] auto getLogicalDevice() const -> gpu::VKLogicalDevice *;
-
 		[[nodiscard]] auto getNativeWindow() const -> GLFWwindow *;
 		[[nodiscard]] auto getSwapchain() const -> gpu::VKSwapchain *;
 
 	private:
-		gpu::VKInstance *      m_vkInstance{nullptr};
-		gpu::VKPhysicalDevice *m_vkPhysicalDevice{nullptr};
-		gpu::VKLogicalDevice * m_vkLogicalDevice{nullptr};
+		gpu::VKLogicalDevice *m_device{nullptr};
 
 		vk::SurfaceKHR m_windowSurface{nullptr};
 
@@ -108,5 +107,4 @@ namespace toaster
 
 		GLFWCallbackData m_callbackData{};
 	};
-
 }

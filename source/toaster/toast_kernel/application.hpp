@@ -26,13 +26,19 @@ namespace toaster
 		auto close() noexcept -> void;
 
 		[[nodiscard]] auto getWindow() const noexcept -> Window &;
+		[[nodiscard]] auto getLogicalDevice() const -> gpu::VKLogicalDevice *;
 
 	private:
 		auto onWindowCloseEvent(WindowCloseEvent &p_event) -> bool;
 		auto onWindowResizeEvent(WindowResizeEvent &p_event) -> bool;
 
 		ApplicationCreateInfo m_createInfo{};
-		Window *              m_window{nullptr};
+
+		gpu::VKInstance *      m_vkInstance{nullptr};
+		gpu::VKPhysicalDevice *m_vkPhysicalDevice{nullptr};
+		gpu::VKLogicalDevice * m_vkLogicalDevice{nullptr};
+
+		Window *m_window{nullptr};
 
 		std::vector<IAppLayer *> m_layers;
 

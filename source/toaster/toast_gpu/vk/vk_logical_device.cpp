@@ -91,8 +91,11 @@ namespace toaster::gpu
 			compute_queue_create_info.pQueuePriorities = &queue_priority;
 		}
 
-		const std::vector<CString> extension_vec{m_specInfo.requiredExtensions.begin(), m_specInfo.requiredExtensions.end()};
-		vk::DeviceCreateInfo       device_create_info{};
+		std::vector<CString> extension_vec;
+		for (const auto &ext: m_specInfo.requiredExtensions)
+			extension_vec.emplace_back(ext.c_str());
+
+		vk::DeviceCreateInfo device_create_info{};
 		device_create_info.enabledExtensionCount   = static_cast<uint32>(extension_vec.size());
 		device_create_info.ppEnabledExtensionNames = extension_vec.data();
 		device_create_info.queueCreateInfoCount    = queue_create_infos.size();

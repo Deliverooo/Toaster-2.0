@@ -5,7 +5,7 @@ namespace toaster::gpu
 {
 	struct VKPhysicalDeviceSpecInfo
 	{
-		using ExtensionSet = std::unordered_set<CString>;
+		using ExtensionSet = std::unordered_set<String>;
 
 		ExtensionSet requiredExtensions;
 	};

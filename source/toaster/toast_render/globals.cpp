@@ -24,7 +24,7 @@ namespace toaster
 
 	auto Globals::init(gpu::VKLogicalDevice *p_device) -> void
 	{
-		s_globalData      = new GlobalData{};
+		s_globalData         = new GlobalData{};
 		s_globalData->device = p_device;
 
 		{
@@ -93,35 +93,42 @@ namespace toaster
 	{
 		s_globalData->device = nullptr;
 		delete s_globalData;
+		s_globalData = nullptr;
 	}
 
 	auto Globals::getShaderLibrary() -> const ShaderLibrary &
 	{
+		TST_ASSERT_MSG(s_globalData, "Did you forget to initialise Globals?!");
 		return s_globalData->shaderLibrary;
 	}
 
 	auto Globals::getFullscreenQuadVertexBuffer() -> const RefPtr<gpu::VKVertexBuffer> &
 	{
+		TST_ASSERT_MSG(s_globalData, "Did you forget to initialise Globals?!");
 		return s_globalData->quadVertexBuffer;
 	}
 
 	auto Globals::getFullscreenQuadIndexBuffer() -> const RefPtr<gpu::VKIndexBuffer> &
 	{
+		TST_ASSERT_MSG(s_globalData, "Did you forget to initialise Globals?!");
 		return s_globalData->quadIndexBuffer;
 	}
 
 	auto Globals::getFullscreenQuadVertices() -> const std::vector<QuadVertex> &
 	{
+		TST_ASSERT_MSG(s_globalData, "Did you forget to initialise Globals?!");
 		return s_globalData->quadVertices;
 	}
 
 	auto Globals::getFullscreenQuadIndices() -> const std::vector<uint32> &
 	{
+		TST_ASSERT_MSG(s_globalData, "Did you forget to initialise Globals?!");
 		return s_globalData->quadIndices;
 	}
 
 	auto Globals::getWhiteTexture() -> const RefPtr<gpu::VKTexture2D> &
 	{
+		TST_ASSERT_MSG(s_globalData, "Did you forget to initialise Globals?!");
 		return s_globalData->whiteTexture;
 	}
 }

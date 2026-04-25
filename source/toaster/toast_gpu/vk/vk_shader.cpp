@@ -8,12 +8,15 @@
 
 #include "toast_lib/logging.hpp"
 
+#define TST_SHADER_LOG_TRACE(...) do { if(m_device->getSpecInfo().printShaderDebugInfo) { LOG_TRACE(__VA_ARGS__); } } while(false)
+#define TST_SHADER_LOG_INFO(...) do { if(m_device->getSpecInfo().printShaderDebugInfo) { LOG_INFO(__VA_ARGS__); } } while(false)
+
 namespace toaster::gpu
 {
-	VKShader::VKShader(VKLogicalDevice *p_dev, const BytecodeMap &p_bytecode_map, const String &p_name) : m_device(p_dev), m_name(p_name),
+	VKShader::VKShader(VKLogicalDevice *p_device, const BytecodeMap &p_bytecode_map, const String &p_name) : m_device(p_device), m_name(p_name),
 																										  m_shaderBytecodeMap(p_bytecode_map)
 	{
-		TST_ASSERT_MSG(p_dev, "Device cannot be null");
+		TST_ASSERT_MSG(p_device, "Device cannot be null");
 
 		for (auto &[stage, code]: p_bytecode_map)
 		{
@@ -26,10 +29,10 @@ namespace toaster::gpu
 			create_info.pName                              = "main";
 		}
 
-		LOG_TRACE("Shader: {} [", m_name);
+		TST_SHADER_LOG_TRACE("Shader: {} [", m_name);
 		for (auto &[stage, code]: p_bytecode_map)
 			_reflect(stage, code);
-		LOG_TRACE("]");
+		TST_SHADER_LOG_TRACE("]");
 
 		_createDescriptors();
 	}
@@ -132,9 +135,9 @@ namespace toaster::gpu
 		spirv_cross::CompilerGLSL compiler{copy};
 		auto                      resources{compiler.get_shader_resources()};
 
-		LOG_INFO("Shader stage: {}\n", vk::to_string(p_stage));
+		TST_SHADER_LOG_INFO("Shader stage: {}\n", vk::to_string(p_stage));
 
-		LOG_INFO("Uniform buffers:");
+		TST_SHADER_LOG_INFO("Uniform buffers:");
 		for (const auto &resource: resources.uniform_buffers)
 		{
 			const String &name = resource.name;
@@ -158,12 +161,12 @@ namespace toaster::gpu
 			uniform_buffer.name           = name;
 			uniform_buffer.binding        = binding;
 
-			LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
-			LOG_TRACE("\t\tMember count: {}", member_count);
-			LOG_TRACE("\t\tSize: {}", size);
+			TST_SHADER_LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
+			TST_SHADER_LOG_TRACE("\t\tMember count: {}", member_count);
+			TST_SHADER_LOG_TRACE("\t\tSize: {}", size);
 		}
 
-		LOG_INFO("Storage buffers:");
+		TST_SHADER_LOG_INFO("Storage buffers:");
 		for (const auto &resource: resources.storage_buffers)
 		{
 			const String &name = resource.name;
@@ -186,12 +189,12 @@ namespace toaster::gpu
 			uniform_buffer.name           = name;
 			uniform_buffer.binding        = binding;
 
-			LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
-			LOG_TRACE("\t\tMember count: {}", member_count);
-			LOG_TRACE("\t\tSize: {}", size);
+			TST_SHADER_LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
+			TST_SHADER_LOG_TRACE("\t\tMember count: {}", member_count);
+			TST_SHADER_LOG_TRACE("\t\tSize: {}", size);
 		}
 
-		LOG_INFO("Combined image samplers:");
+		TST_SHADER_LOG_INFO("Combined image samplers:");
 		for (const auto &resource: resources.sampled_images)
 		{
 			const String &name = resource.name;
@@ -220,14 +223,14 @@ namespace toaster::gpu
 			image_sampler_resource.binding         = binding;
 			image_sampler_resource.arraySize       = array_size;
 
-			LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
-			LOG_TRACE("\t\tArray size: {}", array_size);
+			TST_SHADER_LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
+			TST_SHADER_LOG_TRACE("\t\tArray size: {}", array_size);
 		}
 
-		LOG_INFO("Push constant buffers:");
+		TST_SHADER_LOG_INFO("Push constant buffers:");
 		for (const auto &resource: resources.push_constant_buffers)
 		{
-			LOG_TRACE("Stage: {}", vk::to_string((p_stage)));
+			TST_SHADER_LOG_TRACE("Stage: {}", vk::to_string((p_stage)));
 
 			const String &name = resource.name;
 
@@ -244,7 +247,7 @@ namespace toaster::gpu
 			push_constant_range.size   = size;
 			push_constant_range.offset = offset;
 
-			LOG_TRACE("PCR: Name: {} | Size: {} | Offset: {}", name, size, offset);
+			TST_SHADER_LOG_TRACE("PCR: Name: {} | Size: {} | Offset: {}", name, size, offset);
 
 			if (name.starts_with("_"))
 				continue;
@@ -262,8 +265,8 @@ namespace toaster::gpu
 
 				member_offset -= offset;
 
-				LOG_TRACE("Member size: {}", member_size);
-				LOG_TRACE("Member offset: {}", member_offset);
+				TST_SHADER_LOG_TRACE("Member size: {}", member_size);
+				TST_SHADER_LOG_TRACE("Member offset: {}", member_offset);
 
 				push_constant_buffer.pushConstants[fmt::format("{}.{}", name, member_name)] = PushConstant{member_name, static_cast<uint32>(member_size), member_offset};
 			}
@@ -363,3 +366,6 @@ namespace toaster::gpu
 		}
 	}
 }
+
+#undef TST_SHADER_LOG_TRACE
+#undef TST_SHADER_LOG_INFO
