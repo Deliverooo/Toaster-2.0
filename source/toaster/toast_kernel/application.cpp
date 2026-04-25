@@ -60,7 +60,6 @@ namespace toaster
 				layer->onEvent(e);
 			});
 		});
-		input::setCurrentWindowContext(m_window);
 		#pragma endregion
 
 		Globals::init(m_vkLogicalDevice);
@@ -80,7 +79,6 @@ namespace toaster
 
 		delete m_window;
 		Window::shutdownWindowingAPI();
-		input::setCurrentWindowContext(nullptr);
 
 		delete m_vkLogicalDevice;
 		delete m_vkPhysicalDevice;

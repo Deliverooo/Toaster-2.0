@@ -1,20 +1,18 @@
 #pragma once
 
+#include "../resource.hpp"
 #include "../toast_gpu.hpp"
 
 #include <vulkan/vulkan_raii.hpp>
 #include "toast_lib/core_basic.hpp"
-#include "../resource.hpp"
 
 namespace toaster::gpu
 {
-	class VKLogicalDevice;
-
 	class TST_GPU_API VKStorageBuffer final : public IGPUResource
 	{
+		TST_GPU_OBJECT
 	public:
 		VKStorageBuffer(VKLogicalDevice *p_device, uint64 p_size);
-		auto getDevice() const -> VKLogicalDevice *;
 
 		auto getBuffer() -> vk::raii::Buffer &;
 		auto getBufferMemory() -> vk::raii::DeviceMemory &;
@@ -28,8 +26,6 @@ namespace toaster::gpu
 		[[nodiscard]] auto getResourceType() const -> EGPUResourceType override;
 
 	private:
-		VKLogicalDevice *m_device{nullptr};
-
 		vk::raii::Buffer         m_buffer{nullptr};
 		vk::raii::DeviceMemory   m_bufferMemory{nullptr};
 		vk::DescriptorBufferInfo m_descriptorInfo{};

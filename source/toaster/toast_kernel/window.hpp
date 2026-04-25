@@ -16,6 +16,8 @@ struct GLFWwindow;
 
 namespace toaster
 {
+	class InputContext;
+
 	namespace gpu
 	{
 		class VKSwapchain;
@@ -86,6 +88,7 @@ namespace toaster
 
 		[[nodiscard]] auto getNativeWindow() const -> GLFWwindow *;
 		[[nodiscard]] auto getSwapchain() const -> gpu::VKSwapchain *;
+		[[nodiscard]] auto getInputContext() const -> InputContext *;
 
 	private:
 		gpu::VKLogicalDevice *m_device{nullptr};
@@ -93,6 +96,8 @@ namespace toaster
 		vk::SurfaceKHR m_windowSurface{nullptr};
 
 		GLFWwindow *m_window{nullptr};
+
+		InputContext *m_inputCtx{nullptr};
 
 		gpu::VKSwapchain *m_swapchain{nullptr};
 

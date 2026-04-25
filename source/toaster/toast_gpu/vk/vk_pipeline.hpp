@@ -5,15 +5,13 @@
 
 namespace toaster::gpu
 {
-	class VKGPUContext;
-
 	struct PipelineCreateInfo
 	{
 		VertexBufferLayout vertexBufferLayout;
 		InstanceLayout     instanceLayout;
 
 		// Thanks to Vulkan 1.3's dynamic rendering, when creating a pipeline, you only need to specify the formats for your rendering attachments
-		// This is very helpful because I hate framebuffers and Vulkan render passes.
+		// This is very helpful because I hate framebuffers and Vulkan render passes. :))))))
 		std::vector<vk::Format> colourAttachments;
 
 		vk::Format    depthFormat{vk::Format::eUndefined};
@@ -32,9 +30,9 @@ namespace toaster::gpu
 
 	class TST_GPU_API VKPipeline
 	{
+		TST_GPU_OBJECT
 	public:
 		VKPipeline(VKLogicalDevice *p_device, const PipelineCreateInfo &p_create_info);
-		auto getDevice() const -> VKLogicalDevice *;
 
 		[[nodiscard]] auto getPipeline() -> vk::raii::Pipeline &;
 		[[nodiscard]] auto getPipelineLayout() -> vk::raii::PipelineLayout &;
@@ -42,11 +40,8 @@ namespace toaster::gpu
 		[[nodiscard]] auto getCreateInfo() const -> const PipelineCreateInfo &;
 
 	private:
-		auto _createGraphicsPipeline() -> void;
-
+		auto        _createGraphicsPipeline() -> void;
 		static auto _getVulkanAttribType(EBufferDataType p_type) -> vk::Format;
-
-		VKLogicalDevice *m_device{nullptr};
 
 		PipelineCreateInfo m_createInfo{};
 

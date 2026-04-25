@@ -16,11 +16,6 @@ namespace toaster::gpu
 		_createDepthResources();
 	}
 
-	auto VKSwapchain::getDevice() const -> VKLogicalDevice *
-	{
-		return m_device;
-	}
-
 	auto VKSwapchain::beginFrame() -> void
 	{
 		// Wait for the previous frame to be finished before rendering this one

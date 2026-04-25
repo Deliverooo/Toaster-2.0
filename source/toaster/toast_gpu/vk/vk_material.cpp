@@ -40,11 +40,6 @@ namespace toaster::gpu
 		m_pushConstantStorageBuffer.release();
 	}
 
-	auto VKMaterial::getDevice() const -> VKLogicalDevice *
-	{
-		return m_device;
-	}
-
 	auto VKMaterial::set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);

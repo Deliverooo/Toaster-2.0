@@ -116,7 +116,6 @@ namespace toaster::gpu
 	auto VKCommandBufferPFF::end(uint32 p_frame_index) -> void
 	{
 		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Bradar what is dis?!");
-
 		m_commandBuffers[p_frame_index].end();
 	}
 

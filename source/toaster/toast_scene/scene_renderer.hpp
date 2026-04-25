@@ -18,6 +18,7 @@ namespace toaster
 
 	class SceneRenderer
 	{
+		TST_GPU_OBJECT
 	public:
 		SceneRenderer(gpu::VKLogicalDevice *p_device, const SceneRendererSpecInfo &p_spec_info);
 		~SceneRenderer();
@@ -43,8 +44,6 @@ namespace toaster
 		auto _renderLightCullingPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 		auto _renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 		auto _renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-
-		gpu::VKLogicalDevice *m_device{nullptr};
 
 		SceneRendererSpecInfo m_specInfo{};
 

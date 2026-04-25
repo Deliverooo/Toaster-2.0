@@ -142,7 +142,7 @@ namespace toaster::gpu
 		m_pendingResourceUpdates.resize(m_specInfo.maxFramesInFlight);
 	}
 
-	auto VKLogicalDevice::getPhysicalDevice() const -> VKPhysicalDevice *
+	auto VKLogicalDevice::getPhysicalDevice() const -> NonOwningPtr<VKPhysicalDevice>
 	{
 		return m_physicalDevice;
 	}

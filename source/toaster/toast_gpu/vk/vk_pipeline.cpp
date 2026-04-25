@@ -15,11 +15,6 @@ namespace toaster::gpu
 		_createGraphicsPipeline();
 	}
 
-	auto VKPipeline::getDevice() const -> VKLogicalDevice *
-	{
-		return m_device;
-	}
-
 	auto VKPipeline::getPipeline() -> vk::raii::Pipeline &
 	{
 		return m_graphicsPipeline;

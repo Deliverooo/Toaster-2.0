@@ -5,13 +5,17 @@
 
 #include <glm/gtx/quaternion.hpp>
 
+#include "toast_lib/ptr.hpp"
+
 namespace toaster
 {
+	class InputContext;
+
 	class EditorCamera final : public Camera
 	{
 	public:
 		EditorCamera() = default;
-		EditorCamera(float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far);
+		EditorCamera(InputContext *p_ctx, float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far);
 
 		auto onUpdate(float32 p_dt) -> void;
 		auto onEvent(Event &p_event) -> void;
@@ -35,6 +39,8 @@ namespace toaster
 		auto _updateProjection() -> void;
 		auto _onMouseScrollEvent(MouseScrollEvent &p_event) -> bool;
 
+		NonOwningPtr<InputContext> m_ctx{nullptr};
+
 		glm::vec3 m_position{0.0f, 1.0f, 3.0f};
 
 		static constexpr glm::vec3 c_forwardDir{0.0f, 0.0f, -1.0f};
@@ -52,6 +58,5 @@ namespace toaster
 		float32 m_zFar{1000.0f};
 
 		float32 m_zoom{1.0f};
-
 	};
 }

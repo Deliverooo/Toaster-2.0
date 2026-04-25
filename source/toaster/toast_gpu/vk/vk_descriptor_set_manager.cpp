@@ -54,11 +54,6 @@ namespace toaster::gpu
 		}
 	}
 
-	auto VKDescriptorSetManager::getDevice() const -> VKLogicalDevice *
-	{
-		return m_device;
-	}
-
 	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void
 	{
 		if (const auto decl{getDescriptorDeclaration(p_name)})
@@ -172,7 +167,7 @@ namespace toaster::gpu
 						{
 							auto uniform_buffer{resource.resources[0].as<VKUniformBufferPFF>()};
 							TST_ASSERT(uniform_buffer);
-							write_descriptor.pBufferInfo               = &uniform_buffer->getUBO(frame_index)->getDescriptorInfo();
+							write_descriptor.pBufferInfo               = &uniform_buffer->getDescriptorInfo(frame_index);
 							stored_write_descriptor.resourceHandles[0] = write_descriptor.pBufferInfo->buffer;
 
 							if (!write_descriptor.pBufferInfo->buffer)
@@ -254,7 +249,7 @@ namespace toaster::gpu
 					}
 					case EGPUResourceType::eUniformBufferPFF:
 					{
-						const auto &buffer_info{resource.resources[0].as<VKUniformBufferPFF>()->getUBO(p_frame_index)->getDescriptorInfo()};
+						const auto &buffer_info{resource.resources[0].as<VKUniformBufferPFF>()->getDescriptorInfo(p_frame_index)};
 						if (buffer_info.buffer != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
 							m_invalidDescriptorResources[set][binding] = resource;
 						break;
@@ -320,8 +315,8 @@ namespace toaster::gpu
 					case EGPUResourceType::eUniformBufferPFF:
 					{
 						auto uniform_buffer{resource.resources[0].as<VKUniformBufferPFF>()};
-						write_descriptor.wds.pBufferInfo    = &uniform_buffer->getUBO(p_frame_index)->getDescriptorInfo();
-						write_descriptor.resourceHandles[0] = uniform_buffer->getUBO(p_frame_index)->getDescriptorInfo().buffer;
+						write_descriptor.wds.pBufferInfo    = &uniform_buffer->getDescriptorInfo(p_frame_index);
+						write_descriptor.resourceHandles[0] = uniform_buffer->getDescriptorInfo(p_frame_index).buffer;
 						break;
 					}
 					case EGPUResourceType::eStorageBuffer:
@@ -411,7 +406,7 @@ namespace toaster::gpu
 		return m_endSet;
 	}
 
-	auto VKDescriptorSetManager::_getDescriptorType(vk::DescriptorType p_type) const -> EDescriptorType
+	auto VKDescriptorSetManager::_getDescriptorType(vk::DescriptorType p_type) -> EDescriptorType
 	{
 		switch (p_type)
 		{
@@ -425,7 +420,7 @@ namespace toaster::gpu
 		return EDescriptorType::eUnknown;
 	}
 
-	auto VKDescriptorSetManager::_getResourceType(vk::DescriptorType p_type) const -> EGPUResourceType
+	auto VKDescriptorSetManager::_getResourceType(vk::DescriptorType p_type) -> EGPUResourceType
 	{
 		switch (p_type)
 		{

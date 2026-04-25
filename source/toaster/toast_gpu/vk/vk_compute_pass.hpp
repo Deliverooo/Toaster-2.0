@@ -11,9 +11,9 @@ namespace toaster::gpu
 
 	class TST_GPU_API VKComputePass
 	{
+		TST_GPU_OBJECT
 	public:
 		VKComputePass(VKLogicalDevice *p_device, const RefPtr<VKComputePipeline> &p_pipeline);
-		auto getDevice() const -> VKLogicalDevice *;
 
 		auto setInput(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
 		auto setInput(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void;
@@ -31,8 +31,6 @@ namespace toaster::gpu
 		[[nodiscard]] auto getEndSetIndex() const -> uint32;
 
 	private:
-		VKLogicalDevice *m_device{nullptr};
-
 		RefPtr<VKComputePipeline>         m_pipeline{nullptr};
 		UniquePtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};
 	};

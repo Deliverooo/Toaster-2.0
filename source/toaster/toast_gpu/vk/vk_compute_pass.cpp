@@ -8,11 +8,6 @@ namespace toaster::gpu
 		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_device, m_pipeline->getShader(), 1, 3);
 	}
 
-	auto VKComputePass::getDevice() const -> VKLogicalDevice *
-	{
-		return m_device;
-	}
-
 	auto VKComputePass::setInput(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_uniform_buffer);

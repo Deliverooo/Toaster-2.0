@@ -66,9 +66,9 @@ namespace toaster::gpu
 
 	class TST_GPU_API VKDescriptorSetManager
 	{
+		TST_GPU_OBJECT
 	public:
 		VKDescriptorSetManager(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader, uint32 p_start_set, uint32 p_end_set);
-		auto getDevice() const -> VKLogicalDevice *;
 
 		auto setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
 		auto setDescriptor(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void;
@@ -104,10 +104,8 @@ namespace toaster::gpu
 		auto getEndSetIndex() const -> uint32;
 
 	private:
-		auto _getDescriptorType(vk::DescriptorType p_type) const -> EDescriptorType;
-		auto _getResourceType(vk::DescriptorType p_type) const -> EGPUResourceType;
-
-		VKLogicalDevice *m_device{nullptr};
+		static auto _getDescriptorType(vk::DescriptorType p_type) -> EDescriptorType;
+		static auto _getResourceType(vk::DescriptorType p_type) -> EGPUResourceType;
 
 		RefPtr<VKShader> m_shader{nullptr};
 		uint32           m_startSet{0u};

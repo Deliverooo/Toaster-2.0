@@ -16,11 +16,6 @@ namespace toaster::gpu
 		m_descriptorInfo.range  = p_size;
 	}
 
-	auto VKStorageBuffer::getDevice() const -> VKLogicalDevice *
-	{
-		return m_device;
-	}
-
 	auto VKStorageBuffer::getBuffer() -> vk::raii::Buffer &
 	{
 		return m_buffer;

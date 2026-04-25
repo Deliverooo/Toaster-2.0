@@ -14,7 +14,7 @@
 #include <Windows.h>
 #include <vulkan/vulkan_win32.h>
 
-#include "../../editor/source/editor_camera.hpp"
+#include "editor_camera.hpp"
 #include "GLFW/glfw3.h"
 #include "toast_gpu/vk/vk_swapchain.hpp"
 #include "toast_kernel/input.hpp"
@@ -80,7 +80,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	});
 	window->maximize();
 
-	toaster::input::setCurrentWindowContext(window);
+	auto input_ctx{window->getInputContext()};
 	#pragma endregion
 
 	toaster::Globals::init(vk_logical_device);
@@ -108,7 +108,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		renderer_2d_spec_info.renderTargetHeight = window_height;
 		auto renderer_2d{toaster::make_reference<toaster::Renderer2D>(vk_logical_device, renderer_2d_spec_info)};
 
-		toaster::EditorCamera camera{90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
+		toaster::EditorCamera camera{input_ctx, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
 
 		swapchain->setResizeCallback([&](const uint32 width, const uint32 height) -> void
 		{
@@ -174,7 +174,6 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 	delete window;
 	toaster::Window::shutdownWindowingAPI();
-	toaster::input::setCurrentWindowContext(nullptr);
 
 	delete vk_logical_device;
 	delete vk_physical_device;

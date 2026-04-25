@@ -15,7 +15,7 @@ namespace toaster::gpu
 	public:
 		VKPhysicalDevice(VKInstance *p_instance, const VKPhysicalDeviceSpecInfo &p_spec_info);
 
-		[[nodiscard]] auto getInstance() const -> VKInstance *;
+		[[nodiscard]] auto getInstance() const -> NonOwningPtr<VKInstance>;
 		[[nodiscard]] auto getSpecInfo() const -> const VKPhysicalDeviceSpecInfo &;
 
 		[[nodiscard]] auto getVulkanPhysicalDevice() -> vk::raii::PhysicalDevice &;
@@ -38,7 +38,7 @@ namespace toaster::gpu
 	private:
 		[[nodiscard]] auto _isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const -> bool;
 
-		VKInstance *m_instance{nullptr};
+		NonOwningPtr<VKInstance> m_instance{nullptr};
 
 		VKPhysicalDeviceSpecInfo m_specInfo;
 

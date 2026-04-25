@@ -11,11 +11,6 @@ namespace toaster::gpu
 		recreate();
 	}
 
-	auto VKImage2D::getDevice() const -> VKLogicalDevice *
-	{
-		return m_device;
-	}
-
 	auto VKImage2D::getImage() -> vk::raii::Image &
 	{
 		return m_image;

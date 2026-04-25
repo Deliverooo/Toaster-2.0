@@ -20,11 +20,12 @@ namespace toaster::gpu
 
 	class TST_GPU_API VKTexture2D final : public IGPUResource
 	{
+		TST_GPU_OBJECT
+		TST_GPU_RESOURCE(Texture2D)
 	public:
 		VKTexture2D(VKLogicalDevice *p_dev, const TextureSpecInfo &p_spec_info);
 		VKTexture2D(VKLogicalDevice *p_dev, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
 		VKTexture2D(VKLogicalDevice *p_dev, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size);
-		auto getDevice() const -> VKLogicalDevice *;
 
 		auto resize(uint32 p_width, uint32 p_height) -> void;
 
@@ -35,11 +36,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto getSampler() -> vk::raii::Sampler &;
 		[[nodiscard]] auto getDescriptorInfo() -> vk::DescriptorImageInfo &;
 
-		[[nodiscard]] auto getResourceType() const -> EGPUResourceType override;
-
 	private:
-		VKLogicalDevice *m_device{nullptr};
-
 		TextureSpecInfo      m_specInfo{};
 		io::filesystem::Path m_path;
 
@@ -54,20 +51,17 @@ namespace toaster::gpu
 	// TODO: Actually implement ts... (I am very scared of equirectangular to cubemap conversions...)
 	class TST_GPU_API VKTexture3D final : public IGPUResource
 	{
+		TST_GPU_OBJECT
+		TST_GPU_RESOURCE(Texture3D)
 	public:
 		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size);
-		[[nodiscard]] auto getDevice() const -> VKLogicalDevice *;
 
 		[[nodiscard]] auto getSpecInfo() const -> const TextureSpecInfo &;
 		[[nodiscard]] auto getImage() -> vk::raii::Image &;
 		[[nodiscard]] auto getImageView() -> vk::raii::ImageView &;
 		[[nodiscard]] auto getDescriptorInfo() -> vk::DescriptorImageInfo &;
 
-		[[nodiscard]] auto getResourceType() const -> EGPUResourceType override;
-
 	private:
-		VKLogicalDevice *m_device{nullptr};
-
 		TextureSpecInfo m_specInfo{};
 
 		vk::raii::Image        m_image{nullptr};

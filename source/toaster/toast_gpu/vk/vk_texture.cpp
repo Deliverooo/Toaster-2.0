@@ -4,7 +4,6 @@
 
 #include "vk_logical_device.hpp"
 
-
 namespace toaster::gpu
 {
 	VKTexture2D::VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info) : m_device(p_device), m_specInfo(p_spec_info)
@@ -181,11 +180,6 @@ namespace toaster::gpu
 		m_descriptorImageInfo.sampler     = m_sampler;
 	}
 
-	auto VKTexture2D::getDevice() const -> VKLogicalDevice *
-	{
-		return m_device;
-	}
-
 	auto VKTexture2D::resize(uint32 p_width, uint32 p_height) -> void
 	{
 		m_sampler             = nullptr;
@@ -235,18 +229,8 @@ namespace toaster::gpu
 		return m_descriptorImageInfo;
 	}
 
-	auto VKTexture2D::getResourceType() const -> EGPUResourceType
-	{
-		return EGPUResourceType::eTexture2D;
-	}
-
 	VKTexture3D::VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size) : m_device(p_device), m_specInfo(p_spec_info)
 	{
-	}
-
-	auto VKTexture3D::getDevice() const -> VKLogicalDevice *
-	{
-		return m_device;
 	}
 
 	auto VKTexture3D::getSpecInfo() const -> const TextureSpecInfo &
@@ -267,10 +251,5 @@ namespace toaster::gpu
 	auto VKTexture3D::getDescriptorInfo() -> vk::DescriptorImageInfo &
 	{
 		return m_descriptorImageInfo;
-	}
-
-	auto VKTexture3D::getResourceType() const -> EGPUResourceType
-	{
-		return EGPUResourceType::eTexture3D;
 	}
 }

@@ -2,19 +2,15 @@
 
 #include "vk_descriptor_set_manager.hpp"
 #include "vk_shader.hpp"
-#include "toast_lib/core_basic.hpp"
 
 namespace toaster::gpu
 {
-	class VKLogicalDevice;
-
 	class TST_GPU_API VKMaterial
 	{
+		TST_GPU_OBJECT
 	public:
 		VKMaterial(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader, const String &p_name = "Unknown?");
 		~VKMaterial();
-		auto getDevice() const -> VKLogicalDevice *;
-
 
 		auto set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void;
 		auto set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void;
@@ -55,8 +51,6 @@ namespace toaster::gpu
 
 	private:
 		auto _getPushConstantDeclaration(const String &p_name) -> const PushConstant *;
-
-		VKLogicalDevice *m_device{nullptr};
 
 		RefPtr<VKShader> m_shader{nullptr};
 		String           m_name{};

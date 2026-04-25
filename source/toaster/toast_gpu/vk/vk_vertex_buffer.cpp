@@ -29,11 +29,6 @@ namespace toaster::gpu
 							   m_vertexBuffer, m_vertexBufferMemory);
 	}
 
-	auto VKVertexBuffer::getDevice() const -> VKLogicalDevice *
-	{
-		return m_device;
-	}
-
 	auto VKVertexBuffer::getBuffer() -> vk::raii::Buffer &
 	{
 		return m_vertexBuffer;

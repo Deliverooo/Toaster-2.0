@@ -35,7 +35,7 @@ namespace toaster::gpu
 		return result;
 	}
 
-	VKMesh::VKMesh(VKLogicalDevice* p_dev, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader) : m_device(p_dev), m_path(p_path)
+	VKMesh::VKMesh(VKLogicalDevice *p_dev, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader) : m_device(p_dev), m_path(p_path)
 	{
 		Assimp::Importer importer;
 
@@ -173,11 +173,6 @@ namespace toaster::gpu
 
 		const vk::DeviceSize index_buffer_size{sizeof(uint32) * m_indices.size()};
 		m_indexBuffer = m_device->alloc<VKIndexBuffer>(static_cast<void *>(m_indices.data()), index_buffer_size);
-	}
-
-	auto VKMesh::getDevice() const -> VKLogicalDevice *
-	{
-		return m_device;
 	}
 
 	auto VKMesh::getVertexBuffer() const -> const RefPtr<VKVertexBuffer> &

@@ -21,6 +21,8 @@
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
+#include "input.hpp"
+
 #include <windows.h>
 #include <vulkan/vulkan_win32.h>
 
@@ -273,6 +275,8 @@ namespace toaster
 		#undef GET_CB_DATA
 		#pragma endregion
 
+		m_inputCtx = new InputContext{this};
+
 		if (!p_create_info.iconPath.empty())
 		{
 			GLFWimage window_icon[1]{};
@@ -300,6 +304,8 @@ namespace toaster
 		delete m_swapchain;
 
 		vkDestroySurfaceKHR(*m_device->getPhysicalDevice()->getInstance()->getVulkanInstance(), m_windowSurface, nullptr);
+
+		delete m_inputCtx;
 
 		glfwDestroyWindow(m_window);
 	}
@@ -395,5 +401,10 @@ namespace toaster
 	auto Window::getSwapchain() const -> gpu::VKSwapchain *
 	{
 		return m_swapchain;
+	}
+
+	auto Window::getInputContext() const -> InputContext *
+	{
+		return m_inputCtx;
 	}
 }

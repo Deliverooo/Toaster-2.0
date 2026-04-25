@@ -23,9 +23,9 @@ namespace toaster::gpu
 	// You would use this for render attachments
 	class TST_GPU_API VKImage2D
 	{
+		TST_GPU_OBJECT
 	public:
 		VKImage2D(VKLogicalDevice *p_ctx, const ImageCreateInfo &p_create_info);
-		[[nodiscard]] auto getDevice() const -> VKLogicalDevice *;
 
 		auto getImage() -> vk::raii::Image &;
 		auto getImageMemory() -> vk::raii::DeviceMemory &;
@@ -40,8 +40,6 @@ namespace toaster::gpu
 		auto recreate() -> void;
 
 	private:
-		VKLogicalDevice *m_device{nullptr};
-
 		ImageCreateInfo m_createInfo{};
 
 		vk::raii::Image        m_image{nullptr};

@@ -1,23 +1,22 @@
 #pragma once
 
+#include "../resource.hpp"
 #include "../toast_gpu.hpp"
 
 #include <vulkan/vulkan_raii.hpp>
 #include "toast_lib/core_basic.hpp"
-#include "../resource.hpp"
 
 namespace toaster::gpu
 {
-	class VKLogicalDevice;
-
 	class TST_GPU_API VKUniformBuffer final : public IGPUResource
 	{
+		TST_GPU_OBJECT
+		TST_GPU_RESOURCE(UniformBuffer)
 	public:
 		VKUniformBuffer(VKLogicalDevice *p_ctx, uint64 p_size);
-		auto getDevice() const -> VKLogicalDevice *;
 
-		auto getBuffer() -> vk::raii::Buffer &;
-		auto getBufferMemory() -> vk::raii::DeviceMemory &;
+		[[nodiscard]] auto getBuffer() -> vk::raii::Buffer &;
+		[[nodiscard]] auto getBufferMemory() -> vk::raii::DeviceMemory &;
 
 		[[nodiscard]] auto getDescriptorInfo() const -> const vk::DescriptorBufferInfo &;
 
@@ -26,11 +25,7 @@ namespace toaster::gpu
 		auto mapMemory(uint64 p_size, uint64 p_offset) -> void *;
 		auto unmapMemory() -> void;
 
-		[[nodiscard]] auto getResourceType() const -> EGPUResourceType override;
-
 	private:
-		VKLogicalDevice *m_device{nullptr};
-
 		vk::raii::Buffer         m_buffer{nullptr};
 		vk::raii::DeviceMemory   m_bufferMemory{nullptr};
 		vk::DescriptorBufferInfo m_descriptorInfo{};
@@ -41,22 +36,29 @@ namespace toaster::gpu
 	// Typically you wouldn't really use a single uniform buffer anyway, so use this instead.
 	class TST_GPU_API VKUniformBufferPFF final : public IGPUResource
 	{
+		TST_GPU_OBJECT
+		TST_GPU_RESOURCE(UniformBufferPFF)
 	public:
 		VKUniformBufferPFF(VKLogicalDevice *p_device, uint64 p_size, uint32 p_frames_in_flight);
+		VKUniformBufferPFF(const VKUniformBufferPFF &p_other) = delete;
+		VKUniformBufferPFF(VKUniformBufferPFF &&p_other)      = delete;
+		auto operator=(VKUniformBufferPFF &&p_other) noexcept -> VKUniformBufferPFF &;
 
-		auto getUBO(uint32 p_frame_index) -> RefPtr<VKUniformBuffer>;
-		auto setUBO(uint32 p_frame_index, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
+		[[nodiscard]] auto getBuffer(uint32 p_frame_index) -> vk::raii::Buffer &;
+		[[nodiscard]] auto getBufferMemory(uint32 p_frame_index) -> vk::raii::DeviceMemory &;
 
-		auto begin() -> std::vector<RefPtr<VKUniformBuffer> >::iterator;
-		auto end() -> std::vector<RefPtr<VKUniformBuffer> >::iterator;
+		[[nodiscard]] auto getDescriptorInfo(uint32 p_frame_index) const -> const vk::DescriptorBufferInfo &;
 
-		[[nodiscard]] auto getResourceType() const -> EGPUResourceType override;
+		auto mapMemory(uint32 p_frame_index, uint64 p_size, uint64 p_offset) -> void *;
+		auto unmapMemory(uint32 p_frame_index) -> void;
 
-		auto mapMemory(uint64 p_size, uint64 p_offset) -> std::vector<void *>;
-		auto unmapMemory() -> void;
+		auto mapAllMemory(uint64 p_size, uint64 p_offset) -> std::vector<void *>;
+		auto unmapAllMemory() -> void;
 
 	private:
-		std::vector<RefPtr<VKUniformBuffer> > m_uniformBuffers;
+		std::vector<vk::raii::Buffer>         m_uniformBuffers;
+		std::vector<vk::raii::DeviceMemory>   m_uniformBufferMemories;
+		std::vector<vk::DescriptorBufferInfo> m_descriptorBufferInfos;
 		uint32                                m_framesInFlightCount{0u};
 	};
 }

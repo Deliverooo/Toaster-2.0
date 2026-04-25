@@ -9,8 +9,6 @@
 
 namespace toaster::gpu
 {
-	class VKLogicalDevice;
-
 	struct MeshVertex
 	{
 		glm::vec3 position;
@@ -46,10 +44,9 @@ namespace toaster::gpu
 
 	class TST_GPU_API VKMesh
 	{
+		TST_GPU_OBJECT
 	public:
 		VKMesh(VKLogicalDevice *p_device, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader);
-		// Shader is temp until I move mesh to the Renderer folder
-		auto getDevice() const -> VKLogicalDevice *;
 
 		auto getVertexBuffer() const -> const RefPtr<VKVertexBuffer> &;
 		auto getIndexBuffer() const -> const RefPtr<VKIndexBuffer> &;
@@ -62,8 +59,6 @@ namespace toaster::gpu
 
 	private:
 		auto _traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void;
-
-		VKLogicalDevice *m_device{nullptr};
 
 		io::filesystem::Path m_path;
 

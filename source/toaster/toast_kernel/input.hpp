@@ -5,19 +5,28 @@
 #include "toast_lib/input_codes.hpp"
 #include "toast_lib/system_types.h"
 
-class Window;
+#include "toast_lib/ptr.hpp"
 
-namespace toaster::input
+namespace toaster
 {
-	auto setCurrentWindowContext(Window *p_window_ctx) -> void;
+	class Window;
 
-	auto setCursorMode(ECursorMode p_mode) -> void;
-	auto getCursorMode() -> ECursorMode;
+	class InputContext
+	{
+	public:
+		InputContext(Window *p_window);
 
-	auto getMouseX() -> float32;
-	auto getMouseY() -> float32;
-	auto getMousePos() -> std::pair<float32, float32>;
+		auto setCursorMode(input::ECursorMode p_mode) -> void;
+		auto getCursorMode() -> input::ECursorMode;
 
-	auto isMouseButtonDown(EMouseButton p_button) -> bool;
-	auto isKeyDown(EKeyCode p_key_code) -> bool;
+		auto getMouseX() -> float32;
+		auto getMouseY() -> float32;
+		auto getMousePos() -> std::pair<float32, float32>;
+
+		auto isMouseButtonDown(input::EMouseButton p_button) -> bool;
+		auto isKeyDown(input::EKeyCode p_key_code) -> bool;
+
+	private:
+		NonOwningPtr<Window> m_window{nullptr};
+	};
 }

@@ -15,12 +15,12 @@ namespace toaster
 		{
 			constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
 			m_cameraUBOs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
-			m_mappedCameraUBOs = m_cameraUBOs->mapMemory(ubo_size, 0);
+			m_mappedCameraUBOs = m_cameraUBOs->mapAllMemory(ubo_size, 0);
 		}
 		{
 			constexpr vk::DeviceSize ubo_size{sizeof(DirectionalLightUB)};
 			m_directionalLightUBOs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
-			m_mappedDirectionalLightUBOs = m_directionalLightUBOs->mapMemory(ubo_size, 0);
+			m_mappedDirectionalLightUBOs = m_directionalLightUBOs->mapAllMemory(ubo_size, 0);
 		}
 		// {
 		// constexpr vk::DeviceSize ubo_size{sizeof(PointLightUB)};
@@ -30,7 +30,7 @@ namespace toaster
 		{
 			constexpr vk::DeviceSize ubo_size{sizeof(SceneDataUB)};
 			m_sceneDataUBOs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
-			m_mappedSceneDataUBOs = m_sceneDataUBOs->mapMemory(ubo_size, 0);
+			m_mappedSceneDataUBOs = m_sceneDataUBOs->mapAllMemory(ubo_size, 0);
 		}
 
 		{
@@ -167,10 +167,9 @@ namespace toaster
 
 	SceneRenderer::~SceneRenderer()
 	{
-		m_sceneDataUBOs->unmapMemory();
-		m_directionalLightUBOs->unmapMemory();
-		// m_pointLightUBOs->unmapMemory();
-		m_cameraUBOs->unmapMemory();
+		m_sceneDataUBOs->unmapAllMemory();
+		m_directionalLightUBOs->unmapAllMemory();
+		m_cameraUBOs->unmapAllMemory();
 	}
 
 	auto SceneRenderer::begin([[maybe_unused]] const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const glm::mat4 &p_view_matrix,

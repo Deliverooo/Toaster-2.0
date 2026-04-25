@@ -30,7 +30,7 @@ namespace toaster
 
 		constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
 		m_cameraUBs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
-		m_mappedCameraUBs = m_cameraUBs->mapMemory(ubo_size, 0);
+		m_mappedCameraUBs = m_cameraUBs->mapAllMemory(ubo_size, 0);
 
 		m_quadRenderPass = m_device->alloc<gpu::VKRenderPass>(m_quadPipeline);
 		m_quadRenderPass->setInput("Camera", m_cameraUBs);
@@ -98,7 +98,7 @@ namespace toaster
 
 	Renderer2D::~Renderer2D()
 	{
-		m_cameraUBs->unmapMemory();
+		m_cameraUBs->unmapAllMemory();
 		delete[] m_quadVertexBase;
 	}
 

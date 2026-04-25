@@ -26,7 +26,7 @@ namespace igz = ImGuizmo;
 
 namespace toaster
 {
-	EditorLayer::EditorLayer(Application *p_app) : IAppLayer(p_app), m_editorCamera(90.0f, 1.777f, 0.1f, 100.0f)
+	EditorLayer::EditorLayer(Application *p_app) : IAppLayer(p_app), m_editorCamera(p_app->getWindow().getInputContext(), 90.0f, 1.777f, 0.1f, 100.0f)
 	{
 	}
 
@@ -169,8 +169,8 @@ namespace toaster
 
 	auto EditorLayer::onUIRender() -> void
 	{
-		#if 1
 		const auto &app{getApp()};
+		auto        input_ctx{app.getWindow().getInputContext()};
 		const auto  swapchain{app.getWindow().getSwapchain()};
 		uint32      frame_index{swapchain->getFrameIndex()};
 
@@ -211,9 +211,6 @@ namespace toaster
 
 		m_sceneHierarchyPanel->onUIRender(frame_index);
 
-		#if 1
-
-		// if (m_imguiSceneRendererDescriptorSets[frame_index])
 		Entity selected_entity = m_sceneHierarchyPanel->getSelectedEntity();
 		if (selected_entity && m_gizmoType != -1)
 		{
@@ -224,7 +221,7 @@ namespace toaster
 			igz::SetDrawlist(ig::GetForegroundDrawList());     // Draw to the main surface
 			igz::SetRect(0, 0, m_windowWidth, m_windowHeight); // Full window area
 
-			bool snap_transform = input::isKeyDown(input::EKeyCode::eLeftControl);
+			bool snap_transform = input_ctx->isKeyDown(input::EKeyCode::eLeftControl);
 
 			auto &    tc               = selected_entity.getComponent<TransformComponent>();
 			glm::mat4 entity_transform = tc.getTransform();
@@ -251,8 +248,6 @@ namespace toaster
 			}
 		}
 
-		#endif
-
 		ig::Begin("Renderer settings");
 		ig::Text("Scene renderer background");
 		if (ig::Button("File", ImVec2{ig::GetContentRegionAvail().x, 0}))
@@ -268,16 +263,12 @@ namespace toaster
 		}
 		ig::End();
 
-		#if 1
-		if (ig::IsWindowFocused(ImGuiFocusedFlags_AnyWindow) || ig::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
+		if (ig::IsWindowFocused(ImGuiFocusedFlags_AnyWindow) || ig::IsAnyItemHovered())
 			m_canOperateCamera = false;
 		else
 			m_canOperateCamera = true;
-		#endif
 
 		ig::End(); // DockSpace Demo
-
-		#endif
 	}
 
 	auto EditorLayer::_onWindowFileDropEvent(WindowFileDropEvent &p_event) -> bool
@@ -304,8 +295,9 @@ namespace toaster
 
 	auto EditorLayer::_onKeyPressEvent(KeyPressEvent &p_event) -> bool
 	{
-		#if 1
-		if (!m_canOperateCamera)
+		auto input_ctx{getApp().getWindow().getInputContext()};
+
+		if (!m_canOperateCamera || !ig::IsAnyItemHovered())
 		{
 			switch (p_event.getKeyCode())
 			{
@@ -324,7 +316,7 @@ namespace toaster
 				case input::EKeyCode::eL:
 				{
 					// Switch between world and local space transforming for the gizmos
-					if (input::isKeyDown(input::EKeyCode::eLeftAlt))
+					if (input_ctx->isKeyDown(input::EKeyCode::eLeftAlt))
 					{
 						if (m_gizmoMode == igz::MODE::LOCAL)
 							m_gizmoMode = igz::MODE::WORLD;
@@ -336,7 +328,6 @@ namespace toaster
 				default: break;
 			}
 		}
-		#endif
 		if (p_event.getKeyCode() == input::EKeyCode::eEscape)
 			getApp().close();
 		return false;

@@ -51,7 +51,7 @@ namespace toaster::gpu
 
 		VKLogicalDevice(VKPhysicalDevice *p_physical_device, const VKLogicalDeviceSpecInfo &p_spec_info);
 
-		[[nodiscard]] auto getPhysicalDevice() const -> VKPhysicalDevice *;
+		[[nodiscard]] auto getPhysicalDevice() const -> NonOwningPtr<VKPhysicalDevice>;
 		[[nodiscard]] auto getSpecInfo() const -> const VKLogicalDeviceSpecInfo &;
 
 		[[nodiscard]] auto getVulkanLogicalDevice() -> vk::raii::Device &;
@@ -133,7 +133,7 @@ namespace toaster::gpu
 		operator vk::raii::Device &() { return m_logicalDevice; }
 
 	private:
-		VKPhysicalDevice *m_physicalDevice{nullptr};
+		NonOwningPtr<VKPhysicalDevice> m_physicalDevice{nullptr};
 
 		VKLogicalDeviceSpecInfo m_specInfo{};
 

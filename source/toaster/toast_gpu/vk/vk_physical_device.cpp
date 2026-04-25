@@ -56,7 +56,7 @@ namespace toaster::gpu
 		LOG_INFO("");
 	}
 
-	auto VKPhysicalDevice::getInstance() const -> VKInstance *
+	auto VKPhysicalDevice::getInstance() const -> NonOwningPtr<VKInstance>
 	{
 		return m_instance;
 	}

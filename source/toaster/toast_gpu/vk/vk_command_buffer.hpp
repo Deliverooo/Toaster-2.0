@@ -10,6 +10,7 @@ namespace toaster::gpu
 
 	class TST_GPU_API VKCommandBuffer
 	{
+		TST_GPU_OBJECT
 	public:
 		VKCommandBuffer(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, bool p_fence_signaled = false);
 
@@ -28,8 +29,6 @@ namespace toaster::gpu
 		auto resetCommandBuffer() -> void;
 
 	private:
-		VKLogicalDevice *m_device{nullptr};
-
 		vk::raii::CommandBuffer m_commandBuffer{nullptr};
 		vk::raii::Fence         m_waitFence{nullptr};
 
@@ -38,6 +37,7 @@ namespace toaster::gpu
 
 	class VKCommandBufferPFF
 	{
+		TST_GPU_OBJECT
 	public:
 		VKCommandBufferPFF(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, uint32 p_frames_in_flight, bool p_fence_signaled = false);
 
@@ -56,8 +56,6 @@ namespace toaster::gpu
 		auto resetCommandBuffer(uint32 p_frame_index) -> void;
 
 	private:
-		VKLogicalDevice *m_device{nullptr};
-
 		std::vector<vk::raii::CommandBuffer> m_commandBuffers;
 		std::vector<vk::raii::Fence>         m_waitFences;
 

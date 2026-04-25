@@ -54,7 +54,7 @@ namespace toaster::gpu
 		return *this;
 	}
 
-	auto VKShader::getDevice() const -> VKLogicalDevice *
+	auto VKShader::getDevice() const -> NonOwningPtr<VKLogicalDevice>
 	{
 		return m_device;
 	}

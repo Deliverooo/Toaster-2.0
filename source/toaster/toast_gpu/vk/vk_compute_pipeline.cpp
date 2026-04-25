@@ -2,7 +2,6 @@
 
 #include "vk_logical_device.hpp"
 
-
 namespace toaster::gpu
 {
 	VKComputePipeline::VKComputePipeline(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader) : m_device(p_device), m_shader(p_shader)
@@ -33,11 +32,6 @@ namespace toaster::gpu
 		compute_pipeline_create_info.stage  = stage_infos[0];
 
 		m_pipeline = {m_device->getVulkanLogicalDevice(), nullptr, compute_pipeline_create_info};
-	}
-
-	auto VKComputePipeline::getDevice() const -> VKLogicalDevice *
-	{
-		return m_device;
 	}
 
 	auto VKComputePipeline::getShader() const -> const RefPtr<VKShader> &

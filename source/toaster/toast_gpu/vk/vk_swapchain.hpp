@@ -8,10 +8,9 @@
 
 namespace toaster::gpu
 {
-	class VKLogicalDevice;
-
 	class TST_GPU_API VKSwapchain
 	{
+		TST_GPU_OBJECT
 	public:
 		using BeginFrameCB              = std::function<void(VKLogicalDevice *, uint32)>;
 		using ResizeCB                  = std::function<void(uint32, uint32)>;
@@ -19,7 +18,6 @@ namespace toaster::gpu
 		using GetWindowBackBufferSizeCB = std::function<std::pair<uint32, uint32>()>;
 
 		VKSwapchain(VKLogicalDevice *p_dev, vk::SurfaceKHR *p_surface);
-		[[nodiscard]] auto getDevice() const -> VKLogicalDevice *;
 
 		auto beginFrame() -> void;
 		auto endFrame() -> void;
@@ -62,8 +60,6 @@ namespace toaster::gpu
 
 		auto _create() -> void;
 		auto _recreateSwapchain() -> void;
-
-		VKLogicalDevice *m_device{nullptr};
 
 		vk::SurfaceKHR *m_windowSurface{nullptr};
 

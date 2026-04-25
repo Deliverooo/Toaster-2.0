@@ -5,39 +5,41 @@
 
 namespace toaster
 {
-	EditorCamera::EditorCamera(float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far) : Camera(glm::perspective(glm::radians(p_fov), p_aspectRatio, p_near,
-																															  p_far)), m_fov(p_fov),
-																									  m_aspectRatio(p_aspectRatio), m_zNear(p_near), m_zFar(p_far)
+	EditorCamera::EditorCamera(InputContext *p_ctx, float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far) : Camera(glm::perspective(glm::radians(p_fov),
+																																				   p_aspectRatio, p_near,
+																																				   p_far)), m_ctx(p_ctx),
+																														   m_fov(p_fov), m_aspectRatio(p_aspectRatio),
+																														   m_zNear(p_near), m_zFar(p_far)
 	{
 	}
 
 	auto EditorCamera::onUpdate(float32 p_dt) -> void
 	{
-		if (input::isMouseButtonDown(input::EMouseButton::eRight))
+		if (m_ctx->isMouseButtonDown(input::EMouseButton::eRight))
 		{
-			if (input::getCursorMode() != input::ECursorMode::eDisabled)
-				input::setCursorMode(input::ECursorMode::eDisabled);
+			if (m_ctx->getCursorMode() != input::ECursorMode::eDisabled)
+				m_ctx->setCursorMode(input::ECursorMode::eDisabled);
 
-			float32 speed{input::isKeyDown(input::EKeyCode::eLeftControl) ? 30.0f : 10.0f};
+			float32 speed{m_ctx->isKeyDown(input::EKeyCode::eLeftControl) ? 30.0f : 10.0f};
 
 			glm::vec3 delta_position{0.0f};
-			if (input::isKeyDown(input::EKeyCode::eW))
+			if (m_ctx->isKeyDown(input::EKeyCode::eW))
 				delta_position += c_forwardDir;
-			if (input::isKeyDown(input::EKeyCode::eA))
+			if (m_ctx->isKeyDown(input::EKeyCode::eA))
 				delta_position -= c_rightDir;
-			if (input::isKeyDown(input::EKeyCode::eS))
+			if (m_ctx->isKeyDown(input::EKeyCode::eS))
 				delta_position -= c_forwardDir;
-			if (input::isKeyDown(input::EKeyCode::eD))
+			if (m_ctx->isKeyDown(input::EKeyCode::eD))
 				delta_position += c_rightDir;
 
 			delta_position = ((glm::length(delta_position) == 0.0f) ? glm::vec3{0.0f} : glm::normalize(delta_position)) * p_dt;
 			m_position     += glm::vec3{getRotationMatrix() * glm::vec4{delta_position, 0.0f}} * speed;
-			if (input::isKeyDown(input::EKeyCode::eSpace))
+			if (m_ctx->isKeyDown(input::EKeyCode::eSpace))
 				m_position += c_upDir * p_dt * speed;
-			if (input::isKeyDown(input::EKeyCode::eLeftShift))
+			if (m_ctx->isKeyDown(input::EKeyCode::eLeftShift))
 				m_position -= c_upDir * p_dt * speed;
 
-			const glm::vec2 mouse{input::getMouseX(), input::getMouseY()};
+			const glm::vec2 mouse{m_ctx->getMouseX(), m_ctx->getMouseY()};
 			const glm::vec2 delta{(mouse - m_initialMousePosition) * 0.002f};
 			m_yaw   += delta.x;
 			m_pitch -= delta.y;
@@ -50,10 +52,10 @@ namespace toaster
 		}
 		else
 		{
-			if (input::getCursorMode() != input::ECursorMode::eNormal)
-				input::setCursorMode(input::ECursorMode::eNormal);
+			if (m_ctx->getCursorMode() != input::ECursorMode::eNormal)
+				m_ctx->setCursorMode(input::ECursorMode::eNormal);
 
-			const glm::vec2 mouse{input::getMouseX(), input::getMouseY()};
+			const glm::vec2 mouse{m_ctx->getMouseX(), m_ctx->getMouseY()};
 			m_initialMousePosition = mouse;
 		}
 	}
