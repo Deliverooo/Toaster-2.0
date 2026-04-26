@@ -26,5 +26,8 @@ namespace toaster
 
 		os::LibraryHandle m_hostfxrLibraryHandle{nullptr};
 		hostfxr_handle    m_hostfxrContext{nullptr};
+
+		hostfxr_initialize_for_runtime_config_fn m_initFn{nullptr};
+		hostfxr_close_fn                         m_closeFn{nullptr};
 	};
 }

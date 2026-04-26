@@ -22,16 +22,12 @@
 #include "toast_scene/scene.hpp"
 #include "toast_scene/scene_renderer.hpp"
 
-#include <Windows.h>
-#include <hostfxr.h>
-#include <libloaderapi.h>
-#include <nethost.h>
-#include <coreclr_delegates.h>
-
 #include "toast_lib/events/key_event.hpp"
 #include "toast_lib/os/file_dialog.hpp"
 #include "toast_lib/os/library_loading.hpp"
-#include "toast_scripting/host_instance.hpp"
+
+#include <mono/jit/jit.h>
+#include <mono/metadata/assembly.h>
 
 #if USE_WINMAIN
 INT WINAPI WinMain([[maybe_unused]] HINSTANCE hInstance, [[maybe_unused]] HINSTANCE hPrevInstance, [[maybe_unused]] LPSTR lpCmdLine, [[maybe_unused]] INT nCmdShow)
@@ -97,11 +93,23 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 	toaster::Globals::init(vk_logical_device);
 
-	toaster::HostInstanceSpecInfo host_instance_spec_info{};
-	host_instance_spec_info.configPath   = L"C:/dev/DotNet/TestManagedLibrary/bin/Debug/net10.0/TestManagedLibrary.runtimeconfig.json";
-	host_instance_spec_info.assemblyPath = L"C:/dev/DotNet/TestManagedLibrary/bin/Debug/net10.0/TestManagedLibrary.dll";
+	mono_set_dirs("C:/Program Files/Mono/lib", "C:/Program Files/Mono/etc");
 
-	toaster::HostInstance host_instance{host_instance_spec_info};
+	MonoDomain *domain{mono_jit_init("ToasterApplicationDomain")};
+
+	MonoAssembly *assembly{mono_domain_assembly_open(domain, "C:/dev/DotNet/TestManagedLibrary/bin/Debug/net10.0/TestManagedLibrary.dll")};
+	if (!assembly)
+	{
+		TST_ASSERT_MSG(false, "No Monos?!");
+	}
+
+	MonoImage *image{mono_assembly_get_image(assembly)};
+	MonoClass *mono_class{mono_class_from_name(image, "Toaster", "Test")};
+
+	MonoMethod *method{mono_class_get_method_from_name(mono_class, "orbiculate", 0)};
+	mono_runtime_invoke(method, nullptr, nullptr, nullptr);
+
+	mono_jit_cleanup(domain);
 
 	{
 		toaster::io::filesystem::Path shader_dir{"../source/toaster/toast_shaders"};
@@ -160,7 +168,6 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		while (!window_closed)
 		{
 			const auto start_time{static_cast<float32>(glfwGetTime())};
-			LOG_INFO("{}", start_time);
 			dt              = start_time - last_frame_time;
 			last_frame_time = start_time;
 

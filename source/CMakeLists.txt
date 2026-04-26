@@ -38,3 +38,16 @@ if (WIN32)
 			"${NETHOST_PATH}/nethost.dll"
 			$<TARGET_FILE_DIR:Toaster>)
 endif ()
+
+set(MONO_PATH "C:/Program Files/Mono")
+target_include_directories(Toaster PUBLIC "${MONO_PATH}/include/mono-2.0")
+find_library(MONO_LIB NAMES mono-2.0-sgen PATHS "${MONO_PATH}/lib")
+
+set(MONO_DLL_PATH "${MONO_PATH}/bin/mono-2.0-sgen.dll")
+target_link_libraries(Toaster PUBLIC ${MONO_LIB})
+if (WIN32)
+	add_custom_command(TARGET Toaster POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"${MONO_DLL_PATH}"
+			$<TARGET_FILE_DIR:Toaster>)
+endif ()

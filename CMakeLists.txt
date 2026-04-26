@@ -41,7 +41,6 @@ add_compile_definitions(USE_OPENGL_BACKEND=${WITH_OPENGL_BACKEND})
 message(STATUS "DEBUG: WITH_VULKAN_BACKEND is set to: '${WITH_VULKAN_BACKEND}'")
 message(STATUS "DEBUG: WITH_OPENGL_BACKEND is set to: '${WITH_OPENGL_BACKEND}'")
 
-
 find_package(Vulkan REQUIRED COMPONENTS glslangValidator shaderc_combined SPIRV-Tools)
 
 if (NOT ${Vulkan_FOUND} OR NOT ${Vulkan_glslangValidator_FOUND} OR NOT ${Vulkan_shaderc_combined_FOUND} OR NOT ${Vulkan_SPIRV-Tools_FOUND})
