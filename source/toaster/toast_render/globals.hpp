@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../toaster_export.hpp"
+
 #include "shader_library.hpp"
 
 #include "toast_gpu/vk/vk_index_buffer.hpp"
@@ -11,7 +13,7 @@
 
 namespace toaster
 {
-	class Globals final
+	class TST_API Globals final
 	{
 	public:
 		struct QuadVertex

@@ -11,9 +11,6 @@
 #include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_render/renderer.hpp"
 
-#include <Windows.h>
-#include <vulkan/vulkan_win32.h>
-
 #include "editor_camera.hpp"
 #include "GLFW/glfw3.h"
 #include "toast_gpu/vk/vk_swapchain.hpp"
@@ -21,6 +18,19 @@
 #include "toast_lib/events/window_event.hpp"
 #include "toast_render/globals.hpp"
 #include "toast_render/renderer_2d.hpp"
+#include "toast_scene/components.hpp"
+#include "toast_scene/scene.hpp"
+#include "toast_scene/scene_renderer.hpp"
+
+#include <Windows.h>
+#include <hostfxr.h>
+#include <libloaderapi.h>
+#include <nethost.h>
+#include <coreclr_delegates.h>
+
+#include "toast_lib/os/file_dialog.hpp"
+#include "toast_lib/os/library_loading.hpp"
+#include "toast_scripting/host_instance.hpp"
 
 #if USE_WINMAIN
 INT WINAPI WinMain([[maybe_unused]] HINSTANCE hInstance, [[maybe_unused]] HINSTANCE hPrevInstance, [[maybe_unused]] LPSTR lpCmdLine, [[maybe_unused]] INT nCmdShow)
@@ -63,9 +73,11 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	#pragma region create window
 	toaster::Window::initWindowingAPI();
 	toaster::WindowCreateInfo window_create_info{};
-	window_create_info.width  = 1920;
-	window_create_info.height = 1080;
-	window_create_info.title  = "Toaster-2.0 -> Vulkan";
+	window_create_info.width          = 1280u;
+	window_create_info.height         = 720u;
+	window_create_info.title          = "Toaster-2.0 -> Vulkan";
+	window_create_info.iconPath       = "../resources/textures/WindowIcon001.png";
+	window_create_info.startMaximized = true;
 	auto window{new toaster::Window{vk_logical_device, window_create_info}};
 
 	volatile bool window_closed{false};
@@ -78,13 +90,35 @@ auto main(int32 p_argc, char **p_argv) -> int32
 			return true;
 		});
 	});
-	window->maximize();
 
 	auto input_ctx{window->getInputContext()};
 	#pragma endregion
 
 	toaster::Globals::init(vk_logical_device);
+
+	toaster::HostInstanceSpecInfo host_instance_spec_info{};
+	host_instance_spec_info.configPath   = L"C:/dev/DotNet/TestManagedLibrary/bin/Debug/net10.0/TestManagedLibrary.runtimeconfig.json";
+	host_instance_spec_info.assemblyPath = L"C:/dev/DotNet/TestManagedLibrary/bin/Debug/net10.0/TestManagedLibrary.dll";
+
+	toaster::HostInstance host_instance{host_instance_spec_info};
+
 	{
+		toaster::io::filesystem::Path shader_dir{"../source/toaster/toast_shaders"};
+
+		toaster::ShaderLibrary shader_lib{};
+		shader_lib.add("Mesh Test", toaster::gpu::VKShaderCompiler::compileToShaderFromPaths(vk_logical_device,
+																							 {vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment}, {
+																								 shader_dir / "mesh.vert.glsl",
+																								 shader_dir / "mesh.pixel.glsl"
+																							 }));
+
+		auto scene{toaster::make_unique<toaster::Scene>(vk_logical_device, "Main Scene")};
+		{
+			toaster::Entity orbo_entity{scene->createEntity()};
+			orbo_entity.addComponent<toaster::MeshComponent>().mesh = vk_logical_device->alloc<toaster::gpu::VKMesh>("../resources/meshes/Orbo.fbx",
+																													 shader_lib.get("Mesh Test"));
+		}
+
 		auto   swapchain{window->getSwapchain()};
 		uint32 window_width{swapchain->getExtent().width};
 		uint32 window_height{swapchain->getExtent().height};
@@ -103,10 +137,11 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		auto render_pass{vk_logical_device->alloc<toaster::gpu::VKRenderPass>(pipeline)};
 		render_pass->bake();
 
-		toaster::Renderer2DSpecInfo renderer_2d_spec_info{};
-		renderer_2d_spec_info.renderTargetWidth  = window_width;
-		renderer_2d_spec_info.renderTargetHeight = window_height;
-		auto renderer_2d{toaster::make_reference<toaster::Renderer2D>(vk_logical_device, renderer_2d_spec_info)};
+		toaster::SceneRendererSpecInfo scene_renderer_spec_info{};
+		scene_renderer_spec_info.viewportWidth  = window_width;
+		scene_renderer_spec_info.viewportHeight = window_height;
+		scene_renderer_spec_info.scene          = scene.get();
+		auto scene_renderer{toaster::make_reference<toaster::SceneRenderer>(vk_logical_device, scene_renderer_spec_info)};
 
 		toaster::EditorCamera camera{input_ctx, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
 
@@ -115,17 +150,17 @@ auto main(int32 p_argc, char **p_argv) -> int32
 			window_width  = width;
 			window_height = height;
 
-			renderer_2d->onResize(width, height);
+			scene_renderer->onResize(width, height);
 			camera.setViewportSize(static_cast<float32>(width), static_cast<float32>(height));
 		});
 
-		float32 lastFrameTime{0.0f};
-		float32 deltaTime{0.0f};
+		float32 last_frame_time{0.0f};
+		float32 dt{0.0f};
 		while (!window_closed)
 		{
-			const auto startTime{static_cast<float32>(glfwGetTime())};
-			deltaTime     = startTime - lastFrameTime;
-			lastFrameTime = startTime;
+			const auto start_time{static_cast<float32>(glfwGetTime())};
+			dt              = start_time - last_frame_time;
+			last_frame_time = start_time;
 
 			window->processEvents();
 			window->beginFrame();
@@ -133,13 +168,12 @@ auto main(int32 p_argc, char **p_argv) -> int32
 			auto & command_buffer{swapchain->getCurrentCommandBuffer()};
 			uint32 frame_index{swapchain->getFrameIndex()};
 
-			camera.onUpdate(deltaTime);
+			camera.onUpdate(dt);
 
-			renderer_2d->begin(command_buffer, frame_index, camera.getViewMatrix(), camera.getProjectionMatrix());
-			renderer_2d->submitQuad({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 1.0f, 1.0f});
-			renderer_2d->end(command_buffer, frame_index);
+			scene->onUpdate(dt);
+			scene->onRender(command_buffer, frame_index, dt, scene_renderer, camera.getViewMatrix(), camera.getProjectionMatrix());
 
-			render_pass->setInput("u_Texture", renderer_2d->getColourOutput());
+			render_pass->setInput("u_Texture", scene_renderer->getOutputColourTexture());
 
 			toaster::gpu::RenderingInfo rendering_info{};
 			rendering_info.renderArea = vk::Rect2D{{0, 0}, {window_width, window_height}};

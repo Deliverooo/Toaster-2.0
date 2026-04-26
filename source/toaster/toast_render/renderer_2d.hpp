@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../toaster_export.hpp"
+
 #include "toast_gpu/buffer_layout.hpp"
 #include "toast_lib/ptr.hpp"
 #include "toast_lib/math/math_vector.hpp"
@@ -26,7 +28,7 @@ namespace toaster
 		class VKShader;
 	}
 
-	struct Renderer2DSpecInfo
+	struct TST_API Renderer2DSpecInfo
 	{
 		uint32 renderTargetWidth{1920u};
 		uint32 renderTargetHeight{1080u};
@@ -36,7 +38,7 @@ namespace toaster
 		bool overrideAttachments{false};
 	};
 
-	class Renderer2D final
+	class TST_API Renderer2D final
 	{
 	public:
 		struct Stats

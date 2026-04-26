@@ -11,12 +11,12 @@ namespace toaster
 	class WindowCloseEvent;
 	class WindowResizeEvent;
 
-	struct ApplicationCreateInfo
+	struct TST_API ApplicationCreateInfo
 	{
 		WindowCreateInfo windowCreateInfo{};
 	};
 
-	class Application
+	class TST_API Application
 	{
 	public:
 		Application(const ApplicationCreateInfo &p_create_info, int32 p_argc, char **p_argv);

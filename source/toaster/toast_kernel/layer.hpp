@@ -3,6 +3,8 @@
  */
 #pragma once
 
+#include "../toaster_export.hpp"
+
 #include "toast_lib/system_types.h"
 #include "toast_lib/events/event.hpp"
 
@@ -30,7 +32,7 @@ namespace toaster
 	 * @remarks Implementations of this interface should ensure thread safety where necessary
 	 *          and follow design principles to promote scalability and maintainability.
 	 */
-	class IAppLayer
+	class TST_API IAppLayer
 	{
 	public:
 		template<typename TLayer> requires std::derived_from<TLayer, IAppLayer>

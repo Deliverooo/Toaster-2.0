@@ -5,6 +5,7 @@
 namespace toaster
 {
 	using CString = const char *;
+	using CWString = const wchar_t *;
 
 	using String    = std::string;
 	using WString   = std::wstring;

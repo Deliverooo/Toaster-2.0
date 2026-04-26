@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../toaster_export.hpp"
+
 #include <utility> // std::pair
 
 #include "toast_lib/input_codes.hpp"
@@ -11,7 +13,7 @@ namespace toaster
 {
 	class Window;
 
-	class InputContext
+	class TST_API InputContext
 	{
 	public:
 		InputContext(Window *p_window);

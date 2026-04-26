@@ -31,6 +31,8 @@ namespace toaster::gpu
 		using BytecodeMap           = std::map<vk::ShaderStageFlagBits, Bytecode>;
 
 		VKShader(VKLogicalDevice *p_device, const BytecodeMap &p_bytecode_map, const String &p_name = "Unknown");
+		VKShader(VKLogicalDevice *p_device, const InitialiserList<vk::ShaderStageFlagBits> &p_stages, const InitialiserList<Bytecode> &p_bytecodes,
+				 const String &   p_name = "Unknown");
 		VKShader(const VKShader &p_other) = delete;
 		VKShader(VKShader &&p_other)      = delete;
 		auto operator=(VKShader &&p_other) noexcept -> VKShader &;

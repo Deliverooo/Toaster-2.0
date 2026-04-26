@@ -11,33 +11,19 @@ namespace toaster::gpu
 		switch (p_stage)
 		{
 			case vk::ShaderStageFlagBits::eVertex: return shaderc_vertex_shader;
-				break;
 			case vk::ShaderStageFlagBits::eTessellationControl: return shaderc_tess_control_shader;
-				break;
 			case vk::ShaderStageFlagBits::eTessellationEvaluation: return shaderc_tess_evaluation_shader;
-				break;
 			case vk::ShaderStageFlagBits::eGeometry: return shaderc_geometry_shader;
-				break;
 			case vk::ShaderStageFlagBits::eFragment: return shaderc_fragment_shader;
-				break;
 			case vk::ShaderStageFlagBits::eCompute: return shaderc_compute_shader;
-				break;
 			case vk::ShaderStageFlagBits::eRaygenKHR: return shaderc_raygen_shader;
-				break;
 			case vk::ShaderStageFlagBits::eAnyHitKHR: return shaderc_anyhit_shader;
-				break;
 			case vk::ShaderStageFlagBits::eClosestHitKHR: return shaderc_closesthit_shader;
-				break;
 			case vk::ShaderStageFlagBits::eMissKHR: return shaderc_miss_shader;
-				break;
 			case vk::ShaderStageFlagBits::eIntersectionKHR: return shaderc_intersection_shader;
-				break;
 			case vk::ShaderStageFlagBits::eCallableKHR: return shaderc_callable_shader;
-				break;
 			case vk::ShaderStageFlagBits::eTaskEXT: return shaderc_task_shader;
-				break;
 			case vk::ShaderStageFlagBits::eMeshEXT: return shaderc_mesh_shader;
-				break;
 			default: TST_ASSERT_MSG(false, "Unknown shader stage!");
 				break;
 		}
@@ -45,7 +31,7 @@ namespace toaster::gpu
 		return shaderc_vertex_shader;
 	}
 
-	auto VKShaderCompiler::compileToBytecodeFromString(const String &p_source, vk::ShaderStageFlagBits p_stage) -> VKShader::Bytecode
+	auto VKShaderCompiler::compileToBytecodeFromString(vk::ShaderStageFlagBits p_stage, const String &p_source) -> VKShader::Bytecode
 	{
 		const shaderc::Compiler compiler{};
 		shaderc::CompileOptions compile_options{};
@@ -72,7 +58,7 @@ namespace toaster::gpu
 		return {compilation_result.begin(), compilation_result.end()};
 	}
 
-	auto VKShaderCompiler::compileToBytecodeFromFilepath(const io::filesystem::Path &p_path, vk::ShaderStageFlagBits p_stage) -> VKShader::Bytecode
+	auto VKShaderCompiler::compileToBytecodeFromFilepath(vk::ShaderStageFlagBits p_stage, const io::filesystem::Path &p_path) -> VKShader::Bytecode
 	{
 		String source{io::filesystem::readFile(p_path)};
 
@@ -103,30 +89,44 @@ namespace toaster::gpu
 		return {compilation_result.begin(), compilation_result.end()};
 	}
 
-	auto VKShaderCompiler::compileToShaderFromStrings(VKLogicalDevice *p_device, const std::unordered_map<vk::ShaderStageFlagBits, String> &p_source_map,
-													  const String &   p_name) -> RefPtr<VKShader>
+	auto VKShaderCompiler::compileToShaderFromStrings(VKLogicalDevice *                    p_device, InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
+													  const InitialiserList<const String> &p_sources, const String &p_name) -> RefPtr<VKShader>
 	{
 		VKShader::BytecodeMap bytecode_map;
-		for (const auto &[stage, source]: p_source_map)
+
+		auto kit = p_stages.begin();
+		auto vit = p_sources.begin();
+
+		while (kit != p_stages.end() && vit != p_sources.end())
 		{
-			const VKShader::Bytecode bytecode{compileToBytecodeFromString(source, stage)};
+			const VKShader::Bytecode bytecode{compileToBytecodeFromString(*kit, *vit)};
 			if (bytecode.empty())
 				return nullptr;
-			bytecode_map[stage] = bytecode;
+			bytecode_map[*kit] = bytecode;
+
+			++kit;
+			++vit;
 		}
 		return make_reference<VKShader>(p_device, bytecode_map, p_name);
 	}
 
-	auto VKShaderCompiler::compileToShaderFromPaths(VKLogicalDevice *p_device, const std::unordered_map<vk::ShaderStageFlagBits, io::filesystem::Path> &p_path_map,
-													const String &   p_name) -> RefPtr<VKShader>
+	auto VKShaderCompiler::compileToShaderFromPaths(VKLogicalDevice *p_device, const InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
+													const InitialiserList<const io::filesystem::Path> &p_paths, const String &p_name) -> RefPtr<VKShader>
 	{
 		VKShader::BytecodeMap bytecode_map;
-		for (const auto &[stage, path]: p_path_map)
+
+		auto kit = p_stages.begin();
+		auto vit = p_paths.begin();
+
+		while (kit != p_stages.end() && vit != p_paths.end())
 		{
-			const VKShader::Bytecode bytecode{compileToBytecodeFromFilepath(path, stage)};
+			const VKShader::Bytecode bytecode{compileToBytecodeFromFilepath(*kit, *vit)};
 			if (bytecode.empty())
 				return nullptr;
-			bytecode_map[stage] = bytecode;
+			bytecode_map[*kit] = bytecode;
+
+			++kit;
+			++vit;
 		}
 		return make_reference<VKShader>(p_device, bytecode_map, p_name);
 	}

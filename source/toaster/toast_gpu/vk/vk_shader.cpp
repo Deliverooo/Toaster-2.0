@@ -14,7 +14,7 @@
 namespace toaster::gpu
 {
 	VKShader::VKShader(VKLogicalDevice *p_device, const BytecodeMap &p_bytecode_map, const String &p_name) : m_device(p_device), m_name(p_name),
-																										  m_shaderBytecodeMap(p_bytecode_map)
+																											 m_shaderBytecodeMap(p_bytecode_map)
 	{
 		TST_ASSERT_MSG(p_device, "Device cannot be null");
 
@@ -31,6 +31,39 @@ namespace toaster::gpu
 
 		TST_SHADER_LOG_TRACE("Shader: {} [", m_name);
 		for (auto &[stage, code]: p_bytecode_map)
+			_reflect(stage, code);
+		TST_SHADER_LOG_TRACE("]");
+
+		_createDescriptors();
+	}
+
+	VKShader::VKShader(VKLogicalDevice *p_device, const InitialiserList<vk::ShaderStageFlagBits> &p_stages, const InitialiserList<Bytecode> &p_bytecodes,
+					   const String &   p_name) : m_device(p_device), m_name(p_name)
+	{
+		TST_ASSERT_MSG(p_device, "Device cannot be null");
+
+		auto kit = p_stages.begin();
+		auto vit = p_bytecodes.begin();
+		while (kit != p_stages.end() && vit != p_bytecodes.end())
+		{
+			m_shaderBytecodeMap[*kit] = *vit;
+			++kit;
+			++vit;
+		}
+
+		for (auto &[stage, code]: m_shaderBytecodeMap)
+		{
+			m_shaderModules.insert({stage, m_device->createShaderModule(code)});
+
+			vk::PipelineShaderStageCreateInfo &create_info = m_shaderCreateInfos[stage];
+			create_info                                    = vk::PipelineShaderStageCreateInfo{};
+			create_info.module                             = *m_shaderModules.at(stage);
+			create_info.stage                              = stage;
+			create_info.pName                              = "main";
+		}
+
+		TST_SHADER_LOG_TRACE("Shader: {} [", m_name);
+		for (auto &[stage, code]: m_shaderBytecodeMap)
 			_reflect(stage, code);
 		TST_SHADER_LOG_TRACE("]");
 

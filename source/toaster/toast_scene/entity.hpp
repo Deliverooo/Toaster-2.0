@@ -5,7 +5,7 @@
 
 namespace toaster
 {
-	class Entity
+	class TST_API Entity
 	{
 	public:
 		Entity() = default;

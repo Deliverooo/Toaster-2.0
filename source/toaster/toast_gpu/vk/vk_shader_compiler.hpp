@@ -10,12 +10,13 @@ namespace toaster::gpu
 	class TST_GPU_API VKShaderCompiler final
 	{
 	public:
-		static auto compileToBytecodeFromString(const String &p_source, vk::ShaderStageFlagBits p_stage) -> VKShader::Bytecode;
-		static auto compileToBytecodeFromFilepath(const io::filesystem::Path &p_path, vk::ShaderStageFlagBits p_stage) -> VKShader::Bytecode;
+		static auto compileToBytecodeFromString(vk::ShaderStageFlagBits p_stage, const String &p_source) -> VKShader::Bytecode;
+		static auto compileToBytecodeFromFilepath(vk::ShaderStageFlagBits p_stage, const io::filesystem::Path &p_path) -> VKShader::Bytecode;
 
-		static auto compileToShaderFromStrings(VKLogicalDevice *p_device, const std::unordered_map<vk::ShaderStageFlagBits, String> &p_source_map,
-											   const String &   p_name = "Compiled shader") -> RefPtr<VKShader>;
-		static auto compileToShaderFromPaths(VKLogicalDevice *p_device, const std::unordered_map<vk::ShaderStageFlagBits, io::filesystem::Path> &p_path_map,
-											 const String &   p_name = "Compiled shader") -> RefPtr<VKShader>;
+		static auto compileToShaderFromStrings(VKLogicalDevice *                    p_device, InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
+											   const InitialiserList<const String> &p_sources, const String &p_name = "Compiled shader") -> RefPtr<VKShader>;
+
+		static auto compileToShaderFromPaths(VKLogicalDevice *                                  p_device, const InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
+											 const InitialiserList<const io::filesystem::Path> &p_paths, const String &p_name = "Compiled shader") -> RefPtr<VKShader>;
 	};
 }

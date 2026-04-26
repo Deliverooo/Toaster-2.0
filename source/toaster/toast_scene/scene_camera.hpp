@@ -1,10 +1,12 @@
 #pragma once
 
+#include "../toaster_export.hpp"
+
 #include "toast_lib/camera.hpp"
 
 namespace toaster
 {
-	class SceneCamera final : public Camera
+	class TST_API SceneCamera final : public Camera
 	{
 	public:
 		enum class EProjectionType

@@ -10,7 +10,7 @@
 
 #include "toast_gpu/vk/vk_texture.hpp"
 
-#define DEFINE_COMPONENT(__name) struct __name
+#define DEFINE_COMPONENT(__name) struct TST_API __name
 
 namespace toaster
 {

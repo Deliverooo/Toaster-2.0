@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../toaster_export.hpp"
+
 #include "toast_gpu/vk/vk_render_pass.hpp"
 #include "toast_gpu/vk/vk_compute_pass.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
@@ -14,7 +16,7 @@
 namespace toaster
 {
 	// Static interface class
-	class Renderer final
+	class TST_API Renderer final
 	{
 	public:
 		static auto beginRendering(const gpu::RenderingInfo &       p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index,

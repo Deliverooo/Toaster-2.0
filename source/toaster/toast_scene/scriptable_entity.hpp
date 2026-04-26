@@ -4,7 +4,7 @@
 
 namespace toaster
 {
-	class ScriptableEntity
+	class TST_API ScriptableEntity
 	{
 	public:
 		ScriptableEntity()          = default;

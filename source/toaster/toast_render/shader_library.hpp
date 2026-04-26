@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../toaster_export.hpp"
+
 #include <unordered_map>
 
 #include "toast_gpu/vk/vk_shader.hpp"
@@ -7,7 +9,7 @@
 
 namespace toaster
 {
-	class ShaderLibrary
+	class TST_API ShaderLibrary
 	{
 	public:
 		ShaderLibrary()  = default;

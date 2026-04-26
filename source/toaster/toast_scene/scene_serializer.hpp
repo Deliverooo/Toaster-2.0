@@ -10,7 +10,7 @@ namespace YAML
 
 namespace toaster
 {
-	class SceneSerializer
+	class TST_API SceneSerializer
 	{
 	public:
 		SceneSerializer(const RefPtr<Scene> &p_scene);

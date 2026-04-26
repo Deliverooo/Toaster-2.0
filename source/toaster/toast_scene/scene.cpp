@@ -215,13 +215,13 @@ namespace toaster
 	}
 
 	template<typename Type>
-	auto Scene::onComponentAdded([[maybe_unused]] Entity p_entity, [[maybe_unused]] Type &p_component) -> void
+	 auto Scene::onComponentAdded([[maybe_unused]] Entity p_entity, [[maybe_unused]] Type &p_component) -> void
 	{
 		TST_ASSERT(false);
 	}
 
 	#define ON_COMPONENT_ADDED(__type)	template<>\
-										auto Scene::onComponentAdded<__type>([[maybe_unused]] Entity p_entity, __type &p_component) -> void
+											TST_API auto Scene::onComponentAdded<__type>([[maybe_unused]] Entity p_entity, __type &p_component) -> void
 
 	ON_COMPONENT_ADDED(TagComponent)
 	{

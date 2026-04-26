@@ -7,16 +7,16 @@
 
 namespace toaster
 {
-	struct SceneRendererSpecInfo
+	struct TST_API SceneRendererSpecInfo
 	{
-		RefPtr<Scene> scene{nullptr};
+		NonOwningPtr<Scene> scene{nullptr};
 		uint32        viewportWidth{0u};
 		uint32        viewportHeight{0u};
 		int32         viewportOffsetX{0u};
 		int32         viewportOffsetY{0u};
 	};
 
-	class SceneRenderer
+	class TST_API SceneRenderer
 	{
 		TST_GPU_OBJECT
 	public:

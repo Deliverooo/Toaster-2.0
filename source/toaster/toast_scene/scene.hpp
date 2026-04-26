@@ -13,21 +13,21 @@ namespace toaster
 	class Entity;
 	class SceneRenderer;
 
-	struct DirectionalLight
+	struct TST_API DirectionalLight
 	{
 		glm::vec4 direction{0.0f};
 		glm::vec4 radiance{1.0f};
 	};
 
-	struct PointLight
+	struct TST_API PointLight
 	{
 		glm::vec4 position{0.0f};
 		glm::vec4 radiance{1.0f};
-		float32 radius{25.0f};
-		float32 falloff{1.0f};
+		float32   radius{25.0f};
+		float32   falloff{1.0f};
 	};
 
-	struct SpotLight
+	struct TST_API SpotLight
 	{
 		glm::vec3 position{0.0f};
 		glm::vec3 radiance{1.0f};
@@ -37,17 +37,16 @@ namespace toaster
 		float32   range{12.0f};
 	};
 
-	struct SceneLightEnvironment
+	struct TST_API SceneLightEnvironment
 	{
 		std::vector<DirectionalLight> directionalLights;
 		std::vector<PointLight>       pointLights;
-		// std::vector<SpotLight>        spotLights;
 	};
 
-	class Scene
+	class TST_API Scene
 	{
 	public:
-		Scene(gpu::VKLogicalDevice *p_ctx, const String &p_name = "");
+		Scene(gpu::VKLogicalDevice *p_device, const String &p_name = "");
 		~Scene();
 
 		auto onUpdate(float32 p_dt) -> void;
@@ -73,9 +72,9 @@ namespace toaster
 
 	private:
 		template<typename Type>
-		auto onComponentAdded(Entity p_entity, Type &p_component) -> void;
+		TST_API auto onComponentAdded(Entity p_entity, Type &p_component) -> void;
 
-		gpu::VKLogicalDevice *m_device{nullptr};
+		NonOwningPtr<gpu::VKLogicalDevice> m_device{nullptr};
 
 		entt::registry m_registry;
 

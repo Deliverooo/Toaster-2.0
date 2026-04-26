@@ -80,7 +80,7 @@ namespace toaster
 		SceneRendererSpecInfo scene_renderer_spec_info{};
 		scene_renderer_spec_info.viewportWidth  = m_windowWidth;
 		scene_renderer_spec_info.viewportHeight = m_windowHeight;
-		scene_renderer_spec_info.scene          = m_scene;
+		scene_renderer_spec_info.scene          = m_scene.get();
 		m_sceneRenderer                         = make_reference<SceneRenderer>(m_device, scene_renderer_spec_info);
 
 		Renderer2DSpecInfo renderer_2d_create_info{};

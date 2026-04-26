@@ -3,6 +3,8 @@
  */
 #pragma once
 
+#include "../toaster_export.hpp"
+
 #include <unordered_set>
 #include <utility> // std::pair
 #include <vulkan/vulkan_raii.hpp>
@@ -26,7 +28,7 @@ namespace toaster
 		class VKLogicalDevice;
 	}
 
-	struct WindowCreateInfo
+	struct TST_API WindowCreateInfo
 	{
 		uint32 width{1920u};
 		uint32 height{1080u};
@@ -42,7 +44,7 @@ namespace toaster
 	 *
 	 * @brief Represents the window of the application
 	 */
-	class Window
+	class TST_API Window
 	{
 	public:
 		/*!
