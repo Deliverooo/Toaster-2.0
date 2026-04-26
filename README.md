@@ -15,6 +15,6 @@ My plans for the enigne are as follows:
 <p float="left" width=25%> 
 	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/vulkan/examples/images/Sponza_Demo.png" width=25%>
 	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/vulkan/examples/images/Triple_T.png" width=25%>
-	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/vulkan/examples/images/Toaster_Development_environment.png" width=25%>
+	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/vulkan/examples/images/Toaster_development_environment_overview.png" width=25%>
 	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/vulkan/examples/images/Sprite_Renderer.png" width=25%>
 </p>
