@@ -1,5 +1,7 @@
+
 add_subdirectory(fmt)
 
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(assimp)
 
 add_subdirectory(miniaudio)
@@ -28,5 +30,10 @@ endif ()
 add_subdirectory(imgui)
 
 add_subdirectory(ImGuizmo)
+
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_SHARED_LIBRARY ON CACHE BOOL "" FORCE)
 
 add_subdirectory(glfw)

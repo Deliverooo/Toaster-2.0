@@ -13,6 +13,8 @@ target_link_libraries(Toaster PUBLIC tst::toast_gpu)
 target_link_libraries(Toaster PRIVATE assimp::assimp)
 target_link_libraries(Toaster PRIVATE stb)
 target_link_libraries(Toaster PUBLIC glfw)
+target_compile_definitions(Toaster PUBLIC GLFW_DLL)
+
 target_link_libraries(Toaster PUBLIC EnTT::EnTT)
 target_link_libraries(Toaster PRIVATE yaml-cpp::yaml-cpp)
 

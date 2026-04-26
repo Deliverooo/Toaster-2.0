@@ -28,6 +28,7 @@
 #include <nethost.h>
 #include <coreclr_delegates.h>
 
+#include "toast_lib/events/key_event.hpp"
 #include "toast_lib/os/file_dialog.hpp"
 #include "toast_lib/os/library_loading.hpp"
 #include "toast_scripting/host_instance.hpp"
@@ -159,6 +160,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		while (!window_closed)
 		{
 			const auto start_time{static_cast<float32>(glfwGetTime())};
+			LOG_INFO("{}", start_time);
 			dt              = start_time - last_frame_time;
 			last_frame_time = start_time;
 
