@@ -3,13 +3,13 @@
 
 namespace toaster
 {
-	class EditorApplication : public Application
+	class EditorApplication final : public Application
 	{
 	public:
-		EditorApplication(const ApplicationCreateInfo& p_create_info);
+		explicit EditorApplication(const ApplicationCreateInfo &p_create_info, int32 p_argc, char * *p_argv);
 		~EditorApplication();
 
-		void setBlockUIEvents(bool p_block_ui_events);
+		auto setBlockUIEvents(bool p_block_ui_events) const -> void;
 
 	private:
 		class ImGuiLayer *m_imGuiLayer{nullptr};

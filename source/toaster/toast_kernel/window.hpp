@@ -3,7 +3,11 @@
  */
 #pragma once
 
-#include <string>
+#include "../toaster_export.hpp"
+
+#include <unordered_set>
+#include <utility> // std::pair
+#include <vulkan/vulkan_raii.hpp>
 
 #include "toast_lib/string.hpp"
 #include "toast_lib/system_types.h"
@@ -14,24 +18,23 @@ struct GLFWwindow;
 
 namespace toaster
 {
+	class InputContext;
+
 	namespace gpu
 	{
-		class IGPUContext;
-		class VKSwapChain;
+		class VKSwapchain;
+		class VKInstance;
+		class VKPhysicalDevice;
+		class VKLogicalDevice;
 	}
 
-	struct ScreenPos
-	{
-		float32 x, y;
-	};
-
-	struct WindowCreateInfo
+	struct TST_API WindowCreateInfo
 	{
 		uint32 width{1920u};
 		uint32 height{1080u};
-		String title{""};
+		String title{};
 
-		io::filesystem::Path iconPath{""};
+		io::filesystem::Path iconPath{};
 
 		bool startMaximized{false};
 	};
@@ -41,7 +44,7 @@ namespace toaster
 	 *
 	 * @brief Represents the window of the application
 	 */
-	class Window
+	class TST_API Window
 	{
 	public:
 		/*!
@@ -49,60 +52,66 @@ namespace toaster
 		 *
 		 * @details Called once before window creation in the Application class
 		 */
-		static void initWindowingAPI();
+		static auto initWindowingAPI() -> void;
 		/*!
 		 * @brief Shuts down the windowing API (GLFW)
 		 *
  		 * @details Called once after window destruction in the Application class
  		 */
-		static void shutdownWindowingAPI();
+		static auto shutdownWindowingAPI() -> void;
 
-		Window(const WindowCreateInfo &p_create_info);
+		static auto getRequiredInstanceExtensions() -> std::unordered_set<String>;
+
+		Window(gpu::VKLogicalDevice *p_device, const WindowCreateInfo &p_create_info);
 		~Window();
 
-		void beginFrame();
-		void processEvents();
-		void endFrame();
+		auto beginFrame() -> void;
+		auto processEvents() -> void;
+		auto endFrame() -> void;
 
-		void showWindow();
-		void hideWindow();
+		auto showWindow() -> void;
+		auto hideWindow() -> void;
 
-		void maximize();
-		void minimize();
-		void restore();
+		auto maximize() -> void;
+		auto minimize() -> void;
+		auto restore() -> void;
 
-		void fullscreen();
+		auto fullscreen() -> void;
 
-		void setEventCallback(const EventCallbackFn &p_callback);
+		auto setEventCallback(const EventCallbackFn &p_callback) -> void;
 
-		[[nodiscard]] uint32        getWidth() const;
-		[[nodiscard]] uint32        getHeight() const;
-		[[nodiscard]] float32       getAspect() const;
-		[[nodiscard]] ScreenPos     getCenter() const;
-		[[nodiscard]] const String &getTitle() const;
+		[[nodiscard]] auto getWidth() const -> uint32;
+		[[nodiscard]] auto getHeight() const -> uint32;
+		[[nodiscard]] auto getAspect() const -> float32;
+		[[nodiscard]] auto getCenter() const -> std::pair<float32, float32>;
+		[[nodiscard]] auto getTitle() const -> const String &;
 
-		void setTitle(const String &p_title);
+		auto setTitle(const String &p_title) -> void;
 
-		[[nodiscard]] gpu::IGPUContext *getGPUContext() const;
-
-		[[nodiscard]] GLFWwindow *getNativeWindow() const;
+		[[nodiscard]] auto getNativeWindow() const -> GLFWwindow *;
+		[[nodiscard]] auto getSwapchain() const -> gpu::VKSwapchain *;
+		[[nodiscard]] auto getInputContext() const -> InputContext *;
 
 	private:
-		gpu::IGPUContext *m_gpuContext{nullptr};
+		gpu::VKLogicalDevice *m_device{nullptr};
+
+		vk::SurfaceKHR m_windowSurface{nullptr};
 
 		GLFWwindow *m_window{nullptr};
 
-		// gpu::VKSwapChain *m_swapchain{nullptr};
+		InputContext *m_inputCtx{nullptr};
+
+		gpu::VKSwapchain *m_swapchain{nullptr};
 
 		struct GLFWCallbackData
 		{
 			uint32 width{0u};
 			uint32 height{0u};
-			String title;
+			String title{};
 
-			EventCallbackFn eventCallback;
+			EventCallbackFn eventCallback{nullptr};
 		};
 
-		GLFWCallbackData m_callbackData;
+		GLFWCallbackData m_callbackData{};
 	};
 }

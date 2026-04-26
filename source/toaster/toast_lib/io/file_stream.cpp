@@ -14,22 +14,22 @@ namespace toaster::io
 		m_fileStream.close();
 	}
 
-	bool FileStreamReader::isGood() const
+	auto FileStreamReader::isGood() const -> bool
 	{
 		return m_fileStream.good();
 	}
 
-	uint64 FileStreamReader::getStreamPos() const
+	auto FileStreamReader::getStreamPos() const -> uint64
 	{
 		return m_fileStream.tellg();
 	}
 
-	void FileStreamReader::setStreamPos(uint64 p_stream_pos)
+	auto FileStreamReader::setStreamPos(uint64 p_stream_pos) -> void
 	{
 		m_fileStream.seekg(static_cast<std::streamoff>(p_stream_pos));
 	}
 
-	bool FileStreamReader::readData(uint8 *p_dst, uint64 p_size)
+	auto FileStreamReader::readData(uint8 *p_dst, uint64 p_size) -> bool
 	{
 		m_fileStream.read(reinterpret_cast<char *>(p_dst), static_cast<std::streamsize>(p_size));
 		return true;
@@ -45,22 +45,22 @@ namespace toaster::io
 		m_fileStream.close();
 	}
 
-	bool FileStreamWriter::isGood() const
+	auto FileStreamWriter::isGood() const -> bool
 	{
 		return m_fileStream.good();
 	}
 
-	uint64 FileStreamWriter::getStreamPos() const
+	auto FileStreamWriter::getStreamPos() const -> uint64
 	{
 		return m_fileStream.tellp();
 	}
 
-	void FileStreamWriter::setStreamPos(const uint64 p_stream_pos)
+	auto FileStreamWriter::setStreamPos(const uint64 p_stream_pos) -> void
 	{
 		m_fileStream.seekp(static_cast<std::streamoff>(p_stream_pos));
 	}
 
-	bool FileStreamWriter::writeData(const uint8 *p_data, const uint64 p_size)
+	auto FileStreamWriter::writeData(const uint8 *p_data, const uint64 p_size) -> bool
 	{
 		m_fileStream.write(reinterpret_cast<const char *>(p_data), static_cast<std::streamsize>(p_size));
 		return true;

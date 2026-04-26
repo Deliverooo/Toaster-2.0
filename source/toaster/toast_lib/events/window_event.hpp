@@ -3,6 +3,9 @@
  */
 #pragma once
 
+#include <sstream>
+#include <vector>
+
 #include "event.hpp"
 
 namespace toaster
@@ -13,9 +16,9 @@ namespace toaster
 		WindowCloseEvent() = default;
 
 		EVENT_CLASS_CATEGORY(EventCategory_Application)
-		EVENT_CLASS_TYPE(WindowClose)
+		EVENT_CLASS_TYPE(eWindowClose)
 
-		[[nodiscard]] String toStr() const override
+		[[nodiscard]] virtual auto toStr() const -> String override
 		{
 			return "Window Closed Event -> [Window Closed]";
 		}
@@ -29,13 +32,13 @@ namespace toaster
 		}
 
 		EVENT_CLASS_CATEGORY(EventCategory_Application)
-		EVENT_CLASS_TYPE(WindowResize)
+		EVENT_CLASS_TYPE(eWindowResize)
 
-		[[nodiscard]] uint32  getWidth() const { return m_width; }
-		[[nodiscard]] uint32  getHeight() const { return m_height; }
-		[[nodiscard]] float32 getAspectRatio() const { return static_cast<float32>(m_width) / static_cast<float32>(m_height); }
+		[[nodiscard]] auto getWidth() const -> uint32 { return m_width; }
+		[[nodiscard]] auto getHeight() const -> uint32 { return m_height; }
+		[[nodiscard]] auto getAspectRatio() const -> float32 { return static_cast<float32>(m_width) / static_cast<float32>(m_height); }
 
-		[[nodiscard]] String toStr() const override
+		[[nodiscard]] virtual auto toStr() const -> String override
 		{
 			return "Window Resize Event -> [" + to_string(m_width) + ", " + to_string(m_height) + "]";
 		}
@@ -53,11 +56,11 @@ namespace toaster
 		}
 
 		EVENT_CLASS_CATEGORY(EventCategory_Application)
-		EVENT_CLASS_TYPE(WindowMinimize)
+		EVENT_CLASS_TYPE(eWindowMinimize)
 
-		[[nodiscard]] bool isMinimized() const { return m_minimized; }
+		[[nodiscard]] auto isMinimized() const -> bool { return m_minimized; }
 
-		[[nodiscard]] std::string toStr() const override
+		[[nodiscard]] virtual auto toStr() const -> String override
 		{
 			return "Window Minimized Event -> [" + to_string(m_minimized) + "]";
 		}
@@ -74,16 +77,45 @@ namespace toaster
 		}
 
 		EVENT_CLASS_CATEGORY(EventCategory_Application)
-		EVENT_CLASS_TYPE(WindowMaximize)
+		EVENT_CLASS_TYPE(eWindowMaximize)
 
-		[[nodiscard]] bool isMaximized() const { return m_maximized; }
+		[[nodiscard]] auto isMaximized() const -> bool { return m_maximized; }
 
-		[[nodiscard]] String toStr() const override
+		[[nodiscard]] virtual auto toStr() const -> String override
 		{
 			return "Window Minimized Event -> [" + to_string(m_maximized) + "]";
 		}
 
 	private:
-		bool m_maximized;
+		bool m_maximized{true};
+	};
+
+	class WindowFileDropEvent final : public Event
+	{
+	public:
+		WindowFileDropEvent(const std::vector<String> &p_filepaths) : m_filepaths(p_filepaths)
+		{
+		}
+
+		EVENT_CLASS_CATEGORY(EventCategory_Application)
+		EVENT_CLASS_TYPE(eWindowFileDrop)
+
+		[[nodiscard]] auto getFilepaths() const -> const std::vector<String> & { return m_filepaths; }
+
+		[[nodiscard]] virtual auto toStr() const -> String override
+		{
+			std::ostringstream oss;
+			for (uint32 i{0u}; i < m_filepaths.size(); ++i)
+			{
+				oss << m_filepaths[i];
+				if (i != m_filepaths.size() - 1)
+					oss << " | ";
+			}
+
+			return "Window File Drop Event -> [" + oss.str() + "]";
+		}
+
+	private:
+		std::vector<String> m_filepaths;
 	};
 }

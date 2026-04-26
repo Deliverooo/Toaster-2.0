@@ -2,6 +2,49 @@
 
 #include <fmt/color.h>
 #include <fmt/format.h>
+#include <glm/glm.hpp>
+
+template<>
+struct fmt::formatter<glm::vec2>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const glm::vec2 &v, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "({}, {})", v.x, v.y);
+	}
+};
+
+template<>
+struct fmt::formatter<glm::vec3>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const glm::vec3 &v, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "({}, {}, {})", v.x, v.y, v.z);
+	}
+};
+
+template<>
+struct fmt::formatter<glm::vec4>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const glm::vec4 &v, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "({}, {}, {}, {})", v.x, v.y, v.z, v.w);
+	}
+};
 
 namespace toaster::log
 {
@@ -14,10 +57,10 @@ namespace toaster::log
 		eFatal
 	};
 
-	template<ELogLevel log_level, typename... Args>
-	void printMessage(fmt::format_string<Args...> format, Args &&... args)
+	template<ELogLevel log_level, typename... TArgs>
+	auto printMessage(fmt::format_string<TArgs...> format, TArgs &&... args) -> void
 	{
-		std::string formatted = fmt::format(format, std::forward<Args>(args)...);
+		std::string formatted = fmt::format(format, std::forward<TArgs>(args)...);
 		if constexpr (log_level == ELogLevel::eTrace)
 		{
 			fmt::print(fmt::fg(fmt::terminal_color::cyan), "{}\n", formatted);
@@ -40,9 +83,17 @@ namespace toaster::log
 		}
 	}
 
+	#ifndef NDEBUG
 	#define LOG_TRACE(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eTrace>(__VA_ARGS__)
 	#define LOG_INFO(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eInfo>(__VA_ARGS__)
 	#define LOG_WARN(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eWarning>(__VA_ARGS__)
 	#define LOG_ERROR(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eError>(__VA_ARGS__)
 	#define LOG_FATAL(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eFatal>(__VA_ARGS__)
+	#else
+	#define LOG_TRACE(...)
+	#define LOG_INFO(...)
+	#define LOG_WARN(...)
+	#define LOG_ERROR(...)
+	#define LOG_FATAL(...)
+	#endif
 }

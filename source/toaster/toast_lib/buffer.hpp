@@ -3,7 +3,6 @@
  */
 #pragma once
 
-#include <memory>
 #include "system_types.h"
 #include "toast_assert.h"
 
@@ -19,7 +18,7 @@ namespace toaster
 		{
 		}
 
-		static Buffer copy(const Buffer &p_other)
+		static auto copy(const Buffer &p_other) -> Buffer
 		{
 			Buffer buffer;
 			buffer.allocate(p_other.m_size);
@@ -27,7 +26,7 @@ namespace toaster
 			return buffer;
 		}
 
-		static Buffer copy(const void *p_data, uint64 p_size)
+		static auto copy(const void *p_data, uint64 p_size) -> Buffer
 		{
 			Buffer buffer;
 			buffer.allocate(p_size);
@@ -36,7 +35,7 @@ namespace toaster
 			return buffer;
 		}
 
-		void allocate(const uint64 p_size)
+		auto allocate(const uint64 p_size) -> void
 		{
 			delete[] static_cast<uint8 *>(m_data);
 			m_data = nullptr;
@@ -48,38 +47,38 @@ namespace toaster
 			m_data = new uint8[p_size];
 		}
 
-		void reallocate(const uint64 p_size)
+		auto reallocate(const uint64 p_size) -> void
 		{
 			release();
 			allocate(p_size);
 		}
 
-		void release()
+		auto release() -> void
 		{
 			delete[] static_cast<uint8 *>(m_data);
 			m_data = nullptr;
 			m_size = 0;
 		}
 
-		void zeroInitialize()
+		auto zeroInitialize() -> void
 		{
 			if (m_data)
 				memset(m_data, 0, m_size);
 		}
 
 		template<typename Type>
-		Type &read(const uint64 p_offset = 0u)
+		auto read(const uint64 p_offset = 0u) -> Type &
 		{
-			return *static_cast<Type *>(static_cast<uint8 *>(m_data) + p_offset);
+			return *reinterpret_cast<Type *>(static_cast<uint8 *>(m_data) + p_offset);
 		}
 
 		template<typename Type>
-		const Type &read(uint64 p_offset = 0u) const
+		auto read(uint64 p_offset = 0u) const -> const Type &
 		{
 			return *static_cast<Type *>(static_cast<uint8 *>(m_data) + p_offset);
 		}
 
-		[[nodiscard]] uint8 *readBytes(uint64 p_size, uint64 p_offset) const
+		[[nodiscard]] auto readBytes(uint64 p_size, uint64 p_offset) const -> uint8 *
 		{
 			TST_ASSERT_MSG(p_offset + p_size <= m_size, "Buffer overflow!");
 			const auto buffer = new uint8[p_size];
@@ -87,13 +86,13 @@ namespace toaster
 			return buffer;
 		}
 
-		void write(Buffer p_buffer, uint64 p_offset = 0u)
+		auto write(Buffer p_buffer, uint64 p_offset = 0u) -> void
 		{
 			TST_ASSERT_MSG(p_offset + p_buffer.m_size <= m_size, "Buffer overflow!");
 			std::memcpy(static_cast<uint8 *>(m_data) + p_offset, p_buffer.m_data, p_buffer.m_size);
 		}
 
-		void write(const void *p_data, uint64 p_size, uint64 p_offset = 0u)
+		auto write(const void *p_data, uint64 p_size, uint64 p_offset = 0u) -> void
 		{
 			write(Buffer(p_data, p_size), p_offset);
 		}
@@ -103,24 +102,24 @@ namespace toaster
 			return static_cast<bool>(m_data);
 		}
 
-		uint8 &operator[](int p_index)
+		auto operator[](int32 p_index) -> uint8 &
 		{
 			return static_cast<uint8 *>(m_data)[p_index];
 		}
 
-		uint8 operator[](int p_index) const
+		auto operator[](int32 p_index) const -> uint8
 		{
 			return static_cast<uint8 *>(m_data)[p_index];
 		}
 
 		template<typename Type>
-		Type *as() const
+		auto as() const -> Type *
 		{
 			return static_cast<Type *>(m_data);
 		}
 
-		[[nodiscard]] uint64 size() const { return m_size; }
-		[[nodiscard]] void * data() const { return m_data; }
+		[[nodiscard]] auto size() const -> uint32 { return m_size; }
+		[[nodiscard]] auto data() const -> void * { return m_data; }
 
 	private:
 		void * m_data{nullptr};

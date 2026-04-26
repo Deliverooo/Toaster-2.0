@@ -17,3 +17,6 @@
 [submodule "nativefiledialog-extended"]
 	path = extern/nativefiledialog-extended
 	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "extern/glfw"]
+	path = extern/glfw
+	url = https://github.com/glfw/glfw.git

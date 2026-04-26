@@ -1,117 +1,123 @@
 #pragma once
 
+#include <atomic> // I am atomic
+#include <functional>
 #include <memory>
 
 namespace toaster
 {
+	// Literally a better std::shared_ptr
 	template<typename Type>
 	class RefPtr
 	{
 	public:
-		RefPtr(std::nullptr_t) : m_ptr(nullptr), m_refCount(nullptr)
+		using DeleterFn = std::function<void(Type *)>;
+
+		RefPtr(std::nullptr_t) : m_ptr(nullptr), m_controlBlock(nullptr)
 		{
 		}
 
-		RefPtr(Type *p_ptr = nullptr) : m_ptr(p_ptr), m_refCount(p_ptr ? new std::atomic_int32_t(1) : nullptr)
+		RefPtr(Type *p_ptr = nullptr, DeleterFn p_deleter = [](Type *p) { delete p; }) : m_ptr(p_ptr),
+																						 m_controlBlock(p_ptr ? new ControlBlock(1, std::move(p_deleter)) : nullptr)
 		{
 		}
 
-		RefPtr(const RefPtr &p_other) : m_ptr(p_other.m_ptr), m_refCount(p_other.m_refCount)
+		RefPtr(const RefPtr &p_other) : m_ptr(p_other.m_ptr), m_controlBlock(p_other.m_controlBlock)
 		{
 			_incRef();
 		}
 
 		template<typename TOther>
-		RefPtr(const RefPtr<TOther> &p_other) : m_ptr(p_other.m_ptr), m_refCount(p_other.m_refCount)
+		RefPtr(const RefPtr<TOther> &p_other) : m_ptr(dynamic_cast<Type *>(p_other.m_ptr)), m_controlBlock(reinterpret_cast<ControlBlock *>(p_other.m_controlBlock))
 		{
 			_incRef();
 		}
 
 		template<typename TOther>
-		RefPtr(RefPtr<TOther> &&p_other) : m_ptr(p_other.m_ptr), m_refCount(p_other.m_refCount)
+		RefPtr(RefPtr<TOther> &&p_other) : m_ptr(dynamic_cast<Type *>(p_other.m_ptr)), m_controlBlock(reinterpret_cast<ControlBlock *>(p_other.m_controlBlock))
 		{
-			p_other.m_ptr      = nullptr;
-			p_other.m_refCount = nullptr;
+			p_other.m_ptr          = nullptr;
+			p_other.m_controlBlock = nullptr;
 		}
 
 		~RefPtr() { _release(); }
 
-		RefPtr &operator=(std::nullptr_t)
+		auto operator=(std::nullptr_t) -> RefPtr &
 		{
 			_release();
 			m_ptr = nullptr;
 			return *this;
 		}
 
-		RefPtr &operator=(const RefPtr &p_other)
+		auto operator=(const RefPtr &p_other) -> RefPtr &
 		{
 			if (this != &p_other)
 			{
 				_release();
-				m_ptr      = p_other.m_ptr;
-				m_refCount = p_other.m_refCount;
+				m_ptr          = p_other.m_ptr;
+				m_controlBlock = p_other.m_controlBlock;
 				_incRef();
 			}
 			return *this;
 		}
 
 		template<typename TOther>
-		RefPtr &operator=(const RefPtr<TOther> &p_other)
+		auto operator=(const RefPtr<TOther> &p_other) -> RefPtr &
 		{
 			if (this != &p_other)
 			{
 				_release();
-				m_ptr      = p_other.m_ptr;
-				m_refCount = p_other.m_refCount;
+				m_ptr          = p_other.m_ptr;
+				m_controlBlock = p_other.m_controlBlock;
 				_incRef();
 			}
 			return *this;
 		}
 
 		template<typename TOther>
-		RefPtr &operator=(RefPtr<TOther> &&p_other) noexcept
+		auto operator=(RefPtr<TOther> &&p_other) noexcept -> RefPtr &
 		{
 			if (this != &p_other)
 			{
 				_release();
-				m_ptr              = p_other.m_ptr;
-				m_refCount         = p_other.m_refCount;
-				p_other.m_ptr      = nullptr;
-				p_other.m_refCount = nullptr;
+				m_ptr                  = p_other.m_ptr;
+				m_controlBlock         = p_other.m_controlBlock;
+				p_other.m_ptr          = nullptr;
+				p_other.m_controlBlock = nullptr;
 			}
 			return *this;
 		}
 
-		Type &operator*() { return *m_ptr; }
-		Type *operator->() { return m_ptr; }
+		auto operator*() -> Type & { return *m_ptr; }
+		auto operator->() -> Type * { return m_ptr; }
 
-		Type &operator*() const { return *m_ptr; }
-		Type *operator->() const { return m_ptr; }
+		auto operator*() const -> Type & { return *m_ptr; }
+		auto operator->() const -> Type * { return m_ptr; }
 
-		Type *      get() { return m_ptr; }
-		const Type *get() const { return m_ptr; }
+		auto get() -> Type * { return m_ptr; }
+		auto get() const -> const Type * { return m_ptr; }
 
-		void reset(Type *p_ptr = nullptr)
+		auto reset(Type *p_ptr = nullptr, DeleterFn p_deleter = [](Type *p) { delete p; }) -> void
 		{
 			if (m_ptr == p_ptr)
 				return;
 			_release();
-			m_ptr      = p_ptr;
-			m_refCount = p_ptr ? new std::atomic_int32_t(1) : nullptr;
+			m_ptr          = p_ptr;
+			m_controlBlock = p_ptr ? new ControlBlock(1, std::move(p_deleter)) : nullptr;
 		}
 
 		template<typename TOther>
-		RefPtr<TOther> as() const
+		auto as() const -> RefPtr<TOther>
 		{
 			return RefPtr<TOther>(*this);
 		}
 
-		bool operator==(const RefPtr &p_other) const
+		auto operator==(const RefPtr &p_other) const -> bool
 		{
 			return m_ptr == p_other.m_ptr;
 		}
 
-		bool operator!=(const RefPtr &p_other) const
+		auto operator!=(const RefPtr &p_other) const -> bool
 		{
 			return m_ptr != p_other.m_ptr;
 		}
@@ -120,79 +126,157 @@ namespace toaster
 		operator bool() const { return m_ptr != nullptr; }
 
 	private:
-		void _incRef()
+		auto _incRef() -> void
 		{
-			if (m_refCount)
-				++(*m_refCount);
+			if (m_controlBlock)
+				++(m_controlBlock->refCount);
 		}
 
-		void _release()
+		auto _release() -> void
 		{
-			if (m_refCount)
+			if (m_controlBlock)
 			{
-				if (--(*m_refCount) == 0)
+				if (--(m_controlBlock->refCount) == 0)
 				{
-					delete m_ptr;
-					delete m_refCount;
+					m_controlBlock->deleter(m_ptr);
+					delete m_controlBlock;
 				}
-				m_ptr      = nullptr;
-				m_refCount = nullptr;
+				m_ptr          = nullptr;
+				m_controlBlock = nullptr;
 			}
 		}
 
-		mutable Type *               m_ptr{nullptr};
-		mutable std::atomic_int32_t *m_refCount{nullptr};
+		struct ControlBlock
+		{
+			std::atomic_int32_t refCount;
+			DeleterFn           deleter;
+
+			ControlBlock(int32_t p_count, DeleterFn p_deleter) : refCount(p_count), deleter(std::move(p_deleter))
+			{
+			}
+		};
+
+		mutable Type *        m_ptr{nullptr};
+		mutable ControlBlock *m_controlBlock{nullptr};
 
 		template<typename TOther>
 		friend class RefPtr;
 	};
 
-	template<typename Type>
-	class WeakRefPtr
-	{
-	public:
-		WeakRefPtr() = default;
-
-		WeakRefPtr(const RefPtr<Type> &p_ref_ptr)
-		{
-			m_ptr = p_ref_ptr.get();
-		}
-
-		WeakRefPtr(Type *p_ptr)
-		{
-			m_ptr = p_ptr;
-		}
-
-		Type &operator*() { return *m_ptr; }
-		Type *operator->() { return m_ptr; }
-
-		Type &operator*() const { return *m_ptr; }
-		Type *operator->() const { return m_ptr; }
-
-		operator bool() const { return false; } // TODO: ts
-
-		template<typename TOther>
-		WeakRefPtr<TOther> as() const
-		{
-			return WeakRefPtr<TOther>(dynamic_cast<TOther *>(m_ptr));
-		}
-
-	private:
-		Type *m_ptr{nullptr};
-	};
-
-	template<typename Type>
-	using UniquePtr = std::unique_ptr<Type>;
-
 	template<typename Type, typename... TArgs>
-	RefPtr<Type> make_reference(TArgs &&... p_args)
+	auto make_reference(TArgs &&... p_args) -> RefPtr<Type>
 	{
 		return RefPtr<Type>(new Type(std::forward<TArgs>(p_args)...));
 	}
 
 	template<typename Type, typename... TArgs>
-	UniquePtr<Type> make_unique(TArgs &&... p_args)
+	auto allocate_reference(typename RefPtr<Type>::DeleterFn &&p_deleter, TArgs &&... p_args) -> RefPtr<Type>
+	{
+		return RefPtr<Type>(new Type(std::forward<TArgs>(p_args)...), std::move(p_deleter));
+	}
+
+	template<typename Type>
+	using UniquePtr = std::unique_ptr<Type>;
+
+	template<typename Type, typename... TArgs>
+	auto make_unique(TArgs &&... p_args) -> UniquePtr<Type>
 	{
 		return std::make_unique<Type>(std::forward<TArgs>(p_args)...);
 	}
+
+	template<typename Type>
+	class NonOwningPtr
+	{
+	public:
+		NonOwningPtr(Type *p_ptr) : m_ptr(p_ptr)
+		{
+		}
+
+		NonOwningPtr(std::nullptr_t) : m_ptr(nullptr)
+		{
+		}
+
+		NonOwningPtr(const NonOwningPtr &p_other) : m_ptr(p_other.m_ptr)
+		{
+		}
+
+		NonOwningPtr(NonOwningPtr &&p_other) noexcept : m_ptr(std::move(p_other.m_ptr))
+		{
+		}
+
+		auto operator=(std::nullptr_t) -> NonOwningPtr &
+		{
+			m_ptr = nullptr;
+			return *this;
+		}
+
+		auto operator=(const NonOwningPtr &p_other) -> NonOwningPtr &
+		{
+			if (this != &p_other)
+			{
+				m_ptr = p_other.m_ptr;
+			}
+			return *this;
+		}
+
+		template<typename TOther>
+		auto operator=(const NonOwningPtr<TOther> &p_other) -> NonOwningPtr &
+		{
+			if (this != &p_other)
+			{
+				m_ptr = p_other.m_ptr;
+			}
+			return *this;
+		}
+
+		template<typename TOther>
+		auto operator=(NonOwningPtr<TOther> &&p_other) noexcept -> NonOwningPtr &
+		{
+			if (this != &p_other)
+			{
+				m_ptr         = p_other.m_ptr;
+				p_other.m_ptr = nullptr;
+			}
+			return *this;
+		}
+
+		auto operator*() -> Type & { return *m_ptr; }
+		auto operator->() -> Type * { return m_ptr; }
+
+		auto operator*() const -> Type & { return *m_ptr; }
+		auto operator->() const -> Type * { return m_ptr; }
+
+		operator Type *() { return m_ptr; }
+		operator Type *() const { return m_ptr; }
+
+		auto get() -> Type * { return m_ptr; }
+		auto get() const -> Type * { return m_ptr; }
+
+		auto reset(Type *p_ptr = nullptr) -> void
+		{
+			m_ptr = p_ptr;
+		}
+
+		template<typename TOther>
+		auto as() -> NonOwningPtr<TOther>
+		{
+			return dynamic_cast<TOther *>(m_ptr);
+		}
+
+		auto operator==(const NonOwningPtr &p_other) const -> bool
+		{
+			return m_ptr == p_other.m_ptr;
+		}
+
+		auto operator!=(const NonOwningPtr &p_other) const -> bool
+		{
+			return m_ptr != p_other.m_ptr;
+		}
+
+		operator bool() { return m_ptr != nullptr; }
+		operator bool() const { return m_ptr != nullptr; }
+
+	private:
+		mutable Type *m_ptr{nullptr};
+	};
 }

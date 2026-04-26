@@ -11,7 +11,7 @@ namespace toaster::os
 		const char *spec;
 	};
 
-	io::filesystem::Path openFileDialog(std::initializer_list<FileDialogFilterItem> p_in_filters = {});
-	io::filesystem::Path openFolderDialog(const char *p_initial_folder = "");
-	io::filesystem::Path saveFileDialog(std::initializer_list<FileDialogFilterItem> p_in_filters = {});
+	auto openFileDialog(std::initializer_list<FileDialogFilterItem> p_in_filters = {}) -> io::filesystem::Path;
+	auto openFolderDialog(const char *p_initial_folder = "") -> io::filesystem::Path;
+	auto saveFileDialog(std::initializer_list<FileDialogFilterItem> p_in_filters = {}) -> io::filesystem::Path;
 }

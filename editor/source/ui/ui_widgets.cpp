@@ -7,7 +7,7 @@ namespace toaster::ui
 {
 	constexpr float text_padding = 5.0f;
 
-	bool dragFloat(const String &p_label, float *v, const char *p_id, float p_speed, float p_min, float p_max, const char *p_format, ImGuiSliderFlags p_flags)
+	auto dragFloat(const String &p_label, float *v, const char *p_id, float p_speed, float p_min, float p_max, const char *p_format, ImGuiSliderFlags p_flags) -> bool
 	{
 		TST_ASSERT(v);
 
@@ -38,8 +38,8 @@ namespace toaster::ui
 		return result;
 	}
 
-	bool dragFloatWithReset(const String &   p_label, float *p_v, const char *p_id, float p_speed, float p_min, float p_max, const char *p_format, float p_reset_value,
-							ImGuiSliderFlags p_flags)
+	auto dragFloatWithReset(const String &   p_label, float *p_v, const char *p_id, float p_speed, float p_min, float p_max, const char *p_format, float p_reset_value,
+							ImGuiSliderFlags p_flags) -> bool
 	{
 		TST_ASSERT(p_v);
 
@@ -78,7 +78,7 @@ namespace toaster::ui
 		return result;
 	}
 
-	bool checkbox(const String &p_label, bool *p_v)
+	auto checkbox(const String &p_label, bool *p_v) -> bool
 	{
 		TST_ASSERT(p_v);
 
@@ -95,7 +95,7 @@ namespace toaster::ui
 		return result;
 	}
 
-	bool beginCombo(const String &p_label, const char *preview_value, ImGuiComboFlags flags)
+	auto beginCombo(const String &p_label, const char *preview_value, ImGuiComboFlags flags) -> bool
 	{
 		ImGuiStyle &style = ig::GetStyle();
 		ImGuiIO &   io    = ig::GetIO();
@@ -122,12 +122,12 @@ namespace toaster::ui
 		return result;
 	}
 
-	void endCombo()
+	auto endCombo() -> void
 	{
 		ig::EndCombo();
 	}
 
-	bool colourEdit3(const String &p_label, float p_col[3], ImGuiColorEditFlags p_flags)
+	auto colourEdit3(const String &p_label, float p_col[3], ImGuiColorEditFlags p_flags) -> bool
 	{
 		ImGuiStyle &style = ig::GetStyle();
 		ImGuiIO &   io    = ig::GetIO();
@@ -152,7 +152,7 @@ namespace toaster::ui
 		return result;
 	}
 
-	bool colourEdit4(const String &p_label, float p_col[4], ImGuiColorEditFlags p_flags)
+	auto colourEdit4(const String &p_label, float p_col[4], ImGuiColorEditFlags p_flags) -> bool
 	{
 		ImGuiStyle &style = ig::GetStyle();
 		ImGuiIO &   io    = ig::GetIO();

@@ -1,22 +1,25 @@
 #pragma once
 
+#include "../toaster_export.hpp"
+
 #include <unordered_map>
 
-#include "toast_gpu/shader.hpp"
+#include "toast_gpu/vk/vk_shader.hpp"
+#include "toast_lib/ptr.hpp"
 
 namespace toaster
 {
-	class ShaderLibrary
+	class TST_API ShaderLibrary
 	{
 	public:
 		ShaderLibrary()  = default;
 		~ShaderLibrary() = default;
 
-		void add(const std::string &p_name, const RefPtr<gpu::IShader> &p_shader);
+		auto add(const String &p_name, const RefPtr<gpu::VKShader> &p_shader) -> void;
 
-		[[nodiscard]] RefPtr<gpu::IShader> get(const std::string &p_name) const;
+		[[nodiscard]] auto get(const String &p_name) const -> RefPtr<gpu::VKShader>;
 
 	private:
-		std::unordered_map<std::string, RefPtr<gpu::IShader> > m_shaders;
+		std::unordered_map<String, RefPtr<gpu::VKShader> > m_shaders;
 	};
 }

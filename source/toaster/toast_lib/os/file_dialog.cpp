@@ -7,12 +7,11 @@
 
 namespace toaster::os
 {
-	io::filesystem::Path openFileDialog(const std::initializer_list<FileDialogFilterItem> p_in_filters)
+	auto openFileDialog(const std::initializer_list<FileDialogFilterItem> p_in_filters) -> io::filesystem::Path
 	{
 		NFD::UniquePath filePath;
-		nfdresult_t     result = NFD::OpenDialog(filePath, (const nfdfilteritem_t *) p_in_filters.begin(), p_in_filters.size());
 
-		switch (result)
+		switch (NFD::OpenDialog(filePath, reinterpret_cast<const nfdfilteritem_t *>(p_in_filters.begin()), p_in_filters.size()))
 		{
 			case NFD_OKAY:
 				return filePath.get();
@@ -30,12 +29,11 @@ namespace toaster::os
 		return "";
 	}
 
-	io::filesystem::Path openFolderDialog(const char *p_initial_folder)
+	auto openFolderDialog(const char *p_initial_folder) -> io::filesystem::Path
 	{
 		NFD::UniquePath filePath;
-		nfdresult_t     result = NFD::PickFolder(filePath, p_initial_folder);
 
-		switch (result)
+		switch (NFD::PickFolder(filePath, p_initial_folder))
 		{
 			case NFD_OKAY:
 				return filePath.get();
@@ -53,12 +51,11 @@ namespace toaster::os
 		return "";
 	}
 
-	io::filesystem::Path saveFileDialog(const std::initializer_list<FileDialogFilterItem> p_in_filters)
+	auto saveFileDialog(const std::initializer_list<FileDialogFilterItem> p_in_filters) -> io::filesystem::Path
 	{
 		NFD::UniquePath filePath;
-		nfdresult_t     result = NFD::SaveDialog(filePath, (const nfdfilteritem_t *) p_in_filters.begin(), p_in_filters.size());
 
-		switch (result)
+		switch (NFD::SaveDialog(filePath, reinterpret_cast<const nfdfilteritem_t *>(p_in_filters.begin()), p_in_filters.size()))
 		{
 			case NFD_OKAY:
 				return filePath.get();

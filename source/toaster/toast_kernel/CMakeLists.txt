@@ -8,8 +8,8 @@ set(SRC
 		window.cpp
 		window.hpp
 
-		ortho_camera_controller.cpp
-		ortho_camera_controller.hpp
+		layer.cpp
+		layer.hpp
 )
 
 list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")

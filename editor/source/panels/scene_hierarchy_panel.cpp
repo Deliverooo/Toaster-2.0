@@ -7,11 +7,14 @@
 
 #include "../ui/ui_utils.hpp"
 #include "../ui/ui_widgets.hpp"
+#include "glm/gtc/type_ptr.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_render/globals.hpp"
 
 namespace toaster
 {
-	static void drawVec3Ctrl(const String &p_label, glm::vec3 *p_vec, const glm::vec3 &p_reset = glm::vec3{1.0f}, const char *p_vec1_label = "X",
-							 const char *  p_vec2_label                                        = "Y", const char *            p_vec3_label = "Z")
+	static auto drawVec3Ctrl(const String &p_label, glm::vec3 *p_vec, const glm::vec3 &p_reset = glm::vec3{1.0f}, const char *p_vec1_label = "X",
+							 const char *  p_vec2_label                                        = "Y", const char *            p_vec3_label = "Z") -> bool
 	{
 		const String vec1_str_id = String("##") + p_vec1_label;
 		const String vec2_str_id = String("##") + p_vec2_label;
@@ -20,19 +23,23 @@ namespace toaster
 		ImGuiIO &io        = ig::GetIO();
 		auto     bold_font = io.Fonts->Fonts[1];
 
+		bool ret{false};
+
 		ig::PushID(p_label.c_str());
 
 		ig::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.5f);
-		ui::dragFloatWithReset(p_label + " " + p_vec1_label, &p_vec->x, vec1_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.x);
-		ui::dragFloatWithReset(p_vec2_label, &p_vec->y, vec2_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.y);
-		ui::dragFloatWithReset(p_vec3_label, &p_vec->z, vec3_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.z);
+		ret |= ui::dragFloatWithReset(p_label + " " + p_vec1_label, &p_vec->x, vec1_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.x);
+		ret |= ui::dragFloatWithReset(p_vec2_label, &p_vec->y, vec2_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.y);
+		ret |= ui::dragFloatWithReset(p_vec3_label, &p_vec->z, vec3_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.z);
 		ig::PopStyleVar();
 
 		ig::PopID();
+
+		return ret;
 	}
 
 	template<typename Type, bool Removable = true, typename UIFunc>
-	static void drawComponent(const String &p_name, Entity p_entity, UIFunc p_func)
+	static auto drawComponent(const String &p_name, Entity p_entity, UIFunc p_func, void *p_caller_id) -> void
 	{
 		ig::PushID(typeid(Type).hash_code());
 
@@ -75,7 +82,11 @@ namespace toaster
 				}
 
 				if (ig::MenuItem("Reset"))
+				{
+					SceneHierarchyPanel *caller{(SceneHierarchyPanel *) p_caller_id};
+					caller->m_device->getVulkanLogicalDevice().waitIdle();
 					comp.reset();
+				}
 
 				ig::EndPopup();
 			}
@@ -91,21 +102,19 @@ namespace toaster
 		ig::PopID();
 	}
 
-	SceneHierarchyPanel::SceneHierarchyPanel(const RefPtr<Scene> &p_scene) : m_scene(p_scene)
+	SceneHierarchyPanel::SceneHierarchyPanel(gpu::VKLogicalDevice *p_device, const RefPtr<Scene> &p_scene) : m_device(p_device), m_scene(p_scene)
 	{
 	}
 
-	SceneHierarchyPanel::~SceneHierarchyPanel()
-	{
-	}
+	SceneHierarchyPanel::~SceneHierarchyPanel() = default;
 
-	void SceneHierarchyPanel::setScene(const RefPtr<Scene> &p_scene)
+	auto SceneHierarchyPanel::setScene(const RefPtr<Scene> &p_scene) -> void
 	{
 		m_scene          = p_scene;
 		m_selectedEntity = {};
 	}
 
-	void SceneHierarchyPanel::onUIRender()
+	auto SceneHierarchyPanel::onUIRender(uint32 p_frame_index) -> void
 	{
 		ig::Begin("Scene Hierarchy");
 
@@ -114,7 +123,7 @@ namespace toaster
 		for (auto e: reg.view<entt::entity>())
 		{
 			Entity entity = {e, m_scene.get()};
-			_drawEntityNode(entity);
+			_drawEntityNode(entity, p_frame_index);
 		}
 
 		if (ig::IsMouseDown(ImGuiMouseButton_Left) && ig::IsWindowHovered())
@@ -135,23 +144,23 @@ namespace toaster
 
 		if (m_selectedEntity)
 		{
-			_drawComponents(m_selectedEntity);
+			_drawComponents(m_selectedEntity, p_frame_index);
 		}
 
 		ig::End();
 	}
 
-	Entity SceneHierarchyPanel::getSelectedEntity() const
+	auto SceneHierarchyPanel::getSelectedEntity() const -> Entity
 	{
 		return m_selectedEntity;
 	}
 
-	void SceneHierarchyPanel::setSelectedEntity(Entity p_entity)
+	auto SceneHierarchyPanel::setSelectedEntity(Entity p_entity) -> void
 	{
 		m_selectedEntity = p_entity;
 	}
 
-	void SceneHierarchyPanel::_drawEntityNode(Entity p_entity)
+	auto SceneHierarchyPanel::_drawEntityNode(Entity p_entity, uint32 p_frame_index) -> void
 	{
 		auto &tag_comp = p_entity.getComponent<TagComponent>();
 
@@ -185,7 +194,7 @@ namespace toaster
 		}
 	}
 
-	void SceneHierarchyPanel::_drawComponents(Entity p_entity)
+	auto SceneHierarchyPanel::_drawComponents(Entity p_entity, uint32 p_frame_index) -> void
 	{
 		{
 			auto &tag_comp = p_entity.getComponent<TagComponent>();
@@ -213,9 +222,33 @@ namespace toaster
 				ig::CloseCurrentPopup();
 			}
 
+			if (ig::MenuItem("Mesh"))
+			{
+				m_selectedEntity.addComponent<MeshComponent>();
+				ig::CloseCurrentPopup();
+			}
+
 			if (ig::MenuItem("Camera"))
 			{
 				m_selectedEntity.addComponent<CameraComponent>();
+				ig::CloseCurrentPopup();
+			}
+
+			if (ig::MenuItem("Directional Light"))
+			{
+				m_selectedEntity.addComponent<DirectionalLightComponent>();
+				ig::CloseCurrentPopup();
+			}
+
+			if (ig::MenuItem("Point Light"))
+			{
+				m_selectedEntity.addComponent<PointLightComponent>();
+				ig::CloseCurrentPopup();
+			}
+
+			if (ig::MenuItem("Spot Light"))
+			{
+				m_selectedEntity.addComponent<SpotLightComponent>();
 				ig::CloseCurrentPopup();
 			}
 
@@ -230,7 +263,7 @@ namespace toaster
 			ig::Separator();
 			drawVec3Ctrl("Scale", &p_comp.scale, glm::vec3{1.0f});
 			ig::Separator();
-		});
+		}, this);
 
 		drawComponent<CameraComponent>("Camera", p_entity, [](CameraComponent &p_comp)
 		{
@@ -289,9 +322,9 @@ namespace toaster
 			ig::PopStyleVar();
 
 			ig::SetItemTooltip("If true, the camera will be used as the main camera to view the scene from.");
-		});
+		}, this);
 
-		drawComponent<SpriteRendererComponent>("Sprite Renderer", p_entity, [](SpriteRendererComponent &p_comp)
+		drawComponent<SpriteRendererComponent>("Sprite Renderer", p_entity, [this](SpriteRendererComponent &p_comp)
 		{
 			ui::colourEdit4("Colour", &p_comp.colour.x);
 
@@ -299,16 +332,94 @@ namespace toaster
 			ui::dragFloat("Tiling Factor", &p_comp.tilingFactor, "##Tiling_Factor", 0.1f);
 			ig::PopStyleVar();
 
-			// ig::SetNextItemWidth(ig::GetContentRegionAvail().x);
+			ig::Text("Texture:");
 			if (ig::Button("File", ImVec2{ig::GetContentRegionAvail().x, 0}))
 			{
-				auto path = os::openFileDialog({{"Image", "png,jpg,jpeg"}});
+				auto path = os::openFileDialog({{"Texture", "png,jpg,jpeg"}});
 				if (io::filesystem::exists(path))
 				{
 					LOG_INFO("{}", path.string());
-					p_comp.texture = gpu::ITexture2D::create(path);
+
+					gpu::TextureSpecInfo texture_spec_info{};
+					p_comp.texture = m_device->alloc<gpu::VKTexture2D>(texture_spec_info, path);
 				}
 			}
-		});
+		}, this);
+
+		drawComponent<MeshComponent>("Mesh", p_entity, [this,p_frame_index](MeshComponent &p_comp)
+		{
+			ig::Text("Mesh source file:");
+			if (ig::Button("File", ImVec2{ig::GetContentRegionAvail().x, 0}))
+			{
+				auto path = os::openFileDialog({{"Mesh", "fbx,obj,glb"}});
+				if (io::filesystem::exists(path))
+				{
+					LOG_INFO("{}", path.string());
+
+					auto geometry_shader{Globals::getShaderLibrary().get("Geometry")};
+					p_comp.mesh = m_device->alloc<gpu::VKMesh>(path, geometry_shader);
+				}
+			}
+
+			if (p_comp.mesh)
+			{
+				for (auto &mat: p_comp.mesh->getMaterials())
+					_drawMaterial(p_frame_index, mat);
+			}
+			// ig::Separator();
+			// glm::vec3 &colour{p_comp.mesh->getMaterials()[0]->get<glm::vec3>("u_Material.albedoColour")};
+			// if (ui::colourEdit3("Colour", glm::value_ptr(colour)))
+			// p_comp.mesh->getMaterials()[0]->set("u_Material.albedoColour", colour);
+		}, this);
+
+		drawComponent<DirectionalLightComponent>("Directional Light", p_entity, [](DirectionalLightComponent &p_comp)
+		{
+			ui::colourEdit3("Radiance", &p_comp.radiance.x);
+			ui::dragFloat("Multiplier", &p_comp.multiplier, "##Multiplier", 0.01f);
+		}, this);
+
+		drawComponent<PointLightComponent>("Point Light", p_entity, [](PointLightComponent &p_comp)
+		{
+			ui::colourEdit3("Radiance", glm::value_ptr(p_comp.radiance));
+			ui::dragFloat("Multiplier", &p_comp.multiplier, "##Multiplier", 0.01f);
+			ig::Separator();
+			ui::dragFloat("Radius", &p_comp.radius, "##Radius", 0.05f);
+			ui::dragFloat("Falloff", &p_comp.falloff, "##Falloff", 0.05f);
+		}, this);
+
+		drawComponent<SpotLightComponent>("Spot Light", p_entity, [](SpotLightComponent &p_comp)
+		{
+			ui::colourEdit3("Radiance", glm::value_ptr(p_comp.radiance));
+			ui::dragFloat("Multiplier", &p_comp.multiplier, "##Multiplier", 0.01f);
+			ig::Separator();
+			ui::dragFloat("Angle", &p_comp.angle, "##Angle", 0.05f);
+			ui::dragFloat("Range", &p_comp.range, "##Range", 0.05f);
+			ui::dragFloat("Falloff", &p_comp.falloff, "##Falloff", 0.05f);
+		}, this);
+	}
+
+	auto SceneHierarchyPanel::_drawMaterial(uint32 p_frame_index, const RefPtr<gpu::VKMaterial> &p_mat) -> void
+	{
+		ig::PushID(p_mat->getName().c_str());
+		ig::Text("Material: %s", p_mat->getName().c_str());
+
+		auto albedo_map{p_mat->getResource<gpu::VKTexture2D>("u_AlbedoTexture")};
+		if (albedo_map)
+		{
+			ig::Image(ImTextureRef(p_mat->getDescriptorSet(p_frame_index)), ImVec2{100, 100}, ImVec2{0, 0}, ImVec2{1, 1});
+		}
+
+		if (ig::Button("Albedo texture", ImVec2{ig::GetContentRegionAvail().x, 0}))
+		{
+			auto path = os::openFileDialog({{"Mesh", "png,jpg,bmp"}});
+			if (io::filesystem::exists(path))
+			{
+				LOG_INFO("{}", path.string());
+				p_mat->set("u_AlbedoTexture", m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
+			}
+		}
+
+		ig::Separator();
+		ig::PopID();
 	}
 }

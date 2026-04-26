@@ -1,12 +1,17 @@
 #include "scene.hpp"
 #include "entity.hpp"
 #include "components.hpp"
+#include "scene_renderer.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 
 #include "toast_lib/logging.hpp"
+#include "toast_render/globals.hpp"
+
+#define TST_ENABLE_2D_SCENE_RENDERING 1
 
 namespace toaster
 {
-	Scene::Scene(const String &p_name) : m_name(p_name.empty() ? "Untitled Scene" : p_name)
+	Scene::Scene(gpu::VKLogicalDevice *p_device, const String &p_name) : m_device(p_device), m_name(p_name.empty() ? "Untitled Scene" : p_name)
 	{
 	}
 
@@ -14,7 +19,7 @@ namespace toaster
 	{
 	}
 
-	void Scene::onUpdate(float32 p_dt)
+	auto Scene::onUpdate(float32 p_dt) -> void
 	{
 		m_registry.view<NativeScriptComponent>().each([this, p_dt](auto p_entity, auto &p_script)
 		{
@@ -29,10 +34,11 @@ namespace toaster
 		});
 	}
 
-	void Scene::onRender(float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d)
+	auto Scene::onRender([[maybe_unused]] const vk::raii::CommandBuffer &p_cmd, [[maybe_unused]] uint32 p_frame_index, [[maybe_unused]] float32 p_dt,
+						 [[maybe_unused]] const RefPtr<SceneRenderer> &  p_scene_renderer) -> void
 	{
-		Camera *  main_camera{nullptr};
-		glm::mat4 camera_transform{1.0f};
+		#if 0
+		Camera *main_camera{nullptr}; glm::mat4 camera_transform{1.0f};
 		{
 			auto view = m_registry.view<TransformComponent, CameraComponent>();
 			for (auto entity: view)
@@ -45,59 +51,113 @@ namespace toaster
 					break;
 				}
 			}
-		}
-
-		if (main_camera)
+		} if (main_camera)
 		{
-			p_renderer_2d->begin(*main_camera, camera_transform);
+			p_scene_renderer->begin(p_cmd, p_frame_index, camera_transform, main_camera->getProjectionMatrix());
 
 			auto group = m_registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
 			for (auto entity: group)
 			{
 				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
 
-				if (sprite.texture)
-					p_renderer_2d->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor);
-				else
-					p_renderer_2d->submitQuad(transform.getTransform(), sprite.colour);
+				// if (sprite.texture)
+				// p_scene_renderer->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor);
+				// else
+				// p_scene_renderer->submitQuad(transform.getTransform(), sprite.colour);
 			}
 
-			p_renderer_2d->end();
+			p_scene_renderer->end(p_cmd, p_frame_index);
 		}
+		else
+			TST_ASSERT(false);
+		#endif
 	}
 
-	void Scene::onRender(float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d, const glm::mat4 &p_view, const glm::mat4 &p_projection)
+	auto Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer,
+						 const glm::mat4 &              p_view, const glm::mat4 &p_projection) -> void
 	{
-		p_renderer_2d->begin(p_view, p_projection);
+		m_lightEnvironment.pointLights.clear();
 
-		auto group = m_registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
-		for (auto entity: group)
 		{
-			auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
+			for (const auto group{m_registry.group<TransformComponent>(entt::get<DirectionalLightComponent>)}; const auto entity: group)
+			{
+				auto [transform, directional_light]{group.get<TransformComponent, DirectionalLightComponent>(entity)};
 
-			if (sprite.texture)
-				p_renderer_2d->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor, static_cast<uint32>(entity));
-			else
-				p_renderer_2d->submitQuad(transform.getTransform(), sprite.colour, static_cast<uint32>(entity));
+				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
+																	  glm::vec4(glm::normalize(transform.rotation), 1.0f),
+																	  glm::vec4(directional_light.radiance, directional_light.multiplier)
+																  });
+			}
 		}
+		{
+			for (const auto view{m_registry.view<TransformComponent, PointLightComponent>()}; const auto entity: view)
+			{
+				auto [transform, point_light]{view.get<TransformComponent, PointLightComponent>(entity)};
 
-		p_renderer_2d->end();
+				m_lightEnvironment.pointLights.emplace_back(PointLight{
+																glm::vec4(transform.translation, 1.0f),
+																glm::vec4(point_light.radiance, point_light.multiplier),
+																point_light.radius,
+																point_light.falloff
+															});
+			}
+		}
+		{
+			p_scene_renderer->begin(p_cmd, p_frame_index, p_view, p_projection);
+			for (const auto view{m_registry.view<TransformComponent, MeshComponent>()}; const auto entity: view)
+			{
+				if (auto [transform, mesh]{view.get<TransformComponent, MeshComponent>(entity)}; mesh.mesh)
+				{
+					p_scene_renderer->renderMesh(mesh.mesh, transform.getTransform());
+				}
+			}
+			p_scene_renderer->end(p_cmd, p_frame_index);
+		}
+		#if TST_ENABLE_2D_SCENE_RENDERING
+		{
+			auto renderer_2d{p_scene_renderer->getRenderer2D()};
+			renderer_2d->begin(p_cmd, p_frame_index, p_view, p_projection);
+
+			for (const auto view{m_registry.view<TransformComponent, SpriteRendererComponent>()}; const auto entity: view)
+			{
+				auto [transform, src]{view.get<TransformComponent, SpriteRendererComponent>(entity)};
+				if (src.texture)
+					renderer_2d->submitQuad(transform.getTransform(), src.texture, src.colour);
+				else
+					renderer_2d->submitQuad(transform.getTransform(), src.colour);
+			}
+
+			gpu::RenderingAttachmentInfo colour_attachment_info{};
+			colour_attachment_info.clearValue = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
+			colour_attachment_info.image      = p_scene_renderer->getOutputColourTexture()->getImage();
+			colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eNone;
+			colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+
+			gpu::RenderingAttachmentInfo depth_attachment_info{};
+			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
+			depth_attachment_info.image      = p_scene_renderer->getOutputDepthTexture()->getImage();
+			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eLoad;
+			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+
+			renderer_2d->end(p_cmd, p_frame_index, &colour_attachment_info, &depth_attachment_info);
+		}
+		#endif
 	}
 
-	void Scene::setViewportSize(uint32 p_width, uint32 p_height)
+	auto Scene::setViewportSize(uint32 p_width, uint32 p_height) -> void
 	{
 		m_viewportWidth  = p_width;
 		m_viewportHeight = p_height;
 
-		auto view = m_registry.view<CameraComponent>();
+		auto view{m_registry.view<CameraComponent>()};
 		for (auto entity: view)
 		{
-			auto &cameraComponent = view.get<CameraComponent>(entity);
+			auto &cameraComponent{view.get<CameraComponent>(entity)};
 			cameraComponent.camera.setViewportSize(p_width, p_height);
 		}
 	}
 
-	Entity Scene::createEntity(const String &p_name)
+	auto Scene::createEntity(const String &p_name) -> Entity
 	{
 		auto entity = Entity{m_registry.create(), this};
 
@@ -112,12 +172,12 @@ namespace toaster
 		return entity;
 	}
 
-	void Scene::destroyEntity(Entity p_entity)
+	auto Scene::destroyEntity(Entity p_entity) -> void
 	{
 		m_registry.destroy(p_entity);
 	}
 
-	Entity Scene::getMainCameraEntity()
+	auto Scene::getMainCameraEntity() -> Entity
 	{
 		auto view = m_registry.view<CameraComponent>();
 		for (auto entity: view)
@@ -129,34 +189,39 @@ namespace toaster
 		return {};
 	}
 
-	entt::registry &Scene::getRegistry()
+	auto Scene::getRegistry() -> entt::registry &
 	{
 		return m_registry;
 	}
 
-	const entt::registry &Scene::getRegistry() const
+	auto Scene::getRegistry() const -> const entt::registry &
 	{
 		return m_registry;
 	}
 
-	void Scene::setName(const String &p_name)
+	auto Scene::setName(const String &p_name) -> void
 	{
 		m_name = p_name;
 	}
 
-	String Scene::getName() const
+	auto Scene::getName() const -> String
 	{
 		return m_name;
 	}
 
+	auto Scene::getLightEnvironment() const -> const SceneLightEnvironment &
+	{
+		return m_lightEnvironment;
+	}
+
 	template<typename Type>
-	void Scene::onComponentAdded([[maybe_unused]] Entity p_entity, [[maybe_unused]] Type &p_component)
+	 auto Scene::onComponentAdded([[maybe_unused]] Entity p_entity, [[maybe_unused]] Type &p_component) -> void
 	{
 		TST_ASSERT(false);
 	}
 
 	#define ON_COMPONENT_ADDED(__type)	template<>\
-										void Scene::onComponentAdded<__type>([[maybe_unused]] Entity p_entity, __type &p_component)
+											TST_API auto Scene::onComponentAdded<__type>([[maybe_unused]] Entity p_entity, __type &p_component) -> void
 
 	ON_COMPONENT_ADDED(TagComponent)
 	{
@@ -176,6 +241,12 @@ namespace toaster
 		(void) p_component;
 	}
 
+	ON_COMPONENT_ADDED(MeshComponent)
+	{
+		(void) p_entity;
+		(void) p_component;
+	}
+
 	ON_COMPONENT_ADDED(CameraComponent)
 	{
 		(void) p_entity;
@@ -183,6 +254,24 @@ namespace toaster
 	}
 
 	ON_COMPONENT_ADDED(NativeScriptComponent)
+	{
+		(void) p_entity;
+		(void) p_component;
+	}
+
+	ON_COMPONENT_ADDED(DirectionalLightComponent)
+	{
+		(void) p_entity;
+		(void) p_component;
+	}
+
+	ON_COMPONENT_ADDED(PointLightComponent)
+	{
+		(void) p_entity;
+		(void) p_component;
+	}
+
+	ON_COMPONENT_ADDED(SpotLightComponent)
 	{
 		(void) p_entity;
 		(void) p_component;

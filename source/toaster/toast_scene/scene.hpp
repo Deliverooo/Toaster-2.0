@@ -3,38 +3,78 @@
 #include <entt/entt.hpp>
 
 #include "toast_lib/string.hpp"
+#include "toast_lib/math/colours.hpp"
 #include "toast_render/renderer_2d.hpp"
+
+#include "toast_gpu/vk/vk_mesh.hpp"
 
 namespace toaster
 {
 	class Entity;
+	class SceneRenderer;
 
-	class Scene
+	struct TST_API DirectionalLight
+	{
+		glm::vec4 direction{0.0f};
+		glm::vec4 radiance{1.0f};
+	};
+
+	struct TST_API PointLight
+	{
+		glm::vec4 position{0.0f};
+		glm::vec4 radiance{1.0f};
+		float32   radius{25.0f};
+		float32   falloff{1.0f};
+	};
+
+	struct TST_API SpotLight
+	{
+		glm::vec3 position{0.0f};
+		glm::vec3 radiance{1.0f};
+		float32   falloff{1.0f};
+		float32   multiplier{1.0f};
+		float32   angle{67.0f};
+		float32   range{12.0f};
+	};
+
+	struct TST_API SceneLightEnvironment
+	{
+		std::vector<DirectionalLight> directionalLights;
+		std::vector<PointLight>       pointLights;
+	};
+
+	class TST_API Scene
 	{
 	public:
-		Scene(const String &p_name = "");
+		Scene(gpu::VKLogicalDevice *p_device, const String &p_name = "");
 		~Scene();
 
-		void onUpdate(float32 p_dt);
+		auto onUpdate(float32 p_dt) -> void;
 
-		void onRender(float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d);
-		void onRender(float32 p_dt, const RefPtr<Renderer2D> &p_renderer_2d, const glm::mat4 &p_view, const glm::mat4 &p_projection);
-		void setViewportSize(uint32 p_width, uint32 p_height);
+		auto onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void;
+		auto onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
+					  const glm::mat4 &              p_projection) -> void;
 
-		Entity createEntity(const String &p_name = "");
-		void   destroyEntity(Entity p_entity);
+		auto setViewportSize(uint32 p_width, uint32 p_height) -> void;
 
-		Entity getMainCameraEntity();
+		auto createEntity(const String &p_name = "") -> Entity;
+		auto destroyEntity(Entity p_entity) -> void;
 
-		entt::registry &                    getRegistry();
-		[[nodiscard]] const entt::registry &getRegistry() const;
+		auto getMainCameraEntity() -> Entity;
 
-		void                 setName(const String &p_name);
-		[[nodiscard]] String getName() const;
+		auto               getRegistry() -> entt::registry &;
+		[[nodiscard]] auto getRegistry() const -> const entt::registry &;
+
+		auto               setName(const String &p_name) -> void;
+		[[nodiscard]] auto getName() const -> String;
+
+		auto getLightEnvironment() const -> const SceneLightEnvironment &;
 
 	private:
 		template<typename Type>
-		void onComponentAdded(Entity p_entity, Type &p_component);
+		TST_API auto onComponentAdded(Entity p_entity, Type &p_component) -> void;
+
+		NonOwningPtr<gpu::VKLogicalDevice> m_device{nullptr};
 
 		entt::registry m_registry;
 
@@ -44,6 +84,11 @@ namespace toaster
 		uint32 m_viewportHeight{0u};
 
 		uint32 m_newEntityTagCount{0u};
+
+		SceneLightEnvironment m_lightEnvironment;
+
 		friend class Entity;
+		friend class SceneSerializer;
+		friend class SceneRenderer;
 	};
 }

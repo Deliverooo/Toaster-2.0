@@ -1,0 +1,5 @@
+1. Take a look at the transform components and try to make their rotations' be quaternion so I can better transform stuff.
+2. Resolve the coordinate system to be idealy the same as OpenGL's, so that I can use my OpenGL stuff with Toaster.
+3. With the coordinates being correct, I can now write a basic Blinn Phong shader to test the directional lights with the renderer.
+4. After the directional lights have been tested and work, I will introduce the point lights to work with the Blinn Phong shader.
+5. Integrate ImGuizmo back into the editor so that I can more easily transform stuff.

@@ -1,7 +1,5 @@
 #include "window.hpp"
 
-#include "toast_gpu/gpu_context.hpp"
-
 #include <GLFW/glfw3.h>
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <dwmapi.h>
@@ -13,7 +11,6 @@
 
 #include <stb/stb_image.h>
 
-#include "application.hpp"
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
 
@@ -21,36 +18,68 @@
 #include "toast_lib/events/mouse_event.hpp"
 #include "toast_lib/events/window_event.hpp"
 
+#include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_gpu/vk/vk_swapchain.hpp"
+
+#include "input.hpp"
+
+#include <windows.h>
+#include <vulkan/vulkan_win32.h>
+
 namespace toaster
 {
-	static bool s_glfwInitialized = false;
+	auto cstringArrayToVector(CString *p_arr, uint32 p_size) -> std::vector<CString>
+	{
+		std::vector<CString> vec{p_size};
+		for (uint32 i{0u}; i < p_size; ++i)
+			vec.emplace_back(p_arr[i]);
+		return vec;
+	}
 
-	static void glfwErrorCallback(int error, const char *description)
+	static bool s_glfwInitialized{false};
+
+	static auto _glfwErrorCallback(int32 error, CString description) -> void
 	{
 		LOG_ERROR("GLFW error: ({}): {}", error, description);
 	}
 
-	void Window::initWindowingAPI()
+	auto Window::initWindowingAPI() -> void
 	{
 		if (!s_glfwInitialized)
 		{
-			const bool init_result = glfwInit();
+			const bool init_result{static_cast<bool>(glfwInit())};
+			(void) init_result;
 			TST_ASSERT_MSG(init_result, "glfw initialization failed!");
 
-			glfwSetErrorCallback(glfwErrorCallback);
+			glfwSetErrorCallback(_glfwErrorCallback);
 
 			s_glfwInitialized = true;
 		}
 	}
 
-	void Window::shutdownWindowingAPI()
+	auto Window::shutdownWindowingAPI() -> void
 	{
 		TST_ASSERT_MSG(s_glfwInitialized, "Attempted to shutdown windowing API before initializing it!");
 
 		glfwTerminate();
 	}
 
-	Window::Window(const WindowCreateInfo &p_create_info)
+	auto Window::getRequiredInstanceExtensions() -> std::unordered_set<String>
+	{
+		uint32     glfw_extension_count{0u};
+		const auto glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
+
+		std::vector<String> required_extensions{glfw_extension_count};
+		for (uint32 i{0u}; i < glfw_extension_count; ++i)
+			required_extensions[i] = glfw_extensions[i];
+
+		required_extensions.emplace_back(vk::KHRSurfaceExtensionName);
+		required_extensions.emplace_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+
+		return {required_extensions.begin(), required_extensions.end()};
+	}
+
+	Window::Window(gpu::VKLogicalDevice *p_device, const WindowCreateInfo &p_create_info) : m_device(p_device)
 	{
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
@@ -65,19 +94,53 @@ namespace toaster
 
 		m_window = glfwCreateWindow(static_cast<int32>(p_create_info.width), static_cast<int32>(p_create_info.height), p_create_info.title.c_str(), nullptr, nullptr);
 
-		m_gpuContext = gpu::IGPUContext::create(m_window);
-		// m_swapchain  = new gpu::VKSwapChain(m_gpuContext, m_window);
+		#pragma region setup swapchain
+		VkSurfaceKHR surface;
+		if (auto err = glfwCreateWindowSurface(*m_device->getPhysicalDevice()->getInstance()->getVulkanInstance(), m_window, nullptr, &surface); err != VK_SUCCESS)
+		{
+			LOG_ERROR("Failed to create window surface: {}", vk::to_string(static_cast<vk::Result>(err)));
+			TST_ASSERT(false);
+		}
+		m_windowSurface = surface;
 
-		BOOL useDarkMode = TRUE;
-		DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &useDarkMode, sizeof(useDarkMode));
+		m_swapchain = new gpu::VKSwapchain(m_device, &m_windowSurface);
+		m_swapchain->setGetWindowBackBufferSizeCallback([this]()
+		{
+			int32 width;
+			int32 height;
+			glfwGetFramebufferSize(m_window, &width, &height);
+			return std::make_pair(static_cast<uint32>(width), static_cast<uint32>(height));
+		});
+		m_swapchain->setHandleMinimisationCallback([this]() -> void
+		{
+			int32 width;
+			int32 height;
+			glfwGetFramebufferSize(m_window, &width, &height);
+			while (width == 0 || height == 0)
+			{
+				glfwGetFramebufferSize(m_window, &width, &height);
+				glfwWaitEvents();
+			}
+		});
+		m_swapchain->setBeginFrameCallback([](gpu::VKLogicalDevice *device, const uint32 frame_index) -> void
+		{
+			device->setCurrentFrameIndex(frame_index);
+			device->performGarbageCollection();
+		});
+		#pragma endregion
+
+		constexpr BOOL use_dark_mode{TRUE};
+		(void) DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &use_dark_mode, sizeof(use_dark_mode));
 
 		glfwSetWindowUserPointer(m_window, &m_callbackData);
 
-		glfwSetWindowSizeCallback(m_window, [](GLFWwindow *window, const int width, const int height)
+		#pragma region setup glfw callbacks
+		#define GET_CB_DATA() *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)))
+		glfwSetWindowSizeCallback(m_window, [](GLFWwindow *window, const int32 width, const int32 height)
 		{
-			auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			auto &data{GET_CB_DATA()};
 
-			WindowResizeEvent event(width, height);
+			WindowResizeEvent event{static_cast<uint32>(width), static_cast<uint32>(height)};
 			if (data.eventCallback)
 				data.eventCallback(event);
 			data.width  = width;
@@ -86,36 +149,36 @@ namespace toaster
 
 		glfwSetWindowCloseCallback(m_window, [](GLFWwindow *window)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
-			WindowCloseEvent event;
+			WindowCloseEvent event{};
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
 
-		glfwSetKeyCallback(m_window, [](GLFWwindow *window, int key, int scancode, int action, int mods)
+		glfwSetKeyCallback(m_window, [](GLFWwindow *window, int32 key, [[maybe_unused]] int32 scancode, const int32 action, [[maybe_unused]] int32 mods)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
 			switch (action)
 			{
 				case GLFW_PRESS:
 				{
-					KeyPressEvent event(static_cast<input::EKeyCode>(key), 0);
+					KeyPressEvent event{static_cast<input::EKeyCode>(key), 0};
 					if (data.eventCallback)
 						data.eventCallback(event);
 					break;
 				}
 				case GLFW_RELEASE:
 				{
-					KeyReleaseEvent event(static_cast<input::EKeyCode>(key));
+					KeyReleaseEvent event{static_cast<input::EKeyCode>(key)};
 					if (data.eventCallback)
 						data.eventCallback(event);
 					break;
 				}
 				case GLFW_REPEAT:
 				{
-					KeyPressEvent event(static_cast<input::EKeyCode>(key), 1);
+					KeyPressEvent event{static_cast<input::EKeyCode>(key), 1};
 					if (data.eventCallback)
 						data.eventCallback(event);
 					break;
@@ -127,29 +190,29 @@ namespace toaster
 
 		glfwSetCharCallback(m_window, [](GLFWwindow *window, uint32_t codepoint)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
-			KeyTypeEvent event(static_cast<input::EKeyCode>(codepoint));
+			KeyTypeEvent event{static_cast<input::EKeyCode>(codepoint)};
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
 
-		glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int button, int action, int mods)
+		glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int32 button, int32 action, [[maybe_unused]] int32 mods)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
 			switch (action)
 			{
 				case GLFW_PRESS:
 				{
-					MouseButtonPressEvent event(static_cast<input::EMouseButton>(button));
+					MouseButtonPressEvent event{static_cast<input::EMouseButton>(button)};
 					if (data.eventCallback)
 						data.eventCallback(event);
 					break;
 				}
 				case GLFW_RELEASE:
 				{
-					MouseButtonReleaseEvent event(static_cast<input::EMouseButton>(button));
+					MouseButtonReleaseEvent event{static_cast<input::EMouseButton>(button)};
 					if (data.eventCallback)
 						data.eventCallback(event);
 					break;
@@ -158,46 +221,67 @@ namespace toaster
 			}
 		});
 
-		glfwSetScrollCallback(m_window, [](GLFWwindow *window, double xOffset, double yOffset)
+		glfwSetScrollCallback(m_window, [](GLFWwindow *window, float64 xOffset, float64 yOffset)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
-			MouseScrollEvent event(static_cast<float>(xOffset), static_cast<float>(yOffset));
+			MouseScrollEvent event{static_cast<float32>(xOffset), static_cast<float32>(yOffset)};
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
 
-		glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, double x, double y)
+		glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, float64 x, float64 y)
 		{
-			const auto &   data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
-			MouseMoveEvent event(static_cast<float>(x), static_cast<float>(y));
+			const auto &data{GET_CB_DATA()};
+
+			MouseMoveEvent event{static_cast<float32>(x), static_cast<float32>(y)};
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
 
-		glfwSetWindowMaximizeCallback(m_window, [](GLFWwindow *window, int maximized)
+		glfwSetWindowMaximizeCallback(m_window, [](GLFWwindow *window, int32 maximized)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
-			WindowMaximizeEvent event(static_cast<bool>(maximized));
+			WindowMaximizeEvent event{static_cast<bool>(maximized)};
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
 
-		glfwSetWindowIconifyCallback(m_window, [](GLFWwindow *window, int iconified)
+		glfwSetWindowIconifyCallback(m_window, [](GLFWwindow *window, int32 iconified)
 		{
-			const auto &data = *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)));
+			const auto &data{GET_CB_DATA()};
 
-			WindowMinimizeEvent event(static_cast<bool>(iconified));
+			WindowMinimizeEvent event{static_cast<bool>(iconified)};
 			if (data.eventCallback)
 				data.eventCallback(event);
 		});
+
+		glfwSetDropCallback(m_window, [](GLFWwindow *window, int32 path_count, CString paths[])
+		{
+			const auto &data{GET_CB_DATA()};
+
+			std::vector<String> filepaths{static_cast<std::vector<String>::size_type>(path_count)};
+			for (uint32 i{0u}; i < path_count; ++i)
+			{
+				LOG_INFO("File received: {}", paths[i]);
+				filepaths[i] = paths[i];
+			}
+			WindowFileDropEvent event{filepaths};
+
+			if (data.eventCallback)
+				data.eventCallback(event);
+		});
+		#undef GET_CB_DATA
+		#pragma endregion
+
+		m_inputCtx = new InputContext{this};
 
 		if (!p_create_info.iconPath.empty())
 		{
-			GLFWimage window_icon[1];
+			GLFWimage window_icon[1]{};
 
-			int32 nr_channels;
+			int32 nr_channels{};
 			window_icon[0].pixels = stbi_load(p_create_info.iconPath.string().c_str(), &window_icon[0].width, &window_icon[0].height, &nr_channels, 4);
 			if (window_icon[0].pixels)
 			{
@@ -205,9 +289,7 @@ namespace toaster
 				stbi_image_free(window_icon[0].pixels);
 			}
 			else
-			{
 				LOG_ERROR("Failed to load image icon. Path: {}", p_create_info.iconPath.string());
-			}
 		}
 
 		if (p_create_info.startMaximized)
@@ -218,101 +300,111 @@ namespace toaster
 
 	Window::~Window()
 	{
-		delete m_gpuContext;
+		m_device->getVulkanLogicalDevice().waitIdle();
+		delete m_swapchain;
+
+		vkDestroySurfaceKHR(*m_device->getPhysicalDevice()->getInstance()->getVulkanInstance(), m_windowSurface, nullptr);
+
+		delete m_inputCtx;
 
 		glfwDestroyWindow(m_window);
 	}
 
-	void Window::beginFrame()
+	auto Window::beginFrame() -> void
 	{
+		m_swapchain->beginFrame();
 	}
 
-	void Window::processEvents()
+	auto Window::processEvents() -> void
 	{
 		glfwPollEvents();
 	}
 
-	void Window::endFrame()
+	auto Window::endFrame() -> void
 	{
-		// glfwSwapBuffers(m_window);
+		m_swapchain->endFrame();
 	}
 
-	void Window::showWindow()
+	auto Window::showWindow() -> void
 	{
 		glfwShowWindow(m_window);
 	}
 
-	void Window::hideWindow()
+	auto Window::hideWindow() -> void
 	{
 		glfwHideWindow(m_window);
 	}
 
-	void Window::maximize()
+	auto Window::maximize() -> void
 	{
 		glfwMaximizeWindow(m_window);
 	}
 
-	void Window::minimize()
+	auto Window::minimize() -> void
 	{
 		glfwIconifyWindow(m_window);
 	}
 
-	void Window::restore()
+	auto Window::restore() -> void
 	{
 		glfwRestoreWindow(m_window);
 	}
 
-	void Window::fullscreen()
+	auto Window::fullscreen() -> void
 	{
-		GLFWmonitor *      monitor = glfwGetPrimaryMonitor();
-		const GLFWvidmode *mode    = glfwGetVideoMode(monitor);
-
+		GLFWmonitor *      monitor{glfwGetPrimaryMonitor()};
+		const GLFWvidmode *mode{glfwGetVideoMode(monitor)};
 		glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
 	}
 
-	void Window::setEventCallback(const EventCallbackFn &p_callback)
+	auto Window::setEventCallback(const EventCallbackFn &p_callback) -> void
 	{
 		m_callbackData.eventCallback = p_callback;
 	}
 
-	uint32 Window::getWidth() const
+	auto Window::getWidth() const -> uint32
 	{
 		return m_callbackData.width;
 	}
 
-	float32 Window::getAspect() const
+	auto Window::getAspect() const -> float32
 	{
 		return static_cast<float32>(m_callbackData.height) / static_cast<float32>(m_callbackData.width);
 	}
 
-	ScreenPos Window::getCenter() const
+	auto Window::getCenter() const -> std::pair<float32, float32>
 	{
 		return {static_cast<float32>(m_callbackData.width) / 2.0f, static_cast<float32>(m_callbackData.height) / 2.0f};
 	}
 
-	uint32 Window::getHeight() const
+	auto Window::getHeight() const -> uint32
 	{
 		return m_callbackData.height;
 	}
 
-	const std::string &Window::getTitle() const
+	auto Window::getTitle() const -> const std::string &
 	{
 		return m_callbackData.title;
 	}
 
-	void Window::setTitle(const std::string &p_title)
+	auto Window::setTitle(const std::string &p_title) -> void
 	{
 		m_callbackData.title = p_title;
 		glfwSetWindowTitle(m_window, p_title.c_str());
 	}
 
-	gpu::IGPUContext *Window::getGPUContext() const
-	{
-		return m_gpuContext;
-	}
-
-	GLFWwindow *Window::getNativeWindow() const
+	auto Window::getNativeWindow() const -> GLFWwindow *
 	{
 		return m_window;
+	}
+
+	auto Window::getSwapchain() const -> gpu::VKSwapchain *
+	{
+		return m_swapchain;
+	}
+
+	auto Window::getInputContext() const -> InputContext *
+	{
+		return m_inputCtx;
 	}
 }

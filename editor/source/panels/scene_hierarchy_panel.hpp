@@ -8,22 +8,28 @@ namespace toaster
 	class SceneHierarchyPanel
 	{
 	public:
-		SceneHierarchyPanel(const RefPtr<Scene> &p_scene);
+		SceneHierarchyPanel(gpu::VKLogicalDevice *p_device, const RefPtr<Scene> &p_scene);
 		~SceneHierarchyPanel();
 
-		void setScene(const RefPtr<Scene> &p_scene);
+		auto setScene(const RefPtr<Scene> &p_scene) -> void;
 
-		void onUIRender();
+		auto onUIRender(uint32 p_frame_index) -> void;
 
-		Entity getSelectedEntity() const;
-		void   setSelectedEntity(Entity p_entity);
+		auto getSelectedEntity() const -> Entity;
+		auto setSelectedEntity(Entity p_entity) -> void;
 
 	private:
-		void _drawEntityNode(Entity p_entity);
-		void _drawComponents(Entity p_entity);
+		auto _drawEntityNode(Entity p_entity, uint32 p_frame_index) -> void;
+		auto _drawComponents(Entity p_entity, uint32 p_frame_index) -> void;
+		auto _drawMaterial(uint32 p_frame_index,const RefPtr<gpu::VKMaterial> &p_mat) -> void;
+
+		gpu::VKLogicalDevice *m_device{nullptr};
 
 		RefPtr<Scene> m_scene;
 
 		Entity m_selectedEntity;
+
+		template<typename Type, bool Removable, typename UIFunc>
+		friend auto drawComponent(const String &p_name, Entity p_entity, UIFunc p_func, void *p_caller_id) -> void;
 	};
 }

@@ -1,69 +1,77 @@
 #pragma once
 
+#include "toast_kernel/application.hpp"
+#include "toast_lib/ptr.hpp"
+
 #include "editor_camera.hpp"
 #include "panels/scene_hierarchy_panel.hpp"
-#include "toaster/toast_gpu/framebuffer.hpp"
-#include "toaster/toast_kernel/layer.hpp"
-#include "toaster/toast_render/renderer_2d.hpp"
+#include "toast_lib/events/key_event.hpp"
+#include "toast_lib/events/window_event.hpp"
 
-#include "toaster/toast_gpu/shader.hpp"
-#include "toaster/toast_gpu/texture.hpp"
-#include "toaster/toast_kernel/ortho_camera_controller.hpp"
+#include <imgui.h>
 
-#include "toaster/toast_lib/events/key_event.hpp"
-#include "toaster/toast_lib/events/mouse_event.hpp"
-#include "toaster/toast_lib/events/window_event.hpp"
-
-#include "toaster/toast_scene/entity.hpp"
-#include "toaster/toast_scene/scene.hpp"
-
-#include <array>
-
-#include "toast_render/mesh.hpp"
+namespace ig = ImGui;
 
 namespace toaster
 {
-	class EditorLayer : public IAppLayer
+	namespace gpu
+	{
+		class VKPipeline;
+		class VKRenderPass;
+		class VKMaterial;
+		class VKTexture2D;
+		class VKImage2D;
+		class VKUniformBuffer;
+		class VKUniformBufferPFF;
+	}
+
+	class Renderer2D;
+	class SceneRenderer;
+	class Scene;
+
+	class EditorLayer final : public IAppLayer
 	{
 	public:
-		EditorLayer(Application *p_app);
+		explicit EditorLayer(Application *p_app);
 
-		void onInit() override;
-		void onDestroy() override;
-		void onUpdate(float32 p_dt) override;
-		void onEvent(Event &p_event) override;
+		virtual auto onInit() -> void override;
+		virtual auto onDestroy() -> void override;
+		virtual auto onUpdate(float32 p_dt) -> void override;
+		virtual auto onEvent(Event &p_event) -> void override;
 
-		void onUIRender() override;
+		virtual auto onUIRender() -> void override;
 
 	private:
-		void newScene();
-		void saveScene();
-		void openScene();
-		bool onKeyPressEvent(KeyPressEvent &p_event);
-		bool onMouseButtonPressEvent(MouseButtonPressEvent &p_event);
+		auto _onWindowFileDropEvent(WindowFileDropEvent &p_event) -> bool;
+		auto _onKeyPressEvent(KeyPressEvent &p_event) -> bool;
 
-		RefPtr<Scene> m_scene;
+		gpu::VKLogicalDevice *m_device{nullptr};
 
-		RefPtr<SceneHierarchyPanel> m_sceneHierarchyPanel;
+		uint32 m_windowWidth{0u};
+		uint32 m_windowHeight{0u};
 
-		RefPtr<Renderer2D> m_renderer2d;
+		// uint32 m_viewportWidth{0u};
+		// uint32 m_viewportHeight{0u};
 
-		RefPtr<Mesh> m_mesh;
+		float32 m_time{0.0f};
 
-		RefPtr<gpu::IFramebuffer> m_framebuffer;
+		RefPtr<gpu::VKPipeline>   m_fullscreenPipeline{nullptr};
+		RefPtr<gpu::VKRenderPass> m_fullscreenPass{nullptr};
+		RefPtr<gpu::VKMaterial>   m_fullscreenMaterial{nullptr};
+
+		// RefPtr<gpu::VKImage2D> m_fullscreenAttachmentImage{nullptr};
+
+		RefPtr<Scene>                  m_scene{nullptr};
+		UniquePtr<SceneHierarchyPanel> m_sceneHierarchyPanel{nullptr};
+		RefPtr<SceneRenderer>          m_sceneRenderer{nullptr};
+
+		RefPtr<Renderer2D> m_renderer2D{nullptr};
 
 		EditorCamera m_editorCamera;
-
-		String                   m_initialWindowTitle;
-		glm::vec2                m_viewportSize{0.0f, 0.0f};
-		std::array<glm::vec2, 2> m_viewportBounds{};
 
 		int32 m_gizmoType{-1}; // Translate, rotate or scale
 		int32 m_gizmoMode{0};  // 0 For local, 1 for world space
 
-		Entity m_hoveredEntity{};
-
-		volatile bool m_viewportFocused{false};
-		volatile bool m_viewportHovered{false};
+		bool m_canOperateCamera{true};
 	};
 }

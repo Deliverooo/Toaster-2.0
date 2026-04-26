@@ -4,10 +4,8 @@
 
 namespace toaster
 {
-	EditorApplication::EditorApplication(const ApplicationCreateInfo& p_create_info) : Application(p_create_info)
+	EditorApplication::EditorApplication(const ApplicationCreateInfo &p_create_info, int32 p_argc, char* *p_argv) : Application(p_create_info, p_argc, p_argv)
 	{
-		io::filesystem::setWorkingDirectory("../"); // The main Toaster dir (where the resource folder is)
-
 		addLayer(IAppLayer::alloc<EditorLayer>(this));
 
 		m_imGuiLayer = IAppLayer::alloc<ImGuiLayer>(this);
@@ -19,7 +17,7 @@ namespace toaster
 
 	EditorApplication::~EditorApplication() = default;
 
-	void EditorApplication::setBlockUIEvents(bool p_block_ui_events)
+	auto EditorApplication::setBlockUIEvents(bool p_block_ui_events) const -> void
 	{
 		m_imGuiLayer->setBlockEvents(p_block_ui_events);
 	}

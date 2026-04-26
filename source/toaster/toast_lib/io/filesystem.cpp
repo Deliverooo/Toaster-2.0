@@ -4,7 +4,7 @@
 
 namespace toaster::io::filesystem
 {
-	static int skipByteOrderMark(std::istream &p_in)
+	static auto skipByteOrderMark(std::istream &p_in) -> int
 	{
 		char test[4] = {0};
 		p_in.seekg(0, std::ios::beg);
@@ -18,27 +18,44 @@ namespace toaster::io::filesystem
 		return 0;
 	}
 
-	Path getWorkingDirectory()
+	auto getWorkingDirectory() -> Path
 	{
 		return std::filesystem::current_path();
 	}
 
-	void setWorkingDirectory(const Path &p_dir)
+	auto setWorkingDirectory(const Path &p_dir) -> void
 	{
 		std::filesystem::current_path(p_dir);
 	}
 
-	void createDirectory(const Path &p_dir)
+	auto createDirectory(const Path &p_dir) -> void
 	{
 		std::filesystem::create_directory(p_dir);
 	}
 
-	bool exists(const Path &p_path)
+	auto exists(const Path &p_path) -> bool
 	{
 		return std::filesystem::exists(p_path);
 	}
 
-	String readFile(const Path &p_path)
+	auto readBinary(const Path &p_path) -> std::vector<uint32>
+	{
+		std::vector<uint32> result;
+		std::ifstream       in{p_path, std::ios::in | std::ios::binary | std::ios::ate};
+		if (in)
+		{
+			const auto file_size = in.tellg();
+			result.resize(file_size / sizeof(uint32));
+
+			in.seekg(0);
+
+			in.read(reinterpret_cast<char *>(result.data()), file_size);
+		}
+		in.close();
+		return result;
+	}
+
+	auto readFile(const Path &p_path) -> String
 	{
 		String        result;
 		std::ifstream in{p_path, std::ios::in | std::ios::binary | std::ios::ate};
@@ -55,7 +72,7 @@ namespace toaster::io::filesystem
 		return result;
 	}
 
-	String readFileAndSkipBOM(const Path &p_path)
+	auto readFileAndSkipBOM(const Path &p_path) -> String
 	{
 		String        result;
 		std::ifstream in{p_path, std::ios::in | std::ios::binary};
@@ -75,7 +92,7 @@ namespace toaster::io::filesystem
 		return result;
 	}
 
-	void writeFile(const Path &p_path, const String &p_data)
+	auto writeFile(const Path &p_path, const String &p_data) -> void
 	{
 		std::ofstream out{p_path, std::ios::out | std::ios::binary};
 		if (out)

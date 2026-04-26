@@ -9,7 +9,7 @@ namespace toaster
 		_recalculateProjection();
 	}
 
-	void SceneCamera::setPerspective(float32 p_fov, float32 p_z_near, float32 p_z_far)
+	auto SceneCamera::setPerspective(float32 p_fov, float32 p_z_near, float32 p_z_far) -> void
 	{
 		m_projectionType  = EProjectionType::ePerspective;
 		m_perspectiveFov  = p_fov;
@@ -18,7 +18,7 @@ namespace toaster
 		_recalculateProjection();
 	}
 
-	void SceneCamera::setOrthographic(float32 p_size, float32 p_z_near, float32 p_z_far)
+	auto SceneCamera::setOrthographic(float32 p_size, float32 p_z_near, float32 p_z_far) -> void
 	{
 		m_projectionType = EProjectionType::eOrthographic;
 		m_orthoSize      = p_size;
@@ -27,7 +27,7 @@ namespace toaster
 		_recalculateProjection();
 	}
 
-	void SceneCamera::setViewportSize(uint32 p_width, uint32 p_height)
+	auto SceneCamera::setViewportSize(uint32 p_width, uint32 p_height) -> void
 	{
 		// For the scene, we have to make sure that the width is not 0 when adding a camera component
 		const float32 safe_width  = static_cast<float32>(std::max(p_width, 1u));
@@ -37,7 +37,7 @@ namespace toaster
 		_recalculateProjection();
 	}
 
-	void SceneCamera::_recalculateProjection()
+	auto SceneCamera::_recalculateProjection() -> void
 	{
 		switch (m_projectionType)
 		{

@@ -13,6 +13,9 @@ set(SRC
 		scene_serializer.hpp
 
 		scriptable_entity.hpp
+
+		scene_renderer.cpp
+		scene_renderer.hpp
 )
 
 list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")

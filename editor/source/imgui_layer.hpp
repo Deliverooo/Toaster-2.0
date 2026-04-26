@@ -3,27 +3,32 @@
 #include "toaster/toast_kernel/layer.hpp"
 
 #include <imgui.h>
+namespace ig = ImGui;
+
+#include <vulkan/vulkan_raii.hpp>
 
 namespace toaster
 {
-	class ImGuiLayer : public IAppLayer
+	class ImGuiLayer final : public IAppLayer
 	{
 	public:
-		ImGuiLayer(Application *p_app);
-		~ImGuiLayer() override = default;
+		explicit ImGuiLayer(Application *p_app);
+		virtual  ~ImGuiLayer() override = default;
 
-		void onInit() override;
-		void onDestroy() override;
+		virtual auto onInit() -> void override;
+		virtual auto onDestroy() -> void override;
 
-		void onUpdate(float32 p_dt) override;
-		void onEvent(Event &p_event) override;
+		virtual auto onUpdate(float32 p_dt) -> void override;
+		virtual auto onEvent(Event &p_event) -> void override;
 
-		void begin();
-		void end();
+		auto begin() -> void;
+		auto end() -> void;
 
-		void setBlockEvents(bool p_block);
+		auto setBlockEvents(bool p_block) -> void;
 
 	private:
 		bool m_blockEvents{false};
+
+		vk::raii::DescriptorPool m_descriptorPool{nullptr};
 	};
 }

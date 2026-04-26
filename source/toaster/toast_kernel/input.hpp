@@ -1,23 +1,34 @@
 #pragma once
 
-#include <utility>
+#include "../toaster_export.hpp"
+
+#include <utility> // std::pair
 
 #include "toast_lib/input_codes.hpp"
 #include "toast_lib/system_types.h"
 
-struct GLFWwindow;
+#include "toast_lib/ptr.hpp"
 
-namespace toaster::input
+namespace toaster
 {
-	void setCurrentWindowContext(GLFWwindow *p_window_ctx);
+	class Window;
 
-	void        setCursorMode(ECursorMode p_mode);
-	ECursorMode getCursorMode();
+	class TST_API InputContext
+	{
+	public:
+		InputContext(Window *p_window);
 
-	float32                     getMouseX();
-	float32                     getMouseY();
-	std::pair<float32, float32> getMousePos();
+		auto setCursorMode(input::ECursorMode p_mode) -> void;
+		auto getCursorMode() -> input::ECursorMode;
 
-	bool isMouseButtonDown(EMouseButton p_button);
-	bool isKeyDown(EKeyCode p_key_code);
+		auto getMouseX() -> float32;
+		auto getMouseY() -> float32;
+		auto getMousePos() -> std::pair<float32, float32>;
+
+		auto isMouseButtonDown(input::EMouseButton p_button) -> bool;
+		auto isKeyDown(input::EKeyCode p_key_code) -> bool;
+
+	private:
+		NonOwningPtr<Window> m_window{nullptr};
+	};
 }

@@ -10,19 +10,19 @@ namespace YAML
 
 namespace toaster
 {
-	class SceneSerializer
+	class TST_API SceneSerializer
 	{
 	public:
 		SceneSerializer(const RefPtr<Scene> &p_scene);
 
-		void serialize(const io::filesystem::Path &p_filepath);
-		void serializeToYAML(YAML::Emitter &p_out);
+		auto serialize(const io::filesystem::Path &p_filepath) -> void;
+		auto serializeToYAML(YAML::Emitter &p_out) -> void;
 
-		bool deserialize(const io::filesystem::Path &p_filepath);
-		bool deserializeFromYAML(const String &p_yaml_string);
+		auto deserialize(const io::filesystem::Path &p_filepath) -> bool;
+		auto deserializeFromYAML(const String &p_yaml_string) -> bool;
 
-		static void serializeEntity(YAML::Emitter &p_out, Entity p_entity, const RefPtr<Scene>& p_scene);
-		static void deserializeEntities(YAML::Node &p_entities, const RefPtr<Scene>& p_scene);
+		static auto serializeEntity(YAML::Emitter &p_out, Entity p_entity, const RefPtr<Scene> &p_scene) -> void;
+		static auto deserializeEntities(YAML::Node &p_entities, const RefPtr<Scene> &p_scene) -> void;
 
 	private:
 		RefPtr<Scene> m_scene;

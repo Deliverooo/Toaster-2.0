@@ -11,27 +11,28 @@
 
 namespace toaster
 {
-	enum class EventType
+	enum class EEventType
 	{
-		None = 0,
-		WindowClose,
-		WindowMinimize,
-		WindowMaximize,
-		WindowResize,
-		WindowFocus,
-		WindowLostFocus,
-		WindowMoved,
-		AppTick,
-		AppUpdate,
-		AppRender,
-		KeyPressed,
-		KeyReleased,
-		KeyTyped,
-		MouseButtonPressed,
-		MouseButtonReleased,
-		MouseButtonDown,
-		MouseMoved,
-		MouseScrolled
+		eNone = 0,
+		eWindowClose,
+		eWindowMinimize,
+		eWindowMaximize,
+		eWindowResize,
+		eWindowFocus,
+		eWindowLostFocus,
+		eWindowMoved,
+		eWindowFileDrop,
+		eAppTick,
+		eAppUpdate,
+		eAppRender,
+		eKeyPressed,
+		eKeyReleased,
+		eKeyTyped,
+		eMouseButtonPressed,
+		eMouseButtonReleased,
+		eMouseButtonDown,
+		eMouseMoved,
+		eMouseScrolled
 	};
 
 	enum EventCategory
@@ -44,11 +45,11 @@ namespace toaster
 		EventCategory_MouseButton = BIT(4)
 	};
 
-	#define EVENT_CLASS_TYPE(__type) static EventType getStaticType() {return EventType::__type;}\
-							   EventType getEventType() const override {return getStaticType();}\
-							   CString getEventName() const override {return #__type;}
+	#define EVENT_CLASS_TYPE(__type) static auto getStaticType() -> EEventType {return EEventType::__type;}\
+							   auto getEventType() const -> EEventType override {return getStaticType();}\
+							   auto getEventName() const -> CString override {return #__type;}
 
-	#define EVENT_CLASS_CATEGORY(__category) virtual int32 getEventCategory() const override {return __category;}
+	#define EVENT_CLASS_CATEGORY(__category) virtual auto getEventCategory() const -> int32 override {return __category;}
 
 	/*!
 	 * @class Event
@@ -59,21 +60,21 @@ namespace toaster
 	public:
 		virtual ~Event() = default;
 
-		[[nodiscard]] virtual EventType getEventType() const = 0;
+		[[nodiscard]] virtual auto getEventType() const -> EEventType = 0;
 
-		[[nodiscard]] virtual CString getEventName() const = 0;
+		[[nodiscard]] virtual auto getEventName() const -> CString = 0;
 
-		[[nodiscard]] virtual int32 getEventCategory() const = 0;
+		[[nodiscard]] virtual auto getEventCategory() const -> int32 = 0;
 
-		[[nodiscard]] virtual String toStr() const = 0;
+		[[nodiscard]] virtual auto toStr() const -> String = 0;
 
-		[[nodiscard]] bool inCategory(const EventCategory p_category) const { return getEventCategory() & p_category; }
+		[[nodiscard]] auto inCategory(const EventCategory p_category) const -> bool { return getEventCategory() & p_category; }
 
-		[[nodiscard]] bool isHandled() const { return m_handled; }
-		void               setHandled(const bool p_handled) { m_handled = p_handled; }
+		[[nodiscard]] auto isHandled() const -> bool { return m_handled; }
+		auto               setHandled(const bool p_handled) -> void { m_handled = p_handled; }
 
 	protected:
-		bool m_handled = false;
+		bool m_handled{false};
 
 		friend class EventDispatcher;
 	};
@@ -96,7 +97,7 @@ namespace toaster
 
 		// Dispatch function that takes a function and calls it if the event type matches
 		template<typename Type> requires std::derived_from<Type, Event>
-		bool dispatch(EventFunc<Type> p_func)
+		auto dispatch(EventFunc<Type> p_func) -> bool
 		{
 			// Check if the event type matches the type T
 			if (m_event.getEventType() == Type::getStaticType())

@@ -5,4 +5,4 @@
 
 // #define ts this
 
-#define BIT(_n) (1 << _n)
+#define BIT(__n) (1u << __n)

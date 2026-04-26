@@ -1,223 +1,271 @@
 #include "renderer_2d.hpp"
 
 #include "globals.hpp"
-#include "render_command.hpp"
+#include "renderer.hpp"
+#include "toast_gpu/vk/vk_logical_device.hpp"
 
 namespace toaster
 {
-	Renderer2D::Renderer2D(const Renderer2DCreateInfo &p_create_info) : m_createInfo(p_create_info), m_maxVertices(p_create_info.maxQuads * 4u),
-																		m_maxIndices(p_create_info.maxQuads * 6u)
+	Renderer2D::Renderer2D(gpu::VKLogicalDevice *p_p_devicectx, const Renderer2DSpecInfo &p_create_info) : m_device(p_p_devicectx), m_createInfo(p_create_info),
+																										   m_maxVertices(p_create_info.maxQuads * 4u),
+																										   m_maxIndices(p_create_info.maxQuads * 6u)
 	{
-		m_quadVertexBuffer = gpu::IVertexBuffer::create(m_maxVertices * sizeof(QuadVertex));
-		const auto vbl     = gpu::VertexBufferLayout{
-			{gpu::EShaderDataType::eFloat4, "a_Position"},
-			{gpu::EShaderDataType::eFloat4, "a_Colour"},
-			{gpu::EShaderDataType::eFloat2, "a_TexCoord"},
-			{gpu::EShaderDataType::eFloat, "a_TexIndex"},
-			{gpu::EShaderDataType::eFloat, "a_TilingFactor"},
-			{gpu::EShaderDataType::eInt, "a_ObjectID"}
+		m_quadVertexBufferLayout = gpu::BufferLayout{
+			{gpu::EBufferDataType::eFloat4, "a_Position"},
+			{gpu::EBufferDataType::eFloat4, "a_Colour"},
+			{gpu::EBufferDataType::eFloat2, "a_TexCoord"},
+			{gpu::EBufferDataType::eFloat, "a_TexIndex"},
+			{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
 		};
-		m_quadVertexBuffer->setLayout(vbl);
 
-		m_quadVertexBase = new QuadVertex[m_maxVertices];
+		auto                    quad_shader{Globals::getShaderLibrary().get("Quad")};
+		gpu::PipelineCreateInfo pipeline_create_info{};
+		pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
+		pipeline_create_info.depthFormat        = m_device->getPhysicalDevice()->getDepthFormat();
+		pipeline_create_info.vertexBufferLayout = m_quadVertexBufferLayout;
+		pipeline_create_info.shader             = quad_shader;
+		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
+		pipeline_create_info.multisample        = false;
+		m_quadPipeline                          = m_device->alloc<gpu::VKPipeline>(pipeline_create_info);
 
-		auto *quad_indices = new uint32[m_maxIndices];
+		constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
+		m_cameraUBs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
+		m_mappedCameraUBs = m_cameraUBs->mapAllMemory(ubo_size, 0);
 
+		m_quadRenderPass = m_device->alloc<gpu::VKRenderPass>(m_quadPipeline);
+		m_quadRenderPass->setInput("Camera", m_cameraUBs);
+		m_quadRenderPass->bake();
+
+		m_quadMaterial = m_device->alloc<gpu::VKMaterial>(quad_shader);
+
+		if (!m_createInfo.overrideAttachments)
+		{
+			gpu::TextureSpecInfo colour_attachment_texture_spec_info{};
+			colour_attachment_texture_spec_info.width  = m_createInfo.renderTargetWidth;
+			colour_attachment_texture_spec_info.height = m_createInfo.renderTargetHeight;
+			colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
+			m_renderTargetTexture                      = m_device->alloc<gpu::VKTexture2D>(colour_attachment_texture_spec_info);
+
+			gpu::ImageCreateInfo depth_attachment_image_create_info{};
+			depth_attachment_image_create_info.width  = m_createInfo.renderTargetWidth;
+			depth_attachment_image_create_info.height = m_createInfo.renderTargetHeight;
+			depth_attachment_image_create_info.format = m_device->getPhysicalDevice()->getDepthFormat();
+			depth_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+			m_renderTargetDepthImage                  = m_device->alloc<gpu::VKImage2D>(depth_attachment_image_create_info);
+		}
+		else
+		{
+			m_renderTargetTexture    = nullptr;
+			m_renderTargetDepthImage = nullptr;
+		}
+
+		vk::DeviceSize quad_vertex_buffer_size{sizeof(QuadVertex) * m_maxVertices};
+		m_quadVertexBuffer = m_device->alloc<gpu::VKVertexBuffer>(quad_vertex_buffer_size);
+		m_quadVertexBase   = new QuadVertex[m_maxVertices];
+
+		auto   quad_indices{new uint32[m_maxIndices]};
 		uint32 offset{0u};
 		for (uint32 i{0u}; i < m_maxIndices; i += 6u)
 		{
-			quad_indices[i]     = offset;
+			quad_indices[i + 0] = offset + 0;
 			quad_indices[i + 1] = offset + 1;
-			quad_indices[i + 2] = offset + 2;
+			quad_indices[i + 2] = offset + 3;
 
-			quad_indices[i + 3] = offset + 2;
-			quad_indices[i + 4] = offset + 3;
-			quad_indices[i + 5] = offset;
+			quad_indices[i + 3] = offset + 1;
+			quad_indices[i + 4] = offset + 2;
+			quad_indices[i + 5] = offset + 3;
 
 			offset += 4u;
 		}
-		m_quadIndexBuffer = gpu::IIndexBuffer::create(quad_indices, m_maxIndices);
+
+		vk::DeviceSize index_buffer_size{m_maxIndices * sizeof(uint32)};
+		m_quadIndexBuffer = m_device->alloc<gpu::VKIndexBuffer>(quad_indices, index_buffer_size);
+
 		delete[] quad_indices;
 
-		m_quadVertexArray = gpu::IVertexArray::create();
-		m_quadVertexArray->addVertexBuffer(m_quadVertexBuffer);
-		m_quadVertexArray->setIndexBuffer(m_quadIndexBuffer);
+		m_quadVertexPositions[0] = {0.5f, 0.5f, 0.0f, 1.0f};
+		m_quadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};
+		m_quadVertexPositions[2] = {-0.5f, -0.5f, 0.0f, 1.0f};
+		m_quadVertexPositions[3] = {-0.5f, 0.5f, 0.0f, 1.0f};
 
-		m_whiteTexture            = gpu::ITexture2D::create(1, 1);
-		uint32 white_texture_data = 0xffffffff;
-		m_whiteTexture->setData(&white_texture_data, sizeof(uint32));
+		m_quadVertexTexCoords[0] = {1.0f, 0.0f};
+		m_quadVertexTexCoords[1] = {1.0f, 1.0f};
+		m_quadVertexTexCoords[2] = {0.0f, 1.0f};
+		m_quadVertexTexCoords[3] = {0.0f, 0.0f};
 
-		int samplers[c_maxTextureSlots];
-		for (int i{0}; i < c_maxTextureSlots; ++i)
-		{
-			samplers[i] = i;
-		}
-
-		const auto quad_shader = Globals::shaderLibrary()->get("Quad");
-		// quad_shader->bind();
-		quad_shader->setUniform("u_Textures", samplers, c_maxTextureSlots);
-
-		m_textureSlots[0] = m_whiteTexture;
-
-		m_quadVertexPositions = {
-			tsm::float4{-0.5f, -0.5f, 0.0f, 1.0f},
-			tsm::float4{0.5f, -0.5f, 0.0f, 1.0f},
-			tsm::float4{0.5f, 0.5f, 0.0f, 1.0f},
-			tsm::float4{-0.5f, 0.5f, 0.0f, 1.0f}
-		};
-
-		m_quadVertexTexCoords = {tsm::float2{0.0f, 0.0f}, tsm::float2{1.0f, 0.0f}, tsm::float2{1.0f, 1.0f}, tsm::float2{0.0f, 1.0f}};
+		m_textureSlots[0] = Globals::getWhiteTexture();
 	}
 
 	Renderer2D::~Renderer2D()
 	{
+		m_cameraUBs->unmapAllMemory();
 		delete[] m_quadVertexBase;
 	}
 
-	void Renderer2D::begin(const Camera &p_camera, const tsm::float4x4 &p_transform)
+	auto Renderer2D::begin([[maybe_unused]] const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix,
+						   const tsm::float4x4 &                           p_proj_matrix) -> void
 	{
-		const auto quad_shader = Globals::shaderLibrary()->get("Quad");
-		quad_shader->bind();
+		CameraUB ubo{};
+		ubo.view       = p_view_matrix;
+		ubo.proj       = p_proj_matrix;
+		ubo.proj[1][1] *= -1.0f;
 
-		// quad_shader->setUniformBinding(0, glm::inverse(p_transform));
-		// quad_shader->setUniformBinding(1, p_camera.getProjectionMatrix());
-		quad_shader->setUniform("u_View", glm::inverse(p_transform));
-		quad_shader->setUniform("u_Proj", p_camera.getProjectionMatrix());
+		std::memcpy(m_mappedCameraUBs[p_frame_index], &ubo, sizeof(CameraUB));
 
-		m_quadIndexCount   = 0u;
-		m_quadVertexPtr    = m_quadVertexBase;
+		m_quadIndexCount = 0u;
+		m_quadVertexPtr  = m_quadVertexBase;
+
 		m_textureSlotIndex = 1u;
-	}
-
-	void Renderer2D::begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix)
-	{
-		const auto quad_shader = Globals::shaderLibrary()->get("Quad");
-		quad_shader->bind();
-
-		// quad_shader->setUniformBinding(0, p_view_matrix);
-		// quad_shader->setUniformBinding(1, p_proj_matrix);
-		quad_shader->setUniform("u_View", p_view_matrix);
-		quad_shader->setUniform("u_Proj", p_proj_matrix);
-
-		m_quadIndexCount   = 0u;
-		m_quadVertexPtr    = m_quadVertexBase;
-		m_textureSlotIndex = 1u;
+		for (uint32 i{1u}; i < m_textureSlots.size(); ++i)
+			m_textureSlots[i] = nullptr;
 
 		m_stats.quadCount = 0u;
 	}
 
-	void Renderer2D::end()
+	auto Renderer2D::end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, gpu::RenderingAttachmentInfo *p_override_colour_attachment,
+						 gpu::RenderingAttachmentInfo * p_override_depth_attachment) -> void
 	{
+		if (m_createInfo.overrideAttachments && !p_override_colour_attachment && !p_override_depth_attachment)
+		{
+			TST_ASSERT_MSG(false, "Please provide the attachment infos...");
+		}
+
+		gpu::RenderingInfo rendering_info{};
+		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight}};
+		rendering_info.layerCount = 1;
+
+		if (p_override_colour_attachment)
+			rendering_info.colourAttachments.emplace_back(*p_override_colour_attachment);
+		else
+		{
+			gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
+			colour_attachment_info.image      = m_renderTargetTexture->getImage();
+			colour_attachment_info.clearValue = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
+			colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
+			colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+		}
+
+		gpu::RenderingAttachmentInfo depth_attachment_info{};
+		if (p_override_depth_attachment)
+			depth_attachment_info = *p_override_depth_attachment;
+		else
+		{
+			depth_attachment_info.image      = m_renderTargetDepthImage;
+			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
+			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
+		}
+		rendering_info.pDepthAttachment = &depth_attachment_info;
+
+		Renderer::beginRendering(rendering_info, p_cmd, p_frame_index, m_quadRenderPass);
+
 		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
 		if (size) // Apparently you have to check ts, or things won't work correctly and there will be artifacts...
 		{
-			m_quadVertexBuffer->setData(m_quadVertexBase, size);
+			m_quadVertexBuffer->setData(m_quadVertexBase, size, 0);
 
-			for (uint32 i{0u}; i < m_textureSlotIndex; ++i)
+			for (uint32 i{0u}; i < m_textureSlots.size(); ++i)
 			{
-				m_textureSlots[i]->bind(i);
+				if (m_textureSlots[i])
+				{
+					m_quadMaterial->set("u_Textures", m_textureSlots[i], i);
+				}
+				else
+					m_quadMaterial->set("u_Textures", Globals::getWhiteTexture(), i);
 			}
 
-			RenderCommand::drawIndexed(m_quadVertexArray, m_quadIndexCount);
+			Renderer::renderGeometry(p_cmd, p_frame_index, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, glm::mat4{1.0f});
 		}
+
+		Renderer::endRendering(rendering_info, p_cmd);
 	}
 
-	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour, IDType p_object_id)
+	auto Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void
 	{
-		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f});
-		submitQuad(transform, p_colour, p_object_id);
+		const tsm::float4x4 transform{glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f})};
+		submitQuad(transform, p_colour);
 	}
 
-	void Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour, IDType p_object_id)
+	auto Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void
 	{
-		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, tsm::float3{p_position.x, p_position.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, {
-																																		p_scale.x,
-																																		p_scale.y,
-																																		1.0f
-																																	});
-		submitQuad(transform, p_colour, p_object_id);
+		const tsm::float4x4 transform{
+			glm::translate(glm::mat4{1.0f}, tsm::float3{p_position.x, p_position.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f})
+		};
+		submitQuad(transform, p_colour);
 	}
 
-	void Renderer2D::submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour, IDType p_object_id)
+	auto Renderer2D::submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour) -> void
 	{
 		if (m_quadIndexCount >= m_maxIndices)
 			_beginNewBatch();
 
 		for (uint32 i{0u}; i < 4u; ++i)
 		{
-			m_quadVertexPtr->position     = p_transform * m_quadVertexPositions[i];
-			m_quadVertexPtr->colour       = p_colour;
-			m_quadVertexPtr->texCoord     = m_quadVertexTexCoords[i];
-			m_quadVertexPtr->texIndex     = 0.0f;
-			m_quadVertexPtr->tilingFactor = 1.0f;
-			m_quadVertexPtr->objectID     = p_object_id;
+			m_quadVertexPtr->position = p_transform * m_quadVertexPositions[i];
+			m_quadVertexPtr->colour   = p_colour;
+			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
+			m_quadVertexPtr->texIndex = 0;
 			m_quadVertexPtr++;
 		}
 		m_quadIndexCount += 6u;
 		m_stats.quadCount++;
 	}
 
-	void Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::ITexture2D> &p_texture, const tsm::float4 &p_tint_colour,
-								float32            p_tiling_factor, IDType        p_object_id)
-	{
-		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f});
-		submitQuad(transform, p_texture, p_tint_colour, p_tiling_factor, p_object_id);
-	}
-
-	void Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::ITexture2D> &p_texture, const tsm::float4 &p_tint_colour,
-								float32            p_tiling_factor, IDType        p_object_id)
-	{
-		const tsm::float4x4 transform = glm::translate(glm::mat4{1.0f}, tsm::float3{p_position.x, p_position.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, {
-																																		p_scale.x,
-																																		p_scale.y,
-																																		1.0f
-																																	});
-		submitQuad(transform, p_texture, p_tint_colour, p_tiling_factor, p_object_id);
-	}
-
-	void Renderer2D::submitQuad(const tsm::float4x4 &p_transform, const RefPtr<gpu::ITexture2D> &p_texture, const tsm::float4 &p_tint_colour, float32 p_tiling_factor,
-								IDType               p_object_id)
+	auto Renderer2D::submitQuad(const tsm::float4x4 &p_transform, const RefPtr<gpu::VKTexture2D> &p_texture, const tsm::float4 &p_colour) -> void
 	{
 		if (m_quadIndexCount >= m_maxIndices)
 			_beginNewBatch();
 
-		const auto texture_index = static_cast<float32>(_getTextureSlotIndex(p_texture));
+		uint32 tex_index{_getTextureSlotIndex(p_texture)};
 
 		for (uint32 i{0u}; i < 4u; ++i)
 		{
-			m_quadVertexPtr->position     = p_transform * m_quadVertexPositions[i];
-			m_quadVertexPtr->colour       = p_tint_colour;
-			m_quadVertexPtr->texCoord     = m_quadVertexTexCoords[i];
-			m_quadVertexPtr->texIndex     = texture_index;
-			m_quadVertexPtr->tilingFactor = p_tiling_factor;
-			m_quadVertexPtr->objectID     = p_object_id;
+			m_quadVertexPtr->position = p_transform * m_quadVertexPositions[i];
+			m_quadVertexPtr->colour   = p_colour;
+			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
+			m_quadVertexPtr->texIndex = tex_index;
 			m_quadVertexPtr++;
 		}
-
 		m_quadIndexCount += 6u;
 		m_stats.quadCount++;
 	}
 
-	const Renderer2D::Stats &Renderer2D::getStats() const
+	auto Renderer2D::getStats() const -> const Stats &
 	{
 		return m_stats;
 	}
 
-	void Renderer2D::_beginNewBatch()
+	auto Renderer2D::getColourOutput() const -> const RefPtr<gpu::VKTexture2D> &
 	{
-		end();
-
-		m_quadIndexCount   = 0u;
-		m_quadVertexPtr    = m_quadVertexBase;
-		m_textureSlotIndex = 1u;
+		return m_renderTargetTexture;
 	}
 
-	uint32 Renderer2D::_getTextureSlotIndex(const RefPtr<gpu::ITexture2D> &p_texture)
+	auto Renderer2D::onResize(uint32 p_width, uint32 p_height) -> void
+	{
+		m_createInfo.renderTargetWidth  = p_width;
+		m_createInfo.renderTargetHeight = p_height;
+
+		if (!m_createInfo.overrideAttachments)
+		{
+			m_renderTargetTexture->resize(p_width, p_height);
+			m_renderTargetDepthImage->resize(p_width, p_height);
+		}
+	}
+
+	auto Renderer2D::_beginNewBatch() -> void
+	{
+		// end();
+
+		m_quadIndexCount = 0u;
+		m_quadVertexPtr  = m_quadVertexBase;
+	}
+
+	auto Renderer2D::_getTextureSlotIndex(const RefPtr<gpu::VKTexture2D> &p_texture) -> uint32
 	{
 		uint32 texture_index{0u};
 		for (uint32 i{1u}; i < m_textureSlotIndex; ++i)
 		{
-			if (*m_textureSlots[i] == *p_texture)
+			if (m_textureSlots[i]->getDescriptorInfo() == p_texture->getDescriptorInfo())
 			{
 				texture_index = i;
 				break;
@@ -226,9 +274,10 @@ namespace toaster
 
 		if (texture_index == 0u)
 		{
+			// LOG_TRACE("Setting new texture: {}", p_texture->getPath().string());
 			texture_index                      = m_textureSlotIndex;
 			m_textureSlots[m_textureSlotIndex] = p_texture;
-			m_textureSlotIndex++;
+			++m_textureSlotIndex;
 		}
 
 		return texture_index;

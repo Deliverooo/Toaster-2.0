@@ -3,15 +3,15 @@
 
 namespace tsm::constants
 {
-	template<typename T> requires std::floating_point<T>
-	constexpr T pi()
+	template<typename Type> requires std::floating_point<Type>
+	constexpr auto pi() -> Type
 	{
-		return T(3.14159265358979323846264338327950288);
+		return Type(3.14159265358979323846264338327950288);
 	}
 
-	template<typename T> requires std::floating_point<T>
-	constexpr T sqrt2()
+	template<typename Type> requires std::floating_point<Type>
+	constexpr auto sqrt2() -> Type
 	{
-		return T(1.414213562373095048801688724288);
+		return Type(1.414213562373095048801688724288);
 	}
 }

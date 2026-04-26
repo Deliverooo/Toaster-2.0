@@ -1,19 +1,38 @@
 #pragma once
 
-#include "toast_gpu/vertex_array.hpp"
-#include "toast_render/shader_library.hpp"
+#include "../toaster_export.hpp"
+
+#include "shader_library.hpp"
+
+#include "toast_gpu/vk/vk_index_buffer.hpp"
+#include "toast_gpu/vk/vk_vertex_buffer.hpp"
+
+#include <glm/glm.hpp>
+
+#include "toast_gpu/vk/vk_texture.hpp"
 
 namespace toaster
 {
-	class Globals final
+	class TST_API Globals final
 	{
 	public:
-		static void init();
-		static void shutdown();
+		struct QuadVertex
+		{
+			glm::vec3 position;
+			glm::vec2 texCoord;
+		};
 
-		static const RefPtr<ShaderLibrary> &shaderLibrary();
+		static auto init(gpu::VKLogicalDevice *p_device) -> void;
+		static auto shutdown() -> void;
 
-		static RefPtr<gpu::IVertexArray> quadVertexArray();
-		static RefPtr<gpu::IVertexArray> fullscreenQuadVertexArray();
+		static auto getShaderLibrary() -> const ShaderLibrary &;
+
+		static auto getFullscreenQuadVertexBuffer() -> const RefPtr<gpu::VKVertexBuffer> &;
+		static auto getFullscreenQuadIndexBuffer() -> const RefPtr<gpu::VKIndexBuffer> &;
+
+		static auto getFullscreenQuadVertices() -> const std::vector<QuadVertex> &;
+		static auto getFullscreenQuadIndices() -> const std::vector<uint32> &;
+
+		static auto getWhiteTexture() -> const RefPtr<gpu::VKTexture2D> &;
 	};
 }

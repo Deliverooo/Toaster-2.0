@@ -1,23 +1,33 @@
 #pragma once
 
+#include <concepts>
+#include "toast_gpu.hpp"
+
 namespace toaster::gpu
 {
-	enum class EResourceType
+	enum class EGPUResourceType
 	{
+		eUnknown,
 		eUniformBuffer,
-		eUniformBufferSet,
+		eUniformBufferPFF,
 		eStorageBuffer,
-		eStorageBufferSet,
+		eStorageBufferPFF,
 		eTexture2D,
-		eTexture3D,
-		eSampler
+		eTexture3D
 	};
 
-	class IResource
+	class TST_GPU_API IGPUResource
 	{
 	public:
-		virtual ~IResource() = default;
+		virtual ~IGPUResource() = default;
 
-		virtual EResourceType getResourceType() const = 0;
+		[[nodiscard]] virtual auto getResourceType() const -> EGPUResourceType = 0;
 	};
+
+	template<typename Type> concept GPUResource_c = std::derived_from<Type, IGPUResource>;
+
+	#define TST_GPU_RESOURCE(__typename)\
+		public:\
+			[[nodiscard]] virtual auto getResourceType() const -> ::toaster::gpu::EGPUResourceType override\
+														{ return ::toaster::gpu::EGPUResourceType::e##__typename; } private:
 }

@@ -4,12 +4,11 @@ namespace toaster::gpu
 {
 	enum class EImageFormat
 	{
-		eInvalid = 0,
-		eRedInteger,
-		eRed8UI,
-		eRed16UI,
-		eRed32UI,
-		eRed32F,
+		eR8UNorm,
+		eR8UInt,
+		eR16UInt,
+		eR32UInt,
+		eR32F,
 		eRG8,
 		eRG16F,
 		eRG32F,
@@ -20,15 +19,26 @@ namespace toaster::gpu
 		eB10R11G11UF,
 		eSRGB,
 		eSRGBA,
-
-		// Depth Formats
 		eDepth32FStencil8UInt,
 		eDepth32F,
 		eDepth24Stencil8
 	};
 
-	inline bool isDepthFormat(const EImageFormat p_format)
+	enum class EImageUsage
 	{
-		return (p_format == EImageFormat::eDepth32FStencil8UInt) || (p_format == EImageFormat::eDepth32F) || (p_format == EImageFormat::eDepth24Stencil8);
-	}
+		eTexture,
+		eAttachment,
+		eStorage,
+		eHostRead
+	};
+
+	enum class ETextureFiltering
+	{
+		eLinear, eNearest, eCubic
+	};
+
+	enum class ETextureWrapping
+	{
+		eClamp, eRepeat
+	};
 }

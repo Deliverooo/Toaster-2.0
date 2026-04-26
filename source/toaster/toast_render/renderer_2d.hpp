@@ -1,22 +1,44 @@
 #pragma once
 
-#include "toast_gpu/framebuffer.hpp"
-#include "toast_gpu/texture.hpp"
-#include "toast_gpu/vertex_array.hpp"
+#include "../toaster_export.hpp"
 
-#include "toast_lib/camera.hpp"
+#include "toast_gpu/buffer_layout.hpp"
+#include "toast_lib/ptr.hpp"
 #include "toast_lib/math/math_vector.hpp"
 
 #include <array>
+#include <vulkan/vulkan_raii.hpp>
+
+#include "toast_gpu/vk/vk_render_attachment.hpp"
 
 namespace toaster
 {
-	struct Renderer2DCreateInfo
+	namespace gpu
 	{
+		class VKLogicalDevice;
+		class VKPipeline;
+		class VKRenderPass;
+		class VKMaterial;
+		class VKTexture2D;
+		class VKImage2D;
+		class VKUniformBuffer;
+		class VKUniformBufferPFF;
+		class VKVertexBuffer;
+		class VKIndexBuffer;
+		class VKShader;
+	}
+
+	struct TST_API Renderer2DSpecInfo
+	{
+		uint32 renderTargetWidth{1920u};
+		uint32 renderTargetHeight{1080u};
+
 		uint32 maxQuads{10000u};
+
+		bool overrideAttachments{false};
 	};
 
-	class Renderer2D
+	class TST_API Renderer2D final
 	{
 	public:
 		struct Stats
@@ -24,54 +46,53 @@ namespace toaster
 			uint32 quadCount{0u};
 		};
 
-		#ifndef TST_RENDERER_2D_USE_64_BIT_IDS
-		using IDType = int32;
-		static constexpr IDType c_invalidID{-1};
-		#else
-		using IDType = int64; static constexpr IDType c_invalidID{-1};
-		#endif
-
-		explicit Renderer2D(const Renderer2DCreateInfo &p_create_info);
+		explicit Renderer2D(gpu::VKLogicalDevice *p_device, const Renderer2DSpecInfo &p_create_info);
 		~Renderer2D();
 
-		void begin(const Camera &p_camera, const tsm::float4x4 &p_transform);
-		void begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix);
-		void end();
+		auto begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void;
+		auto end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
+				 gpu::RenderingAttachmentInfo * p_override_depth_attachment                                                             = nullptr) -> void;
 
-		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour, IDType p_object_id = c_invalidID);
-		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour, IDType p_object_id = c_invalidID);
-		void submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour, IDType p_object_id = c_invalidID);
+		auto submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
+		auto submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
+		auto submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour) -> void;
+		auto submitQuad(const tsm::float4x4 &p_transform, const RefPtr<gpu::VKTexture2D> &p_texture, const tsm::float4 &p_colour) -> void;
 
-		void submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const RefPtr<gpu::ITexture2D> &p_texture,
-						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f, IDType p_object_id = c_invalidID);
-		void submitQuad(const tsm::float2 &p_position, const tsm::float2 &                              p_scale, const RefPtr<gpu::ITexture2D> &p_texture,
-						const tsm::float4 &p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f, IDType p_object_id = c_invalidID);
-		void submitQuad(const tsm::float4x4 &p_transform, const RefPtr<gpu::ITexture2D> &                 p_texture,
-						const tsm::float4 &  p_tint_colour = tsm::float4{1.0f, 1.0f, 1.0f, 1.0f}, float32 p_tiling_factor = 1.0f, IDType p_object_id = c_invalidID);
+		auto onResize(uint32 p_width, uint32 p_height) -> void;
 
-		const Stats &getStats() const;
+		auto               getColourOutput() const -> const RefPtr<gpu::VKTexture2D> &;
+		[[nodiscard]] auto getStats() const -> const Stats &;
 
 	private:
-		void   _beginNewBatch();
-		uint32 _getTextureSlotIndex(const RefPtr<gpu::ITexture2D> &p_texture);
+		auto _beginNewBatch() -> void;
+		auto _getTextureSlotIndex(const RefPtr<gpu::VKTexture2D> &p_texture) -> uint32;
 
-		Renderer2DCreateInfo m_createInfo;
-		uint32               m_maxVertices;
-		uint32               m_maxIndices;
+		gpu::VKLogicalDevice *m_device;
+
+		Renderer2DSpecInfo m_createInfo;
+		uint32             m_maxVertices;
+		uint32             m_maxIndices;
 
 		struct QuadVertex
 		{
-			tsm::float4 position;
-			tsm::float4 colour;
-			tsm::float2 texCoord;
-			float32     texIndex;
-			float32     tilingFactor;
-			IDType      objectID;
+			tsm::float4 position{0.0f};
+			tsm::float4 colour{1.0f};
+			tsm::float2 texCoord{0.0f};
+			float32     texIndex{0u};
+			float32     tilingFactor{1.0f};
 		};
 
-		RefPtr<gpu::IVertexArray>  m_quadVertexArray;
-		RefPtr<gpu::IVertexBuffer> m_quadVertexBuffer;
-		RefPtr<gpu::IIndexBuffer>  m_quadIndexBuffer;
+		gpu::BufferLayout m_quadVertexBufferLayout;
+
+		RefPtr<gpu::VKTexture2D> m_renderTargetTexture{nullptr};
+		RefPtr<gpu::VKImage2D>   m_renderTargetDepthImage{nullptr};
+
+		RefPtr<gpu::VKPipeline>   m_quadPipeline{nullptr};
+		RefPtr<gpu::VKRenderPass> m_quadRenderPass{nullptr};
+		RefPtr<gpu::VKMaterial>   m_quadMaterial{nullptr};
+
+		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
+		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
 
 		QuadVertex *m_quadVertexBase{nullptr};
 		QuadVertex *m_quadVertexPtr{nullptr};
@@ -81,11 +102,17 @@ namespace toaster
 		std::array<tsm::float4, 4u> m_quadVertexPositions;
 		std::array<tsm::float2, 4u> m_quadVertexTexCoords;
 
-		static constexpr uint32                                c_maxTextureSlots{32u};
-		std::array<RefPtr<gpu::ITexture2D>, c_maxTextureSlots> m_textureSlots;
-		uint32                                                 m_textureSlotIndex{1u};
+		struct CameraUB
+		{
+			glm::mat4 view;
+			glm::mat4 proj;
+		};
 
-		RefPtr<gpu::ITexture2D> m_whiteTexture;
+		RefPtr<gpu::VKUniformBufferPFF> m_cameraUBs{nullptr};
+		std::vector<void *>             m_mappedCameraUBs;
+
+		std::array<RefPtr<gpu::VKTexture2D>, 32u> m_textureSlots;
+		uint32                                    m_textureSlotIndex{1u};
 
 		Stats m_stats;
 	};

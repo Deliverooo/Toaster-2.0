@@ -8,31 +8,33 @@
 
 #include "toast_lib/io/filesystem.hpp"
 
-#include <fstream>
 #include <yaml-cpp/yaml.h>
 
-inline YAML::Emitter &operator<<(YAML::Emitter &out, const glm::vec2 &v)
+#include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_gpu/vk/vk_texture.hpp"
+
+inline auto operator<<(YAML::Emitter &out, const glm::vec2 &v) -> YAML::Emitter &
 {
 	out << YAML::Flow;
 	out << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
 	return out;
 }
 
-inline YAML::Emitter &operator<<(YAML::Emitter &out, const glm::vec3 &v)
+inline auto operator<<(YAML::Emitter &out, const glm::vec3 &v) -> YAML::Emitter &
 {
 	out << YAML::Flow;
 	out << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
 	return out;
 }
 
-inline YAML::Emitter &operator<<(YAML::Emitter &out, const glm::vec4 &v)
+inline auto operator<<(YAML::Emitter &out, const glm::vec4 &v) -> YAML::Emitter &
 {
 	out << YAML::Flow;
 	out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
 	return out;
 }
 
-inline YAML::Emitter &operator<<(YAML::Emitter &out, const glm::quat &v)
+inline auto operator<<(YAML::Emitter &out, const glm::quat &v) -> YAML::Emitter &
 {
 	out << YAML::Flow;
 	out << YAML::BeginSeq << v.w << v.x << v.y << v.z << YAML::EndSeq;
@@ -44,7 +46,7 @@ namespace YAML
 	template<>
 	struct convert<glm::vec2>
 	{
-		static Node encode(const glm::vec2 &rhs)
+		static auto encode(const glm::vec2 &rhs) -> Node
 		{
 			Node node;
 			node.push_back(rhs.x);
@@ -52,7 +54,7 @@ namespace YAML
 			return node;
 		}
 
-		static bool decode(const Node &node, glm::vec2 &rhs)
+		static auto decode(const Node &node, glm::vec2 &rhs) -> bool
 		{
 			if (!node.IsSequence() || node.size() != 2)
 			{
@@ -68,7 +70,7 @@ namespace YAML
 	template<>
 	struct convert<glm::vec3>
 	{
-		static Node encode(const glm::vec3 &rhs)
+		static auto encode(const glm::vec3 &rhs) -> Node
 		{
 			Node node;
 			node.push_back(rhs.x);
@@ -77,7 +79,7 @@ namespace YAML
 			return node;
 		}
 
-		static bool decode(const Node &node, glm::vec3 &rhs)
+		static auto decode(const Node &node, glm::vec3 &rhs) -> bool
 		{
 			if (!node.IsSequence() || node.size() != 3)
 			{
@@ -94,7 +96,7 @@ namespace YAML
 	template<>
 	struct convert<glm::vec4>
 	{
-		static Node encode(const glm::vec4 &rhs)
+		static auto encode(const glm::vec4 &rhs) -> Node
 		{
 			Node node;
 			node.push_back(rhs.x);
@@ -104,7 +106,7 @@ namespace YAML
 			return node;
 		}
 
-		static bool decode(const Node &node, glm::vec4 &rhs)
+		static auto decode(const Node &node, glm::vec4 &rhs) -> bool
 		{
 			if (!node.IsSequence() || node.size() != 4)
 			{
@@ -122,7 +124,7 @@ namespace YAML
 	template<>
 	struct convert<glm::quat>
 	{
-		static Node encode(const glm::quat &rhs)
+		static auto encode(const glm::quat &rhs) -> Node
 		{
 			Node node;
 			node.push_back(rhs.w);
@@ -132,7 +134,7 @@ namespace YAML
 			return node;
 		}
 
-		static bool decode(const Node &node, glm::quat &rhs)
+		static auto decode(const Node &node, glm::quat &rhs) -> bool
 		{
 			if (!node.IsSequence() || node.size() != 4)
 			{
@@ -155,7 +157,7 @@ namespace toaster
 		TST_ASSERT_MSG(p_scene, "Scene is null");
 	}
 
-	void SceneSerializer::serialize(const io::filesystem::Path &p_filepath)
+	auto SceneSerializer::serialize(const io::filesystem::Path &p_filepath) -> void
 	{
 		YAML::Emitter out;
 		serializeToYAML(out);
@@ -163,7 +165,7 @@ namespace toaster
 		io::filesystem::writeFile(p_filepath, out.c_str());
 	}
 
-	void SceneSerializer::serializeToYAML(YAML::Emitter &p_out)
+	auto SceneSerializer::serializeToYAML(YAML::Emitter &p_out) -> void
 	{
 		p_out << YAML::BeginMap;
 		p_out << YAML::Key << "Scene" << YAML::Value << m_scene->getName();
@@ -182,7 +184,7 @@ namespace toaster
 		p_out << YAML::EndMap;
 	}
 
-	bool SceneSerializer::deserialize(const io::filesystem::Path &p_filepath)
+	auto SceneSerializer::deserialize(const io::filesystem::Path &p_filepath) -> bool
 	{
 		const String yaml_string = io::filesystem::readFile(p_filepath);
 
@@ -199,7 +201,7 @@ namespace toaster
 		return true;
 	}
 
-	bool SceneSerializer::deserializeFromYAML(const String &p_yaml_string)
+	auto SceneSerializer::deserializeFromYAML(const String &p_yaml_string) -> bool
 	{
 		YAML::Node data = YAML::Load(p_yaml_string);
 
@@ -216,7 +218,7 @@ namespace toaster
 		return true;
 	}
 
-	void SceneSerializer::serializeEntity(YAML::Emitter &p_out, Entity p_entity, const RefPtr<Scene> &p_scene)
+	auto SceneSerializer::serializeEntity(YAML::Emitter &p_out, Entity p_entity, [[maybe_unused]] const RefPtr<Scene> &p_scene) -> void
 	{
 		p_out << YAML::BeginMap;
 		p_out << YAML::Key << "Entity" << YAML::Value << "67676767";
@@ -248,7 +250,7 @@ namespace toaster
 			const auto &src = p_entity.getComponent<SpriteRendererComponent>();
 			p_out << YAML::Key << "Colour" << YAML::Value << src.colour;
 
-			auto texture_path = src.texture ? src.texture->getPath().value() : "Null";
+			auto texture_path = src.texture ? src.texture->getPath() : "Null";
 			p_out << YAML::Key << "TexturePath" << YAML::Value << texture_path.string();
 			p_out << YAML::Key << "TilingFactor" << YAML::Value << src.tilingFactor;
 
@@ -281,11 +283,12 @@ namespace toaster
 		p_out << YAML::EndMap;
 	}
 
-	void SceneSerializer::deserializeEntities(YAML::Node &p_entities, const RefPtr<Scene> &p_scene)
+	auto SceneSerializer::deserializeEntities(YAML::Node &p_entities, const RefPtr<Scene> &p_scene) -> void
 	{
 		for (auto entity: p_entities)
 		{
 			uint64 uuid = entity["Entity"].as<uint64>();
+			(void) uuid;
 
 			String entity_name;
 			auto   tag_comp = entity["TagComponent"];
@@ -311,7 +314,9 @@ namespace toaster
 
 				auto texture_path = sprite_comp["TexturePath"].as<String>();
 				if (texture_path != "Null")
-					src.texture = gpu::ITexture2D::create(texture_path);
+				{
+					src.texture = p_scene->m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, texture_path);
+				}
 				else
 					src.texture = nullptr;
 

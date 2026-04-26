@@ -24,6 +24,7 @@ set(SRC
 		math/math_vector.hpp
 		math/math_constants.hpp
 		math/math_matrix.hpp
+		math/colours.hpp
 
 		util_defines.hpp
 
@@ -31,6 +32,10 @@ set(SRC
 
 		os/file_dialog.cpp
 		os/file_dialog.hpp
+		os/library_loading.cpp
+		os/library_loading.hpp
+
+		initialiser_list.hpp
 )
 
 add_library(toast_lib STATIC) # less problematic...

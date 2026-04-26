@@ -8,9 +8,9 @@
 #include "scriptable_entity.hpp"
 #include "glm/gtx/quaternion.hpp"
 
-#include "toast_gpu/texture.hpp"
+#include "toast_gpu/vk/vk_texture.hpp"
 
-#define DEFINE_COMPONENT(__name) struct __name
+#define DEFINE_COMPONENT(__name) struct TST_API __name
 
 namespace toaster
 {
@@ -35,12 +35,12 @@ namespace toaster
 		{
 		}
 
-		[[nodiscard]] glm::mat4 getTransform() const
+		[[nodiscard]] auto getTransform() const -> glm::mat4
 		{
 			return glm::translate(glm::mat4{1.0f}, translation) * glm::toMat4(glm::quat{rotation}) * glm::scale(glm::mat4{1.0f}, scale);
 		}
 
-		void reset()
+		auto reset() -> void
 		{
 			translation = glm::vec3{0.0f, 0.0f, 0.0f};
 			rotation    = glm::vec3{0.0f, 0.0f, 0.0f};
@@ -57,16 +57,29 @@ namespace toaster
 		SpriteRendererComponent()  = default;
 		~SpriteRendererComponent() = default;
 
-		void reset()
+		auto reset() -> void
 		{
 			colour       = glm::vec4{1.0f};
 			texture      = nullptr;
 			tilingFactor = 1.0f;
 		}
 
-		glm::vec4               colour{1.0f};
-		RefPtr<gpu::ITexture2D> texture{nullptr};
-		float32                 tilingFactor{1.0f};
+		glm::vec4                colour{1.0f};
+		RefPtr<gpu::VKTexture2D> texture{nullptr};
+		float32                  tilingFactor{1.0f};
+	};
+
+	DEFINE_COMPONENT(MeshComponent)
+	{
+		MeshComponent()  = default;
+		~MeshComponent() = default;
+
+		auto reset() -> void
+		{
+			mesh.reset(nullptr);
+		}
+
+		RefPtr<gpu::VKMesh> mesh{nullptr};
 	};
 
 	DEFINE_COMPONENT(CameraComponent)
@@ -74,7 +87,7 @@ namespace toaster
 		CameraComponent()  = default;
 		~CameraComponent() = default;
 
-		void reset()
+		auto reset() -> void
 		{
 			camera         = SceneCamera{};
 			projectionType = SceneCamera::EProjectionType::eOrthographic;
@@ -84,6 +97,52 @@ namespace toaster
 		SceneCamera                  camera;
 		SceneCamera::EProjectionType projectionType{SceneCamera::EProjectionType::eOrthographic};
 		bool                         primary{false};
+	};
+
+	DEFINE_COMPONENT(DirectionalLightComponent)
+	{
+		glm::vec3 radiance{1.0f};
+		float32   multiplier{1.0f};
+
+		auto reset() -> void
+		{
+			radiance   = glm::vec3{1.0f};
+			multiplier = 1.0f;
+		}
+	};
+
+	DEFINE_COMPONENT(PointLightComponent)
+	{
+		glm::vec3 radiance{1.0f};
+		float32   multiplier{1.0f};
+		float32   radius{1.0f};
+		float32   falloff{1.0f};
+
+		auto reset() -> void
+		{
+			radiance   = glm::vec3{1.0f};
+			multiplier = 1.0f;
+			radius     = 1.0f;
+			falloff    = 1.0f;
+		}
+	};
+
+	DEFINE_COMPONENT(SpotLightComponent)
+	{
+		glm::vec3 radiance{1.0f};
+		float32   falloff{1.0f};
+		float32   multiplier{1.0f};
+		float32   angle{67.0f};
+		float32   range{12.0f};
+
+		auto reset() -> void
+		{
+			radiance   = glm::vec3{1.0f};
+			falloff    = 1.0f;
+			multiplier = 1.0f;
+			angle      = 67.0f;
+			range      = 12.0f;
+		}
 	};
 
 	DEFINE_COMPONENT(NativeScriptComponent)
@@ -97,7 +156,7 @@ namespace toaster
 		DestroyFn destroyFn{nullptr};
 
 		template<c_ScriptableEntity Type>
-		void bind()
+		auto bind() -> void
 		{
 			instantiateFn = []() -> ScriptableEntity * { return static_cast<ScriptableEntity *>(new Type()); };
 			destroyFn     = [](NativeScriptComponent *p_ncs) -> void

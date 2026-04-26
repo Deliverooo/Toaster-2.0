@@ -2,42 +2,49 @@
 
 #include <filesystem>
 #include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
+#include <backends/imgui_impl_vulkan.h>
+
 #include "toaster/toast_kernel/application.hpp"
 
 #include <GLFW/glfw3.h>
 
+#include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_gpu/vk/vk_swapchain.hpp"
 #include "ui/colours.hpp"
 
 #include <ImGuizmo.h>
+namespace igz = ImGuizmo;
 
 namespace toaster
 {
+	static auto checkVKResult(VkResult p_result) -> void
+	{
+		if (p_result != VK_SUCCESS)
+		{
+			TST_ASSERT_MSG(false, "Result is not successful");
+		}
+	}
+
 	ImGuiLayer::ImGuiLayer(Application *p_app) : IAppLayer(p_app)
 	{
 	}
 
-	void ImGuiLayer::onInit()
+	auto ImGuiLayer::onInit() -> void
 	{
 		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
+		ig::CreateContext();
+		ImGuiIO &io{ig::GetIO()};
+		(void) io;
 
-		ImGuiIO &io = ImGui::GetIO();
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
+		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Viewports
 
-		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+		io.FontDefault = io.Fonts->AddFontFromFileTTF("../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
+		io.Fonts->AddFontFromFileTTF("../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Bold.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
 
-		io.FontDefault = io.Fonts->AddFontFromFileTTF("resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
-		io.Fonts->AddFontFromFileTTF("resources/fonts/Noto_Sans_JP/static/NotoSansJP-Bold.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
-		// io.FontDefault = io.Fonts->AddFontFromFileTTF("resources/fonts/DejaVuSans/DejaVuSans.ttf", 16.0f, nullptr, io.Fonts->GetGlyphRangesChineseFull());
-		// io.Fonts->AddFontFromFileTTF("resources/fonts/DejaVuSans/DejaVuSans-Bold.ttf", 16.0f, nullptr, io.Fonts->GetGlyphRangesChineseFull());
-
-		ImGui_ImplGlfw_InitForOpenGL(getApp().getWindow().getNativeWindow(), true);
-		ImGui_ImplOpenGL3_Init("#version 460 core");
-
-		auto &style  = ImGui::GetStyle();
-		auto &colours = ImGui::GetStyle().Colors;
+		auto &style{ImGui::GetStyle()};
+		auto &colours{ImGui::GetStyle().Colors};
 
 		// Headers
 		colours[ImGuiCol_Header]        = ImGui::ColorConvertU32ToFloat4(ui::colours::theme::groupHeader);
@@ -112,54 +119,150 @@ namespace toaster
 		style.FrameRounding   = 2.5f;
 		style.FrameBorderSize = 1.0f;
 		style.IndentSpacing   = 11.0f;
+
+		const auto &app{getApp()};
+		auto        device{app.getLogicalDevice()};
+		const auto  swapchain{app.getWindow().getSwapchain()};
+
+		vk::DescriptorPoolSize pool_sizes[] = {
+			{vk::DescriptorType::eSampler, 1000},
+			{vk::DescriptorType::eCombinedImageSampler, 1000},
+			{vk::DescriptorType::eSampledImage, 256},
+			{vk::DescriptorType::eStorageImage, 24},
+			{vk::DescriptorType::eUniformTexelBuffer, 8},
+			{vk::DescriptorType::eStorageTexelBuffer, 8},
+			{vk::DescriptorType::eUniformBuffer, 32},
+			{vk::DescriptorType::eStorageBuffer, 32},
+			{vk::DescriptorType::eUniformBufferDynamic, 16},
+			{vk::DescriptorType::eStorageBufferDynamic, 16},
+			{vk::DescriptorType::eInputAttachment, 8}
+		};
+
+		uint32_t max_sets = 0;
+		for (const auto &ps: pool_sizes)
+			max_sets += ps.descriptorCount;
+
+		vk::DescriptorPoolCreateInfo descriptor_pool_create_info{};
+		descriptor_pool_create_info.pPoolSizes    = pool_sizes;
+		descriptor_pool_create_info.poolSizeCount = IM_ARRAYSIZE(pool_sizes);
+		descriptor_pool_create_info.maxSets       = max_sets;
+		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
+
+		m_descriptorPool = device->getVulkanLogicalDevice().createDescriptorPool(descriptor_pool_create_info);
+
+		ImGui_ImplGlfw_InitForVulkan(app.getWindow().getNativeWindow(), true);
+
+		ImGui_ImplVulkan_InitInfo init_info{};
+		init_info.Instance        = *device->getPhysicalDevice()->getInstance()->getVulkanInstance();
+		init_info.PhysicalDevice  = *device->getPhysicalDevice()->getVulkanPhysicalDevice();
+		init_info.Device          = static_cast<vk::Device>(static_cast<vk::raii::Device &>(*device));
+		init_info.QueueFamily     = device->getQueueFamilyIndices().graphics;
+		init_info.Queue           = *device->getGraphicsQueue();
+		init_info.PipelineCache   = nullptr;
+		init_info.DescriptorPool  = *m_descriptorPool;
+		init_info.Allocator       = nullptr;
+		init_info.MinImageCount   = swapchain->getMinImageCount();
+		init_info.ImageCount      = swapchain->getImageCount();
+		init_info.CheckVkResultFn = checkVKResult;
+
+		vk::PipelineRenderingCreateInfo rendering_create_info{};
+		rendering_create_info.colorAttachmentCount    = 1;
+		vk::Format colour_attachment_format           = swapchain->getSurfaceFormat().format;
+		rendering_create_info.pColorAttachmentFormats = &colour_attachment_format;
+		rendering_create_info.depthAttachmentFormat   = device->getPhysicalDevice()->getDepthFormat();
+
+		// Dynamic rendering
+		init_info.UseDynamicRendering                          = true;
+		init_info.PipelineInfoMain.PipelineRenderingCreateInfo = rendering_create_info;
+
+		ImGui_ImplVulkan_Init(&init_info);
 	}
 
-	void ImGuiLayer::onDestroy()
+	auto ImGuiLayer::onDestroy() -> void
 	{
-		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplVulkan_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
-		ImGui::DestroyContext();
+		ig::DestroyContext();
 	}
 
-	void ImGuiLayer::onUpdate(float32 p_dt)
+	auto ImGuiLayer::onUpdate(float32 p_dt) -> void
 	{
 	}
 
-	void ImGuiLayer::onEvent(Event &p_event)
+	auto ImGuiLayer::onEvent(Event &p_event) -> void
 	{
 		if (m_blockEvents)
 		{
-			ImGuiIO &io = ImGui::GetIO();
+			ImGuiIO &io = ig::GetIO();
+			(void) io;
 			p_event.setHandled(p_event.isHandled() | (p_event.inCategory(EventCategory_Mouse) & io.WantCaptureMouse));
 			p_event.setHandled(p_event.isHandled() | (p_event.inCategory(EventCategory_Keyboard) & io.WantCaptureKeyboard));
 		}
 	}
 
-	void ImGuiLayer::begin()
+	auto ImGuiLayer::begin() -> void
 	{
-		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-		ImGuizmo::BeginFrame();
+		ig::NewFrame();
+		igz::BeginFrame();
 	}
 
-	void ImGuiLayer::end()
+	auto ImGuiLayer::end() -> void
 	{
-		ImGui::Render();
-		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+		const auto &app{getApp()};
+		const auto  swapchain{app.getWindow().getSwapchain()};
 
-		ImGuiIO &io = ImGui::GetIO();
+		ig::Render();
 
+		auto &command_buffer{swapchain->getCurrentCommandBuffer()};
+
+		vk::RenderingAttachmentInfo colour_attachment_info{};
+		colour_attachment_info.clearValue  = vk::ClearColorValue{0.005f, 0.105f, 0.005f, 0.0f};
+		colour_attachment_info.imageView   = swapchain->getCurrentImageView();
+		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eNone;
+		colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
+
+		vk::RenderingAttachmentInfo depth_attachment_info{};
+		depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
+		depth_attachment_info.imageView   = swapchain->getDepthImageView();
+		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eNone;
+		depth_attachment_info.storeOp     = vk::AttachmentStoreOp::eNone;
+
+		vk::RenderingInfo rendering_info{};
+		rendering_info.renderArea           = vk::Rect2D{{0, 0}, swapchain->getExtent()};
+		rendering_info.layerCount           = 1;
+		rendering_info.colorAttachmentCount = 1;
+		rendering_info.pColorAttachments    = &colour_attachment_info;
+		rendering_info.pDepthAttachment     = &depth_attachment_info;
+
+		const vk::Viewport viewport{0.0f, 0.0f, static_cast<float32>(swapchain->getExtent().width), static_cast<float32>(swapchain->getExtent().height), 0.0f, 1.0f};
+		const vk::Rect2D   scissor{vk::Offset2D{0, 0}, swapchain->getExtent()};
+
+		command_buffer.beginRendering(rendering_info);
+
+		command_buffer.setViewport(0, viewport);
+		command_buffer.setScissor(0, scissor);
+
+		ImDrawData *data = ig::GetDrawData();
+		ImGui_ImplVulkan_RenderDrawData(data, *command_buffer);
+
+		command_buffer.endRendering();
+
+		ImGuiIO &io = ig::GetIO();
+		(void) io;
+
+		// Update and Render additional Platform Windows
 		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 		{
-			GLFWwindow *context = glfwGetCurrentContext();
-			ImGui::UpdatePlatformWindows();
-			ImGui::RenderPlatformWindowsDefault();
-			glfwMakeContextCurrent(context);
+			ig::UpdatePlatformWindows();
+			ig::RenderPlatformWindowsDefault();
 		}
 	}
 
-	void ImGuiLayer::setBlockEvents(bool p_block)
+	auto ImGuiLayer::setBlockEvents(bool p_block) -> void
 	{
 		m_blockEvents = p_block;
 	}

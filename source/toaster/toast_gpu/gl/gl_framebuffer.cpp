@@ -12,7 +12,8 @@ namespace toaster::gpu
 	{
 		for (auto create_info: p_framebuffer_create_info.attachments.attachments)
 		{
-			if (!isDepthFormat(create_info.format))
+			if (!(create_info.format == EImageFormat::eDepth32F || create_info.format == EImageFormat::eDepth24Stencil8 || create_info.format ==
+				  EImageFormat::eDepth32FStencil8UInt))
 				m_colourAttachmentCreateInfos.emplace_back(create_info);
 			else
 				m_depthStencilAttachmentCreateInfo = create_info;
@@ -145,7 +146,7 @@ namespace toaster::gpu
 				gl::namedFramebufferDrawBuffers(m_framebufferID, static_cast<gl::SizeI>(m_colourAttachmentIDs.size()), draw_buffers);
 			}
 		}
-		if (m_depthStencilAttachmentCreateInfo.format != EImageFormat::eInvalid)
+		if (m_depthStencilAttachmentCreateInfo.format != EImageFormat(0))
 		{
 			gl::createTextures(multisample ? gl::TextureType::e2DMultisample : gl::TextureType::e2D, 1, &m_depthStencilAttachmentID);
 
@@ -179,11 +180,11 @@ namespace toaster::gpu
 	{
 		switch (p_format)
 		{
-			case EImageFormat::eRedInteger:
-			case EImageFormat::eRed8UI:
-			case EImageFormat::eRed16UI:
-			case EImageFormat::eRed32UI:
-			case EImageFormat::eRed32F:
+			case EImageFormat::eR8UNorm:
+			case EImageFormat::eR8UInt:
+			case EImageFormat::eR16UInt:
+			case EImageFormat::eR32UInt:
+			case EImageFormat::eR32F:
 			case EImageFormat::eRG8:
 			case EImageFormat::eRG16F:
 			case EImageFormat::eRG32F:
@@ -210,11 +211,11 @@ namespace toaster::gpu
 	{
 		switch (p_format)
 		{
-			case EImageFormat::eRedInteger: return gl::Format::eRedInteger;
-			case EImageFormat::eRed8UI: return gl::Format::eRedInteger;
-			case EImageFormat::eRed16UI: return gl::Format::eRedInteger;
-			case EImageFormat::eRed32UI: return gl::Format::eRedInteger;
-			case EImageFormat::eRed32F: return gl::Format::eRed;
+			case EImageFormat::eR8UNorm: return gl::Format::eRedInteger;
+			case EImageFormat::eR8UInt: return gl::Format::eRedInteger;
+			case EImageFormat::eR16UInt: return gl::Format::eRedInteger;
+			case EImageFormat::eR32UInt: return gl::Format::eRedInteger;
+			case EImageFormat::eR32F: return gl::Format::eRed;
 			case EImageFormat::eRG8: return gl::Format::eRG;
 			case EImageFormat::eRG16F: return gl::Format::eRG;
 			case EImageFormat::eRG32F: return gl::Format::eRG;
@@ -237,11 +238,11 @@ namespace toaster::gpu
 	{
 		switch (p_format)
 		{
-			case EImageFormat::eRedInteger: return gl::Format::eR32I;
-			case EImageFormat::eRed8UI: return gl::Format::eR8UI;
-			case EImageFormat::eRed16UI: return gl::Format::eR16UI;
-			case EImageFormat::eRed32UI: return gl::Format::eR32UI;
-			case EImageFormat::eRed32F: return gl::Format::eR32F;
+			case EImageFormat::eR8UNorm: return gl::Format::eR32I;
+			case EImageFormat::eR8UInt: return gl::Format::eR8UI;
+			case EImageFormat::eR16UInt: return gl::Format::eR16UI;
+			case EImageFormat::eR32UInt: return gl::Format::eR32UI;
+			case EImageFormat::eR32F: return gl::Format::eR32F;
 			case EImageFormat::eRG8: return gl::Format::eRG8;
 			case EImageFormat::eRG16F: return gl::Format::eRG16F;
 			case EImageFormat::eRG32F: return gl::Format::eRG32F;
@@ -264,11 +265,11 @@ namespace toaster::gpu
 	{
 		switch (p_format)
 		{
-			case EImageFormat::eRedInteger: return gl::DataType::eInt;
-			case EImageFormat::eRed8UI: return gl::DataType::eUnsignedInt;
-			case EImageFormat::eRed16UI: return gl::DataType::eUnsignedInt;
-			case EImageFormat::eRed32UI: return gl::DataType::eUnsignedInt;
-			case EImageFormat::eRed32F: return gl::DataType::eFloat;
+			case EImageFormat::eR8UNorm: return gl::DataType::eInt;
+			case EImageFormat::eR8UInt: return gl::DataType::eUnsignedInt;
+			case EImageFormat::eR16UInt: return gl::DataType::eUnsignedInt;
+			case EImageFormat::eR32UInt: return gl::DataType::eUnsignedInt;
+			case EImageFormat::eR32F: return gl::DataType::eFloat;
 			case EImageFormat::eRG8: return gl::DataType::eInt;
 			case EImageFormat::eRG16F: return gl::DataType::eFloat;
 			case EImageFormat::eRG32F: return gl::DataType::eFloat;
