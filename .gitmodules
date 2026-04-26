@@ -14,9 +14,9 @@
 [submodule "imguizmo"]
 	path = extern/ImGuizmo
 	url = https://github.com/Deliverooo/ImGuizmo.git
-[submodule "nativefiledialog-extended"]
-	path = extern/nativefiledialog-extended
-	url = https://github.com/btzy/nativefiledialog-extended.git
 [submodule "extern/glfw"]
 	path = extern/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "extern/nativefiledialog-extended"]
+	path = extern/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended.git
