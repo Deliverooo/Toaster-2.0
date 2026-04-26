@@ -17,6 +17,7 @@ namespace toaster
 	namespace gpu
 	{
 		class IGPUContext;
+		class VKSwapChain;
 	}
 
 	struct ScreenPos
@@ -90,6 +91,8 @@ namespace toaster
 		gpu::IGPUContext *m_gpuContext{nullptr};
 
 		GLFWwindow *m_window{nullptr};
+
+		// gpu::VKSwapChain *m_swapchain{nullptr};
 
 		struct GLFWCallbackData
 		{

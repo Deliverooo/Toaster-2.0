@@ -8,12 +8,12 @@
 #include <sstream>
 #include <GLFW/glfw3.h>
 
-#include "gl/gl_gpu_context.hpp"
+#include "vk/vk_gpu_context.hpp"
 
 namespace toaster::gpu
 {
 	IGPUContext *IGPUContext::create(GLFWwindow *p_window)
 	{
-		return new GLGPUContext(p_window);
+		return new VKGPUContext(p_window);
 	}
 }
