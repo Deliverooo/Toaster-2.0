@@ -1,7 +1,6 @@
 #include "vk_storage_buffer.hpp"
 #include "vk_logical_device.hpp"
 
-
 namespace toaster::gpu
 {
 	VKStorageBuffer::VKStorageBuffer(VKLogicalDevice *p_device, uint64 p_size) : m_device(p_device)
@@ -9,7 +8,7 @@ namespace toaster::gpu
 		TST_ASSERT_MSG(p_device, "Context cannot be null");
 
 		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer,
-							vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, m_buffer, m_bufferMemory);
+							   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, m_buffer, m_bufferMemory);
 
 		m_descriptorInfo.buffer = m_buffer;
 		m_descriptorInfo.offset = 0;
@@ -47,7 +46,7 @@ namespace toaster::gpu
 		m_descriptorInfo = vk::DescriptorBufferInfo{};
 
 		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer,
-							vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, m_buffer, m_bufferMemory);
+							   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, m_buffer, m_bufferMemory);
 
 		m_descriptorInfo.buffer = m_buffer;
 		m_descriptorInfo.offset = 0;
@@ -70,14 +69,12 @@ namespace toaster::gpu
 
 	auto VKStorageBufferPFF::getSSBO(uint32 p_frame_index) -> RefPtr<VKStorageBuffer>
 	{
-		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Out of range");
-		return m_storageBuffers[p_frame_index];
+		return m_storageBuffers.at(p_frame_index);
 	}
 
 	auto VKStorageBufferPFF::setSSBO(uint32 p_frame_index, const RefPtr<VKStorageBuffer> &p_storage_buffer) -> void
 	{
-		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Out of range");
-		m_storageBuffers[p_frame_index] = p_storage_buffer;
+		m_storageBuffers.at(p_frame_index) = p_storage_buffer;
 	}
 
 	auto VKStorageBufferPFF::begin() -> std::vector<RefPtr<VKStorageBuffer> >::iterator

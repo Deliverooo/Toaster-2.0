@@ -107,25 +107,20 @@ namespace toaster::gpu
 
 	auto VKCommandBufferPFF::begin(uint32 p_frame_index) -> void
 	{
-		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Bradar what is dis?!");
-
 		constexpr vk::CommandBufferBeginInfo begin_info{};
-		m_commandBuffers[p_frame_index].begin(begin_info);
+		m_commandBuffers.at(p_frame_index).begin(begin_info);
 	}
 
 	auto VKCommandBufferPFF::end(uint32 p_frame_index) -> void
 	{
-		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Bradar what is dis?!");
-		m_commandBuffers[p_frame_index].end();
+		m_commandBuffers.at(p_frame_index).end();
 	}
 
 	auto VKCommandBufferPFF::submit(uint32 p_frame_index, vk::PipelineStageFlags2 p_wait_stage_mask, const std::initializer_list<const vk::Semaphore> &p_wait_semaphores,
 									const std::initializer_list<const vk::Semaphore> &p_signal_semaphores) -> void
 	{
-		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Bradar what is dis?!");
-
 		vk::CommandBufferSubmitInfo command_buffer_info{};
-		command_buffer_info.commandBuffer = m_commandBuffers[p_frame_index];
+		command_buffer_info.commandBuffer = m_commandBuffers.at(p_frame_index);
 
 		std::vector<vk::SemaphoreSubmitInfo> wait_semaphore_infos;
 		for (const auto &wait_semaphore: p_wait_semaphores)
@@ -154,32 +149,26 @@ namespace toaster::gpu
 
 	auto VKCommandBufferPFF::getVulkanCommandBuffer(uint32 p_frame_index) -> vk::raii::CommandBuffer &
 	{
-		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Bradar what is dis?!");
-		return m_commandBuffers[p_frame_index];
+		return m_commandBuffers.at(p_frame_index);
 	}
 
 	auto VKCommandBufferPFF::getWaitFence(uint32 p_frame_index) -> vk::raii::Fence &
 	{
-		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Bradar what is dis?!");
-		return m_waitFences[p_frame_index];
+		return m_waitFences.at(p_frame_index);
 	}
 
 	auto VKCommandBufferPFF::waitForFence(uint32 p_frame_index) -> void
 	{
-		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Bradar what is dis?!");
-		m_device->waitForFence(*m_waitFences[p_frame_index]);
+		m_device->waitForFence(*m_waitFences.at(p_frame_index));
 	}
 
 	auto VKCommandBufferPFF::resetFence(uint32 p_frame_index) -> void
 	{
-		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Bradar what is dis?!");
-		m_device->getVulkanLogicalDevice().resetFences(*m_waitFences[p_frame_index]);
+		m_device->getVulkanLogicalDevice().resetFences(*m_waitFences.at(p_frame_index));
 	}
 
 	auto VKCommandBufferPFF::resetCommandBuffer(uint32 p_frame_index) -> void
 	{
-		TST_ASSERT_MSG(p_frame_index < m_framesInFlightCount, "Bradar what is dis?!");
-		m_commandBuffers[p_frame_index].reset();
+		m_commandBuffers.at(p_frame_index).reset();
 	}
-
 }

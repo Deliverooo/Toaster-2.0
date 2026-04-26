@@ -84,32 +84,27 @@ namespace toaster::gpu
 
 	auto VKUniformBufferPFF::getBuffer(uint32 p_frame_index) -> vk::raii::Buffer &
 	{
-		TST_ASSERT_MSG(m_framesInFlightCount > 0, "Bradar what is dis?!");
-		return m_uniformBuffers[p_frame_index];
+		return m_uniformBuffers.at(p_frame_index);
 	}
 
 	auto VKUniformBufferPFF::getBufferMemory(uint32 p_frame_index) -> vk::raii::DeviceMemory &
 	{
-		TST_ASSERT_MSG(m_framesInFlightCount > 0, "Bradar what is dis?!");
-		return m_uniformBufferMemories[p_frame_index];
+		return m_uniformBufferMemories.at(p_frame_index);
 	}
 
 	auto VKUniformBufferPFF::getDescriptorInfo(uint32 p_frame_index) const -> const vk::DescriptorBufferInfo &
 	{
-		TST_ASSERT_MSG(m_framesInFlightCount > 0, "Bradar what is dis?!");
-		return m_descriptorBufferInfos[p_frame_index];
+		return m_descriptorBufferInfos.at(p_frame_index);
 	}
 
 	auto VKUniformBufferPFF::mapMemory(uint32 p_frame_index, uint64 p_size, uint64 p_offset) -> void *
 	{
-		TST_ASSERT_MSG(m_framesInFlightCount > 0, "Bradar what is dis?!");
-		return m_uniformBufferMemories[p_frame_index].mapMemory(p_offset, p_size);
+		return m_uniformBufferMemories.at(p_frame_index).mapMemory(p_offset, p_size);
 	}
 
 	auto VKUniformBufferPFF::unmapMemory(uint32 p_frame_index) -> void
 	{
-		TST_ASSERT_MSG(m_framesInFlightCount > 0, "Bradar what is dis?!");
-		m_uniformBufferMemories[p_frame_index].unmapMemory();
+		m_uniformBufferMemories.at(p_frame_index).unmapMemory();
 	}
 
 	auto VKUniformBufferPFF::mapAllMemory(uint64 p_size, uint64 p_offset) -> std::vector<void *>

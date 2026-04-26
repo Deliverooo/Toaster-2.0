@@ -10,6 +10,9 @@ docs/html/
 bin/
 lib/
 
+scripts/Toaster/bin/
+scripts/Toaster/obj/
+
 # Compiled Object files
 *.slo
 *.lo

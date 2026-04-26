@@ -29,6 +29,8 @@
 #include <mono/jit/jit.h>
 #include <mono/metadata/assembly.h>
 
+#include "toast_scripting/script_engine.hpp"
+
 #if USE_WINMAIN
 INT WINAPI WinMain([[maybe_unused]] HINSTANCE hInstance, [[maybe_unused]] HINSTANCE hPrevInstance, [[maybe_unused]] LPSTR lpCmdLine, [[maybe_unused]] INT nCmdShow)
 {
@@ -36,6 +38,7 @@ INT WINAPI WinMain([[maybe_unused]] HINSTANCE hInstance, [[maybe_unused]] HINSTA
 auto main(int32 p_argc, char **p_argv) -> int32
 {
 	#endif
+	toaster::io::filesystem::Path executable_path{p_argv[0]};
 
 	#pragma region create vulkan devices
 	toaster::gpu::VKInstanceSpecInfo vk_instance_spec_info{};
@@ -93,23 +96,24 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 	toaster::Globals::init(vk_logical_device);
 
-	mono_set_dirs("C:/Program Files/Mono/lib", "C:/Program Files/Mono/etc");
+	toaster::io::filesystem::Path scripts_dir{"../scripts"};
 
-	MonoDomain *domain{mono_jit_init("ToasterApplicationDomain")};
+	bool force_compile_scripts{true};
 
-	MonoAssembly *assembly{mono_domain_assembly_open(domain, "C:/dev/DotNet/TestManagedLibrary/bin/Debug/net10.0/TestManagedLibrary.dll")};
-	if (!assembly)
+	if (!toaster::io::filesystem::exists(scripts_dir / "Toaster/bin") || force_compile_scripts)
 	{
-		TST_ASSERT_MSG(false, "No Monos?!");
+		toaster::io::filesystem::Path script_bat_path{"../scripts/build_scripts.bat"};
+		toaster::String               build_scripts_cmd{std::format("cd ../scripts && {}", std::filesystem::absolute(script_bat_path).string())};
+		std::system(build_scripts_cmd.c_str());
 	}
 
-	MonoImage *image{mono_assembly_get_image(assembly)};
-	MonoClass *mono_class{mono_class_from_name(image, "Toaster", "Test")};
+	toaster::ScriptEngineSpecInfo script_engine_spec_info{};
+	script_engine_spec_info.rootDomainName = "ToasterRootDomain";
+	script_engine_spec_info.appDomainName  = "ToasterAppDomain";
+	script_engine_spec_info.assemblyPath   = "../scripts/Toaster/bin/Debug/net10.0/Toaster.dll";
+	toaster::ScriptEngine script_engine{script_engine_spec_info};
 
-	MonoMethod *method{mono_class_get_method_from_name(mono_class, "orbiculate", 0)};
-	mono_runtime_invoke(method, nullptr, nullptr, nullptr);
-
-	mono_jit_cleanup(domain);
+	script_engine.printAssemblyTypes(script_engine.getAssembly());
 
 	{
 		toaster::io::filesystem::Path shader_dir{"../source/toaster/toast_shaders"};
@@ -200,7 +204,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 			depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
 			depth_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
 			depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
-			rendering_info.pDepthAttachment   = &depth_attachment_info;
+			rendering_info.pDepthAttachment   = std::addressof(depth_attachment_info);
 
 			toaster::Renderer::beginRendering(rendering_info, command_buffer, frame_index, render_pass);
 			toaster::Renderer::renderFullscreenQuad(command_buffer, frame_index, pipeline, nullptr);
