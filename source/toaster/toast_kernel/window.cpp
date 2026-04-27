@@ -350,11 +350,24 @@ namespace toaster
 		glfwRestoreWindow(m_window);
 	}
 
-	auto Window::fullscreen() -> void
+	auto Window::isFullscreen() const -> bool
+	{
+		return glfwGetWindowMonitor(m_window);
+	}
+
+	auto Window::setFullscreen() -> void
 	{
 		GLFWmonitor *      monitor{glfwGetPrimaryMonitor()};
 		const GLFWvidmode *mode{glfwGetVideoMode(monitor)};
 		glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+	}
+
+	auto Window::setWindowed() -> void
+	{
+		if (glfwGetWindowMonitor(m_window))
+		{
+			glfwSetWindowMonitor(m_window, nullptr, 0, 0, static_cast<int32>(m_callbackData.width), static_cast<int32>(m_callbackData.height), 0);
+		}
 	}
 
 	auto Window::setEventCallback(const EventCallbackFn &p_callback) -> void

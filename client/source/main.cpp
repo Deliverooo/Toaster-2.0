@@ -81,13 +81,25 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	auto window{new toaster::Window{vk_logical_device, window_create_info}};
 
 	volatile bool window_closed{false};
-	window->setEventCallback([&window_closed](toaster::Event &event) mutable -> void
+	window->setEventCallback([&window, &window_closed](toaster::Event &event) mutable -> void
 	{
 		toaster::EventDispatcher dispatcher{event};
 		dispatcher.dispatch<toaster::WindowCloseEvent>([&window_closed](toaster::WindowCloseEvent &window_close_event) mutable -> bool
 		{
 			window_closed = true;
 			return true;
+		});
+		dispatcher.dispatch<toaster::KeyPressEvent>([&window](toaster::KeyPressEvent &key_press_event) mutable -> bool
+		{
+			if (key_press_event.getKeyCode() == toaster::input::EKeyCode::eF11)
+			{
+				if (!window->isFullscreen())
+					window->setFullscreen();
+				else
+					window->setWindowed();
+			}
+
+			return false;
 		});
 	});
 

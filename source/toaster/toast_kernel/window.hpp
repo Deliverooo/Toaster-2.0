@@ -76,7 +76,9 @@ namespace toaster
 		auto minimize() -> void;
 		auto restore() -> void;
 
-		auto fullscreen() -> void;
+		auto isFullscreen() const -> bool;
+		auto setFullscreen() -> void;
+		auto setWindowed() -> void;
 
 		auto setEventCallback(const EventCallbackFn &p_callback) -> void;
 
