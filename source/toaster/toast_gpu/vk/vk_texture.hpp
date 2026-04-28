@@ -32,7 +32,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto getSpecInfo() const -> const TextureSpecInfo &;
 		auto               getPath() const -> const io::filesystem::Path &;
 		[[nodiscard]] auto getMipLevelCount() const -> uint32;
-		auto               getImage() const -> const RefPtr<VKImage2D> &;
+		auto               getImage() const -> const RefPtr<VKRawImage> &;
 		[[nodiscard]] auto getSampler() -> vk::raii::Sampler &;
 		[[nodiscard]] auto getDescriptorInfo() -> vk::DescriptorImageInfo &;
 
@@ -42,7 +42,7 @@ namespace toaster::gpu
 
 		uint32 m_mipLevels{1u};
 
-		RefPtr<VKImage2D> m_image{nullptr};
+		RefPtr<VKRawImage> m_image{nullptr};
 		vk::raii::Sampler m_sampler{nullptr};
 
 		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};

@@ -218,9 +218,9 @@ auto main(int32 p_argc, char **p_argv) -> int32
 			depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
 			rendering_info.pDepthAttachment   = std::addressof(depth_attachment_info);
 
-			toaster::Renderer::beginRendering(rendering_info, command_buffer, frame_index, render_pass);
-			toaster::Renderer::renderFullscreenQuad(command_buffer, frame_index, pipeline, nullptr);
-			toaster::Renderer::endRendering(rendering_info, command_buffer);
+			toaster::render::beginRendering(rendering_info, command_buffer, frame_index, render_pass);
+			toaster::render::renderFullscreenQuad(command_buffer, frame_index, pipeline, nullptr);
+			toaster::render::endRendering(rendering_info, command_buffer);
 
 			window->endFrame();
 		}

@@ -9,3 +9,5 @@
 #else
 #define TST_API
 #endif
+
+#define TST_STATIC_INTERFACE(__name) class __declspec(novtable) TST_API __name final

@@ -302,27 +302,27 @@ namespace toaster
 		depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 		rendering_info.pDepthAttachment  = &depth_attachment_info;
 
-		Renderer::beginRendering(rendering_info, p_cmd, p_frame_index, m_depthPrePass);
+		render::beginRendering(rendering_info, p_cmd, p_frame_index, m_depthPrePass);
 
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
 			{
-				Renderer::renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_depthPrePipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform,
+				render::renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_depthPrePipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform,
 									 nullptr);
 			}
 		}
 
-		Renderer::endRendering(rendering_info, p_cmd);
+		render::endRendering(rendering_info, p_cmd);
 	}
 
 	auto SceneRenderer::_renderLightCullingPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
-		Renderer::beginCompute(p_cmd, p_frame_index, m_lightCullingPass);
+		render::beginCompute(p_cmd, p_frame_index, m_lightCullingPass);
 
-		Renderer::dispatchCompute(p_cmd, p_frame_index, m_lightCullingPass, m_lightCullingMaterial, 1, 1, 1);
+		render::dispatchCompute(p_cmd, p_frame_index, m_lightCullingPass, m_lightCullingMaterial, 1, 1, 1);
 
-		Renderer::endCompute(p_cmd, p_frame_index, m_lightCullingPass);
+		render::endCompute(p_cmd, p_frame_index, m_lightCullingPass);
 	}
 
 	auto SceneRenderer::_renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
@@ -339,9 +339,9 @@ namespace toaster
 		colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
 		colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 
-		Renderer::beginRendering(rendering_info, p_cmd, p_frame_index, m_skyboxPass);
-		Renderer::renderFullscreenQuad(p_cmd, p_frame_index, m_skyboxPipeline, m_skyboxMaterial);
-		Renderer::endRendering(rendering_info, p_cmd);
+		render::beginRendering(rendering_info, p_cmd, p_frame_index, m_skyboxPass);
+		render::renderFullscreenQuad(p_cmd, p_frame_index, m_skyboxPipeline, m_skyboxMaterial);
+		render::endRendering(rendering_info, p_cmd);
 	}
 
 	auto SceneRenderer::_renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
@@ -375,16 +375,16 @@ namespace toaster
 		depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eDontCare;
 		rendering_info.pDepthAttachment  = &depth_attachment_info;
 
-		Renderer::beginRendering(rendering_info, p_cmd, p_frame_index, m_geometryPass);
+		render::beginRendering(rendering_info, p_cmd, p_frame_index, m_geometryPass);
 
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
 			{
-				Renderer::renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_geometryPipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform);
+				render::renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_geometryPipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform);
 			}
 		}
 
-		Renderer::endRendering(rendering_info, p_cmd);
+		render::endRendering(rendering_info, p_cmd);
 	}
 }

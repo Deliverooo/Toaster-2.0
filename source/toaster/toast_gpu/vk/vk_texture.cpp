@@ -15,14 +15,14 @@ namespace toaster::gpu
 			if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
 				usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
 
-			ImageCreateInfo image_create_info{};
+			ImageSpecInfo image_create_info{};
 			image_create_info.width       = m_specInfo.width;
 			image_create_info.height      = m_specInfo.height;
 			image_create_info.usage       = usage_flags;
 			image_create_info.mipCount    = m_mipLevels;
 			image_create_info.sampleCount = m_specInfo.sampleCount;
 			image_create_info.format      = m_specInfo.format;
-			m_image                       = m_device->alloc<VKImage2D>(image_create_info);
+			m_image                       = m_device->alloc<VKRawImage>(image_create_info);
 
 			m_device->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone,
 											vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
@@ -35,14 +35,14 @@ namespace toaster::gpu
 			if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
 				usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
 
-			ImageCreateInfo image_create_info{};
+			ImageSpecInfo image_create_info{};
 			image_create_info.width       = m_specInfo.width;
 			image_create_info.height      = m_specInfo.height;
 			image_create_info.usage       = usage_flags;
 			image_create_info.mipCount    = m_mipLevels;
 			image_create_info.sampleCount = m_specInfo.sampleCount;
 			image_create_info.format      = m_specInfo.format;
-			m_image                       = m_device->alloc<VKImage2D>(image_create_info);
+			m_image                       = m_device->alloc<VKRawImage>(image_create_info);
 
 			m_device->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone,
 											vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
@@ -95,14 +95,14 @@ namespace toaster::gpu
 		else
 			m_mipLevels = 1;
 
-		ImageCreateInfo image_create_info{};
+		ImageSpecInfo image_create_info{};
 		image_create_info.width       = m_specInfo.width;
 		image_create_info.height      = m_specInfo.height;
 		image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = m_specInfo.format;
-		m_image                       = m_device->alloc<VKImage2D>(image_create_info);
+		m_image                       = m_device->alloc<VKRawImage>(image_create_info);
 
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
@@ -137,14 +137,14 @@ namespace toaster::gpu
 	VKTexture2D::VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size) : m_device(p_device), m_specInfo(p_spec_info),
 																														   m_path("")
 	{
-		ImageCreateInfo image_create_info{};
+		ImageSpecInfo image_create_info{};
 		image_create_info.width       = m_specInfo.width;
 		image_create_info.height      = m_specInfo.height;
 		image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = vk::Format::eR8G8B8A8Unorm;
-		m_image                       = m_device->alloc<VKImage2D>(image_create_info);
+		m_image                       = m_device->alloc<VKRawImage>(image_create_info);
 
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
@@ -214,7 +214,7 @@ namespace toaster::gpu
 		return m_mipLevels;
 	}
 
-	auto VKTexture2D::getImage() const -> const RefPtr<VKImage2D> &
+	auto VKTexture2D::getImage() const -> const RefPtr<VKRawImage> &
 	{
 		return m_image;
 	}

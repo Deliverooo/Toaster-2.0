@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../toaster_export.hpp"
+#include "../toaster_macros.hpp"
 
 #include <utility> // std::pair
 

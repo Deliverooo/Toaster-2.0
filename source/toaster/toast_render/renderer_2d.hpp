@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../toaster_export.hpp"
+#include "../toaster_macros.hpp"
 
 #include "toast_gpu/buffer_layout.hpp"
 #include "toast_lib/ptr.hpp"
@@ -20,7 +20,7 @@ namespace toaster
 		class VKRenderPass;
 		class VKMaterial;
 		class VKTexture2D;
-		class VKImage2D;
+		class VKRawImage;
 		class VKUniformBuffer;
 		class VKUniformBufferPFF;
 		class VKVertexBuffer;
@@ -85,7 +85,8 @@ namespace toaster
 		gpu::BufferLayout m_quadVertexBufferLayout;
 
 		RefPtr<gpu::VKTexture2D> m_renderTargetTexture{nullptr};
-		RefPtr<gpu::VKImage2D>   m_renderTargetDepthImage{nullptr};
+
+		gpu::AttachmentImageHandle m_renderTargetDepthImage{nullptr};
 
 		RefPtr<gpu::VKPipeline>   m_quadPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_quadRenderPass{nullptr};
@@ -99,8 +100,8 @@ namespace toaster
 
 		uint32 m_quadIndexCount{0u};
 
-		std::array<tsm::float4, 4u> m_quadVertexPositions;
-		std::array<tsm::float2, 4u> m_quadVertexTexCoords;
+		std::array<tsm::float4, 4u> m_quadVertexPositions{};
+		std::array<tsm::float2, 4u> m_quadVertexTexCoords{};
 
 		struct CameraUB
 		{

@@ -104,12 +104,21 @@ namespace toaster::gpu
 			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
 
+	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKImage2D> &p_image_2d) -> void
+	{
+		if (const auto decl{getDescriptorDeclaration(p_name)})
+			m_descriptorResources.at(decl->set)[decl->binding] = p_image_2d;
+		else
+			LOG_WARN("Descriptor was not found: {}", p_name);
+	}
+
 	auto VKDescriptorSetManager::bakeDescriptors() -> void
 	{
-		std::array<vk::DescriptorPoolSize, 3> descriptor_pool_sizes{
+		std::array<vk::DescriptorPoolSize, 4> descriptor_pool_sizes{
 			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 100},
 			vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 100},
-			vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 100}
+			vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 100},
+			vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 100}
 		};
 
 		vk::DescriptorPoolCreateInfo descriptor_pool_create_info{};
@@ -217,6 +226,17 @@ namespace toaster::gpu
 								TST_ASSERT_MSG(false, "Oh no");
 							break;
 						}
+						case EGPUResourceType::eImage2D:
+						{
+							auto image_2d{resource.resources[0].as<VKImage2D>()};
+							TST_ASSERT(image_2d);
+							write_descriptor.pImageInfo                = &image_2d->getDescriptorInfo();
+							stored_write_descriptor.resourceHandles[0] = write_descriptor.pImageInfo->imageView;
+
+							if (!write_descriptor.pImageInfo->imageView)
+								TST_ASSERT_MSG(false, "Oh no");
+							break;
+						}
 
 						default: break;
 					}
@@ -283,6 +303,12 @@ namespace toaster::gpu
 							}
 						}
 						break;
+					}
+					case EGPUResourceType::eImage2D:
+					{
+						const auto &image_info{resource.resources[0].as<VKImage2D>()->getDescriptorInfo()};
+						if (image_info.imageView != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
+							m_invalidDescriptorResources[set][binding] = resource;
 					}
 					default: break;
 				}
@@ -353,6 +379,13 @@ namespace toaster::gpu
 							write_descriptor.wds.pImageInfo     = &texture_2d->getDescriptorInfo();
 							write_descriptor.resourceHandles[0] = texture_2d->getDescriptorInfo().imageView;
 						}
+						break;
+					}
+					case EGPUResourceType::eImage2D:
+					{
+						auto image_2d{resource.resources[0].as<VKImage2D>()};
+						write_descriptor.wds.pImageInfo     = &image_2d->getDescriptorInfo();
+						write_descriptor.resourceHandles[0] = image_2d->getDescriptorInfo().imageView;
 						break;
 					}
 					default: break;

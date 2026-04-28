@@ -14,7 +14,8 @@ namespace toaster::gpu
 		eUnknown,
 		eUniformBuffer,
 		eStorageBuffer,
-		eSampler2D
+		eSampler2D,
+		eImage2D
 	};
 
 	struct DescriptorDeclaration
@@ -57,6 +58,10 @@ namespace toaster::gpu
 		{
 		}
 
+		DescriptorResource(const RefPtr<VKImage2D> &p_image_2d) : resources(std::vector<RefPtr<IGPUResource> >(1, p_image_2d)), type(EGPUResourceType::eImage2D)
+		{
+		}
+
 		auto set(const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_index) -> void
 		{
 			type               = EGPUResourceType::eTexture2D;
@@ -76,6 +81,7 @@ namespace toaster::gpu
 		auto setDescriptor(const String &p_name, const RefPtr<VKStorageBufferPFF> &p_storage_buffer_pff) -> void;
 		auto setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void;
 		auto setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void;
+		auto setDescriptor(const String &p_name, const RefPtr<VKImage2D> &p_image_2d) -> void;
 
 		template<GPUResource_c TResource>
 		auto getDescriptor(const String &p_name) -> RefPtr<TResource>

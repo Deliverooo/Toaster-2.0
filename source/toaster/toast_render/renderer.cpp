@@ -3,10 +3,55 @@
 #include "globals.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 
-namespace toaster
+namespace toaster::render
 {
-	auto Renderer::beginRendering(const gpu::RenderingInfo &       p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index,
-								  const RefPtr<gpu::VKRenderPass> &p_render_pass) -> void
+	namespace util
+	{
+		auto shaderReadToColourAttachment(const gpu::AttachmentImageHandle &p_image) -> void
+		{
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+														vk::AccessFlagBits2::eShaderRead, vk::AccessFlagBits2::eColorAttachmentWrite,
+														vk::PipelineStageFlagBits2::eFragmentShader, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+		}
+
+		auto shaderReadToDepthAttachment(const gpu::AttachmentImageHandle &p_image, bool p_read_only) -> void
+		{
+			const vk::ImageLayout  new_layout{p_read_only ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal};
+			const vk::AccessFlags2 dst_access_flags{p_read_only ? vk::AccessFlagBits2::eDepthStencilAttachmentRead : vk::AccessFlagBits2::eDepthStencilAttachmentWrite};
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, new_layout, vk::AccessFlagBits2::eShaderRead,
+														dst_access_flags, vk::PipelineStageFlagBits2::eFragmentShader,
+														vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
+
+			p_image->setCurrentImageLayout(new_layout);
+		}
+
+		auto colourAttachmentToShaderRead(const gpu::AttachmentImageHandle &p_image) -> void
+		{
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+														vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eShaderRead,
+														vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eFragmentShader,
+														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		}
+
+		auto depthAttachmentToShaderRead(const gpu::AttachmentImageHandle &p_image, bool p_read_only) -> void
+		{
+			const vk::ImageLayout  old_layout{p_read_only ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal};
+			const vk::AccessFlags2 src_access_flags{p_read_only ? vk::AccessFlagBits2::eDepthStencilAttachmentRead : vk::AccessFlagBits2::eDepthStencilAttachmentWrite};
+
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), old_layout, vk::ImageLayout::eShaderReadOnlyOptimal, src_access_flags,
+														vk::AccessFlagBits2::eShaderRead,
+														vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+														vk::PipelineStageFlagBits2::eFragmentShader, p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		}
+	}
+
+	auto beginRendering(const gpu::RenderingInfo &       p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index,
+						const RefPtr<gpu::VKRenderPass> &p_render_pass) -> void
 	{
 		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
 		TST_ASSERT_MSG(p_render_pass, "Render pass is null");
@@ -22,14 +67,9 @@ namespace toaster
 				info.imageView = image->getImageView();
 
 				// Perform the layout transition on sampled attachment images
-				if ((image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled) && (image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
-				{
-					image->getDevice()->transitionImageLayout(image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
-															  vk::AccessFlagBits2::eShaderRead, vk::AccessFlagBits2::eColorAttachmentWrite,
-															  vk::PipelineStageFlagBits2::eFragmentShader, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-															  image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eColor);
-					image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
-				}
+				if ((image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
+					util::shaderReadToColourAttachment(image);
+
 				info.imageLayout = image->getCurrentImageLayout();
 			}
 			else
@@ -44,16 +84,10 @@ namespace toaster
 				info.resolveImageView = resolve_image->getImageView();
 
 				// Perform the layout transition on sampled attachment images
-				if ((resolve_image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
+				if ((resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
 						resolve_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
-				{
-					resolve_image->getDevice()->transitionImageLayout(resolve_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
-																	  vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eShaderRead,
-																	  vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eFragmentShader,
-																	  vk::PipelineStageFlagBits2::eColorAttachmentOutput, resolve_image->getCreateInfo().mipCount,
-																	  vk::ImageAspectFlagBits::eColor);
-					resolve_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
-				}
+					util::shaderReadToColourAttachment(resolve_image);
+
 				info.resolveImageLayout = resolve_image->getCurrentImageLayout();
 			}
 			else
@@ -78,27 +112,10 @@ namespace toaster
 				depth_attachment_info.imageView = depth_image->getImageView();
 
 				// Perform the layout transition on sampled attachment images
-				if ((depth_image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
+				if ((depth_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
 						depth_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
-					if (p_rendering_info.depthReadOnly)
-					{
-						depth_image->getDevice()->transitionImageLayout(depth_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
-																		vk::ImageLayout::eDepthReadOnlyOptimal, vk::AccessFlagBits2::eShaderRead,
-																		vk::AccessFlagBits2::eDepthStencilAttachmentRead, vk::PipelineStageFlagBits2::eFragmentShader,
-																		vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-																		depth_image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
-						depth_image->setCurrentImageLayout(vk::ImageLayout::eDepthReadOnlyOptimal);
-					}
-					else
-					{
-						depth_image->getDevice()->transitionImageLayout(depth_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
-																		vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eShaderRead,
-																		vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eFragmentShader,
-																		vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-																		depth_image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
-						depth_image->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
-					}
+					util::shaderReadToDepthAttachment(depth_image, p_rendering_info.depthReadOnly);
 				}
 
 				depth_attachment_info.imageLayout = depth_image->getCurrentImageLayout();
@@ -114,17 +131,10 @@ namespace toaster
 			{
 				depth_attachment_info.resolveImageView = depth_resolve_image->getImageView();
 				// Perform the layout transition on sampled attachment images
-				if ((depth_resolve_image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
+				if ((depth_resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
 						depth_resolve_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
-					depth_resolve_image->getDevice()->transitionImageLayout(depth_resolve_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal,
-																			vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eShaderRead,
-																			vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-																			vk::PipelineStageFlagBits2::eFragmentShader,
-																			vk::PipelineStageFlagBits2::eEarlyFragmentTests |
-																			vk::PipelineStageFlagBits2::eLateFragmentTests, depth_resolve_image->getCreateInfo().mipCount,
-																			vk::ImageAspectFlagBits::eDepth);
-					depth_resolve_image->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
+					util::shaderReadToDepthAttachment(depth_resolve_image, false);
 				}
 
 				depth_attachment_info.resolveImageLayout = depth_resolve_image->getCurrentImageLayout();
@@ -206,10 +216,10 @@ namespace toaster
 		const auto descriptor_sets = p_render_pass->getDescriptorSets(p_frame_index);
 		if (!descriptor_sets.empty())
 			p_command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_render_pass->getPipeline()->getPipelineLayout(), p_render_pass->getStartSetIndex(),
-											descriptor_sets, nullptr);
+												descriptor_sets, nullptr);
 	}
 
-	auto Renderer::endRendering(const gpu::RenderingInfo &p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer) -> void
+	auto endRendering(const gpu::RenderingInfo &p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer) -> void
 	{
 		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
 
@@ -219,23 +229,14 @@ namespace toaster
 		for (const auto &rendering_attachment: p_rendering_info.colourAttachments)
 		{
 			auto image{rendering_attachment.image};
-			if ((image != nullptr) && (image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled))
+			if ((image != nullptr) && (image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				image->getDevice()->transitionImageLayout(image->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-														  vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eShaderRead,
-														  vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eFragmentShader,
-														  image->getCreateInfo().mipCount, vk::ImageAspectFlagBits::eColor);
-				image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+				util::colourAttachmentToShaderRead(image);
 			}
 			auto resolve_image{rendering_attachment.resolveImage};
-			if ((resolve_image != nullptr) && (resolve_image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled))
+			if ((resolve_image != nullptr) && (resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				resolve_image->getDevice()->transitionImageLayout(resolve_image->getImage(), vk::ImageLayout::eColorAttachmentOptimal,
-																  vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eColorAttachmentWrite,
-																  vk::AccessFlagBits2::eShaderRead, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-																  vk::PipelineStageFlagBits2::eFragmentShader, resolve_image->getCreateInfo().mipCount,
-																  vk::ImageAspectFlagBits::eColor);
-				resolve_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+				util::colourAttachmentToShaderRead(resolve_image);
 			}
 		}
 
@@ -243,43 +244,19 @@ namespace toaster
 		{
 			auto depth_image{p_rendering_info.pDepthAttachment->image};
 
-			if ((depth_image != nullptr) && (depth_image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled))
+			if ((depth_image != nullptr) && (depth_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				if (p_rendering_info.depthReadOnly)
-				{
-					depth_image->getDevice()->transitionImageLayout(depth_image->getImage(), vk::ImageLayout::eDepthReadOnlyOptimal,
-																	vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eDepthStencilAttachmentRead,
-																	vk::AccessFlagBits2::eShaderRead,
-																	vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-																	vk::PipelineStageFlagBits2::eFragmentShader, depth_image->getCreateInfo().mipCount,
-																	vk::ImageAspectFlagBits::eDepth);
-				}
-				else
-				{
-					depth_image->getDevice()->transitionImageLayout(depth_image->getImage(), vk::ImageLayout::eDepthAttachmentOptimal,
-																	vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-																	vk::AccessFlagBits2::eShaderRead,
-																	vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-																	vk::PipelineStageFlagBits2::eFragmentShader, depth_image->getCreateInfo().mipCount,
-																	vk::ImageAspectFlagBits::eDepth);
-				}
-				depth_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+				util::depthAttachmentToShaderRead(depth_image, p_rendering_info.depthReadOnly);
 			}
 			auto depth_resolve_image{p_rendering_info.pDepthAttachment->resolveImage};
-			if ((depth_resolve_image != nullptr) && (depth_resolve_image->getCreateInfo().usage & vk::ImageUsageFlagBits::eSampled))
+			if ((depth_resolve_image != nullptr) && (depth_resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				depth_resolve_image->getDevice()->transitionImageLayout(depth_resolve_image->getImage(), vk::ImageLayout::eDepthAttachmentOptimal,
-																		vk::ImageLayout::eShaderReadOnlyOptimal, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-																		vk::AccessFlagBits2::eShaderRead,
-																		vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-																		vk::PipelineStageFlagBits2::eFragmentShader, depth_resolve_image->getCreateInfo().mipCount,
-																		vk::ImageAspectFlagBits::eDepth);
-				depth_resolve_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+				util::depthAttachmentToShaderRead(depth_resolve_image, false);
 			}
 		}
 	}
 
-	auto Renderer::beginCompute(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKComputePass> &p_compute_pass) -> void
+	auto beginCompute(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKComputePass> &p_compute_pass) -> void
 	{
 		p_command_buffer.bindPipeline(vk::PipelineBindPoint::eCompute, p_compute_pass->getPipeline()->getPipeline());
 
@@ -291,8 +268,8 @@ namespace toaster
 												descriptor_sets, nullptr);
 	}
 
-	auto Renderer::dispatchCompute(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKComputePass> &p_compute_pass,
-								   const RefPtr<gpu::VKMaterial> &p_material, uint32       p_work_group_x, uint32 p_work_group_y, uint32 p_work_group_z) -> void
+	auto dispatchCompute(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKComputePass> &p_compute_pass,
+						 const RefPtr<gpu::VKMaterial> &p_material, uint32       p_work_group_x, uint32 p_work_group_y, uint32 p_work_group_z) -> void
 	{
 		if (p_material)
 			if (p_material->hasDescriptorSets())
@@ -302,14 +279,14 @@ namespace toaster
 		p_command_buffer.dispatch(p_work_group_x, p_work_group_y, p_work_group_z);
 	}
 
-	auto Renderer::endCompute([[maybe_unused]] const vk::raii::CommandBuffer &   p_command_buffer, [[maybe_unused]] uint32 p_frame_index,
-							  [[maybe_unused]] const RefPtr<gpu::VKComputePass> &p_compute_pass) -> void
+	auto endCompute([[maybe_unused]] const vk::raii::CommandBuffer &   p_command_buffer, [[maybe_unused]] uint32 p_frame_index,
+					[[maybe_unused]] const RefPtr<gpu::VKComputePass> &p_compute_pass) -> void
 	{
 	}
 
-	auto Renderer::renderGeometry(const vk::raii::CommandBuffer &    p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
-								  const RefPtr<gpu::VKVertexBuffer> &p_vertex_buffer, const RefPtr<gpu::VKIndexBuffer> &p_index_buffer, uint32 p_index_count,
-								  const RefPtr<gpu::VKMaterial> &    p_material, const glm::mat4 &p_transform) -> void
+	auto renderGeometry(const vk::raii::CommandBuffer &    p_command_buffer, uint32                           p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
+						const RefPtr<gpu::VKVertexBuffer> &p_vertex_buffer, const RefPtr<gpu::VKIndexBuffer> &p_index_buffer, uint32                        p_index_count,
+						const RefPtr<gpu::VKMaterial> &    p_material, const glm::mat4 &                      p_transform) -> void
 	{
 		// Push the constants
 		p_command_buffer.pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
@@ -344,8 +321,8 @@ namespace toaster
 		p_command_buffer.drawIndexed(p_index_count, 1, 0, 0, 0);
 	}
 
-	auto Renderer::renderFullscreenQuad(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
-										const RefPtr<gpu::VKMaterial> &p_material) -> void
+	auto renderFullscreenQuad(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
+							  const RefPtr<gpu::VKMaterial> &p_material) -> void
 	{
 		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
 
@@ -378,8 +355,8 @@ namespace toaster
 		p_command_buffer.drawIndexed(Globals::getFullscreenQuadIndices().size(), 1, 0, 0, 0);
 	}
 
-	auto Renderer::renderMesh(const vk::raii::CommandBuffer &p_command_buffer, uint32     p_frame_index, const RefPtr<gpu::VKMesh> &p_mesh, uint32 p_submesh_index,
-							  const RefPtr<gpu::VKPipeline> &p_pipeline, const glm::mat4 &p_transform) -> void
+	auto renderMesh(const vk::raii::CommandBuffer &p_command_buffer, uint32     p_frame_index, const RefPtr<gpu::VKMesh> &p_mesh, uint32 p_submesh_index,
+					const RefPtr<gpu::VKPipeline> &p_pipeline, const glm::mat4 &p_transform) -> void
 	{
 		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
 
@@ -419,8 +396,8 @@ namespace toaster
 		p_command_buffer.drawIndexed(submesh.indexCount, 1, submesh.baseIndex, submesh.baseVertex, 0);
 	}
 
-	auto Renderer::renderMesh(const vk::raii::CommandBuffer &p_command_buffer, uint32     p_frame_index, const RefPtr<gpu::VKMesh> &  p_mesh, uint32 p_submesh_index,
-							  const RefPtr<gpu::VKPipeline> &p_pipeline, const glm::mat4 &p_transform, const RefPtr<gpu::VKMaterial> &p_override_material) -> void
+	auto renderMesh(const vk::raii::CommandBuffer &p_command_buffer, uint32     p_frame_index, const RefPtr<gpu::VKMesh> &  p_mesh, uint32 p_submesh_index,
+					const RefPtr<gpu::VKPipeline> &p_pipeline, const glm::mat4 &p_transform, const RefPtr<gpu::VKMaterial> &p_override_material) -> void
 	{
 		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
 
@@ -456,6 +433,6 @@ namespace toaster
 		p_mesh->getIndexBuffer()->bind(p_command_buffer, vk::IndexType::eUint32);
 
 		// Finally, draw indexed :)
-		p_command_buffer.drawIndexed(submesh.indexCount, 1, submesh.baseIndex, submesh.baseVertex, 0);
+		p_command_buffer.drawIndexed(submesh.indexCount, 1, submesh.baseIndex, static_cast<int32>(submesh.baseVertex), 0);
 	}
 }

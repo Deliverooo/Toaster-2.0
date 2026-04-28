@@ -6,9 +6,9 @@
 
 namespace toaster
 {
-	Renderer2D::Renderer2D(gpu::VKLogicalDevice *p_p_devicectx, const Renderer2DSpecInfo &p_create_info) : m_device(p_p_devicectx), m_createInfo(p_create_info),
-																										   m_maxVertices(p_create_info.maxQuads * 4u),
-																										   m_maxIndices(p_create_info.maxQuads * 6u)
+	Renderer2D::Renderer2D(gpu::VKLogicalDevice *p_device, const Renderer2DSpecInfo &p_create_info) : m_device(p_device), m_createInfo(p_create_info),
+																									  m_maxVertices(p_create_info.maxQuads * 4u),
+																									  m_maxIndices(p_create_info.maxQuads * 6u)
 	{
 		m_quadVertexBufferLayout = gpu::BufferLayout{
 			{gpu::EBufferDataType::eFloat4, "a_Position"},
@@ -46,12 +46,12 @@ namespace toaster
 			colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
 			m_renderTargetTexture                      = m_device->alloc<gpu::VKTexture2D>(colour_attachment_texture_spec_info);
 
-			gpu::ImageCreateInfo depth_attachment_image_create_info{};
+			gpu::ImageSpecInfo depth_attachment_image_create_info{};
 			depth_attachment_image_create_info.width  = m_createInfo.renderTargetWidth;
 			depth_attachment_image_create_info.height = m_createInfo.renderTargetHeight;
 			depth_attachment_image_create_info.format = m_device->getPhysicalDevice()->getDepthFormat();
 			depth_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-			m_renderTargetDepthImage                  = m_device->alloc<gpu::VKImage2D>(depth_attachment_image_create_info);
+			m_renderTargetDepthImage                  = m_device->alloc<gpu::AttachmentImage>(depth_attachment_image_create_info);
 		}
 		else
 		{
@@ -157,7 +157,7 @@ namespace toaster
 		}
 		rendering_info.pDepthAttachment = &depth_attachment_info;
 
-		Renderer::beginRendering(rendering_info, p_cmd, p_frame_index, m_quadRenderPass);
+		render::beginRendering(rendering_info, p_cmd, p_frame_index, m_quadRenderPass);
 
 		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
 		if (size) // Apparently you have to check ts, or things won't work correctly and there will be artifacts...
@@ -174,10 +174,10 @@ namespace toaster
 					m_quadMaterial->set("u_Textures", Globals::getWhiteTexture(), i);
 			}
 
-			Renderer::renderGeometry(p_cmd, p_frame_index, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, glm::mat4{1.0f});
+			render::renderGeometry(p_cmd, p_frame_index, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, glm::mat4{1.0f});
 		}
 
-		Renderer::endRendering(rendering_info, p_cmd);
+		render::endRendering(rendering_info, p_cmd);
 	}
 
 	auto Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void

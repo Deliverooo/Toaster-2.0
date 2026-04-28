@@ -3,7 +3,7 @@
  */
 #pragma once
 
-#include "../toaster_export.hpp"
+#include "../toaster_macros.hpp"
 
 #include <unordered_set>
 #include <utility> // std::pair

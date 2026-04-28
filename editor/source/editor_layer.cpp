@@ -152,9 +152,9 @@ namespace toaster
 
 		rendering_info.pDepthAttachment = &depth_attachment_info;
 
-		Renderer::beginRendering(rendering_info, cmd_buf, frame_index, m_fullscreenPass);
-		Renderer::renderFullscreenQuad(cmd_buf, frame_index, m_fullscreenPipeline, nullptr);
-		Renderer::endRendering(rendering_info, cmd_buf);
+		render::beginRendering(rendering_info, cmd_buf, frame_index, m_fullscreenPass);
+		render::renderFullscreenQuad(cmd_buf, frame_index, m_fullscreenPipeline, nullptr);
+		render::endRendering(rendering_info, cmd_buf);
 	}
 
 	auto EditorLayer::onEvent(Event &p_event) -> void

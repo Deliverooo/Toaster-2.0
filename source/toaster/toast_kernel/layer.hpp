@@ -3,7 +3,7 @@
  */
 #pragma once
 
-#include "../toaster_export.hpp"
+#include "../toaster_macros.hpp"
 
 #include "toast_lib/system_types.h"
 #include "toast_lib/events/event.hpp"

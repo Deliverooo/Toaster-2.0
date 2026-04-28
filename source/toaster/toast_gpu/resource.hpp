@@ -13,7 +13,8 @@ namespace toaster::gpu
 		eStorageBuffer,
 		eStorageBufferPFF,
 		eTexture2D,
-		eTexture3D
+		eTexture3D,
+		eImage2D
 	};
 
 	class TST_GPU_API IGPUResource
