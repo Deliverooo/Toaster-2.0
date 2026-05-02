@@ -6,7 +6,7 @@
 
 #include <mono/jit/jit.h>
 
-namespace toaster
+namespace toaster::script
 {
 	struct TST_API ScriptEngineSpecInfo
 	{
@@ -22,11 +22,12 @@ namespace toaster
 		ScriptEngine(const ScriptEngineSpecInfo &p_spec_info);
 		~ScriptEngine();
 
-		auto getRootDomain() const -> MonoDomain *;
-		auto getAppDomain() const -> MonoDomain *;
-		auto getAssembly() const -> MonoAssembly *;
+		[[nodiscard]] auto getRootDomain() const -> MonoDomain *;
+		[[nodiscard]] auto getAppDomain() const -> MonoDomain *;
+		[[nodiscard]] auto getAssembly() const -> MonoAssembly *;
+		[[nodiscard]] auto getImage() const -> MonoImage *;
 
-		auto loadAssembly(const io::filesystem::Path &p_path) const -> MonoAssembly *;
+		[[nodiscard]] auto loadAssembly(const io::filesystem::Path &p_path) const -> MonoAssembly *;
 
 		auto printAssemblyTypes(MonoAssembly *p_assembly) const -> void;
 
@@ -37,5 +38,6 @@ namespace toaster
 		MonoDomain *m_appDomain{nullptr};
 
 		MonoAssembly *m_assembly{nullptr};
+		MonoImage *   m_image{nullptr};
 	};
 }

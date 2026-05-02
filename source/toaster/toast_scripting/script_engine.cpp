@@ -5,7 +5,7 @@
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
 
-namespace toaster
+namespace toaster::script
 {
 	ScriptEngine::ScriptEngine(const ScriptEngineSpecInfo &p_spec_info) : m_specInfo(p_spec_info)
 	{
@@ -18,6 +18,7 @@ namespace toaster
 
 		m_assembly = loadAssembly(m_specInfo.assemblyPath);
 		TST_ASSERT_MSG(m_assembly, "Failed to load assembly");
+		m_image = mono_assembly_get_image(m_assembly);
 	}
 
 	ScriptEngine::~ScriptEngine()
@@ -41,6 +42,11 @@ namespace toaster
 	auto ScriptEngine::getAssembly() const -> MonoAssembly *
 	{
 		return m_assembly;
+	}
+
+	auto ScriptEngine::getImage() const -> MonoImage *
+	{
+		return m_image;
 	}
 
 	auto ScriptEngine::loadAssembly(const io::filesystem::Path &p_path) const -> MonoAssembly *

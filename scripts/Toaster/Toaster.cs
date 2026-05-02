@@ -1,18 +1,28 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Text.Unicode;
 
 namespace Toaster
 {
     public class Orbo
     {
-        public Orbo()
+        public static void staticTest()
         {
-            Console.WriteLine("Orbo!!!");
+            Console.WriteLine("Static Test!!");
         }
-        public int orbo()
+        
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern void nativeTest();
+        
+        public Orbo(int p_num)
         {
-            Console.WriteLine("Orbo Method!!!");
-
-            return 67;
+            this.orbo(p_num);
+        }
+        public void orbo(int p_num)
+        {
+            Console.WriteLine("Number: {0}", p_num);
+            
         }
     }
 }

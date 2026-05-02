@@ -30,7 +30,12 @@
 #include <mono/metadata/assembly.h>
 
 #include "toast_scripting/script_engine.hpp"
+#include "toast_scripting/script_object.hpp"
 
+static void nativeTest()
+{
+	LOG_INFO("Hello Native Orbo!");
+}
 #if USE_WINMAIN
 INT WINAPI WinMain([[maybe_unused]] HINSTANCE hInstance, [[maybe_unused]] HINSTANCE hPrevInstance, [[maybe_unused]] LPSTR lpCmdLine, [[maybe_unused]] INT nCmdShow)
 {
@@ -110,34 +115,31 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 	toaster::io::filesystem::Path scripts_dir{"../scripts"};
 
-	bool force_compile_scripts{true};
+	// bool force_compile_scripts{true};
 
-	if (!toaster::io::filesystem::exists(scripts_dir / "Toaster/bin") || force_compile_scripts)
-	{
-		toaster::io::filesystem::Path script_bat_path{"../scripts/build_scripts.bat"};
-		toaster::String               build_scripts_cmd{std::format("cd ../scripts && {}", std::filesystem::absolute(script_bat_path).string())};
-		std::system(build_scripts_cmd.c_str());
-	}
+	// if (!toaster::io::filesystem::exists(scripts_dir / "Toaster/bin") || force_compile_scripts)
+	// {
+	// toaster::io::filesystem::Path script_bat_path{"../scripts/build_scripts.bat"};
+	// toaster::String               build_scripts_cmd{std::format("cd ../scripts && {}", std::filesystem::absolute(script_bat_path).string())};
+	// std::system(build_scripts_cmd.c_str());
+	// }
 
-	toaster::ScriptEngineSpecInfo script_engine_spec_info{};
+	toaster::script::ScriptEngineSpecInfo script_engine_spec_info{};
 	script_engine_spec_info.rootDomainName = "ToasterRootDomain";
 	script_engine_spec_info.appDomainName  = "ToasterAppDomain";
-	script_engine_spec_info.assemblyPath   = "../scripts/Toaster/bin/Debug/net10.0/Toaster.dll";
-	toaster::ScriptEngine script_engine{script_engine_spec_info};
+	script_engine_spec_info.assemblyPath   = scripts_dir / "Toaster/bin/Debug/net10.0/Toaster.dll";
+	toaster::script::ScriptEngine script_engine{script_engine_spec_info};
+
+	mono_add_internal_call("Toaster.Orbo::nativeTest", (const void *) nativeTest);
 
 	script_engine.printAssemblyTypes(script_engine.getAssembly());
 
-	MonoImage *image{mono_assembly_get_image(script_engine.getAssembly())};
-	MonoClass *orbo_class{mono_class_from_name(image, "Toaster", "Orbo")};
+	toaster::script::Class orbo_class{&script_engine, "Toaster", "Orbo"};
 
-	MonoObject *orbo_object{mono_object_new(script_engine.getAppDomain(), orbo_class)};
-	mono_runtime_object_init(orbo_object);
+	toaster::script::Object orbo_object{&orbo_class};
+	orbo_object.construct(41);
 
-	MonoMethod *method{mono_class_get_method_from_name(orbo_class, "orbo", 0)};
-	MonoObject *ret{mono_runtime_invoke(method, orbo_object, nullptr, nullptr)};
-
-	int return_value{*static_cast<int *>(mono_object_unbox(ret))};
-	LOG_ERROR("{}", return_value);
+	orbo_class.invokeStaticMethod("staticTest");
 
 	{
 		toaster::io::filesystem::Path shader_dir{"../source/toaster/toast_shaders"};
