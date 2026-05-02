@@ -17,12 +17,14 @@ namespace Toaster
         
         public Orbo(int p_num)
         {
-            this.orbo(p_num);
+            nativeOrbo();
         }
-        public void orbo(int p_num)
+        public void printTest(string p_message)
         {
-            Console.WriteLine("Number: {0}", p_num);
-            
+            Console.WriteLine("Message: {0}", p_message);
         }
+        
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public extern void nativeOrbo();
     }
 }

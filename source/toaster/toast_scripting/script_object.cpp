@@ -7,8 +7,23 @@ namespace toaster::script
 		m_class = mono_class_from_name(m_engine->getImage(), p_namespace.c_str(), p_name.c_str());
 	}
 
+	auto Class::getClass() -> MonoClass *
+	{
+		return m_class;
+	}
+
 	Object::Object(Class *p_class) : m_class(p_class)
 	{
 		m_object = mono_object_new(m_class->m_engine->getAppDomain(), m_class->m_class);
+	}
+
+	auto Object::getClass() -> Class *
+	{
+		return m_class;
+	}
+
+	auto Object::getObject() -> MonoObject *
+	{
+		return m_object;
 	}
 }

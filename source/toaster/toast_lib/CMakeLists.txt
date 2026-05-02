@@ -36,6 +36,8 @@ set(SRC
 		os/library_loading.hpp
 
 		initialiser_list.hpp
+
+		type_traits.hpp
 )
 
 add_library(toast_lib STATIC) # less problematic...

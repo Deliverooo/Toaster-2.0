@@ -32,10 +32,6 @@
 #include "toast_scripting/script_engine.hpp"
 #include "toast_scripting/script_object.hpp"
 
-static void nativeTest()
-{
-	LOG_INFO("Hello Native Orbo!");
-}
 #if USE_WINMAIN
 INT WINAPI WinMain([[maybe_unused]] HINSTANCE hInstance, [[maybe_unused]] HINSTANCE hPrevInstance, [[maybe_unused]] LPSTR lpCmdLine, [[maybe_unused]] INT nCmdShow)
 {
@@ -130,16 +126,19 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	script_engine_spec_info.assemblyPath   = scripts_dir / "Toaster/bin/Debug/net10.0/Toaster.dll";
 	toaster::script::ScriptEngine script_engine{script_engine_spec_info};
 
-	mono_add_internal_call("Toaster.Orbo::nativeTest", (const void *) nativeTest);
+	script_engine.registerMethod("Toaster.Orbo::nativeTest", +[]() -> void { LOG_INFO("Hello Native Test!"); });
+	script_engine.registerMethod("Toaster.Orbo::nativeOrbo", +[]() -> void { LOG_INFO("Hello Native Orbo!"); });
 
 	script_engine.printAssemblyTypes(script_engine.getAssembly());
 
 	toaster::script::Class orbo_class{&script_engine, "Toaster", "Orbo"};
+	orbo_class.invokeStaticMethod("staticTest");
 
 	toaster::script::Object orbo_object{&orbo_class};
 	orbo_object.construct(41);
 
-	orbo_class.invokeStaticMethod("staticTest");
+	MonoString *str{mono_string_new(script_engine.getAppDomain(), "Orbicular")};
+	orbo_object.invoke("printTest", str);
 
 	{
 		toaster::io::filesystem::Path shader_dir{"../source/toaster/toast_shaders"};

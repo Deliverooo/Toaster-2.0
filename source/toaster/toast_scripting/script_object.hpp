@@ -1,5 +1,6 @@
 #pragma once
 #include "script_engine.hpp"
+#include "toast_lib/type_traits.hpp"
 
 namespace toaster::script
 {
@@ -12,9 +13,9 @@ namespace toaster::script
 		MonoObject *invokeStaticMethod(const String &p_method_name, const TArgs &... p_args)
 		{
 			constexpr uint32 parameter_count{sizeof...(p_args)};
-			if constexpr (parameter_count > 0)
+			if constexpr (parameter_count > 0u)
 			{
-				void *params[parameter_count]{(void *) &p_args...};
+				void *params[parameter_count]{( getAddressIfNotPointer(p_args), ...)};
 
 				MonoMethod *method{mono_class_get_method_from_name(m_class, p_method_name.c_str(), parameter_count)};
 				return mono_runtime_invoke(method, nullptr, params, nullptr);
@@ -26,6 +27,8 @@ namespace toaster::script
 				return ret;
 			}
 		}
+
+		[[nodiscard]] auto getClass() -> MonoClass *;
 
 	private:
 		ScriptEngine *m_engine{nullptr};
@@ -41,30 +44,18 @@ namespace toaster::script
 		Object(Class *p_class);
 
 		template<typename... TArgs>
-		void construct(const TArgs &... p_args)
+		void construct(TArgs &&... p_args)
 		{
-			constexpr uint32 parameter_count{sizeof...(p_args)};
-			if constexpr (parameter_count > 0)
-			{
-				void *params[parameter_count]{(void *) &p_args...};
-
-				MonoMethod *method{mono_class_get_method_from_name(m_class->m_class, ".ctor", parameter_count)};
-				mono_runtime_invoke(method, m_object, params, nullptr);
-			}
-			else
-			{
-				MonoMethod *method{mono_class_get_method_from_name(m_class->m_class, ".ctor", parameter_count)};
-				mono_runtime_invoke(method, m_object, nullptr, nullptr);
-			}
+			invoke(".ctor", std::forward<TArgs>(p_args)...);
 		}
 
 		template<typename... TArgs>
-		MonoObject *invoke(const String &p_method_name, const TArgs &... p_args)
+		MonoObject *invoke(const String &p_method_name, TArgs &&... p_args)
 		{
 			constexpr uint32 parameter_count{sizeof...(p_args)};
-			if constexpr (parameter_count > 0)
+			if constexpr (parameter_count > 0u)
 			{
-				void *params[parameter_count]{(void *) &p_args...};
+				void *params[parameter_count]{( getAddressIfNotPointer(p_args), ...)};
 
 				MonoMethod *method{mono_class_get_method_from_name(m_class->m_class, p_method_name.c_str(), parameter_count)};
 				return mono_runtime_invoke(method, m_object, params, nullptr);
@@ -75,6 +66,9 @@ namespace toaster::script
 				return mono_runtime_invoke(method, m_object, nullptr, nullptr);
 			}
 		}
+
+		[[nodiscard]] auto getClass() -> Class *;
+		[[nodiscard]] auto getObject() -> MonoObject *;
 
 	private:
 		Class *m_class{nullptr};

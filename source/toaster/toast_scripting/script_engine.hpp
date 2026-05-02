@@ -22,6 +22,12 @@ namespace toaster::script
 		ScriptEngine(const ScriptEngineSpecInfo &p_spec_info);
 		~ScriptEngine();
 
+		template<typename TFunc>
+		auto registerMethod(const String &p_method_name, TFunc p_method) -> void
+		{
+			mono_add_internal_call(p_method_name.c_str(), (const void *) p_method);
+		}
+
 		[[nodiscard]] auto getRootDomain() const -> MonoDomain *;
 		[[nodiscard]] auto getAppDomain() const -> MonoDomain *;
 		[[nodiscard]] auto getAssembly() const -> MonoAssembly *;
