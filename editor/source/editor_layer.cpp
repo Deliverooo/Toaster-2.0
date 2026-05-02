@@ -73,7 +73,7 @@ namespace toaster
 
 		m_fullscreenMaterial = m_device->alloc<gpu::VKMaterial>(fullscreen_shader);
 
-		m_scene = make_reference<Scene>(m_device, "Main Scene");
+		m_scene = make_reference<Scene>(m_device, nullptr, "Main Scene");
 
 		m_sceneHierarchyPanel = make_unique<SceneHierarchyPanel>(m_device, m_scene);
 

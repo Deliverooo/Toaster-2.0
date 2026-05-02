@@ -1,12 +1,14 @@
-﻿namespace Toaster; 
+﻿namespace Toaster;
 
 public class Player : Entity
 {
-	void OnCreate()
+	public void OnCreate()
 	{
+		Console.WriteLine("Player: OnCreate");
 	}
 
-	void OnUpdate(float p_dt)
+	public void OnUpdate(float p_dt)
 	{
+		Console.WriteLine("Player: OnUpdate {0}", p_dt);
 	}
 }

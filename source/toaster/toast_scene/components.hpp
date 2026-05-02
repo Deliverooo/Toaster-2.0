@@ -9,6 +9,8 @@
 #include "glm/gtx/quaternion.hpp"
 
 #include "toast_gpu/vk/vk_texture.hpp"
+#include "toast_scripting/script_common.hpp"
+#include "toast_scripting/script_object.hpp"
 
 #define DEFINE_COMPONENT(__name) struct TST_API __name
 
@@ -165,5 +167,11 @@ namespace toaster
 				p_ncs->instance = nullptr;
 			};
 		}
+	};
+
+	DEFINE_COMPONENT(ScriptComponent)
+	{
+		String className{};
+		// RefPtr<script::Class> scriptClass{nullptr};
 	};
 }

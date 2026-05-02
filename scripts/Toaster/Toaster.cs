@@ -26,6 +26,14 @@ namespace Toaster
 		public float W = p_w;
 	}
 
+	public static class Math
+	{
+		public static Vec2 IdentityVec2()
+		{
+			return new Vec2(1.3f, 3.1415f);
+		}
+	}
+
 	public class Log
 	{
 		public static void Trace(string p_str)
@@ -61,7 +69,6 @@ namespace Toaster
 	{
 		public Entity()
 		{
-			
 		}
 	}
 

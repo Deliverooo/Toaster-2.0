@@ -29,6 +29,7 @@
 #include <mono/jit/jit.h>
 #include <mono/metadata/assembly.h>
 
+#include "toast_scripting/script_common.hpp"
 #include "toast_scripting/script_engine.hpp"
 #include "toast_scripting/script_object.hpp"
 
@@ -129,30 +130,10 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	script_engine.registerMethod("Toaster.Orbo::NativeTest", +[]() -> void { LOG_INFO("Hello Native Test!"); });
 	script_engine.registerMethod("Toaster.Orbo::NativeOrbo", +[]() -> void { LOG_INFO("Hello Native Orbo!"); });
 
-	// script_engine.printAssemblyTypes(script_engine.getAssembly());
-
-	{
-		toaster::script::Class orbo_class{&script_engine, "Toaster", "Orbo"};
-		orbo_class.invokeStaticMethod("StaticTest");
-
-		toaster::script::Object orbo_object{&orbo_class};
-		orbo_object.construct(41);
-
-		MonoString *str{mono_string_new(script_engine.getAppDomain(), "Orbicular")};
-		orbo_object.invoke("PrintTest", str);
-	}
-
-	toaster::script::Class log_class{&script_engine, "Toaster", "Log"};
-
-	MonoString *str{mono_string_new(script_engine.getAppDomain(), "Hello trace")};
-	log_class.invokeStaticMethod("Trace", str);
-
-	std::unordered_map<toaster::String, toaster::RefPtr<toaster::script::Class> > entity_classes;
-
-	MonoImage *            image{script_engine.getImage()};
-	const MonoTableInfo *  type_definitions{mono_image_get_table_info(image, MONO_TABLE_TYPEDEF)};
-	toaster::script::Class entity_class{&script_engine, "Toaster", "Entity"};
-	for (uint32 row{0u}; row < mono_table_info_get_rows(type_definitions); ++row)
+	#if 0
+	std::unordered_map<toaster::String, toaster::RefPtr<toaster::script::Class> > entity_classes; MonoImage *image{script_engine.getImage()}; const MonoTableInfo *
+			type_definitions{mono_image_get_table_info(image, MONO_TABLE_TYPEDEF)}; toaster::script::Class entity_class{&script_engine, "Toaster", "Entity"}; for (
+		uint32 row{0u}; row < mono_table_info_get_rows(type_definitions); ++row)
 	{
 		uint32 cols[MONO_TYPEDEF_SIZE]{};
 		mono_metadata_decode_row(type_definitions, row, cols, MONO_TYPEDEF_SIZE);
@@ -167,12 +148,14 @@ auto main(int32 p_argc, char **p_argv) -> int32
 			LOG_ERROR("Is entity: {}", full_name);
 			entity_classes[full_name] = toaster::make_reference<toaster::script::Class>(&script_engine, script_class);
 		}
-	}
-
-	for (auto &[class_name, class_]: entity_classes)
+	} for (auto &[class_name, class_]: entity_classes)
 	{
 		LOG_INFO("Class: {} ", class_name);
-	}
+	} toaster::script::Object player_object{entity_classes.at("Toaster.Player").get()}; player_object.construct(); player_object.invoke("OnCreate"); player_object.
+			invoke("OnUpdate", 67.0f); toaster::script::Class math_class{&script_engine, "Toaster", "Math"}; toaster::script::Object tst_vec2{
+		math_class.invokeStaticMethod("IdentityVec2")
+	}; LOG_INFO("{}", *tst_vec2.castTo<glm::vec2>());
+	#endif
 
 	{
 		toaster::io::filesystem::Path shader_dir{"../source/toaster/toast_shaders"};
@@ -184,11 +167,13 @@ auto main(int32 p_argc, char **p_argv) -> int32
 																								 shader_dir / "mesh.pixel.glsl"
 																							 }));
 
-		auto scene{toaster::make_unique<toaster::Scene>(vk_logical_device, "Main Scene")};
+		auto scene{toaster::make_unique<toaster::Scene>(vk_logical_device, &script_engine, "Main Scene")};
 		{
 			toaster::Entity orbo_entity{scene->createEntity()};
 			orbo_entity.addComponent<toaster::MeshComponent>().mesh = vk_logical_device->alloc<toaster::gpu::VKMesh>("../resources/meshes/Orbo.fbx",
 																													 shader_lib.get("Mesh Test"));
+
+			orbo_entity.addComponent<toaster::ScriptComponent>().className = "Toaster.Player";
 		}
 
 		auto   swapchain{window->getSwapchain()};

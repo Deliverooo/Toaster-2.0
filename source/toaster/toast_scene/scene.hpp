@@ -10,6 +10,13 @@
 
 namespace toaster
 {
+	namespace script
+	{
+		class ScriptEngine;
+		class Class;
+		class Object;
+	}
+
 	class Entity;
 	class SceneRenderer;
 
@@ -43,10 +50,12 @@ namespace toaster
 		std::vector<PointLight>       pointLights;
 	};
 
+	class ScriptableEntityCS;
+
 	class TST_API Scene
 	{
 	public:
-		Scene(gpu::VKLogicalDevice *p_device, const String &p_name = "");
+		Scene(gpu::VKLogicalDevice *p_device, script::ScriptEngine *p_script_engine = nullptr, const String &p_name = "");
 		~Scene();
 
 		auto onUpdate(float32 p_dt) -> void;
@@ -75,6 +84,7 @@ namespace toaster
 		TST_API auto onComponentAdded(Entity p_entity, Type &p_component) -> void;
 
 		NonOwningPtr<gpu::VKLogicalDevice> m_device{nullptr};
+		NonOwningPtr<script::ScriptEngine> m_scriptEngine{nullptr};
 
 		entt::registry m_registry;
 
@@ -84,6 +94,9 @@ namespace toaster
 		uint32 m_viewportHeight{0u};
 
 		uint32 m_newEntityTagCount{0u};
+
+		std::unordered_map<String, RefPtr<script::Class> >      m_entityClassMap;
+		std::unordered_map<uint32, RefPtr<ScriptableEntityCS> > m_entityScriptMap;
 
 		SceneLightEnvironment m_lightEnvironment;
 

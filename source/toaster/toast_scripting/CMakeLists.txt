@@ -4,6 +4,8 @@ set(SRC
 
 		script_object.cpp
 		script_object.hpp
+
+		script_common.hpp
 )
 
 list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")
