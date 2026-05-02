@@ -126,19 +126,53 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	script_engine_spec_info.assemblyPath   = scripts_dir / "Toaster/bin/Debug/net10.0/Toaster.dll";
 	toaster::script::ScriptEngine script_engine{script_engine_spec_info};
 
-	script_engine.registerMethod("Toaster.Orbo::nativeTest", +[]() -> void { LOG_INFO("Hello Native Test!"); });
-	script_engine.registerMethod("Toaster.Orbo::nativeOrbo", +[]() -> void { LOG_INFO("Hello Native Orbo!"); });
+	script_engine.registerMethod("Toaster.Orbo::NativeTest", +[]() -> void { LOG_INFO("Hello Native Test!"); });
+	script_engine.registerMethod("Toaster.Orbo::NativeOrbo", +[]() -> void { LOG_INFO("Hello Native Orbo!"); });
 
-	script_engine.printAssemblyTypes(script_engine.getAssembly());
+	// script_engine.printAssemblyTypes(script_engine.getAssembly());
 
-	toaster::script::Class orbo_class{&script_engine, "Toaster", "Orbo"};
-	orbo_class.invokeStaticMethod("staticTest");
+	{
+		toaster::script::Class orbo_class{&script_engine, "Toaster", "Orbo"};
+		orbo_class.invokeStaticMethod("StaticTest");
 
-	toaster::script::Object orbo_object{&orbo_class};
-	orbo_object.construct(41);
+		toaster::script::Object orbo_object{&orbo_class};
+		orbo_object.construct(41);
 
-	MonoString *str{mono_string_new(script_engine.getAppDomain(), "Orbicular")};
-	orbo_object.invoke("printTest", str);
+		MonoString *str{mono_string_new(script_engine.getAppDomain(), "Orbicular")};
+		orbo_object.invoke("PrintTest", str);
+	}
+
+	toaster::script::Class log_class{&script_engine, "Toaster", "Log"};
+
+	MonoString *str{mono_string_new(script_engine.getAppDomain(), "Hello trace")};
+	log_class.invokeStaticMethod("Trace", str);
+
+	std::unordered_map<toaster::String, toaster::RefPtr<toaster::script::Class> > entity_classes;
+
+	MonoImage *            image{script_engine.getImage()};
+	const MonoTableInfo *  type_definitions{mono_image_get_table_info(image, MONO_TABLE_TYPEDEF)};
+	toaster::script::Class entity_class{&script_engine, "Toaster", "Entity"};
+	for (uint32 row{0u}; row < mono_table_info_get_rows(type_definitions); ++row)
+	{
+		uint32 cols[MONO_TYPEDEF_SIZE]{};
+		mono_metadata_decode_row(type_definitions, row, cols, MONO_TYPEDEF_SIZE);
+
+		auto name_space{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE])};
+		auto type_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME])};
+
+		MonoClass *script_class{mono_class_from_name(image, name_space, type_name)};
+		if (mono_class_is_subclass_of(script_class, entity_class.getClass(), false))
+		{
+			toaster::String full_name{fmt::format("{}.{}", name_space, type_name)};
+			LOG_ERROR("Is entity: {}", full_name);
+			entity_classes[full_name] = toaster::make_reference<toaster::script::Class>(&script_engine, script_class);
+		}
+	}
+
+	for (auto &[class_name, class_]: entity_classes)
+	{
+		LOG_INFO("Class: {} ", class_name);
+	}
 
 	{
 		toaster::io::filesystem::Path shader_dir{"../source/toaster/toast_shaders"};

@@ -1,13 +1,15 @@
 #pragma once
+
 #include "script_engine.hpp"
 #include "toast_lib/type_traits.hpp"
 
 namespace toaster::script
 {
-	class Class
+	class TST_API Class
 	{
 	public:
 		Class(ScriptEngine *p_engine, const String &p_namespace, const String &p_name);
+		Class(ScriptEngine *p_engine, MonoClass *p_class);
 
 		template<typename... TArgs>
 		MonoObject *invokeStaticMethod(const String &p_method_name, const TArgs &... p_args)
@@ -38,7 +40,7 @@ namespace toaster::script
 		friend class Object;
 	};
 
-	class Object
+	class TST_API Object
 	{
 	public:
 		Object(Class *p_class);

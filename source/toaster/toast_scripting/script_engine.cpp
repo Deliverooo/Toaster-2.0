@@ -29,7 +29,6 @@ namespace toaster::script
 		mono_jit_cleanup(m_rootDomain);
 	}
 
-
 	auto ScriptEngine::getRootDomain() const -> MonoDomain *
 	{
 		return m_rootDomain;
@@ -69,6 +68,8 @@ namespace toaster::script
 		MonoImage *          image{mono_assembly_get_image(p_assembly)};
 		const MonoTableInfo *type_definitions{mono_image_get_table_info(image, MONO_TABLE_TYPEDEF)};
 
+		MonoClass *entity_class{mono_class_from_name(image, "Toaster", "Entity")};
+
 		for (uint32 row{0u}; row < mono_table_info_get_rows(type_definitions); ++row)
 		{
 			uint32 cols[MONO_TYPEDEF_SIZE]{};
@@ -77,6 +78,12 @@ namespace toaster::script
 			auto name_space{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE])};
 			auto type_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME])};
 			auto method_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_METHOD_LIST])};
+
+			MonoClass *script_class{mono_class_from_name(image, name_space, type_name)};
+			if (mono_class_is_subclass_of(entity_class, script_class, false))
+			{
+				LOG_ERROR("Is entity");
+			}
 
 			LOG_INFO("Namespace: {} | Type: {} | Method: {}", name_space, type_name, method_name);
 		}

@@ -7,6 +7,10 @@ namespace toaster::script
 		m_class = mono_class_from_name(m_engine->getImage(), p_namespace.c_str(), p_name.c_str());
 	}
 
+	Class::Class(ScriptEngine *p_engine, MonoClass *p_class) : m_engine(p_engine), m_class(p_class)
+	{
+	}
+
 	auto Class::getClass() -> MonoClass *
 	{
 		return m_class;
