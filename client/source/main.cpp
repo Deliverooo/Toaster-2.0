@@ -105,7 +105,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		});
 	});
 
-	auto input_ctx{window->getInputContext()};
+	static auto input_ctx{window->getInputContext()};
 	#pragma endregion
 
 	toaster::Globals::init(vk_logical_device);
@@ -130,19 +130,24 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	{
 		static auto scene{new toaster::Scene{vk_logical_device, &script_engine, "Main Scene"}};
 
+		script_engine.registerMethod("Toaster.Input::IsKeyDown", +[](toaster::input::EKeyCode p_key_code) -> bool
+		{
+			return input_ctx->isKeyDown(p_key_code);
+		});
+
 		script_engine.registerMethod("Toaster.Orbo::NativeTest", +[]() -> void { LOG_INFO("Hello Native Test!"); });
 		script_engine.registerMethod("Toaster.Orbo::NativeOrbo", +[]() -> void { LOG_INFO("Hello Native Orbo!"); });
 
-		script_engine.registerMethod("Toaster.InternalCalls::GetTranslation", +[](uint32 entity_id, glm::vec3 *out_translation) -> void
+		script_engine.registerMethod("Toaster.InternalCalls::GetTranslation", +[](uint32 p_entity_id, glm::vec3 *p_out_translation) -> void
 		{
-			toaster::Entity entity{static_cast<entt::entity>(entity_id), scene};
-			*out_translation = entity.getComponent<toaster::TransformComponent>().translation;
+			toaster::Entity entity{static_cast<entt::entity>(p_entity_id), scene};
+			*p_out_translation = entity.getComponent<toaster::TransformComponent>().translation;
 		});
 
-		script_engine.registerMethod("Toaster.InternalCalls::SetTranslation", +[](uint32 entity_id, glm::vec3 *translation) -> void
+		script_engine.registerMethod("Toaster.InternalCalls::SetTranslation", +[](uint32 p_entity_id, glm::vec3 *p_translation) -> void
 		{
-			toaster::Entity entity{static_cast<entt::entity>(entity_id), scene};
-			entity.getComponent<toaster::TransformComponent>().translation = *translation;
+			toaster::Entity entity{static_cast<entt::entity>(p_entity_id), scene};
+			entity.getComponent<toaster::TransformComponent>().translation = *p_translation;
 		});
 
 		toaster::io::filesystem::Path shader_dir{"../source/toaster/toast_shaders"};

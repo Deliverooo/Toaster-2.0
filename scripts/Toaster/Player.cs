@@ -9,8 +9,18 @@ public class Player : Entity
 
 	public void OnUpdate(float p_dt)
 	{
+		const float speed = 2.0f;
+
 		Vec3 translation = Translation;
-		translation.X += 0.25f * p_dt;
+		if (Input.IsKeyDown(Input.KeyCode.Up))
+			translation.Y += speed * p_dt;
+		if (Input.IsKeyDown(Input.KeyCode.Down))
+			translation.Y -= speed * p_dt;
+		if (Input.IsKeyDown(Input.KeyCode.Left))
+			translation.X -= speed * p_dt;
+		if (Input.IsKeyDown(Input.KeyCode.Right))
+			translation.X += speed * p_dt;
+
 		Translation = translation;
 	}
 }

@@ -57,7 +57,7 @@ namespace toaster
 				auto type_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME])};
 
 				MonoClass *script_class{mono_class_from_name(image, name_space, type_name)};
-				if (mono_class_is_subclass_of(script_class, m_baseEntityClass->getClass(), false))
+				if (script_class && mono_class_is_subclass_of(script_class, m_baseEntityClass->getClass(), false))
 				{
 					String full_name{fmt::format("{}.{}", name_space, type_name)};
 					LOG_ERROR("Is entity: {}", full_name);
