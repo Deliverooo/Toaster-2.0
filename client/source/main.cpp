@@ -127,6 +127,18 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 	script_engine.printAssemblyTypes(script_engine.getAssembly());
 
+	MonoImage *image{mono_assembly_get_image(script_engine.getAssembly())};
+	MonoClass *orbo_class{mono_class_from_name(image, "Toaster", "Orbo")};
+
+	MonoObject *orbo_object{mono_object_new(script_engine.getAppDomain(), orbo_class)};
+	mono_runtime_object_init(orbo_object);
+
+	MonoMethod *method{mono_class_get_method_from_name(orbo_class, "orbo", 0)};
+	MonoObject *ret{mono_runtime_invoke(method, orbo_object, nullptr, nullptr)};
+
+	int return_value{*static_cast<int *>(mono_object_unbox(ret))};
+	LOG_ERROR("{}", return_value);
+
 	{
 		toaster::io::filesystem::Path shader_dir{"../source/toaster/toast_shaders"};
 

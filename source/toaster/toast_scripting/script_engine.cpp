@@ -69,8 +69,9 @@ namespace toaster
 
 			auto name_space{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE])};
 			auto type_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME])};
+			auto method_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_METHOD_LIST])};
 
-			LOG_INFO("Namespace: {} | Type: {}", name_space, type_name);
+			LOG_INFO("Namespace: {} | Type: {} | Method: {}", name_space, type_name, method_name);
 		}
 	}
 }

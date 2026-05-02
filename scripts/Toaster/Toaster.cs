@@ -1,12 +1,18 @@
 ﻿using System;
 
-namespace Toaster;
-
-public class Test
+namespace Toaster
 {
-    public static int print()
+    public class Orbo
     {
-        Console.WriteLine("Orbo!!!!");
-        return 67;
+        public Orbo()
+        {
+            Console.WriteLine("Orbo!!!");
+        }
+        public int orbo()
+        {
+            Console.WriteLine("Orbo Method!!!");
+
+            return 67;
+        }
     }
 }
