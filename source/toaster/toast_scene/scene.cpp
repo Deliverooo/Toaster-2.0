@@ -14,13 +14,13 @@ namespace toaster
 	class TST_API ScriptableEntityCS
 	{
 	public:
-		ScriptableEntityCS(script::Class *p_class) : m_obj(p_class)
+		ScriptableEntityCS(script::Class *p_class, Scene *p_scene, Entity p_entity) : m_obj(p_class)
 		{
 			TST_ASSERT_MSG(m_obj.getClass()->getScriptEngine(), "Class's script engine is null");
 
 			m_onCreateMethod = m_obj.getClass()->getMethod("OnCreate", 0);
 			m_onUpdateMethod = m_obj.getClass()->getMethod("OnUpdate", 1);
-			m_obj.construct();
+			m_obj.invoke(p_scene->m_baseEntityClass->getMethod(".ctor", 1), static_cast<uint32>(p_entity));
 		}
 
 		void onCreate()
@@ -47,7 +47,7 @@ namespace toaster
 		{
 			MonoImage *          image{m_scriptEngine->getImage()};
 			const MonoTableInfo *type_definitions{mono_image_get_table_info(image, MONO_TABLE_TYPEDEF)};
-			script::Class        entity_class{m_scriptEngine, "Toaster", "Entity"};
+			m_baseEntityClass = make_reference<script::Class>(m_scriptEngine, "Toaster", "Entity");
 			for (uint32 row{0u}; row < mono_table_info_get_rows(type_definitions); ++row)
 			{
 				uint32 cols[MONO_TYPEDEF_SIZE]{};
@@ -57,7 +57,7 @@ namespace toaster
 				auto type_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME])};
 
 				MonoClass *script_class{mono_class_from_name(image, name_space, type_name)};
-				if (mono_class_is_subclass_of(script_class, entity_class.getClass(), false))
+				if (mono_class_is_subclass_of(script_class, m_baseEntityClass->getClass(), false))
 				{
 					String full_name{fmt::format("{}.{}", name_space, type_name)};
 					LOG_ERROR("Is entity: {}", full_name);
@@ -81,15 +81,25 @@ namespace toaster
 		{
 			for (const auto view{m_registry.view<ScriptComponent>()}; const auto entity: view)
 			{
-				auto [script]{view.get<ScriptComponent>(entity)};
+				auto [class_name]{view.get<ScriptComponent>(entity)};
 
-				if (!m_entityScriptMap.contains(static_cast<uint32>(entity)))
+				uint32 entity_id{static_cast<uint32>(entity)};
+				Entity e{entity, this};
+				if (!m_entityScriptMap.contains(entity_id))
 				{
-					m_entityScriptMap[(uint32) entity] = make_reference<ScriptableEntityCS>(m_entityClassMap[script].get());
-					m_entityScriptMap[(uint32) entity]->onCreate();
+					if (m_entityClassMap.contains(class_name))
+					{
+						m_entityScriptMap[entity_id] = make_reference<ScriptableEntityCS>(m_entityClassMap[class_name].get(), this, e);
+						m_entityScriptMap[entity_id]->onCreate();
+					}
+					else
+					{
+						LOG_ERROR("Invalid script class name: {}", class_name);
+					}
 				}
 
-				m_entityScriptMap[(uint32) entity]->onUpdate(p_dt);
+				if (m_entityScriptMap.contains(entity_id))
+					m_entityScriptMap[entity_id]->onUpdate(p_dt);
 			}
 		}
 
@@ -270,6 +280,7 @@ namespace toaster
 	{
 		return m_registry;
 	}
+
 
 	auto Scene::setName(const String &p_name) -> void
 	{

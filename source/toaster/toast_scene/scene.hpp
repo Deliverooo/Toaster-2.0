@@ -19,6 +19,7 @@ namespace toaster
 
 	class Entity;
 	class SceneRenderer;
+	class ScriptableEntityCS; // Inside the scene.cpp file
 
 	struct TST_API DirectionalLight
 	{
@@ -49,8 +50,6 @@ namespace toaster
 		std::vector<DirectionalLight> directionalLights;
 		std::vector<PointLight>       pointLights;
 	};
-
-	class ScriptableEntityCS;
 
 	class TST_API Scene
 	{
@@ -95,11 +94,13 @@ namespace toaster
 
 		uint32 m_newEntityTagCount{0u};
 
+		RefPtr<script::Class>                                   m_baseEntityClass{nullptr};
 		std::unordered_map<String, RefPtr<script::Class> >      m_entityClassMap;
 		std::unordered_map<uint32, RefPtr<ScriptableEntityCS> > m_entityScriptMap;
 
 		SceneLightEnvironment m_lightEnvironment;
 
+		friend class ScriptableEntityCS;
 		friend class Entity;
 		friend class SceneSerializer;
 		friend class SceneRenderer;

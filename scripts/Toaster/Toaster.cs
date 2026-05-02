@@ -65,10 +65,37 @@ namespace Toaster
 		}
 	}
 
+	public static class InternalCalls
+	{
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		public static extern void GetTranslation(uint p_entity_id, out Vec3 p_out_translation);
+
+		[MethodImpl(MethodImplOptions.InternalCall)]
+		public static extern void SetTranslation(uint p_entity_id, ref Vec3 p_translation);
+	}
+
 	public class Entity
 	{
-		public Entity()
+		protected Entity()
 		{
+			ID = 0;
+		}
+
+		internal Entity(uint p_id)
+		{
+			ID = p_id;
+		}
+
+		protected readonly uint ID;
+
+		public Vec3 Translation
+		{
+			get
+			{
+				InternalCalls.GetTranslation(ID, out Vec3 outTranslation);
+				return outTranslation;
+			}
+			set => InternalCalls.SetTranslation(ID, ref value);
 		}
 	}
 

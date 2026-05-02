@@ -1,6 +1,7 @@
 #pragma once
 
 #include "script_engine.hpp"
+#include "toast_lib/ptr.hpp"
 #include "toast_lib/type_traits.hpp"
 
 namespace toaster::script
@@ -114,7 +115,7 @@ namespace toaster::script
 		[[nodiscard]] auto getObject() -> MonoObject *;
 
 	private:
-		Class *m_class{nullptr};
+		NonOwningPtr<Class> m_class{nullptr};
 
 		MonoObject *m_object{nullptr};
 	};
