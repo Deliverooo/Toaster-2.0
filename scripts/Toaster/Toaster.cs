@@ -5,35 +5,6 @@ using System.Text.Unicode;
 
 namespace Toaster
 {
-	public struct Vec2(float p_x, float p_y)
-	{
-		public float X = p_x;
-		public float Y = p_y;
-	}
-
-	public struct Vec3(float p_x, float p_y, float p_z)
-	{
-		public float X = p_x;
-		public float Y = p_y;
-		public float Z = p_z;
-	}
-
-	public struct Vec4(float p_x, float p_y, float p_z, float p_w)
-	{
-		public float X = p_x;
-		public float Y = p_y;
-		public float Z = p_z;
-		public float W = p_w;
-	}
-
-	public static class Math
-	{
-		public static Vec2 IdentityVec2()
-		{
-			return new Vec2(1.3f, 3.1415f);
-		}
-	}
-
 	public class Log
 	{
 		public static void Trace(string p_str)

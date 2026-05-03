@@ -4,7 +4,7 @@ namespace Toaster;
 
 public static class Input
 {
-	public enum KeyCode
+	public enum EKeyCode
 	{
 		Space = 32,
 		Apostrophe = 39,
@@ -112,6 +112,59 @@ public static class Input
 		Menu = 348
 	}
 
+	public enum EMouseButton
+	{
+		Button0 = 0,
+		Button1 = 1,
+		Button2 = 2,
+		Button3 = 3,
+		Button4 = 4,
+		Button5 = 5,
+		Left = Button0,
+		Right = Button1,
+		Middle = Button2
+	};
+
+	public enum ECursorMode
+	{
+		Normal = 0,
+		Hidden = 1,
+		Disabled = 2,
+		Captured = 3
+	}
+
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	public static extern bool IsKeyDown(KeyCode p_key_code);
+	public static extern bool IsKeyDown(EKeyCode p_key_code);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	public static extern bool IsMouseButtonDown(EMouseButton p_mouse_button);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	public static extern void GetCursorMode(out ECursorMode p_cursor_mode);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	public static extern void SetCursorMode(ECursorMode p_cursor_mode);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	private static extern void GetMousePos(out Vec2 p_mouse_pos);
+
+
+	public static ECursorMode CursorMode
+	{
+		get
+		{
+			GetCursorMode(out ECursorMode mode);
+			return mode;
+		}
+		set => SetCursorMode(value);
+	}
+
+	public static Vec2 MousePos
+	{
+		get
+		{
+			GetMousePos(out Vec2 pos);
+			return pos;
+		}
+	}
 }

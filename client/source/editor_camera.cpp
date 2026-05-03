@@ -15,6 +15,8 @@ namespace toaster
 
 	auto EditorCamera::onUpdate(float32 p_dt) -> void
 	{
+		if (!m_ctx)
+			return;
 		if (m_ctx->isMouseButtonDown(input::EMouseButton::eRight))
 		{
 			if (m_ctx->getCursorMode() != input::ECursorMode::eDisabled)

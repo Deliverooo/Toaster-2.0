@@ -135,6 +135,27 @@ auto main(int32 p_argc, char **p_argv) -> int32
 			return input_ctx->isKeyDown(p_key_code);
 		});
 
+		script_engine.registerMethod("Toaster.Input::IsMouseButtonDown", +[](toaster::input::EMouseButton p_mouse_button) -> bool
+		{
+			return input_ctx->isMouseButtonDown(p_mouse_button);
+		});
+
+		script_engine.registerMethod("Toaster.Input::GetCursorMode", +[](toaster::input::ECursorMode* p_cursor_mode) -> void
+		{
+			*p_cursor_mode = input_ctx->getCursorMode();
+		});
+
+		script_engine.registerMethod("Toaster.Input::SetCursorMode", +[](toaster::input::ECursorMode p_cursor_mode) -> void
+		{
+			input_ctx->setCursorMode(p_cursor_mode);
+		});
+
+		script_engine.registerMethod("Toaster.Input::GetMousePos", +[](glm::vec2 *p_out_pos) -> void
+		{
+			auto [x, y]{input_ctx->getMousePos()};
+			*p_out_pos = glm::vec2{x, y};
+		});
+
 		script_engine.registerMethod("Toaster.Orbo::NativeTest", +[]() -> void { LOG_INFO("Hello Native Test!"); });
 		script_engine.registerMethod("Toaster.Orbo::NativeOrbo", +[]() -> void { LOG_INFO("Hello Native Orbo!"); });
 
@@ -193,7 +214,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		scene_renderer_spec_info.scene          = scene;
 		auto scene_renderer{toaster::make_reference<toaster::SceneRenderer>(vk_logical_device, scene_renderer_spec_info)};
 
-		toaster::EditorCamera camera{input_ctx, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
+		toaster::EditorCamera camera{nullptr, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
 
 		swapchain->setResizeCallback([&](const uint32 width, const uint32 height) -> void
 		{
