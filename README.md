@@ -21,7 +21,7 @@ A graphics engine based on the OG Toaster architecture, but with better things..
 5. Goto `Toaster-2.0/scripts` and run `build_scripts.bat` to build the C# DLL
 6. Enjoy... :)
 
-My plans for the enigne are as follows:
+# Planned Features
 
 - Asset system
 - Audio?
