@@ -63,3 +63,22 @@ public class SpriteRendererComponent : Component
 		set => SetColour(EntityParent.Id, ref value);
 	}
 }
+
+public class MeshComponent : Component
+{
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	private static extern bool HasMaterialInternal(uint p_entity_id, uint p_index);
+
+	public bool HasMaterial(uint p_index)
+	{
+		return HasMaterialInternal(EntityParent.Id, p_index);
+	}
+
+	public Material GetMaterial(uint p_index)
+	{
+		if (!HasMaterial(p_index))
+			return null;
+
+		return new Material(EntityParent.Id, p_index);
+	}
+}

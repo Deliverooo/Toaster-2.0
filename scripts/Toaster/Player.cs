@@ -7,6 +7,7 @@ public class Player : Entity
 	private TagComponent Tag;
 	private TransformComponent Transform;
 	private SpriteRendererComponent SpriteRenderer;
+	private MeshComponent Mesh;
 
 	private float Time = 0.0f;
 
@@ -15,8 +16,7 @@ public class Player : Entity
 		Transform = GetComponent<TransformComponent>();
 		Tag = GetComponent<TagComponent>();
 		SpriteRenderer = AddComponent<SpriteRendererComponent>();
-
-		SpriteRenderer.Colour = new Vec4(0.0f, 0.2f, 1.0f, 1.0f);
+		Mesh = GetComponent<MeshComponent>();
 	}
 
 	public void OnUpdate(float p_dt)
@@ -26,6 +26,9 @@ public class Player : Entity
 
 		float col = (float)System.Math.Abs(System.Math.Sin(Time));
 		SpriteRenderer.Colour = new Vec4(col, col, 1.0f, 1.0f);
+		
+		Material mat = Mesh.GetMaterial(0);
+		mat.AlbedoColour = new Vec3(col, 1.0f, 1.0f);
 
 		Vec3 translation = Transform.Translation;
 

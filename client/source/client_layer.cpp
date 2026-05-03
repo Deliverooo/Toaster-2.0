@@ -126,6 +126,30 @@ namespace toaster
 			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
 			entity.getComponent<SpriteRendererComponent>().colour = *p_colour;
 		});
+
+		m_scriptEngine->registerMethod("Toaster.MeshComponent::HasMaterialInternal", +[](uint32 p_entity_id, uint32 p_index) -> bool
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
+			auto & mesh{entity.getComponent<MeshComponent>()};
+			return mesh.mesh->getMaterials().size() > p_index;
+		});
+
+		m_scriptEngine->registerMethod("Toaster.Material::GetAlbedoColour", +[](uint32 p_entity_id, uint32 p_index, glm::vec3 *p_out_colour) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
+			auto & mesh{entity.getComponent<MeshComponent>()};
+			auto & material{mesh.mesh->getMaterials().at(p_index)};
+			*p_out_colour = material->get<glm::vec3>("u_Material.albedoColour");
+		});
+
+		m_scriptEngine->registerMethod("Toaster.Material::SetAlbedoColour", +[](uint32 p_entity_id, uint32 p_index, glm::vec3 *p_colour) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
+			auto & mesh{entity.getComponent<MeshComponent>()};
+			auto & material{mesh.mesh->getMaterials().at(p_index)};
+			material->set("u_Material.albedoColour", *p_colour);
+		});
+
 		#pragma endregion
 
 		m_camera = EditorCamera{input_ctx, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};

@@ -77,7 +77,7 @@ namespace toaster
 			REGISTER_COMPONENT_TYPE(TagComponent);
 			REGISTER_COMPONENT_TYPE(TransformComponent);
 			REGISTER_COMPONENT_TYPE(SpriteRendererComponent);
-			// REGISTER_COMPONENT_TYPE(MeshComponent);
+			REGISTER_COMPONENT_TYPE(MeshComponent);
 			// REGISTER_COMPONENT_TYPE(CameraComponent);
 
 			#undef REGISTER_COMPONENT_TYPE
