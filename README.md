@@ -12,6 +12,15 @@ A graphics engine based on the OG Toaster architecture, but with better things..
 - Orbo
 - Allegedly 14674 lines of code (As of 03/05/2026)
 
+# Using / Installing
+
+1. Make sure you have the Mono SDK installed -> https://www.mono-project.com/download/stable
+2. Make sure you have the .NET SDK installed -> https://dotnet.microsoft.com/en-us/download
+3. Make sure you have the Vulkan SDK installed with Version > 1.3 -> https://vulkan.lunarg.com/sdk/home
+4. Git clone with ```git clone --recursive https://github.com/Deliverooo/Toaster-2.0.git```
+5. Goto `Toaster-2.0/scripts` and run `build_scripts.bat` to build the C# DLL
+6. Enjoy... :)
+
 My plans for the enigne are as follows:
 
 - Asset system
