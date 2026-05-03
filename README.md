@@ -10,6 +10,7 @@ A graphics engine based on the OG Toaster architecture, but with better things..
 - Model loading
 - Pretty nice looking API
 - Orbo
+- Allegedly 14674 lines of code (As of 03/05/2026)
 
 My plans for the enigne are as follows:
 
