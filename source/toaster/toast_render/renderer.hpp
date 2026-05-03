@@ -15,15 +15,6 @@
 
 namespace toaster::render
 {
-	// For dynamic rendering I have to handle the image layout transitions manually, so this simplifies things...
-	namespace util
-	{
-		auto shaderReadToColourAttachment(const gpu::AttachmentImageHandle &p_image) -> void;
-		auto shaderReadToDepthAttachment(const gpu::AttachmentImageHandle &p_image, bool p_read_only) -> void;
-		auto colourAttachmentToShaderRead(const gpu::AttachmentImageHandle &p_image) -> void;
-		auto depthAttachmentToShaderRead(const gpu::AttachmentImageHandle &p_image, bool p_read_only) -> void;
-	}
-
 	auto beginRendering(const gpu::RenderingInfo &       p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index,
 						const RefPtr<gpu::VKRenderPass> &p_render_pass) -> void;
 	auto endRendering(const gpu::RenderingInfo &p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer) -> void;

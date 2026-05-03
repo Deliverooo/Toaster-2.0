@@ -8,12 +8,18 @@
 
 namespace toaster::gpu
 {
+	enum class ETextureUsage
+	{
+		eRenderAttachmentSampled, eShaderSampled
+	};
+
 	struct TextureSpecInfo
 	{
 		uint32                  width{0u};
 		uint32                  height{0u};
 		vk::Format              format{vk::Format::eR8G8B8A8Srgb};
 		vk::SampleCountFlagBits sampleCount{vk::SampleCountFlagBits::e1};
+		ETextureUsage           usage{ETextureUsage::eRenderAttachmentSampled};
 
 		bool generateMips{true};
 	};
@@ -28,6 +34,10 @@ namespace toaster::gpu
 		VKTexture2D(VKLogicalDevice *p_dev, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size);
 
 		auto resize(uint32 p_width, uint32 p_height) -> void;
+		auto setData(void *p_data, uint64 p_size) -> void;
+
+		// If you want to work with textures and don't want to immediately set the data you might want to deffer the sampler creation
+		auto createSampler(vk::ImageLayout p_override_layout = vk::ImageLayout::eUndefined) -> void; // Also creates the descriptor info
 
 		[[nodiscard]] auto getSpecInfo() const -> const TextureSpecInfo &;
 		auto               getPath() const -> const io::filesystem::Path &;
@@ -43,7 +53,9 @@ namespace toaster::gpu
 		uint32 m_mipLevels{1u};
 
 		RefPtr<VKRawImage> m_image{nullptr};
-		vk::raii::Sampler m_sampler{nullptr};
+		vk::raii::Sampler  m_sampler{nullptr};
+
+		Buffer m_textureData;
 
 		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};
 	};

@@ -5,51 +5,6 @@
 
 namespace toaster::render
 {
-	namespace util
-	{
-		auto shaderReadToColourAttachment(const gpu::AttachmentImageHandle &p_image) -> void
-		{
-			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
-														vk::AccessFlagBits2::eShaderRead, vk::AccessFlagBits2::eColorAttachmentWrite,
-														vk::PipelineStageFlagBits2::eFragmentShader, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
-			p_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
-		}
-
-		auto shaderReadToDepthAttachment(const gpu::AttachmentImageHandle &p_image, bool p_read_only) -> void
-		{
-			const vk::ImageLayout  new_layout{p_read_only ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal};
-			const vk::AccessFlags2 dst_access_flags{p_read_only ? vk::AccessFlagBits2::eDepthStencilAttachmentRead : vk::AccessFlagBits2::eDepthStencilAttachmentWrite};
-			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, new_layout, vk::AccessFlagBits2::eShaderRead,
-														dst_access_flags, vk::PipelineStageFlagBits2::eFragmentShader,
-														vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
-
-			p_image->setCurrentImageLayout(new_layout);
-		}
-
-		auto colourAttachmentToShaderRead(const gpu::AttachmentImageHandle &p_image) -> void
-		{
-			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-														vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eShaderRead,
-														vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eFragmentShader,
-														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
-			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-		}
-
-		auto depthAttachmentToShaderRead(const gpu::AttachmentImageHandle &p_image, bool p_read_only) -> void
-		{
-			const vk::ImageLayout  old_layout{p_read_only ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal};
-			const vk::AccessFlags2 src_access_flags{p_read_only ? vk::AccessFlagBits2::eDepthStencilAttachmentRead : vk::AccessFlagBits2::eDepthStencilAttachmentWrite};
-
-			p_image->getDevice()->transitionImageLayout(p_image->getImage(), old_layout, vk::ImageLayout::eShaderReadOnlyOptimal, src_access_flags,
-														vk::AccessFlagBits2::eShaderRead,
-														vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-														vk::PipelineStageFlagBits2::eFragmentShader, p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
-			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-		}
-	}
-
 	auto beginRendering(const gpu::RenderingInfo &       p_rendering_info, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index,
 						const RefPtr<gpu::VKRenderPass> &p_render_pass) -> void
 	{
@@ -68,7 +23,7 @@ namespace toaster::render
 
 				// Perform the layout transition on sampled attachment images
 				if ((image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
-					util::shaderReadToColourAttachment(image);
+					gpu::util::shaderReadToColourAttachment(image.get());
 
 				info.imageLayout = image->getCurrentImageLayout();
 			}
@@ -86,7 +41,7 @@ namespace toaster::render
 				// Perform the layout transition on sampled attachment images
 				if ((resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
 						resolve_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
-					util::shaderReadToColourAttachment(resolve_image);
+					gpu::util::shaderReadToColourAttachment(resolve_image.get());
 
 				info.resolveImageLayout = resolve_image->getCurrentImageLayout();
 			}
@@ -115,7 +70,7 @@ namespace toaster::render
 				if ((depth_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
 						depth_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
-					util::shaderReadToDepthAttachment(depth_image, p_rendering_info.depthReadOnly);
+					gpu::util::shaderReadToDepthAttachment(depth_image.get(), p_rendering_info.depthReadOnly);
 				}
 
 				depth_attachment_info.imageLayout = depth_image->getCurrentImageLayout();
@@ -134,7 +89,7 @@ namespace toaster::render
 				if ((depth_resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
 						depth_resolve_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
-					util::shaderReadToDepthAttachment(depth_resolve_image, false);
+					gpu::util::shaderReadToDepthAttachment(depth_resolve_image.get(), false);
 				}
 
 				depth_attachment_info.resolveImageLayout = depth_resolve_image->getCurrentImageLayout();
@@ -231,12 +186,12 @@ namespace toaster::render
 			auto image{rendering_attachment.image};
 			if ((image != nullptr) && (image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				util::colourAttachmentToShaderRead(image);
+				gpu::util::colourAttachmentToShaderRead(image.get());
 			}
 			auto resolve_image{rendering_attachment.resolveImage};
 			if ((resolve_image != nullptr) && (resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				util::colourAttachmentToShaderRead(resolve_image);
+				gpu::util::colourAttachmentToShaderRead(resolve_image.get());
 			}
 		}
 
@@ -246,12 +201,12 @@ namespace toaster::render
 
 			if ((depth_image != nullptr) && (depth_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				util::depthAttachmentToShaderRead(depth_image, p_rendering_info.depthReadOnly);
+				gpu::util::depthAttachmentToShaderRead(depth_image.get(), p_rendering_info.depthReadOnly);
 			}
 			auto depth_resolve_image{p_rendering_info.pDepthAttachment->resolveImage};
 			if ((depth_resolve_image != nullptr) && (depth_resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				util::depthAttachmentToShaderRead(depth_resolve_image, false);
+				gpu::util::depthAttachmentToShaderRead(depth_resolve_image.get(), false);
 			}
 		}
 	}

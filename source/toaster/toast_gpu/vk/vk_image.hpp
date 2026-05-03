@@ -70,4 +70,16 @@ namespace toaster::gpu
 
 		vk::DescriptorImageInfo m_descriptorImageInfo{};
 	};
+
+	// For dynamic rendering I have to handle the image layout transitions manually, so this simplifies things...
+	namespace util
+	{
+		auto shaderReadToColourAttachment(AttachmentImage *p_image) -> void;
+		auto shaderReadToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void;
+		auto colourAttachmentToShaderRead(AttachmentImage *p_image) -> void;
+		auto depthAttachmentToShaderRead(AttachmentImage *p_image, bool p_read_only) -> void;
+		auto transferDstToShaderRead(AttachmentImage *p_image) -> void;
+		auto shaderReadToTransferDst(AttachmentImage *p_image) -> void;
+		auto undefinedToTransferDst(AttachmentImage *p_image) -> void;
+	}
 }

@@ -12,10 +12,6 @@ public class Player : Entity
 
 	public void OnCreate()
 	{
-		Console.WriteLine("Player: OnCreate | ID: {0}", Id);
-
-		Input.CursorMode = Input.ECursorMode.Disabled;
-
 		Transform = GetComponent<TransformComponent>();
 		Tag = GetComponent<TagComponent>();
 		SpriteRenderer = AddComponent<SpriteRendererComponent>();
@@ -29,15 +25,9 @@ public class Player : Entity
 		const float speed = 2.0f;
 
 		float col = (float)System.Math.Abs(System.Math.Sin(Time));
-
-		Vec4 new_colour = new Vec4(col, col, 1.0f, 1.0f);
-		SpriteRenderer.Colour = new_colour;
+		SpriteRenderer.Colour = new Vec4(col, col, 1.0f, 1.0f);
 
 		Vec3 translation = Transform.Translation;
-
-		if (Input.IsMouseButtonDown(Input.EMouseButton.Middle) &&
-		    Input.CursorMode != Input.ECursorMode.Normal)
-			Input.CursorMode = Input.ECursorMode.Normal;
 
 		if (Input.IsKeyDown(Input.EKeyCode.Up))
 			translation.Y += speed * p_dt;

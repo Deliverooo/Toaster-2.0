@@ -221,14 +221,29 @@ auto main(int32 p_argc, char **p_argv) -> int32
 																								 shader_dir / "mesh.pixel.glsl"
 																							 }));
 
+		toaster::gpu::TextureSpecInfo texture_spec_info{};
+		texture_spec_info.width        = 1u;
+		texture_spec_info.height       = 1u;
+		texture_spec_info.format       = vk::Format::eR8G8B8A8Unorm;
+		texture_spec_info.usage        = toaster::gpu::ETextureUsage::eShaderSampled;
+		texture_spec_info.generateMips = false;
+		auto         tex_2d{vk_logical_device->alloc<toaster::gpu::VKTexture2D>(texture_spec_info)};
+		const uint64 tex_size{texture_spec_info.width * texture_spec_info.height * 4};
+		uint32       tex_data{0xFF00FFFF};
+		tex_2d->setData(&tex_data, tex_size);
+		tex_2d->createSampler();
+
 		{
 			toaster::Entity orbo_entity{scene->createEntity("Orbo")};
-
-			LOG_INFO("Orbo entity id: {}", static_cast<uint32>(orbo_entity));
 			orbo_entity.addComponent<toaster::MeshComponent>().mesh = vk_logical_device->alloc<toaster::gpu::VKMesh>("../resources/meshes/Orbo.fbx",
 																													 shader_lib.get("Mesh Test"));
 
 			orbo_entity.addComponent<toaster::ScriptComponent>().className = "Toaster.Player";
+		}
+		{
+			toaster::Entity peeb_entity{scene->createEntity("Peeb")};
+			auto &          src{peeb_entity.addComponent<toaster::SpriteRendererComponent>()};
+			src.texture = tex_2d;
 		}
 
 		auto   swapchain{window->getSwapchain()};
@@ -255,7 +270,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		scene_renderer_spec_info.scene          = scene;
 		auto scene_renderer{toaster::make_reference<toaster::SceneRenderer>(vk_logical_device, scene_renderer_spec_info)};
 
-		toaster::EditorCamera camera{nullptr, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
+		toaster::EditorCamera camera{input_ctx, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
 
 		swapchain->setResizeCallback([&](const uint32 width, const uint32 height) -> void
 		{

@@ -101,4 +101,74 @@ namespace toaster::gpu
 	{
 		return m_descriptorImageInfo;
 	}
+
+	namespace util
+	{
+		auto shaderReadToColourAttachment(AttachmentImage *p_image) -> void
+		{
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+														vk::AccessFlagBits2::eShaderRead, vk::AccessFlagBits2::eColorAttachmentWrite,
+														vk::PipelineStageFlagBits2::eFragmentShader, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+		}
+
+		auto shaderReadToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void
+		{
+			const vk::ImageLayout  new_layout{p_read_only ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal};
+			const vk::AccessFlags2 dst_access_flags{p_read_only ? vk::AccessFlagBits2::eDepthStencilAttachmentRead : vk::AccessFlagBits2::eDepthStencilAttachmentWrite};
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, new_layout, vk::AccessFlagBits2::eShaderRead,
+														dst_access_flags, vk::PipelineStageFlagBits2::eFragmentShader,
+														vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
+
+			p_image->setCurrentImageLayout(new_layout);
+		}
+
+		auto colourAttachmentToShaderRead(AttachmentImage *p_image) -> void
+		{
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+														vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eShaderRead,
+														vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eFragmentShader,
+														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		}
+
+		auto depthAttachmentToShaderRead(AttachmentImage *p_image, bool p_read_only) -> void
+		{
+			const vk::ImageLayout  old_layout{p_read_only ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal};
+			const vk::AccessFlags2 src_access_flags{p_read_only ? vk::AccessFlagBits2::eDepthStencilAttachmentRead : vk::AccessFlagBits2::eDepthStencilAttachmentWrite};
+
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), old_layout, vk::ImageLayout::eShaderReadOnlyOptimal, src_access_flags,
+														vk::AccessFlagBits2::eShaderRead,
+														vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+														vk::PipelineStageFlagBits2::eFragmentShader, p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		}
+
+		auto transferDstToShaderRead(AttachmentImage *p_image) -> void
+		{
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+														vk::AccessFlagBits2::eTransferWrite, vk::AccessFlagBits2::eShaderRead, vk::PipelineStageFlagBits2::eTransfer,
+														vk::PipelineStageFlagBits2::eFragmentShader, p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		}
+
+		auto shaderReadToTransferDst(AttachmentImage *p_image) -> void
+		{
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eTransferDstOptimal,
+														vk::AccessFlagBits2::eShaderRead, vk::AccessFlagBits2::eTransferWrite,
+														vk::PipelineStageFlagBits2::eFragmentShader, vk::PipelineStageFlagBits2::eTransfer,
+														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
+		}
+
+		auto undefinedToTransferDst(AttachmentImage *p_image) -> void
+		{
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
+														vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
+														vk::PipelineStageFlagBits2::eTransfer, p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
+		}
+	}
 }

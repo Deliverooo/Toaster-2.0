@@ -8,47 +8,50 @@ namespace toaster::gpu
 {
 	VKTexture2D::VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info) : m_device(p_device), m_specInfo(p_spec_info)
 	{
-		// The only reason to create an image without providing it with any data is to use it as an attachment...
-		if (!m_device->isDepthFormat(m_specInfo.format))
+		if (m_specInfo.usage == ETextureUsage::eRenderAttachmentSampled)
 		{
-			vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled};
-			if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
-				usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
+			// The only reason to create an image without providing it with any data is to use it as an attachment...
+			if (!m_device->isDepthFormat(m_specInfo.format))
+			{
+				vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled};
+				if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
+					usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
 
-			ImageSpecInfo image_create_info{};
-			image_create_info.width       = m_specInfo.width;
-			image_create_info.height      = m_specInfo.height;
-			image_create_info.usage       = usage_flags;
-			image_create_info.mipCount    = m_mipLevels;
-			image_create_info.sampleCount = m_specInfo.sampleCount;
-			image_create_info.format      = m_specInfo.format;
-			m_image                       = m_device->alloc<VKRawImage>(image_create_info);
+				ImageSpecInfo image_create_info{};
+				image_create_info.width       = m_specInfo.width;
+				image_create_info.height      = m_specInfo.height;
+				image_create_info.usage       = usage_flags;
+				image_create_info.mipCount    = m_mipLevels;
+				image_create_info.sampleCount = m_specInfo.sampleCount;
+				image_create_info.format      = m_specInfo.format;
+				m_image                       = m_device->alloc<VKRawImage>(image_create_info);
+			}
+			else
+			{
+				vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled};
+				if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
+					usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
 
-			m_device->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone,
-											vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
-											vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1, vk::ImageAspectFlagBits::eColor);
-			m_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
+				ImageSpecInfo image_create_info{};
+				image_create_info.width       = m_specInfo.width;
+				image_create_info.height      = m_specInfo.height;
+				image_create_info.usage       = usage_flags;
+				image_create_info.mipCount    = m_mipLevels;
+				image_create_info.sampleCount = m_specInfo.sampleCount;
+				image_create_info.format      = m_specInfo.format;
+				m_image                       = m_device->alloc<VKRawImage>(image_create_info);
+			}
 		}
-		else
+		else if (m_specInfo.usage == ETextureUsage::eShaderSampled)
 		{
-			vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled};
-			if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
-				usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
-
 			ImageSpecInfo image_create_info{};
 			image_create_info.width       = m_specInfo.width;
 			image_create_info.height      = m_specInfo.height;
-			image_create_info.usage       = usage_flags;
+			image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 			image_create_info.mipCount    = m_mipLevels;
 			image_create_info.sampleCount = m_specInfo.sampleCount;
 			image_create_info.format      = m_specInfo.format;
 			m_image                       = m_device->alloc<VKRawImage>(image_create_info);
-
-			m_device->transitionImageLayout(m_image->getImage(), m_image->getCurrentImageLayout(), vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone,
-											vk::AccessFlagBits2::eDepthStencilAttachmentWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
-											vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, 1,
-											vk::ImageAspectFlagBits::eDepth);
-			m_image->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
 		}
 
 		m_sampler = m_device->createSampler();
@@ -104,34 +107,14 @@ namespace toaster::gpu
 		image_create_info.format      = m_specInfo.format;
 		m_image                       = m_device->alloc<VKRawImage>(image_create_info);
 
-		vk::raii::Buffer       staging_buffer{nullptr};
-		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
-
-		m_device->createBuffer(image_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-							   staging_buffer, staging_buffer_memory);
-
-		void *mapped = staging_buffer_memory.mapMemory(0, image_size, {});
-		std::memcpy(mapped, pixels, image_size);
-		staging_buffer_memory.unmapMemory();
-
+		setData(pixels, image_size);
 		if (loaded)
 			stbi_image_free(pixels);
 
-		m_device->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eNone,
-										vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eTransfer, m_mipLevels,
-										vk::ImageAspectFlagBits::eColor);
-
-		m_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
-		m_device->copyBufferToImage(staging_buffer, m_image->getImage(), m_specInfo.width, m_specInfo.height);
 		m_device->generateMipmaps(m_image->getImage(), m_specInfo.width, m_specInfo.height, m_mipLevels);
-		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal); // Generate mips leaves the image in the eShaderReadOnlyOptimal layout
 
-		m_sampler = m_device->createSampler();
-
-		m_descriptorImageInfo             = vk::DescriptorImageInfo{};
-		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-		m_descriptorImageInfo.imageView   = m_image->getImageView();
-		m_descriptorImageInfo.sampler     = m_sampler;
+		createSampler();
 	}
 
 	VKTexture2D::VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size) : m_device(p_device), m_specInfo(p_spec_info),
@@ -146,55 +129,48 @@ namespace toaster::gpu
 		image_create_info.format      = vk::Format::eR8G8B8A8Unorm;
 		m_image                       = m_device->alloc<VKRawImage>(image_create_info);
 
-		vk::raii::Buffer       staging_buffer{nullptr};
-		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
-
-		vk::DeviceSize image_size{p_size}; // 1 Pixel * 1 Pixel * RGBA
-
-		m_device->createBuffer(image_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-							   staging_buffer, staging_buffer_memory);
-
-		void *mapped = staging_buffer_memory.mapMemory(0, image_size, {});
-		std::memcpy(mapped, p_data, image_size);
-		staging_buffer_memory.unmapMemory();
-
-		m_device->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal, vk::AccessFlagBits2::eNone,
-										vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eTransfer, 1,
-										vk::ImageAspectFlagBits::eColor);
-
-		m_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
-
-		m_device->copyBufferToImage(staging_buffer, m_image->getImage(), p_spec_info.width, p_spec_info.height);
-
-		m_device->transitionImageLayout(m_image->getImage(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-										vk::AccessFlagBits2::eTransferWrite, vk::AccessFlagBits2::eShaderRead, vk::PipelineStageFlagBits2::eTransfer,
-										vk::PipelineStageFlagBits2::eFragmentShader, 1, vk::ImageAspectFlagBits::eColor);
-
-		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
-
-		m_sampler = m_device->createSampler();
-
-		m_descriptorImageInfo             = vk::DescriptorImageInfo{};
-		m_descriptorImageInfo.imageLayout = m_image->getCurrentImageLayout();
-		m_descriptorImageInfo.imageView   = m_image->getImageView();
-		m_descriptorImageInfo.sampler     = m_sampler;
+		setData(p_data, p_size);
+		util::transferDstToShaderRead(m_image.get());
+		createSampler();
 	}
 
 	auto VKTexture2D::resize(uint32 p_width, uint32 p_height) -> void
 	{
+		m_image->resize(p_width, p_height);
+		createSampler(vk::ImageLayout::eShaderReadOnlyOptimal);
+	}
+
+	auto VKTexture2D::setData(void *p_data, uint64 p_size) -> void
+	{
+		m_textureData.release();
+		m_textureData.allocate(p_size);
+		m_textureData = Buffer::copy(p_data, p_size);
+
+		vk::raii::Buffer       staging_buffer{nullptr};
+		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
+
+		m_device->createBuffer(m_textureData.size(), vk::BufferUsageFlagBits::eTransferSrc,
+							   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, staging_buffer, staging_buffer_memory);
+
+		void *mapped = staging_buffer_memory.mapMemory(0, m_textureData.size(), {});
+		std::memcpy(mapped, m_textureData.data(), m_textureData.size());
+		staging_buffer_memory.unmapMemory();
+
+		util::undefinedToTransferDst(m_image.get());
+		m_device->copyBufferToImage(staging_buffer, m_image->getImage(), m_specInfo.width, m_specInfo.height);
+	}
+
+	auto VKTexture2D::createSampler(vk::ImageLayout p_override_layout) -> void
+	{
+		if (m_image->getCurrentImageLayout() == vk::ImageLayout::eTransferDstOptimal)
+			util::transferDstToShaderRead(m_image.get());
+
 		m_sampler             = nullptr;
 		m_descriptorImageInfo = vk::DescriptorImageInfo{};
 
-		m_image->resize(p_width, p_height);
-
-		if (m_device->isDepthFormat(m_specInfo.format))
-			m_image->setCurrentImageLayout(vk::ImageLayout::eDepthAttachmentOptimal);
-		else
-			m_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
-
 		m_sampler = m_device->createSampler();
 
-		m_descriptorImageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		m_descriptorImageInfo.imageLayout = (p_override_layout == vk::ImageLayout::eUndefined) ? m_image->getCurrentImageLayout() : p_override_layout;
 		m_descriptorImageInfo.imageView   = m_image->getImageView();
 		m_descriptorImageInfo.sampler     = m_sampler;
 	}
