@@ -153,7 +153,7 @@ public static class Input
 	{
 		get
 		{
-			GetCursorMode(out ECursorMode mode);
+			GetCursorMode(out var mode);
 			return mode;
 		}
 		set => SetCursorMode(value);
@@ -163,7 +163,7 @@ public static class Input
 	{
 		get
 		{
-			GetMousePos(out Vec2 pos);
+			GetMousePos(out var pos);
 			return pos;
 		}
 	}

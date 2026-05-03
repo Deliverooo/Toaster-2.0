@@ -54,6 +54,10 @@ namespace toaster
 	class TST_API Scene
 	{
 	public:
+		using ComponentType  = void *; // Actually a MonoType*...
+		using HasComponentFn = bool(*)(Entity *);
+		using AddComponentFn = void(*)(Entity *);
+
 		Scene(gpu::VKLogicalDevice *p_device, script::ScriptEngine *p_script_engine = nullptr, const String &p_name = "");
 		~Scene();
 
@@ -78,6 +82,10 @@ namespace toaster
 
 		auto getLightEnvironment() const -> const SceneLightEnvironment &;
 
+		auto getScriptEngine() -> NonOwningPtr<script::ScriptEngine>;
+		auto getHasComponentFn(ComponentType p_component_type) -> HasComponentFn &;
+		auto getAddComponentFn(ComponentType p_component_type) -> AddComponentFn &;
+
 	private:
 		template<typename Type>
 		TST_API auto onComponentAdded(Entity p_entity, Type &p_component) -> void;
@@ -97,6 +105,9 @@ namespace toaster
 		RefPtr<script::Class>                                   m_baseEntityClass{nullptr};
 		std::unordered_map<String, RefPtr<script::Class> >      m_entityClassMap;
 		std::unordered_map<uint32, RefPtr<ScriptableEntityCS> > m_entityScriptMap;
+
+		std::unordered_map<ComponentType, HasComponentFn> m_hasComponentFnMap;
+		std::unordered_map<ComponentType, AddComponentFn> m_addComponentFnMap;
 
 		SceneLightEnvironment m_lightEnvironment;
 

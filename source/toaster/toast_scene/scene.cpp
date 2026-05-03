@@ -60,15 +60,27 @@ namespace toaster
 				if (script_class && mono_class_is_subclass_of(script_class, m_baseEntityClass->getClass(), false))
 				{
 					String full_name{fmt::format("{}.{}", name_space, type_name)};
-					LOG_ERROR("Is entity: {}", full_name);
 					m_entityClassMap[full_name] = toaster::make_reference<script::Class>(m_scriptEngine, script_class);
 				}
 			}
 
-			for (auto &[class_name, class_]: m_entityClassMap)
+			for (const auto &class_name: m_entityClassMap | std::views::keys)
 			{
-				LOG_INFO("Class: {} ", class_name);
+				LOG_INFO("Found Entity class: {} ", class_name);
 			}
+
+			#define REGISTER_COMPONENT_TYPE(__type) {MonoType *managed_type{mono_reflection_type_from_name((char *) "Toaster."#__type, m_scriptEngine->getImage())};\
+													if(!managed_type) { LOG_FATAL("Could not find component: "#__type); TST_ASSERT(false);}\
+													m_hasComponentFnMap[managed_type] = +[](Entity *p_entity) -> bool { return p_entity->hasComponent<__type>(); };\
+													m_addComponentFnMap[managed_type] = +[](Entity *p_entity) -> void { __type& comp{p_entity->addComponent<__type>()}; (void)comp; };}
+
+			REGISTER_COMPONENT_TYPE(TagComponent);
+			REGISTER_COMPONENT_TYPE(TransformComponent);
+			REGISTER_COMPONENT_TYPE(SpriteRendererComponent);
+			// REGISTER_COMPONENT_TYPE(MeshComponent);
+			// REGISTER_COMPONENT_TYPE(CameraComponent);
+
+			#undef REGISTER_COMPONENT_TYPE
 		}
 	}
 
@@ -281,7 +293,6 @@ namespace toaster
 		return m_registry;
 	}
 
-
 	auto Scene::setName(const String &p_name) -> void
 	{
 		m_name = p_name;
@@ -295,6 +306,21 @@ namespace toaster
 	auto Scene::getLightEnvironment() const -> const SceneLightEnvironment &
 	{
 		return m_lightEnvironment;
+	}
+
+	auto Scene::getScriptEngine() -> NonOwningPtr<script::ScriptEngine>
+	{
+		return m_scriptEngine;
+	}
+
+	auto Scene::getHasComponentFn(ComponentType p_component_type) -> HasComponentFn &
+	{
+		return m_hasComponentFnMap.at(p_component_type);
+	}
+
+	auto Scene::getAddComponentFn(ComponentType p_component_type) -> AddComponentFn &
+	{
+		return m_addComponentFnMap.at(p_component_type);
 	}
 
 	template<typename Type>

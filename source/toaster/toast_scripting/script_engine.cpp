@@ -11,7 +11,7 @@ namespace toaster::script
 	{
 		mono_set_dirs("C:/Program Files/Mono/lib", "C:/Program Files/Mono/etc");
 
-		m_rootDomain = mono_jit_init(m_specInfo.rootDomainName.c_str());
+		m_rootDomain = mono_jit_init_version(m_specInfo.rootDomainName.c_str(), "v4.0.30319");
 
 		m_appDomain = mono_domain_create_appdomain(const_cast<char *>(m_specInfo.appDomainName.c_str()), nullptr);
 		mono_domain_set(m_appDomain, true);

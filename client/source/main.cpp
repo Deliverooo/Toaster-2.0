@@ -124,7 +124,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	toaster::script::ScriptEngineSpecInfo script_engine_spec_info{};
 	script_engine_spec_info.rootDomainName = "ToasterRootDomain";
 	script_engine_spec_info.appDomainName  = "ToasterAppDomain";
-	script_engine_spec_info.assemblyPath   = scripts_dir / "Toaster/bin/Debug/net10.0/Toaster.dll";
+	script_engine_spec_info.assemblyPath   = scripts_dir / "Toaster/bin/Debug/net48/Toaster.dll";
 	toaster::script::ScriptEngine script_engine{script_engine_spec_info};
 
 	{
@@ -140,7 +140,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 			return input_ctx->isMouseButtonDown(p_mouse_button);
 		});
 
-		script_engine.registerMethod("Toaster.Input::GetCursorMode", +[](toaster::input::ECursorMode* p_cursor_mode) -> void
+		script_engine.registerMethod("Toaster.Input::GetCursorMode", +[](toaster::input::ECursorMode *p_cursor_mode) -> void
 		{
 			*p_cursor_mode = input_ctx->getCursorMode();
 		});
@@ -159,16 +159,57 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		script_engine.registerMethod("Toaster.Orbo::NativeTest", +[]() -> void { LOG_INFO("Hello Native Test!"); });
 		script_engine.registerMethod("Toaster.Orbo::NativeOrbo", +[]() -> void { LOG_INFO("Hello Native Orbo!"); });
 
-		script_engine.registerMethod("Toaster.InternalCalls::GetTranslation", +[](uint32 p_entity_id, glm::vec3 *p_out_translation) -> void
+		script_engine.registerMethod("Toaster.InternalCalls::HasComponent", +[](uint32 p_entity_id, MonoReflectionType *p_component_type) -> bool
+		{
+			MonoType *      type{mono_reflection_type_get_type(p_component_type)};
+			toaster::Entity entity{static_cast<entt::entity>(p_entity_id), scene};
+			return scene->getHasComponentFn(type)(&entity);
+		});
+
+		script_engine.registerMethod("Toaster.InternalCalls::AddComponent", +[](uint32 p_entity_id, MonoReflectionType *p_component_type) -> void
+		{
+			MonoType *      type{mono_reflection_type_get_type(p_component_type)};
+			toaster::Entity entity{static_cast<entt::entity>(p_entity_id), scene};
+			scene->getAddComponentFn(type)(&entity);
+		});
+
+		script_engine.registerMethod("Toaster.TagComponent::GetTag", +[](uint32 p_entity_id, MonoString **p_out_tag) -> void
+		{
+			toaster::Entity entity{static_cast<entt::entity>(p_entity_id), scene};
+			*p_out_tag = mono_string_new(scene->getScriptEngine()->getAppDomain(), entity.getComponent<toaster::TagComponent>().tag.c_str());
+		});
+
+		script_engine.registerMethod("Toaster.TagComponent::SetTag", +[](uint32 p_entity_id, MonoString **p_tag) -> void
+		{
+			toaster::Entity entity{static_cast<entt::entity>(p_entity_id), scene};
+
+			char *new_string{mono_string_to_utf8(*p_tag)};
+			entity.getComponent<toaster::TagComponent>().tag = toaster::String{new_string};
+			mono_free(new_string);
+		});
+
+		script_engine.registerMethod("Toaster.TransformComponent::GetTranslation", +[](uint32 p_entity_id, glm::vec3 *p_out_translation) -> void
 		{
 			toaster::Entity entity{static_cast<entt::entity>(p_entity_id), scene};
 			*p_out_translation = entity.getComponent<toaster::TransformComponent>().translation;
 		});
 
-		script_engine.registerMethod("Toaster.InternalCalls::SetTranslation", +[](uint32 p_entity_id, glm::vec3 *p_translation) -> void
+		script_engine.registerMethod("Toaster.TransformComponent::SetTranslation", +[](uint32 p_entity_id, glm::vec3 *p_translation) -> void
 		{
 			toaster::Entity entity{static_cast<entt::entity>(p_entity_id), scene};
 			entity.getComponent<toaster::TransformComponent>().translation = *p_translation;
+		});
+
+		script_engine.registerMethod("Toaster.SpriteRendererComponent::GetColour", +[](uint32 p_entity_id, glm::vec4 *p_out_colour) -> void
+		{
+			toaster::Entity entity{static_cast<entt::entity>(p_entity_id), scene};
+			*p_out_colour = entity.getComponent<toaster::SpriteRendererComponent>().colour;
+		});
+
+		script_engine.registerMethod("Toaster.SpriteRendererComponent::SetColour", +[](uint32 p_entity_id, glm::vec4 *p_colour) -> void
+		{
+			toaster::Entity entity{static_cast<entt::entity>(p_entity_id), scene};
+			entity.getComponent<toaster::SpriteRendererComponent>().colour = *p_colour;
 		});
 
 		toaster::io::filesystem::Path shader_dir{"../source/toaster/toast_shaders"};
@@ -181,7 +222,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 																							 }));
 
 		{
-			toaster::Entity orbo_entity{scene->createEntity()};
+			toaster::Entity orbo_entity{scene->createEntity("Orbo")};
 
 			LOG_INFO("Orbo entity id: {}", static_cast<uint32>(orbo_entity));
 			orbo_entity.addComponent<toaster::MeshComponent>().mesh = vk_logical_device->alloc<toaster::gpu::VKMesh>("../resources/meshes/Orbo.fbx",

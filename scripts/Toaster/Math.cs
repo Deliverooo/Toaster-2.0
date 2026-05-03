@@ -105,6 +105,7 @@ public struct Vec4
 		X = p_s;
 		Y = p_s;
 		Z = p_s;
+		W = p_s;
 	}
 
 	public static Vec4 operator +(Vec4 p_a, Vec4 p_b)
