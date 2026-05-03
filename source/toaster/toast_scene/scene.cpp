@@ -131,39 +131,89 @@ namespace toaster
 	auto Scene::onRender([[maybe_unused]] const vk::raii::CommandBuffer &p_cmd, [[maybe_unused]] uint32 p_frame_index, [[maybe_unused]] float32 p_dt,
 						 [[maybe_unused]] const RefPtr<SceneRenderer> &  p_scene_renderer) -> void
 	{
-		#if 0
-		Camera *main_camera{nullptr}; glm::mat4 camera_transform{1.0f};
+		Camera *  main_camera{nullptr};
+		glm::mat4 camera_transform{1.0f};
+
+		Entity main_camera_entity{getMainCameraEntity()};
+		if ((entt::entity) main_camera_entity != entt::null)
 		{
-			auto view = m_registry.view<TransformComponent, CameraComponent>();
-			for (auto entity: view)
+			main_camera      = &main_camera_entity.getComponent<CameraComponent>().camera;
+			camera_transform = main_camera_entity.getComponent<TransformComponent>().getTransform();
+		}
+
+		if (!main_camera)
+		{
+			LOG_WARN("Scene has no main camera!");
+			return;
+		}
+
+		m_lightEnvironment.pointLights.clear();
+
+		{
+			for (const auto group{m_registry.group<TransformComponent>(entt::get<DirectionalLightComponent>)}; const auto entity: group)
 			{
-				auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
-				if (camera.primary)
+				auto [transform, directional_light]{group.get<TransformComponent, DirectionalLightComponent>(entity)};
+
+				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
+																	  glm::vec4(glm::normalize(transform.rotation), 1.0f),
+																	  glm::vec4(directional_light.radiance, directional_light.multiplier)
+																  });
+			}
+		}
+		{
+			for (const auto view{m_registry.view<TransformComponent, PointLightComponent>()}; const auto entity: view)
+			{
+				auto [transform, point_light]{view.get<TransformComponent, PointLightComponent>(entity)};
+
+				m_lightEnvironment.pointLights.emplace_back(PointLight{
+																glm::vec4(transform.translation, 1.0f),
+																glm::vec4(point_light.radiance, point_light.multiplier),
+																point_light.radius,
+																point_light.falloff
+															});
+			}
+		}
+
+		glm::mat4 camera_view{glm::inverse(camera_transform)};
+		{
+			p_scene_renderer->begin(p_cmd, p_frame_index, camera_view, main_camera->getProjectionMatrix());
+			for (const auto view{m_registry.view<TransformComponent, MeshComponent>()}; const auto entity: view)
+			{
+				if (auto [transform, mesh]{view.get<TransformComponent, MeshComponent>(entity)}; mesh.mesh)
 				{
-					main_camera      = &camera.camera;
-					camera_transform = transform.getTransform();
-					break;
+					p_scene_renderer->renderMesh(mesh.mesh, transform.getTransform());
 				}
 			}
-		} if (main_camera)
-		{
-			p_scene_renderer->begin(p_cmd, p_frame_index, camera_transform, main_camera->getProjectionMatrix());
-
-			auto group = m_registry.group<TransformComponent>(entt::get<SpriteRendererComponent>);
-			for (auto entity: group)
-			{
-				auto [transform, sprite] = group.get<TransformComponent, SpriteRendererComponent>(entity);
-
-				// if (sprite.texture)
-				// p_scene_renderer->submitQuad(transform.getTransform(), sprite.texture, sprite.colour, sprite.tilingFactor);
-				// else
-				// p_scene_renderer->submitQuad(transform.getTransform(), sprite.colour);
-			}
-
 			p_scene_renderer->end(p_cmd, p_frame_index);
 		}
-		else
-			TST_ASSERT(false);
+		#if TST_ENABLE_2D_SCENE_RENDERING
+		{
+			auto renderer_2d{p_scene_renderer->getRenderer2D()};
+			renderer_2d->begin(p_cmd, p_frame_index, camera_view, main_camera->getProjectionMatrix());
+
+			for (const auto view{m_registry.view<TransformComponent, SpriteRendererComponent>()}; const auto entity: view)
+			{
+				auto [transform, src]{view.get<TransformComponent, SpriteRendererComponent>(entity)};
+				if (src.texture)
+					renderer_2d->submitQuad(transform.getTransform(), src.texture, src.colour);
+				else
+					renderer_2d->submitQuad(transform.getTransform(), src.colour);
+			}
+
+			gpu::RenderingAttachmentInfo colour_attachment_info{};
+			colour_attachment_info.clearValue = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
+			colour_attachment_info.image      = p_scene_renderer->getOutputColourTexture()->getImage();
+			colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eNone;
+			colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+
+			gpu::RenderingAttachmentInfo depth_attachment_info{};
+			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
+			depth_attachment_info.image      = p_scene_renderer->getOutputDepthTexture()->getImage();
+			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eLoad;
+			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+
+			renderer_2d->end(p_cmd, p_frame_index, &colour_attachment_info, &depth_attachment_info);
+		}
 		#endif
 	}
 

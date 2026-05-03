@@ -8,19 +8,16 @@
 #include "toaster/toast_lib/events/mouse_event.hpp"
 #include "toaster/toast_lib/events/window_event.hpp"
 
-#include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
-#include "toast_gpu/vk/vk_index_buffer.hpp"
-#include "toast_gpu/vk/vk_material.hpp"
-#include "toast_gpu/vk/vk_shader.hpp"
-#include "toast_gpu/vk/vk_mesh.hpp"
-#include "toast_gpu/vk/vk_pipeline.hpp"
-#include "toast_gpu/vk/vk_render_pass.hpp"
-#include "toast_gpu/vk/vk_texture.hpp"
-#include "toast_gpu/vk/vk_uniform_buffer.hpp"
-#include "toast_gpu/vk/vk_render_attachment.hpp"
 #include "toast_scene/scene_renderer.hpp"
 
+#include <mono/jit/jit.h>
+#include <mono/metadata/assembly.h>
+
+#include "toast_render/shader_library.hpp"
+#include "toast_scripting/script_common.hpp"
+#include "toast_scripting/script_engine.hpp"
+#include "toast_scripting/script_object.hpp"
 
 namespace toaster
 {
@@ -45,6 +42,18 @@ namespace toaster
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
 
-		RefPtr<Renderer2D> m_renderer2D{nullptr};
+		UniquePtr<script::ScriptEngine> m_scriptEngine{nullptr};
+
+		static inline Scene *activeScene{nullptr};
+
+		RefPtr<Scene>         m_scene{nullptr};
+		RefPtr<SceneRenderer> m_sceneRenderer{nullptr};
+
+		ShaderLibrary m_shaderLibrary;
+
+		RefPtr<gpu::VKPipeline>   m_fullscreenPipeline{nullptr};
+		RefPtr<gpu::VKRenderPass> m_fullscreenRenderPass{nullptr};
+
+		EditorCamera m_camera;
 	};
 }

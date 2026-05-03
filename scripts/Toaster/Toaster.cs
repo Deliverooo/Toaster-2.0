@@ -43,28 +43,4 @@ namespace Toaster
 		[MethodImpl(MethodImplOptions.InternalCall)]
 		public static extern void AddComponent(uint p_entity_id, Type p_component_type);
 	}
-
-	public class Orbo
-	{
-		public static void StaticTest()
-		{
-			Console.WriteLine("Static Test!!");
-		}
-
-		[MethodImpl(MethodImplOptions.InternalCall)]
-		public static extern void NativeTest();
-
-		public Orbo(int p_num)
-		{
-			NativeOrbo();
-		}
-
-		public void PrintTest(string p_message)
-		{
-			Console.WriteLine("Message: {0}", p_message);
-		}
-
-		[MethodImpl(MethodImplOptions.InternalCall)]
-		public extern void NativeOrbo();
-	}
 }

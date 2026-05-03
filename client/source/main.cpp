@@ -12,7 +12,7 @@
 #include "toast_render/renderer.hpp"
 
 #include "editor_camera.hpp"
-#include "GLFW/glfw3.h"
+#include <GLFW/glfw3.h>
 #include "toast_gpu/vk/vk_swapchain.hpp"
 #include "toast_kernel/input.hpp"
 #include "toast_lib/events/window_event.hpp"
@@ -40,14 +40,28 @@ INT WINAPI WinMain([[maybe_unused]] HINSTANCE hInstance, [[maybe_unused]] HINSTA
 auto main(int32 p_argc, char **p_argv) -> int32
 {
 	#endif
+
+	#ifndef TST_CLIENT_DEMO
+	toaster::ApplicationCreateInfo app_create_info{};
+	app_create_info.windowCreateInfo.width          = 1920;
+	app_create_info.windowCreateInfo.height         = 1080;
+	app_create_info.windowCreateInfo.title          = "Toaster v3.1415 - vulkan";
+	app_create_info.windowCreateInfo.iconPath       = "../resources/textures/OrboCloseup.png";
+	app_create_info.windowCreateInfo.startMaximized = true;
+
+	auto *app = new toaster::ClientApplication(app_create_info, p_argc, p_argv);
+
+	app->run();
+	delete app;
+	return EXIT_SUCCESS;
+
+	#else
+
 	toaster::io::filesystem::Path executable_path{p_argv[0]};
 
 	#pragma region create vulkan devices
-	toaster::gpu::VKInstanceSpecInfo vk_instance_spec_info{};
-	vk_instance_spec_info.appName            = "Toaster-2.0 -> Vulkan";
-	vk_instance_spec_info.requiredExtensions = toaster::Window::getRequiredInstanceExtensions();
-	auto vk_instance{new toaster::gpu::VKInstance{vk_instance_spec_info}};
-
+	toaster::gpu::VKInstanceSpecInfo vk_instance_spec_info{}; vk_instance_spec_info.appName = "Toaster-2.0 -> Vulkan";
+	vk_instance_spec_info.requiredExtensions = toaster::Window::getRequiredInstanceExtensions(); auto vk_instance{new toaster::gpu::VKInstance{vk_instance_spec_info}};
 	std::unordered_set<toaster::String> required_device_extensions{
 		vk::KHRSwapchainExtensionName,
 		vk::KHRDynamicRenderingExtensionName,
@@ -55,62 +69,78 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		vk::EXTCustomBorderColorExtensionName,
 		vk::KHRMaintenance6ExtensionName,
 		vk::KHRLoadStoreOpNoneExtensionName
+	}; toaster::gpu::VKPhysicalDeviceSpecInfo vk_physical_device_spec_info{}; vk_physical_device_spec_info.requiredExtensions = required_device_extensions; auto
+			vk_physical_device{new toaster::gpu::VKPhysicalDevice{vk_instance, vk_physical_device_spec_info}}; toaster::gpu::VKLogicalDeviceSpecInfo
+			vk_logical_device_spec_info{}; vk_logical_device_spec_info.usePresent = true; vk_logical_device_spec_info.printShaderDebugInfo = false;
+	vk_logical_device_spec_info.requiredExtensions = required_device_extensions; auto features{toaster::gpu::VKLogicalDeviceSpecInfo::getDefaultFeatures()};
+	vk_logical_device_spec_info.pNext = features.get<vk::PhysicalDeviceFeatures2>(); auto vk_logical_device{
+		new toaster::gpu::VKLogicalDevice{vk_physical_device, vk_logical_device_spec_info}
 	};
-
-	toaster::gpu::VKPhysicalDeviceSpecInfo vk_physical_device_spec_info{};
-	vk_physical_device_spec_info.requiredExtensions = required_device_extensions;
-
-	auto vk_physical_device{new toaster::gpu::VKPhysicalDevice{vk_instance, vk_physical_device_spec_info}};
-
-	toaster::gpu::VKLogicalDeviceSpecInfo vk_logical_device_spec_info{};
-	vk_logical_device_spec_info.usePresent           = true;
-	vk_logical_device_spec_info.printShaderDebugInfo = false;
-	vk_logical_device_spec_info.requiredExtensions   = required_device_extensions;
-	auto features{toaster::gpu::VKLogicalDeviceSpecInfo::getDefaultFeatures()};
-	vk_logical_device_spec_info.pNext = features.get<vk::PhysicalDeviceFeatures2>();
-
-	auto vk_logical_device{new toaster::gpu::VKLogicalDevice{vk_physical_device, vk_logical_device_spec_info}};
 	#pragma endregion
 
 	#pragma region create window
-	toaster::Window::initWindowingAPI();
-	toaster::WindowCreateInfo window_create_info{};
-	window_create_info.width          = 1280u;
-	window_create_info.height         = 720u;
-	window_create_info.title          = "Toaster-2.0 -> Vulkan";
-	window_create_info.iconPath       = "../resources/textures/WindowIcon001.png";
-	window_create_info.startMaximized = true;
-	auto window{new toaster::Window{vk_logical_device, window_create_info}};
+	toaster::Window::initWindowingAPI(); toaster::WindowCreateInfo window_create_info{}; window_create_info.width = 1280u; window_create_info.height = 720u;
+	window_create_info.title = "Toaster-2.0 -> Vulkan"; window_create_info.iconPath = "../resources/textures/WindowIcon001.png"; window_create_info.startMaximized = true;
+	auto window{new toaster::Window{vk_logical_device, window_create_info}}; volatile bool window_closed{false}; window->setEventCallback([&window, &window_closed
+																																		  ](toaster::Event &event) mutable
+																																	  -> void
+																																		  {
+																																			  toaster::EventDispatcher
+																																					  dispatcher{event};
+																																			  dispatcher.dispatch<
+																																				  toaster::WindowCloseEvent>([
+																																												 &window_closed
+																																											 ](
+																																										 toaster::WindowCloseEvent
+																																										 &window_close_event)
+																																									 mutable
+																																										 ->
+																																										 bool
+																																											 {
+																																												 window_closed
+																																														 = true;
+																																												 return
+																																														 true;
+																																											 });
+																																			  dispatcher.dispatch<
+																																				  toaster::KeyPressEvent>([
+																																											  &window
+																																										  ](
+																																									  toaster::KeyPressEvent
+																																									  &key_press_event)
+																																								  mutable
+																																									  ->
+																																									  bool
+																																										  {
+																																											  if
+																																											  (key_press_event
+																																											   .getKeyCode()
+																																											   ==
+																																											   toaster::input::EKeyCode::eF11)
+																																											  {
+																																												  if
+																																												  (!
+																																													  window
+																																													  ->
+																																													  isFullscreen())
+																																													  window
+																																															  ->
+																																															  setFullscreen();
+																																												  else
+																																													  window
+																																															  ->
+																																															  setWindowed();
+																																											  }
 
-	volatile bool window_closed{false};
-	window->setEventCallback([&window, &window_closed](toaster::Event &event) mutable -> void
-	{
-		toaster::EventDispatcher dispatcher{event};
-		dispatcher.dispatch<toaster::WindowCloseEvent>([&window_closed](toaster::WindowCloseEvent &window_close_event) mutable -> bool
-		{
-			window_closed = true;
-			return true;
-		});
-		dispatcher.dispatch<toaster::KeyPressEvent>([&window](toaster::KeyPressEvent &key_press_event) mutable -> bool
-		{
-			if (key_press_event.getKeyCode() == toaster::input::EKeyCode::eF11)
-			{
-				if (!window->isFullscreen())
-					window->setFullscreen();
-				else
-					window->setWindowed();
-			}
-
-			return false;
-		});
-	});
-
-	static auto input_ctx{window->getInputContext()};
+																																											  return
+																																													  false;
+																																										  });
+																																		  }); static auto input_ctx{
+		window->getInputContext()
+	};
 	#pragma endregion
 
-	toaster::Globals::init(vk_logical_device);
-
-	toaster::io::filesystem::Path scripts_dir{"../scripts"};
+	toaster::Globals::init(vk_logical_device); toaster::io::filesystem::Path scripts_dir{"../scripts"};
 
 	#if 0
 	constexpr bool force_compile_scripts{true}; if (!toaster::io::filesystem::exists(scripts_dir / "Toaster/bin") || force_compile_scripts)
@@ -121,10 +151,8 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	}
 	#endif
 
-	toaster::script::ScriptEngineSpecInfo script_engine_spec_info{};
-	script_engine_spec_info.rootDomainName = "ToasterRootDomain";
-	script_engine_spec_info.appDomainName  = "ToasterAppDomain";
-	script_engine_spec_info.assemblyPath   = scripts_dir / "Toaster/bin/Debug/net48/Toaster.dll";
+	toaster::script::ScriptEngineSpecInfo script_engine_spec_info{}; script_engine_spec_info.rootDomainName = "ToasterRootDomain";
+	script_engine_spec_info.appDomainName = "ToasterAppDomain"; script_engine_spec_info.assemblyPath = scripts_dir / "Toaster/bin/Debug/net48/Toaster.dll";
 	toaster::script::ScriptEngine script_engine{script_engine_spec_info};
 
 	{
@@ -229,7 +257,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		texture_spec_info.generateMips = false;
 		auto         tex_2d{vk_logical_device->alloc<toaster::gpu::VKTexture2D>(texture_spec_info)};
 		const uint64 tex_size{texture_spec_info.width * texture_spec_info.height * 4};
-		uint32       tex_data{0xFF00FFFF};
+		uint32       tex_data{0xFFFFFFFF};
 		tex_2d->setData(&tex_data, tex_size);
 		tex_2d->createSampler();
 
@@ -240,10 +268,19 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 			orbo_entity.addComponent<toaster::ScriptComponent>().className = "Toaster.Player";
 		}
+
+		if constexpr (false)
 		{
 			toaster::Entity peeb_entity{scene->createEntity("Peeb")};
 			auto &          src{peeb_entity.addComponent<toaster::SpriteRendererComponent>()};
 			src.texture = tex_2d;
+
+			auto &cam{peeb_entity.addComponent<toaster::CameraComponent>()};
+			cam.primary = true;
+			cam.camera.setProjectionType(toaster::SceneCamera::EProjectionType::ePerspective);
+
+			auto &trans{peeb_entity.getComponent<toaster::TransformComponent>()};
+			trans.translation.z = 10.0f;
 		}
 
 		auto   swapchain{window->getSwapchain()};
@@ -277,6 +314,8 @@ auto main(int32 p_argc, char **p_argv) -> int32
 			window_width  = width;
 			window_height = height;
 
+			scene->setViewportSize(width, height);
+
 			scene_renderer->onResize(width, height);
 			camera.setViewportSize(static_cast<float32>(width), static_cast<float32>(height));
 		});
@@ -299,6 +338,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 			scene->onUpdate(dt);
 			scene->onRender(command_buffer, frame_index, dt, scene_renderer, camera.getViewMatrix(), camera.getProjectionMatrix());
+			// scene->onRender(command_buffer, frame_index, dt, scene_renderer);
 
 			render_pass->setInput("u_Texture", scene_renderer->getOutputColourTexture());
 
@@ -328,19 +368,8 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		}
 
 		delete scene;
-	}
+	} vk_logical_device->getVulkanLogicalDevice().waitIdle(); toaster::Globals::shutdown(); vk_logical_device->performGarbageCollection(); delete window;
+	toaster::Window::shutdownWindowingAPI(); delete vk_logical_device; delete vk_physical_device; delete vk_instance; return 0;
 
-	vk_logical_device->getVulkanLogicalDevice().waitIdle();
-
-	toaster::Globals::shutdown();
-	vk_logical_device->performGarbageCollection();
-
-	delete window;
-	toaster::Window::shutdownWindowingAPI();
-
-	delete vk_logical_device;
-	delete vk_physical_device;
-	delete vk_instance;
-
-	return 0;
+	#endif
 }
