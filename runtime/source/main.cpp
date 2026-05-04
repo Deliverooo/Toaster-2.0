@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "client_application.hpp"
+#include "runtime_application.hpp"
 #include "toast_gpu/vk/vk_command_buffer.hpp"
 #include "toast_gpu/vk/vk_compute_pass.hpp"
 #include "toast_gpu/vk/vk_compute_pipeline.hpp"
@@ -11,8 +11,8 @@
 #include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_render/renderer.hpp"
 
-#include "editor_camera.hpp"
 #include <GLFW/glfw3.h>
+#include "fp_camera.hpp"
 #include "toast_gpu/vk/vk_swapchain.hpp"
 #include "toast_kernel/input.hpp"
 #include "toast_lib/events/window_event.hpp"
@@ -41,15 +41,15 @@ auto main(int32 p_argc, char **p_argv) -> int32
 {
 	#endif
 
-	#ifndef TST_CLIENT_DEMO
+	#ifndef TST_RUNTIME_DEMO
 	toaster::ApplicationCreateInfo app_create_info{};
 	app_create_info.windowCreateInfo.width          = 1920;
 	app_create_info.windowCreateInfo.height         = 1080;
-	app_create_info.windowCreateInfo.title          = "Toaster v3.1415 - vulkan";
+	app_create_info.windowCreateInfo.title          = "Toaster Vπ - Runtime;
 	app_create_info.windowCreateInfo.iconPath       = "../resources/textures/OrboCloseup.png";
 	app_create_info.windowCreateInfo.startMaximized = true;
 
-	auto *app = new toaster::ClientApplication(app_create_info, p_argc, p_argv);
+	auto *app = new toaster::RuntimeApplication(app_create_info, p_argc, p_argv);
 
 	app->run();
 	delete app;
@@ -307,7 +307,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		scene_renderer_spec_info.scene          = scene;
 		auto scene_renderer{toaster::make_reference<toaster::SceneRenderer>(vk_logical_device, scene_renderer_spec_info)};
 
-		toaster::EditorCamera camera{input_ctx, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
+		toaster::FPCamera camera{input_ctx, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
 
 		swapchain->setResizeCallback([&](const uint32 width, const uint32 height) -> void
 		{

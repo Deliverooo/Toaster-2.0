@@ -1,6 +1,6 @@
 #pragma once
 
-#include "editor_camera.hpp"
+#include "fp_camera.hpp"
 #include "toaster/toast_kernel/layer.hpp"
 #include "toaster/toast_render/renderer_2d.hpp"
 
@@ -21,10 +21,10 @@
 
 namespace toaster
 {
-	class ClientLayer final : public IAppLayer
+	class RuntimeLayer final : public IAppLayer
 	{
 	public:
-		ClientLayer(Application *p_app);
+		RuntimeLayer(Application *p_app);
 
 		auto onInit() -> void override;
 		auto onDestroy() -> void override;
@@ -52,6 +52,6 @@ namespace toaster
 		RefPtr<gpu::VKPipeline>   m_fullscreenPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_fullscreenRenderPass{nullptr};
 
-		EditorCamera m_camera;
+		FPCamera m_camera;
 	};
 }

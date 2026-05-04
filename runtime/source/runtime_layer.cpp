@@ -1,4 +1,4 @@
-#include "client_layer.hpp"
+#include "runtime_layer.hpp"
 
 #include "stb/stb_image.h"
 #include "toaster/toast_kernel/application.hpp"
@@ -22,11 +22,11 @@ namespace ig = ImGui;
 
 namespace toaster
 {
-	ClientLayer::ClientLayer(Application *p_app) : IAppLayer(p_app)
+	RuntimeLayer::RuntimeLayer(Application *p_app) : IAppLayer(p_app)
 	{
 	}
 
-	auto ClientLayer::onInit() -> void
+	auto RuntimeLayer::onInit() -> void
 	{
 		auto &app    = getApp();
 		auto  device = app.getLogicalDevice();
@@ -49,7 +49,7 @@ namespace toaster
 		input_ctx->registerScriptMethods(m_scriptEngine.get());
 		#pragma endregion
 
-		m_camera = EditorCamera{input_ctx, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
+		m_camera = FPCamera{input_ctx, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
 
 		swapchain->setResizeCallback([&](const uint32 width, const uint32 height) -> void
 		{
@@ -98,14 +98,14 @@ namespace toaster
 		}
 	}
 
-	auto ClientLayer::onDestroy() -> void
+	auto RuntimeLayer::onDestroy() -> void
 	{
 		auto &app = getApp();
 		auto  device{app.getLogicalDevice()};
 		device->getVulkanLogicalDevice().waitIdle();
 	}
 
-	auto ClientLayer::onUpdate(const float32 p_dt) -> void
+	auto RuntimeLayer::onUpdate(const float32 p_dt) -> void
 	{
 		m_time += p_dt;
 
@@ -148,18 +148,18 @@ namespace toaster
 		render::endRendering(rendering_info, command_buffer);
 	}
 
-	auto ClientLayer::onEvent(Event &p_event) -> void
+	auto RuntimeLayer::onEvent(Event &p_event) -> void
 	{
 		EventDispatcher eventDispatcher(p_event);
-		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(ClientLayer::_onKeyPressEvent));
-		eventDispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(ClientLayer::_onWindowResizeEvent));
+		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(RuntimeLayer::_onKeyPressEvent));
+		eventDispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(RuntimeLayer::_onWindowResizeEvent));
 	}
 
-	auto ClientLayer::onUIRender() -> void
+	auto RuntimeLayer::onUIRender() -> void
 	{
 	}
 
-	auto ClientLayer::_onKeyPressEvent(KeyPressEvent &e) -> bool
+	auto RuntimeLayer::_onKeyPressEvent(KeyPressEvent &e) -> bool
 	{
 		auto &app{getApp()};
 		auto &window{app.getWindow()};
@@ -175,7 +175,7 @@ namespace toaster
 		return false;
 	}
 
-	auto ClientLayer::_onWindowResizeEvent(WindowResizeEvent &e) -> bool
+	auto RuntimeLayer::_onWindowResizeEvent(WindowResizeEvent &e) -> bool
 	{
 		return false;
 	}

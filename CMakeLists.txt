@@ -122,5 +122,5 @@ set(CMAKE_CXX_FLAGS "${CXX_WARNINGS} ${CMAKE_CXX_FLAGS} ${PLATFORM_CFLAGS}")
 add_subdirectory(extern)
 add_subdirectory(source)
 
-add_subdirectory(client)
+add_subdirectory(runtime)
 add_subdirectory(editor)
