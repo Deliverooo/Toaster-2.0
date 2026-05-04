@@ -96,6 +96,22 @@ namespace toaster
 			Entity camera_controller{m_scene->createEntity("Camera controller")};
 			camera_controller.addComponent<ScriptComponent>().className = "Toaster.CameraController";
 		}
+
+		{
+			Entity point_light_entity{m_scene->createEntity("Point Light 1")};
+			auto & tc{point_light_entity.getComponent<TransformComponent>()};
+			auto & plc{point_light_entity.addComponent<PointLightComponent>()};
+			tc.translation = {-1.0f, 1.0f, 1.0f};
+			plc.radiance   = tsm::colours::magenta;
+		}
+
+		{
+			Entity point_light_entity{m_scene->createEntity("Point Light 2")};
+			auto & tc{point_light_entity.getComponent<TransformComponent>()};
+			auto & plc{point_light_entity.addComponent<PointLightComponent>()};
+			tc.translation = {1.0f, 1.0f, 1.0f};
+			plc.radiance   = tsm::colours::weezer;
+		}
 	}
 
 	auto RuntimeLayer::onDestroy() -> void

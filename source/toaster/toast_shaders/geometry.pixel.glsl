@@ -205,9 +205,11 @@ void main()
     vec4 albedo_texture_colour = texture(u_AlbedoTexture, v_TexCoord);
     params.albedo = albedo_texture_colour.rgb * u_Material.albedoColour;
 
+    params.metalness = 0.0f;
+
     params.F0 = mix(vec3(0.04f), params.albedo, params.metalness);
 
-    params.roughness = 1.0f;
+    params.roughness = 0.5f;
     params.metalness = 0.0f;
 
     params.normal = normalize(v_Normal);

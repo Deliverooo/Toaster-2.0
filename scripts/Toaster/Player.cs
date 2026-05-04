@@ -4,7 +4,6 @@ public class Player : Entity
 {
 	private TagComponent m_Tag;
 	private TransformComponent m_Transform;
-	private SpriteRendererComponent m_SpriteRenderer;
 	private MeshComponent m_Mesh;
 
 	private float m_Time = 0.0f;
@@ -13,7 +12,6 @@ public class Player : Entity
 	{
 		m_Transform = GetComponent<TransformComponent>();
 		m_Tag = GetComponent<TagComponent>();
-		m_SpriteRenderer = AddComponent<SpriteRendererComponent>();
 		m_Mesh = GetComponent<MeshComponent>();
 	}
 
@@ -23,7 +21,7 @@ public class Player : Entity
 		const float speed = 2.0f;
 
 		//SpriteRenderer.Colour = new Vec4(col, col, 1.0f, 1.0f);
-		float col = (float)System.Math.Abs(System.Math.Sin(m_Time));
+		// float col = (float)System.Math.Abs(System.Math.Sin(m_Time));
 
 		// Material mat = Mesh.GetMaterial(0);
 		// mat.AlbedoColour = new Vec3(col, 1.0f, 1.0f)	;

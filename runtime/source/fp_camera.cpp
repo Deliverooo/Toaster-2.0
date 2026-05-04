@@ -67,7 +67,7 @@ namespace toaster
 	auto FPCamera::onEvent(Event &p_event) -> void
 	{
 		EventDispatcher dispatcher{p_event};
-		dispatcher.dispatch<MouseScrollEvent>(TST_BIND_EVENT_FN(EditorCamera::_onMouseScrollEvent));
+		dispatcher.dispatch<MouseScrollEvent>(TST_BIND_EVENT_FN(FPCamera::_onMouseScrollEvent));
 	}
 
 	auto FPCamera::setViewportSize(float32 p_width, float32 p_height) -> void
