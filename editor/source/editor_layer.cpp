@@ -241,10 +241,10 @@ namespace toaster
 
 				tsm::decomposeTransform(entity_transform, translation, rotation, scale);
 
-				const glm::vec3 delta_rotation = glm::eulerAngles(rotation) - tc.rotation;
-				tc.translation                 = translation;
-				tc.rotation                    += delta_rotation;
-				tc.scale                       = scale;
+				const glm::quat delta_rotation{rotation - tc.rotation};
+				tc.translation = translation;
+				tc.rotation    += delta_rotation;
+				tc.scale       = scale;
 			}
 		}
 

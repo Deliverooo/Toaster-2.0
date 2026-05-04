@@ -41,6 +41,8 @@ namespace toaster
 			if (m_ctx->isKeyDown(input::EKeyCode::eLeftShift))
 				m_position -= c_upDir * p_dt * speed;
 
+			// LOG_INFO("Pos: {}", m_position);
+
 			const glm::vec2 mouse{m_ctx->getMouseX(), m_ctx->getMouseY()};
 			const glm::vec2 delta{(mouse - m_initialMousePosition) * 0.002f};
 			m_yaw   += delta.x;

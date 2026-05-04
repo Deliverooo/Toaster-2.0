@@ -22,11 +22,11 @@ namespace toaster
 			m_directionalLightUBOs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
 			m_mappedDirectionalLightUBOs = m_directionalLightUBOs->mapAllMemory(ubo_size, 0);
 		}
-		// {
-		// constexpr vk::DeviceSize ubo_size{sizeof(PointLightUB)};
-		// m_pointLightUBOs       = m_ctx->alloc<gpu::VKUniformBufferPFF>(ubo_size, gpu::VKGPUContext::c_maxFramesInFlight);
-		// m_mappedPointLightUBOs = m_pointLightUBOs->mapMemory(ubo_size, 0);
-		// }
+		{
+			constexpr vk::DeviceSize ubo_size{sizeof(PointLightUB)};
+			m_pointLightUBOs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
+			m_mappedPointLightUBOs = m_pointLightUBOs->mapAllMemory(ubo_size, 0);
+		}
 		{
 			constexpr vk::DeviceSize ubo_size{sizeof(SceneDataUB)};
 			m_sceneDataUBOs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
@@ -130,7 +130,7 @@ namespace toaster
 			m_geometryPass = m_device->alloc<gpu::VKRenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs);
 			m_geometryPass->setInput("DirectionalLightData", m_directionalLightUBOs);
-			// m_geometryPass->setInput("PointLightData", m_pointLightUBOs);
+			m_geometryPass->setInput("PointLightData", m_pointLightUBOs);
 			m_geometryPass->setInput("SceneData", m_sceneDataUBOs);
 
 			m_geometryPass->bake(); // TODO: rename ts to toast
@@ -192,7 +192,6 @@ namespace toaster
 			}
 			std::memcpy(m_mappedDirectionalLightUBOs[p_frame_index], &directional_light_ub, sizeof(DirectionalLightUB));
 		}
-		#if 0
 		{
 			PointLightUB point_light_ub{};
 			point_light_ub.count = std::min(static_cast<uint32>(light_environment.pointLights.size()), PointLightUB::c_maxPointLights);
@@ -200,12 +199,11 @@ namespace toaster
 			{
 				point_light_ub.pointLights[i].position = light_environment.pointLights[i].position;
 				point_light_ub.pointLights[i].radiance = light_environment.pointLights[i].radiance;
-				point_light_ub.pointLights[i].radius   = light_environment.pointLights[i].radius;
-				point_light_ub.pointLights[i].falloff  = light_environment.pointLights[i].falloff;
+				// point_light_ub.pointLights[i].radius   = light_environment.pointLights[i].radius;
+				// point_light_ub.pointLights[i].falloff  = light_environment.pointLights[i].falloff;
 			}
 			std::memcpy(m_mappedPointLightUBOs[p_frame_index], &point_light_ub, sizeof(PointLightUB));
 		}
-		#endif
 
 		SceneDataUB scene_data_ub{};
 		scene_data_ub.cameraPos = glm::inverse(p_view_matrix)[3];

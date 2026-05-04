@@ -10,10 +10,10 @@ namespace toaster
 	struct TST_API SceneRendererSpecInfo
 	{
 		NonOwningPtr<Scene> scene{nullptr};
-		uint32        viewportWidth{0u};
-		uint32        viewportHeight{0u};
-		int32         viewportOffsetX{0u};
-		int32         viewportOffsetY{0u};
+		uint32              viewportWidth{0u};
+		uint32              viewportHeight{0u};
+		int32               viewportOffsetX{0u};
+		int32               viewportOffsetY{0u};
 	};
 
 	class TST_API SceneRenderer
@@ -102,6 +102,18 @@ namespace toaster
 
 		RefPtr<gpu::VKUniformBufferPFF> m_directionalLightUBOs;
 		std::vector<void *>             m_mappedDirectionalLightUBOs;
+
+		struct PointLightUB
+		{
+			static constexpr uint32 c_maxPointLights{128u};
+
+			uint32     count{0u};
+			glm::vec3  _padding{0.0f};
+			PointLight pointLights[c_maxPointLights]{};
+		};
+
+		RefPtr<gpu::VKUniformBufferPFF> m_pointLightUBOs;
+		std::vector<void *>             m_mappedPointLightUBOs;
 
 		struct SceneDataUB
 		{

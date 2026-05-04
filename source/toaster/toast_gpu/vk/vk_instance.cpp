@@ -7,6 +7,7 @@ namespace toaster::gpu
 
 	VKInstance::VKInstance(const VKInstanceSpecInfo &p_spec_info) : m_specInfo(p_spec_info)
 	{
+
 		if (!m_specInfo.debugCallback)
 			m_specInfo.debugCallback = &_debugCallback; // Fallback to the default one :)
 

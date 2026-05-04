@@ -259,7 +259,10 @@ namespace toaster
 		{
 			drawVec3Ctrl("Position", &p_comp.translation, glm::vec3{0.0f});
 			ig::Separator();
-			drawVec3Ctrl("Rotation", &p_comp.rotation, glm::vec3{0.0f});
+
+			glm::vec3 rotation_euler{glm::eulerAngles(p_comp.rotation)};
+			if (drawVec3Ctrl("Rotation", &rotation_euler, glm::vec3{0.0f}))
+				p_comp.rotation = glm::quat{rotation_euler};
 			ig::Separator();
 			drawVec3Ctrl("Scale", &p_comp.scale, glm::vec3{1.0f});
 			ig::Separator();
@@ -382,9 +385,6 @@ namespace toaster
 		{
 			ui::colourEdit3("Radiance", glm::value_ptr(p_comp.radiance));
 			ui::dragFloat("Multiplier", &p_comp.multiplier, "##Multiplier", 0.01f);
-			ig::Separator();
-			ui::dragFloat("Radius", &p_comp.radius, "##Radius", 0.05f);
-			ui::dragFloat("Falloff", &p_comp.falloff, "##Falloff", 0.05f);
 		}, this);
 
 		drawComponent<SpotLightComponent>("Spot Light", p_entity, [](SpotLightComponent &p_comp)

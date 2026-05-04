@@ -31,8 +31,8 @@ namespace toaster
 	{
 		glm::vec4 position{0.0f};
 		glm::vec4 radiance{1.0f};
-		float32   radius{25.0f};
-		float32   falloff{1.0f};
+		// float32   radius{25.0f};
+		// float32   falloff{1.0f};
 	};
 
 	struct TST_API SpotLight

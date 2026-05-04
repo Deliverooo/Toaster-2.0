@@ -1,6 +1,6 @@
 ﻿namespace Toaster;
 
-public class Entity
+public abstract class Entity
 {
 	protected Entity()
 	{
@@ -13,6 +13,9 @@ public class Entity
 	}
 
 	public readonly uint Id;
+
+	protected abstract void OnCreate();
+	protected abstract void OnUpdate(float p_dt);
 
 	private bool HasComponent<T>() where T : Component, new()
 	{

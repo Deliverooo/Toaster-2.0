@@ -44,18 +44,18 @@ namespace toaster
 
 		[[nodiscard]] auto getTransform() const -> glm::mat4
 		{
-			return glm::translate(glm::mat4{1.0f}, translation) * glm::toMat4(glm::quat{rotation}) * glm::scale(glm::mat4{1.0f}, scale);
+			return glm::translate(glm::mat4{1.0f}, translation) * glm::toMat4(rotation) * glm::scale(glm::mat4{1.0f}, scale);
 		}
 
 		auto reset() -> void
 		{
 			translation = glm::vec3{0.0f, 0.0f, 0.0f};
-			rotation    = glm::vec3{0.0f, 0.0f, 0.0f};
+			rotation    = glm::quat{1.0f, 0.0f, 0.0f, 0.0f};
 			scale       = glm::vec3{1.0f, 1.0f, 1.0f};
 		}
 
 		glm::vec3 translation{0.0f};
-		glm::vec3 rotation{0.0f};
+		glm::quat rotation{1.0f, 0.0f, 0.0f, 0.0f};
 		glm::vec3 scale{1.0f};
 	};
 
@@ -122,15 +122,15 @@ namespace toaster
 	{
 		glm::vec3 radiance{1.0f};
 		float32   multiplier{1.0f};
-		float32   radius{1.0f};
-		float32   falloff{1.0f};
+		// float32   radius{1.0f};
+		// float32   falloff{1.0f};
 
 		auto reset() -> void
 		{
 			radiance   = glm::vec3{1.0f};
 			multiplier = 1.0f;
-			radius     = 1.0f;
-			falloff    = 1.0f;
+			// radius     = 1.0f;
+			// falloff    = 1.0f;
 		}
 	};
 
@@ -177,6 +177,5 @@ namespace toaster
 	DEFINE_COMPONENT(ScriptComponent)
 	{
 		String className{};
-		// RefPtr<script::Class> scriptClass{nullptr};
 	};
 }

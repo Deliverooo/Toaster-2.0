@@ -15,6 +15,8 @@ namespace toaster::gpu
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                 = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                 = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                  = true;
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fragmentStoresAndAtomics          = true;
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.vertexPipelineStoresAndAtomics    = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                   = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                    = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                    = true;

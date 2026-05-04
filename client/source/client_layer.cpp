@@ -88,14 +88,13 @@ namespace toaster
 
 		{
 			Entity orbo_entity{m_scene->createEntity("Orbo")};
-			orbo_entity.addComponent<MeshComponent>().mesh        = device->alloc<gpu::VKMesh>("../resources/meshes/DJT_Sculpt.fbx", m_shaderLibrary.get("Mesh Test"));
+			orbo_entity.addComponent<MeshComponent>().mesh = device->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
 			orbo_entity.addComponent<ScriptComponent>().className = "Toaster.Player";
 		}
 
 		{
-			Entity dir_light{m_scene->createEntity("Dir light")};
-			auto & light{dir_light.addComponent<DirectionalLightComponent>()};
-			dir_light.getComponent<TransformComponent>().translation = {0.0f, 0.0f, 10.0f};
+			Entity camera_controller{m_scene->createEntity("Camera controller")};
+			camera_controller.addComponent<ScriptComponent>().className = "Toaster.CameraController";
 		}
 	}
 
@@ -121,8 +120,8 @@ namespace toaster
 		m_camera.onUpdate(p_dt);
 
 		m_scene->onUpdate(p_dt);
-		m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer, m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
-		// scene->onRender(command_buffer, frame_index, dt, scene_renderer);
+		// m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer, m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
+		m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer);
 
 		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getOutputColourTexture());
 

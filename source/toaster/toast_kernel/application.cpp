@@ -29,7 +29,8 @@ namespace toaster
 			vk::KHRTimelineSemaphoreExtensionName,
 			vk::EXTCustomBorderColorExtensionName,
 			vk::KHRMaintenance6ExtensionName,
-			vk::KHRLoadStoreOpNoneExtensionName
+			vk::KHRLoadStoreOpNoneExtensionName,
+			vk::KHRShaderNonSemanticInfoExtensionName
 		};
 		gpu::VKPhysicalDeviceSpecInfo vk_physical_device_spec_info{};
 		vk_physical_device_spec_info.requiredExtensions = required_device_extensions;
