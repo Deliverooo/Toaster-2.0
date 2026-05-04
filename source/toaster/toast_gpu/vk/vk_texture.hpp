@@ -42,7 +42,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto getSpecInfo() const -> const TextureSpecInfo &;
 		auto               getPath() const -> const io::filesystem::Path &;
 		[[nodiscard]] auto getMipLevelCount() const -> uint32;
-		auto               getImage() const -> const RefPtr<VKRawImage> &;
+		auto               getImage()  ->  RefPtr<VKRawImage> ;
 		[[nodiscard]] auto getSampler() -> vk::raii::Sampler &;
 		[[nodiscard]] auto getDescriptorInfo() -> vk::DescriptorImageInfo &;
 

@@ -139,7 +139,10 @@ namespace toaster
 		// m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer, m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
 		m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer);
 
-		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getOutputColourTexture());
+		auto tex{m_sceneRenderer->getOutputColourTexture()};
+		// gpu::util::colourAttachmentToShaderRead(tex->getImage().get());
+		m_fullscreenRenderPass->setInput("u_Texture", tex);
+		// gpu::util::shaderReadToColourAttachment(tex->getImage().get());
 
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, swapchain_extent};

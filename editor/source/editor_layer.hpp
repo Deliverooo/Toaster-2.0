@@ -62,7 +62,7 @@ namespace toaster
 
 		RefPtr<Renderer2D> m_renderer2D{nullptr};
 
-		FPCamera m_editorCamera;
+		EditorCamera m_editorCamera;
 
 		int32 m_gizmoType{-1}; // Translate, rotate or scale
 		int32 m_gizmoMode{0};  // 0 For local, 1 for world space

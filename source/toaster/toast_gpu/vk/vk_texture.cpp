@@ -190,7 +190,7 @@ namespace toaster::gpu
 		return m_mipLevels;
 	}
 
-	auto VKTexture2D::getImage() const -> const RefPtr<VKRawImage> &
+	auto VKTexture2D::getImage()  ->  RefPtr<VKRawImage>
 	{
 		return m_image;
 	}

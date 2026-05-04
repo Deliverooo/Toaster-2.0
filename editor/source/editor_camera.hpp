@@ -11,11 +11,11 @@ namespace toaster
 {
 	class InputContext;
 
-	class FPCamera final : public Camera
+	class EditorCamera final : public Camera
 	{
 	public:
-		FPCamera() = default;
-		FPCamera(InputContext *p_ctx, float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far);
+		EditorCamera() = default;
+		EditorCamera(InputContext *p_ctx, float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far);
 
 		auto onUpdate(float32 p_dt) -> void;
 		auto onEvent(Event &p_event) -> void;

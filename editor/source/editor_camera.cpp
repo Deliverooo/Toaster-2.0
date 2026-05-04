@@ -5,7 +5,7 @@
 
 namespace toaster
 {
-	FPCamera::FPCamera(InputContext *p_ctx, float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far) : Camera(glm::perspective(glm::radians(p_fov),
+	EditorCamera::EditorCamera(InputContext *p_ctx, float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far) : Camera(glm::perspective(glm::radians(p_fov),
 																																				   p_aspectRatio, p_near,
 																																				   p_far)), m_ctx(p_ctx),
 																														   m_fov(p_fov), m_aspectRatio(p_aspectRatio),
@@ -13,7 +13,7 @@ namespace toaster
 	{
 	}
 
-	auto FPCamera::onUpdate(float32 p_dt) -> void
+	auto EditorCamera::onUpdate(float32 p_dt) -> void
 	{
 		if (m_ctx->isMouseButtonDown(input::EMouseButton::eRight))
 		{
@@ -60,26 +60,26 @@ namespace toaster
 		}
 	}
 
-	auto FPCamera::onEvent(Event &p_event) -> void
+	auto EditorCamera::onEvent(Event &p_event) -> void
 	{
 		EventDispatcher dispatcher{p_event};
 		dispatcher.dispatch<MouseScrollEvent>(TST_BIND_EVENT_FN(EditorCamera::_onMouseScrollEvent));
 	}
 
-	auto FPCamera::setViewportSize(float32 p_width, float32 p_height) -> void
+	auto EditorCamera::setViewportSize(float32 p_width, float32 p_height) -> void
 	{
 		m_aspectRatio = p_width / p_height;
 		_updateProjection();
 	}
 
-	auto FPCamera::getViewMatrix() const -> glm::mat4
+	auto EditorCamera::getViewMatrix() const -> glm::mat4
 	{
 		const glm::mat4 cameraTranslation{glm::translate(glm::mat4{1.0f}, m_position)};
 		const glm::mat4 cameraRotation{getRotationMatrix()};
 		return glm::inverse(cameraTranslation * cameraRotation);
 	}
 
-	auto FPCamera::getRotationMatrix() const -> glm::mat4
+	auto EditorCamera::getRotationMatrix() const -> glm::mat4
 	{
 		glm::quat pitchRotation{glm::angleAxis(m_pitch, glm::vec3{1.0f, 0.0f, 0.0f})};
 		glm::quat yawRotation{glm::angleAxis(m_yaw, glm::vec3{0.0f, -1.0f, 0.0f})};
@@ -87,47 +87,47 @@ namespace toaster
 		return glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);
 	}
 
-	auto FPCamera::getViewProjection() const -> glm::mat4
+	auto EditorCamera::getViewProjection() const -> glm::mat4
 	{
 		return m_projection * getViewMatrix();
 	}
 
-	auto FPCamera::getForwardDirection() const -> glm::vec3
+	auto EditorCamera::getForwardDirection() const -> glm::vec3
 	{
 		return getRotationMatrix() * glm::vec4{c_forwardDir, 0.0f};
 	}
 
-	auto FPCamera::getRightDirection() const -> glm::vec3
+	auto EditorCamera::getRightDirection() const -> glm::vec3
 	{
 		return getRotationMatrix() * glm::vec4{c_rightDir, 0.0f};
 	}
 
-	auto FPCamera::getUpDirection() const -> glm::vec3
+	auto EditorCamera::getUpDirection() const -> glm::vec3
 	{
 		return getRotationMatrix() * glm::vec4{c_upDir, 0.0f};
 	}
 
-	auto FPCamera::getPosition() const -> const glm::vec3 &
+	auto EditorCamera::getPosition() const -> const glm::vec3 &
 	{
 		return m_position;
 	}
 
-	auto FPCamera::getPitch() const -> float32
+	auto EditorCamera::getPitch() const -> float32
 	{
 		return m_pitch;
 	}
 
-	auto FPCamera::getYaw() const -> float32
+	auto EditorCamera::getYaw() const -> float32
 	{
 		return m_yaw;
 	}
 
-	auto FPCamera::_updateProjection() -> void
+	auto EditorCamera::_updateProjection() -> void
 	{
 		m_projection = glm::perspective(glm::radians(m_fov) * m_zoom, m_aspectRatio, m_zNear, m_zFar);
 	}
 
-	auto FPCamera::_onMouseScrollEvent(MouseScrollEvent &p_event) -> bool
+	auto EditorCamera::_onMouseScrollEvent(MouseScrollEvent &p_event) -> bool
 	{
 		m_zoom -= p_event.getScrollY() * 0.02f;
 		if (m_zoom < glm::radians(1.0f))

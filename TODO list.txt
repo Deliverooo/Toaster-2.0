@@ -3,3 +3,5 @@
 3. With the coordinates being correct, I can now write a basic Blinn Phong shader to test the directional lights with the renderer.
 4. After the directional lights have been tested and work, I will introduce the point lights to work with the Blinn Phong shader.
 5. Integrate ImGuizmo back into the editor so that I can more easily transform stuff.
+
+6. Weird ahh validation error to do with the image layout causing artifacts when resizing... :(((
