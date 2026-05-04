@@ -56,7 +56,9 @@ vec3 calcDirectionalLights()
     {
         DirectionalLight light = u_DirectionalLights.lights[i];
 
+        float diff = max(dot(params.normal, normalize(-light.direction.xyz)), 0.0f);
 
+        result += params.albedo * diff * light.radiance * light.multiplier;
     }
 
     return result;
@@ -78,7 +80,7 @@ void main()
     params.view = normalize(u_SceneData.cameraPos - v_Position);
     params.nDotV = max(dot(params.normal, params.view), 0.0);
 
-    vec3 final_colour = vec3(params.albedo);
+    vec3 final_colour = vec3(params.albedo) * 0.02f;
 
     final_colour += calcDirectionalLights();
 

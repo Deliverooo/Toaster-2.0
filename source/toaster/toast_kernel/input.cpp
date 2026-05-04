@@ -2,11 +2,48 @@
 
 #include <GLFW/glfw3.h>
 #include "window.hpp"
+#include "toast_scripting/script_engine.hpp"
 
 namespace toaster
 {
+	static InputContext *s_activeInputCtx{nullptr}; // For the script method lambdas
+
 	InputContext::InputContext(Window *p_window) : m_window(p_window)
 	{
+		s_activeInputCtx = this;
+	}
+
+	InputContext::~InputContext()
+	{
+		s_activeInputCtx = nullptr;
+	}
+
+	auto InputContext::registerScriptMethods(script::ScriptEngine *p_engine) -> void
+	{
+		p_engine->registerMethod("Toaster.Input::IsKeyDown", +[](input::EKeyCode p_key_code) -> bool
+		{
+			return s_activeInputCtx->isKeyDown(p_key_code);
+		});
+
+		p_engine->registerMethod("Toaster.Input::IsMouseButtonDown", +[](input::EMouseButton p_mouse_button) -> bool
+		{
+			return s_activeInputCtx->isMouseButtonDown(p_mouse_button);
+		});
+
+		p_engine->registerMethod("Toaster.Input::GetCursorMode", +[](input::ECursorMode *p_cursor_mode) -> void
+		{
+			*p_cursor_mode = s_activeInputCtx->getCursorMode();
+		});
+
+		p_engine->registerMethod("Toaster.Input::SetCursorMode", +[](input::ECursorMode p_cursor_mode) -> void
+		{
+			s_activeInputCtx->setCursorMode(p_cursor_mode);
+		});
+
+		p_engine->registerMethod("Toaster.Input::GetMousePos", +[](MousePos *p_out_pos) -> void
+		{
+			*p_out_pos = s_activeInputCtx->getMousePos();
+		});
 	}
 
 	auto InputContext::getMouseX() -> float32
@@ -21,7 +58,7 @@ namespace toaster
 		return y;
 	}
 
-	auto InputContext::getMousePos() -> std::pair<float32, float32>
+	auto InputContext::getMousePos() -> MousePos
 	{
 		float64 x{0.0f};
 		float64 y{0.0f};

@@ -24,11 +24,11 @@ public class Player : Entity
 		Time += p_dt;
 		const float speed = 2.0f;
 
+		//SpriteRenderer.Colour = new Vec4(col, col, 1.0f, 1.0f);
 		float col = (float)System.Math.Abs(System.Math.Sin(Time));
-		SpriteRenderer.Colour = new Vec4(col, col, 1.0f, 1.0f);
-		
-		Material mat = Mesh.GetMaterial(0);
-		mat.AlbedoColour = new Vec3(col, 1.0f, 1.0f);
+
+		if (Input.IsKeyDown(Input.EKeyCode.I))
+			Transform.Reset();
 
 		Vec3 translation = Transform.Translation;
 

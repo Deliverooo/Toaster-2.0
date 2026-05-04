@@ -2,6 +2,7 @@
 #include "entity.hpp"
 #include "components.hpp"
 #include "scene_renderer.hpp"
+#include "glm/gtx/euler_angles.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 
 #include "toast_lib/logging.hpp"
@@ -40,9 +41,13 @@ namespace toaster
 		script::Method *m_onUpdateMethod{nullptr};
 	};
 
+	static Scene *s_activeScene{nullptr};
+
 	Scene::Scene(gpu::VKLogicalDevice *p_device, script::ScriptEngine *p_script_engine, const String &p_name) : m_device(p_device), m_scriptEngine(p_script_engine),
 																												m_name(p_name.empty() ? "Untitled Scene" : p_name)
 	{
+		s_activeScene = this;
+
 		if (m_scriptEngine)
 		{
 			MonoImage *          image{m_scriptEngine->getImage()};
@@ -72,20 +77,23 @@ namespace toaster
 			#define REGISTER_COMPONENT_TYPE(__type) {MonoType *managed_type{mono_reflection_type_from_name((char *) "Toaster."#__type, m_scriptEngine->getImage())};\
 													if(!managed_type) { LOG_FATAL("Could not find component: "#__type); TST_ASSERT(false);}\
 													m_hasComponentFnMap[managed_type] = +[](Entity *p_entity) -> bool { return p_entity->hasComponent<__type>(); };\
-													m_addComponentFnMap[managed_type] = +[](Entity *p_entity) -> void { __type& comp{p_entity->addComponent<__type>()}; (void)comp; };}
-
+													m_addComponentFnMap[managed_type] = +[](Entity *p_entity) -> void { __type& comp{p_entity->addComponent<__type>()}; (void)comp; };\
+													m_resetComponentFnMap[managed_type] = +[](Entity *p_entity) -> void { __type& comp{p_entity->getComponent<__type>()}; comp.reset(); };}
 			REGISTER_COMPONENT_TYPE(TagComponent);
 			REGISTER_COMPONENT_TYPE(TransformComponent);
 			REGISTER_COMPONENT_TYPE(SpriteRendererComponent);
 			REGISTER_COMPONENT_TYPE(MeshComponent);
-			// REGISTER_COMPONENT_TYPE(CameraComponent);
+			REGISTER_COMPONENT_TYPE(DirectionalLightComponent);
 
 			#undef REGISTER_COMPONENT_TYPE
 		}
+
+		_registerScriptMethods();
 	}
 
 	Scene::~Scene()
 	{
+		s_activeScene = nullptr;
 	}
 
 	auto Scene::onUpdate(float32 p_dt) -> void
@@ -148,14 +156,18 @@ namespace toaster
 		}
 
 		m_lightEnvironment.pointLights.clear();
+		m_lightEnvironment.directionalLights.clear();
 
 		{
 			for (const auto group{m_registry.group<TransformComponent>(entt::get<DirectionalLightComponent>)}; const auto entity: group)
 			{
 				auto [transform, directional_light]{group.get<TransformComponent, DirectionalLightComponent>(entity)};
 
+				glm::mat4 rotation{glm::eulerAngleXYZ(transform.rotation.x, transform.rotation.y, transform.rotation.z)};
+				glm::vec4 forward{rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)};
+				glm::vec3 direction{glm::normalize(glm::vec3(forward))};
 				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
-																	  glm::vec4(glm::normalize(transform.rotation), 1.0f),
+																	  glm::vec4(direction, 1.0f),
 																	  glm::vec4(directional_light.radiance, directional_light.multiplier)
 																  });
 			}
@@ -221,14 +233,18 @@ namespace toaster
 						 const glm::mat4 &              p_view, const glm::mat4 &p_projection) -> void
 	{
 		m_lightEnvironment.pointLights.clear();
+		m_lightEnvironment.directionalLights.clear();
 
 		{
 			for (const auto group{m_registry.group<TransformComponent>(entt::get<DirectionalLightComponent>)}; const auto entity: group)
 			{
 				auto [transform, directional_light]{group.get<TransformComponent, DirectionalLightComponent>(entity)};
 
+				glm::mat4 rotation{glm::eulerAngleXYZ(transform.rotation.x, transform.rotation.y, transform.rotation.z)};
+				glm::vec4 forward{rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)};
+				glm::vec3 direction{glm::normalize(glm::vec3(forward))};
 				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
-																	  glm::vec4(glm::normalize(transform.rotation), 1.0f),
+																	  glm::vec4(direction, 1.0f),
 																	  glm::vec4(directional_light.radiance, directional_light.multiplier)
 																  });
 			}
@@ -371,6 +387,121 @@ namespace toaster
 	auto Scene::getAddComponentFn(ComponentType p_component_type) -> AddComponentFn &
 	{
 		return m_addComponentFnMap.at(p_component_type);
+	}
+
+	auto Scene::getResetComponentFn(ComponentType p_component_type) -> ResetComponentFn &
+	{
+		return m_resetComponentFnMap.at(p_component_type);
+	}
+
+	auto Scene::_registerScriptMethods() -> void
+	{
+		m_scriptEngine->registerMethod("Toaster.InternalCalls::HasComponent", +[](uint32 p_entity_id, MonoReflectionType *p_component_type) -> bool
+		{
+			MonoType *type{mono_reflection_type_get_type(p_component_type)};
+			Entity    entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			return s_activeScene->getHasComponentFn(type)(&entity);
+		});
+
+		m_scriptEngine->registerMethod("Toaster.InternalCalls::AddComponent", +[](uint32 p_entity_id, MonoReflectionType *p_component_type) -> void
+		{
+			MonoType *type{mono_reflection_type_get_type(p_component_type)};
+			Entity    entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			s_activeScene->getAddComponentFn(type)(&entity);
+		});
+
+		m_scriptEngine->registerMethod("Toaster.Component::ResetInternal", +[](uint32 p_entity_id, MonoReflectionType *p_component_type) -> void
+		{
+			MonoType *type{mono_reflection_type_get_type(p_component_type)};
+			Entity    entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			s_activeScene->getResetComponentFn(type)(&entity);
+		});
+
+		m_scriptEngine->registerMethod("Toaster.TagComponent::GetTag", +[](uint32 p_entity_id, MonoString **p_out_tag) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			*p_out_tag = mono_string_new(s_activeScene->getScriptEngine()->getAppDomain(), entity.getComponent<TagComponent>().tag.c_str());
+		});
+
+		m_scriptEngine->registerMethod("Toaster.TagComponent::SetTag", +[](uint32 p_entity_id, MonoString **p_tag) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+
+			char *new_string{mono_string_to_utf8(*p_tag)};
+			entity.getComponent<TagComponent>().tag = String{new_string};
+			mono_free(new_string);
+		});
+
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetTranslation", +[](uint32 p_entity_id, glm::vec3 *p_out_translation) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			*p_out_translation = entity.getComponent<TransformComponent>().translation;
+		});
+
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetTranslation", +[](uint32 p_entity_id, glm::vec3 *p_translation) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			entity.getComponent<TransformComponent>().translation = *p_translation;
+		});
+
+		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::GetColour", +[](uint32 p_entity_id, glm::vec4 *p_out_colour) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			*p_out_colour = entity.getComponent<SpriteRendererComponent>().colour;
+		});
+
+		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::SetColour", +[](uint32 p_entity_id, glm::vec4 *p_colour) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			entity.getComponent<SpriteRendererComponent>().colour = *p_colour;
+		});
+
+		m_scriptEngine->registerMethod("Toaster.MeshComponent::HasMaterialInternal", +[](uint32 p_entity_id, uint32 p_index) -> bool
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			auto & mesh{entity.getComponent<MeshComponent>()};
+			return mesh.mesh->getMaterials().size() > p_index;
+		});
+
+		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::GetRadiance", +[](uint32 p_entity_id, glm::vec3 *p_out_colour) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			*p_out_colour = entity.getComponent<DirectionalLightComponent>().radiance;
+		});
+
+		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::SetRadiance", +[](uint32 p_entity_id, glm::vec3 *p_colour) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			entity.getComponent<DirectionalLightComponent>().radiance = *p_colour;
+		});
+
+		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::GetMultiplier", +[](uint32 p_entity_id, float32 *p_multiplier) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			*p_multiplier = entity.getComponent<DirectionalLightComponent>().multiplier;
+		});
+
+		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::SetMultiplier", +[](uint32 p_entity_id, float32 *p_multiplier) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			entity.getComponent<DirectionalLightComponent>().multiplier = *p_multiplier;
+		});
+
+		m_scriptEngine->registerMethod("Toaster.Material::GetAlbedoColour", +[](uint32 p_entity_id, uint32 p_index, glm::vec3 *p_out_colour) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			auto & mesh{entity.getComponent<MeshComponent>()};
+			auto & material{mesh.mesh->getMaterials().at(p_index)};
+			*p_out_colour = material->get<glm::vec3>("u_Material.albedoColour");
+		});
+
+		m_scriptEngine->registerMethod("Toaster.Material::SetAlbedoColour", +[](uint32 p_entity_id, uint32 p_index, glm::vec3 *p_colour) -> void
+		{
+			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			auto & mesh{entity.getComponent<MeshComponent>()};
+			auto & material{mesh.mesh->getMaterials().at(p_index)};
+			material->set("u_Material.albedoColour", *p_colour);
+		});
 	}
 
 	template<typename Type>

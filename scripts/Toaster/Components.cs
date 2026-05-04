@@ -4,6 +4,14 @@ namespace Toaster;
 
 public abstract class Component
 {
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	private static extern void ResetInternal(uint p_entity_id, Type p_type);
+
+	public void Reset()
+	{
+		ResetInternal(EntityParent.Id, this.GetType());
+	}
+
 	public Entity EntityParent { get; internal set; } = null!;
 }
 
@@ -80,5 +88,40 @@ public class MeshComponent : Component
 			return null;
 
 		return new Material(EntityParent.Id, p_index);
+	}
+}
+
+public class DirectionalLightComponent : Component
+{
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	private static extern void GetRadiance(uint p_entity_id, out Vec3 p_out_radiance);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	private static extern void SetRadiance(uint p_entity_id, ref Vec3 p_radiance);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	private static extern void GetMultiplier(uint p_entity_id, out float p_out_multiplier);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	private static extern void SetMultiplier(uint p_entity_id, ref float p_multiplier);
+
+	public Vec3 Radiance
+	{
+		get
+		{
+			GetRadiance(EntityParent.Id, out var radiance);
+			return radiance;
+		}
+		set => SetRadiance(EntityParent.Id, ref value);
+	}
+
+	public float Multiplier
+	{
+		get
+		{
+			GetMultiplier(EntityParent.Id, out var multiplier);
+			return multiplier;
+		}
+		set => SetMultiplier(EntityParent.Id, ref value);
 	}
 }

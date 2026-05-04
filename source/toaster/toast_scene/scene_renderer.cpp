@@ -309,7 +309,7 @@ namespace toaster
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
 			{
 				render::renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_depthPrePipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform,
-									 nullptr);
+								   nullptr);
 			}
 		}
 

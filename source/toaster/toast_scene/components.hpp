@@ -25,6 +25,11 @@ namespace toaster
 		{
 		}
 
+		auto reset() -> void
+		{
+			tag.clear();
+		}
+
 		String tag;
 	};
 

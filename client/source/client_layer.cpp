@@ -28,9 +28,9 @@ namespace toaster
 
 	auto ClientLayer::onInit() -> void
 	{
-		auto &      app    = getApp();
-		auto        device = app.getLogicalDevice();
-		static auto input_ctx{app.getWindow().getInputContext()};
+		auto &app    = getApp();
+		auto  device = app.getLogicalDevice();
+		auto  input_ctx{app.getWindow().getInputContext()};
 
 		auto   swapchain{app.getWindow().getSwapchain()};
 		uint32 window_width{swapchain->getExtent().width};
@@ -45,111 +45,8 @@ namespace toaster
 		script_engine_spec_info.assemblyPath   = scripts_dir / "Toaster/bin/Debug/net48/Toaster.dll";
 		m_scriptEngine                         = make_unique<script::ScriptEngine>(script_engine_spec_info);
 
-		m_scene     = make_reference<Scene>(app.getLogicalDevice(), m_scriptEngine.get(), "New Scene");
-		activeScene = m_scene.get();
-
-		m_scriptEngine->registerMethod("Toaster.Input::IsKeyDown", +[](input::EKeyCode p_key_code) -> bool
-		{
-			return input_ctx->isKeyDown(p_key_code);
-		});
-
-		m_scriptEngine->registerMethod("Toaster.Input::IsMouseButtonDown", +[](input::EMouseButton p_mouse_button) -> bool
-		{
-			return input_ctx->isMouseButtonDown(p_mouse_button);
-		});
-
-		m_scriptEngine->registerMethod("Toaster.Input::GetCursorMode", +[](input::ECursorMode *p_cursor_mode) -> void
-		{
-			*p_cursor_mode = input_ctx->getCursorMode();
-		});
-
-		m_scriptEngine->registerMethod("Toaster.Input::SetCursorMode", +[](input::ECursorMode p_cursor_mode) -> void
-		{
-			input_ctx->setCursorMode(p_cursor_mode);
-		});
-
-		m_scriptEngine->registerMethod("Toaster.Input::GetMousePos", +[](glm::vec2 *p_out_pos) -> void
-		{
-			auto [x, y]{input_ctx->getMousePos()};
-			*p_out_pos = glm::vec2{x, y};
-		});
-
-		m_scriptEngine->registerMethod("Toaster.InternalCalls::HasComponent", +[](uint32 p_entity_id, MonoReflectionType *p_component_type) -> bool
-		{
-			MonoType *type{mono_reflection_type_get_type(p_component_type)};
-			Entity    entity{static_cast<entt::entity>(p_entity_id), activeScene};
-			return activeScene->getHasComponentFn(type)(&entity);
-		});
-
-		m_scriptEngine->registerMethod("Toaster.InternalCalls::AddComponent", +[](uint32 p_entity_id, MonoReflectionType *p_component_type) -> void
-		{
-			MonoType *type{mono_reflection_type_get_type(p_component_type)};
-			Entity    entity{static_cast<entt::entity>(p_entity_id), activeScene};
-			activeScene->getAddComponentFn(type)(&entity);
-		});
-
-		m_scriptEngine->registerMethod("Toaster.TagComponent::GetTag", +[](uint32 p_entity_id, MonoString **p_out_tag) -> void
-		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
-			*p_out_tag = mono_string_new(activeScene->getScriptEngine()->getAppDomain(), entity.getComponent<TagComponent>().tag.c_str());
-		});
-
-		m_scriptEngine->registerMethod("Toaster.TagComponent::SetTag", +[](uint32 p_entity_id, MonoString **p_tag) -> void
-		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
-
-			char *new_string{mono_string_to_utf8(*p_tag)};
-			entity.getComponent<TagComponent>().tag = String{new_string};
-			mono_free(new_string);
-		});
-
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetTranslation", +[](uint32 p_entity_id, glm::vec3 *p_out_translation) -> void
-		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
-			*p_out_translation = entity.getComponent<TransformComponent>().translation;
-		});
-
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetTranslation", +[](uint32 p_entity_id, glm::vec3 *p_translation) -> void
-		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
-			entity.getComponent<TransformComponent>().translation = *p_translation;
-		});
-
-		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::GetColour", +[](uint32 p_entity_id, glm::vec4 *p_out_colour) -> void
-		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
-			*p_out_colour = entity.getComponent<SpriteRendererComponent>().colour;
-		});
-
-		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::SetColour", +[](uint32 p_entity_id, glm::vec4 *p_colour) -> void
-		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
-			entity.getComponent<SpriteRendererComponent>().colour = *p_colour;
-		});
-
-		m_scriptEngine->registerMethod("Toaster.MeshComponent::HasMaterialInternal", +[](uint32 p_entity_id, uint32 p_index) -> bool
-		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
-			auto & mesh{entity.getComponent<MeshComponent>()};
-			return mesh.mesh->getMaterials().size() > p_index;
-		});
-
-		m_scriptEngine->registerMethod("Toaster.Material::GetAlbedoColour", +[](uint32 p_entity_id, uint32 p_index, glm::vec3 *p_out_colour) -> void
-		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
-			auto & mesh{entity.getComponent<MeshComponent>()};
-			auto & material{mesh.mesh->getMaterials().at(p_index)};
-			*p_out_colour = material->get<glm::vec3>("u_Material.albedoColour");
-		});
-
-		m_scriptEngine->registerMethod("Toaster.Material::SetAlbedoColour", +[](uint32 p_entity_id, uint32 p_index, glm::vec3 *p_colour) -> void
-		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), activeScene};
-			auto & mesh{entity.getComponent<MeshComponent>()};
-			auto & material{mesh.mesh->getMaterials().at(p_index)};
-			material->set("u_Material.albedoColour", *p_colour);
-		});
-
+		m_scene = make_reference<Scene>(app.getLogicalDevice(), m_scriptEngine.get(), "New Scene");
+		input_ctx->registerScriptMethods(m_scriptEngine.get());
 		#pragma endregion
 
 		m_camera = EditorCamera{input_ctx, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
@@ -191,8 +88,14 @@ namespace toaster
 
 		{
 			Entity orbo_entity{m_scene->createEntity("Orbo")};
-			orbo_entity.addComponent<MeshComponent>().mesh        = device->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", m_shaderLibrary.get("Mesh Test"));
+			orbo_entity.addComponent<MeshComponent>().mesh        = device->alloc<gpu::VKMesh>("../resources/meshes/DJT_Sculpt.fbx", m_shaderLibrary.get("Mesh Test"));
 			orbo_entity.addComponent<ScriptComponent>().className = "Toaster.Player";
+		}
+
+		{
+			Entity dir_light{m_scene->createEntity("Dir light")};
+			auto & light{dir_light.addComponent<DirectionalLightComponent>()};
+			dir_light.getComponent<TransformComponent>().translation = {0.0f, 0.0f, 10.0f};
 		}
 	}
 

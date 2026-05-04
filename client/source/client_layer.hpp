@@ -44,8 +44,6 @@ namespace toaster
 
 		UniquePtr<script::ScriptEngine> m_scriptEngine{nullptr};
 
-		static inline Scene *activeScene{nullptr};
-
 		RefPtr<Scene>         m_scene{nullptr};
 		RefPtr<SceneRenderer> m_sceneRenderer{nullptr};
 
