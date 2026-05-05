@@ -72,16 +72,16 @@ namespace toaster
 		});
 
 		auto                    fullscreen_shader{Globals::getShaderLibrary().get("Composite")};
-		gpu::PipelineCreateInfo fullscreen_pipeline_create_info{};
-		fullscreen_pipeline_create_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
-		fullscreen_pipeline_create_info.depthFormat        = swapchain->getDepthFormat();
-		fullscreen_pipeline_create_info.shader             = fullscreen_shader;
-		fullscreen_pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone; // We don't want to cull our viewport
-		fullscreen_pipeline_create_info.vertexBufferLayout = gpu::BufferLayout{
+		gpu::PipelineSpecInfo fullscreen_pipeline_spec_info{};
+		fullscreen_pipeline_spec_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
+		fullscreen_pipeline_spec_info.depthFormat        = swapchain->getDepthFormat();
+		fullscreen_pipeline_spec_info.shader             = fullscreen_shader;
+		fullscreen_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eNone; // We don't want to cull our viewport
+		fullscreen_pipeline_spec_info.vertexBufferLayout = gpu::BufferLayout{
 			{gpu::EBufferDataType::eFloat3, "a_Position"},
 			{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
 		};
-		m_fullscreenPipeline   = device->alloc<gpu::VKPipeline>(fullscreen_pipeline_create_info);
+		m_fullscreenPipeline   = device->alloc<gpu::VKPipeline>(fullscreen_pipeline_spec_info);
 		m_fullscreenRenderPass = device->alloc<gpu::VKRenderPass>(m_fullscreenPipeline);
 		m_fullscreenRenderPass->bake();
 

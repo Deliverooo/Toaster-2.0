@@ -19,7 +19,7 @@ namespace toaster
 		};
 
 		auto                    quad_shader{Globals::getShaderLibrary().get("Quad")};
-		gpu::PipelineCreateInfo pipeline_create_info{};
+		gpu::PipelineSpecInfo pipeline_create_info{};
 		pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
 		pipeline_create_info.depthFormat        = m_device->getPhysicalDevice()->getDepthFormat();
 		pipeline_create_info.vertexBufferLayout = m_quadVertexBufferLayout;

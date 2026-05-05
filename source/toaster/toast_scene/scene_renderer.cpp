@@ -42,17 +42,17 @@ namespace toaster
 
 		#pragma region depth-pre
 		{
-			gpu::PipelineCreateInfo depth_pre_pipeline_create_info{};
-			depth_pre_pipeline_create_info.vertexBufferLayout = {
+			gpu::PipelineSpecInfo depth_pre_pipeline_spec_info{};
+			depth_pre_pipeline_spec_info.vertexBufferLayout = {
 				{gpu::EBufferDataType::eFloat3, "a_Position"},
 				{gpu::EBufferDataType::eFloat3, "a_Normal"},
 				{gpu::EBufferDataType::eFloat3, "a_Tangent"},
 				{gpu::EBufferDataType::eFloat3, "a_Bitangent"},
 				{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
 			};
-			depth_pre_pipeline_create_info.depthFormat = vk::Format::eD32Sfloat;
-			depth_pre_pipeline_create_info.shader      = Globals::getShaderLibrary().get("Depth-Pre");
-			m_depthPrePipeline                         = m_device->alloc<gpu::VKPipeline>(depth_pre_pipeline_create_info);
+			depth_pre_pipeline_spec_info.depthFormat = vk::Format::eD32Sfloat;
+			depth_pre_pipeline_spec_info.shader      = Globals::getShaderLibrary().get("Depth-Pre");
+			m_depthPrePipeline                       = m_device->alloc<gpu::VKPipeline>(depth_pre_pipeline_spec_info);
 
 			m_depthPrePass = m_device->alloc<gpu::VKRenderPass>(m_depthPrePipeline);
 			m_depthPrePass->setInput("Camera", m_cameraUBOs);
@@ -70,30 +70,25 @@ namespace toaster
 
 		#pragma region light culling
 		{
-			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary( m_specInfo.resourceDirectory / "../bin/shaders/test.comp.glsl.spv")};
-			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eCompute, cs_bytecode}};
-			m_lightCullingShader = m_device->alloc<gpu::VKShader>(shader_bytecode_map, "Compute-Test");
-
-			m_lightCullingPipeline = m_device->alloc<gpu::VKComputePipeline>(m_lightCullingShader);
+			m_lightCullingPipeline = m_device->alloc<gpu::VKComputePipeline>(Globals::getShaderLibrary().get("Compute-Test"));
 
 			m_lightCullingPass = m_device->alloc<gpu::VKComputePass>(m_lightCullingPipeline);
 			m_lightCullingPass->setInput("Test", m_computeStorageBuffers);
 			m_lightCullingPass->bake();
 
-			m_lightCullingMaterial = m_device->alloc<gpu::VKMaterial>(m_lightCullingShader);
+			m_lightCullingMaterial = m_device->alloc<gpu::VKMaterial>(Globals::getShaderLibrary().get("Compute-Test"));
 		}
 		#pragma endregion
 
 		#pragma region skybox
 		{
-			gpu::PipelineCreateInfo pipeline_create_info{};
-			pipeline_create_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
-			pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
-			pipeline_create_info.shader             = Globals::getShaderLibrary().get("Skybox");
-			pipeline_create_info.polygonMode        = vk::PolygonMode::eFill;
-			pipeline_create_info.multisample        = false;
-			m_skyboxPipeline                        = m_device->alloc<gpu::VKPipeline>(pipeline_create_info);
+			gpu::PipelineSpecInfo skybox_pipeline_spec_info{};
+			skybox_pipeline_spec_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
+			skybox_pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
+			skybox_pipeline_spec_info.shader             = Globals::getShaderLibrary().get("Skybox");
+			skybox_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
+			skybox_pipeline_spec_info.multisample        = false;
+			m_skyboxPipeline                             = m_device->alloc<gpu::VKPipeline>(skybox_pipeline_spec_info);
 
 			m_skyboxPass = m_device->alloc<gpu::VKRenderPass>(m_skyboxPipeline);
 			m_skyboxPass->setInput("Camera", m_cameraUBOs);
@@ -107,25 +102,25 @@ namespace toaster
 
 		#pragma region geometry
 		{
-			gpu::PipelineCreateInfo pipeline_create_info{};
-			pipeline_create_info.vertexBufferLayout = {
+			gpu::PipelineSpecInfo geometry_pipeline_spec_info{};
+			geometry_pipeline_spec_info.vertexBufferLayout = {
 				{gpu::EBufferDataType::eFloat3, "a_Position"},
 				{gpu::EBufferDataType::eFloat3, "a_Normal"},
 				{gpu::EBufferDataType::eFloat3, "a_Tangent"},
 				{gpu::EBufferDataType::eFloat3, "a_Bitangent"},
 				{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
 			};
-			pipeline_create_info.colourAttachments = {
+			geometry_pipeline_spec_info.colourAttachments = {
 				vk::Format::eR8G8B8A8Srgb,
 				vk::Format::eR8G8B8A8Srgb /*Positions*/,
 				vk::Format::eR8G8B8A8Srgb /*Normals*/
 			};
-			pipeline_create_info.depthFormat  = {vk::Format::eD32Sfloat};
-			pipeline_create_info.depthWrite   = false;
-			pipeline_create_info.depthCompare = vk::CompareOp::eEqual;
+			geometry_pipeline_spec_info.depthFormat  = {vk::Format::eD32Sfloat};
+			geometry_pipeline_spec_info.depthWrite   = false;
+			geometry_pipeline_spec_info.depthCompare = vk::CompareOp::eEqual;
 			// pipeline_create_info.polygonMode = vk::PolygonMode::eLine;
-			pipeline_create_info.shader = Globals::getShaderLibrary().get("Geometry");
-			m_geometryPipeline          = m_device->alloc<gpu::VKPipeline>(pipeline_create_info);
+			geometry_pipeline_spec_info.shader = Globals::getShaderLibrary().get("Geometry");
+			m_geometryPipeline                 = m_device->alloc<gpu::VKPipeline>(geometry_pipeline_spec_info);
 
 			m_geometryPass = m_device->alloc<gpu::VKRenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs);
@@ -181,26 +176,24 @@ namespace toaster
 		camera_ub.proj[1][1] *= -1.0f; // Silly opengl
 		std::memcpy(m_mappedCameraUBOs[p_frame_index], &camera_ub, sizeof(CameraUB));
 
-		const SceneLightEnvironment &light_environment{m_specInfo.scene->getLightEnvironment()};
+		const auto &[directional_lights, point_lights]{m_specInfo.scene->getLightEnvironment()};
 		{
 			DirectionalLightUB directional_light_ub{};
-			directional_light_ub.count = light_environment.directionalLights.size();
-			for (uint32 i{0u}; i < DirectionalLightUB::c_maxDirectionalLights && i < light_environment.directionalLights.size(); ++i)
+			directional_light_ub.count = directional_lights.size();
+			for (uint32 i{0u}; i < DirectionalLightUB::c_maxDirectionalLights && i < directional_lights.size(); ++i)
 			{
-				directional_light_ub.directionalLights[i].direction = light_environment.directionalLights[i].direction;
-				directional_light_ub.directionalLights[i].radiance  = light_environment.directionalLights[i].radiance;
+				directional_light_ub.directionalLights[i].direction = directional_lights[i].direction;
+				directional_light_ub.directionalLights[i].radiance  = directional_lights[i].radiance;
 			}
 			std::memcpy(m_mappedDirectionalLightUBOs[p_frame_index], &directional_light_ub, sizeof(DirectionalLightUB));
 		}
 		{
 			PointLightUB point_light_ub{};
-			point_light_ub.count = std::min(static_cast<uint32>(light_environment.pointLights.size()), PointLightUB::c_maxPointLights);
-			for (uint32 i{0u}; i < PointLightUB::c_maxPointLights && i < light_environment.pointLights.size(); ++i)
+			point_light_ub.count = std::min(static_cast<uint32>(point_lights.size()), PointLightUB::c_maxPointLights);
+			for (uint32 i{0u}; i < PointLightUB::c_maxPointLights && i < point_lights.size(); ++i)
 			{
-				point_light_ub.pointLights[i].position = light_environment.pointLights[i].position;
-				point_light_ub.pointLights[i].radiance = light_environment.pointLights[i].radiance;
-				// point_light_ub.pointLights[i].radius   = light_environment.pointLights[i].radius;
-				// point_light_ub.pointLights[i].falloff  = light_environment.pointLights[i].falloff;
+				point_light_ub.pointLights[i].position = point_lights[i].position;
+				point_light_ub.pointLights[i].radiance = point_lights[i].radiance;
 			}
 			std::memcpy(m_mappedPointLightUBOs[p_frame_index], &point_light_ub, sizeof(PointLightUB));
 		}

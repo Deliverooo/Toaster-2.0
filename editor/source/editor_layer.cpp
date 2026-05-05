@@ -60,7 +60,7 @@ namespace toaster
 
 		auto fullscreen_shader{Globals::getShaderLibrary().get("Composite")};
 
-		gpu::PipelineCreateInfo fullscreen_pipeline_create_info{};
+		gpu::PipelineSpecInfo fullscreen_pipeline_create_info{};
 		fullscreen_pipeline_create_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
 		fullscreen_pipeline_create_info.depthFormat        = swapchain->getDepthFormat();
 		fullscreen_pipeline_create_info.shader             = fullscreen_shader;

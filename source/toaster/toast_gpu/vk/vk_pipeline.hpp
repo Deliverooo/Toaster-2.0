@@ -5,7 +5,7 @@
 
 namespace toaster::gpu
 {
-	struct PipelineCreateInfo
+	struct PipelineSpecInfo
 	{
 		VertexBufferLayout vertexBufferLayout;
 		InstanceLayout     instanceLayout;
@@ -32,18 +32,19 @@ namespace toaster::gpu
 	{
 		TST_GPU_OBJECT
 	public:
-		VKPipeline(VKLogicalDevice *p_device, const PipelineCreateInfo &p_create_info);
+		VKPipeline(VKLogicalDevice *p_device, const PipelineSpecInfo &p_spec_info);
 
 		[[nodiscard]] auto getPipeline() -> vk::raii::Pipeline &;
 		[[nodiscard]] auto getPipelineLayout() -> vk::raii::PipelineLayout &;
 
-		[[nodiscard]] auto getCreateInfo() const -> const PipelineCreateInfo &;
+		[[nodiscard]] auto getSpecInfo() const -> const PipelineSpecInfo &;
+
+		static auto getVulkanAttribType(EBufferDataType p_type) -> vk::Format;
 
 	private:
-		auto        _createGraphicsPipeline() -> void;
-		static auto _getVulkanAttribType(EBufferDataType p_type) -> vk::Format;
+		auto _createGraphicsPipeline() -> void;
 
-		PipelineCreateInfo m_createInfo{};
+		PipelineSpecInfo m_specInfo{};
 
 		vk::raii::Pipeline       m_graphicsPipeline{nullptr};
 		vk::raii::PipelineLayout m_pipelineLayout{nullptr};

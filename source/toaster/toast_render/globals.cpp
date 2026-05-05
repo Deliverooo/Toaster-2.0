@@ -69,6 +69,14 @@ namespace toaster
 			s_globalData->shaderLibrary.add("Quad", quad_shader);
 		}
 
+		{
+			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/test.comp.glsl.spv")};
+			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
+			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {cs_bytecode};
+			const auto                                     compute_test_shader{s_globalData->device->alloc<gpu::VKShader>(shader_stages, bytecode, "Compute-Test")};
+			s_globalData->shaderLibrary.add("Compute-Test", compute_test_shader);
+		}
+
 		s_globalData->quadVertices.emplace_back(QuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
 		s_globalData->quadVertices.emplace_back(QuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});
 		s_globalData->quadVertices.emplace_back(QuadVertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}});

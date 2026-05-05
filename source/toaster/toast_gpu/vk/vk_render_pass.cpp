@@ -6,7 +6,7 @@ namespace toaster::gpu
 {
 	VKRenderPass::VKRenderPass(VKLogicalDevice *p_device, const RefPtr<VKPipeline> &p_pipeline) : m_device(p_device), m_pipeline(p_pipeline)
 	{
-		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_device, m_pipeline->getCreateInfo().shader, 1, 3);
+		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_device, m_pipeline->getSpecInfo().shader, 1, 3);
 	}
 
 	auto VKRenderPass::setInput(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void

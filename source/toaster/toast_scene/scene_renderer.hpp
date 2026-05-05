@@ -58,7 +58,7 @@ namespace toaster
 		#pragma endregion
 
 		#pragma region light culling
-		RefPtr<gpu::VKShader>          m_lightCullingShader{nullptr};
+		// RefPtr<gpu::VKShader>          m_lightCullingShader{nullptr};
 		RefPtr<gpu::VKComputePipeline> m_lightCullingPipeline{nullptr};
 		RefPtr<gpu::VKComputePass>     m_lightCullingPass{nullptr};
 		RefPtr<gpu::VKMaterial>        m_lightCullingMaterial{nullptr};
