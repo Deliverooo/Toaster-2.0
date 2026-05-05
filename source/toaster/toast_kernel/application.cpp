@@ -15,6 +15,13 @@ namespace toaster
 {
 	Application::Application(const ApplicationCreateInfo &p_create_info, [[maybe_unused]] int32 p_argc, [[maybe_unused]] char **p_argv) : m_createInfo(p_create_info)
 	{
+		m_commandLineArgs.resize(p_argc);
+		for (uint32 i{0u}; i < p_argc; ++i)
+			m_commandLineArgs[i] = p_argv[i];
+
+		m_exeDirectory = m_commandLineArgs[0];
+		m_exeDirectory = m_exeDirectory.parent_path();
+
 		Window::initWindowingAPI();
 
 		#pragma region create vulkan objects
@@ -63,7 +70,7 @@ namespace toaster
 		});
 		#pragma endregion
 
-		Globals::init(m_vkLogicalDevice);
+		Globals::init(m_vkLogicalDevice, m_exeDirectory);
 	}
 
 	Application::~Application() noexcept
@@ -128,6 +135,16 @@ namespace toaster
 	auto Application::getLogicalDevice() const -> gpu::VKLogicalDevice *
 	{
 		return m_vkLogicalDevice;
+	}
+
+	auto Application::getCommandLineArgs() const noexcept -> const std::vector<String> &
+	{
+		return m_commandLineArgs;
+	}
+
+	auto Application::getExeDirectory() const noexcept -> const io::filesystem::Path &
+	{
+		return m_exeDirectory;
 	}
 
 	auto Application::onWindowCloseEvent([[maybe_unused]] WindowCloseEvent &p_event) -> bool

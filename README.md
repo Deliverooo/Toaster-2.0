@@ -19,7 +19,10 @@ A graphics engine based on the OG Toaster architecture, but with better things..
 3. Make sure you have the Vulkan SDK installed with Version >= 1.3 -> https://vulkan.lunarg.com/sdk/home
 4. Git clone with ```git clone --recursive https://github.com/Deliverooo/Toaster-2.0.git```
 5. Goto `Toaster-2.0/scripts` and run `build_scripts.bat` to build the C# DLL
-6. Enjoy... :)
+6. Go to your **system** environment variables and add the bin directory to **PATH** e.g. ```C:\dev\Toaster-2.0\bin```
+7. Open a terminal in the root directory and type ```toaster_runtime scripts\Toaster\bin\Debug\Toaster.dll``` if you
+   want to run the runtime with the C# script demo. If not, type toaster_editor in any terminal to run the editor. :)
+8. Enjoy... :)
 
 # Planned Features
 

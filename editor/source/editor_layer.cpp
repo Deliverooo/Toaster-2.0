@@ -36,6 +36,8 @@ namespace toaster
 		m_device = app.getLogicalDevice();
 		const auto swapchain{app.getWindow().getSwapchain()};
 
+		const auto &binary_dir{app.getExeDirectory()};
+
 		m_windowWidth  = std::max(swapchain->getExtent().width, 1u);
 		m_windowHeight = std::max(swapchain->getExtent().height, 1u);
 
@@ -78,10 +80,11 @@ namespace toaster
 		m_sceneHierarchyPanel = make_unique<SceneHierarchyPanel>(m_device, m_scene);
 
 		SceneRendererSpecInfo scene_renderer_spec_info{};
-		scene_renderer_spec_info.viewportWidth  = m_windowWidth;
-		scene_renderer_spec_info.viewportHeight = m_windowHeight;
-		scene_renderer_spec_info.scene          = m_scene.get();
-		m_sceneRenderer                         = make_reference<SceneRenderer>(m_device, scene_renderer_spec_info);
+		scene_renderer_spec_info.viewportWidth     = m_windowWidth;
+		scene_renderer_spec_info.viewportHeight    = m_windowHeight;
+		scene_renderer_spec_info.scene             = m_scene.get();
+		scene_renderer_spec_info.resourceDirectory = binary_dir / "../resources";
+		m_sceneRenderer                            = make_reference<SceneRenderer>(m_device, scene_renderer_spec_info);
 
 		Renderer2DSpecInfo renderer_2d_create_info{};
 		renderer_2d_create_info.renderTargetWidth  = m_windowWidth;
@@ -94,7 +97,7 @@ namespace toaster
 			transform_comp.translation = {0.0f, 0.0f, 0.0f};
 			transform_comp.scale       = {1.0f, 1.0f, 1.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
-			mc.mesh = m_device->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
+			mc.mesh = m_device->alloc<gpu::VKMesh>(binary_dir / "../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
 		}
 		{
 			Entity point_light_entity{m_scene->createEntity()};

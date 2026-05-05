@@ -12,7 +12,7 @@ int main(int32 p_argc, char **p_argv) // Maybe_todo, Forward these parameters to
 	app_create_info.windowCreateInfo.width          = 1920;
 	app_create_info.windowCreateInfo.height         = 1080;
 	app_create_info.windowCreateInfo.title          = "Toaster v3.1415 - vulkan";
-	app_create_info.windowCreateInfo.iconPath       = "../resources/textures/OrboCloseup.png";
+	app_create_info.windowCreateInfo.iconPath       = toaster::io::filesystem::Path{p_argv[0]}.parent_path() / "../resources/textures/OrboCloseup.png";
 	app_create_info.windowCreateInfo.startMaximized = true;
 
 	auto *app = new toaster::EditorApplication(app_create_info, p_argc, p_argv);

@@ -38,7 +38,7 @@ namespace toaster
 			m_computeStorageBuffers = m_device->alloc<gpu::VKStorageBufferPFF>(ssbo_size, m_device->getSpecInfo().maxFramesInFlight);
 		}
 
-		m_skyboxTexture = m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, "../resources/environments/'Environment_map'.jpg");
+		m_skyboxTexture = m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, m_specInfo.resourceDirectory / "environments/'Environment_map'.jpg");
 
 		#pragma region depth-pre
 		{
@@ -70,7 +70,7 @@ namespace toaster
 
 		#pragma region light culling
 		{
-			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary("shaders/test.comp.glsl.spv")};
+			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary( m_specInfo.resourceDirectory / "../bin/shaders/test.comp.glsl.spv")};
 			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			gpu::VKShader::BytecodeMap shader_bytecode_map{{vk::ShaderStageFlagBits::eCompute, cs_bytecode}};
 			m_lightCullingShader = m_device->alloc<gpu::VKShader>(shader_bytecode_map, "Compute-Test");

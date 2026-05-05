@@ -31,17 +31,22 @@ namespace toaster
 
 	auto ImGuiLayer::onInit() -> void
 	{
+		const auto &app{getApp()};
 		IMGUI_CHECKVERSION();
 		ig::CreateContext();
 		ImGuiIO &io{ig::GetIO()};
 		(void) io;
 
+		const auto &binary_dir{app.getExeDirectory()};
+
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
 		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Viewports
 
-		io.FontDefault = io.Fonts->AddFontFromFileTTF("../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
-		io.Fonts->AddFontFromFileTTF("../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Bold.ttf", 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
+		io.FontDefault = io.Fonts->AddFontFromFileTTF(io::filesystem::Path{binary_dir / "../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf"}.string().c_str(),
+													  0, nullptr, io.Fonts->GetGlyphRangesJapanese());
+		io.Fonts->AddFontFromFileTTF(io::filesystem::Path{binary_dir / "../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Bold.ttf"}.string().c_str(), 0, nullptr,
+									 io.Fonts->GetGlyphRangesJapanese());
 
 		auto &style{ImGui::GetStyle()};
 		auto &colours{ImGui::GetStyle().Colors};
@@ -120,9 +125,8 @@ namespace toaster
 		style.FrameBorderSize = 1.0f;
 		style.IndentSpacing   = 11.0f;
 
-		const auto &app{getApp()};
-		auto        device{app.getLogicalDevice()};
-		const auto  swapchain{app.getWindow().getSwapchain()};
+		auto       device{app.getLogicalDevice()};
+		const auto swapchain{app.getWindow().getSwapchain()};
 
 		vk::DescriptorPoolSize pool_sizes[] = {
 			{vk::DescriptorType::eSampler, 1000},

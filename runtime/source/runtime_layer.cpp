@@ -36,13 +36,22 @@ namespace toaster
 		uint32 window_width{swapchain->getExtent().width};
 		uint32 window_height{swapchain->getExtent().height};
 
+		const auto &binary_dir{app.getExeDirectory()};
+
 		#pragma region script + scene setup
-		io::filesystem::Path scripts_dir{"../scripts"};
+
+		io::filesystem::Path script_assembly_dll{};
+		if (app.getCommandLineArgs().size() > 1) // Custom script dll
+			script_assembly_dll = app.getCommandLineArgs()[1];
+		else
+			script_assembly_dll = binary_dir / "../scripts/Toaster/bin/Debug/net48/Toaster.dll"; // Fallback to the demo script
+
+		LOG_INFO("{}", script_assembly_dll.string());
 
 		script::ScriptEngineSpecInfo script_engine_spec_info{};
 		script_engine_spec_info.rootDomainName = "ToasterRootDomain";
 		script_engine_spec_info.appDomainName  = "ToasterAppDomain";
-		script_engine_spec_info.assemblyPath   = scripts_dir / "Toaster/bin/Debug/net48/Toaster.dll";
+		script_engine_spec_info.assemblyPath   = script_assembly_dll;
 		m_scriptEngine                         = make_unique<script::ScriptEngine>(script_engine_spec_info);
 
 		m_scene = make_reference<Scene>(app.getLogicalDevice(), m_scriptEngine.get(), "New Scene");
@@ -77,18 +86,20 @@ namespace toaster
 		m_fullscreenRenderPass->bake();
 
 		SceneRendererSpecInfo scene_renderer_spec_info{};
-		scene_renderer_spec_info.viewportWidth  = window_width;
-		scene_renderer_spec_info.viewportHeight = window_height;
-		scene_renderer_spec_info.scene          = m_scene.get();
-		m_sceneRenderer                         = toaster::make_reference<SceneRenderer>(device, scene_renderer_spec_info);
+		scene_renderer_spec_info.viewportWidth     = window_width;
+		scene_renderer_spec_info.viewportHeight    = window_height;
+		scene_renderer_spec_info.scene             = m_scene.get();
+		scene_renderer_spec_info.resourceDirectory = binary_dir / "../resources";
+		m_sceneRenderer                            = toaster::make_reference<SceneRenderer>(device, scene_renderer_spec_info);
 
-		io::filesystem::Path shader_dir{"../source/toaster/toast_shaders"};
+		io::filesystem::Path shader_dir{binary_dir / "../source/toaster/toast_shaders"};
 		m_shaderLibrary.add("Mesh Test", gpu::VKShaderCompiler::compileToShaderFromPaths(device, {vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment},
 																						 {shader_dir / "mesh.vert.glsl", shader_dir / "mesh.pixel.glsl"}));
 
 		{
 			Entity orbo_entity{m_scene->createEntity("Orbo")};
-			orbo_entity.addComponent<MeshComponent>().mesh = device->alloc<gpu::VKMesh>("../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
+			orbo_entity.addComponent<MeshComponent>().mesh = device->alloc<gpu::VKMesh>(binary_dir / "../resources/meshes/Orbo.fbx",
+																						Globals::getShaderLibrary().get("Geometry"));
 			orbo_entity.addComponent<ScriptComponent>().className = "Toaster.Player";
 		}
 

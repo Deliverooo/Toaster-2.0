@@ -9,11 +9,12 @@ namespace toaster
 {
 	struct TST_API SceneRendererSpecInfo
 	{
-		NonOwningPtr<Scene> scene{nullptr};
-		uint32              viewportWidth{0u};
-		uint32              viewportHeight{0u};
-		int32               viewportOffsetX{0u};
-		int32               viewportOffsetY{0u};
+		io::filesystem::Path resourceDirectory{};
+		NonOwningPtr<Scene>  scene{nullptr};
+		uint32               viewportWidth{0u};
+		uint32               viewportHeight{0u};
+		int32                viewportOffsetX{0u};
+		int32                viewportOffsetY{0u};
 	};
 
 	class TST_API SceneRenderer

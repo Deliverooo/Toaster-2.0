@@ -22,7 +22,7 @@ namespace toaster
 			glm::vec2 texCoord;
 		};
 
-		static auto init(gpu::VKLogicalDevice *p_device) -> void;
+		static auto init(gpu::VKLogicalDevice *p_device, const io::filesystem::Path& p_binary_dir) -> void;
 		static auto shutdown() -> void;
 
 		static auto getShaderLibrary() -> const ShaderLibrary &;

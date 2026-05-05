@@ -22,47 +22,47 @@ namespace toaster
 
 	static GlobalData *s_globalData{nullptr};
 
-	auto Globals::init(gpu::VKLogicalDevice *p_device) -> void
+	auto Globals::init(gpu::VKLogicalDevice *p_device, const io::filesystem::Path &p_binary_dir) -> void
 	{
 		s_globalData         = new GlobalData{};
 		s_globalData->device = p_device;
 
 		InitialiserList shader_stages = {vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment};
 		{
-			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary("shaders/depth-pre.vert.glsl.spv")};
-			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/depth-pre.pixel.glsl.spv")};
+			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/depth-pre.vert.glsl.spv")};
+			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/depth-pre.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			InitialiserList bytecode = {vs_bytecode, ps_bytecode};
 			const auto      depth_pre_shader{s_globalData->device->alloc<gpu::VKShader>(shader_stages, bytecode, "Depth-Pre")};
 			s_globalData->shaderLibrary.add("Depth-Pre", depth_pre_shader); // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
 		}
 		{
-			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary("shaders/geometry.vert.glsl.spv")};
-			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/geometry.pixel.glsl.spv")};
+			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/geometry.vert.glsl.spv")};
+			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/geometry.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			std::initializer_list bytecode = {vs_bytecode, ps_bytecode};
 			const auto            geometry_shader{s_globalData->device->alloc<gpu::VKShader>(shader_stages, bytecode, "Geometry")};
 			s_globalData->shaderLibrary.add("Geometry", geometry_shader); // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
 		}
 		{
-			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary("shaders/composite.vert.glsl.spv")};
-			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/composite.pixel.glsl.spv")};
+			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/composite.vert.glsl.spv")};
+			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/composite.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
 			const auto                                     composite_shader{s_globalData->device->alloc<gpu::VKShader>(shader_stages, bytecode, "Composite")};
 			s_globalData->shaderLibrary.add("Composite", composite_shader);
 		}
 		{
-			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary("shaders/skybox.vert.glsl.spv")};
-			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/skybox.pixel.glsl.spv")};
+			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/skybox.vert.glsl.spv")};
+			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/skybox.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
 			const auto                                     skybox_shader{s_globalData->device->alloc<gpu::VKShader>(shader_stages, bytecode, "Skybox")};
 			s_globalData->shaderLibrary.add("Skybox", skybox_shader);
 		}
 		{
-			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary("shaders/quad.vert.glsl.spv")};
-			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary("shaders/quad.pixel.glsl.spv")};
+			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/quad.vert.glsl.spv")};
+			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/quad.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
 			const auto                                     quad_shader{s_globalData->device->alloc<gpu::VKShader>(shader_stages, bytecode, "Quad")};

@@ -42,11 +42,12 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	#endif
 
 	#ifndef TST_RUNTIME_DEMO
+
 	toaster::ApplicationCreateInfo app_create_info{};
 	app_create_info.windowCreateInfo.width          = 1920;
 	app_create_info.windowCreateInfo.height         = 1080;
 	app_create_info.windowCreateInfo.title          = "Toaster Vπ - Runtime";
-	app_create_info.windowCreateInfo.iconPath       = "../resources/textures/OrboCloseup.png";
+	app_create_info.windowCreateInfo.iconPath       = toaster::io::filesystem::Path{p_argv[0]}.parent_path() / "../resources/textures/OrboCloseup.png";
 	app_create_info.windowCreateInfo.startMaximized = true;
 
 	auto *app = new toaster::RuntimeApplication(app_create_info, p_argc, p_argv);

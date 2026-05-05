@@ -28,11 +28,17 @@ namespace toaster
 		[[nodiscard]] auto getWindow() const noexcept -> Window &;
 		[[nodiscard]] auto getLogicalDevice() const -> gpu::VKLogicalDevice *;
 
+		[[nodiscard]] auto getCommandLineArgs() const noexcept -> const std::vector<String> &;
+		[[nodiscard]] auto getExeDirectory() const noexcept -> const io::filesystem::Path &;
+
 	private:
 		auto onWindowCloseEvent(WindowCloseEvent &p_event) -> bool;
 		auto onWindowResizeEvent(WindowResizeEvent &p_event) -> bool;
 
 		ApplicationCreateInfo m_createInfo{};
+
+		io::filesystem::Path m_exeDirectory;
+		std::vector<String>  m_commandLineArgs;
 
 		gpu::VKInstance *      m_vkInstance{nullptr};
 		gpu::VKPhysicalDevice *m_vkPhysicalDevice{nullptr};
