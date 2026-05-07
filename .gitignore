@@ -10,6 +10,14 @@ docs/html/
 bin/
 lib/
 
+examples/Sandbox/bin/
+examples/Sandbox/obj/
+examples/Sandbox/.idea/
+examples/Sandbox/.vs/
+
+*.DotSettings.User
+
+
 scripts/Toaster/bin/
 scripts/Toaster/obj/
 

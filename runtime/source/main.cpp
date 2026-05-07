@@ -153,7 +153,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	#endif
 
 	toaster::script::ScriptEngineSpecInfo script_engine_spec_info{}; script_engine_spec_info.rootDomainName = "ToasterRootDomain";
-	script_engine_spec_info.appDomainName = "ToasterAppDomain"; script_engine_spec_info.assemblyPath = scripts_dir / "Toaster/bin/Debug/net48/Toaster.dll";
+	script_engine_spec_info.appDomainName = "ToasterAppDomain"; script_engine_spec_info.appAssemblyPath = scripts_dir / "Toaster/bin/Debug/net48/Toaster.dll";
 	toaster::script::ScriptEngine script_engine{script_engine_spec_info};
 
 	{

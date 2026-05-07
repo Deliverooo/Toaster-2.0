@@ -40,19 +40,28 @@ namespace toaster
 
 		#pragma region script + scene setup
 
-		io::filesystem::Path script_assembly_dll{};
-		if (app.getCommandLineArgs().size() > 1) // Custom script dll
-			script_assembly_dll = app.getCommandLineArgs()[1];
+		io::filesystem::Path core_script_assembly_dll{};
+		io::filesystem::Path app_script_assembly_dll{};
+		if (app.getCommandLineArgs().size() > 1) // Custom app script dll
+		{
+			// When compiling, the Toaster.dll should automatically be in the same directory as the app one... :)
+			core_script_assembly_dll = io::filesystem::Path{app.getCommandLineArgs()[1]}.parent_path() / "Toaster.dll";
+			app_script_assembly_dll  = app.getCommandLineArgs()[1];
+		}
 		else
-			script_assembly_dll = binary_dir / "../scripts/Toaster/bin/Debug/net48/Toaster.dll"; // Fallback to the demo script
+		{
+			core_script_assembly_dll = "../scripts/Toaster/bin/Debug/net48/Toaster.dll";  // Fallback to the prebuild toaster dll
+			app_script_assembly_dll  = "../examples/Sandbox/bin/Debug/net48/Sandbox.dll"; // Fallback to the demo script
+		}
 
-		LOG_INFO("{}", script_assembly_dll.string());
+		LOG_INFO("{}", app_script_assembly_dll.string());
 
 		script::ScriptEngineSpecInfo script_engine_spec_info{};
-		script_engine_spec_info.rootDomainName = "ToasterRootDomain";
-		script_engine_spec_info.appDomainName  = "ToasterAppDomain";
-		script_engine_spec_info.assemblyPath   = script_assembly_dll;
-		m_scriptEngine                         = make_unique<script::ScriptEngine>(script_engine_spec_info);
+		script_engine_spec_info.rootDomainName   = "ToasterRootDomain";
+		script_engine_spec_info.appDomainName    = "ToasterAppDomain";
+		script_engine_spec_info.coreAssemblyPath = core_script_assembly_dll;
+		script_engine_spec_info.appAssemblyPath  = app_script_assembly_dll;
+		m_scriptEngine                           = make_unique<script::ScriptEngine>(script_engine_spec_info);
 
 		m_scene = make_reference<Scene>(app.getLogicalDevice(), m_scriptEngine.get(), "New Scene");
 		input_ctx->registerScriptMethods(m_scriptEngine.get());
@@ -71,7 +80,7 @@ namespace toaster
 			m_camera.setViewportSize(static_cast<float32>(width), static_cast<float32>(height));
 		});
 
-		auto                    fullscreen_shader{Globals::getShaderLibrary().get("Composite")};
+		auto                  fullscreen_shader{Globals::getShaderLibrary().get("Composite")};
 		gpu::PipelineSpecInfo fullscreen_pipeline_spec_info{};
 		fullscreen_pipeline_spec_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
 		fullscreen_pipeline_spec_info.depthFormat        = swapchain->getDepthFormat();
@@ -100,12 +109,12 @@ namespace toaster
 			Entity orbo_entity{m_scene->createEntity("Orbo")};
 			orbo_entity.addComponent<MeshComponent>().mesh = device->alloc<gpu::VKMesh>(binary_dir / "../resources/meshes/Orbo.fbx",
 																						Globals::getShaderLibrary().get("Geometry"));
-			orbo_entity.addComponent<ScriptComponent>().className = "Toaster.Player";
+			orbo_entity.addComponent<ScriptComponent>().className = "Sandbox.Player";
 		}
 
 		{
 			Entity camera_controller{m_scene->createEntity("Camera controller")};
-			camera_controller.addComponent<ScriptComponent>().className = "Toaster.CameraController";
+			camera_controller.addComponent<ScriptComponent>().className = "Sandbox.CameraController";
 		}
 
 		{

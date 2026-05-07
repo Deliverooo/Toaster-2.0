@@ -9,8 +9,8 @@ namespace toaster::script
 	class TST_API Class
 	{
 	public:
-		Class(ScriptEngine *p_engine, const String &p_namespace, const String &p_name);
-		Class(ScriptEngine *p_engine, MonoClass *p_class);
+		Class(ScriptEngine *p_engine, const String &p_namespace, const String &p_name, EClassScope p_class_scope = EClassScope::eApp);
+		Class(ScriptEngine *p_engine, MonoClass *p_class, EClassScope p_class_scope = EClassScope::eApp);
 
 		template<typename... TArgs>
 		auto invokeStaticMethod(const String &p_method_name, const TArgs &... p_args) -> MonoObject *
@@ -50,11 +50,13 @@ namespace toaster::script
 		[[nodiscard]] auto getMethod(const String &p_method_name, int32 p_param_count) -> MonoMethod *;
 		[[nodiscard]] auto getClass() -> MonoClass *;
 		[[nodiscard]] auto getScriptEngine() -> ScriptEngine *;
+		[[nodiscard]] auto getClassScope() const -> EClassScope;
 
 	private:
 		ScriptEngine *m_engine{nullptr};
 
-		MonoClass *m_class{nullptr};
+		MonoClass * m_class{nullptr};
+		EClassScope m_classScope{EClassScope::eApp};
 
 		friend class Object;
 	};

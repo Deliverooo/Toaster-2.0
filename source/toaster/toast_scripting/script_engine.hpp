@@ -13,7 +13,14 @@ namespace toaster::script
 		String rootDomainName{"Root"};
 		String appDomainName{"App"};
 
-		io::filesystem::Path assemblyPath{};
+		io::filesystem::Path coreAssemblyPath{};
+		io::filesystem::Path appAssemblyPath{};
+	};
+
+	// Specifies whether the class is a part of the core assembly or the app assembly
+	enum class EClassScope
+	{
+		eCore, eApp
 	};
 
 	class TST_API ScriptEngine
@@ -30,8 +37,11 @@ namespace toaster::script
 
 		[[nodiscard]] auto getRootDomain() const -> MonoDomain *;
 		[[nodiscard]] auto getAppDomain() const -> MonoDomain *;
-		[[nodiscard]] auto getAssembly() const -> MonoAssembly *;
-		[[nodiscard]] auto getImage() const -> MonoImage *;
+
+		[[nodiscard]] auto getCoreAssembly() const -> MonoAssembly *;
+		[[nodiscard]] auto getCoreImage() const -> MonoImage *;
+		[[nodiscard]] auto getAppAssembly() const -> MonoAssembly *;
+		[[nodiscard]] auto getAppImage() const -> MonoImage *;
 
 		[[nodiscard]] auto loadAssembly(const io::filesystem::Path &p_path) const -> MonoAssembly *;
 
@@ -43,7 +53,10 @@ namespace toaster::script
 		MonoDomain *m_rootDomain{nullptr};
 		MonoDomain *m_appDomain{nullptr};
 
-		MonoAssembly *m_assembly{nullptr};
-		MonoImage *   m_image{nullptr};
+		MonoAssembly *m_coreAssembly{nullptr};
+		MonoAssembly *m_appAssembly{nullptr};
+
+		MonoImage *m_coreImage{nullptr};
+		MonoImage *m_appImage{nullptr};
 	};
 }

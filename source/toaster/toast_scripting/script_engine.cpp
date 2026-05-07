@@ -16,9 +16,11 @@ namespace toaster::script
 		m_appDomain = mono_domain_create_appdomain(const_cast<char *>(m_specInfo.appDomainName.c_str()), nullptr);
 		mono_domain_set(m_appDomain, true);
 
-		m_assembly = loadAssembly(m_specInfo.assemblyPath);
-		TST_ASSERT_MSG(m_assembly, "Failed to load assembly");
-		m_image = mono_assembly_get_image(m_assembly);
+		m_coreAssembly = loadAssembly(m_specInfo.coreAssemblyPath);
+		m_appAssembly  = loadAssembly(m_specInfo.appAssemblyPath);
+		TST_ASSERT_MSG(m_appAssembly, "Failed to load core assembly");
+		m_coreImage = mono_assembly_get_image(m_coreAssembly);
+		m_appImage  = mono_assembly_get_image(m_appAssembly);
 	}
 
 	ScriptEngine::~ScriptEngine()
@@ -39,14 +41,24 @@ namespace toaster::script
 		return m_appDomain;
 	}
 
-	auto ScriptEngine::getAssembly() const -> MonoAssembly *
+	auto ScriptEngine::getCoreAssembly() const -> MonoAssembly *
 	{
-		return m_assembly;
+		return m_coreAssembly;
 	}
 
-	auto ScriptEngine::getImage() const -> MonoImage *
+	auto ScriptEngine::getCoreImage() const -> MonoImage *
 	{
-		return m_image;
+		return m_coreImage;
+	}
+
+	auto ScriptEngine::getAppAssembly() const -> MonoAssembly *
+	{
+		return m_appAssembly;
+	}
+
+	auto ScriptEngine::getAppImage() const -> MonoImage *
+	{
+		return m_appImage;
 	}
 
 	auto ScriptEngine::loadAssembly(const io::filesystem::Path &p_path) const -> MonoAssembly *

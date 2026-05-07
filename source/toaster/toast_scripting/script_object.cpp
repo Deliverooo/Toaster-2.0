@@ -2,12 +2,12 @@
 
 namespace toaster::script
 {
-	Class::Class(ScriptEngine *p_engine, const String &p_namespace, const String &p_name) : m_engine(p_engine)
+	Class::Class(ScriptEngine *p_engine, const String &p_namespace, const String &p_name, EClassScope p_class_scope) : m_engine(p_engine), m_classScope(p_class_scope)
 	{
-		m_class = mono_class_from_name(m_engine->getImage(), p_namespace.c_str(), p_name.c_str());
+		m_class = mono_class_from_name((m_classScope == EClassScope::eApp) ? m_engine->getAppImage() : m_engine->getCoreImage(), p_namespace.c_str(), p_name.c_str());
 	}
 
-	Class::Class(ScriptEngine *p_engine, MonoClass *p_class) : m_engine(p_engine), m_class(p_class)
+	Class::Class(ScriptEngine *p_engine, MonoClass *p_class, EClassScope p_class_scope) : m_engine(p_engine), m_class(p_class), m_classScope(p_class_scope)
 	{
 	}
 
@@ -24,6 +24,11 @@ namespace toaster::script
 	auto Class::getScriptEngine() -> ScriptEngine *
 	{
 		return m_engine;
+	}
+
+	auto Class::getClassScope() const -> EClassScope
+	{
+		return m_classScope;
 	}
 
 	Object::Object(Class *p_class) : m_class(p_class)

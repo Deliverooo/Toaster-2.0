@@ -50,21 +50,24 @@ namespace toaster
 
 		if (m_scriptEngine)
 		{
-			MonoImage *          image{m_scriptEngine->getImage()};
+			MonoImage *          image{m_scriptEngine->getAppImage()};
 			const MonoTableInfo *type_definitions{mono_image_get_table_info(image, MONO_TABLE_TYPEDEF)};
-			m_baseEntityClass = make_reference<script::Class>(m_scriptEngine, "Toaster", "Entity");
+			m_baseEntityClass = make_reference<script::Class>(m_scriptEngine, "Toaster", "Entity", script::EClassScope::eCore);
 			for (uint32 row{0u}; row < mono_table_info_get_rows(type_definitions); ++row)
 			{
 				uint32 cols[MONO_TYPEDEF_SIZE]{};
 				mono_metadata_decode_row(type_definitions, static_cast<int32>(row), cols, MONO_TYPEDEF_SIZE);
 
-				auto name_space{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE])};
-				auto type_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME])};
+				auto   name_space{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE])};
+				auto   type_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME])};
+				String full_name{fmt::format("{}.{}", name_space, type_name)};
+
+				if (full_name == "Toaster.Entity" || full_name == ".<Module>")
+					continue;
 
 				MonoClass *script_class{mono_class_from_name(image, name_space, type_name)};
 				if (script_class && mono_class_is_subclass_of(script_class, m_baseEntityClass->getClass(), false))
 				{
-					String full_name{fmt::format("{}.{}", name_space, type_name)};
 					m_entityClassMap[full_name] = toaster::make_reference<script::Class>(m_scriptEngine, script_class);
 				}
 			}
@@ -74,7 +77,7 @@ namespace toaster
 				LOG_INFO("Found Entity class: {} ", class_name);
 			}
 
-			#define REGISTER_COMPONENT_TYPE(__type) {MonoType *managed_type{mono_reflection_type_from_name((char *) "Toaster."#__type, m_scriptEngine->getImage())};\
+			#define REGISTER_COMPONENT_TYPE(__type) {MonoType *managed_type{mono_reflection_type_from_name((char *) "Toaster."#__type, m_scriptEngine->getCoreImage())};\
 													if(!managed_type) { LOG_FATAL("Could not find component: "#__type); TST_ASSERT(false);}\
 													m_hasComponentFnMap[managed_type] = +[](Entity *p_entity) -> bool { return p_entity->hasComponent<__type>(); };\
 													m_addComponentFnMap[managed_type] = +[](Entity *p_entity) -> void { __type& comp{p_entity->addComponent<__type>()}; (void)comp; };\

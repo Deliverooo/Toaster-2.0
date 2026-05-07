@@ -1,4 +1,11 @@
-﻿namespace Toaster;
+﻿global using Vec2 = System.Numerics.Vector2;
+global using Vec3 = System.Numerics.Vector3;
+global using Vec4 = System.Numerics.Vector4;
+global using Quat = System.Numerics.Quaternion;
+global using Mat4 = System.Numerics.Matrix4x4;
+using Toaster;
+
+namespace Sandbox;
 
 public class Player : Entity
 {
@@ -68,7 +75,7 @@ public class CameraController : Entity
 
 		m_Camera = AddComponent<CameraComponent>();
 		m_Camera.ProjectionType = CameraComponent.EProjectionType.Perspective;
-		m_Camera.PerspectiveFov = Math.Radians(90.0f);
+		m_Camera.PerspectiveFov = Toaster.Math.Radians(90.0f);
 		m_Camera.Primary = true;
 	}
 
@@ -106,10 +113,10 @@ public class CameraController : Entity
 			Vec2 mouse_delta = (mouse - m_InitialMousePos) * 0.002f;
 			m_Yaw += mouse_delta.X;
 			m_Pitch += mouse_delta.Y;
-			if (m_Pitch > Math.Radians(89.0f))
-				m_Pitch = Math.Radians(89.0f);
-			if (m_Pitch < Math.Radians(-89.0f))
-				m_Pitch = Math.Radians(-89.0f);
+			if (m_Pitch > Toaster.Math.Radians(89.0f))
+				m_Pitch = Toaster.Math.Radians(89.0f);
+			if (m_Pitch < Toaster.Math.Radians(-89.0f))
+				m_Pitch = Toaster.Math.Radians(-89.0f);
 
 			m_InitialMousePos = mouse;
 
