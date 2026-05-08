@@ -12,6 +12,7 @@
 
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
+#include "toast_render/globals.hpp"
 
 inline auto operator<<(YAML::Emitter &out, const glm::vec2 &v) -> YAML::Emitter &
 {
@@ -250,10 +251,25 @@ namespace toaster
 			const auto &src = p_entity.getComponent<SpriteRendererComponent>();
 			p_out << YAML::Key << "Colour" << YAML::Value << src.colour;
 
-			auto texture_path = src.texture ? src.texture->getPath() : "Null";
+			auto texture_path = src.texture ? relative(src.texture->getPath()) : "Null";
 			p_out << YAML::Key << "TexturePath" << YAML::Value << texture_path.string();
 			p_out << YAML::Key << "TilingFactor" << YAML::Value << src.tilingFactor;
 
+			p_out << YAML::EndMap;
+		}
+
+		if (p_entity.hasComponent<MeshComponent>())
+		{
+			const auto &mc{p_entity.getComponent<MeshComponent>()};
+
+			p_out << YAML::Key << "MeshComponent";
+			p_out << YAML::BeginMap;
+
+			auto mesh_path{mc.mesh->getFilepath()};
+			if (exists(mesh_path))
+				p_out << YAML::Key << "MeshPath" << YAML::Value << relative(mesh_path).string();
+			else
+				p_out << YAML::Key << "MeshPath" << YAML::Value << "Null";
 			p_out << YAML::EndMap;
 		}
 
@@ -280,6 +296,40 @@ namespace toaster
 			p_out << YAML::EndMap;
 		}
 
+		if (p_entity.hasComponent<DirectionalLightComponent>())
+		{
+			const auto &dlc{p_entity.getComponent<DirectionalLightComponent>()};
+
+			p_out << YAML::Key << "DirectionalLightComponent";
+			p_out << YAML::BeginMap;
+
+			p_out << YAML::Key << "Radiance" << YAML::Value << dlc.radiance;
+			p_out << YAML::Key << "Multiplier" << YAML::Value << dlc.multiplier;
+			p_out << YAML::EndMap;
+		}
+
+		if (p_entity.hasComponent<PointLightComponent>())
+		{
+			const auto &plc{p_entity.getComponent<PointLightComponent>()};
+
+			p_out << YAML::Key << "PointLightComponent";
+			p_out << YAML::BeginMap;
+
+			p_out << YAML::Key << "Radiance" << YAML::Value << plc.radiance;
+			p_out << YAML::Key << "Multiplier" << YAML::Value << plc.multiplier;
+			p_out << YAML::EndMap;
+		}
+
+		if (p_entity.hasComponent<ScriptComponent>())
+		{
+			const auto &sc{p_entity.getComponent<ScriptComponent>()};
+
+			p_out << YAML::Key << "ScriptComponent";
+			p_out << YAML::BeginMap;
+			p_out << YAML::Key << "ClassName" << YAML::Value << sc.className;
+			p_out << YAML::EndMap;
+		}
+
 		p_out << YAML::EndMap;
 	}
 
@@ -302,7 +352,7 @@ namespace toaster
 			{
 				auto &tc       = out_entity.getComponent<TransformComponent>();
 				tc.translation = transform_comp["Translation"].as<glm::vec3>();
-				tc.rotation    = transform_comp["Rotation"].as<glm::vec3>();
+				tc.rotation    = transform_comp["Rotation"].as<glm::quat>();
 				tc.scale       = transform_comp["Scale"].as<glm::vec3>();
 			}
 
@@ -325,6 +375,20 @@ namespace toaster
 				src.tilingFactor = sprite_comp["TilingFactor"].as<float32>();
 			}
 
+			auto mesh_comp{entity["MeshComponent"]};
+			if (mesh_comp)
+			{
+				auto &mc{out_entity.addComponent<MeshComponent>()};
+				auto  mesh_path{io::filesystem::Path{mesh_comp["MeshPath"].as<String>()}};
+
+				if (mesh_path != "Null" && exists(mesh_path))
+					mc.mesh = p_scene->m_device->alloc<gpu::VKMesh>(mesh_path, Globals::getShaderLibrary().get("Geometry"));
+				else
+				{
+					LOG_ERROR("Mesh path does not exist: {}", mesh_path.string());
+				}
+			}
+
 			auto camera_comp = entity["CameraComponent"];
 			if (camera_comp)
 			{
@@ -344,6 +408,29 @@ namespace toaster
 
 				cc.projectionType = static_cast<SceneCamera::EProjectionType>(camera_node["ProjectionType"].as<int32>());
 				cc.primary        = camera_comp["Primary"].as<bool>();
+			}
+
+			auto directional_light_comp{entity["DirectionalLightComponent"]};
+			if (directional_light_comp)
+			{
+				auto &dlc{out_entity.addComponent<DirectionalLightComponent>()};
+				dlc.radiance   = directional_light_comp["Radiance"].as<glm::vec3>();
+				dlc.multiplier = directional_light_comp["Multiplier"].as<float32>();
+			}
+
+			auto point_light_comp{entity["PointLightComponent"]};
+			if (point_light_comp)
+			{
+				auto &plc{out_entity.addComponent<PointLightComponent>()};
+				plc.radiance   = point_light_comp["Radiance"].as<glm::vec3>();
+				plc.multiplier = point_light_comp["Multiplier"].as<float32>();
+			}
+
+			auto script_comp{entity["ScriptComponent"]};
+			if (script_comp)
+			{
+				auto &sc{out_entity.addComponent<ScriptComponent>()};
+				sc.className = script_comp["ClassName"].as<String>();
 			}
 		}
 	}

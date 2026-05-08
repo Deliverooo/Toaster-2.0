@@ -111,6 +111,14 @@ namespace toaster::gpu
 		return m_shaderCreateInfos.at(p_stage);
 	}
 
+	auto VKShader::getShaderStageFlags() const -> vk::ShaderStageFlags
+	{
+		vk::ShaderStageFlags result{0u};
+		for (const auto &[stage, code]: m_shaderBytecodeMap)
+			result |= stage;
+		return result;
+	}
+
 	auto VKShader::getShaderBytecodeMap() const -> const BytecodeMap &
 	{
 		return m_shaderBytecodeMap;
@@ -295,6 +303,8 @@ namespace toaster::gpu
 				const auto &member_name{compiler.get_member_name(buffer_type.self, i)};
 				auto        member_size{compiler.get_declared_struct_member_size(buffer_type, i)};
 				auto        member_offset{compiler.type_struct_member_offset(buffer_type, i)};
+
+				member_offset -= offset;
 
 				TST_SHADER_LOG_TRACE("Member size: {}", member_size);
 				TST_SHADER_LOG_TRACE("Member offset: {}", member_offset);

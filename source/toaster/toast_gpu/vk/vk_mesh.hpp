@@ -57,6 +57,8 @@ namespace toaster::gpu
 		auto getVertices() const -> const std::vector<MeshVertex> &;
 		auto getIndices() const -> const std::vector<uint32> &;
 
+		auto getFilepath() const -> const io::filesystem::Path &;
+
 	private:
 		auto _traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void;
 

@@ -131,3 +131,10 @@ public class CameraController : Entity
 		}
 	}
 }
+
+public class Test
+{
+	public int OrboMethod() { return 6741; }
+
+	public static int StaticOrbo() { return 678919; }
+}

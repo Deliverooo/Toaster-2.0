@@ -369,10 +369,6 @@ namespace toaster
 				for (auto &mat: p_comp.mesh->getMaterials())
 					_drawMaterial(p_frame_index, mat);
 			}
-			// ig::Separator();
-			// glm::vec3 &colour{p_comp.mesh->getMaterials()[0]->get<glm::vec3>("u_Material.albedoColour")};
-			// if (ui::colourEdit3("Colour", glm::value_ptr(colour)))
-			// p_comp.mesh->getMaterials()[0]->set("u_Material.albedoColour", colour);
 		}, this);
 
 		drawComponent<DirectionalLightComponent>("Directional Light", p_entity, [](DirectionalLightComponent &p_comp)
@@ -411,13 +407,39 @@ namespace toaster
 
 		if (ig::Button("Albedo texture", ImVec2{ig::GetContentRegionAvail().x, 0}))
 		{
-			auto path = os::openFileDialog({{"Mesh", "png,jpg,bmp"}});
+			auto path = os::openFileDialog({{"Albedo", "png,jpg,bmp"}});
 			if (io::filesystem::exists(path))
 			{
 				LOG_INFO("{}", path.string());
 				p_mat->set("u_AlbedoTexture", m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
 			}
 		}
+
+		if (ig::Button("Normal texture", ImVec2{ig::GetContentRegionAvail().x, 0}))
+		{
+			auto path = os::openFileDialog({{"Normal", "png,jpg,bmp"}});
+			if (io::filesystem::exists(path))
+			{
+				LOG_INFO("{}", path.string());
+				p_mat->set("u_NormalTexture", m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
+				p_mat->set("u_Material.hasNormalMap", 1u);
+			}
+		}
+
+		ig::Separator();
+		glm::vec3 &colour{p_mat->get<glm::vec3>("u_Material.albedoColour")};
+		if (ui::colourEdit3("Colour", glm::value_ptr(colour)))
+			p_mat->set("u_Material.albedoColour", colour);
+
+		ig::Separator();
+		float32 &roughness{p_mat->get<float32>("u_Material.roughness")};
+		if (ui::dragFloat("Roughness", &roughness, "##Roughness", 0.01f, 0.001f, 1.0f))
+			p_mat->set("u_Material.roughness", roughness);
+
+		ig::Separator();
+		float32 &metalness{p_mat->get<float32>("u_Material.metalness")};
+		if (ui::dragFloat("Metalness", &metalness, "##Metalness", 0.01f, 0.001f, 1.0f))
+			p_mat->set("u_Material.metalness", metalness);
 
 		ig::Separator();
 		ig::PopID();

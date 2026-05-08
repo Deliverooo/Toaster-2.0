@@ -125,6 +125,7 @@ namespace toaster::gpu
 				float32 roughness;
 				if (ai_material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) != aiReturn_SUCCESS)
 					roughness = 0.4f;
+				material->set("u_Material.roughness", roughness);
 
 				float32 metalness;
 				if (ai_material->Get(AI_MATKEY_REFLECTIVITY, metalness) != aiReturn_SUCCESS)
@@ -135,11 +136,11 @@ namespace toaster::gpu
 				else
 					metalness = 1.0f;
 
+				material->set("u_Material.metalness", metalness);
+
 				LOG_TRACE("\tCOLOUR = {}, {}, {}", ai_colour.r, ai_colour.g, ai_colour.b);
 				LOG_TRACE("\tROUGHNESS = {}", roughness);
 				LOG_TRACE("\tMETALNESS = {}", metalness);
-
-				// m_roughness = roughness;
 
 				bool has_albedo_map = ai_material->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &ai_tex_path) == AI_SUCCESS;
 				if (!has_albedo_map)
@@ -226,6 +227,11 @@ namespace toaster::gpu
 	auto VKMesh::getIndices() const -> const std::vector<uint32> &
 	{
 		return m_indices;
+	}
+
+	auto VKMesh::getFilepath() const -> const io::filesystem::Path &
+	{
+		return m_path;
 	}
 
 	auto VKMesh::_traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void

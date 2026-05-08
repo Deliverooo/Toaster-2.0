@@ -115,12 +115,12 @@ namespace toaster
 				vk::Format::eR8G8B8A8Srgb /*Positions*/,
 				vk::Format::eR8G8B8A8Srgb /*Normals*/
 			};
-			geometry_pipeline_spec_info.depthFormat  = {vk::Format::eD32Sfloat};
+			geometry_pipeline_spec_info.depthFormat  = vk::Format::eD32Sfloat;
 			geometry_pipeline_spec_info.depthWrite   = false;
 			geometry_pipeline_spec_info.depthCompare = vk::CompareOp::eEqual;
-			// pipeline_create_info.polygonMode = vk::PolygonMode::eLine;
-			geometry_pipeline_spec_info.shader = Globals::getShaderLibrary().get("Geometry");
-			m_geometryPipeline                 = m_device->alloc<gpu::VKPipeline>(geometry_pipeline_spec_info);
+			geometry_pipeline_spec_info.polygonMode  = vk::PolygonMode::eFill;
+			geometry_pipeline_spec_info.shader       = Globals::getShaderLibrary().get("Geometry");
+			m_geometryPipeline                       = m_device->alloc<gpu::VKPipeline>(geometry_pipeline_spec_info);
 
 			m_geometryPass = m_device->alloc<gpu::VKRenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs);

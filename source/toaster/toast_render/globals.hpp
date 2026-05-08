@@ -25,6 +25,11 @@ namespace toaster
 		static auto init(gpu::VKLogicalDevice *p_device, const io::filesystem::Path& p_binary_dir) -> void;
 		static auto shutdown() -> void;
 
+		/*!
+		 * @brief use ->get("") to get a shader
+		 * The shaders included are "Depth-Pre", "Geometry", "Composite", "Skybox", "Quad", "Compute-Test"
+		 * @return Returns the shader library
+		 */
 		static auto getShaderLibrary() -> const ShaderLibrary &;
 
 		static auto getFullscreenQuadVertexBuffer() -> const RefPtr<gpu::VKVertexBuffer> &;

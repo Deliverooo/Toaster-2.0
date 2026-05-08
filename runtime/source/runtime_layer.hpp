@@ -31,13 +31,8 @@ namespace toaster
 		auto onUpdate(float32 p_dt) -> void override;
 		auto onEvent(Event &p_event) -> void override;
 
-		auto onUIRender() -> void override;
-
 	private:
 		auto _onKeyPressEvent(KeyPressEvent &e) -> bool;
-		auto _onWindowResizeEvent(WindowResizeEvent &e) -> bool;
-
-		float32 m_time{0.0f};
 
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
@@ -47,11 +42,7 @@ namespace toaster
 		RefPtr<Scene>         m_scene{nullptr};
 		RefPtr<SceneRenderer> m_sceneRenderer{nullptr};
 
-		ShaderLibrary m_shaderLibrary;
-
 		RefPtr<gpu::VKPipeline>   m_fullscreenPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_fullscreenRenderPass{nullptr};
-
-		FPCamera m_camera;
 	};
 }

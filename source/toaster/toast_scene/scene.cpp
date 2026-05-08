@@ -15,12 +15,12 @@ namespace toaster
 	class TST_API ScriptableEntityCS
 	{
 	public:
-		ScriptableEntityCS(script::Class *p_class, Scene *p_scene, Entity p_entity) : m_obj(p_class)
+		ScriptableEntityCS(const script::Class &p_class, Scene *p_scene, Entity p_entity) : m_obj(p_class)
 		{
-			TST_ASSERT_MSG(m_obj.getClass()->getScriptEngine(), "Class's script engine is null");
+			TST_ASSERT_MSG(m_obj.getClass().getScriptEngine(), "Class's script engine is null");
 
-			m_onCreateMethod = m_obj.getClass()->getMethod("OnCreate", 0);
-			m_onUpdateMethod = m_obj.getClass()->getMethod("OnUpdate", 1);
+			m_onCreateMethod = m_obj.getClass().getMethod("OnCreate", 0);
+			m_onUpdateMethod = m_obj.getClass().getMethod("OnUpdate", 1);
 			m_obj.invoke(p_scene->m_baseEntityClass->getMethod(".ctor", 1), static_cast<uint32>(p_entity));
 		}
 
@@ -72,9 +72,17 @@ namespace toaster
 				}
 			}
 
-			for (const auto &class_name: m_entityClassMap | std::views::keys)
+			for (const auto &[class_name, klass]: m_entityClassMap)
 			{
 				LOG_INFO("Found Entity class: {} ", class_name);
+
+				void *          iterator{nullptr};
+				MonoClassField *field{nullptr};
+				while ((field = mono_class_get_fields(klass->getClass(), &iterator)) != nullptr)
+				{
+					CString name{mono_field_get_name(field)};
+					LOG_INFO("Field: {}", name);
+				}
 			}
 
 			#define REGISTER_COMPONENT_TYPE(__type) {MonoType *managed_type{mono_reflection_type_from_name((char *) "Toaster."#__type, m_scriptEngine->getCoreImage())};\
@@ -114,7 +122,7 @@ namespace toaster
 				{
 					if (m_entityClassMap.contains(class_name))
 					{
-						m_entityScriptMap[entity_id] = make_reference<ScriptableEntityCS>(m_entityClassMap[class_name].get(), this, e);
+						m_entityScriptMap[entity_id] = make_reference<ScriptableEntityCS>(*m_entityClassMap[class_name].get(), this, e);
 						m_entityScriptMap[entity_id]->onCreate();
 					}
 					else
@@ -148,7 +156,7 @@ namespace toaster
 		glm::mat4 camera_transform{1.0f};
 
 		Entity main_camera_entity{getMainCameraEntity()};
-		if ((entt::entity) main_camera_entity != entt::null)
+		if (static_cast<entt::entity>(main_camera_entity) != entt::null)
 		{
 			main_camera      = &main_camera_entity.getComponent<CameraComponent>().camera;
 			camera_transform = main_camera_entity.getComponent<TransformComponent>().getTransform();
@@ -314,12 +322,12 @@ namespace toaster
 
 	auto Scene::createEntity(const String &p_name) -> Entity
 	{
-		auto entity = Entity{m_registry.create(), this};
+		auto entity{Entity{m_registry.create(), this}};
 
 		entity.addComponent<TransformComponent>();
 
 		const bool name_empty = p_name.empty();
-		entity.addComponent<TagComponent>(name_empty ? "ヌル　エンチチ (" + std::to_string(m_newEntityTagCount) + ")" : p_name);
+		entity.addComponent<TagComponent>(name_empty ? fmt::format("ヌル　エンチチ ({})", m_newEntityTagCount) : p_name);
 
 		if (name_empty)
 			++m_newEntityTagCount; // E.g. "New Entity (1)"
@@ -334,11 +342,9 @@ namespace toaster
 
 	auto Scene::getMainCameraEntity() -> Entity
 	{
-		auto view = m_registry.view<CameraComponent>();
-		for (auto entity: view)
+		for (const auto view = m_registry.view<CameraComponent>(); const auto &entity: view)
 		{
-			const auto &camera = view.get<CameraComponent>(entity);
-			if (camera.primary)
+			if (const auto &camera = view.get<CameraComponent>(entity); camera.primary)
 				return Entity{entity, this};
 		}
 		return {};

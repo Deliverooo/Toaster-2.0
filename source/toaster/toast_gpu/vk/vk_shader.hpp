@@ -20,6 +20,7 @@ namespace toaster::gpu
 			// Ts just makes it easier to access the shader resources
 			std::unordered_map<String, ShaderResource> resources; // Textures / images
 
+			PushConstantRange              sharedPushConstantRange;
 			std::vector<PushConstantRange> pushConstantRanges;
 
 			// // Ts just makes it easier to access the shader push constant buffers
@@ -43,6 +44,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto getPipelineShaderStageCreateInfos() const -> std::vector<vk::PipelineShaderStageCreateInfo>;
 		[[nodiscard]] auto getPipelineShaderStageCreateInfo(vk::ShaderStageFlagBits p_stage) const -> const vk::PipelineShaderStageCreateInfo &;
 
+		[[nodiscard]] auto getShaderStageFlags() const -> vk::ShaderStageFlags;
 		[[nodiscard]] auto getShaderBytecodeMap() const -> const BytecodeMap &;
 		[[nodiscard]] auto getShaderBytecode(vk::ShaderStageFlagBits p_stage) const -> const Bytecode &;
 

@@ -18,6 +18,7 @@
 #include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_scene/components.hpp"
 #include "toast_scene/entity.hpp"
+#include "toast_scene/scene_serializer.hpp"
 namespace ig = ImGui;
 
 namespace toaster
@@ -32,9 +33,19 @@ namespace toaster
 		auto  device = app.getLogicalDevice();
 		auto  input_ctx{app.getWindow().getInputContext()};
 
-		auto   swapchain{app.getWindow().getSwapchain()};
-		uint32 window_width{swapchain->getExtent().width};
-		uint32 window_height{swapchain->getExtent().height};
+		auto swapchain{app.getWindow().getSwapchain()};
+		m_viewportWidth  = swapchain->getExtent().width;
+		m_viewportHeight = swapchain->getExtent().height;
+
+		swapchain->setResizeCallback([this](const uint32 width, const uint32 height) -> void
+		{
+			m_viewportWidth  = width;
+			m_viewportHeight = height;
+
+			m_scene->setViewportSize(width, height);
+
+			m_sceneRenderer->onResize(width, height);
+		});
 
 		const auto &binary_dir{app.getExeDirectory()};
 
@@ -67,19 +78,6 @@ namespace toaster
 		input_ctx->registerScriptMethods(m_scriptEngine.get());
 		#pragma endregion
 
-		m_camera = FPCamera{input_ctx, 90.0f, static_cast<float32>(window_width) / static_cast<float32>(window_height), 0.1f, 1000.0f};
-
-		swapchain->setResizeCallback([&](const uint32 width, const uint32 height) -> void
-		{
-			window_width  = width;
-			window_height = height;
-
-			m_scene->setViewportSize(width, height);
-
-			m_sceneRenderer->onResize(width, height);
-			m_camera.setViewportSize(static_cast<float32>(width), static_cast<float32>(height));
-		});
-
 		auto                  fullscreen_shader{Globals::getShaderLibrary().get("Composite")};
 		gpu::PipelineSpecInfo fullscreen_pipeline_spec_info{};
 		fullscreen_pipeline_spec_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
@@ -95,16 +93,14 @@ namespace toaster
 		m_fullscreenRenderPass->bake();
 
 		SceneRendererSpecInfo scene_renderer_spec_info{};
-		scene_renderer_spec_info.viewportWidth     = window_width;
-		scene_renderer_spec_info.viewportHeight    = window_height;
+		scene_renderer_spec_info.viewportWidth     = m_viewportWidth;
+		scene_renderer_spec_info.viewportHeight    = m_viewportHeight;
 		scene_renderer_spec_info.scene             = m_scene.get();
 		scene_renderer_spec_info.resourceDirectory = binary_dir / "../resources";
 		m_sceneRenderer                            = toaster::make_reference<SceneRenderer>(device, scene_renderer_spec_info);
 
+		#if 0
 		io::filesystem::Path shader_dir{binary_dir / "../source/toaster/toast_shaders"};
-		m_shaderLibrary.add("Mesh Test", gpu::VKShaderCompiler::compileToShaderFromPaths(device, {vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment},
-																						 {shader_dir / "mesh.vert.glsl", shader_dir / "mesh.pixel.glsl"}));
-
 		{
 			Entity orbo_entity{m_scene->createEntity("Orbo")};
 			orbo_entity.addComponent<MeshComponent>().mesh = device->alloc<gpu::VKMesh>(binary_dir / "../resources/meshes/Test_scene.fbx",
@@ -123,6 +119,7 @@ namespace toaster
 			auto & plc{point_light_entity.addComponent<PointLightComponent>()};
 			tc.translation = {-1.0f, 1.0f, 1.0f};
 			plc.radiance   = tsm::colours::magenta;
+			plc.multiplier = 3.0f;
 		}
 
 		{
@@ -131,7 +128,18 @@ namespace toaster
 			auto & plc{point_light_entity.addComponent<PointLightComponent>()};
 			tc.translation = {1.0f, 1.0f, 1.0f};
 			plc.radiance   = tsm::colours::weezer;
+			plc.multiplier = 3.0f;
 		}
+		#endif
+
+		SceneSerializer scene_serializer{m_scene};
+		scene_serializer.deserialize(binary_dir / "../resources/scenes/Test.tscene");
+
+		script::Class  klass{m_scriptEngine.get(), "Sandbox", "Test"};
+		script::Object obj{klass};
+		script::Object res{*obj.invoke("OrboMethod")};
+		LOG_INFO("{}", *res.castTo<int32>());
+		LOG_INFO("{}", *klass.invokeStaticMethod("StaticOrbo")->castTo<int32>());
 	}
 
 	auto RuntimeLayer::onDestroy() -> void
@@ -143,29 +151,20 @@ namespace toaster
 
 	auto RuntimeLayer::onUpdate(const float32 p_dt) -> void
 	{
-		m_time += p_dt;
-
 		auto &app       = getApp();
 		auto  swapchain = app.getWindow().getSwapchain();
 
 		uint32 frame_index{swapchain->getFrameIndex()};
-
-		vk::Extent2D swapchain_extent{swapchain->getExtent()};
-		auto &       command_buffer = swapchain->getCurrentCommandBuffer();
-
-		m_camera.onUpdate(p_dt);
+		auto & command_buffer = swapchain->getCurrentCommandBuffer();
 
 		m_scene->onUpdate(p_dt);
-		// m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer, m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
 		m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer);
 
 		auto tex{m_sceneRenderer->getOutputColourTexture()};
-		// gpu::util::colourAttachmentToShaderRead(tex->getImage().get());
 		m_fullscreenRenderPass->setInput("u_Texture", tex);
-		// gpu::util::shaderReadToColourAttachment(tex->getImage().get());
 
 		gpu::RenderingInfo rendering_info{};
-		rendering_info.renderArea = vk::Rect2D{{0, 0}, swapchain_extent};
+		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_viewportWidth, m_viewportHeight}};
 
 		auto &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
 		colour_attachment_info.imageView   = swapchain->getCurrentImageView();
@@ -191,11 +190,6 @@ namespace toaster
 	{
 		EventDispatcher eventDispatcher(p_event);
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(RuntimeLayer::_onKeyPressEvent));
-		eventDispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(RuntimeLayer::_onWindowResizeEvent));
-	}
-
-	auto RuntimeLayer::onUIRender() -> void
-	{
 	}
 
 	auto RuntimeLayer::_onKeyPressEvent(KeyPressEvent &e) -> bool
@@ -211,11 +205,6 @@ namespace toaster
 				window.setWindowed();
 		}
 
-		return false;
-	}
-
-	auto RuntimeLayer::_onWindowResizeEvent(WindowResizeEvent &e) -> bool
-	{
 		return false;
 	}
 }

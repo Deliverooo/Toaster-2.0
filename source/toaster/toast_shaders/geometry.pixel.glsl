@@ -19,8 +19,10 @@ layout(set = 0, binding = 1) uniform sampler2D u_NormalTexture;
 
 layout(push_constant) uniform Material
 {
-    vec3 albedoColour;
-    uint hasNormalMap;
+    layout(offset = 64) vec3 albedoColour;
+    layout(offset = 76) uint hasNormalMap;
+    layout(offset = 80) float roughness;
+    layout(offset = 84) float metalness;
 } u_Material;
 
 struct DirectionalLight
@@ -189,8 +191,8 @@ void main()
     vec4 albedo_texture_colour = texture(u_AlbedoTexture, v_TexCoord);
     params.albedo = albedo_texture_colour.rgb * u_Material.albedoColour;
 
-    params.metalness = 0.0f;
-    params.roughness = 0.5f;
+    params.metalness = u_Material.metalness;
+    params.roughness = u_Material.roughness;
 
     params.F0 = vec3(0.04f);
     params.F0 = mix(params.F0, params.albedo, params.metalness);
