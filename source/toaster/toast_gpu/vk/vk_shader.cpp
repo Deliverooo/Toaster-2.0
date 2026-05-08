@@ -296,8 +296,6 @@ namespace toaster::gpu
 				auto        member_size{compiler.get_declared_struct_member_size(buffer_type, i)};
 				auto        member_offset{compiler.type_struct_member_offset(buffer_type, i)};
 
-				member_offset -= offset;
-
 				TST_SHADER_LOG_TRACE("Member size: {}", member_size);
 				TST_SHADER_LOG_TRACE("Member offset: {}", member_offset);
 

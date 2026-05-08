@@ -1,22 +1,26 @@
 #version 460
 
+#define VEC3_SIZE 12
+#define UINT_SIZE 4
 #define PI 3.1415926535f
-#define EPSILON 0.00001f
 
 layout(location = 0) in vec3 v_WorldPos;
 layout(location = 1) in vec3 v_Colour;
 layout(location = 2) in vec2 v_TexCoord;
 layout(location = 3) in vec3 v_Normal;
+layout(location = 4) in mat3 v_WorldNormals;
 
 layout(location = 0) out vec4 o_Colour;
 layout(location = 1) out vec4 o_Position;
 layout(location = 2) out vec4 o_Normal;
 
 layout(set = 0, binding = 0) uniform sampler2D u_AlbedoTexture;
+layout(set = 0, binding = 1) uniform sampler2D u_NormalTexture;
 
 layout(push_constant) uniform Material
 {
-    layout(offset = 64) vec3 albedoColour;
+    vec3 albedoColour;
+    uint hasNormalMap;
 } u_Material;
 
 struct DirectionalLight
@@ -63,48 +67,45 @@ struct PBRGlobals
     float nDotV;
 } params;
 
-// ----------------------------------------------------------------------------
-float DistributionGGX(vec3 N, vec3 H, float roughness)
+float distributionGGX(vec3 p_halfway, float p_roughness)
 {
-    float a = roughness*roughness;
-    float a2 = a*a;
-    float NdotH = max(dot(N, H), 0.0);
-    float NdotH2 = NdotH*NdotH;
+    float a = p_roughness * p_roughness;
+    float a_squared = a * a;
+    float ndoth = max(dot(params.normal, p_halfway), 0.0);
+    float ndoth_squared = ndoth * ndoth;
 
-    float nom   = a2;
-    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom = PI * denom * denom;
+    float numerator   = a_squared;
+    float denominator = (ndoth_squared * (a_squared - 1.0) + 1.0);
+    denominator = PI * denominator * denominator;
 
-    return nom / denom;
+    return numerator / denominator;
 }
-// ----------------------------------------------------------------------------
-float GeometrySchlickGGX(float NdotV, float roughness)
+
+float geometrySchlickGGX(float p_ndotv, float p_roughness)
 {
-    float r = (roughness + 1.0);
-    float k = (r*r) / 8.0;
+    float r = (p_roughness + 1.0f);
+    float k = (r * r) / 8.0f;
 
-    float nom   = NdotV;
-    float denom = NdotV * (1.0 - k) + k;
+    float num   = p_ndotv;
+    float denom = p_ndotv * (1.0f - k) + k;
 
-    return nom / denom;
+    return num / denom;
 }
-// ----------------------------------------------------------------------------
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+
+float geometrySmith(float p_ndotl, float p_roughness)
 {
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
-    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
-    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+    float ggx2 = geometrySchlickGGX(params.nDotV, p_roughness);
+    float ggx1 = geometrySchlickGGX(p_ndotl, p_roughness);
 
     return ggx1 * ggx2;
 }
-// ----------------------------------------------------------------------------
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
+
+vec3 fresnelSchlick(float p_cos_theta)
 {
-    return F0 + (1.0f - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
+    return params.F0 + (1.0f - params.F0) * pow(clamp(1.0f - p_cos_theta, 0.0f, 1.0f), 5.0f);
 }
 
-vec3 calcDirectionalLights()
+vec3 calcDirectionalLights(vec3 p_point)
 {
     vec3 result = vec3(0.0f);
 
@@ -112,46 +113,31 @@ vec3 calcDirectionalLights()
     {
         DirectionalLight light = u_DirectionalLights.lights[i];
 
-        vec3 dir = -light.direction.xyz;
-        vec3 L = normalize(dir);
-        vec3 H = normalize(params.view + L);
+        vec3 light_dir = normalize(-light.direction.xyz);// Also denoted wi
+        vec3 halfway_dir = normalize(light_dir + params.view);// Halfway between the light's direction and the view direction
+        float ndotl = max(dot(params.normal, light_dir), 0.0f);// Amount the light's direction lines up with the surface normal
+        float hdotl = max(dot(halfway_dir, light_dir), 0.0f);
 
-        float distance = length(dir);
-        float attenuation = 1.0 / (distance * distance);
-        vec3 radiance = light.radiance * light.multiplier* attenuation;
+        vec3 light_radiance = light.radiance * light.multiplier;
 
-        // Cook-Torrance BRDF
-        float NDF = DistributionGGX(params.normal, H, params.roughness);
-        float G   = GeometrySmith(params.normal, params.view, L, params.roughness);
-        vec3 F    = fresnelSchlick(max(dot(H, params.view), 0.0), params.F0);
+        float normal_distribution = distributionGGX(halfway_dir, params.roughness);
+        float geometry = geometrySmith(ndotl, params.roughness);
+        vec3 fresnel = fresnelSchlick(hdotl);
+        vec3 dfg = normal_distribution * geometry * fresnel;
 
-        vec3 numerator    = NDF * G * F;
-        float denominator = 4.0 * max(dot(params.normal, params.view), 0.0) * max(dot(params.normal, L), 0.0) + 0.0001;// + 0.0001 to prevent divide by zero
-        vec3 specular = numerator / denominator;
+        float denom = max(4.0f * params.nDotV * ndotl, 0.0001f);// Dont divide by 0...
 
-        // kS is equal to Fresnel
-        vec3 kS = F;
-        // for energy conservation, the diffuse and specular light can't
-        // be above 1.0 (unless the surface emits light); to preserve this
-        // relationship the diffuse component (kD) should equal 1.0 - kS.
-        vec3 kD = vec3(1.0) - kS;
-        // multiply kD by the inverse metalness such that only non-metals
-        // have diffuse lighting, or a linear blend if partly metal (pure metals
-        // have no diffuse light).
-        kD *= 1.0 - params.metalness;
+        vec3 ks = fresnel;
+        vec3 kd = vec3(1.0f) - ks;
+        kd *= 1.0f - params.metalness;
 
-        // scale light by NdotL
-        float NdotL = max(dot(params.normal, L), 0.0);
-
-        // add to outgoing radiance Lo
-        result += (kD * params.albedo / PI + specular) * radiance * NdotL;// note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
-
+        result += ((kd * (params.albedo / PI)) + (dfg / denom)) * light_radiance * ndotl;
     }
 
     return result;
 }
 
-vec3 calcPointLights()
+vec3 calcPointLights(vec3 p_point)
 {
     vec3 result = vec3(0.0f);
 
@@ -159,38 +145,27 @@ vec3 calcPointLights()
     {
         PointLight light = u_PointLights.lights[i];
 
-        vec3 L = normalize(light.position.xyz - v_WorldPos);
-        vec3 H = normalize(params.view + L);
+        vec3 light_dir = normalize(light.position.xyz - p_point);// Also denoted wi
+        vec3 halfway_dir = normalize(light_dir + params.view);// Halfway between the light's direction and the view direction
+        float ndotl = max(dot(params.normal, light_dir), 0.0f);// Amount the light's direction lines up with the surface normal
+        float hdotl = max(dot(halfway_dir, light_dir), 0.0f);
 
-        float distance = length(light.position.xyz - v_WorldPos);
-        float attenuation = 1.0 / (distance * distance);
-        vec3 radiance = light.radiance * light.multiplier * attenuation;
+        float distance = length(light.position.xyz - p_point);// Distance from the light to the frag pos
+        float attenuation = 1.0f / (distance * distance);// Inverse square law
+        vec3 light_radiance = light.radiance * light.multiplier * attenuation;
 
-        // Cook-Torrance BRDF
-        float NDF = DistributionGGX(params.normal, H, params.roughness);
-        float G   = GeometrySmith(params.normal, params.view, L, params.roughness);
-        vec3 F    = fresnelSchlick(max(dot(H, params.view), 0.0), params.F0);
+        float normal_distribution = distributionGGX(halfway_dir, params.roughness);
+        float geometry = geometrySmith(ndotl, params.roughness);
+        vec3 fresnel = fresnelSchlick(hdotl);
+        vec3 dfg = normal_distribution * geometry * fresnel;
 
-        vec3 numerator    = NDF * G * F;
-        float denominator = 4.0 * max(dot(params.normal, params.view), 0.0) * max(dot(params.normal, L), 0.0) + 0.0001;// + 0.0001 to prevent divide by zero
-        vec3 specular = numerator / denominator;
+        float denom = max(4.0f * params.nDotV * ndotl, 0.0001f);// Dont divide by 0...
 
-        // kS is equal to Fresnel
-        vec3 kS = F;
-        // for energy conservation, the diffuse and specular light can't
-        // be above 1.0 (unless the surface emits light); to preserve this
-        // relationship the diffuse component (kD) should equal 1.0 - kS.
-        vec3 kD = vec3(1.0) - kS;
-        // multiply kD by the inverse metalness such that only non-metals
-        // have diffuse lighting, or a linear blend if partly metal (pure metals
-        // have no diffuse light).
-        kD *= 1.0 - params.metalness;
+        vec3 ks = fresnel;
+        vec3 kd = vec3(1.0f) - ks;
+        kd *= 1.0f - params.metalness;
 
-        // scale light by NdotL
-        float NdotL = max(dot(params.normal, L), 0.0);
-
-        // add to outgoing radiance Lo
-        result += (kD * params.albedo / PI + specular) * radiance * NdotL;// note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+        result += ((kd * (params.albedo / PI)) + (dfg / denom)) * light_radiance * ndotl;
     }
 
     return result;
@@ -201,7 +176,15 @@ void main()
     o_Position = vec4(v_WorldPos, 1.0f);
     o_Normal   = vec4(normalize(v_Normal), 1.0f);
 
-    params.normal = normalize(v_Normal);
+    params.normal = normalize(v_Normal);// We have to normalise our normal
+    if (u_Material.hasNormalMap != 0u)
+    {
+        params.normal = normalize(texture(u_NormalTexture, v_TexCoord).rgb * 2.0f - 1.0f);
+        params.normal = normalize(v_WorldNormals * params.normal);
+    }
+
+    params.view = normalize(u_SceneData.cameraPos.xyz - v_WorldPos);// Get the direction of the view from the camera to the frag pos
+    params.nDotV = max(dot(params.normal, params.view), 0.0f);// Tells us how much the view direction is aligned with the surface normal
 
     vec4 albedo_texture_colour = texture(u_AlbedoTexture, v_TexCoord);
     params.albedo = albedo_texture_colour.rgb * u_Material.albedoColour;
@@ -212,15 +195,11 @@ void main()
     params.F0 = vec3(0.04f);
     params.F0 = mix(params.F0, params.albedo, params.metalness);
 
-    params.view = normalize(u_SceneData.cameraPos.xyz - v_WorldPos);
-    params.nDotV = max(dot(params.normal, params.view), 0.0f);
+    vec3 lo = vec3(0.0f);// Outgoing light
 
-    vec3 final_colour = vec3(params.albedo) * 0.02f;
+    lo += calcDirectionalLights(v_WorldPos);
+    lo += calcPointLights(v_WorldPos);
 
-        final_colour += calcDirectionalLights();
-        final_colour += calcPointLights();
-
-//    o_Colour = vec4(vec3(params.nDotV), 1.0f);
-//    o_Colour = vec4(fresnelSchlick(params.nDotV, params.F0), 1.0f);
+    vec3 final_colour = lo;
     o_Colour = vec4(final_colour, 1.0f);
 }

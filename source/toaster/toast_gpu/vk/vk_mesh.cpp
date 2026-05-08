@@ -163,6 +163,29 @@ namespace toaster::gpu
 				}
 				else
 					LOG_WARN("Mesh material does not have an albedo map");
+
+				bool has_normal_map = ai_material->GetTexture(aiTextureType_NORMALS, 0, &ai_tex_path) == AI_SUCCESS;
+
+				if (has_normal_map)
+				{
+					auto parent_path  = p_path.parent_path();
+					auto texture_path = parent_path / ai_tex_path.C_Str();
+					if (!io::filesystem::exists(texture_path))
+					{
+						LOG_TRACE("\tNormal map path = {} --> NOT FOUND", texture_path.string());
+						texture_path = parent_path / texture_path.filename();
+					}
+					LOG_TRACE("\tAlbedo map path = {}{}", texture_path.string(), std::filesystem::exists(texture_path) ? "" : " --> NOT FOUND");
+
+					TextureSpecInfo texture_spec_info{};
+					texture_spec_info.generateMips = true;
+					material->set("u_NormalTexture", m_device->alloc<VKTexture2D>(texture_spec_info, texture_path));
+					material->set<uint32>("u_Material.hasNormalMap", 1u);
+				}
+				else
+				{
+					material->set<uint32>("u_Material.hasNormalMap", 0u);
+				}
 			}
 		}
 		else
