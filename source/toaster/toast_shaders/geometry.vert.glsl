@@ -30,5 +30,5 @@ void main()
     v_WorldPos = vec3(_Transform_.model * vec4(a_Position, 1.0f));
     v_Colour = a_Normal;
     v_TexCoord = a_TexCoord;
-    v_Normal = a_Normal;
+    v_Normal = mat3(transpose(inverse(_Transform_.model))) * a_Normal;
 }

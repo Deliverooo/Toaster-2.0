@@ -107,7 +107,7 @@ namespace toaster
 
 		{
 			Entity orbo_entity{m_scene->createEntity("Orbo")};
-			orbo_entity.addComponent<MeshComponent>().mesh = device->alloc<gpu::VKMesh>(binary_dir / "../resources/meshes/Orbo.fbx",
+			orbo_entity.addComponent<MeshComponent>().mesh = device->alloc<gpu::VKMesh>(binary_dir / "../resources/meshes/Test_scene.fbx",
 																						Globals::getShaderLibrary().get("Geometry"));
 			orbo_entity.addComponent<ScriptComponent>().className = "Sandbox.Player";
 		}

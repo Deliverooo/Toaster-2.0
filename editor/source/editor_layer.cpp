@@ -97,7 +97,7 @@ namespace toaster
 			transform_comp.translation = {0.0f, 0.0f, 0.0f};
 			transform_comp.scale       = {1.0f, 1.0f, 1.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
-			mc.mesh = m_device->alloc<gpu::VKMesh>(binary_dir / "../resources/meshes/Orbo.fbx", Globals::getShaderLibrary().get("Geometry"));
+			mc.mesh = m_device->alloc<gpu::VKMesh>(binary_dir / "../resources/meshes/Test_scene.fbx", Globals::getShaderLibrary().get("Geometry"));
 		}
 		{
 			Entity point_light_entity{m_scene->createEntity()};
@@ -252,6 +252,7 @@ namespace toaster
 		}
 
 		ig::Begin("Renderer settings");
+		ig::Text("%f, %f, %f", m_editorCamera.getPosition().x, m_editorCamera.getPosition().y, m_editorCamera.getPosition().z);
 		ig::Text("Scene renderer background");
 		if (ig::Button("File", ImVec2{ig::GetContentRegionAvail().x, 0}))
 		{

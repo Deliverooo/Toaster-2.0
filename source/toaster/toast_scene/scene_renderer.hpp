@@ -118,7 +118,7 @@ namespace toaster
 
 		struct SceneDataUB
 		{
-			glm::vec3 cameraPos{0.0f};
+			glm::vec4 cameraPos{0.0f, 0.0f, 0.0f, 1.0f};
 		};
 
 		RefPtr<gpu::VKUniformBufferPFF> m_sceneDataUBOs;

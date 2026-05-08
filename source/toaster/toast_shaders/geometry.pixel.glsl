@@ -47,7 +47,7 @@ layout(set = 1, binding = 3) uniform PointLightData
 
 layout(set = 1, binding = 4) uniform SceneData
 {
-    vec3 cameraPos;
+    vec4 cameraPos;
 } u_SceneData;
 
 // Ts is just usefull to have so we can reference it in multiple functions :)
@@ -62,7 +62,6 @@ struct PBRGlobals
     vec3 view;
     float nDotV;
 } params;
-
 
 // ----------------------------------------------------------------------------
 float DistributionGGX(vec3 N, vec3 H, float roughness)
@@ -102,7 +101,7 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
 // ----------------------------------------------------------------------------
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
-    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+    return F0 + (1.0f - F0) * pow(clamp(1.0f - cosTheta, 0.0f, 1.0f), 5.0f);
 }
 
 vec3 calcDirectionalLights()
@@ -202,25 +201,26 @@ void main()
     o_Position = vec4(v_WorldPos, 1.0f);
     o_Normal   = vec4(normalize(v_Normal), 1.0f);
 
+    params.normal = normalize(v_Normal);
+
     vec4 albedo_texture_colour = texture(u_AlbedoTexture, v_TexCoord);
     params.albedo = albedo_texture_colour.rgb * u_Material.albedoColour;
 
     params.metalness = 0.0f;
-
-    params.F0 = mix(vec3(0.04f), params.albedo, params.metalness);
-
     params.roughness = 0.5f;
-    params.metalness = 0.0f;
 
-    params.normal = normalize(v_Normal);
+    params.F0 = vec3(0.04f);
+    params.F0 = mix(params.F0, params.albedo, params.metalness);
 
-    params.view = normalize(u_SceneData.cameraPos - v_WorldPos);
-    params.nDotV = max(dot(params.normal, params.view), 0.0);
+    params.view = normalize(u_SceneData.cameraPos.xyz - v_WorldPos);
+    params.nDotV = max(dot(params.normal, params.view), 0.0f);
 
     vec3 final_colour = vec3(params.albedo) * 0.02f;
 
-    final_colour += calcDirectionalLights();
-    final_colour += calcPointLights();
+        final_colour += calcDirectionalLights();
+        final_colour += calcPointLights();
 
+//    o_Colour = vec4(vec3(params.nDotV), 1.0f);
+//    o_Colour = vec4(fresnelSchlick(params.nDotV, params.F0), 1.0f);
     o_Colour = vec4(final_colour, 1.0f);
 }
