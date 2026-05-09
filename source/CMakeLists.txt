@@ -22,8 +22,22 @@ target_link_libraries(Toaster PUBLIC dwmapi) # For window colour
 
 set_target_properties(Toaster PROPERTIES COMPILE_WARNING_AS_ERROR ON)
 
-set(DOTNET_VERSION "9.0.14")
+set(DOTNET_VERSION "10.0.7")
 set(DOTNET_ROOT "C:/Program Files/dotnet")
+
+set(NETHOST_PATH "${DOTNET_ROOT}/packs/Microsoft.NETCore.App.Host.win-x64/${DOTNET_VERSION}/runtimes/win-x64/native")
+
+target_include_directories(Toaster PUBLIC ${NETHOST_PATH})
+
+find_library(NETHOST_LIB nethost PATHS ${NETHOST_PATH} NO_DEFAULT_PATH)
+target_link_libraries(Toaster PUBLIC ${NETHOST_LIB})
+
+if (WIN32)
+	add_custom_command(TARGET Toaster POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"${NETHOST_PATH}/nethost.dll"
+			$<TARGET_FILE_DIR:Toaster>)
+endif ()
 
 set(MONO_PATH "C:/Program Files/Mono")
 target_include_directories(Toaster PUBLIC "${MONO_PATH}/include/mono-2.0")

@@ -10,6 +10,11 @@ docs/html/
 bin/
 lib/
 
+test/script/.vs/
+test/script/.idea/
+test/script/bin/
+test/script/lib/
+
 examples/Sandbox/bin/
 examples/Sandbox/obj/
 examples/Sandbox/.idea/

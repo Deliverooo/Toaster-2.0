@@ -123,3 +123,4 @@ add_subdirectory(source)
 
 add_subdirectory(runtime)
 add_subdirectory(editor)
+add_subdirectory(test)

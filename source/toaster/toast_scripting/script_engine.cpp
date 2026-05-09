@@ -1,9 +1,12 @@
 #include "script_engine.hpp"
 
+#include <Windows.h>
 #include <mono/metadata/assembly.h>
 
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
+#include "toast_lib/os/file_dialog.hpp"
+#include "toast_lib/os/library_loading.hpp"
 
 namespace toaster::script
 {
@@ -103,6 +106,44 @@ namespace toaster::script
 			}
 
 			LOG_INFO("Namespace: {} | Type: {} | Method: {}", name_space, type_name, method_name);
+		}
+	}
+
+	namespace clr
+	{
+		CLRScriptEngine::CLRScriptEngine(const CLRScriptEngineSpecInfo &p_spec_info) : m_specInfo(p_spec_info)
+		{
+			char_t buffer[MAX_PATH];
+			size_t buffer_size{sizeof(buffer) / sizeof(char_t)};
+			int32  rc{get_hostfxr_path(buffer, &buffer_size, nullptr)};
+			TST_ASSERT(rc == 0);
+
+			os::LibraryHandle lib{os::loadLibrary(buffer)};
+			m_initFn               = os::getProcAddress<hostfxr_initialize_for_runtime_config_fn>(lib, "hostfxr_initialize_for_runtime_config");
+			m_getRuntimeDelegateFn = os::getProcAddress<hostfxr_get_runtime_delegate_fn>(lib, "hostfxr_get_runtime_delegate");
+			m_closeFn              = os::getProcAddress<hostfxr_close_fn>(lib, "hostfxr_close");
+
+			TST_ASSERT(m_initFn);
+			TST_ASSERT(m_getRuntimeDelegateFn);
+			TST_ASSERT(m_closeFn);
+
+			String dll_name{m_specInfo.coreAssemblyPath.stem().string()};
+
+			m_initFn((m_specInfo.coreAssemblyPath.parent_path() / (dll_name + ".runtimeconfig.json")).c_str(), nullptr, &m_hostFxrContext);
+
+			m_getRuntimeDelegateFn(m_hostFxrContext, hdt_load_assembly_and_get_function_pointer, (void **) &m_loadAssemblyAndGetFunctionPointerFn);
+
+			using EntryPointFn = int(*)(void* args, int size);
+			EntryPointFn entryPointFn{nullptr};
+			m_loadAssemblyAndGetFunctionPointerFn(m_specInfo.coreAssemblyPath.c_str(), L"Test.TestClass, Test", L"Init", UNMANAGEDCALLERSONLY_METHOD, nullptr,
+												  (void **) &entryPointFn);
+
+			LOG_INFO("{}", entryPointFn(nullptr, 0));
+		}
+
+		CLRScriptEngine::~CLRScriptEngine()
+		{
+			m_closeFn(m_hostFxrContext);
 		}
 	}
 }
