@@ -25,7 +25,8 @@ A graphics engine based on the OG Toaster architecture, but with better things..
 8. Enjoy... :)
 
 # Planned Features
-
+- Use Hostfxr and CoreClr instead of Mono because it is ~6-7x faster
+- Physics system via Jolt
 - Asset system
 - Audio?
 - ¿Video loading? (possibly; ts sounds cool...)

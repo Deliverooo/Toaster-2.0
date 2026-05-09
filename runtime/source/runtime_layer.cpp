@@ -136,26 +136,6 @@ namespace toaster
 
 		SceneSerializer scene_serializer{m_scene, binary_dir};
 		scene_serializer.deserialize(binary_dir / "../resources/scenes/Test.tscene");
-
-		script::Class  klass{m_scriptEngine.get(), "Sandbox", "Test"};
-		script::Object obj{klass};
-
-		klass.setStaticFieldValue("s_Test", 67);
-
-		LOG_INFO("{}", *klass.invokeStaticMethod("StaticOrbo")->castTo<int32>());
-
-		MonoString *str1{mono_string_new(m_scriptEngine->getAppDomain(), "Orbo")};
-		klass.setStaticFieldValue<MonoString *>("s_Str", str1);
-
-		int32 val{0u};
-		klass.getStaticFieldValue<int32>("s_Test", val);
-		LOG_INFO("{}", val);
-
-		MonoString *str2{nullptr};
-		klass.getStaticFieldValue<MonoString *>("s_Str", str2);
-		char *str_data{mono_string_to_utf8(str2)};
-		LOG_INFO("{}", str_data);
-		mono_free(str_data);
 	}
 
 	auto RuntimeLayer::onDestroy() -> void

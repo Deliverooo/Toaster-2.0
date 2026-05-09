@@ -113,6 +113,32 @@ namespace toaster::script
 		}
 
 		template<typename Type>
+		auto getFieldValue(const toaster::String &p_field_name, Type &p_out_value) -> void
+		{
+			MonoClassField *field{mono_class_get_field_from_name(m_class.getClass(), p_field_name.c_str())};
+			mono_field_get_value(m_object, field, &p_out_value);
+		}
+
+		template<typename Type>
+		auto setFieldValue(const toaster::String &p_field_name, const Type &p_value) -> void
+		{
+			MonoClassField *field{mono_class_get_field_from_name(m_class.getClass(), p_field_name.c_str())};
+			mono_field_set_value(m_object, field, getAddressIfNotPointer(p_value));
+		}
+
+		template<typename Type>
+		auto getFieldValue(MonoClassField *p_field, Type &p_out_value) -> void
+		{
+			mono_field_get_value(m_object, p_field, &p_out_value);
+		}
+
+		template<typename Type>
+		auto setFieldValue(MonoClassField *p_field, const Type &p_value) -> void
+		{
+			mono_field_set_value(m_object, p_field, getAddressIfNotPointer(p_value));
+		}
+
+		template<typename Type>
 		auto castTo() -> Type *
 		{
 			return (Type *) mono_object_unbox(m_object);
@@ -132,30 +158,14 @@ namespace toaster::script
 	auto Class::getStaticFieldValue(const toaster::String &p_field_name, Type &p_out_value) -> void
 	{
 		MonoClassField *field{mono_class_get_field_from_name(m_class, p_field_name.c_str())};
-
-		if constexpr (std::is_same_v<Type, String>)
-		{
-			mono_field_static_get_value(m_vTable, field, ((String &) p_out_value).getMonoString());
-		}
-		else
-		{
-			mono_field_static_get_value(m_vTable, field, &p_out_value);
-		}
+		mono_field_static_get_value(m_vTable, field, &p_out_value);
 	}
 
 	template<typename Type>
 	auto Class::setStaticFieldValue(const toaster::String &p_field_name, const Type &p_value) -> void
 	{
 		MonoClassField *field{mono_class_get_field_from_name(m_class, p_field_name.c_str())};
-
-		if constexpr (std::is_same_v<Type, String>)
-		{
-			mono_field_static_set_value(m_vTable, field, ((const String &) p_value).getMonoString());
-		}
-		else
-		{
-			mono_field_static_set_value(m_vTable, field, getAddressIfNotPointer(p_value));
-		}
+		mono_field_static_set_value(m_vTable, field, getAddressIfNotPointer(p_value));
 	}
 
 	template<typename Type>
