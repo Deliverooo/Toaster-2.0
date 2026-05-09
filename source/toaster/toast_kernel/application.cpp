@@ -13,15 +13,9 @@
 
 namespace toaster
 {
-	Application::Application(const ApplicationCreateInfo &p_create_info, [[maybe_unused]] int32 p_argc, [[maybe_unused]] char **p_argv) : m_createInfo(p_create_info)
+	Application::Application(const ApplicationCreateInfo &p_create_info, const CommandLineArgMap &p_command_line_args) : m_createInfo(p_create_info),
+																														 m_commandLineArgs(p_command_line_args)
 	{
-		m_commandLineArgs.resize(p_argc);
-		for (uint32 i{0u}; i < p_argc; ++i)
-			m_commandLineArgs[i] = p_argv[i];
-
-		m_exeDirectory = m_commandLineArgs[0];
-		m_exeDirectory = m_exeDirectory.parent_path();
-
 		Window::initWindowingAPI();
 
 		#pragma region create vulkan objects
@@ -70,7 +64,7 @@ namespace toaster
 		});
 		#pragma endregion
 
-		Globals::init(m_vkLogicalDevice, m_exeDirectory);
+		Globals::init(m_vkLogicalDevice, m_commandLineArgs["binaryDir"]);
 	}
 
 	Application::~Application() noexcept
@@ -137,14 +131,9 @@ namespace toaster
 		return m_vkLogicalDevice;
 	}
 
-	auto Application::getCommandLineArgs() const noexcept -> const std::vector<String> &
+	auto Application::getCommandLineArgs() const noexcept -> const CommandLineArgMap &
 	{
 		return m_commandLineArgs;
-	}
-
-	auto Application::getExeDirectory() const noexcept -> const io::filesystem::Path &
-	{
-		return m_exeDirectory;
 	}
 
 	auto Application::onWindowCloseEvent([[maybe_unused]] WindowCloseEvent &p_event) -> bool

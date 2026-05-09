@@ -44,6 +44,9 @@ set(SRC
 
 		string.cpp
 		string.hpp
+
+		io/command_line_parser.cpp
+		io/command_line_parser.hpp
 )
 
 add_library(toast_lib STATIC) # less problematic...

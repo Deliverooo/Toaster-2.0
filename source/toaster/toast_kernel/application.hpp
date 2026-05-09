@@ -16,10 +16,12 @@ namespace toaster
 		WindowCreateInfo windowCreateInfo{};
 	};
 
+	using CommandLineArgMap = std::unordered_map<String, String>;
+
 	class TST_API Application
 	{
 	public:
-		Application(const ApplicationCreateInfo &p_create_info, int32 p_argc, char **p_argv);
+		Application(const ApplicationCreateInfo &p_create_info, const CommandLineArgMap &p_command_line_args);
 		~Application() noexcept;
 
 		auto run() -> void;
@@ -28,8 +30,7 @@ namespace toaster
 		[[nodiscard]] auto getWindow() const noexcept -> Window &;
 		[[nodiscard]] auto getLogicalDevice() const -> gpu::VKLogicalDevice *;
 
-		[[nodiscard]] auto getCommandLineArgs() const noexcept -> const std::vector<String> &;
-		[[nodiscard]] auto getExeDirectory() const noexcept -> const io::filesystem::Path &;
+		[[nodiscard]] auto getCommandLineArgs() const noexcept -> const CommandLineArgMap &;
 
 	private:
 		auto onWindowCloseEvent(WindowCloseEvent &p_event) -> bool;
@@ -37,8 +38,7 @@ namespace toaster
 
 		ApplicationCreateInfo m_createInfo{};
 
-		io::filesystem::Path m_exeDirectory;
-		std::vector<String>  m_commandLineArgs;
+		CommandLineArgMap m_commandLineArgs;
 
 		gpu::VKInstance *      m_vkInstance{nullptr};
 		gpu::VKPhysicalDevice *m_vkPhysicalDevice{nullptr};

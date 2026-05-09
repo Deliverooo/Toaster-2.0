@@ -1,0 +1,40 @@
+Scene: New Scene
+Entities:
+  - Entity: 12182979163212401667
+    TagComponent:
+      Tag: Point Light 1
+    TransformComponent:
+      Translation: [-1, 1, 1]
+      Rotation: [1, 0, 0, 0]
+      Scale: [1, 1, 1]
+    PointLightComponent:
+      Radiance: [1, 1, 1]
+      Multiplier: 3
+  - Entity: 6767676767
+    TagComponent:
+      Tag: Sun Light
+    TransformComponent:
+      Translation: [-1, 1, 1]
+      Rotation: [1, 0, 0, 0]
+      Scale: [1, 1, 1]
+    DirectionalLightComponent:
+      Radiance: [1, 1, 1]
+      Multiplier: 3
+  - Entity: 3219593284032183590
+    TagComponent:
+      Tag: Camera controller
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [1, 0, 0, 0]
+      Scale: [1, 1, 1]
+    ScriptComponent:
+      ClassName: Sandbox.CameraController
+  - Entity: 4047269150055983449
+    TagComponent:
+      Tag: Orbo
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [1, 0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshComponent:
+      MeshPath: ..\resources\meshes\Orbo.fbx

@@ -47,7 +47,8 @@ namespace toaster
 			m_sceneRenderer->onResize(width, height);
 		});
 
-		const auto &binary_dir{app.getExeDirectory()};
+		auto                 command_line_args{app.getCommandLineArgs()};
+		io::filesystem::Path binary_dir{command_line_args["binaryDir"]};
 
 		#pragma region script + scene setup
 
@@ -56,8 +57,8 @@ namespace toaster
 		if (app.getCommandLineArgs().size() > 1) // Custom app script dll
 		{
 			// When compiling, the Toaster.dll should automatically be in the same directory as the app one... :)
-			core_script_assembly_dll = io::filesystem::Path{app.getCommandLineArgs()[1]}.parent_path() / "Toaster.dll";
-			app_script_assembly_dll  = app.getCommandLineArgs()[1];
+			core_script_assembly_dll = io::filesystem::Path{command_line_args["scriptAsm"]}.parent_path() / "Toaster.dll";
+			app_script_assembly_dll  = command_line_args["scriptAsm"];
 		}
 		else
 		{
@@ -101,41 +102,17 @@ namespace toaster
 		scene_renderer_spec_info.resourceDirectory = binary_dir / "../resources";
 		m_sceneRenderer                            = toaster::make_reference<SceneRenderer>(device, scene_renderer_spec_info);
 
-		#if 0
-		io::filesystem::Path shader_dir{binary_dir / "../source/toaster/toast_shaders"};
-		{
-			Entity orbo_entity{m_scene->createEntity("Orbo")};
-			orbo_entity.addComponent<MeshComponent>().mesh = device->alloc<gpu::VKMesh>(binary_dir / "../resources/meshes/Test_scene.fbx",
-																						Globals::getShaderLibrary().get("Geometry"));
-			orbo_entity.addComponent<ScriptComponent>().className = "Sandbox.Player";
-		}
-
-		{
-			Entity camera_controller{m_scene->createEntity("Camera controller")};
-			camera_controller.addComponent<ScriptComponent>().className = "Sandbox.CameraController";
-		}
-
-		{
-			Entity point_light_entity{m_scene->createEntity("Point Light 1")};
-			auto & tc{point_light_entity.getComponent<TransformComponent>()};
-			auto & plc{point_light_entity.addComponent<PointLightComponent>()};
-			tc.translation = {-1.0f, 1.0f, 1.0f};
-			plc.radiance   = tsm::colours::magenta;
-			plc.multiplier = 3.0f;
-		}
-
-		{
-			Entity point_light_entity{m_scene->createEntity("Point Light 2")};
-			auto & tc{point_light_entity.getComponent<TransformComponent>()};
-			auto & plc{point_light_entity.addComponent<PointLightComponent>()};
-			tc.translation = {1.0f, 1.0f, 1.0f};
-			plc.radiance   = tsm::colours::weezer;
-			plc.multiplier = 3.0f;
-		}
-		#endif
-
 		SceneSerializer scene_serializer{m_scene, binary_dir};
-		scene_serializer.deserialize(binary_dir / "../resources/scenes/Test.tscene");
+
+		String scene_path{command_line_args["startupScene"]};
+		if (scene_path == "__NONE__")
+		{
+			scene_serializer.deserialize(binary_dir / "../resources/scenes/Test.tscene");
+		}
+		else
+		{
+			scene_serializer.deserialize(scene_path);
+		}
 	}
 
 	auto RuntimeLayer::onDestroy() -> void
