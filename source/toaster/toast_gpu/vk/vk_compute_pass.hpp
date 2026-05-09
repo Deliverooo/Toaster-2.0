@@ -20,6 +20,7 @@ namespace toaster::gpu
 		auto setInput(const String &p_name, const RefPtr<VKStorageBuffer> &p_storage_buffer) -> void;
 		auto setInput(const String &p_name, const RefPtr<VKStorageBufferPFF> &p_storage_buffer_pff) -> void;
 		auto setInput(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void;
+		auto setInput(const String &p_name, const RefPtr<VKImage2D> &p_image_2d) -> void;
 
 		// Only call when you have set all your required inputs :)
 		auto bake() -> void;

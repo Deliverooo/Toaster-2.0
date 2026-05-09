@@ -33,11 +33,6 @@ namespace toaster
 			m_mappedSceneDataUBOs = m_sceneDataUBOs->mapAllMemory(ubo_size, 0);
 		}
 
-		{
-			constexpr vk::DeviceSize ssbo_size{sizeof(int32)};
-			m_computeStorageBuffers = m_device->alloc<gpu::VKStorageBufferPFF>(ssbo_size, m_device->getSpecInfo().maxFramesInFlight);
-		}
-
 		m_skyboxTexture = m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, m_specInfo.resourceDirectory / "environments/'Environment_map'.jpg");
 
 		#pragma region depth-pre
@@ -72,8 +67,15 @@ namespace toaster
 		{
 			m_lightCullingPipeline = m_device->alloc<gpu::VKComputePipeline>(Globals::getShaderLibrary().get("Compute-Test"));
 
+			gpu::ImageSpecInfo compute_image_spec_info{};
+			compute_image_spec_info.width  = m_specInfo.viewportWidth;
+			compute_image_spec_info.height = m_specInfo.viewportHeight;
+			compute_image_spec_info.format = vk::Format::eR32G32B32A32Sfloat;
+			compute_image_spec_info.usage  = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+			m_computeImage                 = m_device->alloc<gpu::VKImage2D>(compute_image_spec_info);
+
 			m_lightCullingPass = m_device->alloc<gpu::VKComputePass>(m_lightCullingPipeline);
-			m_lightCullingPass->setInput("Test", m_computeStorageBuffers);
+			m_lightCullingPass->setInput("u_TestImage", m_computeImage);
 			m_lightCullingPass->bake();
 
 			m_lightCullingMaterial = m_device->alloc<gpu::VKMaterial>(Globals::getShaderLibrary().get("Compute-Test"));
@@ -241,6 +243,11 @@ namespace toaster
 		return m_depthPreAttachmentTexture;
 	}
 
+	auto SceneRenderer::getOutputComputeImage() const -> const RefPtr<gpu::VKImage2D> &
+	{
+		return m_computeImage;
+	}
+
 	auto SceneRenderer::getGeometryPositionsTexture() const -> const RefPtr<gpu::VKTexture2D> &
 	{
 		return m_geometryPositionsAttachmentTexture;
@@ -266,6 +273,8 @@ namespace toaster
 			m_specInfo.viewportHeight = p_height;
 
 			m_depthPreAttachmentTexture->resize(p_width, p_height);
+
+			m_computeImage->resize(p_width, p_height);
 
 			m_geometryPositionsAttachmentTexture->resize(p_width, p_height);
 			m_geometryNormalsAttachmentTexture->resize(p_width, p_height);
@@ -311,7 +320,7 @@ namespace toaster
 	{
 		render::beginCompute(p_cmd, p_frame_index, m_lightCullingPass);
 
-		render::dispatchCompute(p_cmd, p_frame_index, m_lightCullingPass, m_lightCullingMaterial, 1, 1, 1);
+		render::dispatchCompute(p_cmd, p_frame_index, m_lightCullingPass, m_lightCullingMaterial, m_specInfo.viewportWidth, m_specInfo.viewportHeight, 1);
 
 		render::endCompute(p_cmd, p_frame_index, m_lightCullingPass);
 	}

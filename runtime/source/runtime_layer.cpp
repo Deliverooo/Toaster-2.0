@@ -61,8 +61,8 @@ namespace toaster
 		}
 		else
 		{
-			core_script_assembly_dll = "../scripts/Toaster/bin/Debug/net48/Toaster.dll";  // Fallback to the prebuild toaster dll
-			app_script_assembly_dll  = "../examples/Sandbox/bin/Debug/net48/Sandbox.dll"; // Fallback to the demo script
+			core_script_assembly_dll = binary_dir / "../scripts/Toaster/bin/Debug/net48/Toaster.dll";  // Fallback to the prebuild toaster dll
+			app_script_assembly_dll  = binary_dir / "../examples/Sandbox/bin/Debug/net48/Sandbox.dll"; // Fallback to the demo script
 		}
 
 		LOG_INFO("{}", app_script_assembly_dll.string());
@@ -91,6 +91,8 @@ namespace toaster
 		m_fullscreenPipeline   = device->alloc<gpu::VKPipeline>(fullscreen_pipeline_spec_info);
 		m_fullscreenRenderPass = device->alloc<gpu::VKRenderPass>(m_fullscreenPipeline);
 		m_fullscreenRenderPass->bake();
+
+		m_fullscreenMaterial = device->alloc<gpu::VKMaterial>(Globals::getShaderLibrary().get("Composite"));
 
 		SceneRendererSpecInfo scene_renderer_spec_info{};
 		scene_renderer_spec_info.viewportWidth     = m_viewportWidth;
@@ -132,14 +134,28 @@ namespace toaster
 		}
 		#endif
 
-		SceneSerializer scene_serializer{m_scene};
+		SceneSerializer scene_serializer{m_scene, binary_dir};
 		scene_serializer.deserialize(binary_dir / "../resources/scenes/Test.tscene");
 
 		script::Class  klass{m_scriptEngine.get(), "Sandbox", "Test"};
 		script::Object obj{klass};
-		script::Object res{*obj.invoke("OrboMethod")};
-		LOG_INFO("{}", *res.castTo<int32>());
+
+		klass.setStaticFieldValue("s_Test", 67);
+
 		LOG_INFO("{}", *klass.invokeStaticMethod("StaticOrbo")->castTo<int32>());
+
+		MonoString *str1{mono_string_new(m_scriptEngine->getAppDomain(), "Orbo")};
+		klass.setStaticFieldValue<MonoString *>("s_Str", str1);
+
+		int32 val{0u};
+		klass.getStaticFieldValue<int32>("s_Test", val);
+		LOG_INFO("{}", val);
+
+		MonoString *str2{nullptr};
+		klass.getStaticFieldValue<MonoString *>("s_Str", str2);
+		char *str_data{mono_string_to_utf8(str2)};
+		LOG_INFO("{}", str_data);
+		mono_free(str_data);
 	}
 
 	auto RuntimeLayer::onDestroy() -> void
@@ -163,6 +179,8 @@ namespace toaster
 		auto tex{m_sceneRenderer->getOutputColourTexture()};
 		m_fullscreenRenderPass->setInput("u_Texture", tex);
 
+		m_fullscreenMaterial->set("u_Constants.res", glm::vec2{m_viewportWidth, m_viewportHeight});
+
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_viewportWidth, m_viewportHeight}};
 
@@ -182,7 +200,7 @@ namespace toaster
 		rendering_info.pDepthAttachment   = std::addressof(depth_attachment_info);
 
 		render::beginRendering(rendering_info, command_buffer, frame_index, m_fullscreenRenderPass);
-		render::renderFullscreenQuad(command_buffer, frame_index, m_fullscreenPipeline, nullptr);
+		render::renderFullscreenQuad(command_buffer, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);
 		render::endRendering(rendering_info, command_buffer);
 	}
 

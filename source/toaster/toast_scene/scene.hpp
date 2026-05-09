@@ -7,6 +7,7 @@
 #include "toast_render/renderer_2d.hpp"
 
 #include "toast_gpu/vk/vk_mesh.hpp"
+#include "toast_lib/uuid.hpp"
 
 namespace toaster
 {
@@ -71,6 +72,7 @@ namespace toaster
 		auto setViewportSize(uint32 p_width, uint32 p_height) -> void;
 
 		auto createEntity(const String &p_name = "") -> Entity;
+		auto createEntityWithUUID(UUID p_uuid, const String &p_name = "") -> Entity;
 		auto destroyEntity(Entity p_entity) -> void;
 
 		auto getMainCameraEntity() -> Entity;

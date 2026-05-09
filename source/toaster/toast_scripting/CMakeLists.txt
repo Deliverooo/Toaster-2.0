@@ -5,6 +5,9 @@ set(SRC
 		script_object.cpp
 		script_object.hpp
 
+		script_string.cpp
+		script_string.hpp
+
 		script_common.hpp
 )
 

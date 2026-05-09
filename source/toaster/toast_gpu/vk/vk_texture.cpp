@@ -8,12 +8,14 @@ namespace toaster::gpu
 {
 	VKTexture2D::VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info) : m_device(p_device), m_specInfo(p_spec_info)
 	{
+		vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eSampled};
+
 		if (m_specInfo.usage == ETextureUsage::eRenderAttachmentSampled)
 		{
 			// The only reason to create an image without providing it with any data is to use it as an attachment...
 			if (!m_device->isDepthFormat(m_specInfo.format))
 			{
-				vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled};
+				usage_flags |= vk::ImageUsageFlagBits::eColorAttachment;
 				if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
 					usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
 
@@ -28,7 +30,7 @@ namespace toaster::gpu
 			}
 			else
 			{
-				vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eSampled};
+				usage_flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
 				if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
 					usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
 
@@ -44,10 +46,11 @@ namespace toaster::gpu
 		}
 		else if (m_specInfo.usage == ETextureUsage::eShaderSampled)
 		{
+			usage_flags |= vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 			ImageSpecInfo image_create_info{};
 			image_create_info.width       = m_specInfo.width;
 			image_create_info.height      = m_specInfo.height;
-			image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+			image_create_info.usage       = usage_flags;
 			image_create_info.mipCount    = m_mipLevels;
 			image_create_info.sampleCount = m_specInfo.sampleCount;
 			image_create_info.format      = m_specInfo.format;
@@ -190,7 +193,7 @@ namespace toaster::gpu
 		return m_mipLevels;
 	}
 
-	auto VKTexture2D::getImage()  ->  RefPtr<VKRawImage>
+	auto VKTexture2D::getImage() -> RefPtr<VKRawImage>
 	{
 		return m_image;
 	}

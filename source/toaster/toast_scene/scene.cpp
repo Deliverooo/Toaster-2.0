@@ -8,6 +8,8 @@
 #include "toast_lib/logging.hpp"
 #include "toast_render/globals.hpp"
 
+#include <mono/metadata/attrdefs.h>
+
 #define TST_ENABLE_2D_SCENE_RENDERING 1
 
 namespace toaster
@@ -82,6 +84,12 @@ namespace toaster
 				{
 					CString name{mono_field_get_name(field)};
 					LOG_INFO("Field: {}", name);
+
+					MonoType* type{mono_field_get_type(field)};
+					LOG_INFO("Type: {}", mono_type_get_name(type));
+
+					// uint32 flags{mono_field_get_flags(field)};
+					// LOG_INFO("{}", !!(flags & MONO_FIELD_ATTR_PUBLIC));
 				}
 			}
 
@@ -324,6 +332,23 @@ namespace toaster
 	{
 		auto entity{Entity{m_registry.create(), this}};
 
+		entity.addComponent<IDComponent>();
+		entity.addComponent<TransformComponent>();
+
+		const bool name_empty = p_name.empty();
+		entity.addComponent<TagComponent>(name_empty ? fmt::format("ヌル　エンチチ ({})", m_newEntityTagCount) : p_name);
+
+		if (name_empty)
+			++m_newEntityTagCount; // E.g. "New Entity (1)"
+
+		return entity;
+	}
+
+	auto Scene::createEntityWithUUID(UUID p_uuid, const String &p_name) -> Entity
+	{
+		auto entity{Entity{m_registry.create(), this}};
+
+		entity.addComponent<IDComponent>(p_uuid);
 		entity.addComponent<TransformComponent>();
 
 		const bool name_empty = p_name.empty();
@@ -698,6 +723,12 @@ namespace toaster
 
 	#define ON_COMPONENT_ADDED(__type)	template<>\
 											TST_API auto Scene::onComponentAdded<__type>([[maybe_unused]] Entity p_entity, __type &p_component) -> void
+
+	ON_COMPONENT_ADDED(IDComponent)
+	{
+		(void) p_entity;
+		(void) p_component;
+	}
 
 	ON_COMPONENT_ADDED(TagComponent)
 	{

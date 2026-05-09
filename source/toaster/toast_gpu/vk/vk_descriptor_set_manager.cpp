@@ -114,11 +114,12 @@ namespace toaster::gpu
 
 	auto VKDescriptorSetManager::bakeDescriptors() -> void
 	{
-		std::array<vk::DescriptorPoolSize, 4> descriptor_pool_sizes{
+		std::array<vk::DescriptorPoolSize, 5> descriptor_pool_sizes{
 			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 100},
 			vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 100},
 			vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 100},
-			vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 100}
+			vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 100},
+			vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 100},
 		};
 
 		vk::DescriptorPoolCreateInfo descriptor_pool_create_info{};
@@ -448,6 +449,8 @@ namespace toaster::gpu
 			case vk::DescriptorType::eCombinedImageSampler:
 			case vk::DescriptorType::eSampledImage:
 				return EDescriptorType::eSampler2D;
+			case vk::DescriptorType::eStorageImage:
+				return EDescriptorType::eImage2D;
 			default: return EDescriptorType::eUnknown;
 		}
 		return EDescriptorType::eUnknown;
@@ -462,6 +465,8 @@ namespace toaster::gpu
 			case vk::DescriptorType::eCombinedImageSampler:
 			case vk::DescriptorType::eSampledImage:
 				return EGPUResourceType::eTexture2D;
+			case vk::DescriptorType::eStorageImage:
+				return EGPUResourceType::eImage2D;
 			default: return EGPUResourceType::eUnknown;
 		}
 		return EGPUResourceType::eUnknown;

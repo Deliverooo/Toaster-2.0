@@ -134,7 +134,10 @@ public class CameraController : Entity
 
 public class Test
 {
-	public int OrboMethod() { return 6741; }
+	public static int s_Test = 0;
+	public static string s_Str = "Orbicular Peeb";
 
-	public static int StaticOrbo() { return 678919; }
+	public int OrboMethod() { return s_Test; }
+
+	public static int StaticOrbo() { return s_Test; }
 }

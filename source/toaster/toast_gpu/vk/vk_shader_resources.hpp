@@ -39,6 +39,8 @@ namespace toaster::gpu
 		std::unordered_map<uint32, UniformBuffer> uniformBuffers;
 		std::unordered_map<uint32, StorageBuffer> storageBuffers;
 		std::unordered_map<uint32, ImageSampler>  imageSamplers;
+		std::unordered_map<uint32, ImageSampler>  storageImages;
+		std::unordered_map<uint32, ImageSampler>  separateImages;
 
 		// Descriptor name -> vk::WriteDescriptorSet
 		std::unordered_map<String, vk::WriteDescriptorSet> writeDescriptorSets;

@@ -1,6 +1,6 @@
 Scene: New Scene
 Entities:
-  - Entity: 67676767
+  - Entity: 145398633735375879
     TagComponent:
       Tag: Point Light 2
     TransformComponent:
@@ -10,7 +10,7 @@ Entities:
     PointLightComponent:
       Radiance: [0.09411765, 0.60784316, 0.8]
       Multiplier: 3
-  - Entity: 67676767
+  - Entity: 12182979163212401667
     TagComponent:
       Tag: Point Light 1
     TransformComponent:
@@ -20,7 +20,7 @@ Entities:
     PointLightComponent:
       Radiance: [1, 0, 1]
       Multiplier: 3
-  - Entity: 67676767
+  - Entity: 3219593284032183590
     TagComponent:
       Tag: Camera controller
     TransformComponent:
@@ -29,7 +29,7 @@ Entities:
       Scale: [1, 1, 1]
     ScriptComponent:
       ClassName: Sandbox.CameraController
-  - Entity: 67676767
+  - Entity: 4047269150055983449
     TagComponent:
       Tag: Orbo
     TransformComponent:
@@ -40,12 +40,3 @@ Entities:
       MeshPath: ..\resources\meshes\Test_scene.fbx
     ScriptComponent:
       ClassName: Sandbox.Player
-  - Entity: 41
-    TagComponent:
-      Tag: Peeb
-    TransformComponent:
-      Translation: [-2.0, 1.2, 0]
-      Rotation: [1, 0, 0, 0]
-      Scale: [1, 1, 1]
-    MeshComponent:
-      MeshPath: ..\resources\meshes\Normal_test.fbx

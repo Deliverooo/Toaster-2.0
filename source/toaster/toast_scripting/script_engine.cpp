@@ -31,6 +31,11 @@ namespace toaster::script
 		mono_jit_cleanup(m_rootDomain);
 	}
 
+	auto ScriptEngine::getSpecInfo() const -> const ScriptEngineSpecInfo &
+	{
+		return m_specInfo;
+	}
+
 	auto ScriptEngine::getRootDomain() const -> MonoDomain *
 	{
 		return m_rootDomain;

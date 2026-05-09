@@ -35,6 +35,7 @@ namespace toaster::script
 			mono_add_internal_call(p_method_name.c_str(), (const void *) p_method);
 		}
 
+		[[nodiscard]] auto getSpecInfo() const -> const ScriptEngineSpecInfo &;
 		[[nodiscard]] auto getRootDomain() const -> MonoDomain *;
 		[[nodiscard]] auto getAppDomain() const -> MonoDomain *;
 

@@ -9,6 +9,7 @@
 #include "glm/gtx/quaternion.hpp"
 
 #include "toast_gpu/vk/vk_texture.hpp"
+#include "toast_lib/uuid.hpp"
 #include "toast_scripting/script_common.hpp"
 #include "toast_scripting/script_object.hpp"
 
@@ -16,6 +17,18 @@
 
 namespace toaster
 {
+	DEFINE_COMPONENT(IDComponent)
+	{
+		IDComponent()  = default;
+		~IDComponent() = default;
+
+		IDComponent(UUID p_uuid) : uuid(p_uuid)
+		{
+		}
+
+		UUID uuid;
+	};
+
 	DEFINE_COMPONENT(TagComponent)
 	{
 		TagComponent()  = default;

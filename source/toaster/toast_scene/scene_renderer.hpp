@@ -32,6 +32,8 @@ namespace toaster
 		auto getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 		auto getOutputDepthTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 
+		auto getOutputComputeImage() const -> const RefPtr<gpu::VKImage2D>&;
+
 		auto getGeometryPositionsTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 		auto getGeometryNormalsTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 
@@ -63,7 +65,8 @@ namespace toaster
 		RefPtr<gpu::VKComputePass>     m_lightCullingPass{nullptr};
 		RefPtr<gpu::VKMaterial>        m_lightCullingMaterial{nullptr};
 
-		RefPtr<gpu::VKStorageBufferPFF> m_computeStorageBuffers{nullptr};
+		RefPtr<gpu::VKImage2D>          m_computeImage{nullptr};
+
 		#pragma endregion
 
 		#pragma region skybox

@@ -44,5 +44,6 @@ namespace toaster
 
 		RefPtr<gpu::VKPipeline>   m_fullscreenPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_fullscreenRenderPass{nullptr};
+		RefPtr<gpu::VKMaterial>   m_fullscreenMaterial{nullptr};
 	};
 }
