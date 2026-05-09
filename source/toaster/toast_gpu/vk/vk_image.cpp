@@ -143,6 +143,51 @@ namespace toaster::gpu
 
 	namespace util
 	{
+		auto colourAttachmentToShaderRead(AttachmentImage *p_image) -> void
+		{
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+														vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eShaderRead,
+														vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eFragmentShader,
+														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		}
+
+		auto colourAttachmentToTransferSrc(AttachmentImage *p_image) -> void
+		{
+		}
+
+		auto colourAttachmentToTransferDst(AttachmentImage *p_image) -> void
+		{
+		}
+
+		auto colourAttachmentToGeneral(AttachmentImage *p_image) -> void
+		{
+		}
+
+		auto depthAttachmentToShaderRead(AttachmentImage *p_image, bool p_read_only) -> void
+		{
+			const vk::ImageLayout  old_layout{p_read_only ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal};
+			const vk::AccessFlags2 src_access_flags{p_read_only ? vk::AccessFlagBits2::eDepthStencilAttachmentRead : vk::AccessFlagBits2::eDepthStencilAttachmentWrite};
+
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), old_layout, vk::ImageLayout::eShaderReadOnlyOptimal, src_access_flags,
+														vk::AccessFlagBits2::eShaderRead,
+														vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
+														vk::PipelineStageFlagBits2::eFragmentShader, p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		}
+
+		auto depthAttachmentToTransferSrc(AttachmentImage *p_image, bool p_read_only) -> void
+		{
+		}
+
+		auto depthAttachmentToTransferDst(AttachmentImage *p_image, bool p_read_only) -> void
+		{
+		}
+
+		auto depthAttachmentToGeneral(AttachmentImage *p_image, bool p_read_only) -> void
+		{
+		}
+
 		auto shaderReadToColourAttachment(AttachmentImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
@@ -181,25 +226,16 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
 		}
 
-		auto colourAttachmentToShaderRead(AttachmentImage *p_image) -> void
+		auto shaderReadToGeneral(AttachmentImage *p_image) -> void
 		{
-			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-														vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eShaderRead,
-														vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eFragmentShader,
-														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
-			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 		}
 
-		auto depthAttachmentToShaderRead(AttachmentImage *p_image, bool p_read_only) -> void
+		auto transferSrcToColourAttachment(AttachmentImage *p_image) -> void
 		{
-			const vk::ImageLayout  old_layout{p_read_only ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal};
-			const vk::AccessFlags2 src_access_flags{p_read_only ? vk::AccessFlagBits2::eDepthStencilAttachmentRead : vk::AccessFlagBits2::eDepthStencilAttachmentWrite};
+		}
 
-			p_image->getDevice()->transitionImageLayout(p_image->getImage(), old_layout, vk::ImageLayout::eShaderReadOnlyOptimal, src_access_flags,
-														vk::AccessFlagBits2::eShaderRead,
-														vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-														vk::PipelineStageFlagBits2::eFragmentShader, p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eDepth);
-			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		auto transferSrcToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void
+		{
 		}
 
 		auto transferSrcToShaderRead(AttachmentImage *p_image) -> void
@@ -210,12 +246,56 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 		}
 
+		auto transferSrcToTransferDst(AttachmentImage *p_image) -> void
+		{
+		}
+
+		auto transferSrcToGeneral(AttachmentImage *p_image) -> void
+		{
+		}
+
+		auto transferDstToColourAttachment(AttachmentImage *p_image) -> void
+		{
+		}
+
+		auto transferDstToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void
+		{
+		}
+
 		auto transferDstToShaderRead(AttachmentImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
 														vk::AccessFlagBits2::eTransferWrite, vk::AccessFlagBits2::eShaderRead, vk::PipelineStageFlagBits2::eTransfer,
 														vk::PipelineStageFlagBits2::eFragmentShader, p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
 			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+		}
+
+		auto transferDstToTransferSrc(AttachmentImage *p_image) -> void
+		{
+		}
+
+		auto transferDstToGeneral(AttachmentImage *p_image) -> void
+		{
+		}
+
+		auto generalToColourAttachment(AttachmentImage *p_image) -> void
+		{
+		}
+
+		auto generalToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void
+		{
+		}
+
+		auto generalToShaderRead(AttachmentImage *p_image) -> void
+		{
+		}
+
+		auto generalToTransferSrc(AttachmentImage *p_image) -> void
+		{
+		}
+
+		auto generalToTransferDst(AttachmentImage *p_image) -> void
+		{
 		}
 
 		auto undefinedToColourAttachment(AttachmentImage *p_image) -> void
@@ -257,10 +337,183 @@ namespace toaster::gpu
 
 		auto undefinedToGeneral(AttachmentImage *p_image) -> void
 		{
-			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral,
-														vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
-														vk::PipelineStageFlagBits2::eComputeShader | vk::PipelineStageFlagBits2::eFragmentShader, p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral, vk::AccessFlagBits2::eNone,
+														vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
+														vk::PipelineStageFlagBits2::eComputeShader | vk::PipelineStageFlagBits2::eFragmentShader,
+														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
 			p_image->setCurrentImageLayout(vk::ImageLayout::eGeneral);
+		}
+
+		auto toColourAttachment(AttachmentImage *p_image) -> void
+		{
+			vk::ImageLayout layout{p_image->getCurrentImageLayout()};
+			switch (layout)
+			{
+				case vk::ImageLayout::eColorAttachmentOptimal:
+					break;
+				case vk::ImageLayout::eDepthAttachmentOptimal:
+				case vk::ImageLayout::eDepthReadOnlyOptimal:
+				{
+					TST_ASSERT_MSG(false, "Cannot transition from depth attachment to colour attachment");
+					break;
+				}
+				case vk::ImageLayout::eShaderReadOnlyOptimal:
+					shaderReadToColourAttachment(p_image);
+					break;
+				case vk::ImageLayout::eTransferSrcOptimal:
+					transferSrcToColourAttachment(p_image);
+					break;
+				case vk::ImageLayout::eTransferDstOptimal:
+					transferDstToColourAttachment(p_image);
+					break;
+				case vk::ImageLayout::eGeneral:
+					generalToColourAttachment(p_image);
+					break;
+				default: break;
+			}
+		}
+
+		auto toDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void
+		{
+			vk::ImageLayout layout{p_image->getCurrentImageLayout()};
+			switch (layout)
+			{
+				case vk::ImageLayout::eColorAttachmentOptimal:
+				{
+					TST_ASSERT_MSG(false, "Cannot transition from colour attachment to depth attachment");
+					break;
+				}
+				case vk::ImageLayout::eDepthAttachmentOptimal:
+				case vk::ImageLayout::eDepthReadOnlyOptimal:
+					break;
+				case vk::ImageLayout::eShaderReadOnlyOptimal:
+					shaderReadToDepthAttachment(p_image, p_read_only);
+					break;
+				case vk::ImageLayout::eTransferSrcOptimal:
+					transferSrcToDepthAttachment(p_image, p_read_only);
+					break;
+				case vk::ImageLayout::eTransferDstOptimal:
+					transferDstToDepthAttachment(p_image, p_read_only);
+					break;
+				case vk::ImageLayout::eGeneral:
+					generalToDepthAttachment(p_image, p_read_only);
+					break;
+				default: break;
+			}
+		}
+
+		auto toShaderRead(AttachmentImage *p_image) -> void
+		{
+			vk::ImageLayout layout{p_image->getCurrentImageLayout()};
+			switch (layout)
+			{
+				case vk::ImageLayout::eColorAttachmentOptimal:
+					colourAttachmentToShaderRead(p_image);
+					break;
+				case vk::ImageLayout::eDepthAttachmentOptimal:
+					depthAttachmentToShaderRead(p_image, false);
+					break;
+				case vk::ImageLayout::eDepthReadOnlyOptimal:
+					depthAttachmentToShaderRead(p_image, true);
+					break;
+				case vk::ImageLayout::eShaderReadOnlyOptimal:
+					break;
+				case vk::ImageLayout::eTransferSrcOptimal:
+					transferSrcToShaderRead(p_image);
+					break;
+				case vk::ImageLayout::eTransferDstOptimal:
+					transferDstToShaderRead(p_image);
+					break;
+				case vk::ImageLayout::eGeneral:
+					generalToShaderRead(p_image);
+					break;
+				default: break;
+			}
+		}
+
+		auto toTransferSrc(AttachmentImage *p_image) -> void
+		{
+			vk::ImageLayout layout{p_image->getCurrentImageLayout()};
+			switch (layout)
+			{
+				case vk::ImageLayout::eColorAttachmentOptimal:
+					colourAttachmentToTransferSrc(p_image);
+					break;
+				case vk::ImageLayout::eDepthAttachmentOptimal:
+					depthAttachmentToTransferSrc(p_image, false);
+					break;
+				case vk::ImageLayout::eDepthReadOnlyOptimal:
+					depthAttachmentToTransferSrc(p_image, true);
+					break;
+				case vk::ImageLayout::eShaderReadOnlyOptimal:
+					shaderReadToTransferSrc(p_image);
+					break;
+				case vk::ImageLayout::eTransferSrcOptimal:
+					break;
+				case vk::ImageLayout::eTransferDstOptimal:
+					transferDstToTransferSrc(p_image);
+					break;
+				case vk::ImageLayout::eGeneral:
+					generalToTransferSrc(p_image);
+					break;
+				default: break;
+			}
+		}
+
+		auto toTransferDst(AttachmentImage *p_image) -> void
+		{
+			vk::ImageLayout layout{p_image->getCurrentImageLayout()};
+			switch (layout)
+			{
+				case vk::ImageLayout::eColorAttachmentOptimal:
+					colourAttachmentToTransferDst(p_image);
+					break;
+				case vk::ImageLayout::eDepthAttachmentOptimal:
+					depthAttachmentToTransferDst(p_image, false);
+					break;
+				case vk::ImageLayout::eDepthReadOnlyOptimal:
+					depthAttachmentToTransferDst(p_image, true);
+					break;
+				case vk::ImageLayout::eShaderReadOnlyOptimal:
+					shaderReadToTransferDst(p_image);
+					break;
+				case vk::ImageLayout::eTransferSrcOptimal:
+					transferSrcToTransferDst(p_image);
+					break;
+				case vk::ImageLayout::eTransferDstOptimal:
+					break;
+				case vk::ImageLayout::eGeneral:
+					generalToTransferDst(p_image);
+					break;
+				default: break;
+			}
+		}
+
+		auto toGeneral(AttachmentImage *p_image) -> void
+		{
+			vk::ImageLayout layout{p_image->getCurrentImageLayout()};
+			switch (layout)
+			{
+				case vk::ImageLayout::eColorAttachmentOptimal:
+					colourAttachmentToTransferDst(p_image);
+					break;
+				case vk::ImageLayout::eDepthAttachmentOptimal:
+					depthAttachmentToTransferDst(p_image, false);
+					break;
+				case vk::ImageLayout::eDepthReadOnlyOptimal:
+					depthAttachmentToTransferDst(p_image, true);
+					break;
+				case vk::ImageLayout::eShaderReadOnlyOptimal:
+					shaderReadToTransferDst(p_image);
+					break;
+				case vk::ImageLayout::eTransferSrcOptimal:
+					transferSrcToTransferDst(p_image);
+					break;
+				case vk::ImageLayout::eTransferDstOptimal:
+					break;
+				case vk::ImageLayout::eGeneral: break;
+				default: break;
+			}
 		}
 	}
 }

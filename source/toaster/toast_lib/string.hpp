@@ -4,7 +4,7 @@
 
 namespace toaster
 {
-	using CString = const char *;
+	using CString  = const char *;
 	using CWString = const wchar_t *;
 
 	using String    = std::string;
@@ -45,4 +45,7 @@ namespace toaster
 		std::string ret = std::to_string(p_val);
 		return U32String{ret.begin(), ret.end()};
 	}
+
+	WString convertUtf8ToWide(const String &p_string);
+	String  convertWideToUtf8(const WString &p_string);
 }

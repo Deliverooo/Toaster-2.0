@@ -41,6 +41,9 @@ set(SRC
 
 		uuid.cpp
 		uuid.hpp
+
+		string.cpp
+		string.hpp
 )
 
 add_library(toast_lib STATIC) # less problematic...

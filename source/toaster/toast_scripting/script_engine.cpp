@@ -131,14 +131,13 @@ namespace toaster::script
 
 			m_initFn((m_specInfo.coreAssemblyPath.parent_path() / (dll_name + ".runtimeconfig.json")).c_str(), nullptr, &m_hostFxrContext);
 
-			m_getRuntimeDelegateFn(m_hostFxrContext, hdt_load_assembly_and_get_function_pointer, (void **) &m_loadAssemblyAndGetFunctionPointerFn);
+			m_getRuntimeDelegateFn(m_hostFxrContext, hdt_load_assembly, (void **) &m_loadAssemblyFn);
+			m_getRuntimeDelegateFn(m_hostFxrContext, hdt_get_function_pointer, (void **) &m_getFunctionPointerFn);
 
-			using EntryPointFn = int(*)(void* args, int size);
-			EntryPointFn entryPointFn{nullptr};
-			m_loadAssemblyAndGetFunctionPointerFn(m_specInfo.coreAssemblyPath.c_str(), L"Test.TestClass, Test", L"Init", UNMANAGEDCALLERSONLY_METHOD, nullptr,
-												  (void **) &entryPointFn);
+			m_loadAssemblyFn(m_specInfo.coreAssemblyPath.c_str(), nullptr, nullptr);
 
-			LOG_INFO("{}", entryPointFn(nullptr, 0));
+			auto entry_point_fn{getFunctionPointer<int(*)(void *, int)>("Test.TestClass, Test", "Init")};
+			LOG_INFO("{}", entry_point_fn(nullptr, 0));
 		}
 
 		CLRScriptEngine::~CLRScriptEngine()

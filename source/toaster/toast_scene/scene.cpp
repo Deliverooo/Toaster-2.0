@@ -26,14 +26,19 @@ namespace toaster
 			m_obj.invoke(p_scene->m_baseEntityClass->getMethod(".ctor", 1), p_entity.getComponent<UUIDComponent>().uuid);
 		}
 
-		void onCreate()
+		auto onCreate() -> void
 		{
 			m_obj.invoke(m_onCreateMethod);
 		}
 
-		void onUpdate(float32 p_dt)
+		auto onUpdate(float32 p_dt) -> void
 		{
 			m_obj.invoke(m_onUpdateMethod, p_dt);
+		}
+
+		auto getObject() -> script::Object &
+		{
+			return m_obj;
 		}
 
 	private:
@@ -182,13 +187,10 @@ namespace toaster
 		{
 			for (const auto group{m_registry.group<TransformComponent>(entt::get<DirectionalLightComponent>)}; const auto entity: group)
 			{
-				auto [transform, directional_light]{group.get<TransformComponent, DirectionalLightComponent>(entity)};
-
-				glm::mat4 rotation{glm::eulerAngleXYZ(transform.rotation.x, transform.rotation.y, transform.rotation.z)};
-				glm::vec4 forward{rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)};
-				glm::vec3 direction{glm::normalize(glm::vec3(forward))};
+				auto      [transform, directional_light]{group.get<TransformComponent, DirectionalLightComponent>(entity)};
+				glm::vec3 forward = transform.rotation * glm::vec3(0.0f, 0.0f, -1.0f);
 				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
-																	  glm::vec4(direction, 1.0f),
+																	  glm::vec4(forward, 1.0f),
 																	  glm::vec4(directional_light.radiance, directional_light.multiplier)
 																  });
 			}
@@ -453,6 +455,23 @@ namespace toaster
 
 			if (!entity)
 				return 0;
+			return entity.getComponent<UUIDComponent>().uuid;
+		});
+
+		m_scriptEngine->registerMethod("Toaster.Entity::GetScriptInstance", +[](uint64 p_entity_id) -> MonoObject *
+		{
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
+
+			auto instance{s_activeScene->m_entityScriptMap[entity.getComponent<UUIDComponent>().uuid]};
+			return instance->getObject().getObject();
+		});
+
+		m_scriptEngine->registerMethod("Toaster.Entity::CreateEntityInternal", +[](MonoString *p_name) -> uint64
+		{
+			char * name_str{mono_string_to_utf8(p_name)};
+			Entity entity{s_activeScene->createEntity(name_str)};
+			mono_free(name_str);
+
 			return entity.getComponent<UUIDComponent>().uuid;
 		});
 

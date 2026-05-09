@@ -10,6 +10,8 @@
 #include <hostfxr.h>
 #include <nethost.h>
 
+#include "toast_lib/ptr.hpp"
+
 namespace toaster::script
 {
 	struct TST_API ScriptEngineSpecInfo
@@ -79,6 +81,16 @@ namespace toaster::script
 			CLRScriptEngine(const CLRScriptEngineSpecInfo &p_spec_info);
 			~CLRScriptEngine();
 
+			template<typename TFunc>
+			auto getFunctionPointer(const toaster::String &p_type_name, const toaster::String &p_method_name) -> TFunc
+			{
+				TFunc func{nullptr};
+				m_getFunctionPointerFn(convertUtf8ToWide(p_type_name).c_str(), convertUtf8ToWide(p_method_name).c_str(), UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr,
+									   (void **) &func);
+
+				return func;
+			}
+
 		private:
 			CLRScriptEngineSpecInfo m_specInfo{};
 
@@ -88,7 +100,10 @@ namespace toaster::script
 			hostfxr_get_runtime_delegate_fn          m_getRuntimeDelegateFn{nullptr};
 			hostfxr_close_fn                         m_closeFn{nullptr};
 
-			load_assembly_and_get_function_pointer_fn m_loadAssemblyAndGetFunctionPointerFn{nullptr};
+			load_assembly_fn        m_loadAssemblyFn{nullptr};
+			get_function_pointer_fn m_getFunctionPointerFn{nullptr};
 		};
+
+
 	}
 }

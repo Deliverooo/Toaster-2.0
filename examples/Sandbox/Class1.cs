@@ -59,7 +59,7 @@ public class CameraController : Entity
 	private Vec2 m_InitialMousePos = Vec2.Zero;
 
 	private float m_Time = 0.0f;
-	
+
 	private float m_Yaw = 0.0f;
 	private float m_Pitch = 0.0f;
 
@@ -83,15 +83,17 @@ public class CameraController : Entity
 		m_Camera.PerspectiveFov = Toaster.Math.Radians(90.0f);
 		m_Camera.Primary = true;
 
-		m_PointLightEntity = GetEntityByName("Point Light 1");
+		m_PointLightEntity = CreateEntity("Point Light 1");
+		var point_light_comp =  m_PointLightEntity.AddComponent<PointLightComponent>();
+		point_light_comp.Multiplier = 3.0f;
 	}
 
 	protected override void OnUpdate(float p_dt)
 	{
 		m_Time += p_dt;
-		
-		m_PointLightEntity.GetComponent<PointLightComponent>().Radiance = new Vec3(0.0f, (float)Math.Abs(Math.Sin(m_Time)), 1.0f);
-		
+
+		// m_PointLightEntity.GetComponent<DirectionalLightComponent>().Radiance = new Vec3(0.0f, (float)Math.Abs(Math.Sin(m_Time)), 1.0f);
+
 		if (Input.IsMouseButtonDown(Input.EMouseButton.Right))
 		{
 			if (Input.CursorMode != Input.ECursorMode.Disabled)
@@ -132,6 +134,10 @@ public class CameraController : Entity
 			m_InitialMousePos = mouse;
 
 			m_Transform.Rotation = orientation;
+
+			// Vec3 light_transform = m_PointLightEntity.GetComponent<TransformComponent>().Translation;
+			Vec3 light_transform = m_Transform.Translation + GetForwardVector();
+			m_PointLightEntity.GetComponent<TransformComponent>().Translation = light_transform;
 		}
 		else
 		{
