@@ -136,6 +136,7 @@ namespace toaster
 
 		SceneSerializer scene_serializer{m_scene, binary_dir};
 		scene_serializer.deserialize(binary_dir / "../resources/scenes/Test.tscene");
+
 	}
 
 	auto RuntimeLayer::onDestroy() -> void

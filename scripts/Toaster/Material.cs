@@ -5,19 +5,15 @@ namespace Toaster;
 public class Material
 {
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetAlbedoColour(uint p_entity_id,
-		uint p_index,
-		out Vec3 p_out_colour);
+	private static extern void GetAlbedoColour(ulong p_entity_id, uint p_index, out Vec3 p_out_colour);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetAlbedoColour(uint p_entity_id,
-		uint p_index,
-		ref Vec3 p_out_colour);
+	private static extern void SetAlbedoColour(ulong p_entity_id, uint p_index, ref Vec3 p_out_colour);
 
-	private uint EntityId;
+	private ulong EntityId;
 	private uint Index;
 
-	public Material(uint p_entity_id, uint p_index)
+	public Material(ulong p_entity_id, uint p_index)
 	{
 		EntityId = p_entity_id;
 		Index = p_index;

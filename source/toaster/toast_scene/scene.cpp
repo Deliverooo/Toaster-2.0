@@ -23,7 +23,7 @@ namespace toaster
 
 			m_onCreateMethod = m_obj.getClass().getMethod("OnCreate", 0);
 			m_onUpdateMethod = m_obj.getClass().getMethod("OnUpdate", 1);
-			m_obj.invoke(p_scene->m_baseEntityClass->getMethod(".ctor", 1), static_cast<uint32>(p_entity));
+			m_obj.invoke(p_scene->m_baseEntityClass->getMethod(".ctor", 1), p_entity.getComponent<UUIDComponent>().uuid);
 		}
 
 		void onCreate()
@@ -85,7 +85,7 @@ namespace toaster
 					CString name{mono_field_get_name(field)};
 					LOG_INFO("Field: {}", name);
 
-					MonoType* type{mono_field_get_type(field)};
+					MonoType *type{mono_field_get_type(field)};
 					LOG_INFO("Type: {}", mono_type_get_name(type));
 
 					// uint32 flags{mono_field_get_flags(field)};
@@ -124,14 +124,14 @@ namespace toaster
 			{
 				auto [class_name]{view.get<ScriptComponent>(entity)};
 
-				uint32 entity_id{static_cast<uint32>(entity)};
 				Entity e{entity, this};
-				if (!m_entityScriptMap.contains(entity_id))
+				UUID   uuid{e.getComponent<UUIDComponent>().uuid};
+				if (!m_entityScriptMap.contains(uuid))
 				{
 					if (m_entityClassMap.contains(class_name))
 					{
-						m_entityScriptMap[entity_id] = make_reference<ScriptableEntityCS>(*m_entityClassMap[class_name].get(), this, e);
-						m_entityScriptMap[entity_id]->onCreate();
+						m_entityScriptMap[uuid] = make_reference<ScriptableEntityCS>(*m_entityClassMap[class_name].get(), this, e);
+						m_entityScriptMap[uuid]->onCreate();
 					}
 					else
 					{
@@ -139,8 +139,8 @@ namespace toaster
 					}
 				}
 
-				if (m_entityScriptMap.contains(entity_id))
-					m_entityScriptMap[entity_id]->onUpdate(p_dt);
+				if (m_entityScriptMap.contains(uuid))
+					m_entityScriptMap[uuid]->onUpdate(p_dt);
 			}
 		}
 
@@ -164,7 +164,7 @@ namespace toaster
 		glm::mat4 camera_transform{1.0f};
 
 		Entity main_camera_entity{getMainCameraEntity()};
-		if (static_cast<entt::entity>(main_camera_entity) != entt::null)
+		if (main_camera_entity)
 		{
 			main_camera      = &main_camera_entity.getComponent<CameraComponent>().camera;
 			camera_transform = main_camera_entity.getComponent<TransformComponent>().getTransform();
@@ -330,25 +330,16 @@ namespace toaster
 
 	auto Scene::createEntity(const String &p_name) -> Entity
 	{
-		auto entity{Entity{m_registry.create(), this}};
-
-		entity.addComponent<IDComponent>();
-		entity.addComponent<TransformComponent>();
-
-		const bool name_empty = p_name.empty();
-		entity.addComponent<TagComponent>(name_empty ? fmt::format("ヌル　エンチチ ({})", m_newEntityTagCount) : p_name);
-
-		if (name_empty)
-			++m_newEntityTagCount; // E.g. "New Entity (1)"
-
-		return entity;
+		return createEntityWithUUID({}, p_name);
 	}
 
 	auto Scene::createEntityWithUUID(UUID p_uuid, const String &p_name) -> Entity
 	{
 		auto entity{Entity{m_registry.create(), this}};
 
-		entity.addComponent<IDComponent>(p_uuid);
+		entity.addComponent<UUIDComponent>(p_uuid);
+		m_entityUUIDMap[p_uuid] = entity;
+
 		entity.addComponent<TransformComponent>();
 
 		const bool name_empty = p_name.empty();
@@ -362,7 +353,25 @@ namespace toaster
 
 	auto Scene::destroyEntity(Entity p_entity) -> void
 	{
+		m_entityUUIDMap.erase(p_entity.getComponent<UUIDComponent>().uuid);
 		m_registry.destroy(p_entity);
+	}
+
+	auto Scene::getEntityByUUID(UUID p_uuid) -> Entity
+	{
+		if (!m_entityUUIDMap.contains(p_uuid))
+			return {};
+		return {m_entityUUIDMap.at(p_uuid), this};
+	}
+
+	auto Scene::getEntityByName(const String &p_name) -> Entity
+	{
+		for (const auto view = m_registry.view<TagComponent>(); const auto &entity: view)
+		{
+			if (const auto &tag = view.get<TagComponent>(entity); tag.tag == p_name)
+				return Entity{entity, this};
+		}
+		return {};
 	}
 
 	auto Scene::getMainCameraEntity() -> Entity
@@ -422,37 +431,48 @@ namespace toaster
 
 	auto Scene::_registerScriptMethods() -> void
 	{
-		m_scriptEngine->registerMethod("Toaster.InternalCalls::HasComponent", +[](uint32 p_entity_id, MonoReflectionType *p_component_type) -> bool
+		m_scriptEngine->registerMethod("Toaster.Entity::HasComponentInternal", +[](uint64 p_entity_id, MonoReflectionType *p_component_type) -> bool
 		{
 			MonoType *type{mono_reflection_type_get_type(p_component_type)};
-			Entity    entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity    entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			return s_activeScene->getHasComponentFn(type)(&entity);
 		});
 
-		m_scriptEngine->registerMethod("Toaster.InternalCalls::AddComponent", +[](uint32 p_entity_id, MonoReflectionType *p_component_type) -> void
+		m_scriptEngine->registerMethod("Toaster.Entity::AddComponentInternal", +[](uint64 p_entity_id, MonoReflectionType *p_component_type) -> void
 		{
 			MonoType *type{mono_reflection_type_get_type(p_component_type)};
-			Entity    entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity    entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			s_activeScene->getAddComponentFn(type)(&entity);
 		});
 
-		m_scriptEngine->registerMethod("Toaster.Component::ResetInternal", +[](uint32 p_entity_id, MonoReflectionType *p_component_type) -> void
+		m_scriptEngine->registerMethod("Toaster.Entity::GetEntityByNameInternal", +[](MonoString *p_name) -> uint64
+		{
+			char * name_str{mono_string_to_utf8(p_name)};
+			Entity entity{s_activeScene->getEntityByName(name_str)};
+			mono_free(name_str);
+
+			if (!entity)
+				return 0;
+			return entity.getComponent<UUIDComponent>().uuid;
+		});
+
+		m_scriptEngine->registerMethod("Toaster.Component::ResetInternal", +[](uint64 p_entity_id, MonoReflectionType *p_component_type) -> void
 		{
 			MonoType *type{mono_reflection_type_get_type(p_component_type)};
-			Entity    entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity    entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			s_activeScene->getResetComponentFn(type)(&entity);
 		});
 
 		#pragma region Tag Component
-		m_scriptEngine->registerMethod("Toaster.TagComponent::GetTag", +[](uint32 p_entity_id, MonoString **p_out_tag) -> void
+		m_scriptEngine->registerMethod("Toaster.TagComponent::GetTag", +[](uint64 p_entity_id, MonoString **p_out_tag) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_out_tag = mono_string_new(s_activeScene->getScriptEngine()->getAppDomain(), entity.getComponent<TagComponent>().tag.c_str());
 		});
 
-		m_scriptEngine->registerMethod("Toaster.TagComponent::SetTag", +[](uint32 p_entity_id, MonoString **p_tag) -> void
+		m_scriptEngine->registerMethod("Toaster.TagComponent::SetTag", +[](uint64 p_entity_id, MonoString **p_tag) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 
 			char *new_string{mono_string_to_utf8(*p_tag)};
 			entity.getComponent<TagComponent>().tag = String{new_string};
@@ -461,83 +481,83 @@ namespace toaster
 		#pragma endregion
 
 		#pragma region Transform Component
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetTranslation", +[](uint32 p_entity_id, glm::vec3 *p_out_translation) -> void
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetTranslation", +[](uint64 p_entity_id, glm::vec3 *p_out_translation) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_out_translation = entity.getComponent<TransformComponent>().translation;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetTranslation", +[](uint32 p_entity_id, const glm::vec3 *p_translation) -> void
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetTranslation", +[](uint64 p_entity_id, const glm::vec3 *p_translation) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<TransformComponent>().translation = *p_translation;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetRotation", +[](uint32 p_entity_id, glm::vec4 *p_out_rotation) -> void
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetRotation", +[](uint64 p_entity_id, glm::vec4 *p_out_rotation) -> void
 		{
 			Entity           entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
 			const glm::quat &rotation{entity.getComponent<TransformComponent>().rotation};
 			*p_out_rotation = glm::vec4{rotation.x, rotation.y, rotation.z, rotation.w};
 		});
 
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetRotation", +[](uint32 p_entity_id, const glm::vec4 *p_rotation) -> void
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetRotation", +[](uint64 p_entity_id, const glm::vec4 *p_rotation) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<TransformComponent>().rotation = glm::quat{p_rotation->w, p_rotation->x, p_rotation->y, p_rotation->z};
 		});
 
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetScale", +[](uint32 p_entity_id, glm::vec3 *p_out_scale) -> void
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetScale", +[](uint64 p_entity_id, glm::vec3 *p_out_scale) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_out_scale = entity.getComponent<TransformComponent>().scale;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetScale", +[](uint32 p_entity_id, const glm::vec3 *p_scale) -> void
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetScale", +[](uint64 p_entity_id, const glm::vec3 *p_scale) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<TransformComponent>().scale = *p_scale;
 		});
 		#pragma endregion
 
 		#pragma region Sprite Renderer Component
-		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::GetColour", +[](uint32 p_entity_id, glm::vec4 *p_out_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::GetColour", +[](uint64 p_entity_id, glm::vec4 *p_out_colour) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_out_colour = entity.getComponent<SpriteRendererComponent>().colour;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::SetColour", +[](uint32 p_entity_id, const glm::vec4 *p_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::SetColour", +[](uint64 p_entity_id, const glm::vec4 *p_colour) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<SpriteRendererComponent>().colour = *p_colour;
 		});
 		#pragma endregion
 
 		#pragma region Mesh Component
-		m_scriptEngine->registerMethod("Toaster.MeshComponent::HasMaterialInternal", +[](uint32 p_entity_id, uint32 p_index) -> bool
+		m_scriptEngine->registerMethod("Toaster.MeshComponent::HasMaterialInternal", +[](uint64 p_entity_id, uint32 p_index) -> bool
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & mesh{entity.getComponent<MeshComponent>()};
 			return mesh.mesh->getMaterials().size() > p_index;
 		});
 		#pragma endregion
 
 		#pragma region Camera Component
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPrimary", +[](uint32 p_entity_id) -> bool
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPrimary", +[](uint64 p_entity_id) -> bool
 		{
 			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			return cam.primary;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetPrimary", +[](uint32 p_entity_id, const bool *p_primary) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetPrimary", +[](uint64 p_entity_id, const bool *p_primary) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & cam{entity.getComponent<CameraComponent>()};
 			cam.primary = *p_primary;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetProjectionType", +[](uint32 p_entity_id, SceneCamera::EProjectionType *p_out_projection_type) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetProjectionType", +[](uint64 p_entity_id, SceneCamera::EProjectionType *p_out_projection_type) -> void
 		{
 			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
 			const auto &cam{entity.getComponent<CameraComponent>()};
@@ -545,98 +565,98 @@ namespace toaster
 		});
 
 		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetProjectionType",
-									   +[](uint32 p_entity_id, const SceneCamera::EProjectionType *p_projection_type) -> void
+									   +[](uint64 p_entity_id, const SceneCamera::EProjectionType *p_projection_type) -> void
 									   {
-										   Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+										   Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 										   auto & cam{entity.getComponent<CameraComponent>()};
 										   cam.camera.setProjectionType(*p_projection_type);
 									   });
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPerspectiveFov", +[](uint32 p_entity_id, float32 *p_out_perspective_fov) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPerspectiveFov", +[](uint64 p_entity_id, float32 *p_out_perspective_fov) -> void
 		{
 			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_perspective_fov = cam.camera.getPerspectiveFov();
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetPerspectiveFov", +[](uint32 p_entity_id, const float32 *p_perspective_fov) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetPerspectiveFov", +[](uint64 p_entity_id, const float32 *p_perspective_fov) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & cam{entity.getComponent<CameraComponent>()};
 			cam.camera.setPerspectiveFov(*p_perspective_fov);
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPerspectiveNear", +[](uint32 p_entity_id, float32 *p_out_perspective_near) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPerspectiveNear", +[](uint64 p_entity_id, float32 *p_out_perspective_near) -> void
 		{
 			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_perspective_near = cam.camera.getPerspectiveNearClip();
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetPerspectiveNear", +[](uint32 p_entity_id, const float32 *p_perspective_near) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetPerspectiveNear", +[](uint64 p_entity_id, const float32 *p_perspective_near) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & cam{entity.getComponent<CameraComponent>()};
 			cam.camera.setPerspectiveNearClip(*p_perspective_near);
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPerspectiveFar", +[](uint32 p_entity_id, float32 *p_out_perspective_far) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPerspectiveFar", +[](uint64 p_entity_id, float32 *p_out_perspective_far) -> void
 		{
 			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_perspective_far = cam.camera.getPerspectiveFarClip();
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetPerspectiveFar", +[](uint32 p_entity_id, const float32 *p_perspective_far) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetPerspectiveFar", +[](uint64 p_entity_id, const float32 *p_perspective_far) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & cam{entity.getComponent<CameraComponent>()};
 			cam.camera.setPerspectiveFarClip(*p_perspective_far);
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetOrthoSize", +[](uint32 p_entity_id, float32 *p_out_ortho_size) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetOrthoSize", +[](uint64 p_entity_id, float32 *p_out_ortho_size) -> void
 		{
 			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_ortho_size = cam.camera.getOrthoSize();
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetOrthoSize", +[](uint32 p_entity_id, const float32 *p_ortho_size) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetOrthoSize", +[](uint64 p_entity_id, const float32 *p_ortho_size) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & cam{entity.getComponent<CameraComponent>()};
 			cam.camera.setOrthoSize(*p_ortho_size);
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetOrthoNear", +[](uint32 p_entity_id, float32 *p_out_ortho_near) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetOrthoNear", +[](uint64 p_entity_id, float32 *p_out_ortho_near) -> void
 		{
 			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_ortho_near = cam.camera.getOrthoNearClip();
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetOrthoNear", +[](uint32 p_entity_id, const float32 *p_ortho_near) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetOrthoNear", +[](uint64 p_entity_id, const float32 *p_ortho_near) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & cam{entity.getComponent<CameraComponent>()};
 			cam.camera.setOrthoNearClip(*p_ortho_near);
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetOrthoFar", +[](uint32 p_entity_id, float32 *p_out_ortho_far) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetOrthoFar", +[](uint64 p_entity_id, float32 *p_out_ortho_far) -> void
 		{
 			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_ortho_far = cam.camera.getOrthoFarClip();
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetOrthoFar", +[](uint32 p_entity_id, const float32 *p_ortho_far) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::SetOrthoFar", +[](uint64 p_entity_id, const float32 *p_ortho_far) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & cam{entity.getComponent<CameraComponent>()};
 			cam.camera.setOrthoFarClip(*p_ortho_far);
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetProjectionMatrix", +[](uint32 p_entity_id, glm::mat4 *p_out_projection_matrix) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetProjectionMatrix", +[](uint64 p_entity_id, glm::mat4 *p_out_projection_matrix) -> void
 		{
 			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
 			const auto &cam{entity.getComponent<CameraComponent>()};
@@ -645,69 +665,69 @@ namespace toaster
 		#pragma endregion
 
 		#pragma region Directional Light Component
-		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::GetRadiance", +[](uint32 p_entity_id, glm::vec3 *p_out_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::GetRadiance", +[](uint64 p_entity_id, glm::vec3 *p_out_colour) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_out_colour = entity.getComponent<DirectionalLightComponent>().radiance;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::SetRadiance", +[](uint32 p_entity_id, const glm::vec3 *p_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::SetRadiance", +[](uint64 p_entity_id, const glm::vec3 *p_colour) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<DirectionalLightComponent>().radiance = *p_colour;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::GetMultiplier", +[](uint32 p_entity_id, float32 *p_multiplier) -> void
+		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::GetMultiplier", +[](uint64 p_entity_id, float32 *p_multiplier) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_multiplier = entity.getComponent<DirectionalLightComponent>().multiplier;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::SetMultiplier", +[](uint32 p_entity_id, const float32 *p_multiplier) -> void
+		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::SetMultiplier", +[](uint64 p_entity_id, const float32 *p_multiplier) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<DirectionalLightComponent>().multiplier = *p_multiplier;
 		});
 		#pragma endregion
 
 		#pragma region Point Light Component
-		m_scriptEngine->registerMethod("Toaster.PointLightComponent::GetRadiance", +[](uint32 p_entity_id, glm::vec3 *p_out_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.PointLightComponent::GetRadiance", +[](uint64 p_entity_id, glm::vec3 *p_out_colour) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_out_colour = entity.getComponent<PointLightComponent>().radiance;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.PointLightComponent::SetRadiance", +[](uint32 p_entity_id, const glm::vec3 *p_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.PointLightComponent::SetRadiance", +[](uint64 p_entity_id, const glm::vec3 *p_colour) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<PointLightComponent>().radiance = *p_colour;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.PointLightComponent::GetMultiplier", +[](uint32 p_entity_id, float32 *p_multiplier) -> void
+		m_scriptEngine->registerMethod("Toaster.PointLightComponent::GetMultiplier", +[](uint64 p_entity_id, float32 *p_multiplier) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_multiplier = entity.getComponent<PointLightComponent>().multiplier;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.PointLightComponent::SetMultiplier", +[](uint32 p_entity_id, const float32 *p_multiplier) -> void
+		m_scriptEngine->registerMethod("Toaster.PointLightComponent::SetMultiplier", +[](uint64 p_entity_id, const float32 *p_multiplier) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<PointLightComponent>().multiplier = *p_multiplier;
 		});
 		#pragma endregion
 
 		#pragma region Material
-		m_scriptEngine->registerMethod("Toaster.Material::GetAlbedoColour", +[](uint32 p_entity_id, uint32 p_index, glm::vec3 *p_out_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.Material::GetAlbedoColour", +[](uint64 p_entity_id, uint32 p_index, glm::vec3 *p_out_colour) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & mesh{entity.getComponent<MeshComponent>()};
 			auto & material{mesh.mesh->getMaterials().at(p_index)};
 			*p_out_colour = material->get<glm::vec3>("u_Material.albedoColour");
 		});
 
-		m_scriptEngine->registerMethod("Toaster.Material::SetAlbedoColour", +[](uint32 p_entity_id, uint32 p_index, glm::vec3 *p_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.Material::SetAlbedoColour", +[](uint64 p_entity_id, uint32 p_index, glm::vec3 *p_colour) -> void
 		{
-			Entity entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & mesh{entity.getComponent<MeshComponent>()};
 			auto & material{mesh.mesh->getMaterials().at(p_index)};
 			material->set("u_Material.albedoColour", *p_colour);
@@ -724,7 +744,7 @@ namespace toaster
 	#define ON_COMPONENT_ADDED(__type)	template<>\
 											TST_API auto Scene::onComponentAdded<__type>([[maybe_unused]] Entity p_entity, __type &p_component) -> void
 
-	ON_COMPONENT_ADDED(IDComponent)
+	ON_COMPONENT_ADDED(UUIDComponent)
 	{
 		(void) p_entity;
 		(void) p_component;

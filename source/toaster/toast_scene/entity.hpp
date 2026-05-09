@@ -91,7 +91,9 @@ namespace toaster
 				m_scene->m_registry.remove<Type>(m_handle);
 		}
 
-		operator bool() const { return (m_handle != entt::null) && m_scene && m_scene->m_registry.valid(m_handle); }
+		auto isValid() const -> bool { return (m_handle != entt::null) && m_scene && m_scene->m_registry.valid(m_handle); }
+
+		operator bool() const { return isValid(); }
 		operator uint32() const { return static_cast<uint32>(m_handle); }
 		operator entt::entity() const { return m_handle; }
 

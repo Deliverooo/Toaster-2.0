@@ -75,6 +75,9 @@ namespace toaster
 		auto createEntityWithUUID(UUID p_uuid, const String &p_name = "") -> Entity;
 		auto destroyEntity(Entity p_entity) -> void;
 
+		auto getEntityByUUID(UUID p_uuid) -> Entity;
+		auto getEntityByName(const String &p_name) -> Entity;
+
 		auto getMainCameraEntity() -> Entity;
 
 		auto               getRegistry() -> entt::registry &;
@@ -99,7 +102,8 @@ namespace toaster
 		NonOwningPtr<gpu::VKLogicalDevice> m_device{nullptr};
 		NonOwningPtr<script::ScriptEngine> m_scriptEngine{nullptr};
 
-		entt::registry m_registry;
+		entt::registry                         m_registry;
+		std::unordered_map<UUID, entt::entity> m_entityUUIDMap;
 
 		String m_name;
 
@@ -108,9 +112,9 @@ namespace toaster
 
 		uint32 m_newEntityTagCount{0u};
 
-		RefPtr<script::Class>                                   m_baseEntityClass{nullptr};
-		std::unordered_map<String, RefPtr<script::Class> >      m_entityClassMap;
-		std::unordered_map<uint32, RefPtr<ScriptableEntityCS> > m_entityScriptMap;
+		RefPtr<script::Class>                                 m_baseEntityClass{nullptr};
+		std::unordered_map<String, RefPtr<script::Class> >    m_entityClassMap;
+		std::unordered_map<UUID, RefPtr<ScriptableEntityCS> > m_entityScriptMap;
 
 		std::unordered_map<ComponentType, HasComponentFn>   m_hasComponentFnMap;
 		std::unordered_map<ComponentType, AddComponentFn>   m_addComponentFnMap;

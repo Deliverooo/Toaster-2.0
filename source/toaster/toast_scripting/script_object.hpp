@@ -34,6 +34,7 @@ namespace toaster::script
 		auto setStaticFieldValue(MonoClassField *p_field, const Type &p_value) -> void;
 
 		[[nodiscard]] auto getMethod(const toaster::String &p_method_name, uint32 p_parameter_count) const -> Method *;
+		[[nodiscard]] auto getField(const toaster::String &p_field_name) const -> MonoClassField *;
 		[[nodiscard]] auto getClass() const -> MonoClass *;
 		[[nodiscard]] auto getVTable() const -> MonoVTable *;
 		[[nodiscard]] auto getScriptEngine() -> NonOwningPtr<ScriptEngine>;

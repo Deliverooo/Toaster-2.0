@@ -1,38 +1,45 @@
-﻿namespace Toaster;
+﻿using System.Runtime.CompilerServices;
 
-public abstract class Entity
+namespace Toaster;
+
+public class Entity
 {
-	protected Entity()
-	{
-		Id = 0;
-	}
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	private static extern bool HasComponentInternal(ulong p_entity_id, Type p_component_type);
 
-	internal Entity(uint p_id)
-	{
-		Id = p_id;
-	}
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	private static extern void AddComponentInternal(ulong p_entity_id, Type p_component_type);
+	
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	private static extern ulong GetEntityByNameInternal(string p_name);
 
-	public readonly uint Id;
+	protected Entity() { Id = 0; }
 
-	protected abstract void OnCreate();
-	protected abstract void OnUpdate(float p_dt);
+	internal Entity(ulong p_id) { Id = p_id; }
 
-	private bool HasComponent<T>() where T : Component, new()
-	{
-		return InternalCalls.HasComponent(Id, typeof(T));
-	}
+	public readonly ulong Id;
 
-	protected T GetComponent<T>() where T : Component, new()
-	{
-		return !HasComponent<T>() ? null : new T() { EntityParent = this };
-	}
+	protected virtual void OnCreate(){}
+	protected virtual void OnUpdate(float p_dt){}
 
-	protected T AddComponent<T>() where T : Component, new()
+	public bool HasComponent<T>() where T : Component, new() { return HasComponentInternal(Id, typeof(T)); }
+
+	public T GetComponent<T>() where T : Component, new() { return !HasComponent<T>() ? null : new T() { EntityParent = this }; }
+
+	public T AddComponent<T>() where T : Component, new()
 	{
 		if (HasComponent<T>())
 			return null!;
 
-		InternalCalls.AddComponent(Id, typeof(T));
+		AddComponentInternal(Id, typeof(T));
 		return new T() { EntityParent = this };
+	}
+
+	public Entity GetEntityByName(string p_name)
+	{
+		ulong entity_id = GetEntityByNameInternal(p_name);
+		if (entity_id == 0)
+			return null;
+		return new Entity(entity_id);
 	}
 }

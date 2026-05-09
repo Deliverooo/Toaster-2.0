@@ -5,7 +5,7 @@ namespace Toaster;
 public abstract class Component
 {
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void ResetInternal(uint p_entity_id, Type p_type);
+	private static extern void ResetInternal(ulong p_entity_id, Type p_type);
 
 	public void Reset() { ResetInternal(EntityParent.Id, this.GetType()); }
 
@@ -15,10 +15,10 @@ public abstract class Component
 public class TagComponent : Component
 {
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetTag(uint p_entity_id, out string p_out_tag);
+	private static extern void GetTag(ulong p_entity_id, out string p_out_tag);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetTag(uint p_entity_id, ref string p_tag);
+	private static extern void SetTag(ulong p_entity_id, ref string p_tag);
 
 	public string Tag
 	{
@@ -34,22 +34,22 @@ public class TagComponent : Component
 public class TransformComponent : Component
 {
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetTranslation(uint p_entity_id, out Vec3 p_out_translation);
+	private static extern void GetTranslation(ulong p_entity_id, out Vec3 p_out_translation);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetTranslation(uint p_entity_id, ref Vec3 p_translation);
+	private static extern void SetTranslation(ulong p_entity_id, ref Vec3 p_translation);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetRotation(uint p_entity_id, out Quat p_out_rotation);
+	private static extern void GetRotation(ulong p_entity_id, out Quat p_out_rotation);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetRotation(uint p_entity_id, ref Quat p_rotation);
+	private static extern void SetRotation(ulong p_entity_id, ref Quat p_rotation);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetScale(uint p_entity_id, out Vec3 p_out_scale);
+	private static extern void GetScale(ulong p_entity_id, out Vec3 p_out_scale);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetScale(uint p_entity_id, ref Vec3 p_scale);
+	private static extern void SetScale(ulong p_entity_id, ref Vec3 p_scale);
 
 	public Vec3 Translation
 	{
@@ -85,10 +85,10 @@ public class TransformComponent : Component
 public class SpriteRendererComponent : Component
 {
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetColour(uint p_entity_id, out Vec4 p_out_colour);
+	private static extern void GetColour(ulong p_entity_id, out Vec4 p_out_colour);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetColour(uint p_entity_id, ref Vec4 p_colour);
+	private static extern void SetColour(ulong p_entity_id, ref Vec4 p_colour);
 
 	public Vec4 Colour
 	{
@@ -104,7 +104,7 @@ public class SpriteRendererComponent : Component
 public class MeshComponent : Component
 {
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern bool HasMaterialInternal(uint p_entity_id, uint p_index);
+	private static extern bool HasMaterialInternal(ulong p_entity_id, uint p_index);
 
 	public bool HasMaterial(uint p_index) { return HasMaterialInternal(EntityParent.Id, p_index); }
 
@@ -120,55 +120,55 @@ public class CameraComponent : Component
 	}
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern bool GetPrimary(uint p_entity_id);
+	private static extern bool GetPrimary(ulong p_entity_id);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetPrimary(uint p_entity_id, ref bool p_primary);
+	private static extern void SetPrimary(ulong p_entity_id, ref bool p_primary);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetProjectionType(uint p_entity_id, out EProjectionType p_projection_type);
+	private static extern void GetProjectionType(ulong p_entity_id, out EProjectionType p_projection_type);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetProjectionType(uint p_entity_id, ref EProjectionType p_projection_type);
+	private static extern void SetProjectionType(ulong p_entity_id, ref EProjectionType p_projection_type);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetPerspectiveFov(uint p_entity_id, out float p_perspective_fov);
+	private static extern void GetPerspectiveFov(ulong p_entity_id, out float p_perspective_fov);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetPerspectiveFov(uint p_entity_id, ref float p_perspective_fov);
+	private static extern void SetPerspectiveFov(ulong p_entity_id, ref float p_perspective_fov);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetPerspectiveNear(uint p_entity_id, out float p_perspective_near);
+	private static extern void GetPerspectiveNear(ulong p_entity_id, out float p_perspective_near);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetPerspectiveNear(uint p_entity_id, ref float p_perspective_near);
+	private static extern void SetPerspectiveNear(ulong p_entity_id, ref float p_perspective_near);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetPerspectiveFar(uint p_entity_id, out float p_perspective_far);
+	private static extern void GetPerspectiveFar(ulong p_entity_id, out float p_perspective_far);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetPerspectiveFar(uint p_entity_id, ref float p_perspective_far);
+	private static extern void SetPerspectiveFar(ulong p_entity_id, ref float p_perspective_far);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetOrthoSize(uint p_entity_id, out float p_ortho_size);
+	private static extern void GetOrthoSize(ulong p_entity_id, out float p_ortho_size);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetOrthoSize(uint p_entity_id, ref float p_ortho_size);
+	private static extern void SetOrthoSize(ulong p_entity_id, ref float p_ortho_size);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetOrthoNear(uint p_entity_id, out float p_ortho_near);
+	private static extern void GetOrthoNear(ulong p_entity_id, out float p_ortho_near);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetOrthoNear(uint p_entity_id, ref float p_ortho_near);
+	private static extern void SetOrthoNear(ulong p_entity_id, ref float p_ortho_near);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetOrthoFar(uint p_entity_id, out float p_ortho_far);
+	private static extern void GetOrthoFar(ulong p_entity_id, out float p_ortho_far);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetOrthoFar(uint p_entity_id, ref float p_ortho_far);
+	private static extern void SetOrthoFar(ulong p_entity_id, ref float p_ortho_far);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetProjectionMatrix(uint p_entity_id, out Mat4 p_projection_matrix);
+	private static extern void GetProjectionMatrix(ulong p_entity_id, out Mat4 p_projection_matrix);
 
 	public bool Primary
 	{
@@ -249,16 +249,16 @@ public class CameraComponent : Component
 public class DirectionalLightComponent : Component
 {
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetRadiance(uint p_entity_id, out Vec3 p_out_radiance);
+	private static extern void GetRadiance(ulong p_entity_id, out Vec3 p_out_radiance);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetRadiance(uint p_entity_id, ref Vec3 p_radiance);
+	private static extern void SetRadiance(ulong p_entity_id, ref Vec3 p_radiance);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetMultiplier(uint p_entity_id, out float p_out_multiplier);
+	private static extern void GetMultiplier(ulong p_entity_id, out float p_out_multiplier);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetMultiplier(uint p_entity_id, ref float p_multiplier);
+	private static extern void SetMultiplier(ulong p_entity_id, ref float p_multiplier);
 
 	public Vec3 Radiance
 	{
@@ -284,16 +284,16 @@ public class DirectionalLightComponent : Component
 public class PointLightComponent : Component
 {
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetRadiance(uint p_entity_id, out Vec3 p_out_radiance);
+	private static extern void GetRadiance(ulong p_entity_id, out Vec3 p_out_radiance);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetRadiance(uint p_entity_id, ref Vec3 p_radiance);
+	private static extern void SetRadiance(ulong p_entity_id, ref Vec3 p_radiance);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void GetMultiplier(uint p_entity_id, out float p_out_multiplier);
+	private static extern void GetMultiplier(ulong p_entity_id, out float p_out_multiplier);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
-	private static extern void SetMultiplier(uint p_entity_id, ref float p_multiplier);
+	private static extern void SetMultiplier(ulong p_entity_id, ref float p_multiplier);
 
 	public Vec3 Radiance
 	{

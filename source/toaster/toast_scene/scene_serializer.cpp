@@ -222,7 +222,7 @@ namespace toaster
 	auto SceneSerializer::_serializeEntity(YAML::Emitter &p_out, Entity p_entity, [[maybe_unused]] const RefPtr<Scene> &p_scene) -> void
 	{
 		p_out << YAML::BeginMap;
-		p_out << YAML::Key << "Entity" << YAML::Value << p_entity.getComponent<IDComponent>().uuid;
+		p_out << YAML::Key << "Entity" << YAML::Value << p_entity.getComponent<UUIDComponent>().uuid;
 
 		{
 			TST_ASSERT_MSG(p_entity.hasComponent<TagComponent>(), "Tag component is null");

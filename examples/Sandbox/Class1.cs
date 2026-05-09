@@ -4,6 +4,7 @@ global using Vec4 = System.Numerics.Vector4;
 global using Quat = System.Numerics.Quaternion;
 global using Mat4 = System.Numerics.Matrix4x4;
 using Toaster;
+using Math = System.Math;
 
 namespace Sandbox;
 
@@ -53,8 +54,12 @@ public class CameraController : Entity
 	private TransformComponent m_Transform;
 	private CameraComponent m_Camera;
 
+	private Entity m_PointLightEntity;
+
 	private Vec2 m_InitialMousePos = Vec2.Zero;
 
+	private float m_Time = 0.0f;
+	
 	private float m_Yaw = 0.0f;
 	private float m_Pitch = 0.0f;
 
@@ -77,10 +82,16 @@ public class CameraController : Entity
 		m_Camera.ProjectionType = CameraComponent.EProjectionType.Perspective;
 		m_Camera.PerspectiveFov = Toaster.Math.Radians(90.0f);
 		m_Camera.Primary = true;
+
+		m_PointLightEntity = GetEntityByName("Point Light 1");
 	}
 
 	protected override void OnUpdate(float p_dt)
 	{
+		m_Time += p_dt;
+		
+		m_PointLightEntity.GetComponent<PointLightComponent>().Radiance = new Vec3(0.0f, (float)Math.Abs(Math.Sin(m_Time)), 1.0f);
+		
 		if (Input.IsMouseButtonDown(Input.EMouseButton.Right))
 		{
 			if (Input.CursorMode != Input.ECursorMode.Disabled)
@@ -134,10 +145,11 @@ public class CameraController : Entity
 
 public class Test
 {
+	public int m_Test = 2;
 	public static int s_Test = 0;
 	public static string s_Str = "Orbicular Peeb";
 
-	public int OrboMethod() { return s_Test; }
+	public int OrboMethod() { return m_Test; }
 
 	public static int StaticOrbo() { return s_Test; }
 }

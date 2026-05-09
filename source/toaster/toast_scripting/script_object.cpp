@@ -25,6 +25,11 @@ namespace toaster::script
 		return mono_class_get_method_from_name(m_class, p_method_name.c_str(), p_parameter_count);
 	}
 
+	auto Class::getField(const toaster::String &p_field_name) const -> MonoClassField *
+	{
+		return mono_class_get_field_from_name(m_class, p_field_name.c_str());
+	}
+
 	auto Class::getClass() const -> MonoClass *
 	{
 		return m_class;

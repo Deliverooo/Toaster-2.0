@@ -17,12 +17,12 @@
 
 namespace toaster
 {
-	DEFINE_COMPONENT(IDComponent)
+	DEFINE_COMPONENT(UUIDComponent)
 	{
-		IDComponent()  = default;
-		~IDComponent() = default;
+		UUIDComponent()  = default;
+		~UUIDComponent() = default;
 
-		IDComponent(UUID p_uuid) : uuid(p_uuid)
+		UUIDComponent(const UUID p_uuid) : uuid(p_uuid)
 		{
 		}
 
