@@ -18,7 +18,8 @@ namespace toaster::gpu
 		m_whiteTexture = m_device->alloc<VKTexture2D>(texture_spec_info, &texture_data, sizeof(uint32));
 
 		uint32 texture_3d_data[6]{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
-		m_whiteTexture3D = m_device->alloc<VKTexture3D>(texture_spec_info, Buffer{texture_3d_data, sizeof(uint32) * 6});
+		m_whiteTexture3D = m_device->alloc<VKTexture3D>(texture_spec_info);
+		m_whiteTexture3D->setData(Buffer{texture_3d_data, sizeof(uint32) * 6});
 
 		const auto &descriptor_sets{m_shader->getReflectedShaderDescriptorSets()};
 		m_writeDescriptorMap.resize(m_device->getSpecInfo().maxFramesInFlight);

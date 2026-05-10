@@ -3,6 +3,8 @@
 #include "toast_render/renderer.hpp"
 
 #include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_gpu/vk/vk_shader_compiler.hpp"
+#include "toast_gpu/vk/vk_command_buffer.hpp"
 
 namespace toaster
 {
@@ -29,12 +31,37 @@ namespace toaster
 			m_sceneDataUBOs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
 			m_mappedSceneDataUBOs = m_sceneDataUBOs->mapAllMemory(ubo_size, 0);
 		}
+		{
+			gpu::TextureSpecInfo skybox_texture_spec_info{};
+			m_skyboxTexture = m_device->alloc<gpu::VKTexture2D>(skybox_texture_spec_info, m_specInfo.resourceDirectory / "environments/overcast_soil_puresky_2k.hdr");
 
-		m_skyboxTexture = m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, m_specInfo.resourceDirectory / "environments/'Environment_map'.jpg");
+			constexpr uint32     skybox_resolution{2048};
+			gpu::TextureSpecInfo skybox_texture_map_spec_info{};
+			skybox_texture_map_spec_info.width  = skybox_resolution;
+			skybox_texture_map_spec_info.height = skybox_resolution;
+			skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+			m_skyboxMap                         = m_device->alloc<gpu::VKTexture3D>(skybox_texture_map_spec_info);
 
-		gpu::TextureSpecInfo skybox_map_spec_info{};
-		skybox_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
-		// m_skyboxMap                 = m_device->alloc<gpu::VKTexture3D>(skybox_map_spec_info, m_specInfo.resourceDirectory / "environments/grasslands_sunset_1k.hdr");
+			auto equirectangular_to_cubemap_shader{
+				gpu::shader_compiler::compileToShaderFromPaths(m_device, {vk::ShaderStageFlagBits::eCompute},
+															   {m_specInfo.resourceDirectory / "shaders/equirectangular_to_cubemap.comp.glsl"})
+			};
+			auto equirectangular_to_cubemap_pipeline{m_device->alloc<gpu::VKComputePipeline>(equirectangular_to_cubemap_shader)};
+			auto equirectangular_to_cubemap_pass{m_device->alloc<gpu::VKComputePass>(equirectangular_to_cubemap_pipeline)};
+			equirectangular_to_cubemap_pass->setInput("u_EquirectangularMap", m_skyboxTexture);
+			equirectangular_to_cubemap_pass->setInput("o_Cubemap", m_skyboxMap);
+			equirectangular_to_cubemap_pass->bake();
+
+			auto command_buffer{m_device->alloc<gpu::VKCommandBuffer>(vk::QueueFlagBits::eCompute)};
+			command_buffer->begin();
+			render::beginCompute(command_buffer->getVulkanCommandBuffer(), 0, equirectangular_to_cubemap_pass);
+			render::endCompute(command_buffer->getVulkanCommandBuffer(), 0, equirectangular_to_cubemap_pass);
+			render::dispatchCompute(command_buffer->getVulkanCommandBuffer(), 0, equirectangular_to_cubemap_pass, nullptr, skybox_resolution / 32, skybox_resolution / 32,
+									6);
+			command_buffer->end();
+			command_buffer->submit();
+			command_buffer->waitForFence();
+		}
 
 		#pragma region depth-pre
 		{
@@ -77,7 +104,7 @@ namespace toaster
 
 			m_lightCullingPass = m_device->alloc<gpu::VKComputePass>(m_lightCullingPipeline);
 			m_lightCullingPass->setInput("u_TestImage", m_computeImage);
-			m_lightCullingPass->setInput("u_CubemapImage", Globals::getWhiteTexture3D());
+			m_lightCullingPass->setInput("u_CubemapImage", m_skyboxMap);
 			m_lightCullingPass->bake();
 
 			m_lightCullingMaterial = m_device->alloc<gpu::VKMaterial>(Globals::getShaderLibrary().get("Compute-Test"));
@@ -96,7 +123,7 @@ namespace toaster
 
 			m_skyboxPass = m_device->alloc<gpu::VKRenderPass>(m_skyboxPipeline);
 			m_skyboxPass->setInput("Camera", m_cameraUBOs);
-			m_skyboxPass->setInput("u_CubemapImage", Globals::getWhiteTexture3D());
+			m_skyboxPass->setInput("u_CubemapImage", m_skyboxMap);
 
 			m_skyboxPass->bake(); // TODO: rename ts to toast
 			//						   Its funny because the engine is called Toaster...

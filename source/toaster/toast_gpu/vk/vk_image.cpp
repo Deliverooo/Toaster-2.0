@@ -161,7 +161,8 @@ namespace toaster::gpu
 		auto transitionImageLayout(AttachmentImage *p_image, vk::ImageLayout p_src_layout, vk::ImageLayout p_dst_layout) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), getImageLayoutInfo(p_src_layout), getImageLayoutInfo(p_dst_layout),
-														p_image->getSpecInfo().layerCount, p_image->getSpecInfo().mipCount, getImageAspectMask(p_image->getSpecInfo().format));
+														p_image->getSpecInfo().layerCount, p_image->getSpecInfo().mipCount,
+														getImageAspectMask(p_image->getSpecInfo().format));
 			p_image->setCurrentImageLayout(p_dst_layout);
 		}
 

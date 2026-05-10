@@ -4,9 +4,9 @@
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
 
-namespace toaster::gpu
+namespace toaster::gpu::shader_compiler
 {
-	auto getShaderCShaderKind(vk::ShaderStageFlagBits p_stage) -> shaderc_shader_kind
+	constexpr auto getShaderCShaderKind(vk::ShaderStageFlagBits p_stage) -> shaderc_shader_kind
 	{
 		switch (p_stage)
 		{
@@ -31,7 +31,7 @@ namespace toaster::gpu
 		return shaderc_vertex_shader;
 	}
 
-	auto VKShaderCompiler::compileToBytecodeFromString(vk::ShaderStageFlagBits p_stage, const String &p_source) -> VKShader::Bytecode
+	auto compileToBytecodeFromString(vk::ShaderStageFlagBits p_stage, const String &p_source) -> VKShader::Bytecode
 	{
 		const shaderc::Compiler compiler{};
 		shaderc::CompileOptions compile_options{};
@@ -58,7 +58,7 @@ namespace toaster::gpu
 		return {compilation_result.begin(), compilation_result.end()};
 	}
 
-	auto VKShaderCompiler::compileToBytecodeFromFilepath(vk::ShaderStageFlagBits p_stage, const io::filesystem::Path &p_path) -> VKShader::Bytecode
+	auto compileToBytecodeFromFilepath(vk::ShaderStageFlagBits p_stage, const io::filesystem::Path &p_path) -> VKShader::Bytecode
 	{
 		String source{io::filesystem::readFile(p_path)};
 
@@ -89,8 +89,8 @@ namespace toaster::gpu
 		return {compilation_result.begin(), compilation_result.end()};
 	}
 
-	auto VKShaderCompiler::compileToShaderFromStrings(VKLogicalDevice *                    p_device, InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
-													  const InitialiserList<const String> &p_sources, const String &p_name) -> RefPtr<VKShader>
+	auto compileToShaderFromStrings(VKLogicalDevice *p_device, InitialiserList<const vk::ShaderStageFlagBits> &p_stages, const InitialiserList<const String> &p_sources,
+									const String &   p_name) -> RefPtr<VKShader>
 	{
 		VKShader::BytecodeMap bytecode_map;
 
@@ -110,8 +110,8 @@ namespace toaster::gpu
 		return make_reference<VKShader>(p_device, bytecode_map, p_name);
 	}
 
-	auto VKShaderCompiler::compileToShaderFromPaths(VKLogicalDevice *p_device, const InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
-													const InitialiserList<const io::filesystem::Path> &p_paths, const String &p_name) -> RefPtr<VKShader>
+	auto compileToShaderFromPaths(VKLogicalDevice *                                  p_device, const InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
+								  const InitialiserList<const io::filesystem::Path> &p_paths, const String &p_name) -> RefPtr<VKShader>
 	{
 		VKShader::BytecodeMap bytecode_map;
 

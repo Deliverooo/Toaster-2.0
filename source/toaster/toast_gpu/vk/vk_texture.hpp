@@ -32,6 +32,7 @@ namespace toaster::gpu
 		VKTexture2D(VKLogicalDevice *p_dev, const TextureSpecInfo &p_spec_info);
 		VKTexture2D(VKLogicalDevice *p_dev, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
 		VKTexture2D(VKLogicalDevice *p_dev, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size);
+		virtual ~VKTexture2D() override;
 
 		auto resize(uint32 p_width, uint32 p_height) -> void;
 		auto setData(void *p_data, uint64 p_size) -> void;
@@ -66,8 +67,10 @@ namespace toaster::gpu
 		TST_GPU_OBJECT
 		TST_GPU_RESOURCE(Texture3D)
 	public:
+		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info);
 		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
-		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, Buffer p_data);
+		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, const Buffer &p_data);
+		virtual ~VKTexture3D() override;
 
 		auto resize(uint32 p_width, uint32 p_height) -> void;
 		auto setData(void *p_data, uint64 p_size) -> void;
@@ -94,4 +97,9 @@ namespace toaster::gpu
 
 		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};
 	};
+
+	namespace util
+	{
+		TST_GPU_API auto loadTextureImage(const io::filesystem::Path &p_path, vk::Format &p_out_format, uint32 &p_out_width, uint32 &p_out_height) -> Buffer;
+	}
 }

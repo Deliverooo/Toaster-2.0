@@ -42,6 +42,11 @@ namespace toaster::gpu
 			return usage_flags;
 		}
 
+		constexpr auto getBytesPerPixel([[maybe_unused]] vk::Format p_format) -> uint64
+		{
+			return 0u;
+		}
+
 		TST_GPU_API constexpr auto getImageLayoutInfo(vk::ImageLayout p_layout) -> const ImageLayoutInfo &;
 	}
 }

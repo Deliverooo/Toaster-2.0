@@ -393,15 +393,12 @@ namespace toaster::gpu
 		const auto physical_device_props = m_physicalDevice->getVulkanPhysicalDevice().getProperties();
 
 		vk::SamplerCreateInfo sampler_create_info{};
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
 		sampler_create_info.magFilter               = vk::Filter::eLinear;
 		sampler_create_info.minFilter               = vk::Filter::eLinear;
 		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eClampToEdge;
+		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eClampToEdge;
+		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eClampToEdge;
 		sampler_create_info.mipLodBias              = 0.0f;
 		sampler_create_info.anisotropyEnable        = true;
 		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
@@ -409,15 +406,8 @@ namespace toaster::gpu
 		sampler_create_info.compareOp               = vk::CompareOp::eAlways;
 		sampler_create_info.minLod                  = 0.0f;
 		sampler_create_info.maxLod                  = vk::LodClampNone;
-		sampler_create_info.borderColor             = vk::BorderColor::eFloatCustomEXT;
+		sampler_create_info.borderColor             = vk::BorderColor::eFloatOpaqueWhite;
 		sampler_create_info.unnormalizedCoordinates = false;
-
-		// Ts is purely aesthetic
-		vk::SamplerCustomBorderColorCreateInfoEXT border_colour_create_info{};
-		border_colour_create_info.customBorderColor = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
-		border_colour_create_info.format            = vk::Format::eR8G8B8A8Srgb;
-
-		sampler_create_info.pNext = &border_colour_create_info;
 
 		return {m_logicalDevice, sampler_create_info};
 	}
