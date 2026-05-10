@@ -12,6 +12,9 @@
 #include "toast_asset/asset_manager.hpp"
 
 #include <imgui.h>
+
+#include "toast_gpu/vk/vk_renderer.hpp"
+#include "toast_lib/math/colours.hpp"
 namespace ig = ImGui;
 
 #include "glm/gtc/type_ptr.hpp"
@@ -36,7 +39,8 @@ namespace toaster
 		m_device = app.getLogicalDevice();
 		const auto swapchain{app.getWindow().getSwapchain()};
 
-		const auto &binary_dir{app.getExeDirectory()};
+		auto                 command_line_args{app.getCommandLineArgs()};
+		io::filesystem::Path binary_dir{command_line_args["binaryDir"]};
 
 		m_windowWidth  = std::max(swapchain->getExtent().width, 1u);
 		m_windowHeight = std::max(swapchain->getExtent().height, 1u);
@@ -155,9 +159,9 @@ namespace toaster
 
 		rendering_info.pDepthAttachment = &depth_attachment_info;
 
-		render::beginRendering(rendering_info, cmd_buf, frame_index, m_fullscreenPass);
+		gpu::render::beginRendering(rendering_info, cmd_buf, frame_index, m_fullscreenPass);
 		render::renderFullscreenQuad(cmd_buf, frame_index, m_fullscreenPipeline, nullptr);
-		render::endRendering(rendering_info, cmd_buf);
+		gpu::render::endRendering(rendering_info, cmd_buf);
 	}
 
 	auto EditorLayer::onEvent(Event &p_event) -> void
@@ -256,13 +260,13 @@ namespace toaster
 		ig::Text("Scene renderer background");
 		if (ig::Button("File", ImVec2{ig::GetContentRegionAvail().x, 0}))
 		{
-			auto path = os::openFileDialog({{"Texture", "png,jpg,bmp"}});
+			auto path = os::openFileDialog({{"HDRI/Environment Map", "hdr,exr"}});
 			if (io::filesystem::exists(path))
 			{
 				LOG_INFO("{}", path.string());
 
 				gpu::TextureSpecInfo texture_spec_info{};
-				m_sceneRenderer->setEnvironmentBackground(m_device->alloc<gpu::VKTexture2D>(texture_spec_info, path));
+				m_sceneRenderer->setEnvironmentBackground(render::createEnvironmentMap(m_device, path));
 			}
 		}
 		ig::End();
@@ -292,6 +296,14 @@ namespace toaster
 				Entity e{m_scene->createEntity(io::filesystem::Path{path}.stem().string())};
 				auto & src{e.addComponent<SpriteRendererComponent>()};
 				src.texture = m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path);
+			}
+			if (path.ends_with(".hdr") || path.ends_with(".exr"))
+			{
+				if (io::filesystem::exists(path))
+				{
+					LOG_INFO("{}", path);
+					m_sceneRenderer->setEnvironmentBackground(render::createEnvironmentMap(m_device, path));
+				}
 			}
 		}
 		return false;

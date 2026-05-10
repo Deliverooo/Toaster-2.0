@@ -5,6 +5,7 @@
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_gpu/vk/vk_command_buffer.hpp"
+#include "toast_gpu/vk/vk_renderer.hpp"
 
 namespace toaster
 {
@@ -31,37 +32,8 @@ namespace toaster
 			m_sceneDataUBOs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
 			m_mappedSceneDataUBOs = m_sceneDataUBOs->mapAllMemory(ubo_size, 0);
 		}
-		{
-			gpu::TextureSpecInfo skybox_texture_spec_info{};
-			m_skyboxTexture = m_device->alloc<gpu::VKTexture2D>(skybox_texture_spec_info, m_specInfo.resourceDirectory / "environments/overcast_soil_puresky_2k.hdr");
 
-			constexpr uint32     skybox_resolution{2048};
-			gpu::TextureSpecInfo skybox_texture_map_spec_info{};
-			skybox_texture_map_spec_info.width  = skybox_resolution;
-			skybox_texture_map_spec_info.height = skybox_resolution;
-			skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
-			m_skyboxMap                         = m_device->alloc<gpu::VKTexture3D>(skybox_texture_map_spec_info);
-
-			auto equirectangular_to_cubemap_shader{
-				gpu::shader_compiler::compileToShaderFromPaths(m_device, {vk::ShaderStageFlagBits::eCompute},
-															   {m_specInfo.resourceDirectory / "shaders/equirectangular_to_cubemap.comp.glsl"})
-			};
-			auto equirectangular_to_cubemap_pipeline{m_device->alloc<gpu::VKComputePipeline>(equirectangular_to_cubemap_shader)};
-			auto equirectangular_to_cubemap_pass{m_device->alloc<gpu::VKComputePass>(equirectangular_to_cubemap_pipeline)};
-			equirectangular_to_cubemap_pass->setInput("u_EquirectangularMap", m_skyboxTexture);
-			equirectangular_to_cubemap_pass->setInput("o_Cubemap", m_skyboxMap);
-			equirectangular_to_cubemap_pass->bake();
-
-			auto command_buffer{m_device->alloc<gpu::VKCommandBuffer>(vk::QueueFlagBits::eCompute)};
-			command_buffer->begin();
-			render::beginCompute(command_buffer->getVulkanCommandBuffer(), 0, equirectangular_to_cubemap_pass);
-			render::endCompute(command_buffer->getVulkanCommandBuffer(), 0, equirectangular_to_cubemap_pass);
-			render::dispatchCompute(command_buffer->getVulkanCommandBuffer(), 0, equirectangular_to_cubemap_pass, nullptr, skybox_resolution / 32, skybox_resolution / 32,
-									6);
-			command_buffer->end();
-			command_buffer->submit();
-			command_buffer->waitForFence();
-		}
+		m_skyboxMap = render::createEnvironmentMap(m_device, m_specInfo.resourceDirectory / "environments/overcast_soil_puresky_2k.hdr");
 
 		#pragma region depth-pre
 		{
@@ -314,9 +286,10 @@ namespace toaster
 		}
 	}
 
-	auto SceneRenderer::setEnvironmentBackground(const RefPtr<gpu::VKTexture2D> &p_texture) -> void
+	auto SceneRenderer::setEnvironmentBackground(const RefPtr<gpu::VKTexture3D> &p_texture) -> void
 	{
-		m_skyboxTexture = p_texture;
+		m_skyboxMap    = p_texture;
+		m_reloadSkybox = true;
 	}
 
 	auto SceneRenderer::_renderDepthPrePass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
@@ -332,32 +305,34 @@ namespace toaster
 		depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 		rendering_info.pDepthAttachment  = &depth_attachment_info;
 
-		render::beginRendering(rendering_info, p_cmd, p_frame_index, m_depthPrePass);
+		gpu::render::beginRendering(rendering_info, p_cmd, p_frame_index, m_depthPrePass);
 
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
 			{
-				render::renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_depthPrePipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform,
-								   nullptr);
+				gpu::render::renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_depthPrePipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform,
+										nullptr);
 			}
 		}
 
-		render::endRendering(rendering_info, p_cmd);
+		gpu::render::endRendering(rendering_info, p_cmd);
 	}
 
 	auto SceneRenderer::_renderLightCullingPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
-		render::beginCompute(p_cmd, p_frame_index, m_lightCullingPass);
-
-		render::dispatchCompute(p_cmd, p_frame_index, m_lightCullingPass, m_lightCullingMaterial, m_specInfo.viewportWidth, m_specInfo.viewportHeight, 1);
-
-		render::endCompute(p_cmd, p_frame_index, m_lightCullingPass);
+		gpu::render::beginCompute(p_cmd, p_frame_index, m_lightCullingPass);
+		gpu::render::dispatchCompute(p_cmd, p_frame_index, m_lightCullingPass, m_lightCullingMaterial, m_specInfo.viewportWidth, m_specInfo.viewportHeight, 1);
+		gpu::render::endCompute(p_cmd, p_frame_index, m_lightCullingPass);
 	}
 
 	auto SceneRenderer::_renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
-		m_skyboxMaterial->set("u_Texture", m_skyboxTexture);
+		if (m_reloadSkybox)
+		{
+			m_skyboxPass->setInput("u_CubemapImage", m_skyboxMap);
+			m_reloadSkybox = false;
+		}
 
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
@@ -369,9 +344,9 @@ namespace toaster
 		colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
 		colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 
-		render::beginRendering(rendering_info, p_cmd, p_frame_index, m_skyboxPass);
+		gpu::render::beginRendering(rendering_info, p_cmd, p_frame_index, m_skyboxPass);
 		render::renderFullscreenQuad(p_cmd, p_frame_index, m_skyboxPipeline, m_skyboxMaterial);
-		render::endRendering(rendering_info, p_cmd);
+		gpu::render::endRendering(rendering_info, p_cmd);
 	}
 
 	auto SceneRenderer::_renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void
@@ -405,16 +380,16 @@ namespace toaster
 		depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eDontCare;
 		rendering_info.pDepthAttachment  = &depth_attachment_info;
 
-		render::beginRendering(rendering_info, p_cmd, p_frame_index, m_geometryPass);
+		gpu::render::beginRendering(rendering_info, p_cmd, p_frame_index, m_geometryPass);
 
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
 			{
-				render::renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_geometryPipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform);
+				gpu::render::renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_geometryPipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform);
 			}
 		}
 
-		render::endRendering(rendering_info, p_cmd);
+		gpu::render::endRendering(rendering_info, p_cmd);
 	}
 }

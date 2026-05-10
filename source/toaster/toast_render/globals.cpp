@@ -79,6 +79,15 @@ namespace toaster
 			s_globalData->shaderLibrary.add("Compute-Test", compute_test_shader);
 		}
 
+		{
+			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/equirectangular_to_cubemap.comp.glsl.spv")};
+			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
+			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {cs_bytecode};
+			auto                                           stage    = {vk::ShaderStageFlagBits::eCompute};
+			const auto                                     compute_test_shader{s_globalData->device->alloc<gpu::VKShader>(stage, bytecode, "Equirectangular_To_CubeMap")};
+			s_globalData->shaderLibrary.add("Equirectangular_To_CubeMap", compute_test_shader);
+		}
+
 		s_globalData->quadVertices.emplace_back(QuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
 		s_globalData->quadVertices.emplace_back(QuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});
 		s_globalData->quadVertices.emplace_back(QuadVertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}});

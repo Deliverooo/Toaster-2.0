@@ -12,10 +12,10 @@
 
 #include "glm/gtc/type_ptr.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_gpu/vk/vk_renderer.hpp"
 #include "toast_scene/components.hpp"
 #include "toast_scene/scene_serializer.hpp"
 namespace ig = ImGui;
-
 
 namespace toaster
 {
@@ -109,8 +109,6 @@ namespace toaster
 		{
 			scene_serializer.deserialize(scene_path);
 		}
-
-		
 	}
 
 	auto RuntimeLayer::onDestroy() -> void
@@ -154,9 +152,9 @@ namespace toaster
 		depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
 		rendering_info.pDepthAttachment   = std::addressof(depth_attachment_info);
 
-		render::beginRendering(rendering_info, command_buffer, frame_index, m_fullscreenRenderPass);
+		gpu::render::beginRendering(rendering_info, command_buffer, frame_index, m_fullscreenRenderPass);
 		render::renderFullscreenQuad(command_buffer, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);
-		render::endRendering(rendering_info, command_buffer);
+		gpu::render::endRendering(rendering_info, command_buffer);
 	}
 
 	auto RuntimeLayer::onEvent(Event &p_event) -> void

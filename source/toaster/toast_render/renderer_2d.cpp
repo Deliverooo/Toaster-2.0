@@ -3,6 +3,7 @@
 #include "globals.hpp"
 #include "renderer.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_gpu/vk/vk_renderer.hpp"
 
 namespace toaster
 {
@@ -157,7 +158,7 @@ namespace toaster
 		}
 		rendering_info.pDepthAttachment = &depth_attachment_info;
 
-		render::beginRendering(rendering_info, p_cmd, p_frame_index, m_quadRenderPass);
+		gpu::render::beginRendering(rendering_info, p_cmd, p_frame_index, m_quadRenderPass);
 
 		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
 		if (size) // Apparently you have to check ts, or things won't work correctly and there will be artifacts...
@@ -174,10 +175,10 @@ namespace toaster
 					m_quadMaterial->set("u_Textures", Globals::getWhiteTexture(), i);
 			}
 
-			render::renderGeometry(p_cmd, p_frame_index, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, glm::mat4{1.0f});
+			gpu::render::renderGeometry(p_cmd, p_frame_index, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, glm::mat4{1.0f});
 		}
 
-		render::endRendering(rendering_info, p_cmd);
+		gpu::render::endRendering(rendering_info, p_cmd);
 	}
 
 	auto Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void

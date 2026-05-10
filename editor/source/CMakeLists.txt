@@ -30,4 +30,5 @@ target_link_libraries(toaster_editor PRIVATE Toaster)
 
 target_link_libraries(toaster_editor PRIVATE imgui)
 target_link_libraries(toaster_editor PRIVATE ImGuizmo)
+target_link_libraries(toaster_editor PRIVATE argparse)
 

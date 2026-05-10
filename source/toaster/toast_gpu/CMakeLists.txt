@@ -74,6 +74,9 @@ if (${WITH_VULKAN_BACKEND})
 
 			vk/vk_storage_buffer.cpp
 			vk/vk_storage_buffer.hpp
+
+			vk/vk_renderer.cpp
+			vk/vk_renderer.hpp
 	)
 endif ()
 

@@ -37,7 +37,9 @@ namespace toaster
 		ImGuiIO &io{ig::GetIO()};
 		(void) io;
 
-		const auto &binary_dir{app.getExeDirectory()};
+
+		auto                 command_line_args{app.getCommandLineArgs()};
+		io::filesystem::Path binary_dir{command_line_args["binaryDir"]};
 
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking

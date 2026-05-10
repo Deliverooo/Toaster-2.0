@@ -40,7 +40,7 @@ namespace toaster
 		auto getRenderer2D() -> RefPtr<Renderer2D>;
 
 		auto onResize(uint32 p_width, uint32 p_height) -> void;
-		auto setEnvironmentBackground(const RefPtr<gpu::VKTexture2D> &p_texture) -> void;
+		auto setEnvironmentBackground(const RefPtr<gpu::VKTexture3D> &p_texture) -> void;
 
 	private:
 		auto _renderDepthPrePass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
@@ -73,8 +73,8 @@ namespace toaster
 		RefPtr<gpu::VKPipeline>   m_skyboxPipeline{nullptr};
 		RefPtr<gpu::VKRenderPass> m_skyboxPass{nullptr};
 		RefPtr<gpu::VKMaterial>   m_skyboxMaterial{nullptr};
-		RefPtr<gpu::VKTexture2D>  m_skyboxTexture{nullptr};
 		RefPtr<gpu::VKTexture3D>  m_skyboxMap{nullptr};
+		bool                      m_reloadSkybox{false};
 		#pragma endregion
 
 		#pragma region geometry
