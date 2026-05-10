@@ -35,6 +35,8 @@ set(SRC
 		os/file_dialog.hpp
 		os/library_loading.cpp
 		os/library_loading.hpp
+		os/terminal.cpp
+		os/terminal.hpp
 
 		initialiser_list.hpp
 

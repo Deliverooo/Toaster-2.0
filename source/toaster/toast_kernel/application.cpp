@@ -10,6 +10,7 @@
 
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_swapchain.hpp"
+#include "toast_lib/os/terminal.hpp"
 
 namespace toaster
 {
@@ -64,7 +65,7 @@ namespace toaster
 		});
 		#pragma endregion
 
-		Globals::init(m_vkLogicalDevice, m_commandLineArgs["binaryDir"]);
+		Globals::init(m_vkLogicalDevice, os::getBinaryDirectory());
 	}
 
 	Application::~Application() noexcept

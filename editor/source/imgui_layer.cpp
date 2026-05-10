@@ -13,6 +13,8 @@
 #include "ui/colours.hpp"
 
 #include <ImGuizmo.h>
+
+#include "toast_lib/os/terminal.hpp"
 namespace igz = ImGuizmo;
 
 namespace toaster
@@ -37,17 +39,15 @@ namespace toaster
 		ImGuiIO &io{ig::GetIO()};
 		(void) io;
 
-
-		auto                 command_line_args{app.getCommandLineArgs()};
-		io::filesystem::Path binary_dir{command_line_args["binaryDir"]};
+		auto binary_directory{os::getBinaryDirectory()};
 
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
 		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Viewports
 
-		io.FontDefault = io.Fonts->AddFontFromFileTTF(io::filesystem::Path{binary_dir / "../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf"}.string().c_str(),
+		io.FontDefault = io.Fonts->AddFontFromFileTTF(io::filesystem::Path{binary_directory / "../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf"}.string().c_str(),
 													  0, nullptr, io.Fonts->GetGlyphRangesJapanese());
-		io.Fonts->AddFontFromFileTTF(io::filesystem::Path{binary_dir / "../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Bold.ttf"}.string().c_str(), 0, nullptr,
+		io.Fonts->AddFontFromFileTTF(io::filesystem::Path{binary_directory / "../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Bold.ttf"}.string().c_str(), 0, nullptr,
 									 io.Fonts->GetGlyphRangesJapanese());
 
 		auto &style{ImGui::GetStyle()};

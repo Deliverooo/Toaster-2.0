@@ -13,6 +13,7 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_renderer.hpp"
+#include "toast_lib/os/terminal.hpp"
 #include "toast_scene/components.hpp"
 #include "toast_scene/scene_serializer.hpp"
 namespace ig = ImGui;
@@ -44,8 +45,9 @@ namespace toaster
 		});
 
 		auto                 command_line_args{app.getCommandLineArgs()};
-		io::filesystem::Path binary_dir{command_line_args["binaryDir"]};
+		io::filesystem::Path binary_dir{os::getBinaryDirectory()};
 
+		LOG_INFO("Binary directory: {}", binary_dir.string());
 		#pragma region script + scene setup
 
 		io::filesystem::Path core_script_assembly_dll{};

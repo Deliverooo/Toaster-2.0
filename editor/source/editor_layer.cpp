@@ -15,6 +15,7 @@
 
 #include "toast_gpu/vk/vk_renderer.hpp"
 #include "toast_lib/math/colours.hpp"
+#include "toast_lib/os/terminal.hpp"
 namespace ig = ImGui;
 
 #include "glm/gtc/type_ptr.hpp"
@@ -40,7 +41,7 @@ namespace toaster
 		const auto swapchain{app.getWindow().getSwapchain()};
 
 		auto                 command_line_args{app.getCommandLineArgs()};
-		io::filesystem::Path binary_dir{command_line_args["binaryDir"]};
+		io::filesystem::Path binary_dir{os::getBinaryDirectory()};
 
 		m_windowWidth  = std::max(swapchain->getExtent().width, 1u);
 		m_windowHeight = std::max(swapchain->getExtent().height, 1u);
