@@ -3,7 +3,6 @@
 #include <entt/entt.hpp>
 
 #include "toast_lib/string.hpp"
-#include "toast_lib/math/colours.hpp"
 #include "toast_render/renderer_2d.hpp"
 
 #include "toast_gpu/vk/vk_mesh.hpp"

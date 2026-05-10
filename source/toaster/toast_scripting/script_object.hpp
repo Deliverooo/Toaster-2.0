@@ -1,8 +1,9 @@
 #pragma once
 
+#include <optional>
+
 #include "script_common.hpp"
 #include "script_engine.hpp"
-#include "script_string.hpp"
 #include "toast_lib/ptr.hpp"
 #include "toast_lib/type_traits.hpp"
 

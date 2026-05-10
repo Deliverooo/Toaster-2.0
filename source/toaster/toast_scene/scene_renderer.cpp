@@ -1,7 +1,4 @@
 #include "scene_renderer.hpp"
-#include "scene_renderer.hpp"
-#include "scene_renderer.hpp"
-#include "scene_renderer.hpp"
 #include "toast_render/globals.hpp"
 #include "toast_render/renderer.hpp"
 
@@ -34,6 +31,10 @@ namespace toaster
 		}
 
 		m_skyboxTexture = m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, m_specInfo.resourceDirectory / "environments/'Environment_map'.jpg");
+
+		gpu::TextureSpecInfo skybox_map_spec_info{};
+		skybox_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+		// m_skyboxMap                 = m_device->alloc<gpu::VKTexture3D>(skybox_map_spec_info, m_specInfo.resourceDirectory / "environments/grasslands_sunset_1k.hdr");
 
 		#pragma region depth-pre
 		{
@@ -95,6 +96,7 @@ namespace toaster
 
 			m_skyboxPass = m_device->alloc<gpu::VKRenderPass>(m_skyboxPipeline);
 			m_skyboxPass->setInput("Camera", m_cameraUBOs);
+			m_skyboxPass->setInput("u_CubemapImage", Globals::getWhiteTexture3D());
 
 			m_skyboxPass->bake(); // TODO: rename ts to toast
 			//						   Its funny because the engine is called Toaster...

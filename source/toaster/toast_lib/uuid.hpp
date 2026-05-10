@@ -20,11 +20,14 @@ namespace toaster
 	};
 }
 
-template<>
-struct std::hash<toaster::UUID>
+namespace std
 {
-	size_t operator()(const toaster::UUID &p_uuid) const noexcept
+	template<>
+	struct hash<toaster::UUID>
 	{
-		return hash<uint64>{}(p_uuid);
-	}
-};
+		size_t operator()(const toaster::UUID &p_uuid) const noexcept
+		{
+			return hash<uint64>{}(p_uuid);
+		}
+	};
+}

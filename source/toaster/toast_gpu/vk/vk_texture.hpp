@@ -61,12 +61,12 @@ namespace toaster::gpu
 		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};
 	};
 
-	// TODO: Actually implement ts... (I am very scared of equirectangular to cubemap conversions...)
 	class TST_GPU_API VKTexture3D final : public IGPUResource
 	{
 		TST_GPU_OBJECT
 		TST_GPU_RESOURCE(Texture3D)
 	public:
+		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
 		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, Buffer p_data);
 
 		auto resize(uint32 p_width, uint32 p_height) -> void;
@@ -76,6 +76,7 @@ namespace toaster::gpu
 		// If you want to work with textures and don't want to immediately set the data you might want to deffer the sampler creation
 		auto createSampler(vk::ImageLayout p_override_layout = vk::ImageLayout::eUndefined) -> void; // Also creates the descriptor info
 
+		auto               getPath() const -> const io::filesystem::Path &;
 		[[nodiscard]] auto getSpecInfo() const -> const TextureSpecInfo &;
 		auto               getImage() -> RefPtr<VKRawImage>;
 		[[nodiscard]] auto getSampler() -> vk::raii::Sampler &;
@@ -83,6 +84,8 @@ namespace toaster::gpu
 
 	private:
 		TextureSpecInfo m_specInfo{};
+
+		io::filesystem::Path m_path;
 
 		Buffer m_textureData;
 

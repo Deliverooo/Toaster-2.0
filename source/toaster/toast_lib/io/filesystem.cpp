@@ -1,5 +1,6 @@
 #include "filesystem.hpp"
 
+#include <cstring>
 #include <fstream>
 
 namespace toaster::io::filesystem
@@ -9,7 +10,7 @@ namespace toaster::io::filesystem
 		char test[4] = {0};
 		p_in.seekg(0, std::ios::beg);
 		p_in.read(test, 3);
-		if (strcmp(test, "\xEF\xBB\xBF") == 0)
+		if (std::strcmp(test, "\xEF\xBB\xBF") == 0)
 		{
 			p_in.seekg(3, std::ios::beg);
 			return 3;

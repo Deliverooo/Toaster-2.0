@@ -1,9 +1,7 @@
 
 add_definitions(-DWIN32)
 
-if (NOT MSVC)
-	message(FATAL_ERROR "Compiler is unsupported")
-endif ()
+
 
 # Needed for some MSVC installations, example warning:
 # `4099 : PDB {filename} was not found with {object/library}`.

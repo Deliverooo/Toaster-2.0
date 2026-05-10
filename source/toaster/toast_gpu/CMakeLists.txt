@@ -1,4 +1,3 @@
-
 set(GPU_SRC
 		toast_gpu.hpp
 		image.hpp
@@ -45,6 +44,9 @@ if (${WITH_VULKAN_BACKEND})
 			vk/vk_material.hpp
 
 			vk/vk_shader_resources.hpp
+
+			vk/vk_common.cpp
+			vk/vk_common.hpp
 
 			vk/vk_image.cpp
 			vk/vk_image.hpp

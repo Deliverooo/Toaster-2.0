@@ -6,6 +6,7 @@ set(SRC
 		toast_assert.h
 
 		ptr.hpp
+		map.hpp
 
 		camera.hpp
 

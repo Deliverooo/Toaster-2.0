@@ -78,7 +78,7 @@ namespace toaster::gpu
 
 		m_currentImageLayout = vk::ImageLayout::eUndefined;
 
-		vk::ImageTiling image_tiling{vk::ImageTiling::eOptimal};
+		auto image_tiling{vk::ImageTiling::eOptimal};
 		if (m_specInfo.usage & vk::ImageUsageFlagBits::eStorage)
 			image_tiling = vk::ImageTiling::eLinear;
 		if (m_specInfo.layerCount > 1)
@@ -87,10 +87,7 @@ namespace toaster::gpu
 		m_device->createImage({m_specInfo.width, m_specInfo.height, 1u}, m_specInfo.layerCount, m_specInfo.mipCount, m_specInfo.sampleCount, m_specInfo.format,
 							  image_tiling, m_specInfo.usage, vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
 
-		vk::ImageAspectFlags aspect_flags{m_device->isDepthFormat(m_specInfo.format) ? vk::ImageAspectFlagBits::eDepth : vk::ImageAspectFlagBits::eColor};
-		if (m_device->hasStencilComponent(m_specInfo.format))
-			aspect_flags |= vk::ImageAspectFlagBits::eStencil;
-
+		vk::ImageAspectFlags aspect_flags{util::getImageAspectMask(m_specInfo.format)};
 		if (m_specInfo.usage & vk::ImageUsageFlagBits::eColorAttachment)
 		{
 			util::undefinedToColourAttachment(this);
@@ -126,20 +123,12 @@ namespace toaster::gpu
 		m_imageData.release();
 		m_imageData.allocate(p_size);
 		m_imageData = Buffer::copy(p_data, p_size);
+		m_image->setData(p_data, p_size);
+	}
 
-		vk::raii::Buffer       staging_buffer{nullptr};
-		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
-
-		m_device->createBuffer(m_imageData.size(), vk::BufferUsageFlagBits::eTransferSrc,
-							   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, staging_buffer, staging_buffer_memory);
-
-		void *mapped = staging_buffer_memory.mapMemory(0, m_imageData.size(), {});
-		std::memcpy(mapped, m_imageData.data(), m_imageData.size());
-		staging_buffer_memory.unmapMemory();
-
-		util::undefinedToTransferDst(m_image.get());
-		m_device->copyBufferToImage(staging_buffer, m_image->getImage(), {m_image->getSpecInfo().width, m_image->getSpecInfo().height, 1u},
-									m_image->getSpecInfo().layerCount);
+	auto VKImage2D::setData(const Buffer &p_buffer) -> void
+	{
+		setData(p_buffer.data(), p_buffer.size());
 	}
 
 	auto VKImage2D::createSampler(vk::ImageLayout p_override_layout) -> void
@@ -169,30 +158,43 @@ namespace toaster::gpu
 
 	namespace util
 	{
+		auto transitionImageLayout(AttachmentImage *p_image, vk::ImageLayout p_src_layout, vk::ImageLayout p_dst_layout) -> void
+		{
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), getImageLayoutInfo(p_src_layout), getImageLayoutInfo(p_dst_layout),
+														p_image->getSpecInfo().layerCount, p_image->getSpecInfo().mipCount, getImageAspectMask(p_image->getSpecInfo().format));
+			p_image->setCurrentImageLayout(p_dst_layout);
+		}
+
 		auto colourAttachmentToShaderRead(AttachmentImage *p_image) -> void
 		{
-			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-														vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eShaderRead,
-														vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eFragmentShader,
-														p_image->getSpecInfo().layerCount, p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), getImageLayoutInfo(vk::ImageLayout::eColorAttachmentOptimal),
+														getImageLayoutInfo(vk::ImageLayout::eShaderReadOnlyOptimal), p_image->getSpecInfo().layerCount,
+														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
 			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 		}
 
 		auto colourAttachmentToTransferSrc(AttachmentImage *p_image) -> void
 		{
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), getImageLayoutInfo(vk::ImageLayout::eColorAttachmentOptimal),
+														getImageLayoutInfo(vk::ImageLayout::eTransferSrcOptimal), p_image->getSpecInfo().layerCount,
+														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferSrcOptimal);
 		}
 
 		auto colourAttachmentToTransferDst(AttachmentImage *p_image) -> void
 		{
-			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eTransferDstOptimal,
-														vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eTransferWrite,
-														vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eTransfer,
-														p_image->getSpecInfo().layerCount, p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), getImageLayoutInfo(vk::ImageLayout::eColorAttachmentOptimal),
+														getImageLayoutInfo(vk::ImageLayout::eTransferDstOptimal), p_image->getSpecInfo().layerCount,
+														p_image->getSpecInfo().mipCount, vk::ImageAspectFlagBits::eColor);
 			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
 		}
 
 		auto colourAttachmentToGeneral(AttachmentImage *p_image) -> void
 		{
+			p_image->getDevice()->transitionImageLayout(p_image->getImage(), getImageLayoutInfo(vk::ImageLayout::eColorAttachmentOptimal),
+														getImageLayoutInfo(vk::ImageLayout::eGeneral), p_image->getSpecInfo().layerCount, p_image->getSpecInfo().mipCount,
+														vk::ImageAspectFlagBits::eColor);
+			p_image->setCurrentImageLayout(vk::ImageLayout::eGeneral);
 		}
 
 		auto depthAttachmentToShaderRead(AttachmentImage *p_image, bool p_read_only) -> void

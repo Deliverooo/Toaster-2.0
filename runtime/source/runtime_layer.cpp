@@ -1,13 +1,10 @@
 #include "runtime_layer.hpp"
 
-#include "stb/stb_image.h"
 #include "toaster/toast_kernel/application.hpp"
 #include "toaster/toast_kernel/input.hpp"
 #include "toaster/toast_lib/io/file_stream.hpp"
 #include "toaster/toast_render/globals.hpp"
 #include "toaster/toast_render/renderer.hpp"
-
-#include "toast_lib/logging.hpp"
 
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
@@ -15,11 +12,10 @@
 
 #include "glm/gtc/type_ptr.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
-#include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_scene/components.hpp"
-#include "toast_scene/entity.hpp"
 #include "toast_scene/scene_serializer.hpp"
 namespace ig = ImGui;
+
 
 namespace toaster
 {
@@ -113,6 +109,8 @@ namespace toaster
 		{
 			scene_serializer.deserialize(scene_path);
 		}
+
+		
 	}
 
 	auto RuntimeLayer::onDestroy() -> void

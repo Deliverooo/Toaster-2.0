@@ -67,6 +67,7 @@ namespace toaster::gpu
 
 		auto resize(uint32 p_width, uint32 p_height) -> void;
 		auto setData(void *p_data, uint64 p_size) -> void;
+		auto setData(const Buffer &p_buffer) -> void;
 
 		// If you want to work with textures and don't want to immediately set the data you might want to deffer the sampler creation
 		auto createSampler(vk::ImageLayout p_override_layout = vk::ImageLayout::eUndefined) -> void; // Also creates the descriptor info
@@ -86,6 +87,8 @@ namespace toaster::gpu
 	// For dynamic rendering I have to handle the image layout transitions manually, so this simplifies things...
 	namespace util
 	{
+		TST_GPU_API auto transitionImageLayout(AttachmentImage *p_image, vk::ImageLayout p_src_layout, vk::ImageLayout p_dst_layout) -> void;
+
 		TST_GPU_API auto colourAttachmentToShaderRead(AttachmentImage *p_image) -> void;
 		TST_GPU_API auto colourAttachmentToTransferSrc(AttachmentImage *p_image) -> void;
 		TST_GPU_API auto colourAttachmentToTransferDst(AttachmentImage *p_image) -> void;

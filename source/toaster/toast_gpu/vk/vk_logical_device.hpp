@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vk_common.hpp"
 #include "vk_physical_device.hpp"
 #include <deque>
 
@@ -40,8 +41,6 @@ namespace toaster::gpu
 		// Use ts to set your logical device features using vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features...
 		void *pNext{nullptr};
 	};
-
-	using ImageExtent = vk::Extent3D;
 
 	class TST_GPU_API VKLogicalDevice
 	{
@@ -117,6 +116,9 @@ namespace toaster::gpu
 		auto copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) -> void;
 		auto copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void;
 
+		auto transitionImageLayout(vk::raii::Image &p_image, const ImageLayoutInfo &   p_src_layout_info, const ImageLayoutInfo &p_dst_layout_info, uint32 p_layer_count,
+								   uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void;
+
 		auto transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
 								   vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask,
 								   uint32 p_layer_count, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void;
@@ -131,9 +133,6 @@ namespace toaster::gpu
 								   vk::PipelineStageFlags2  p_dst_stage_mask, uint32 p_layer_count, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void;
 
 		auto generateMipmaps(vk::raii::Image &p_src_image, const ImageExtent &p_image_extent, uint32 p_mip_levels) -> void;
-
-		[[nodiscard]] auto hasStencilComponent(vk::Format p_format) const -> bool;
-		[[nodiscard]] auto isDepthFormat(vk::Format p_format) const -> bool;
 
 		operator vk::raii::Device &() { return m_logicalDevice; }
 

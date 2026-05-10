@@ -9,53 +9,19 @@ namespace toaster::gpu
 	VKTexture2D::VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info) : m_device(p_device), m_specInfo(p_spec_info)
 	{
 		vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eSampled};
+		usage_flags |= util::getImageUsageFlags(m_specInfo.format, m_specInfo.sampleCount);
 
-		if (m_specInfo.usage == ETextureUsage::eRenderAttachmentSampled)
-		{
-			// The only reason to create an image without providing it with any data is to use it as an attachment...
-			if (!m_device->isDepthFormat(m_specInfo.format))
-			{
-				usage_flags |= vk::ImageUsageFlagBits::eColorAttachment;
-				if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
-					usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
-
-				ImageSpecInfo image_create_info{};
-				image_create_info.width       = m_specInfo.width;
-				image_create_info.height      = m_specInfo.height;
-				image_create_info.usage       = usage_flags;
-				image_create_info.mipCount    = m_mipLevels;
-				image_create_info.sampleCount = m_specInfo.sampleCount;
-				image_create_info.format      = m_specInfo.format;
-				m_image                       = m_device->alloc<VKRawImage>(image_create_info);
-			}
-			else
-			{
-				usage_flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
-				if (m_specInfo.sampleCount != vk::SampleCountFlagBits::e1)
-					usage_flags |= vk::ImageUsageFlagBits::eTransientAttachment;
-
-				ImageSpecInfo image_create_info{};
-				image_create_info.width       = m_specInfo.width;
-				image_create_info.height      = m_specInfo.height;
-				image_create_info.usage       = usage_flags;
-				image_create_info.mipCount    = m_mipLevels;
-				image_create_info.sampleCount = m_specInfo.sampleCount;
-				image_create_info.format      = m_specInfo.format;
-				m_image                       = m_device->alloc<VKRawImage>(image_create_info);
-			}
-		}
-		else if (m_specInfo.usage == ETextureUsage::eShaderSampled)
-		{
+		if (m_specInfo.usage == ETextureUsage::eShaderSampled)
 			usage_flags |= vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
-			ImageSpecInfo image_create_info{};
-			image_create_info.width       = m_specInfo.width;
-			image_create_info.height      = m_specInfo.height;
-			image_create_info.usage       = usage_flags;
-			image_create_info.mipCount    = m_mipLevels;
-			image_create_info.sampleCount = m_specInfo.sampleCount;
-			image_create_info.format      = m_specInfo.format;
-			m_image                       = m_device->alloc<VKRawImage>(image_create_info);
-		}
+
+		ImageSpecInfo image_create_info{};
+		image_create_info.width       = m_specInfo.width;
+		image_create_info.height      = m_specInfo.height;
+		image_create_info.usage       = usage_flags;
+		image_create_info.mipCount    = m_mipLevels;
+		image_create_info.sampleCount = m_specInfo.sampleCount;
+		image_create_info.format      = m_specInfo.format;
+		m_image                       = m_device->alloc<VKRawImage>(image_create_info);
 
 		m_sampler = m_device->createSampler();
 
@@ -71,7 +37,6 @@ namespace toaster::gpu
 		TST_ASSERT_MSG(p_device, "Context cannot be null");
 
 		// Ts is somewhat necessary
-		// stbi_set_flip_vertically_on_load(true);
 
 		// Possibly in the future I might look into dynamic colour channels, so the images don't need to be in RGBA
 		int32  width{0};
@@ -130,7 +95,7 @@ namespace toaster::gpu
 		image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
-		image_create_info.format      = vk::Format::eR8G8B8A8Unorm;
+		image_create_info.format      = m_specInfo.format;
 		m_image                       = m_device->alloc<VKRawImage>(image_create_info);
 
 		setData(p_data, p_size);
@@ -202,10 +167,50 @@ namespace toaster::gpu
 		return m_descriptorImageInfo;
 	}
 
+	VKTexture3D::VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path) : m_device(p_device),
+																																  m_specInfo(p_spec_info), m_path(p_path)
+	{
+		int32    width{0};
+		int32    height{0};
+		int32    num_channels{0};
+		float32 *pixels = stbi_loadf(p_path.string().c_str(), &width, &height, &num_channels, STBI_rgb_alpha);
+
+		bool loaded{true};
+		if (!pixels)
+		{
+			loaded = false;
+			LOG_ERROR("failed to load texture image: {}", p_path.string());
+			TST_ASSERT(false);
+		}
+
+		vk::DeviceSize image_size = width * height * 4;
+		m_specInfo.width          = static_cast<uint32>(width);
+		m_specInfo.height         = static_cast<uint32>(height);
+
+		ImageSpecInfo image_create_info{};
+		image_create_info.width  = m_specInfo.width;
+		image_create_info.height = m_specInfo.height;
+		image_create_info.usage  = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
+								   vk::ImageUsageFlagBits::eStorage;
+		image_create_info.mipCount    = 1u;
+		image_create_info.sampleCount = m_specInfo.sampleCount;
+		image_create_info.layerCount = 6u;
+		image_create_info.format      = m_specInfo.format;
+		m_image                       = m_device->alloc<VKRawImage>(image_create_info);
+
+		util::toTransferDst(m_image.get());
+		setData(pixels, image_size);
+		if (loaded)
+			stbi_image_free(pixels);
+
+		util::transferDstToGeneral(m_image.get());
+		createSampler();
+	}
+
 	VKTexture3D::VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, Buffer p_data) : m_device(p_device), m_specInfo(p_spec_info)
 	{
-		constexpr uint32 colour_channels{4u};
-		uint32           size{m_specInfo.width * m_specInfo.height * colour_channels * 6};
+		// constexpr uint32 colour_channels{4u};
+		// uint32           size{m_specInfo.width * m_specInfo.height * colour_channels * 6};
 
 		m_textureData = Buffer::copy(p_data);
 
@@ -264,6 +269,11 @@ namespace toaster::gpu
 		m_descriptorImageInfo.imageLayout = (p_override_layout == vk::ImageLayout::eUndefined) ? m_image->getCurrentImageLayout() : p_override_layout;
 		m_descriptorImageInfo.imageView   = m_image->getImageView();
 		m_descriptorImageInfo.sampler     = m_sampler;
+	}
+
+	auto VKTexture3D::getPath() const -> const io::filesystem::Path &
+	{
+		return m_path;
 	}
 
 	auto VKTexture3D::getSpecInfo() const -> const TextureSpecInfo &

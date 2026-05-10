@@ -32,7 +32,7 @@ namespace toaster::io
 		template<typename Type> requires std::is_trivial_v<Type>
 		auto writeRaw(const Type &p_type) -> void
 		{
-			const bool success{writeData(reinterpret_cast<int8 *>(&p_type), sizeof(Type))};
+			const bool success{writeData(reinterpret_cast<uint8 *>(&p_type), sizeof(Type))};
 			TST_ASSERT_MSG(success, "Failed to write type");
 		}
 

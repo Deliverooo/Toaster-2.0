@@ -468,6 +468,33 @@ namespace toaster::gpu
 		cmd.waitForFence();
 	}
 
+	auto VKLogicalDevice::transitionImageLayout(vk::raii::Image &p_image, const ImageLayoutInfo &p_src_layout_info, const ImageLayoutInfo &p_dst_layout_info,
+												uint32           p_layer_count, uint32           p_mip_levels, vk::ImageAspectFlags        p_aspect_flags) -> void
+	{
+		vk::ImageMemoryBarrier2 image_memory_barrier{};
+		image_memory_barrier.oldLayout           = p_src_layout_info.layout;
+		image_memory_barrier.newLayout           = p_dst_layout_info.layout;
+		image_memory_barrier.srcAccessMask       = p_src_layout_info.accessMask;
+		image_memory_barrier.dstAccessMask       = p_dst_layout_info.accessMask;
+		image_memory_barrier.srcStageMask        = p_src_layout_info.stageMask;
+		image_memory_barrier.dstStageMask        = p_dst_layout_info.stageMask;
+		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.image               = p_image;
+		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, p_layer_count};
+
+		vk::DependencyInfo dependency_info{};
+		dependency_info.imageMemoryBarrierCount = 1;
+		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
+
+		VKCommandBuffer cmd{this, vk::QueueFlagBits::eGraphics};
+		cmd.begin();
+		cmd.getVulkanCommandBuffer().pipelineBarrier2(dependency_info);
+		cmd.end();
+		cmd.submit();
+		cmd.waitForFence();
+	}
+
 	auto VKLogicalDevice::transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
 												vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask,
 												uint32           p_layer_count, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void
@@ -677,16 +704,5 @@ namespace toaster::gpu
 		cmd.end();
 		cmd.submit();
 		cmd.waitForFence();
-	}
-
-	auto VKLogicalDevice::hasStencilComponent(vk::Format p_format) const -> bool
-	{
-		return p_format == vk::Format::eD32SfloatS8Uint || p_format == vk::Format::eD24UnormS8Uint;
-	}
-
-	auto VKLogicalDevice::isDepthFormat(vk::Format p_format) const -> bool
-	{
-		return p_format == vk::Format::eD16Unorm || p_format == vk::Format::eD16UnormS8Uint || p_format == vk::Format::eD24UnormS8Uint || p_format ==
-			   vk::Format::eD32Sfloat || p_format == vk::Format::eD32SfloatS8Uint;
 	}
 }

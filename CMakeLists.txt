@@ -1,12 +1,13 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.30)
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 cmake_policy(SET CMP0077 NEW)
 
 if (MSVC)
 	add_compile_options(/MP)
 endif ()
-
-#set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
 
@@ -60,15 +61,6 @@ set(CXX_WARNINGS)
 
 set(PLATFORM_LINKLIBS "")
 
-# Ts is from Blender's CMakeLists.txt ->
-if (UNIX AND NOT APPLE)
-	include(platform_unix)
-elseif (WIN32)
-	include(platform_win32)
-elseif (APPLE)
-	include(platform_apple)
-endif ()
-
 if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	# Most MSVC warnings are C & C++.
 	set(_WARNINGS
@@ -109,7 +101,6 @@ if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 endif ()
 
 # Select C++23 as the standard for C++ projects.
-set(CMAKE_CXX_STANDARD 23)
 # If C++23 is not available, downgrading to an earlier standard is NOT OK.
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Do not enable compiler specific language extensions.
@@ -119,6 +110,7 @@ set(CMAKE_C_FLAGS "${C_WARNINGS} ${CMAKE_C_FLAGS} ${PLATFORM_CFLAGS}")
 set(CMAKE_CXX_FLAGS "${CXX_WARNINGS} ${CMAKE_CXX_FLAGS} ${PLATFORM_CFLAGS}")
 
 add_subdirectory(extern)
+
 add_subdirectory(source)
 
 add_subdirectory(runtime)
