@@ -20,6 +20,7 @@ namespace toaster::gpu
 		vk::ImageUsageFlags     usage{vk::ImageUsageFlagBits::eSampled};
 		vk::SampleCountFlagBits sampleCount{vk::SampleCountFlagBits::e1};
 		uint32                  mipCount{1u};
+		uint32                  layerCount{1u};
 	};
 
 	// An "Image" represents a texture without a sampler
@@ -39,6 +40,8 @@ namespace toaster::gpu
 		auto setCurrentImageLayout(vk::ImageLayout p_layout) -> void;
 		auto getCurrentImageLayout() const -> vk::ImageLayout;
 
+		auto setData(void *p_data, uint64 p_size) -> void;
+		auto setData(const Buffer &p_buffer) -> void;
 		auto resize(uint32 p_width, uint32 p_height) -> void;
 		auto recreate() -> void;
 

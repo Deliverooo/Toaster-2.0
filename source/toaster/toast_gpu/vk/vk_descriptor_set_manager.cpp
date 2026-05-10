@@ -14,9 +14,11 @@ namespace toaster::gpu
 		texture_spec_info.height       = 1u;
 		texture_spec_info.format       = vk::Format::eR8G8B8A8Unorm;
 		texture_spec_info.generateMips = false;
-
 		uint32 texture_data{0xFFFFFFFF};
 		m_whiteTexture = m_device->alloc<VKTexture2D>(texture_spec_info, &texture_data, sizeof(uint32));
+
+		uint32 texture_3d_data[6]{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
+		m_whiteTexture3D = m_device->alloc<VKTexture3D>(texture_spec_info, Buffer{texture_3d_data, sizeof(uint32) * 6});
 
 		const auto &descriptor_sets{m_shader->getReflectedShaderDescriptorSets()};
 		m_writeDescriptorMap.resize(m_device->getSpecInfo().maxFramesInFlight);
@@ -42,14 +44,48 @@ namespace toaster::gpu
 				descriptor_resource.resources.resize(write_descriptor.descriptorCount);
 				descriptor_resource.type = _getResourceType(write_descriptor.descriptorType);
 
+				if (descriptor_set.imageSamplers.contains(binding))
+				{
+					auto & sampler{descriptor_set.imageSamplers.at(binding)};
+					uint32 dimension{sampler.dimension};
+					if (write_descriptor.descriptorType == vk::DescriptorType::eSampledImage || write_descriptor.descriptorType ==
+						vk::DescriptorType::eCombinedImageSampler)
+					{
+						switch (dimension)
+						{
+							case 1:
+								break;
+							case 2: descriptor_declaration.type = EDescriptorType::eSampler2D;
+								break;
+							case 3: descriptor_declaration.type = EDescriptorType::eSampler3D;
+								break;
+							default: break;
+						}
+					}
+					else if (write_descriptor.descriptorType == vk::DescriptorType::eStorageImage)
+					{
+						switch (dimension)
+						{
+							case 1:
+								break;
+							case 2: descriptor_declaration.type = EDescriptorType::eImage2D;
+								break;
+							case 3: descriptor_declaration.type = EDescriptorType::eImage3D;
+								break;
+							default: break;
+						}
+					}
+				}
+
 				if (descriptor_declaration.type == EDescriptorType::eSampler2D)
 					for (uint32 i{0u}; i < descriptor_resource.resources.size(); ++i)
 						descriptor_resource.resources[i] = m_whiteTexture.as<IGPUResource>();
+				else if (descriptor_declaration.type == EDescriptorType::eSampler3D)
+					for (uint32 i{0u}; i < descriptor_resource.resources.size(); ++i)
+						descriptor_resource.resources[i] = m_whiteTexture3D.as<IGPUResource>();
 
 				for (uint32 frame_index{0u}; frame_index < m_device->getSpecInfo().maxFramesInFlight; ++frame_index)
 					m_writeDescriptorMap[frame_index][set][binding] = {write_descriptor, std::vector<void *>{write_descriptor.descriptorCount}};
-
-				// if (descriptor_set.imageSamplers.contains(binding))
 			}
 		}
 	}
@@ -112,6 +148,14 @@ namespace toaster::gpu
 			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
 
+	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKTexture3D> &p_texture_3d) -> void
+	{
+		if (const auto decl{getDescriptorDeclaration(p_name)})
+			m_descriptorResources.at(decl->set)[decl->binding] = p_texture_3d;
+		else
+			LOG_WARN("Descriptor was not found: {}", p_name);
+	}
+
 	auto VKDescriptorSetManager::bakeDescriptors() -> void
 	{
 		std::array<vk::DescriptorPoolSize, 5> descriptor_pool_sizes{
@@ -119,7 +163,7 @@ namespace toaster::gpu
 			vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 100},
 			vk::DescriptorPoolSize{vk::DescriptorType::eCombinedImageSampler, 100},
 			vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 100},
-			vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 100},
+			vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 100}
 		};
 
 		vk::DescriptorPoolCreateInfo descriptor_pool_create_info{};
@@ -238,6 +282,17 @@ namespace toaster::gpu
 								TST_ASSERT_MSG(false, "Oh no");
 							break;
 						}
+						case EGPUResourceType::eTexture3D:
+						{
+							auto texture_3d{resource.resources[0].as<VKTexture3D>()};
+							TST_ASSERT(texture_3d);
+							write_descriptor.pImageInfo                = &texture_3d->getDescriptorInfo();
+							stored_write_descriptor.resourceHandles[0] = write_descriptor.pImageInfo->imageView;
+
+							if (!write_descriptor.pImageInfo->imageView)
+								TST_ASSERT_MSG(false, "Oh no");
+							break;
+						}
 
 						default: break;
 					}
@@ -310,6 +365,14 @@ namespace toaster::gpu
 						const auto &image_info{resource.resources[0].as<VKImage2D>()->getDescriptorInfo()};
 						if (image_info.imageView != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
 							m_invalidDescriptorResources[set][binding] = resource;
+						break;
+					}
+					case EGPUResourceType::eTexture3D:
+					{
+						const auto &image_info{resource.resources[0].as<VKTexture3D>()->getDescriptorInfo()};
+						if (image_info.imageView != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
+							m_invalidDescriptorResources[set][binding] = resource;
+						break;
 					}
 					default: break;
 				}
@@ -389,6 +452,13 @@ namespace toaster::gpu
 						write_descriptor.resourceHandles[0] = image_2d->getDescriptorInfo().imageView;
 						break;
 					}
+					case EGPUResourceType::eTexture3D:
+					{
+						auto texture_3d{resource.resources[0].as<VKTexture3D>()};
+						write_descriptor.wds.pImageInfo     = &texture_3d->getDescriptorInfo();
+						write_descriptor.resourceHandles[0] = texture_3d->getDescriptorInfo().imageView;
+						break;
+					}
 					default: break;
 				}
 
@@ -423,6 +493,11 @@ namespace toaster::gpu
 	auto VKDescriptorSetManager::getWhiteTexture() const -> const RefPtr<VKTexture2D> &
 	{
 		return m_whiteTexture;
+	}
+
+	auto VKDescriptorSetManager::getWhiteTexture3D() const -> const RefPtr<VKTexture3D> &
+	{
+		return m_whiteTexture3D;
 	}
 
 	auto VKDescriptorSetManager::hasDescriptorSets() const -> bool

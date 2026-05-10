@@ -35,6 +35,7 @@ namespace toaster::gpu
 
 		auto resize(uint32 p_width, uint32 p_height) -> void;
 		auto setData(void *p_data, uint64 p_size) -> void;
+		auto setData(const Buffer &p_buffer) -> void;
 
 		// If you want to work with textures and don't want to immediately set the data you might want to deffer the sampler creation
 		auto createSampler(vk::ImageLayout p_override_layout = vk::ImageLayout::eUndefined) -> void; // Also creates the descriptor info
@@ -42,7 +43,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto getSpecInfo() const -> const TextureSpecInfo &;
 		auto               getPath() const -> const io::filesystem::Path &;
 		[[nodiscard]] auto getMipLevelCount() const -> uint32;
-		auto               getImage()  ->  RefPtr<VKRawImage> ;
+		auto               getImage() -> RefPtr<VKRawImage>;
 		[[nodiscard]] auto getSampler() -> vk::raii::Sampler &;
 		[[nodiscard]] auto getDescriptorInfo() -> vk::DescriptorImageInfo &;
 
@@ -66,19 +67,27 @@ namespace toaster::gpu
 		TST_GPU_OBJECT
 		TST_GPU_RESOURCE(Texture3D)
 	public:
-		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size);
+		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, Buffer p_data);
+
+		auto resize(uint32 p_width, uint32 p_height) -> void;
+		auto setData(void *p_data, uint64 p_size) -> void;
+		auto setData(const Buffer &p_buffer) -> void;
+
+		// If you want to work with textures and don't want to immediately set the data you might want to deffer the sampler creation
+		auto createSampler(vk::ImageLayout p_override_layout = vk::ImageLayout::eUndefined) -> void; // Also creates the descriptor info
 
 		[[nodiscard]] auto getSpecInfo() const -> const TextureSpecInfo &;
-		[[nodiscard]] auto getImage() -> vk::raii::Image &;
-		[[nodiscard]] auto getImageView() -> vk::raii::ImageView &;
+		auto               getImage() -> RefPtr<VKRawImage>;
+		[[nodiscard]] auto getSampler() -> vk::raii::Sampler &;
 		[[nodiscard]] auto getDescriptorInfo() -> vk::DescriptorImageInfo &;
 
 	private:
 		TextureSpecInfo m_specInfo{};
 
-		vk::raii::Image        m_image{nullptr};
-		vk::raii::DeviceMemory m_imageMemory{nullptr};
-		vk::raii::ImageView    m_imageView{nullptr};
+		Buffer m_textureData;
+
+		RefPtr<VKRawImage> m_image{nullptr};
+		vk::raii::Sampler  m_sampler{nullptr};
 
 		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};
 	};

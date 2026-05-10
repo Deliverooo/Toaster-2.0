@@ -15,7 +15,9 @@ namespace toaster::gpu
 		eUniformBuffer,
 		eStorageBuffer,
 		eSampler2D,
-		eImage2D
+		eSampler3D,
+		eImage2D,
+		eImage3D
 	};
 
 	struct DescriptorDeclaration
@@ -62,6 +64,10 @@ namespace toaster::gpu
 		{
 		}
 
+		DescriptorResource(const RefPtr<VKTexture3D> &p_texture_3d) : resources(std::vector<RefPtr<IGPUResource> >(1, p_texture_3d)), type(EGPUResourceType::eTexture3D)
+		{
+		}
+
 		auto set(const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_index) -> void
 		{
 			type               = EGPUResourceType::eTexture2D;
@@ -82,6 +88,7 @@ namespace toaster::gpu
 		auto setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void;
 		auto setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void;
 		auto setDescriptor(const String &p_name, const RefPtr<VKImage2D> &p_image_2d) -> void;
+		auto setDescriptor(const String &p_name, const RefPtr<VKTexture3D> &p_texture_3d) -> void;
 
 		template<GPUResource_c TResource>
 		auto getDescriptor(const String &p_name) -> RefPtr<TResource>
@@ -103,6 +110,7 @@ namespace toaster::gpu
 		auto getDescriptorDeclarations() const -> const std::unordered_map<String, DescriptorDeclaration> &;
 
 		auto getWhiteTexture() const -> const RefPtr<VKTexture2D> &;
+		auto getWhiteTexture3D() const -> const RefPtr<VKTexture3D> &;
 
 		auto hasDescriptorSets() const -> bool;
 
@@ -134,5 +142,6 @@ namespace toaster::gpu
 		std::vector<std::vector<vk::raii::DescriptorSet> > m_descriptorSets;
 
 		RefPtr<VKTexture2D> m_whiteTexture{nullptr};
+		RefPtr<VKTexture3D> m_whiteTexture3D{nullptr};
 	};
 }

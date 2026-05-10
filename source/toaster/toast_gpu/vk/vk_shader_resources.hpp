@@ -30,6 +30,7 @@ namespace toaster::gpu
 		String                  name{};
 		uint32                  binding{0u};
 		uint32                  arraySize{0u};
+		uint32                  dimension{1u};
 		vk::ShaderStageFlagBits stage{vk::ShaderStageFlagBits::eAll};
 	};
 

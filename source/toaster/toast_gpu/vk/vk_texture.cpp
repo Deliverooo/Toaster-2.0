@@ -97,7 +97,7 @@ namespace toaster::gpu
 		m_specInfo.height         = static_cast<uint32>(height);
 
 		if (m_specInfo.generateMips)
-			m_mipLevels = std::floor(std::log2(std::max(m_specInfo.width, m_specInfo.height))) + 1u;
+			m_mipLevels = 1u + static_cast<uint32>(std::floor(std::log2(std::max(m_specInfo.width, m_specInfo.height))));
 		else
 			m_mipLevels = 1;
 
@@ -110,11 +110,12 @@ namespace toaster::gpu
 		image_create_info.format      = m_specInfo.format;
 		m_image                       = m_device->alloc<VKRawImage>(image_create_info);
 
+		util::toTransferDst(m_image.get());
 		setData(pixels, image_size);
 		if (loaded)
 			stbi_image_free(pixels);
 
-		m_device->generateMipmaps(m_image->getImage(), m_specInfo.width, m_specInfo.height, m_mipLevels);
+		m_device->generateMipmaps(m_image->getImage(), {m_specInfo.width, m_specInfo.height, 1u}, m_mipLevels);
 		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal); // Generate mips leaves the image in the eShaderReadOnlyOptimal layout
 
 		createSampler();
@@ -145,22 +146,15 @@ namespace toaster::gpu
 
 	auto VKTexture2D::setData(void *p_data, uint64 p_size) -> void
 	{
+		util::toTransferDst(m_image.get());
 		m_textureData.release();
-		m_textureData.allocate(p_size);
 		m_textureData = Buffer::copy(p_data, p_size);
+		m_image->setData(m_textureData);
+	}
 
-		vk::raii::Buffer       staging_buffer{nullptr};
-		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
-
-		m_device->createBuffer(m_textureData.size(), vk::BufferUsageFlagBits::eTransferSrc,
-							   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, staging_buffer, staging_buffer_memory);
-
-		void *mapped = staging_buffer_memory.mapMemory(0, m_textureData.size(), {});
-		std::memcpy(mapped, m_textureData.data(), m_textureData.size());
-		staging_buffer_memory.unmapMemory();
-
-		util::undefinedToTransferDst(m_image.get());
-		m_device->copyBufferToImage(staging_buffer, m_image->getImage(), m_specInfo.width, m_specInfo.height);
+	auto VKTexture2D::setData(const Buffer &p_buffer) -> void
+	{
+		setData(p_buffer.data(), p_buffer.size());
 	}
 
 	auto VKTexture2D::createSampler(vk::ImageLayout p_override_layout) -> void
@@ -208,8 +202,68 @@ namespace toaster::gpu
 		return m_descriptorImageInfo;
 	}
 
-	VKTexture3D::VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size) : m_device(p_device), m_specInfo(p_spec_info)
+	VKTexture3D::VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, Buffer p_data) : m_device(p_device), m_specInfo(p_spec_info)
 	{
+		constexpr uint32 colour_channels{4u};
+		uint32           size{m_specInfo.width * m_specInfo.height * colour_channels * 6};
+
+		m_textureData = Buffer::copy(p_data);
+
+		ImageSpecInfo image_spec_info{};
+		image_spec_info.format     = m_specInfo.format;
+		image_spec_info.width      = m_specInfo.width;
+		image_spec_info.height     = m_specInfo.height;
+		image_spec_info.mipCount   = 1u;
+		image_spec_info.layerCount = 6u;
+		image_spec_info.usage      = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
+									 vk::ImageUsageFlagBits::eStorage;
+
+		m_image = m_device->alloc<VKRawImage>(image_spec_info);
+
+		util::toTransferDst(m_image.get());
+		m_image->setData(m_textureData);
+
+		util::transferDstToGeneral(m_image.get());
+		createSampler(vk::ImageLayout::eGeneral);
+
+		if (m_image->getCurrentImageLayout() == vk::ImageLayout::eUndefined)
+		{
+			TST_ASSERT(false);
+		}
+	}
+
+	auto VKTexture3D::resize(uint32 p_width, uint32 p_height) -> void
+	{
+		m_image->resize(p_width, p_height);
+		createSampler(vk::ImageLayout::eGeneral);
+	}
+
+	auto VKTexture3D::setData(void *p_data, uint64 p_size) -> void
+	{
+		util::toTransferDst(m_image.get());
+		m_textureData.release();
+		m_textureData = Buffer::copy(p_data, p_size);
+		m_image->setData(m_textureData);
+	}
+
+	auto VKTexture3D::setData(const Buffer &p_buffer) -> void
+	{
+		setData(p_buffer.data(), p_buffer.size());
+	}
+
+	auto VKTexture3D::createSampler(vk::ImageLayout p_override_layout) -> void
+	{
+		if (m_image->getCurrentImageLayout() == vk::ImageLayout::eTransferDstOptimal)
+			util::transferDstToShaderRead(m_image.get());
+
+		m_sampler             = nullptr;
+		m_descriptorImageInfo = vk::DescriptorImageInfo{};
+
+		m_sampler = m_device->createSampler();
+
+		m_descriptorImageInfo.imageLayout = (p_override_layout == vk::ImageLayout::eUndefined) ? m_image->getCurrentImageLayout() : p_override_layout;
+		m_descriptorImageInfo.imageView   = m_image->getImageView();
+		m_descriptorImageInfo.sampler     = m_sampler;
 	}
 
 	auto VKTexture3D::getSpecInfo() const -> const TextureSpecInfo &
@@ -217,14 +271,14 @@ namespace toaster::gpu
 		return m_specInfo;
 	}
 
-	auto VKTexture3D::getImage() -> vk::raii::Image &
+	auto VKTexture3D::getImage() -> RefPtr<VKRawImage>
 	{
 		return m_image;
 	}
 
-	auto VKTexture3D::getImageView() -> vk::raii::ImageView &
+	auto VKTexture3D::getSampler() -> vk::raii::Sampler &
 	{
-		return m_imageView;
+		return m_sampler;
 	}
 
 	auto VKTexture3D::getDescriptorInfo() -> vk::DescriptorImageInfo &

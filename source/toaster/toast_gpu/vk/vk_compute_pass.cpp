@@ -38,6 +38,11 @@ namespace toaster::gpu
 		m_descriptorSetManager->setDescriptor(p_name, p_image_2d);
 	}
 
+	auto VKComputePass::setInput(const String &p_name, const RefPtr<VKTexture3D> &p_texture_3d) -> void
+	{
+		m_descriptorSetManager->setDescriptor(p_name, p_texture_3d);
+	}
+
 	auto VKComputePass::bake() -> void
 	{
 		m_descriptorSetManager->bakeDescriptors();

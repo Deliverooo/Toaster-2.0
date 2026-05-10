@@ -43,13 +43,13 @@ namespace toaster::gpu
 
 		m_device->transitionImageLayout(m_commandBuffers.getVulkanCommandBuffer(m_frameIndex), m_swapchainImages[m_imageIndex], vk::ImageLayout::eUndefined,
 										vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eColorAttachmentWrite,
-										vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1,
+										vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1, 1,
 										vk::ImageAspectFlagBits::eColor);
 
 		m_device->transitionImageLayout(m_commandBuffers.getVulkanCommandBuffer(m_frameIndex), m_depthImage, vk::ImageLayout::eUndefined,
 										vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
 										vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-										vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, 1,
+										vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, 1, 1,
 										vk::ImageAspectFlagBits::eDepth);
 	}
 
@@ -57,7 +57,7 @@ namespace toaster::gpu
 	{
 		m_device->transitionImageLayout(m_commandBuffers.getVulkanCommandBuffer(m_frameIndex), m_swapchainImages[m_imageIndex], vk::ImageLayout::eColorAttachmentOptimal,
 										vk::ImageLayout::ePresentSrcKHR, vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eNone,
-										vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1,
+										vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1, 1,
 										vk::ImageAspectFlagBits::eColor);
 
 		m_commandBuffers.end(m_frameIndex);
@@ -200,14 +200,14 @@ namespace toaster::gpu
 	auto VKSwapchain::_createImageViews() -> void
 	{
 		for (auto &img: m_swapchainImages)
-			m_swapchainImageViews.emplace_back(m_device->createImageView(img, m_swapchainSurfaceFormat.format, vk::ImageAspectFlagBits::eColor, 1));
+			m_swapchainImageViews.emplace_back(m_device->createImageView(img, m_swapchainSurfaceFormat.format, vk::ImageAspectFlagBits::eColor, 1u, 1u));
 	}
 
 	auto VKSwapchain::_createDepthResources() -> void
 	{
-		m_device->createImage(m_swapchainExtent.width, m_swapchainExtent.height, 1, vk::SampleCountFlagBits::e1, getDepthFormat(), vk::ImageTiling::eOptimal,
+		m_device->createImage({m_swapchainExtent.width, m_swapchainExtent.height, 1u}, 1u, 1u, vk::SampleCountFlagBits::e1, getDepthFormat(), vk::ImageTiling::eOptimal,
 							  vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal, m_depthImage, m_depthImageMemory);
-		m_depthImageView = m_device->createImageView(m_depthImage, getDepthFormat(), vk::ImageAspectFlagBits::eDepth, 1);
+		m_depthImageView = m_device->createImageView(m_depthImage, getDepthFormat(), vk::ImageAspectFlagBits::eDepth, 1u, 1u);
 	}
 
 	auto VKSwapchain::_createSyncObjects() -> void

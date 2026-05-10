@@ -18,6 +18,7 @@ namespace toaster
 		std::vector<uint32>              quadIndices;
 
 		RefPtr<gpu::VKTexture2D> whiteTexture{nullptr};
+		RefPtr<gpu::VKTexture3D> whiteTexture3D{nullptr};
 	};
 
 	static GlobalData *s_globalData{nullptr};
@@ -97,6 +98,9 @@ namespace toaster
 		white_texture_spec_info.format = vk::Format::eR8G8B8A8Unorm;
 		uint32 white_texture_data{0xFFFFFFFF};
 		s_globalData->whiteTexture = s_globalData->device->alloc<gpu::VKTexture2D>(white_texture_spec_info, &white_texture_data, sizeof(uint32));
+
+		uint32 texture_3d_data[6]{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
+		s_globalData->whiteTexture3D = s_globalData->device->alloc<gpu::VKTexture3D>(white_texture_spec_info, Buffer{texture_3d_data, sizeof(uint32) * 6});
 	}
 
 	auto Globals::shutdown() -> void
@@ -140,5 +144,11 @@ namespace toaster
 	{
 		TST_ASSERT_MSG(s_globalData, "Did you forget to initialise Globals?!");
 		return s_globalData->whiteTexture;
+	}
+
+	auto Globals::getWhiteTexture3D() -> const RefPtr<gpu::VKTexture3D> &
+	{
+		TST_ASSERT_MSG(s_globalData, "Did you forget to initialise Globals?!");
+		return s_globalData->whiteTexture3D;
 	}
 }

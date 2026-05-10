@@ -320,16 +320,14 @@ namespace toaster::gpu
 		p_out_buffer.bindMemory(p_out_memory, 0u);
 	}
 
-	auto VKLogicalDevice::createImage(uint32           p_width, uint32 p_height, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count, vk::Format p_format,
-									  vk::ImageTiling  p_image_tiling, vk::ImageUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
+	auto VKLogicalDevice::createImage(const ImageExtent &p_image_extent, uint32 p_layer_count, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count,
+									  vk::Format p_format, vk::ImageTiling p_image_tiling, vk::ImageUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
 									  vk::raii::Image &p_out_image, vk::raii::DeviceMemory &p_out_memory) -> void
 	{
 		vk::ImageCreateInfo image_create_info{};
-		image_create_info.extent.width  = p_width;
-		image_create_info.extent.height = p_height;
-		image_create_info.extent.depth  = 1;
+		image_create_info.extent        = p_image_extent;
 		image_create_info.mipLevels     = p_mip_levels;
-		image_create_info.arrayLayers   = 1;
+		image_create_info.arrayLayers   = p_layer_count;
 		image_create_info.imageType     = vk::ImageType::e2D;
 		image_create_info.samples       = p_sample_count;
 		image_create_info.sharingMode   = vk::SharingMode::eConcurrent;
@@ -337,6 +335,7 @@ namespace toaster::gpu
 		image_create_info.initialLayout = vk::ImageLayout::eUndefined;
 		image_create_info.usage         = p_usage_flags;
 		image_create_info.format        = p_format;
+		image_create_info.flags         = (p_layer_count > 1) ? vk::ImageCreateFlagBits::eCubeCompatible : static_cast<vk::ImageCreateFlagBits>(0);
 
 		image_create_info.queueFamilyIndexCount = 2;
 		uint32 qfi[]                            = {m_queueFamilyIndices.graphics, m_queueFamilyIndices.transfer};
@@ -353,11 +352,11 @@ namespace toaster::gpu
 		p_out_image.bindMemory(p_out_memory, 0u);
 	}
 
-	auto VKLogicalDevice::createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags,
-										  uint32           p_mip_levels) -> vk::raii::ImageView
+	auto VKLogicalDevice::createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_mip_levels,
+										  uint32           p_layer_count) -> vk::raii::ImageView
 	{
 		vk::ImageViewCreateInfo image_view_create_info{};
-		image_view_create_info.viewType   = vk::ImageViewType::e2D;
+		image_view_create_info.viewType   = (p_layer_count > 1) ? vk::ImageViewType::eCube : vk::ImageViewType::e2D;;
 		image_view_create_info.image      = p_src_image;
 		image_view_create_info.components = {
 			vk::ComponentSwizzle::eIdentity,
@@ -365,16 +364,17 @@ namespace toaster::gpu
 			vk::ComponentSwizzle::eIdentity,
 			vk::ComponentSwizzle::eIdentity
 		};
-		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{p_aspect_flags, 0, p_mip_levels, 0, 1};
+		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{p_aspect_flags, 0, p_mip_levels, 0, p_layer_count};
 		image_view_create_info.format           = p_format;
 
 		return {m_logicalDevice, image_view_create_info};
 	}
 
-	auto VKLogicalDevice::createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_mip_levels) -> vk::raii::ImageView
+	auto VKLogicalDevice::createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_layer_count,
+										  uint32     p_mip_levels) -> vk::raii::ImageView
 	{
 		vk::ImageViewCreateInfo image_view_create_info{};
-		image_view_create_info.viewType   = vk::ImageViewType::e2D;
+		image_view_create_info.viewType   = (p_layer_count > 1) ? vk::ImageViewType::eCube : vk::ImageViewType::e2D;;
 		image_view_create_info.image      = p_src_image;
 		image_view_create_info.components = {
 			vk::ComponentSwizzle::eIdentity,
@@ -382,7 +382,7 @@ namespace toaster::gpu
 			vk::ComponentSwizzle::eIdentity,
 			vk::ComponentSwizzle::eIdentity
 		};
-		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{p_aspect_flags, 0, p_mip_levels, 0, 1};
+		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{p_aspect_flags, 0, p_mip_levels, 0, p_layer_count};
 		image_view_create_info.format           = p_format;
 
 		return {m_logicalDevice, image_view_create_info};
@@ -443,15 +443,15 @@ namespace toaster::gpu
 		cmd.waitForFence();
 	}
 
-	auto VKLogicalDevice::copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, uint32 p_width, uint32 p_height) -> void
+	auto VKLogicalDevice::copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void
 	{
 		vk::BufferImageCopy2 image_copy{};
 		image_copy.bufferOffset      = 0;
 		image_copy.bufferRowLength   = 0;
 		image_copy.bufferImageHeight = 0;
 		image_copy.imageOffset       = vk::Offset3D{0, 0, 0};
-		image_copy.imageExtent       = vk::Extent3D{p_width, p_height, 1};
-		image_copy.imageSubresource  = {vk::ImageAspectFlagBits::eColor, 0, 0, 1};
+		image_copy.imageExtent       = p_image_extent;
+		image_copy.imageSubresource  = {vk::ImageAspectFlagBits::eColor, 0, 0, p_layer_count};
 
 		vk::CopyBufferToImageInfo2 buffer_image_copy{};
 		buffer_image_copy.srcBuffer      = p_src_buffer;
@@ -470,7 +470,7 @@ namespace toaster::gpu
 
 	auto VKLogicalDevice::transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
 												vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask,
-												uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void
+												uint32           p_layer_count, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void
 	{
 		vk::ImageMemoryBarrier2 image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;
@@ -482,7 +482,7 @@ namespace toaster::gpu
 		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.image               = p_image;
-		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, 1};
+		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, p_layer_count};
 
 		vk::DependencyInfo dependency_info{};
 		dependency_info.imageMemoryBarrierCount = 1;
@@ -498,7 +498,8 @@ namespace toaster::gpu
 
 	auto VKLogicalDevice::transitionImageLayout(vk::raii::CommandBuffer &p_cmd, vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 												vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-												vk::PipelineStageFlags2  p_dst_stage_mask, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void
+												vk::PipelineStageFlags2  p_dst_stage_mask, uint32 p_layer_count, uint32 p_mip_levels,
+												vk::ImageAspectFlags     p_aspect_flags) -> void
 	{
 		vk::ImageMemoryBarrier2 image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;
@@ -510,7 +511,7 @@ namespace toaster::gpu
 		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.image               = p_image;
-		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, 1};
+		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, p_layer_count};
 
 		vk::DependencyInfo dependency_info{};
 		dependency_info.imageMemoryBarrierCount = 1;
@@ -521,7 +522,7 @@ namespace toaster::gpu
 
 	auto VKLogicalDevice::transitionImageLayout(vk::Image &      p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
 												vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask,
-												uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void
+												uint32           p_layer_count, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void
 	{
 		vk::ImageMemoryBarrier2 image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;
@@ -533,7 +534,7 @@ namespace toaster::gpu
 		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.image               = p_image;
-		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, 1};
+		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, p_layer_count};
 
 		vk::DependencyInfo dependency_info{};
 		dependency_info.imageMemoryBarrierCount = 1;
@@ -549,7 +550,8 @@ namespace toaster::gpu
 
 	auto VKLogicalDevice::transitionImageLayout(vk::raii::CommandBuffer &p_cmd, vk::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 												vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-												vk::PipelineStageFlags2  p_dst_stage_mask, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void
+												vk::PipelineStageFlags2  p_dst_stage_mask, uint32 p_layer_count, uint32 p_mip_levels,
+												vk::ImageAspectFlags     p_aspect_flags) -> void
 	{
 		vk::ImageMemoryBarrier2 image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;
@@ -561,7 +563,7 @@ namespace toaster::gpu
 		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
 		image_memory_barrier.image               = p_image;
-		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, 1};
+		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, p_layer_count};
 
 		vk::DependencyInfo dependency_info{};
 		dependency_info.imageMemoryBarrierCount = 1;
@@ -570,7 +572,7 @@ namespace toaster::gpu
 		p_cmd.pipelineBarrier2(dependency_info);
 	}
 
-	auto VKLogicalDevice::generateMipmaps(vk::raii::Image &p_src_image, uint32 p_width, uint32 p_height, uint32 p_mip_levels) -> void
+	auto VKLogicalDevice::generateMipmaps(vk::raii::Image &p_src_image, const ImageExtent &p_image_extent, uint32 p_mip_levels) -> void
 	{
 		vk::ImageMemoryBarrier2 memory_barrier{};
 		memory_barrier.image                           = p_src_image;
@@ -586,8 +588,8 @@ namespace toaster::gpu
 		memory_barrier.subresourceRange.layerCount     = 1;
 		memory_barrier.subresourceRange.levelCount     = 1;
 
-		int32 mip_width{static_cast<int32>(p_width)};
-		int32 mip_height{static_cast<int32>(p_height)};
+		int32 mip_width{static_cast<int32>(p_image_extent.width)};
+		int32 mip_height{static_cast<int32>(p_image_extent.height)};
 
 		VKCommandBuffer cmd{this, vk::QueueFlagBits::eGraphics};
 		cmd.begin();

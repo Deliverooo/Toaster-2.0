@@ -39,5 +39,6 @@ namespace toaster
 		static auto getFullscreenQuadIndices() -> const std::vector<uint32> &;
 
 		static auto getWhiteTexture() -> const RefPtr<gpu::VKTexture2D> &;
+		static auto getWhiteTexture3D() -> const RefPtr<gpu::VKTexture3D> &;
 	};
 }

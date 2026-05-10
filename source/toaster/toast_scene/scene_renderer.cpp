@@ -76,6 +76,7 @@ namespace toaster
 
 			m_lightCullingPass = m_device->alloc<gpu::VKComputePass>(m_lightCullingPipeline);
 			m_lightCullingPass->setInput("u_TestImage", m_computeImage);
+			m_lightCullingPass->setInput("u_CubemapImage", Globals::getWhiteTexture3D());
 			m_lightCullingPass->bake();
 
 			m_lightCullingMaterial = m_device->alloc<gpu::VKMaterial>(Globals::getShaderLibrary().get("Compute-Test"));

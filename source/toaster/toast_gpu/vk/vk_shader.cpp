@@ -257,6 +257,7 @@ namespace toaster::gpu
 			image_sampler.name          = name;
 			image_sampler.binding       = binding;
 			image_sampler.arraySize     = array_size;
+			image_sampler.dimension     = type.image.dim;
 
 			ShaderResource &image_sampler_resource = m_reflectionData.resources[name];
 			image_sampler_resource.name            = name;
@@ -290,6 +291,7 @@ namespace toaster::gpu
 			image_sampler.name          = name;
 			image_sampler.binding       = binding;
 			image_sampler.arraySize     = array_size;
+			image_sampler.dimension     = type.image.dim;
 
 			ShaderResource &image_sampler_resource = m_reflectionData.resources[name];
 			image_sampler_resource.name            = name;
@@ -323,6 +325,7 @@ namespace toaster::gpu
 			image_sampler.name          = name;
 			image_sampler.binding       = binding;
 			image_sampler.arraySize     = array_size;
+			image_sampler.dimension     = type.image.dim;
 
 			ShaderResource &image_sampler_resource = m_reflectionData.resources[name];
 			image_sampler_resource.name            = name;
