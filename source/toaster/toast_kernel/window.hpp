@@ -112,6 +112,7 @@ namespace toaster
 			String title{};
 
 			EventCallbackFn eventCallback{nullptr};
+			InputContext *  cbInputCtx{nullptr};
 		};
 
 		GLFWCallbackData m_callbackData{};

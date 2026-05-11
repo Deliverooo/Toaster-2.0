@@ -29,16 +29,32 @@ namespace toaster
 		auto registerScriptMethods(script::ScriptEngine *p_engine) -> void;
 
 		auto setCursorMode(input::ECursorMode p_mode) -> void;
-		auto getCursorMode() -> input::ECursorMode;
+		auto getCursorMode() const -> input::ECursorMode;
 
-		auto getMouseX() -> float32;
-		auto getMouseY() -> float32;
-		auto getMousePos() -> MousePos;
+		auto getMouseX() const -> float32;
+		auto getMouseY() const -> float32;
+		auto getMousePos() const -> MousePos;
 
-		auto isMouseButtonDown(input::EMouseButton p_button) -> bool;
-		auto isKeyDown(input::EKeyCode p_key_code) -> bool;
+		auto isKeyDown(input::EKeyCode p_key_code) const -> bool;
+		auto isKeyPressed(input::EKeyCode p_key_code) const -> bool;
+		auto isKeyReleased(input::EKeyCode p_key_code) const -> bool;
+		auto isKeyHeld(input::EKeyCode p_key_code) const -> bool;
+
+		auto isMouseButtonDown(input::EMouseButton p_button) const -> bool;
+		auto isMouseButtonPressed(input::EMouseButton p_button) const -> bool;
+		auto isMouseButtonReleased(input::EMouseButton p_button) const -> bool;
+		auto isMouseButtonHeld(input::EMouseButton p_button) const -> bool;
 
 	private:
+		auto _setKeyState(input::EKeyCode p_key_code, input::EKeyState p_key_state) -> void;
+		auto _setMouseButtonState(input::EMouseButton p_mouse_button, input::EKeyState p_key_state) -> void;
+		auto _updateKeyStates() -> void;
+
 		NonOwningPtr<Window> m_window{nullptr};
+
+		std::unordered_map<input::EKeyCode, input::EKeyState>     m_keyStateMap;
+		std::unordered_map<input::EMouseButton, input::EKeyState> m_mouseButtonStateMap;
+
+		friend class Window;
 	};
 }

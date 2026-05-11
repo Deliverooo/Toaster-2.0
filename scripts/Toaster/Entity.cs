@@ -9,13 +9,13 @@ public class Entity
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern void AddComponentInternal(ulong p_entity_id, Type p_component_type);
-	
+
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern ulong GetEntityByNameInternal(string p_name);
-	
+
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern object GetScriptInstance(ulong p_entity_id);
-	
+
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern ulong CreateEntityInternal(string p_name);
 
@@ -25,8 +25,8 @@ public class Entity
 
 	public readonly ulong Id;
 
-	protected virtual void OnCreate(){}
-	protected virtual void OnUpdate(float p_dt){}
+	protected virtual void OnCreate() { }
+	protected virtual void OnUpdate(float p_dt) { }
 
 	public bool HasComponent<T>() where T : Component, new() { return HasComponentInternal(Id, typeof(T)); }
 

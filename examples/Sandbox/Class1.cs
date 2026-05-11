@@ -61,6 +61,8 @@ public class CameraController : Entity
 	private float m_Yaw = 0.0f;
 	private float m_Pitch = 0.0f;
 
+	private bool m_slow = false;
+
 	public static readonly Vec3 ForwardDir = new Vec3(0.0f, 0.0f, -1.0f);
 	public static readonly Vec3 RightDir = new Vec3(1.0f, 0.0f, 0.0f);
 	public static readonly Vec3 UpDir = new Vec3(0.0f, 1.0f, 0.0f);
@@ -86,7 +88,6 @@ public class CameraController : Entity
 	{
 		m_Time += p_dt;
 
-
 		if (Input.IsMouseButtonDown(Input.EMouseButton.Right))
 		{
 			if (Input.CursorMode != Input.ECursorMode.Disabled)
@@ -105,6 +106,16 @@ public class CameraController : Entity
 				delta_position += RightDir;
 
 			delta_position = (delta_position.Length() == 0.0f) ? Vec3.Zero : Vec3.Normalize(delta_position) * p_dt;
+
+			if (Input.IsKeyPressed(Input.EKeyCode.L))
+			{
+				if (m_slow)
+					m_slow = false;
+				else
+					m_slow = true;
+			}
+
+			speed *= m_slow ? 0.3f : 1.0f;
 
 			Quat orientation = GetOrientation();
 			Vec4 rotated_position = Vec4.Transform(new Vec4(delta_position, 0.0f), Mat4.CreateFromQuaternion(orientation));

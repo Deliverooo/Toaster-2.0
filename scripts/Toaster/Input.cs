@@ -137,7 +137,25 @@ public static class Input
 	public static extern bool IsKeyDown(EKeyCode p_key_code);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
+	public static extern bool IsKeyPressed(EKeyCode p_key_code);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	public static extern bool IsKeyReleased(EKeyCode p_key_code);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	public static extern bool IsKeyHeld(EKeyCode p_key_code);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
 	public static extern bool IsMouseButtonDown(EMouseButton p_mouse_button);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	public static extern bool IsMouseButtonPressed(EMouseButton p_mouse_button);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	public static extern bool IsMouseButtonReleased(EMouseButton p_mouse_button);
+
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	public static extern bool IsMouseButtonHeld(EMouseButton p_mouse_button);
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	public static extern void GetCursorMode(out ECursorMode p_cursor_mode);
@@ -147,7 +165,6 @@ public static class Input
 
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern void GetMousePos(out Vec2 p_mouse_pos);
-
 
 	public static ECursorMode CursorMode
 	{

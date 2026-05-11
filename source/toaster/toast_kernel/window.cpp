@@ -132,38 +132,24 @@ namespace toaster
 		constexpr BOOL use_dark_mode{TRUE};
 		(void) DwmSetWindowAttribute(glfwGetWin32Window(m_window), DWMWA_USE_IMMERSIVE_DARK_MODE, &use_dark_mode, sizeof(use_dark_mode));
 
+		#pragma region setup glfw callbacks
+
+		m_inputCtx                = new InputContext{this};
+		m_callbackData.cbInputCtx = m_inputCtx;
+
 		glfwSetWindowUserPointer(m_window, &m_callbackData);
 
-		#pragma region setup glfw callbacks
 		#define GET_CB_DATA() *(static_cast<GLFWCallbackData *>(glfwGetWindowUserPointer(window)))
-		glfwSetWindowSizeCallback(m_window, [](GLFWwindow *window, const int32 width, const int32 height)
+
+		glfwSetKeyCallback(m_window, +[](GLFWwindow *window, int32 key, [[maybe_unused]] int32 scancode, const int32 action, [[maybe_unused]] int32 mods)
 		{
 			auto &data{GET_CB_DATA()};
-
-			WindowResizeEvent event{static_cast<uint32>(width), static_cast<uint32>(height)};
-			if (data.eventCallback)
-				data.eventCallback(event);
-			data.width  = width;
-			data.height = height;
-		});
-
-		glfwSetWindowCloseCallback(m_window, [](GLFWwindow *window)
-		{
-			const auto &data{GET_CB_DATA()};
-
-			WindowCloseEvent event{};
-			if (data.eventCallback)
-				data.eventCallback(event);
-		});
-
-		glfwSetKeyCallback(m_window, [](GLFWwindow *window, int32 key, [[maybe_unused]] int32 scancode, const int32 action, [[maybe_unused]] int32 mods)
-		{
-			const auto &data{GET_CB_DATA()};
 
 			switch (action)
 			{
 				case GLFW_PRESS:
 				{
+					data.cbInputCtx->_setKeyState(static_cast<input::EKeyCode>(key), input::EKeyState::ePressed);
 					KeyPressEvent event{static_cast<input::EKeyCode>(key), 0};
 					if (data.eventCallback)
 						data.eventCallback(event);
@@ -171,6 +157,7 @@ namespace toaster
 				}
 				case GLFW_RELEASE:
 				{
+					data.cbInputCtx->_setKeyState(static_cast<input::EKeyCode>(key), input::EKeyState::eReleased);
 					KeyReleaseEvent event{static_cast<input::EKeyCode>(key)};
 					if (data.eventCallback)
 						data.eventCallback(event);
@@ -178,6 +165,7 @@ namespace toaster
 				}
 				case GLFW_REPEAT:
 				{
+					data.cbInputCtx->_setKeyState(static_cast<input::EKeyCode>(key), input::EKeyState::eHeld);
 					KeyPressEvent event{static_cast<input::EKeyCode>(key), 1};
 					if (data.eventCallback)
 						data.eventCallback(event);
@@ -188,7 +176,27 @@ namespace toaster
 			}
 		});
 
-		glfwSetCharCallback(m_window, [](GLFWwindow *window, uint32_t codepoint)
+		glfwSetWindowSizeCallback(m_window, +[](GLFWwindow *window, const int32 width, const int32 height)
+		{
+			auto &data{GET_CB_DATA()};
+
+			WindowResizeEvent event{static_cast<uint32>(width), static_cast<uint32>(height)};
+			if (data.eventCallback)
+				data.eventCallback(event);
+			data.width  = width;
+			data.height = height;
+		});
+
+		glfwSetWindowCloseCallback(m_window, +[](GLFWwindow *window)
+		{
+			const auto &data{GET_CB_DATA()};
+
+			WindowCloseEvent event{};
+			if (data.eventCallback)
+				data.eventCallback(event);
+		});
+
+		glfwSetCharCallback(m_window, +[](GLFWwindow *window, uint32_t codepoint)
 		{
 			const auto &data{GET_CB_DATA()};
 
@@ -197,7 +205,7 @@ namespace toaster
 				data.eventCallback(event);
 		});
 
-		glfwSetMouseButtonCallback(m_window, [](GLFWwindow *window, int32 button, int32 action, [[maybe_unused]] int32 mods)
+		glfwSetMouseButtonCallback(m_window, +[](GLFWwindow *window, int32 button, int32 action, [[maybe_unused]] int32 mods)
 		{
 			const auto &data{GET_CB_DATA()};
 
@@ -205,6 +213,7 @@ namespace toaster
 			{
 				case GLFW_PRESS:
 				{
+					data.cbInputCtx->_setMouseButtonState(static_cast<input::EMouseButton>(button), input::EKeyState::ePressed);
 					MouseButtonPressEvent event{static_cast<input::EMouseButton>(button)};
 					if (data.eventCallback)
 						data.eventCallback(event);
@@ -212,6 +221,7 @@ namespace toaster
 				}
 				case GLFW_RELEASE:
 				{
+					data.cbInputCtx->_setMouseButtonState(static_cast<input::EMouseButton>(button), input::EKeyState::eReleased);
 					MouseButtonReleaseEvent event{static_cast<input::EMouseButton>(button)};
 					if (data.eventCallback)
 						data.eventCallback(event);
@@ -221,7 +231,7 @@ namespace toaster
 			}
 		});
 
-		glfwSetScrollCallback(m_window, [](GLFWwindow *window, float64 xOffset, float64 yOffset)
+		glfwSetScrollCallback(m_window, +[](GLFWwindow *window, float64 xOffset, float64 yOffset)
 		{
 			const auto &data{GET_CB_DATA()};
 
@@ -230,7 +240,7 @@ namespace toaster
 				data.eventCallback(event);
 		});
 
-		glfwSetCursorPosCallback(m_window, [](GLFWwindow *window, float64 x, float64 y)
+		glfwSetCursorPosCallback(m_window, +[](GLFWwindow *window, float64 x, float64 y)
 		{
 			const auto &data{GET_CB_DATA()};
 
@@ -239,7 +249,7 @@ namespace toaster
 				data.eventCallback(event);
 		});
 
-		glfwSetWindowMaximizeCallback(m_window, [](GLFWwindow *window, int32 maximized)
+		glfwSetWindowMaximizeCallback(m_window, +[](GLFWwindow *window, int32 maximized)
 		{
 			const auto &data{GET_CB_DATA()};
 
@@ -248,7 +258,7 @@ namespace toaster
 				data.eventCallback(event);
 		});
 
-		glfwSetWindowIconifyCallback(m_window, [](GLFWwindow *window, int32 iconified)
+		glfwSetWindowIconifyCallback(m_window, +[](GLFWwindow *window, int32 iconified)
 		{
 			const auto &data{GET_CB_DATA()};
 
@@ -257,7 +267,7 @@ namespace toaster
 				data.eventCallback(event);
 		});
 
-		glfwSetDropCallback(m_window, [](GLFWwindow *window, int32 path_count, CString paths[])
+		glfwSetDropCallback(m_window, +[](GLFWwindow *window, int32 path_count, CString paths[])
 		{
 			const auto &data{GET_CB_DATA()};
 
@@ -274,8 +284,6 @@ namespace toaster
 		});
 		#undef GET_CB_DATA
 		#pragma endregion
-
-		m_inputCtx = new InputContext{this};
 
 		if (!p_create_info.iconPath.empty())
 		{
@@ -306,6 +314,7 @@ namespace toaster
 		vkDestroySurfaceKHR(*m_device->getPhysicalDevice()->getInstance()->getVulkanInstance(), m_windowSurface, nullptr);
 
 		delete m_inputCtx;
+		m_callbackData.cbInputCtx = nullptr;
 
 		glfwDestroyWindow(m_window);
 	}
@@ -317,6 +326,7 @@ namespace toaster
 
 	auto Window::processEvents() -> void
 	{
+		m_inputCtx->_updateKeyStates();
 		glfwPollEvents();
 	}
 
