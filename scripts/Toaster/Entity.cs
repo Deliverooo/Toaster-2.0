@@ -28,6 +28,8 @@ public class Entity
 	protected virtual void OnCreate() { }
 	protected virtual void OnUpdate(float p_dt) { }
 
+	protected virtual void OnWindowResizeEvent(WindowResizeEvent p_resize_event) { }
+
 	public bool HasComponent<T>() where T : Component, new() { return HasComponentInternal(Id, typeof(T)); }
 
 	public T GetComponent<T>() where T : Component, new() { return !HasComponent<T>() ? null : new T() { EntityParent = this }; }

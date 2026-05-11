@@ -163,6 +163,7 @@ namespace toaster
 	{
 		EventDispatcher eventDispatcher(p_event);
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(RuntimeLayer::_onKeyPressEvent));
+		m_scene->onEvent(p_event);
 	}
 
 	auto RuntimeLayer::_onKeyPressEvent(KeyPressEvent &e) -> bool

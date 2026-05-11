@@ -147,6 +147,11 @@ public class CameraController : Entity
 			m_InitialMousePos = Input.MousePos;
 		}
 	}
+
+	protected override void OnWindowResizeEvent(WindowResizeEvent p_resize_event)
+	{
+		Console.WriteLine("Size: [{0}, {1}] | Aspect: {2}", p_resize_event.Size.X, p_resize_event.Size.Y, p_resize_event.GetAspectRatio());
+	}
 }
 
 public class Test

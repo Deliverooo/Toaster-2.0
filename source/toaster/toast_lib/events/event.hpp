@@ -61,11 +61,8 @@ namespace toaster
 		virtual ~Event() = default;
 
 		[[nodiscard]] virtual auto getEventType() const -> EEventType = 0;
-
 		[[nodiscard]] virtual auto getEventName() const -> CString = 0;
-
 		[[nodiscard]] virtual auto getEventCategory() const -> int32 = 0;
-
 		[[nodiscard]] virtual auto toStr() const -> String = 0;
 
 		[[nodiscard]] auto inCategory(const EventCategory p_category) const -> bool { return getEventCategory() & p_category; }

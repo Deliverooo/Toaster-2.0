@@ -7,6 +7,7 @@
 
 #include "toast_gpu/vk/vk_mesh.hpp"
 #include "toast_lib/uuid.hpp"
+#include "toast_lib/events/event.hpp"
 
 namespace toaster
 {
@@ -63,6 +64,7 @@ namespace toaster
 		~Scene();
 
 		auto onUpdate(float32 p_dt) -> void;
+		auto onEvent(Event &p_event) -> void;
 
 		auto onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void;
 		auto onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,

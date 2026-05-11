@@ -147,6 +147,8 @@ namespace toaster::script
 		}
 
 		[[nodiscard]] auto getMethod(const toaster::String &p_method_name, uint32 p_parameter_count) const -> Method *;
+		[[nodiscard]] auto getVirtualMethod(Method *p_base_method) const -> Method *;
+		[[nodiscard]] auto overridesMethod(Method *p_base_method) const -> bool;
 		[[nodiscard]] auto getClass() -> Class &;
 		[[nodiscard]] auto getObject() const -> MonoObject *;
 

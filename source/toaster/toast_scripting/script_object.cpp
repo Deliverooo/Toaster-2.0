@@ -78,6 +78,17 @@ namespace toaster::script
 		return mono_class_get_method_from_name(m_class.m_class, p_method_name.c_str(), p_parameter_count);
 	}
 
+	auto Object::getVirtualMethod(Method *p_base_method) const -> Method *
+	{
+		return mono_object_get_virtual_method(m_object, p_base_method);
+	}
+
+	auto Object::overridesMethod(Method *p_base_method) const -> bool
+	{
+		Method *resolve_method{getVirtualMethod(p_base_method)};
+		return p_base_method != resolve_method;
+	}
+
 	auto Object::getClass() -> Class &
 	{
 		return m_class;

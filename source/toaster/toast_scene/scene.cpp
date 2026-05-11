@@ -10,6 +10,8 @@
 
 #include <mono/metadata/attrdefs.h>
 
+#include "toast_lib/events/window_event.hpp"
+
 #define TST_ENABLE_2D_SCENE_RENDERING 1
 
 namespace toaster
@@ -17,12 +19,22 @@ namespace toaster
 	class TST_API ScriptableEntityCS
 	{
 	public:
+		struct WindowResizeEventCS
+		{
+			glm::vec2 size{0.0f};
+		};
+
 		ScriptableEntityCS(const script::Class &p_class, Scene *p_scene, Entity p_entity) : m_obj(p_class)
 		{
 			TST_ASSERT_MSG(m_obj.getClass().getScriptEngine(), "Class's script engine is null");
 
 			m_onCreateMethod = m_obj.getClass().getMethod("OnCreate", 0);
 			m_onUpdateMethod = m_obj.getClass().getMethod("OnUpdate", 1);
+
+			m_onWindowResizeEventMethod = m_obj.getClass().getMethod("OnWindowResizeEvent", 1);
+			// if (!m_onWindowResizeEventMethod)
+			// m_onWindowResizeEventMethod = p_scene->m_baseEntityClass->getMethod("OnWindowResizeEvent", 1);
+
 			m_obj.invoke(p_scene->m_baseEntityClass->getMethod(".ctor", 1), p_entity.getComponent<UUIDComponent>().uuid);
 		}
 
@@ -36,6 +48,23 @@ namespace toaster
 			m_obj.invoke(m_onUpdateMethod, p_dt);
 		}
 
+		auto onEvent(Event &p_event) -> void
+		{
+			if (p_event.getEventType() == WindowResizeEvent::getStaticType())
+			{
+				if (m_onWindowResizeEventMethod)
+				{
+					auto                window_resize_event{static_cast<WindowResizeEvent &>(p_event)};
+					WindowResizeEventCS window_resize_event_data{};
+					window_resize_event_data.size = glm::vec2{
+						static_cast<float32>(window_resize_event.getWidth()),
+						static_cast<float32>(window_resize_event.getHeight())
+					};
+					m_obj.invoke(m_onWindowResizeEventMethod, window_resize_event_data);
+				}
+			}
+		}
+
 		auto getObject() -> script::Object &
 		{
 			return m_obj;
@@ -46,6 +75,7 @@ namespace toaster
 
 		script::Method *m_onCreateMethod{nullptr};
 		script::Method *m_onUpdateMethod{nullptr};
+		script::Method *m_onWindowResizeEventMethod{nullptr};
 	};
 
 	static Scene *s_activeScene{nullptr};
@@ -160,6 +190,20 @@ namespace toaster
 
 			p_script.instance->onUpdate(p_dt);
 		});
+	}
+
+	auto Scene::onEvent(Event &p_event) -> void
+	{
+		for (const auto view{m_registry.view<ScriptComponent>()}; const auto entity: view)
+		{
+			auto [class_name]{view.get<ScriptComponent>(entity)};
+
+			Entity e{entity, this};
+			UUID   uuid{e.getComponent<UUIDComponent>().uuid};
+
+			if (m_entityScriptMap.contains(uuid))
+				m_entityScriptMap[uuid]->onEvent(p_event);
+		}
 	}
 
 	auto Scene::onRender([[maybe_unused]] const vk::raii::CommandBuffer &p_cmd, [[maybe_unused]] uint32 p_frame_index, [[maybe_unused]] float32 p_dt,
