@@ -1,4 +1,4 @@
-#include "runtime_layer.hpp"
+#include "launcher_layer.hpp"
 
 #include "toaster/toast_kernel/application.hpp"
 #include "toaster/toast_kernel/input.hpp"
@@ -8,23 +8,20 @@
 
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
-#include <imgui.h>
-
 #include "glm/gtc/type_ptr.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_renderer.hpp"
 #include "toast_lib/os/terminal.hpp"
 #include "toast_scene/components.hpp"
 #include "toast_scene/scene_serializer.hpp"
-namespace ig = ImGui;
 
 namespace toaster
 {
-	RuntimeLayer::RuntimeLayer(Application *p_app) : IAppLayer(p_app), m_cameraTest(p_app->getWindow().getInputContext(), 90.0f, 1.777f, 0.1f, 100.0f)
+	LauncherLayer::LauncherLayer(Application *p_app) : IAppLayer(p_app)
 	{
 	}
 
-	auto RuntimeLayer::onInit() -> void
+	auto LauncherLayer::onInit() -> void
 	{
 		auto &app    = getApp();
 		auto  device = app.getLogicalDevice();
@@ -33,53 +30,20 @@ namespace toaster
 		auto swapchain{app.getWindow().getSwapchain()};
 		m_viewportWidth  = swapchain->getExtent().width;
 		m_viewportHeight = swapchain->getExtent().height;
-		m_cameraTest.setViewportSize(m_viewportWidth, m_viewportHeight);
 
 		swapchain->setResizeCallback([this](const uint32 width, const uint32 height) -> void
 		{
 			m_viewportWidth  = width;
 			m_viewportHeight = height;
 
-			m_scene->setViewportSize(width, height);
-
-			m_sceneRenderer->onResize(width, height);
-			m_cameraTest.setViewportSize(width, height);
+			m_renderer2D->onResize(width, height);
 		});
 
 		auto                 command_line_args{app.getCommandLineArgs()};
 		io::filesystem::Path binary_dir{os::getBinaryDirectory()};
-
 		LOG_INFO("Binary directory: {}", binary_dir.string());
-		#pragma region script + scene setup
 
-		io::filesystem::Path core_script_assembly_dll{};
-		io::filesystem::Path app_script_assembly_dll{};
-		if (app.getCommandLineArgs().size() > 1) // Custom app script dll
-		{
-			// When compiling, the Toaster.dll should automatically be in the same directory as the app one... :)
-			core_script_assembly_dll = io::filesystem::Path{command_line_args["scriptAsm"]}.parent_path() / "Toaster.dll";
-			app_script_assembly_dll  = command_line_args["scriptAsm"];
-		}
-		else
-		{
-			core_script_assembly_dll = binary_dir / "../scripts/Toaster/bin/Debug/net48/Toaster.dll";  // Fallback to the prebuild toaster dll
-			app_script_assembly_dll  = binary_dir / "../examples/Sandbox/bin/Debug/net48/Sandbox.dll"; // Fallback to the demo script
-		}
-
-		LOG_INFO("{}", app_script_assembly_dll.string());
-
-		script::ScriptEngineSpecInfo script_engine_spec_info{};
-		script_engine_spec_info.rootDomainName   = "ToasterRootDomain";
-		script_engine_spec_info.appDomainName    = "ToasterAppDomain";
-		script_engine_spec_info.coreAssemblyPath = core_script_assembly_dll;
-		script_engine_spec_info.appAssemblyPath  = app_script_assembly_dll;
-		m_scriptEngine                           = make_unique<script::ScriptEngine>(script_engine_spec_info);
-
-		m_scene = make_reference<Scene>(app.getLogicalDevice(), &getGlobals(), m_scriptEngine.get(), "New Scene");
-		input_ctx->registerScriptMethods(m_scriptEngine.get());
-		#pragma endregion
-
-		auto                  fullscreen_shader{getGlobals().getShaderLibrary().get("Composite")};
+		auto                  fullscreen_shader{Globals::getShaderLibrary().get("Composite")};
 		gpu::PipelineSpecInfo fullscreen_pipeline_spec_info{};
 		fullscreen_pipeline_spec_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
 		fullscreen_pipeline_spec_info.depthFormat        = swapchain->getDepthFormat();
@@ -92,37 +56,22 @@ namespace toaster
 		m_fullscreenPipeline   = device->alloc<gpu::VKPipeline>(fullscreen_pipeline_spec_info);
 		m_fullscreenRenderPass = device->alloc<gpu::VKRenderPass>(m_fullscreenPipeline);
 		m_fullscreenRenderPass->bake();
+		m_fullscreenMaterial = device->alloc<gpu::VKMaterial>(Globals::getShaderLibrary().get("Composite"));
 
-		m_fullscreenMaterial = device->alloc<gpu::VKMaterial>(getGlobals().getShaderLibrary().get("Composite"));
-
-		SceneRendererSpecInfo scene_renderer_spec_info{};
-		scene_renderer_spec_info.viewportWidth     = m_viewportWidth;
-		scene_renderer_spec_info.viewportHeight    = m_viewportHeight;
-		scene_renderer_spec_info.scene             = m_scene.get();
-		scene_renderer_spec_info.resourceDirectory = binary_dir / "../resources";
-		m_sceneRenderer                            = toaster::make_reference<SceneRenderer>(device, &getGlobals(), scene_renderer_spec_info);
-
-		SceneSerializer scene_serializer{m_scene, binary_dir};
-
-		String scene_path{command_line_args["startupScene"]};
-		if (scene_path == "__NONE__")
-		{
-			scene_serializer.deserialize(binary_dir / "../resources/scenes/Test.tscene");
-		}
-		else
-		{
-			scene_serializer.deserialize(scene_path);
-		}
+		Renderer2DSpecInfo renderer_2d_spec_info{};
+		renderer_2d_spec_info.renderTargetWidth  = m_viewportWidth;
+		renderer_2d_spec_info.renderTargetHeight = m_viewportHeight;
+		m_renderer2D                             = make_unique<Renderer2D>(device, renderer_2d_spec_info);
 	}
 
-	auto RuntimeLayer::onDestroy() -> void
+	auto LauncherLayer::onDestroy() -> void
 	{
 		auto &app = getApp();
 		auto  device{app.getLogicalDevice()};
 		device->getVulkanLogicalDevice().waitIdle();
 	}
 
-	auto RuntimeLayer::onUpdate(const float32 p_dt) -> void
+	auto LauncherLayer::onUpdate(const float32 p_dt) -> void
 	{
 		auto &app       = getApp();
 		auto  swapchain = app.getWindow().getSwapchain();
@@ -130,13 +79,13 @@ namespace toaster
 		uint32 frame_index{swapchain->getFrameIndex()};
 		auto & command_buffer = swapchain->getCurrentCommandBuffer();
 
-		// LOG_INFO("Scroll: {}, {}", app.getWindow().getInputContext()->getMouseScrollX(), app.getWindow().getInputContext()->getMouseScrollY());
+		glm::mat4 view{1.0f};
+		glm::mat4 proj{glm::ortho(-1.0f, 1.0f, swapchain->getAspectRatio(), -swapchain->getAspectRatio())};
+		m_renderer2D->begin(command_buffer, frame_index, view, proj);
+		m_renderer2D->submitQuad({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f});
+		m_renderer2D->end(command_buffer, frame_index);
 
-		m_cameraTest.onUpdate(p_dt);
-		m_scene->onUpdate(p_dt);
-		m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer);
-
-		auto tex{m_sceneRenderer->getOutputColourTexture()};
+		auto tex{m_renderer2D->getOutputColourTexture()};
 		m_fullscreenRenderPass->setInput("u_Texture", tex);
 
 		m_fullscreenMaterial->set("u_Constants.res", glm::vec2{m_viewportWidth, m_viewportHeight});
@@ -160,19 +109,17 @@ namespace toaster
 		rendering_info.pDepthAttachment   = std::addressof(depth_attachment_info);
 
 		gpu::render::beginRendering(rendering_info, command_buffer, frame_index, m_fullscreenRenderPass);
-		render::renderFullscreenQuad(&getGlobals(), command_buffer, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);
+		render::renderFullscreenQuad(command_buffer, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);
 		gpu::render::endRendering(rendering_info, command_buffer);
 	}
 
-	auto RuntimeLayer::onEvent(Event &p_event) -> void
+	auto LauncherLayer::onEvent(Event &p_event) -> void
 	{
 		EventDispatcher eventDispatcher(p_event);
-		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(RuntimeLayer::_onKeyPressEvent));
-
-		m_scene->onEvent(p_event);
+		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(LauncherLayer::_onKeyPressEvent));
 	}
 
-	auto RuntimeLayer::_onKeyPressEvent(KeyPressEvent &e) -> bool
+	auto LauncherLayer::_onKeyPressEvent(KeyPressEvent &e) -> bool
 	{
 		auto &app{getApp()};
 		auto &window{app.getWindow()};

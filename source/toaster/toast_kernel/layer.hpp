@@ -11,6 +11,7 @@
 namespace toaster
 {
 	class Application;
+	class Globals;
 
 	/*!
 	 * @class IAppLayer
@@ -57,7 +58,8 @@ namespace toaster
 		{
 		}
 
-		virtual auto getApp() -> Application & { return *m_appParent; }
+		virtual auto getApp() -> Application &;
+		virtual auto getGlobals() -> Globals &;
 
 	private:
 		Application *m_appParent{nullptr};

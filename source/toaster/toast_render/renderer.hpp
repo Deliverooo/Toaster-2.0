@@ -11,13 +11,14 @@
 
 #include <glm/glm.hpp>
 
+#include "globals.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_mesh.hpp"
 
 namespace toaster::render
 {
-	TST_API auto createEnvironmentMap(gpu::VKLogicalDevice *p_device, const io::filesystem::Path &p_path) -> RefPtr<gpu::VKTexture3D>;
+	TST_API auto createEnvironmentMap(gpu::VKLogicalDevice *p_device, Globals *p_globals, const io::filesystem::Path &p_path) -> RefPtr<gpu::VKTexture3D>;
 
-	TST_API auto renderFullscreenQuad(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
+	TST_API auto renderFullscreenQuad( Globals *p_globals,const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
 									  const RefPtr<gpu::VKMaterial> &p_material) -> void;
 }

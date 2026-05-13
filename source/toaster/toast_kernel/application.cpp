@@ -65,7 +65,7 @@ namespace toaster
 		});
 		#pragma endregion
 
-		Globals::init(m_vkLogicalDevice, os::getBinaryDirectory());
+		m_globals = new Globals{m_vkLogicalDevice, os::getBinaryDirectory()};
 	}
 
 	Application::~Application() noexcept
@@ -77,7 +77,8 @@ namespace toaster
 			removeLayer(layer);
 		m_layers.clear();
 
-		Globals::shutdown();
+		delete m_globals;
+
 		m_vkLogicalDevice->performGarbageCollection(); // Collect the trash from the globals
 
 		delete m_window;

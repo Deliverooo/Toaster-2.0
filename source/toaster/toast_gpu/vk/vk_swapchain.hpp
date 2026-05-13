@@ -39,6 +39,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto getCurrentCommandBuffer() -> vk::raii::CommandBuffer &;
 
 		[[nodiscard]] auto getExtent() const -> vk::Extent2D;
+		[[nodiscard]] auto getAspectRatio() const -> float32;
 		[[nodiscard]] auto getSurfaceFormat() const -> vk::SurfaceFormatKHR;
 		[[nodiscard]] auto getDepthFormat() const -> vk::Format;
 

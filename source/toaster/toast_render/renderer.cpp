@@ -7,7 +7,7 @@
 
 namespace toaster::render
 {
-	auto createEnvironmentMap(gpu::VKLogicalDevice *p_device, const io::filesystem::Path &p_path) -> RefPtr<gpu::VKTexture3D>
+	auto createEnvironmentMap(gpu::VKLogicalDevice *p_device, Globals *p_globals, const io::filesystem::Path &p_path) -> RefPtr<gpu::VKTexture3D>
 	{
 		RefPtr<gpu::VKTexture2D> env_tex{nullptr};
 		RefPtr<gpu::VKTexture3D> env_map{nullptr};
@@ -22,7 +22,7 @@ namespace toaster::render
 		skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
 		env_map                             = p_device->alloc<gpu::VKTexture3D>(skybox_texture_map_spec_info);
 
-		auto equirectangular_to_cubemap_pipeline{p_device->alloc<gpu::VKComputePipeline>(Globals::getShaderLibrary().get("Equirectangular_To_CubeMap"))};
+		auto equirectangular_to_cubemap_pipeline{p_device->alloc<gpu::VKComputePipeline>(p_globals->getShaderLibrary().get("Equirectangular_To_CubeMap"))};
 		auto equirectangular_to_cubemap_pass{p_device->alloc<gpu::VKComputePass>(equirectangular_to_cubemap_pipeline)};
 		equirectangular_to_cubemap_pass->setInput("u_EquirectangularMap", env_tex);
 		equirectangular_to_cubemap_pass->setInput("o_Cubemap", env_map);
@@ -41,7 +41,7 @@ namespace toaster::render
 		return env_map;
 	}
 
-	auto renderFullscreenQuad(const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
+	auto renderFullscreenQuad(Globals *p_globals, const vk::raii::CommandBuffer &p_command_buffer, uint32 p_frame_index, const RefPtr<gpu::VKPipeline> &p_pipeline,
 							  const RefPtr<gpu::VKMaterial> &p_material) -> void
 	{
 		TST_ASSERT_MSG(*p_command_buffer, "Command buffer is null");
@@ -68,10 +68,10 @@ namespace toaster::render
 			}
 		}
 		// Bind the vertex and index buffers
-		Globals::getFullscreenQuadVertexBuffer()->bind(p_command_buffer);
-		Globals::getFullscreenQuadIndexBuffer()->bind(p_command_buffer, vk::IndexType::eUint32);
+		p_globals->getFullscreenQuadVertexBuffer()->bind(p_command_buffer);
+		p_globals->getFullscreenQuadIndexBuffer()->bind(p_command_buffer, vk::IndexType::eUint32);
 
 		// Finally, draw indexed :)
-		p_command_buffer.drawIndexed(Globals::getFullscreenQuadIndices().size(), 1, 0, 0, 0);
+		p_command_buffer.drawIndexed(p_globals->getFullscreenQuadIndices().size(), 1, 0, 0, 0);
 	}
 }

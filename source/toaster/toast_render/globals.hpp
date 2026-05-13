@@ -15,6 +15,7 @@ namespace toaster
 {
 	class TST_API Globals final
 	{
+		TST_GPU_OBJECT
 	public:
 		struct QuadVertex
 		{
@@ -22,23 +23,37 @@ namespace toaster
 			glm::vec2 texCoord;
 		};
 
-		static auto init(gpu::VKLogicalDevice *p_device, const io::filesystem::Path& p_binary_dir) -> void;
-		static auto shutdown() -> void;
+		Globals(gpu::VKLogicalDevice *p_device, const io::filesystem::Path &p_binary_dir);
+		~Globals();
 
 		/*!
 		 * @brief use ->get("") to get a shader
 		 * The shaders included are "Depth-Pre", "Geometry", "Composite", "Skybox", "Quad", "Compute-Test"
 		 * @return Returns the shader library
 		 */
-		static auto getShaderLibrary() -> const ShaderLibrary &;
+		auto getShaderLibrary() -> const ShaderLibrary &;
 
-		static auto getFullscreenQuadVertexBuffer() -> const RefPtr<gpu::VKVertexBuffer> &;
-		static auto getFullscreenQuadIndexBuffer() -> const RefPtr<gpu::VKIndexBuffer> &;
+		auto getFullscreenQuadVertexBuffer() -> const RefPtr<gpu::VKVertexBuffer> &;
+		auto getFullscreenQuadIndexBuffer() -> const RefPtr<gpu::VKIndexBuffer> &;
 
-		static auto getFullscreenQuadVertices() -> const std::vector<QuadVertex> &;
-		static auto getFullscreenQuadIndices() -> const std::vector<uint32> &;
+		auto getFullscreenQuadVertices() -> const std::vector<QuadVertex> &;
+		auto getFullscreenQuadIndices() -> const std::vector<uint32> &;
 
-		static auto getWhiteTexture() -> const RefPtr<gpu::VKTexture2D> &;
-		static auto getWhiteTexture3D() -> const RefPtr<gpu::VKTexture3D> &;
+		auto getWhiteTexture() -> const RefPtr<gpu::VKTexture2D> &;
+		auto getWhiteTexture3D() -> const RefPtr<gpu::VKTexture3D> &;
+
+	private:
+		io::filesystem::Path m_binaryDir;
+
+		ShaderLibrary m_shaderLibrary;
+
+		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
+		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
+
+		std::vector<QuadVertex> m_quadVertices;
+		std::vector<uint32>     m_quadIndices;
+
+		RefPtr<gpu::VKTexture2D> m_whiteTexture{nullptr};
+		RefPtr<gpu::VKTexture3D> m_whiteTexture3D{nullptr};
 	};
 }

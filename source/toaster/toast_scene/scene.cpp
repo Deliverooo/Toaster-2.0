@@ -8,8 +8,6 @@
 #include "toast_lib/logging.hpp"
 #include "toast_render/globals.hpp"
 
-#include <mono/metadata/attrdefs.h>
-
 #include "toast_lib/events/window_event.hpp"
 
 #define TST_ENABLE_2D_SCENE_RENDERING 1
@@ -80,8 +78,12 @@ namespace toaster
 
 	static Scene *s_activeScene{nullptr};
 
-	Scene::Scene(gpu::VKLogicalDevice *p_device, script::ScriptEngine *p_script_engine, const String &p_name) : m_device(p_device), m_scriptEngine(p_script_engine),
-																												m_name(p_name.empty() ? "Untitled Scene" : p_name)
+	Scene::Scene(gpu::VKLogicalDevice *p_device, Globals *p_globals, script::ScriptEngine *p_script_engine, const String &p_name) : m_device(p_device),
+																																	m_globals(p_globals),
+																																	m_scriptEngine(p_script_engine),
+																																	m_name(p_name.empty()
+																																			   ? "Untitled Scene"
+																																			   : p_name)
 	{
 		s_activeScene = this;
 
@@ -425,11 +427,9 @@ namespace toaster
 	auto Scene::getMainCameraEntity() -> Entity
 	{
 		const auto view = m_registry.view<CameraComponent>();
-		LOG_ERROR("Camera sizes: {}", view.size());
 		for (const auto entity: view)
 		{
 			auto &camera = view.get<CameraComponent>(entity);
-			LOG_ERROR("Primary: {}", camera.primary);
 
 			if (camera.primary)
 				return Entity{entity, this};

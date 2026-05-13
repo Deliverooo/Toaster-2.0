@@ -155,7 +155,7 @@ namespace toaster
 {
 	SceneSerializer::SceneSerializer(const RefPtr<Scene> &p_scene, const io::filesystem::Path &p_binary_dir) : m_scene(p_scene), m_binaryDir(p_binary_dir)
 	{
-		TST_ASSERT_MSG(p_scene, "Scene is null");
+		TST_PERMA_ASSERT_MSG(p_scene, "Scene is null");
 	}
 
 	auto SceneSerializer::serialize(const io::filesystem::Path &p_filepath) -> void
@@ -226,7 +226,7 @@ namespace toaster
 		p_out << YAML::Key << "Entity" << YAML::Value << p_entity.getComponent<UUIDComponent>().uuid;
 
 		{
-			TST_ASSERT_MSG(p_entity.hasComponent<TagComponent>(), "Tag component is null");
+			TST_PERMA_ASSERT_MSG(p_entity.hasComponent<TagComponent>(), "Tag component is null");
 			p_out << YAML::Key << "TagComponent" << YAML::BeginMap;
 			const auto &tag = p_entity.getComponent<TagComponent>().tag;
 			p_out << YAML::Key << "Tag" << YAML::Value << tag;
@@ -234,7 +234,7 @@ namespace toaster
 		}
 
 		{
-			TST_ASSERT_MSG(p_entity.hasComponent<TransformComponent>(), "Transform component is null");
+			TST_PERMA_ASSERT_MSG(p_entity.hasComponent<TransformComponent>(), "Transform component is null");
 			p_out << YAML::Key << "TransformComponent" << YAML::BeginMap;
 
 			const auto &transform = p_entity.getComponent<TransformComponent>();
@@ -383,7 +383,7 @@ namespace toaster
 
 				if (exists(mesh_path))
 				{
-					mc.mesh = p_scene->m_device->alloc<gpu::VKMesh>(mesh_path, Globals::getShaderLibrary().get("Geometry"));
+					mc.mesh = p_scene->m_device->alloc<gpu::VKMesh>(mesh_path, p_scene->m_globals->getShaderLibrary().get("Geometry"));
 				}
 				else
 				{

@@ -152,6 +152,11 @@ namespace toaster::gpu
 		return m_swapchainExtent;
 	}
 
+	auto VKSwapchain::getAspectRatio() const -> float32
+	{
+		return m_swapchainExtent.width / m_swapchainExtent.height;
+	}
+
 	auto VKSwapchain::getSurfaceFormat() const -> vk::SurfaceFormatKHR
 	{
 		return m_swapchainSurfaceFormat;

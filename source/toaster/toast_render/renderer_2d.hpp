@@ -28,6 +28,8 @@ namespace toaster
 		class VKShader;
 	}
 
+	class Globals;
+
 	struct TST_API Renderer2DSpecInfo
 	{
 		uint32 renderTargetWidth{1920u};
@@ -40,13 +42,14 @@ namespace toaster
 
 	class TST_API Renderer2D final
 	{
+		TST_GPU_OBJECT
 	public:
 		struct Stats
 		{
 			uint32 quadCount{0u};
 		};
 
-		explicit Renderer2D(gpu::VKLogicalDevice *p_device, const Renderer2DSpecInfo &p_create_info);
+		explicit Renderer2D(gpu::VKLogicalDevice *p_device, Globals *p_globals, const Renderer2DSpecInfo &p_create_info);
 		~Renderer2D();
 
 		auto begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void;
@@ -60,14 +63,14 @@ namespace toaster
 
 		auto onResize(uint32 p_width, uint32 p_height) -> void;
 
-		auto               getColourOutput() const -> const RefPtr<gpu::VKTexture2D> &;
+		auto               getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 		[[nodiscard]] auto getStats() const -> const Stats &;
 
 	private:
 		auto _beginNewBatch() -> void;
 		auto _getTextureSlotIndex(const RefPtr<gpu::VKTexture2D> &p_texture) -> uint32;
 
-		gpu::VKLogicalDevice *m_device;
+		NonOwningPtr<Globals> m_globals{nullptr};
 
 		Renderer2DSpecInfo m_createInfo;
 		uint32             m_maxVertices;

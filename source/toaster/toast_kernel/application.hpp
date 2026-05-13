@@ -6,10 +6,16 @@
 #include "layer.hpp"
 #include "window.hpp"
 
+#include <unordered_map>
+
+#include "toast_lib/ptr.hpp"
+
 namespace toaster
 {
 	class WindowCloseEvent;
 	class WindowResizeEvent;
+
+	class Globals;
 
 	struct TST_API ApplicationCreateInfo
 	{
@@ -44,6 +50,8 @@ namespace toaster
 		gpu::VKPhysicalDevice *m_vkPhysicalDevice{nullptr};
 		gpu::VKLogicalDevice * m_vkLogicalDevice{nullptr};
 
+		Globals *m_globals{nullptr};
+
 		Window *m_window{nullptr};
 
 		std::vector<IAppLayer *> m_layers;
@@ -56,6 +64,8 @@ namespace toaster
 
 		bool m_minimized{false};
 		bool m_isRunning{true};
+
+		friend class IAppLayer;
 
 	protected:
 		auto addLayer(IAppLayer *p_layer) -> void;

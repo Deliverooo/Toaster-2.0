@@ -7,9 +7,10 @@
 
 namespace toaster
 {
-	Renderer2D::Renderer2D(gpu::VKLogicalDevice *p_device, const Renderer2DSpecInfo &p_create_info) : m_device(p_device), m_createInfo(p_create_info),
-																									  m_maxVertices(p_create_info.maxQuads * 4u),
-																									  m_maxIndices(p_create_info.maxQuads * 6u)
+	Renderer2D::Renderer2D(gpu::VKLogicalDevice *p_device, Globals *p_globals, const Renderer2DSpecInfo &p_create_info) : m_device(p_device), m_globals(p_globals),
+																														  m_createInfo(p_create_info),
+																														  m_maxVertices(p_create_info.maxQuads * 4u),
+																														  m_maxIndices(p_create_info.maxQuads * 6u)
 	{
 		m_quadVertexBufferLayout = gpu::BufferLayout{
 			{gpu::EBufferDataType::eFloat4, "a_Position"},
@@ -19,7 +20,7 @@ namespace toaster
 			{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
 		};
 
-		auto                    quad_shader{Globals::getShaderLibrary().get("Quad")};
+		auto                  quad_shader{m_globals->getShaderLibrary().get("Quad")};
 		gpu::PipelineSpecInfo pipeline_create_info{};
 		pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
 		pipeline_create_info.depthFormat        = m_device->getPhysicalDevice()->getDepthFormat();
@@ -94,7 +95,7 @@ namespace toaster
 		m_quadVertexTexCoords[2] = {0.0f, 1.0f};
 		m_quadVertexTexCoords[3] = {0.0f, 0.0f};
 
-		m_textureSlots[0] = Globals::getWhiteTexture();
+		m_textureSlots[0] = m_globals->getWhiteTexture();
 	}
 
 	Renderer2D::~Renderer2D()
@@ -172,7 +173,7 @@ namespace toaster
 					m_quadMaterial->set("u_Textures", m_textureSlots[i], i);
 				}
 				else
-					m_quadMaterial->set("u_Textures", Globals::getWhiteTexture(), i);
+					m_quadMaterial->set("u_Textures", m_globals->getWhiteTexture(), i);
 			}
 
 			gpu::render::renderGeometry(p_cmd, p_frame_index, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, glm::mat4{1.0f});
@@ -236,7 +237,7 @@ namespace toaster
 		return m_stats;
 	}
 
-	auto Renderer2D::getColourOutput() const -> const RefPtr<gpu::VKTexture2D> &
+	auto Renderer2D::getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &
 	{
 		return m_renderTargetTexture;
 	}

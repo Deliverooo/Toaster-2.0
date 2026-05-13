@@ -22,6 +22,8 @@ namespace toaster
 	class SceneRenderer;
 	class ScriptableEntityCS; // Inside the scene.cpp file
 
+	class Globals;
+
 	struct TST_API DirectionalLight
 	{
 		glm::vec4 direction{0.0f};
@@ -60,7 +62,7 @@ namespace toaster
 		using AddComponentFn   = void(*)(Entity *);
 		using ResetComponentFn = void(*)(Entity *);
 
-		Scene(gpu::VKLogicalDevice *p_device, script::ScriptEngine *p_script_engine = nullptr, const String &p_name = "");
+		Scene(gpu::VKLogicalDevice *p_device, Globals *p_globals, script::ScriptEngine *p_script_engine = nullptr, const String &p_name = "");
 		~Scene();
 
 		auto onUpdate(float32 p_dt) -> void;
@@ -101,6 +103,7 @@ namespace toaster
 		TST_API auto onComponentAdded(Entity p_entity, Type &p_component) -> void;
 
 		NonOwningPtr<gpu::VKLogicalDevice> m_device{nullptr};
+		NonOwningPtr<Globals>              m_globals{nullptr};
 		NonOwningPtr<script::ScriptEngine> m_scriptEngine{nullptr};
 
 		entt::registry                         m_registry;

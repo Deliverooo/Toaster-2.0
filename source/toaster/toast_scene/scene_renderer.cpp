@@ -9,7 +9,8 @@
 
 namespace toaster
 {
-	SceneRenderer::SceneRenderer(gpu::VKLogicalDevice *p_device, const SceneRendererSpecInfo &p_spec_info) : m_device(p_device), m_specInfo(p_spec_info)
+	SceneRenderer::SceneRenderer(gpu::VKLogicalDevice *p_device, Globals *p_globals, const SceneRendererSpecInfo &p_spec_info) : m_device(p_device), m_globals(p_globals),
+																																 m_specInfo(p_spec_info)
 	{
 		TST_ASSERT_MSG(m_specInfo.scene, "This is called SceneRenderer, please provide a scene!");
 		{
@@ -33,7 +34,7 @@ namespace toaster
 			m_mappedSceneDataUBOs = m_sceneDataUBOs->mapAllMemory(ubo_size, 0);
 		}
 
-		m_skyboxMap = render::createEnvironmentMap(m_device, m_specInfo.resourceDirectory / "environments/overcast_soil_puresky_2k.hdr");
+		m_skyboxMap = render::createEnvironmentMap(m_device, m_globals, m_specInfo.resourceDirectory / "environments/overcast_soil_puresky_2k.hdr");
 
 		#pragma region depth-pre
 		{
@@ -46,7 +47,7 @@ namespace toaster
 				{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
 			};
 			depth_pre_pipeline_spec_info.depthFormat = vk::Format::eD32Sfloat;
-			depth_pre_pipeline_spec_info.shader      = Globals::getShaderLibrary().get("Depth-Pre");
+			depth_pre_pipeline_spec_info.shader      = m_globals->getShaderLibrary().get("Depth-Pre");
 			m_depthPrePipeline                       = m_device->alloc<gpu::VKPipeline>(depth_pre_pipeline_spec_info);
 
 			m_depthPrePass = m_device->alloc<gpu::VKRenderPass>(m_depthPrePipeline);
@@ -65,7 +66,7 @@ namespace toaster
 
 		#pragma region light culling
 		{
-			m_lightCullingPipeline = m_device->alloc<gpu::VKComputePipeline>(Globals::getShaderLibrary().get("Compute-Test"));
+			m_lightCullingPipeline = m_device->alloc<gpu::VKComputePipeline>(m_globals->getShaderLibrary().get("Compute-Test"));
 
 			gpu::ImageSpecInfo compute_image_spec_info{};
 			compute_image_spec_info.width  = m_specInfo.viewportWidth;
@@ -79,7 +80,7 @@ namespace toaster
 			m_lightCullingPass->setInput("u_CubemapImage", m_skyboxMap);
 			m_lightCullingPass->bake();
 
-			m_lightCullingMaterial = m_device->alloc<gpu::VKMaterial>(Globals::getShaderLibrary().get("Compute-Test"));
+			m_lightCullingMaterial = m_device->alloc<gpu::VKMaterial>(m_globals->getShaderLibrary().get("Compute-Test"));
 		}
 		#pragma endregion
 
@@ -88,7 +89,7 @@ namespace toaster
 			gpu::PipelineSpecInfo skybox_pipeline_spec_info{};
 			skybox_pipeline_spec_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
 			skybox_pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
-			skybox_pipeline_spec_info.shader             = Globals::getShaderLibrary().get("Skybox");
+			skybox_pipeline_spec_info.shader             = m_globals->getShaderLibrary().get("Skybox");
 			skybox_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
 			skybox_pipeline_spec_info.multisample        = false;
 			m_skyboxPipeline                             = m_device->alloc<gpu::VKPipeline>(skybox_pipeline_spec_info);
@@ -100,7 +101,7 @@ namespace toaster
 			m_skyboxPass->bake(); // TODO: rename ts to toast
 			//						   Its funny because the engine is called Toaster...
 
-			m_skyboxMaterial = m_device->alloc<gpu::VKMaterial>(Globals::getShaderLibrary().get("Skybox"));
+			m_skyboxMaterial = m_device->alloc<gpu::VKMaterial>(m_globals->getShaderLibrary().get("Skybox"));
 		}
 		#pragma endregion
 
@@ -123,7 +124,7 @@ namespace toaster
 			geometry_pipeline_spec_info.depthWrite   = false;
 			geometry_pipeline_spec_info.depthCompare = vk::CompareOp::eEqual;
 			geometry_pipeline_spec_info.polygonMode  = vk::PolygonMode::eFill;
-			geometry_pipeline_spec_info.shader       = Globals::getShaderLibrary().get("Geometry");
+			geometry_pipeline_spec_info.shader       = m_globals->getShaderLibrary().get("Geometry");
 			m_geometryPipeline                       = m_device->alloc<gpu::VKPipeline>(geometry_pipeline_spec_info);
 
 			m_geometryPass = m_device->alloc<gpu::VKRenderPass>(m_geometryPipeline);
@@ -161,7 +162,7 @@ namespace toaster
 		renderer_2d_create_info.renderTargetWidth   = m_specInfo.viewportWidth;
 		renderer_2d_create_info.renderTargetHeight  = m_specInfo.viewportHeight;
 		renderer_2d_create_info.overrideAttachments = true;
-		m_renderer2D                                = make_reference<Renderer2D>(m_device, renderer_2d_create_info);
+		m_renderer2D                                = make_reference<Renderer2D>(m_device, m_globals, renderer_2d_create_info);
 	}
 
 	SceneRenderer::~SceneRenderer()
@@ -345,7 +346,7 @@ namespace toaster
 		colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 
 		gpu::render::beginRendering(rendering_info, p_cmd, p_frame_index, m_skyboxPass);
-		render::renderFullscreenQuad(p_cmd, p_frame_index, m_skyboxPipeline, m_skyboxMaterial);
+		render::renderFullscreenQuad(m_globals, p_cmd, p_frame_index, m_skyboxPipeline, m_skyboxMaterial);
 		gpu::render::endRendering(rendering_info, p_cmd);
 	}
 
