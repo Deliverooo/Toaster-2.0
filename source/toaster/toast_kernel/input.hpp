@@ -21,7 +21,8 @@ namespace toaster
 	class TST_API InputContext
 	{
 	public:
-		using MousePos = std::pair<float32, float32>;
+		using MousePos    = std::pair<float32, float32>;
+		using MouseScroll = std::pair<float32, float32>;
 
 		InputContext(Window *p_window);
 		~InputContext();
@@ -34,6 +35,9 @@ namespace toaster
 		auto getMouseX() const -> float32;
 		auto getMouseY() const -> float32;
 		auto getMousePos() const -> MousePos;
+		auto getMouseScrollX() const -> float32;
+		auto getMouseScrollY() const -> float32;
+		auto getMouseScroll() const -> MouseScroll;
 
 		auto isKeyDown(input::EKeyCode p_key_code) const -> bool;
 		auto isKeyPressed(input::EKeyCode p_key_code) const -> bool;
@@ -48,12 +52,15 @@ namespace toaster
 	private:
 		auto _setKeyState(input::EKeyCode p_key_code, input::EKeyState p_key_state) -> void;
 		auto _setMouseButtonState(input::EMouseButton p_mouse_button, input::EKeyState p_key_state) -> void;
-		auto _updateKeyStates() -> void;
+		auto _setMouseScroll(float32 p_x_offset, float32 p_y_offset) -> void;
+		auto _update() -> void;
+		auto _onEndFrame() -> void;
 
 		NonOwningPtr<Window> m_window{nullptr};
 
 		std::unordered_map<input::EKeyCode, input::EKeyState>     m_keyStateMap;
 		std::unordered_map<input::EMouseButton, input::EKeyState> m_mouseButtonStateMap;
+		MouseScroll                                               m_mouseScroll;
 
 		friend class Window;
 	};

@@ -21,7 +21,7 @@ namespace toaster::script
 
 		m_coreAssembly = loadAssembly(m_specInfo.coreAssemblyPath);
 		m_appAssembly  = loadAssembly(m_specInfo.appAssemblyPath);
-		TST_ASSERT_MSG(m_appAssembly, "Failed to load core assembly");
+		TST_PERMA_ASSERT_MSG(m_appAssembly, "Failed to load core assembly");
 		m_coreImage = mono_assembly_get_image(m_coreAssembly);
 		m_appImage  = mono_assembly_get_image(m_appAssembly);
 	}
@@ -97,15 +97,14 @@ namespace toaster::script
 
 			auto name_space{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAMESPACE])};
 			auto type_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_NAME])};
-			auto method_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_METHOD_LIST])};
 
 			MonoClass *script_class{mono_class_from_name(image, name_space, type_name)};
 			if (mono_class_is_subclass_of(entity_class, script_class, false))
 			{
-				LOG_ERROR("Is entity");
+				LOGD_ERROR("Is entity");
 			}
-
-			LOG_INFO("Namespace: {} | Type: {} | Method: {}", name_space, type_name, method_name);
+			// auto method_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_METHOD_LIST])};
+			// LOGD_INFO("Namespace: {} | Type: {} | Method: {}", name_space, type_name, method_name);
 		}
 	}
 
@@ -116,16 +115,16 @@ namespace toaster::script
 			char_t buffer[MAX_PATH];
 			size_t buffer_size{sizeof(buffer) / sizeof(char_t)};
 			int32  rc{get_hostfxr_path(buffer, &buffer_size, nullptr)};
-			TST_ASSERT(rc == 0);
+			TST_PERMA_ASSERT(rc == 0);
 
 			os::LibraryHandle lib{os::loadLibrary(buffer)};
 			m_initFn               = os::getProcAddress<hostfxr_initialize_for_runtime_config_fn>(lib, "hostfxr_initialize_for_runtime_config");
 			m_getRuntimeDelegateFn = os::getProcAddress<hostfxr_get_runtime_delegate_fn>(lib, "hostfxr_get_runtime_delegate");
 			m_closeFn              = os::getProcAddress<hostfxr_close_fn>(lib, "hostfxr_close");
 
-			TST_ASSERT(m_initFn);
-			TST_ASSERT(m_getRuntimeDelegateFn);
-			TST_ASSERT(m_closeFn);
+			TST_PERMA_ASSERT(m_initFn);
+			TST_PERMA_ASSERT(m_getRuntimeDelegateFn);
+			TST_PERMA_ASSERT(m_closeFn);
 
 			String dll_name{m_specInfo.coreAssemblyPath.stem().string()};
 

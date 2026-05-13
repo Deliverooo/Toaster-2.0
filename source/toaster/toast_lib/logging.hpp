@@ -84,16 +84,24 @@ namespace toaster::log
 	}
 
 	#ifndef NDEBUG
+
+	// Debug - disabled in release builds
+	#define LOGD_TRACE(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eTrace>(__VA_ARGS__)
+	#define LOGD_INFO(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eInfo>(__VA_ARGS__)
+	#define LOGD_WARN(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eWarning>(__VA_ARGS__)
+	#define LOGD_ERROR(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eError>(__VA_ARGS__)
+	#define LOGD_FATAL(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eFatal>(__VA_ARGS__)
+	#else
+	#define LOGD_TRACE(...)
+	#define LOGD_INFO(...)
+	#define LOGD_WARN(...)
+	#define LOGD_ERROR(...)
+	#define LOGD_FATAL(...)
+	#endif
+
 	#define LOG_TRACE(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eTrace>(__VA_ARGS__)
 	#define LOG_INFO(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eInfo>(__VA_ARGS__)
 	#define LOG_WARN(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eWarning>(__VA_ARGS__)
 	#define LOG_ERROR(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eError>(__VA_ARGS__)
 	#define LOG_FATAL(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eFatal>(__VA_ARGS__)
-	#else
-	#define LOG_TRACE(...)
-	#define LOG_INFO(...)
-	#define LOG_WARN(...)
-	#define LOG_ERROR(...)
-	#define LOG_FATAL(...)
-	#endif
 }

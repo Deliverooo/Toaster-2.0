@@ -38,7 +38,7 @@ namespace toaster::gpu
 		{
 			// We can't continue without the required glfw extensions, so terminate the program here
 			LOG_ERROR("Required extension \"{}\" is not supported", *unsupported_extension);
-			TST_ASSERT(false);
+			TST_PERMA_ASSERT(false);
 		}
 
 		LOG_INFO("Available instance extensions:");
@@ -66,7 +66,7 @@ namespace toaster::gpu
 		{
 			// We can't continue without the required validation layers, so terminate the program here
 			LOG_ERROR("Found unsupported validation layer: {}", *unsupported_layer_it);
-			TST_ASSERT(false);
+			TST_PERMA_ASSERT(false);
 		}
 
 		vk::DebugUtilsMessengerCreateInfoEXT debug_messenger_create_info{};

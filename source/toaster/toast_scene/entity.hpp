@@ -19,7 +19,7 @@ namespace toaster
 		template<typename Type, typename... TArgs>
 		auto addComponent(TArgs &&... p_args) -> Type &
 		{
-			TST_ASSERT_MSG(!hasComponent<Type>(), "Entity already has component!");
+			TST_PERMA_ASSERT_MSG(!hasComponent<Type>(), "Entity already has component!");
 			Type &comp = m_scene->m_registry.emplace<Type>(m_handle, std::forward<TArgs>(p_args)...);
 			m_scene->onComponentAdded<Type>(*this, comp);
 			return comp;
@@ -28,14 +28,14 @@ namespace toaster
 		template<typename Type>
 		auto getComponent() -> Type &
 		{
-			TST_ASSERT_MSG(hasComponent<Type>(), "Entity doesn't have component!");
+			TST_PERMA_ASSERT_MSG(hasComponent<Type>(), "Entity doesn't have component!");
 			return m_scene->m_registry.get<Type>(m_handle);
 		}
 
 		template<typename Type>
 		auto getComponent() const -> const Type &
 		{
-			TST_ASSERT_MSG(hasComponent<Type>(), "Entity doesn't have component!");
+			TST_PERMA_ASSERT_MSG(hasComponent<Type>(), "Entity doesn't have component!");
 			return m_scene->m_registry.get<Type>(m_handle);
 		}
 
@@ -80,7 +80,7 @@ namespace toaster
 		template<typename Type>
 		auto removeComponent() -> void
 		{
-			TST_ASSERT_MSG(hasComponent<Type>(), "Entity doesn't have component!");
+			TST_PERMA_ASSERT_MSG(hasComponent<Type>(), "Entity doesn't have component!");
 			m_scene->m_registry.remove<Type>(m_handle);
 		}
 

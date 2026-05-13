@@ -93,6 +93,10 @@ public class CameraController : Entity
 			if (Input.CursorMode != Input.ECursorMode.Disabled)
 				Input.CursorMode = Input.ECursorMode.Disabled;
 
+			float fov = m_Camera.PerspectiveFov;
+			fov -= Toaster.Math.Radians(Input.MouseScroll.Y);
+			m_Camera.PerspectiveFov = fov;
+
 			float speed = Input.IsKeyDown(Input.EKeyCode.LeftControl) ? 30.0f : 10.0f;
 
 			Vec3 delta_position = Vec3.Zero;

@@ -235,6 +235,7 @@ namespace toaster
 		{
 			const auto &data{GET_CB_DATA()};
 
+			data.cbInputCtx->_setMouseScroll(static_cast<float32>(xOffset), static_cast<float32>(yOffset));
 			MouseScrollEvent event{static_cast<float32>(xOffset), static_cast<float32>(yOffset)};
 			if (data.eventCallback)
 				data.eventCallback(event);
@@ -326,13 +327,14 @@ namespace toaster
 
 	auto Window::processEvents() -> void
 	{
-		m_inputCtx->_updateKeyStates();
+		m_inputCtx->_update();
 		glfwPollEvents();
 	}
 
 	auto Window::endFrame() -> void
 	{
 		m_swapchain->endFrame();
+		m_inputCtx->_onEndFrame();
 	}
 
 	auto Window::showWindow() -> void

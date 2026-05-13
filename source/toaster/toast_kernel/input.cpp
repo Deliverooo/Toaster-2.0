@@ -74,6 +74,21 @@ namespace toaster
 		{
 			*p_out_pos = s_activeInputCtx->getMousePos();
 		});
+
+		p_engine->registerMethod("Toaster.Input::GetMouseScroll", +[](MouseScroll *p_out_scroll) -> void
+		{
+			*p_out_scroll = s_activeInputCtx->getMouseScroll();
+		});
+	}
+
+	auto InputContext::setCursorMode(input::ECursorMode p_mode) -> void
+	{
+		glfwSetInputMode(m_window->getNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL + static_cast<int32>(p_mode));
+	}
+
+	auto InputContext::getCursorMode() const -> input::ECursorMode
+	{
+		return static_cast<input::ECursorMode>(glfwGetInputMode(m_window->getNativeWindow(), GLFW_CURSOR) - GLFW_CURSOR_NORMAL);
 	}
 
 	auto InputContext::getMouseX() const -> float32
@@ -94,6 +109,21 @@ namespace toaster
 		float64 y{0.0f};
 		glfwGetCursorPos(m_window->getNativeWindow(), &x, &y);
 		return std::make_pair(static_cast<float32>(x), static_cast<float32>(y));
+	}
+
+	auto InputContext::getMouseScrollX() const -> float32
+	{
+		return m_mouseScroll.first;
+	}
+
+	auto InputContext::getMouseScrollY() const -> float32
+	{
+		return m_mouseScroll.second;
+	}
+
+	auto InputContext::getMouseScroll() const -> MouseScroll
+	{
+		return m_mouseScroll;
 	}
 
 	auto InputContext::isKeyDown(input::EKeyCode p_key_code) const -> bool
@@ -148,7 +178,12 @@ namespace toaster
 		m_mouseButtonStateMap[p_mouse_button] = p_key_state;
 	}
 
-	auto InputContext::_updateKeyStates() -> void
+	auto InputContext::_setMouseScroll(float32 p_x_offset, float32 p_y_offset) -> void
+	{
+		m_mouseScroll = std::make_pair(p_x_offset, p_y_offset);
+	}
+
+	auto InputContext::_update() -> void
 	{
 		for (const auto &[key, state]: m_keyStateMap)
 			if (state == input::EKeyState::ePressed)
@@ -165,15 +200,11 @@ namespace toaster
 		for (const auto &[key, state]: m_mouseButtonStateMap)
 			if (state == input::EKeyState::eReleased)
 				_setMouseButtonState(key, input::EKeyState::eNone);
+
+		m_mouseScroll = {0.0f, 0.0f};
 	}
 
-	auto InputContext::setCursorMode(input::ECursorMode p_mode) -> void
+	auto InputContext::_onEndFrame() -> void
 	{
-		glfwSetInputMode(m_window->getNativeWindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL + static_cast<int32>(p_mode));
-	}
-
-	auto InputContext::getCursorMode() const -> input::ECursorMode
-	{
-		return static_cast<input::ECursorMode>(glfwGetInputMode(m_window->getNativeWindow(), GLFW_CURSOR) - GLFW_CURSOR_NORMAL);
 	}
 }

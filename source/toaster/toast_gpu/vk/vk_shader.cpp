@@ -16,7 +16,7 @@ namespace toaster::gpu
 	VKShader::VKShader(VKLogicalDevice *p_device, const BytecodeMap &p_bytecode_map, const String &p_name) : m_device(p_device), m_name(p_name),
 																											 m_shaderBytecodeMap(p_bytecode_map)
 	{
-		TST_ASSERT_MSG(p_device, "Device cannot be null");
+		TST_PERMA_ASSERT_MSG(p_device, "Device cannot be null");
 
 		for (auto &[stage, code]: p_bytecode_map)
 		{
@@ -40,7 +40,7 @@ namespace toaster::gpu
 	VKShader::VKShader(VKLogicalDevice *p_device, const InitialiserList<vk::ShaderStageFlagBits> &p_stages, const InitialiserList<Bytecode> &p_bytecodes,
 					   const String &   p_name) : m_device(p_device), m_name(p_name)
 	{
-		TST_ASSERT_MSG(p_device, "Device cannot be null");
+		TST_PERMA_ASSERT_MSG(p_device, "Device cannot be null");
 
 		auto kit = p_stages.begin();
 		auto vit = p_bytecodes.begin();
@@ -107,7 +107,7 @@ namespace toaster::gpu
 
 	auto VKShader::getPipelineShaderStageCreateInfo(vk::ShaderStageFlagBits p_stage) const -> const vk::PipelineShaderStageCreateInfo &
 	{
-		TST_ASSERT_MSG(m_shaderCreateInfos.contains(p_stage), "Stage is not present in shader create infos map");
+		TST_PERMA_ASSERT_MSG(m_shaderCreateInfos.contains(p_stage), "Stage is not present in shader create infos map");
 		return m_shaderCreateInfos.at(p_stage);
 	}
 
@@ -126,7 +126,7 @@ namespace toaster::gpu
 
 	auto VKShader::getShaderBytecode(vk::ShaderStageFlagBits p_stage) const -> const Bytecode &
 	{
-		TST_ASSERT_MSG(m_shaderBytecodeMap.contains(p_stage), "Stage is not present in bytecode map");
+		TST_PERMA_ASSERT_MSG(m_shaderBytecodeMap.contains(p_stage), "Stage is not present in bytecode map");
 		return m_shaderBytecodeMap.at(p_stage);
 	}
 
@@ -140,7 +140,7 @@ namespace toaster::gpu
 
 	auto VKShader::getDescriptorSetLayout(uint32 p_set_index) const -> const vk::raii::DescriptorSetLayout &
 	{
-		TST_ASSERT_MSG(p_set_index < m_descriptorSetLayouts.size(), "Set index out of bounds");
+		TST_PERMA_ASSERT_MSG(p_set_index < m_descriptorSetLayouts.size(), "Set index out of bounds");
 		return m_descriptorSetLayouts.at(p_set_index);
 	}
 
@@ -166,7 +166,7 @@ namespace toaster::gpu
 
 	auto VKShader::getDescriptorPoolSizes(uint32 p_set_index) const -> const std::vector<vk::DescriptorPoolSize> &
 	{
-		TST_ASSERT_MSG(m_poolSizes.contains(p_set_index), "Set index out of bounds");
+		TST_PERMA_ASSERT_MSG(m_poolSizes.contains(p_set_index), "Set index out of bounds");
 		return m_poolSizes.at(p_set_index);
 	}
 

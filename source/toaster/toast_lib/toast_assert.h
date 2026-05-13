@@ -27,3 +27,16 @@ auto printAssertFailedMsg(const char *file, int line, const char *function, cons
 #define TST_ASSERT_MSG(_expr, _msg)
 
 #endif
+
+#define TST_PERMA_ASSERT(__expr)\
+		do { if(!(__expr))\
+		{\
+		printAssertFailed(__FILE__, __LINE__, __func__, #__expr);\
+		std::abort();\
+		} } while(false)
+#define TST_PERMA_ASSERT_MSG(__expr, __msg)\
+		do { if(!(__expr))\
+		{\
+		printAssertFailedMsg(__FILE__, __LINE__, __func__, #__expr, __msg);\
+		std::abort();\
+		} } while(false)

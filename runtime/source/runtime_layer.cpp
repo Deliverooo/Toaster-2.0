@@ -111,6 +111,10 @@ namespace toaster
 		{
 			scene_serializer.deserialize(scene_path);
 		}
+
+		auto e{m_scene->createEntity("Test")};
+		auto camera{e.addComponent<CameraComponent>()};
+		camera.primary = true;
 	}
 
 	auto RuntimeLayer::onDestroy() -> void
@@ -127,6 +131,8 @@ namespace toaster
 
 		uint32 frame_index{swapchain->getFrameIndex()};
 		auto & command_buffer = swapchain->getCurrentCommandBuffer();
+
+		// LOG_INFO("Scroll: {}, {}", app.getWindow().getInputContext()->getMouseScrollX(), app.getWindow().getInputContext()->getMouseScrollY());
 
 		m_scene->onUpdate(p_dt);
 		m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer);
@@ -163,6 +169,7 @@ namespace toaster
 	{
 		EventDispatcher eventDispatcher(p_event);
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(RuntimeLayer::_onKeyPressEvent));
+
 		m_scene->onEvent(p_event);
 	}
 

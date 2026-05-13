@@ -26,7 +26,7 @@ namespace toaster
 
 		ScriptableEntityCS(const script::Class &p_class, Scene *p_scene, Entity p_entity) : m_obj(p_class)
 		{
-			TST_ASSERT_MSG(m_obj.getClass().getScriptEngine(), "Class's script engine is null");
+			TST_PERMA_ASSERT_MSG(m_obj.getClass().getScriptEngine(), "Class's script engine is null");
 
 			m_onCreateMethod = m_obj.getClass().getMethod("OnCreate", 0);
 			m_onUpdateMethod = m_obj.getClass().getMethod("OnUpdate", 1);
@@ -129,7 +129,7 @@ namespace toaster
 			}
 
 			#define REGISTER_COMPONENT_TYPE(__type) {MonoType *managed_type{mono_reflection_type_from_name((char *) "Toaster."#__type, m_scriptEngine->getCoreImage())};\
-													if(!managed_type) { LOG_FATAL("Could not find component: "#__type); TST_ASSERT(false);}\
+													if(!managed_type) { LOG_FATAL("Could not find component: "#__type); TST_PERMA_ASSERT(false);}\
 													m_hasComponentFnMap[managed_type] = +[](Entity *p_entity) -> bool { return p_entity->hasComponent<__type>(); };\
 													m_addComponentFnMap[managed_type] = +[](Entity *p_entity) -> void { __type& comp{p_entity->addComponent<__type>()}; (void)comp; };\
 													m_resetComponentFnMap[managed_type] = +[](Entity *p_entity) -> void { __type& comp{p_entity->getComponent<__type>()}; comp.reset(); };}
@@ -206,8 +206,7 @@ namespace toaster
 		}
 	}
 
-	auto Scene::onRender([[maybe_unused]] const vk::raii::CommandBuffer &p_cmd, [[maybe_unused]] uint32 p_frame_index, [[maybe_unused]] float32 p_dt,
-						 [[maybe_unused]] const RefPtr<SceneRenderer> &  p_scene_renderer) -> void
+	auto Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void
 	{
 		Camera *  main_camera{nullptr};
 		glm::mat4 camera_transform{1.0f};
@@ -608,7 +607,7 @@ namespace toaster
 		#pragma region Camera Component
 		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPrimary", +[](uint64 p_entity_id) -> bool
 		{
-			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity      entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			return cam.primary;
 		});
@@ -622,7 +621,7 @@ namespace toaster
 
 		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetProjectionType", +[](uint64 p_entity_id, SceneCamera::EProjectionType *p_out_projection_type) -> void
 		{
-			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity      entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_projection_type = cam.camera.getProjectionType();
 		});
@@ -637,7 +636,7 @@ namespace toaster
 
 		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPerspectiveFov", +[](uint64 p_entity_id, float32 *p_out_perspective_fov) -> void
 		{
-			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity      entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_perspective_fov = cam.camera.getPerspectiveFov();
 		});
@@ -651,7 +650,7 @@ namespace toaster
 
 		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPerspectiveNear", +[](uint64 p_entity_id, float32 *p_out_perspective_near) -> void
 		{
-			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity      entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_perspective_near = cam.camera.getPerspectiveNearClip();
 		});
@@ -665,7 +664,7 @@ namespace toaster
 
 		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPerspectiveFar", +[](uint64 p_entity_id, float32 *p_out_perspective_far) -> void
 		{
-			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity      entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_perspective_far = cam.camera.getPerspectiveFarClip();
 		});
@@ -679,7 +678,7 @@ namespace toaster
 
 		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetOrthoSize", +[](uint64 p_entity_id, float32 *p_out_ortho_size) -> void
 		{
-			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity      entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_ortho_size = cam.camera.getOrthoSize();
 		});
@@ -693,7 +692,7 @@ namespace toaster
 
 		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetOrthoNear", +[](uint64 p_entity_id, float32 *p_out_ortho_near) -> void
 		{
-			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity      entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_ortho_near = cam.camera.getOrthoNearClip();
 		});
@@ -707,7 +706,7 @@ namespace toaster
 
 		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetOrthoFar", +[](uint64 p_entity_id, float32 *p_out_ortho_far) -> void
 		{
-			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity      entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_ortho_far = cam.camera.getOrthoFarClip();
 		});
@@ -721,7 +720,7 @@ namespace toaster
 
 		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetProjectionMatrix", +[](uint64 p_entity_id, glm::mat4 *p_out_projection_matrix) -> void
 		{
-			Entity      entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity      entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			const auto &cam{entity.getComponent<CameraComponent>()};
 			*p_out_projection_matrix = glm::transpose(cam.camera.getProjectionMatrix());
 		});
@@ -801,7 +800,7 @@ namespace toaster
 	template<typename Type>
 	auto Scene::onComponentAdded([[maybe_unused]] Entity p_entity, [[maybe_unused]] Type &p_component) -> void
 	{
-		TST_ASSERT(false);
+		TST_PERMA_ASSERT(false);
 	}
 
 	#define ON_COMPONENT_ADDED(__type)	template<>\

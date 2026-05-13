@@ -166,6 +166,9 @@ public static class Input
 	[MethodImpl(MethodImplOptions.InternalCall)]
 	private static extern void GetMousePos(out Vec2 p_mouse_pos);
 
+	[MethodImpl(MethodImplOptions.InternalCall)]
+	private static extern void GetMouseScroll(out Vec2 p_mouse_scroll);
+ 
 	public static ECursorMode CursorMode
 	{
 		get
@@ -182,6 +185,15 @@ public static class Input
 		{
 			GetMousePos(out var pos);
 			return pos;
+		}
+	}
+
+	public static Vec2 MouseScroll
+	{
+		get
+		{
+			GetMouseScroll(out var scroll);
+			return scroll;
 		}
 	}
 }
