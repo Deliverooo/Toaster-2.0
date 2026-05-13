@@ -20,7 +20,7 @@ namespace ig = ImGui;
 
 namespace toaster
 {
-	RuntimeLayer::RuntimeLayer(Application *p_app) : IAppLayer(p_app)
+	RuntimeLayer::RuntimeLayer(Application *p_app) : IAppLayer(p_app), m_cameraTest(p_app->getWindow().getInputContext(), 90.0f, 1.777f, 0.1f, 100.0f)
 	{
 	}
 
@@ -33,6 +33,7 @@ namespace toaster
 		auto swapchain{app.getWindow().getSwapchain()};
 		m_viewportWidth  = swapchain->getExtent().width;
 		m_viewportHeight = swapchain->getExtent().height;
+		m_cameraTest.setViewportSize(m_viewportWidth, m_viewportHeight);
 
 		swapchain->setResizeCallback([this](const uint32 width, const uint32 height) -> void
 		{
@@ -42,6 +43,7 @@ namespace toaster
 			m_scene->setViewportSize(width, height);
 
 			m_sceneRenderer->onResize(width, height);
+			m_cameraTest.setViewportSize(width, height);
 		});
 
 		auto                 command_line_args{app.getCommandLineArgs()};
@@ -111,10 +113,6 @@ namespace toaster
 		{
 			scene_serializer.deserialize(scene_path);
 		}
-
-		auto e{m_scene->createEntity("Test")};
-		auto camera{e.addComponent<CameraComponent>()};
-		camera.primary = true;
 	}
 
 	auto RuntimeLayer::onDestroy() -> void
@@ -134,6 +132,7 @@ namespace toaster
 
 		// LOG_INFO("Scroll: {}, {}", app.getWindow().getInputContext()->getMouseScrollX(), app.getWindow().getInputContext()->getMouseScrollY());
 
+		m_cameraTest.onUpdate(p_dt);
 		m_scene->onUpdate(p_dt);
 		m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer);
 

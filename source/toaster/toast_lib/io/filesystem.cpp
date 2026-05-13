@@ -3,6 +3,8 @@
 #include <cstring>
 #include <fstream>
 
+#include "toast_lib/toast_assert.h"
+
 namespace toaster::io::filesystem
 {
 	static auto skipByteOrderMark(std::istream &p_in) -> int
@@ -99,6 +101,10 @@ namespace toaster::io::filesystem
 		if (out)
 		{
 			out.write(p_data.data(), static_cast<std::streamsize>(p_data.size()));
+		}
+		else
+		{
+			TST_PERMA_ASSERT_MSG(false, "What is dis");
 		}
 		out.close();
 	}

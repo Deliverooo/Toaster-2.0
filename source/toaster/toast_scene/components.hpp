@@ -14,6 +14,12 @@
 #include "toast_scripting/script_object.hpp"
 
 #define DEFINE_COMPONENT(__name) struct TST_API __name
+#define REGISTER_COMPONENT_HASH(__name) template<>\
+		struct entt::type_hash<toaster::__name> final {\
+			[[nodiscard]] static consteval entt::id_type value() noexcept {\
+				return entt::hashed_string::value(#__name);\
+			}\
+		};
 
 namespace toaster
 {
@@ -188,3 +194,8 @@ namespace toaster
 		String className{};
 	};
 }
+
+REGISTER_COMPONENT_HASH(UUIDComponent)
+REGISTER_COMPONENT_HASH(TransformComponent)
+REGISTER_COMPONENT_HASH(SpriteRendererComponent)
+REGISTER_COMPONENT_HASH(CameraComponent)

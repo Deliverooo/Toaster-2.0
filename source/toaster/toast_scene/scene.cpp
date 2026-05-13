@@ -220,7 +220,7 @@ namespace toaster
 
 		if (!main_camera)
 		{
-			LOG_WARN("Scene has no main camera!");
+			// LOG_WARN("Scene has no main camera!");
 			return;
 		}
 
@@ -380,9 +380,12 @@ namespace toaster
 
 	auto Scene::createEntityWithUUID(UUID p_uuid, const String &p_name) -> Entity
 	{
+		TST_PERMA_ASSERT_MSG(!m_entityUUIDMap.contains(p_uuid), "Bradar wat is dis?");
 		auto entity{Entity{m_registry.create(), this}};
+		LOG_ERROR("{}", (uint32)(entt::entity)entity);
 
 		entity.addComponent<UUIDComponent>(p_uuid);
+
 		m_entityUUIDMap[p_uuid] = entity;
 
 		entity.addComponent<TransformComponent>();
@@ -421,9 +424,14 @@ namespace toaster
 
 	auto Scene::getMainCameraEntity() -> Entity
 	{
-		for (const auto view = m_registry.view<CameraComponent>(); const auto &entity: view)
+		const auto view = m_registry.view<CameraComponent>();
+		LOG_ERROR("Camera sizes: {}", view.size());
+		for (const auto entity: view)
 		{
-			if (const auto &camera = view.get<CameraComponent>(entity); camera.primary)
+			auto &camera = view.get<CameraComponent>(entity);
+			LOG_ERROR("Primary: {}", camera.primary);
+
+			if (camera.primary)
 				return Entity{entity, this};
 		}
 		return {};

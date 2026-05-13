@@ -191,11 +191,12 @@ namespace toaster
 
 		try
 		{
-			TST_ASSERT(deserializeFromYAML(yaml_string));
+			TST_PERMA_ASSERT(deserializeFromYAML(yaml_string));
 		}
 		catch (const YAML::Exception &e)
 		{
 			LOG_ERROR("Failed to deserialize scene '{0}': {1}", p_filepath.string(), e.what());
+			TST_PERMA_ASSERT(false);
 			return false;
 		}
 
@@ -378,7 +379,7 @@ namespace toaster
 			if (mesh_comp)
 			{
 				auto &mc{out_entity.addComponent<MeshComponent>()};
-				auto  mesh_path{m_binaryDir /io::filesystem::Path{mesh_comp["MeshPath"].as<String>()}};
+				auto  mesh_path{m_binaryDir / io::filesystem::Path{mesh_comp["MeshPath"].as<String>()}};
 
 				if (exists(mesh_path))
 				{
