@@ -11,6 +11,9 @@ set(SRC
 
 		globals.cpp
 		globals.hpp
+
+		render_context.cpp
+		render_context.hpp
 )
 
 list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")

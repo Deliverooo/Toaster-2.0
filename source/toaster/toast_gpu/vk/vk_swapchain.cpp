@@ -4,12 +4,14 @@
 
 namespace toaster::gpu
 {
-	VKSwapchain::VKSwapchain(VKLogicalDevice *p_dev, vk::SurfaceKHR *p_surface) : m_device(p_dev), m_windowSurface(p_surface),
-																				  m_commandBuffers(p_dev, vk::QueueFlagBits::eGraphics,
-																								   p_dev->getSpecInfo().maxFramesInFlight, true)
+	VKSwapchain::VKSwapchain(VKLogicalDevice *p_dev, vk::SurfaceKHR *p_surface) : m_device(p_dev), m_windowSurface(p_surface)
 	{
 		TST_ASSERT_MSG(p_dev, "Device cannot be null");
 
+		for (uint32 i{0u}; i < m_device->getSpecInfo().maxFramesInFlight; ++i)
+		{
+			m_commandBuffers.emplace_back(m_device, vk::QueueFlagBits::eGraphics, true);
+		}
 		_create();
 		_createImageViews();
 		_createSyncObjects();
@@ -19,13 +21,13 @@ namespace toaster::gpu
 	auto VKSwapchain::beginFrame() -> void
 	{
 		// Wait for the previous frame to be finished before rendering this one
-		m_commandBuffers.waitForFence(m_frameIndex);
+		m_commandBuffers[m_frameIndex].waitForFence();
 
 		if (m_beginFrameCallback)
 			m_beginFrameCallback(m_device, m_frameIndex);
 
 		// Reset the fence so we can signal it later
-		m_commandBuffers.resetFence(m_frameIndex);
+		m_commandBuffers[m_frameIndex].resetFence();
 
 		auto [res, image_index] = m_swapchain.acquireNextImage(UINT64_MAX, *m_imageAvailableSemaphores[m_frameIndex], nullptr);
 		m_imageIndex            = image_index;
@@ -38,15 +40,15 @@ namespace toaster::gpu
 		if (res != vk::Result::eSuccess)
 			TST_ASSERT_MSG(false, "Failed to acquire swapchain image!");
 
-		m_commandBuffers.resetCommandBuffer(m_frameIndex);
-		m_commandBuffers.begin(m_frameIndex);
+		m_commandBuffers[m_frameIndex].resetCommandBuffer();
+		m_commandBuffers[m_frameIndex].begin();
 
-		m_device->transitionImageLayout(m_commandBuffers.getVulkanCommandBuffer(m_frameIndex), m_swapchainImages[m_imageIndex], vk::ImageLayout::eUndefined,
+		m_device->transitionImageLayout(m_commandBuffers[m_frameIndex].getVulkanCommandBuffer(), m_swapchainImages[m_imageIndex], vk::ImageLayout::eUndefined,
 										vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eColorAttachmentWrite,
 										vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1, 1,
 										vk::ImageAspectFlagBits::eColor);
 
-		m_device->transitionImageLayout(m_commandBuffers.getVulkanCommandBuffer(m_frameIndex), m_depthImage, vk::ImageLayout::eUndefined,
+		m_device->transitionImageLayout(m_commandBuffers[m_frameIndex].getVulkanCommandBuffer(), m_depthImage, vk::ImageLayout::eUndefined,
 										vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
 										vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
 										vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, 1, 1,
@@ -55,17 +57,17 @@ namespace toaster::gpu
 
 	auto VKSwapchain::endFrame() -> void
 	{
-		m_device->transitionImageLayout(m_commandBuffers.getVulkanCommandBuffer(m_frameIndex), m_swapchainImages[m_imageIndex], vk::ImageLayout::eColorAttachmentOptimal,
-										vk::ImageLayout::ePresentSrcKHR, vk::AccessFlagBits2::eColorAttachmentWrite, vk::AccessFlagBits2::eNone,
-										vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1, 1,
-										vk::ImageAspectFlagBits::eColor);
+		m_device->transitionImageLayout(m_commandBuffers[m_frameIndex].getVulkanCommandBuffer(), m_swapchainImages[m_imageIndex],
+										vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR, vk::AccessFlagBits2::eColorAttachmentWrite,
+										vk::AccessFlagBits2::eNone, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+										vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1, 1, vk::ImageAspectFlagBits::eColor);
 
-		m_commandBuffers.end(m_frameIndex);
+		m_commandBuffers[m_frameIndex].end();
 
 		// Waits for the image to be acquired before executing
 		// When we submit the work to the GPU we signal a fence then wait on it before beginning the next frame
-		m_commandBuffers.submit(m_frameIndex, vk::PipelineStageFlagBits2::eColorAttachmentOutput, {*m_imageAvailableSemaphores[m_frameIndex]},
-								{*m_renderFinishedSemaphores[m_frameIndex]});
+		m_commandBuffers[m_frameIndex].submit(vk::PipelineStageFlagBits2::eColorAttachmentOutput, {*m_imageAvailableSemaphores[m_frameIndex]},
+											  {*m_renderFinishedSemaphores[m_frameIndex]});
 
 		vk::PresentInfoKHR present_info{};
 		present_info.waitSemaphoreCount = 1;
@@ -137,14 +139,14 @@ namespace toaster::gpu
 		return m_depthImageMemory;
 	}
 
-	auto VKSwapchain::getCommandBuffer(uint32 p_frame_index) -> vk::raii::CommandBuffer &
+	auto VKSwapchain::getCommandBuffer(uint32 p_frame_index) -> VKCommandBuffer &
 	{
-		return m_commandBuffers.getVulkanCommandBuffer(p_frame_index);
+		return m_commandBuffers.at(p_frame_index);
 	}
 
-	auto VKSwapchain::getCurrentCommandBuffer() -> vk::raii::CommandBuffer &
+	auto VKSwapchain::getCurrentCommandBuffer() -> VKCommandBuffer &
 	{
-		return m_commandBuffers.getVulkanCommandBuffer(m_frameIndex);
+		return m_commandBuffers.at(m_frameIndex);
 	}
 
 	auto VKSwapchain::getExtent() const -> vk::Extent2D

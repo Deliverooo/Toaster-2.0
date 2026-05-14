@@ -72,6 +72,11 @@ namespace toaster::gpu
 		return m_storageBuffers.at(p_frame_index);
 	}
 
+	auto VKStorageBufferPFF::getSSBO(uint32 p_frame_index) const -> const RefPtr<VKStorageBuffer>
+	{
+		return m_storageBuffers.at(p_frame_index);
+	}
+
 	auto VKStorageBufferPFF::setSSBO(uint32 p_frame_index, const RefPtr<VKStorageBuffer> &p_storage_buffer) -> void
 	{
 		m_storageBuffers.at(p_frame_index) = p_storage_buffer;

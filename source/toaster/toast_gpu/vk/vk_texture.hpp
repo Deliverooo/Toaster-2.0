@@ -47,6 +47,7 @@ namespace toaster::gpu
 		auto               getImage() -> RefPtr<VKRawImage>;
 		[[nodiscard]] auto getSampler() -> vk::raii::Sampler &;
 		[[nodiscard]] auto getDescriptorInfo() -> vk::DescriptorImageInfo &;
+		[[nodiscard]] auto getDescriptorInfo() const -> const vk::DescriptorImageInfo &;
 
 	private:
 		TextureSpecInfo      m_specInfo{};
@@ -84,6 +85,7 @@ namespace toaster::gpu
 		auto               getImage() -> RefPtr<VKRawImage>;
 		[[nodiscard]] auto getSampler() -> vk::raii::Sampler &;
 		[[nodiscard]] auto getDescriptorInfo() -> vk::DescriptorImageInfo &;
+		[[nodiscard]] auto getDescriptorInfo() const -> const vk::DescriptorImageInfo &;
 
 	private:
 		TextureSpecInfo m_specInfo{};

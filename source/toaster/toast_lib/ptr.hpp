@@ -112,6 +112,11 @@ namespace toaster
 			return RefPtr<TOther>(*this);
 		}
 
+		auto getWithoutConst() const -> Type * requires requires { !std::same_as<Type, std::remove_const_t<Type> >; }
+		{
+			return m_ptr;
+		}
+
 		auto operator==(const RefPtr &p_other) const -> bool
 		{
 			return m_ptr == p_other.m_ptr;

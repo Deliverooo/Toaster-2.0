@@ -31,47 +31,87 @@ namespace toaster::gpu
 
 	struct TST_GPU_API DescriptorResource
 	{
-		std::vector<RefPtr<IGPUResource> > resources;
-		EGPUResourceType                   type{EGPUResourceType::eUnknown};
+		std::vector<const IGPUResource *> resources;
+		EGPUResourceType                  type{EGPUResourceType::eUnknown};
 
 		DescriptorResource() = default;
 
-		DescriptorResource(const RefPtr<VKUniformBuffer> &p_uniform_buffer) : resources(std::vector<RefPtr<IGPUResource> >(1, p_uniform_buffer)),
+		DescriptorResource(const RefPtr<VKUniformBuffer> &p_uniform_buffer) : resources(std::vector<const IGPUResource *>(1, p_uniform_buffer.get())),
 																			  type(EGPUResourceType::eUniformBuffer)
 		{
 		}
 
-		DescriptorResource(const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) : resources(std::vector<RefPtr<IGPUResource> >(1, p_uniform_buffer_pff)),
+		DescriptorResource(const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) : resources(std::vector<const IGPUResource *>(1, p_uniform_buffer_pff.get())),
 																					 type(EGPUResourceType::eUniformBufferPFF)
 		{
 		}
 
-		DescriptorResource(const RefPtr<VKStorageBuffer> &p_storage_buffer) : resources(std::vector<RefPtr<IGPUResource> >(1, p_storage_buffer)),
+		DescriptorResource(const RefPtr<VKStorageBuffer> &p_storage_buffer) : resources(std::vector<const IGPUResource *>(1, p_storage_buffer.get())),
 																			  type(EGPUResourceType::eStorageBuffer)
 		{
 		}
 
-		DescriptorResource(const RefPtr<VKStorageBufferPFF> &p_storage_buffer_pff) : resources(std::vector<RefPtr<IGPUResource> >(1, p_storage_buffer_pff)),
+		DescriptorResource(const RefPtr<VKStorageBufferPFF> &p_storage_buffer_pff) : resources(std::vector<const IGPUResource *>(1, p_storage_buffer_pff.get())),
 																					 type(EGPUResourceType::eStorageBufferPFF)
 		{
 		}
 
-		DescriptorResource(const RefPtr<VKTexture2D> &p_texture_2d) : resources(std::vector<RefPtr<IGPUResource> >(1, p_texture_2d)), type(EGPUResourceType::eTexture2D)
+		DescriptorResource(const RefPtr<VKTexture2D> &p_texture_2d) : resources(std::vector<const IGPUResource *>(1, p_texture_2d.get())),
+																	  type(EGPUResourceType::eTexture2D)
 		{
 		}
 
-		DescriptorResource(const RefPtr<VKImage2D> &p_image_2d) : resources(std::vector<RefPtr<IGPUResource> >(1, p_image_2d)), type(EGPUResourceType::eImage2D)
+		DescriptorResource(const RefPtr<VKImage2D> &p_image_2d) : resources(std::vector<const IGPUResource *>(1, p_image_2d.get())), type(EGPUResourceType::eImage2D)
 		{
 		}
 
-		DescriptorResource(const RefPtr<VKTexture3D> &p_texture_3d) : resources(std::vector<RefPtr<IGPUResource> >(1, p_texture_3d)), type(EGPUResourceType::eTexture3D)
+		DescriptorResource(const RefPtr<VKTexture3D> &p_texture_3d) : resources(std::vector<const IGPUResource *>(1, p_texture_3d.get())),
+																	  type(EGPUResourceType::eTexture3D)
 		{
 		}
 
 		auto set(const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_index) -> void
 		{
 			type               = EGPUResourceType::eTexture2D;
-			resources[p_index] = p_texture_2d.as<IGPUResource>();
+			resources[p_index] = p_texture_2d.as<IGPUResource>().get();
+		}
+
+		DescriptorResource(const VKUniformBuffer *p_uniform_buffer) : resources(std::vector<const IGPUResource *>(1, p_uniform_buffer)),
+																	  type(EGPUResourceType::eUniformBuffer)
+		{
+		}
+
+		DescriptorResource(const VKUniformBufferPFF *p_uniform_buffer_pff) : resources(std::vector<const IGPUResource *>(1, p_uniform_buffer_pff)),
+																			 type(EGPUResourceType::eUniformBufferPFF)
+		{
+		}
+
+		DescriptorResource(const VKStorageBuffer *p_storage_buffer) : resources(std::vector<const IGPUResource *>(1, p_storage_buffer)),
+																	  type(EGPUResourceType::eStorageBuffer)
+		{
+		}
+
+		DescriptorResource(const VKStorageBufferPFF *p_storage_buffer_pff) : resources(std::vector<const IGPUResource *>(1, p_storage_buffer_pff)),
+																			 type(EGPUResourceType::eStorageBufferPFF)
+		{
+		}
+
+		DescriptorResource(const VKTexture2D *p_texture_2d) : resources(std::vector<const IGPUResource *>(1, p_texture_2d)), type(EGPUResourceType::eTexture2D)
+		{
+		}
+
+		DescriptorResource(const VKImage2D *p_image_2d) : resources(std::vector<const IGPUResource *>(1, p_image_2d)), type(EGPUResourceType::eImage2D)
+		{
+		}
+
+		DescriptorResource(const VKTexture3D *p_texture_3d) : resources(std::vector<const IGPUResource *>(1, p_texture_3d)), type(EGPUResourceType::eTexture3D)
+		{
+		}
+
+		auto set(const VKTexture2D *p_texture_2d, uint32 p_index) -> void
+		{
+			type               = EGPUResourceType::eTexture2D;
+			resources[p_index] = dynamic_cast<const IGPUResource *>(p_texture_2d);
 		}
 	};
 
@@ -80,6 +120,15 @@ namespace toaster::gpu
 		TST_GPU_OBJECT
 	public:
 		VKDescriptorSetManager(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader, uint32 p_start_set, uint32 p_end_set);
+
+		auto setDescriptor(const String &p_name, const VKUniformBuffer *p_uniform_buffer) -> void;
+		auto setDescriptor(const String &p_name, const VKUniformBufferPFF *p_uniform_buffer_pff) -> void;
+		auto setDescriptor(const String &p_name, const VKStorageBuffer *p_storage_buffer) -> void;
+		auto setDescriptor(const String &p_name, const VKStorageBufferPFF *p_storage_buffer_pff) -> void;
+		auto setDescriptor(const String &p_name, const VKTexture2D *p_texture_2d) -> void;
+		auto setDescriptor(const String &p_name, const VKTexture2D *p_texture_2d, uint32 p_array_index) -> void;
+		auto setDescriptor(const String &p_name, const VKImage2D *p_image_2d) -> void;
+		auto setDescriptor(const String &p_name, const VKTexture3D *p_texture_3d) -> void;
 
 		auto setDescriptor(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
 		auto setDescriptor(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void;
@@ -91,12 +140,12 @@ namespace toaster::gpu
 		auto setDescriptor(const String &p_name, const RefPtr<VKTexture3D> &p_texture_3d) -> void;
 
 		template<GPUResource_c TResource>
-		auto getDescriptor(const String &p_name) -> RefPtr<TResource>
+		auto getDescriptor(const String &p_name) -> TResource *
 		{
 			if (const auto decl{getDescriptorDeclaration(p_name)})
 				if (const auto set_it{m_descriptorResources.find(decl->set)}; set_it != m_descriptorResources.end())
 					if (const auto resource_it{set_it->second.find(decl->binding)}; resource_it != set_it->second.end())
-						return resource_it->second.resources[0].as<TResource>();
+						return dynamic_cast<TResource *>(resource_it->second.resources[0]);
 			return nullptr;
 		}
 
@@ -109,8 +158,8 @@ namespace toaster::gpu
 		auto getDescriptorDeclaration(const String &p_name) const -> const DescriptorDeclaration *;
 		auto getDescriptorDeclarations() const -> const std::unordered_map<String, DescriptorDeclaration> &;
 
-		auto getWhiteTexture() const -> const RefPtr<VKTexture2D> &;
-		auto getWhiteTexture3D() const -> const RefPtr<VKTexture3D> &;
+		auto getWhiteTexture() const -> const VKTexture2D *;
+		auto getWhiteTexture3D() const -> const VKTexture3D *;
 
 		auto hasDescriptorSets() const -> bool;
 
@@ -141,7 +190,7 @@ namespace toaster::gpu
 
 		std::vector<std::vector<vk::raii::DescriptorSet> > m_descriptorSets;
 
-		RefPtr<VKTexture2D> m_whiteTexture{nullptr};
-		RefPtr<VKTexture3D> m_whiteTexture3D{nullptr};
+		UniquePtr<VKTexture2D> m_whiteTexture{nullptr};
+		UniquePtr<VKTexture3D> m_whiteTexture3D{nullptr};
 	};
 }

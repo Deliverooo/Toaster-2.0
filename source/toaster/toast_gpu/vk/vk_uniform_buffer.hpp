@@ -49,10 +49,10 @@ namespace toaster::gpu
 
 		[[nodiscard]] auto getDescriptorInfo(uint32 p_frame_index) const -> const vk::DescriptorBufferInfo &;
 
-		auto mapMemory(uint32 p_frame_index, uint64 p_size, uint64 p_offset) -> void *;
+		auto mapMemory(uint32 p_frame_index, uint64 p_size, uint64 p_offset = 0u) -> void *;
 		auto unmapMemory(uint32 p_frame_index) -> void;
 
-		auto mapAllMemory(uint64 p_size, uint64 p_offset) -> std::vector<void *>;
+		auto mapAllMemory(uint64 p_size, uint64 p_offset = 0u) -> std::vector<void *>;
 		auto unmapAllMemory() -> void;
 
 	private:

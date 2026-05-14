@@ -13,6 +13,7 @@
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_render/globals.hpp"
+#include "toast_render/render_context.hpp"
 
 inline auto operator<<(YAML::Emitter &out, const glm::vec2 &v) -> YAML::Emitter &
 {
@@ -365,7 +366,7 @@ namespace toaster
 				auto texture_path = sprite_comp["TexturePath"].as<String>();
 				if (texture_path != "Null")
 				{
-					src.texture = p_scene->m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, m_binaryDir / texture_path);
+					src.texture = p_scene->m_renderCtx->createObjectRef<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, m_binaryDir / texture_path);
 				}
 				else
 					src.texture = nullptr;
@@ -383,7 +384,7 @@ namespace toaster
 
 				if (exists(mesh_path))
 				{
-					mc.mesh = p_scene->m_device->alloc<gpu::VKMesh>(mesh_path, p_scene->m_globals->getShaderLibrary().get("Geometry"));
+					mc.mesh = p_scene->m_renderCtx->createObjectRef<gpu::VKMesh>(mesh_path, p_scene->m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"));
 				}
 				else
 				{

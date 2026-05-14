@@ -3,7 +3,7 @@
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_lib/io/filesystem.hpp"
 
-namespace toaster
+namespace toaster::render
 {
 	Globals::Globals(gpu::VKLogicalDevice *p_device, const io::filesystem::Path &p_binary_dir) : m_device(p_device), m_binaryDir(p_binary_dir)
 	{
@@ -85,48 +85,48 @@ namespace toaster
 		white_texture_spec_info.height = 1;
 		white_texture_spec_info.format = vk::Format::eR8G8B8A8Unorm;
 		uint32 white_texture_data{0xFFFFFFFF};
-		m_whiteTexture = m_device->alloc<gpu::VKTexture2D>(white_texture_spec_info, &white_texture_data, sizeof(uint32));
+		m_whiteTexture = make_unique<gpu::VKTexture2D>(m_device, white_texture_spec_info, &white_texture_data, sizeof(uint32));
 
 		uint32 texture_3d_data[6]{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
-		m_whiteTexture3D = m_device->alloc<gpu::VKTexture3D>(white_texture_spec_info, Buffer{texture_3d_data, sizeof(uint32) * 6});
+		m_whiteTexture3D = make_unique<gpu::VKTexture3D>(m_device, white_texture_spec_info, Buffer{texture_3d_data, sizeof(uint32) * 6});
 	}
 
 	Globals::~Globals()
 	{
 	}
 
-	auto Globals::getShaderLibrary() -> const ShaderLibrary &
+	auto Globals::shaderLibrary() const -> const ShaderLibrary &
 	{
 		return m_shaderLibrary;
 	}
 
-	auto Globals::getFullscreenQuadVertexBuffer() -> const RefPtr<gpu::VKVertexBuffer> &
+	auto Globals::fullscreenQuadVertexBuffer() const -> const RefPtr<gpu::VKVertexBuffer> &
 	{
 		return m_quadVertexBuffer;
 	}
 
-	auto Globals::getFullscreenQuadIndexBuffer() -> const RefPtr<gpu::VKIndexBuffer> &
+	auto Globals::fullscreenQuadIndexBuffer() const -> const RefPtr<gpu::VKIndexBuffer> &
 	{
 		return m_quadIndexBuffer;
 	}
 
-	auto Globals::getFullscreenQuadVertices() -> const std::vector<QuadVertex> &
+	auto Globals::fullscreenQuadVertices() const -> const std::vector<QuadVertex> &
 	{
 		return m_quadVertices;
 	}
 
-	auto Globals::getFullscreenQuadIndices() -> const std::vector<uint32> &
+	auto Globals::fullscreenQuadIndices() const -> const std::vector<uint32> &
 	{
 		return m_quadIndices;
 	}
 
-	auto Globals::getWhiteTexture() -> const RefPtr<gpu::VKTexture2D> &
+	auto Globals::whiteTexture() const -> const gpu::VKTexture2D *
 	{
-		return m_whiteTexture;
+		return m_whiteTexture.get();
 	}
 
-	auto Globals::getWhiteTexture3D() -> const RefPtr<gpu::VKTexture3D> &
+	auto Globals::whiteTexture3D() const -> const gpu::VKTexture3D *
 	{
-		return m_whiteTexture3D;
+		return m_whiteTexture3D.get();
 	}
 }

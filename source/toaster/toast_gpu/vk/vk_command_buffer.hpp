@@ -35,11 +35,11 @@ namespace toaster::gpu
 		vk::QueueFlagBits m_queueType{vk::QueueFlagBits::eGraphics};
 	};
 
-	class VKCommandBufferPFF
+	class VKCommandBufferPFFPacked
 	{
 		TST_GPU_OBJECT
 	public:
-		VKCommandBufferPFF(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, uint32 p_frames_in_flight, bool p_fence_signaled = false);
+		VKCommandBufferPFFPacked(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, uint32 p_frames_in_flight, bool p_fence_signaled = false);
 
 		auto begin(uint32 p_frame_index) -> void;
 		auto end(uint32 p_frame_index) -> void;

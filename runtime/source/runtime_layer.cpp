@@ -8,15 +8,15 @@
 
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
-#include <imgui.h>
-
 #include "glm/gtc/type_ptr.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_renderer.hpp"
 #include "toast_lib/os/terminal.hpp"
+#include "toast_render/render_context.hpp"
 #include "toast_scene/components.hpp"
 #include "toast_scene/scene_serializer.hpp"
-namespace ig = ImGui;
+
+#include "toast_lib/os/file_dialog.hpp"
 
 namespace toaster
 {
@@ -26,8 +26,7 @@ namespace toaster
 
 	auto RuntimeLayer::onInit() -> void
 	{
-		auto &app    = getApp();
-		auto  device = app.getLogicalDevice();
+		auto &app = getApp();
 		auto  input_ctx{app.getWindow().getInputContext()};
 
 		auto swapchain{app.getWindow().getSwapchain()};
@@ -75,11 +74,11 @@ namespace toaster
 		script_engine_spec_info.appAssemblyPath  = app_script_assembly_dll;
 		m_scriptEngine                           = make_unique<script::ScriptEngine>(script_engine_spec_info);
 
-		m_scene = make_reference<Scene>(app.getLogicalDevice(), &getGlobals(), m_scriptEngine.get(), "New Scene");
+		m_scene = make_reference<Scene>(m_renderCtx, m_scriptEngine.get(), "New Scene");
 		input_ctx->registerScriptMethods(m_scriptEngine.get());
 		#pragma endregion
 
-		auto                  fullscreen_shader{getGlobals().getShaderLibrary().get("Composite")};
+		auto                  fullscreen_shader{m_renderCtx->getGlobals()->shaderLibrary().get("Composite")};
 		gpu::PipelineSpecInfo fullscreen_pipeline_spec_info{};
 		fullscreen_pipeline_spec_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
 		fullscreen_pipeline_spec_info.depthFormat        = swapchain->getDepthFormat();
@@ -89,37 +88,31 @@ namespace toaster
 			{gpu::EBufferDataType::eFloat3, "a_Position"},
 			{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
 		};
-		m_fullscreenPipeline   = device->alloc<gpu::VKPipeline>(fullscreen_pipeline_spec_info);
-		m_fullscreenRenderPass = device->alloc<gpu::VKRenderPass>(m_fullscreenPipeline);
+		m_fullscreenPipeline   = m_renderCtx->createObjectRef<gpu::VKPipeline>(fullscreen_pipeline_spec_info);
+		m_fullscreenRenderPass = m_renderCtx->createObjectRef<gpu::VKRenderPass>(m_fullscreenPipeline);
 		m_fullscreenRenderPass->bake();
 
-		m_fullscreenMaterial = device->alloc<gpu::VKMaterial>(getGlobals().getShaderLibrary().get("Composite"));
+		m_fullscreenMaterial = m_renderCtx->createObjectRef<gpu::VKMaterial>(m_renderCtx->getGlobals()->shaderLibrary().get("Composite"));
 
 		SceneRendererSpecInfo scene_renderer_spec_info{};
 		scene_renderer_spec_info.viewportWidth     = m_viewportWidth;
 		scene_renderer_spec_info.viewportHeight    = m_viewportHeight;
 		scene_renderer_spec_info.scene             = m_scene.get();
 		scene_renderer_spec_info.resourceDirectory = binary_dir / "../resources";
-		m_sceneRenderer                            = toaster::make_reference<SceneRenderer>(device, &getGlobals(), scene_renderer_spec_info);
+		m_sceneRenderer                            = toaster::make_reference<SceneRenderer>(m_renderCtx, scene_renderer_spec_info);
 
 		SceneSerializer scene_serializer{m_scene, binary_dir};
 
 		String scene_path{command_line_args["startupScene"]};
 		if (scene_path == "__NONE__")
-		{
 			scene_serializer.deserialize(binary_dir / "../resources/scenes/Test.tscene");
-		}
 		else
-		{
 			scene_serializer.deserialize(scene_path);
-		}
 	}
 
 	auto RuntimeLayer::onDestroy() -> void
 	{
-		auto &app = getApp();
-		auto  device{app.getLogicalDevice()};
-		device->getVulkanLogicalDevice().waitIdle();
+		m_renderCtx->gpuWaitIdle();
 	}
 
 	auto RuntimeLayer::onUpdate(const float32 p_dt) -> void
@@ -130,14 +123,11 @@ namespace toaster
 		uint32 frame_index{swapchain->getFrameIndex()};
 		auto & command_buffer = swapchain->getCurrentCommandBuffer();
 
-		// LOG_INFO("Scroll: {}, {}", app.getWindow().getInputContext()->getMouseScrollX(), app.getWindow().getInputContext()->getMouseScrollY());
-
 		m_cameraTest.onUpdate(p_dt);
 		m_scene->onUpdate(p_dt);
 		m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer);
 
-		auto tex{m_sceneRenderer->getOutputColourTexture()};
-		m_fullscreenRenderPass->setInput("u_Texture", tex);
+		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getOutputColourTexture());
 
 		m_fullscreenMaterial->set("u_Constants.res", glm::vec2{m_viewportWidth, m_viewportHeight});
 
@@ -147,21 +137,17 @@ namespace toaster
 		auto &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
 		colour_attachment_info.imageView   = swapchain->getCurrentImageView();
 		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		colour_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
-		colour_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
 		colour_attachment_info.clearValue  = vk::ClearColorValue{0.0f, 1.0f, 1.0f, 1.0f};
 
 		gpu::RenderingAttachmentInfo depth_attachment_info{};
 		depth_attachment_info.imageView   = swapchain->getDepthImageView();
 		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		depth_attachment_info.loadOp      = vk::AttachmentLoadOp::eClear;
-		depth_attachment_info.storeOp     = vk::AttachmentStoreOp::eStore;
 		depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
 		rendering_info.pDepthAttachment   = std::addressof(depth_attachment_info);
 
-		gpu::render::beginRendering(rendering_info, command_buffer, frame_index, m_fullscreenRenderPass);
-		render::renderFullscreenQuad(&getGlobals(), command_buffer, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);
-		gpu::render::endRendering(rendering_info, command_buffer);
+		m_renderCtx->beginRendering(command_buffer,rendering_info, frame_index, m_fullscreenRenderPass);
+		m_renderCtx->renderFullscreenQuad(command_buffer, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);
+		m_renderCtx->endRendering(command_buffer, rendering_info);
 	}
 
 	auto RuntimeLayer::onEvent(Event &p_event) -> void
@@ -184,6 +170,13 @@ namespace toaster
 			else
 				window.setWindowed();
 		}
+		// if (e.getKeyCode() == input::EKeyCode::eM)
+		// {
+		// 	io::filesystem::Path mesh_path{os::openFileDialog({{"Mesh", "fbx,obj"}})};
+		// 	Entity entity{m_scene->createEntity("I")};
+		// 	auto &mesh{entity.addComponent<MeshComponent>()};
+		// 	mesh.mesh = m_renderCtx->createObjectRef<gpu::VKMesh>(mesh_path, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"));
+		// }
 
 		return false;
 	}

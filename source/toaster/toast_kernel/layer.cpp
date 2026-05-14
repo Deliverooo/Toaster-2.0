@@ -1,12 +1,13 @@
 #include "layer.hpp"
 
 #include "application.hpp"
-#include "window.hpp"
-#include "toast_gpu/vk/vk_logical_device.hpp"
-#include "toast_render/globals.hpp"
 
 namespace toaster
 {
+	IAppLayer::IAppLayer(Application *p_app) : m_appParent(p_app), m_renderCtx(p_app->m_renderContext)
+	{
+	}
+
 	IAppLayer::~IAppLayer()
 	{
 	}
@@ -14,10 +15,5 @@ namespace toaster
 	auto IAppLayer::getApp() -> Application &
 	{
 		return *m_appParent;
-	}
-
-	auto IAppLayer::getGlobals() -> Globals &
-	{
-		return *m_appParent->m_globals;
 	}
 }

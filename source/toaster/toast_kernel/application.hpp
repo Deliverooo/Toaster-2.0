@@ -15,7 +15,11 @@ namespace toaster
 	class WindowCloseEvent;
 	class WindowResizeEvent;
 
-	class Globals;
+	namespace render
+	{
+		class Globals;
+		class RenderContext;
+	}
 
 	struct TST_API ApplicationCreateInfo
 	{
@@ -46,11 +50,13 @@ namespace toaster
 
 		CommandLineArgMap m_commandLineArgs;
 
-		gpu::VKInstance *      m_vkInstance{nullptr};
-		gpu::VKPhysicalDevice *m_vkPhysicalDevice{nullptr};
-		gpu::VKLogicalDevice * m_vkLogicalDevice{nullptr};
+		render::RenderContext *m_renderContext{nullptr};
 
-		Globals *m_globals{nullptr};
+		// gpu::VKInstance *      m_vkInstance/**/{nullptr};
+		// gpu::VKPhysicalDevice *m_vkPhysicalDevice{nullptr};
+		// gpu::VKLogicalDevice * m_vkLogicalDevice{nullptr};
+
+		// render::Globals *m_globals{nullptr};
 
 		Window *m_window{nullptr};
 

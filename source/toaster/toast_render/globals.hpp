@@ -11,7 +11,7 @@
 
 #include "toast_gpu/vk/vk_texture.hpp"
 
-namespace toaster
+namespace toaster::render
 {
 	class TST_API Globals final
 	{
@@ -31,16 +31,16 @@ namespace toaster
 		 * The shaders included are "Depth-Pre", "Geometry", "Composite", "Skybox", "Quad", "Compute-Test"
 		 * @return Returns the shader library
 		 */
-		auto getShaderLibrary() -> const ShaderLibrary &;
+		auto shaderLibrary() const -> const ShaderLibrary &;
 
-		auto getFullscreenQuadVertexBuffer() -> const RefPtr<gpu::VKVertexBuffer> &;
-		auto getFullscreenQuadIndexBuffer() -> const RefPtr<gpu::VKIndexBuffer> &;
+		auto fullscreenQuadVertexBuffer() const -> const RefPtr<gpu::VKVertexBuffer> &;
+		auto fullscreenQuadIndexBuffer() const -> const RefPtr<gpu::VKIndexBuffer> &;
 
-		auto getFullscreenQuadVertices() -> const std::vector<QuadVertex> &;
-		auto getFullscreenQuadIndices() -> const std::vector<uint32> &;
+		auto fullscreenQuadVertices() const -> const std::vector<QuadVertex> &;
+		auto fullscreenQuadIndices() const -> const std::vector<uint32> &;
 
-		auto getWhiteTexture() -> const RefPtr<gpu::VKTexture2D> &;
-		auto getWhiteTexture3D() -> const RefPtr<gpu::VKTexture3D> &;
+		auto whiteTexture() const -> const gpu::VKTexture2D *;
+		auto whiteTexture3D() const -> const gpu::VKTexture3D *;
 
 	private:
 		io::filesystem::Path m_binaryDir;
@@ -53,7 +53,7 @@ namespace toaster
 		std::vector<QuadVertex> m_quadVertices;
 		std::vector<uint32>     m_quadIndices;
 
-		RefPtr<gpu::VKTexture2D> m_whiteTexture{nullptr};
-		RefPtr<gpu::VKTexture3D> m_whiteTexture3D{nullptr};
+		UniquePtr<gpu::VKTexture2D> m_whiteTexture{nullptr};
+		UniquePtr<gpu::VKTexture3D> m_whiteTexture3D{nullptr};
 	};
 }

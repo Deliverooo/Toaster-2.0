@@ -145,6 +145,11 @@ namespace toaster::gpu
 		return m_descriptorImageInfo;
 	}
 
+	auto VKTexture2D::getDescriptorInfo() const -> const vk::DescriptorImageInfo &
+	{
+		return m_descriptorImageInfo;
+	}
+
 	VKTexture3D::VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info) : m_device(p_device), m_specInfo(p_spec_info)
 	{
 		TST_ASSERT_MSG(m_device, "Device cannot be null");
@@ -274,6 +279,11 @@ namespace toaster::gpu
 	}
 
 	auto VKTexture3D::getDescriptorInfo() -> vk::DescriptorImageInfo &
+	{
+		return m_descriptorImageInfo;
+	}
+
+	auto VKTexture3D::getDescriptorInfo() const -> const vk::DescriptorImageInfo &
 	{
 		return m_descriptorImageInfo;
 	}

@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../toaster_macros.hpp"
+#include "toast_lib/ptr.hpp"
 
 #include "toast_lib/system_types.h"
 #include "toast_lib/events/event.hpp"
@@ -11,7 +12,11 @@
 namespace toaster
 {
 	class Application;
-	class Globals;
+
+	namespace render
+	{
+		class RenderContext;
+	}
 
 	/*!
 	 * @class IAppLayer
@@ -42,9 +47,7 @@ namespace toaster
 			return new TLayer(p_app);
 		}
 
-		explicit IAppLayer(Application *p_app) : m_appParent(p_app)
-		{
-		}
+		explicit IAppLayer(Application *p_app);
 
 		virtual ~IAppLayer();
 
@@ -59,9 +62,12 @@ namespace toaster
 		}
 
 		virtual auto getApp() -> Application &;
-		virtual auto getGlobals() -> Globals &;
 
 	private:
 		Application *m_appParent{nullptr};
+
+	protected:
+		// Ts just makes things easier to acess
+		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
 	};
 }

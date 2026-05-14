@@ -9,26 +9,27 @@
 #include <array>
 #include <vulkan/vulkan_raii.hpp>
 
+#include "toast_gpu/vk/vk_command_buffer.hpp"
 #include "toast_gpu/vk/vk_render_attachment.hpp"
 
-namespace toaster
+namespace toaster::gpu
 {
-	namespace gpu
-	{
-		class VKLogicalDevice;
-		class VKPipeline;
-		class VKRenderPass;
-		class VKMaterial;
-		class VKTexture2D;
-		class VKRawImage;
-		class VKUniformBuffer;
-		class VKUniformBufferPFF;
-		class VKVertexBuffer;
-		class VKIndexBuffer;
-		class VKShader;
-	}
+	class VKLogicalDevice;
+	class VKPipeline;
+	class VKRenderPass;
+	class VKMaterial;
+	class VKTexture2D;
+	class VKRawImage;
+	class VKUniformBuffer;
+	class VKUniformBufferPFF;
+	class VKVertexBuffer;
+	class VKIndexBuffer;
+	class VKShader;
+}
 
-	class Globals;
+namespace toaster::render
+{
+	class RenderContext;
 
 	struct TST_API Renderer2DSpecInfo
 	{
@@ -42,19 +43,18 @@ namespace toaster
 
 	class TST_API Renderer2D final
 	{
-		TST_GPU_OBJECT
 	public:
 		struct Stats
 		{
 			uint32 quadCount{0u};
 		};
 
-		explicit Renderer2D(gpu::VKLogicalDevice *p_device, Globals *p_globals, const Renderer2DSpecInfo &p_create_info);
+		explicit Renderer2D(RenderContext *p_render_ctx, const Renderer2DSpecInfo &p_create_info);
 		~Renderer2D();
 
-		auto begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void;
-		auto end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
-				 gpu::RenderingAttachmentInfo * p_override_depth_attachment                                                             = nullptr) -> void;
+		auto begin(uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void;
+		auto end(gpu::VKCommandBuffer &        p_cmd, uint32 p_frame_index, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
+				 gpu::RenderingAttachmentInfo *p_override_depth_attachment                                                             = nullptr) -> void;
 
 		auto submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
 		auto submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
@@ -70,7 +70,7 @@ namespace toaster
 		auto _beginNewBatch() -> void;
 		auto _getTextureSlotIndex(const RefPtr<gpu::VKTexture2D> &p_texture) -> uint32;
 
-		NonOwningPtr<Globals> m_globals{nullptr};
+		NonOwningPtr<RenderContext> m_renderContext{nullptr};
 
 		Renderer2DSpecInfo m_createInfo;
 		uint32             m_maxVertices;
@@ -115,7 +115,7 @@ namespace toaster
 		RefPtr<gpu::VKUniformBufferPFF> m_cameraUBs{nullptr};
 		std::vector<void *>             m_mappedCameraUBs;
 
-		std::array<RefPtr<gpu::VKTexture2D>, 32u> m_textureSlots;
+		std::array<const gpu::VKTexture2D *, 32u> m_textureSlots;
 		uint32                                    m_textureSlotIndex{1u};
 
 		Stats m_stats;

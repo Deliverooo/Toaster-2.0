@@ -35,8 +35,8 @@ namespace toaster::gpu
 		[[nodiscard]] auto getDepthImageView() -> vk::raii::ImageView &;
 		[[nodiscard]] auto getDepthImageMemory() -> vk::raii::DeviceMemory &;
 
-		[[nodiscard]] auto getCommandBuffer(uint32 p_frame_index) -> vk::raii::CommandBuffer &;
-		[[nodiscard]] auto getCurrentCommandBuffer() -> vk::raii::CommandBuffer &;
+		[[nodiscard]] auto getCommandBuffer(uint32 p_frame_index) -> VKCommandBuffer &;
+		[[nodiscard]] auto getCurrentCommandBuffer() -> VKCommandBuffer &;
 
 		[[nodiscard]] auto getExtent() const -> vk::Extent2D;
 		[[nodiscard]] auto getAspectRatio() const -> float32;
@@ -73,7 +73,8 @@ namespace toaster::gpu
 
 		std::vector<vk::raii::Semaphore> m_imageAvailableSemaphores;
 		std::vector<vk::raii::Semaphore> m_renderFinishedSemaphores;
-		VKCommandBufferPFF               m_commandBuffers;
+
+		std::vector<VKCommandBuffer> m_commandBuffers;
 
 		vk::raii::Image        m_depthImage{nullptr};
 		vk::raii::DeviceMemory m_depthImageMemory{nullptr};

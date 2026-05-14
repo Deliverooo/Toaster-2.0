@@ -78,12 +78,9 @@ namespace toaster
 
 	static Scene *s_activeScene{nullptr};
 
-	Scene::Scene(gpu::VKLogicalDevice *p_device, Globals *p_globals, script::ScriptEngine *p_script_engine, const String &p_name) : m_device(p_device),
-																																	m_globals(p_globals),
-																																	m_scriptEngine(p_script_engine),
-																																	m_name(p_name.empty()
-																																			   ? "Untitled Scene"
-																																			   : p_name)
+	Scene::Scene(render::RenderContext *p_render_ctx, script::ScriptEngine *p_script_engine, const String &p_name) : m_renderCtx(p_render_ctx),
+																													 m_scriptEngine(p_script_engine),
+																													 m_name(p_name.empty() ? "Untitled Scene" : p_name)
 	{
 		s_activeScene = this;
 
@@ -208,7 +205,7 @@ namespace toaster
 		}
 	}
 
-	auto Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void
+	auto Scene::onRender(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void
 	{
 		Camera *  main_camera{nullptr};
 		glm::mat4 camera_transform{1.0f};
@@ -251,7 +248,7 @@ namespace toaster
 
 		glm::mat4 camera_view{glm::inverse(camera_transform)};
 		{
-			p_scene_renderer->begin(p_cmd, p_frame_index, camera_view, main_camera->getProjectionMatrix());
+			p_scene_renderer->begin(p_frame_index, camera_view, main_camera->getProjectionMatrix());
 			for (const auto view{m_registry.view<TransformComponent, MeshComponent>()}; const auto entity: view)
 			{
 				if (auto [transform, mesh]{view.get<TransformComponent, MeshComponent>(entity)}; mesh.mesh)
@@ -264,7 +261,7 @@ namespace toaster
 		#if TST_ENABLE_2D_SCENE_RENDERING
 		{
 			auto renderer_2d{p_scene_renderer->getRenderer2D()};
-			renderer_2d->begin(p_cmd, p_frame_index, camera_view, main_camera->getProjectionMatrix());
+			renderer_2d->begin(p_frame_index, camera_view, main_camera->getProjectionMatrix());
 
 			for (const auto view{m_registry.view<TransformComponent, SpriteRendererComponent>()}; const auto entity: view)
 			{
@@ -292,8 +289,8 @@ namespace toaster
 		#endif
 	}
 
-	auto Scene::onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer,
-						 const glm::mat4 &              p_view, const glm::mat4 &p_projection) -> void
+	auto Scene::onRender(gpu::VKCommandBuffer &p_cmd, uint32            p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer,
+						 const glm::mat4 &     p_view, const glm::mat4 &p_projection) -> void
 	{
 		m_lightEnvironment.pointLights.clear();
 		m_lightEnvironment.directionalLights.clear();
@@ -321,7 +318,7 @@ namespace toaster
 			}
 		}
 		{
-			p_scene_renderer->begin(p_cmd, p_frame_index, p_view, p_projection);
+			p_scene_renderer->begin(p_frame_index, p_view, p_projection);
 			for (const auto view{m_registry.view<TransformComponent, MeshComponent>()}; const auto entity: view)
 			{
 				if (auto [transform, mesh]{view.get<TransformComponent, MeshComponent>(entity)}; mesh.mesh)
@@ -334,7 +331,7 @@ namespace toaster
 		#if TST_ENABLE_2D_SCENE_RENDERING
 		{
 			auto renderer_2d{p_scene_renderer->getRenderer2D()};
-			renderer_2d->begin(p_cmd, p_frame_index, p_view, p_projection);
+			renderer_2d->begin(p_frame_index, p_view, p_projection);
 
 			for (const auto view{m_registry.view<TransformComponent, SpriteRendererComponent>()}; const auto entity: view)
 			{

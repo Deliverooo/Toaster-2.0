@@ -3,7 +3,7 @@
 #include "toast_lib/events/window_event.hpp"
 
 #include "input.hpp"
-#include "toast_render/globals.hpp"
+#include "toast_render/render_context.hpp"
 
 #include <algorithm>
 #include <GLFW/glfw3.h>
@@ -19,37 +19,13 @@ namespace toaster
 	{
 		Window::initWindowingAPI();
 
-		#pragma region create vulkan objects
-		gpu::VKInstanceSpecInfo vk_instance_spec_info{};
-		vk_instance_spec_info.appName            = "Toaster-2.0 -> Vulkan QT";
-		vk_instance_spec_info.requiredExtensions = Window::getRequiredInstanceExtensions();
-		m_vkInstance                             = new gpu::VKInstance{vk_instance_spec_info};
-
-		std::unordered_set<String> required_device_extensions{
-			vk::KHRSwapchainExtensionName,
-			vk::KHRDynamicRenderingExtensionName,
-			vk::KHRTimelineSemaphoreExtensionName,
-			vk::EXTCustomBorderColorExtensionName,
-			vk::KHRMaintenance6ExtensionName,
-			vk::KHRLoadStoreOpNoneExtensionName,
-			vk::KHRShaderNonSemanticInfoExtensionName
-		};
-		gpu::VKPhysicalDeviceSpecInfo vk_physical_device_spec_info{};
-		vk_physical_device_spec_info.requiredExtensions = required_device_extensions;
-
-		m_vkPhysicalDevice = new gpu::VKPhysicalDevice{m_vkInstance, vk_physical_device_spec_info};
-
-		gpu::VKLogicalDeviceSpecInfo vk_logical_device_spec_info{};
-		vk_logical_device_spec_info.usePresent         = true;
-		vk_logical_device_spec_info.requiredExtensions = required_device_extensions;
-		auto features{gpu::VKLogicalDeviceSpecInfo::getDefaultFeatures()};
-		vk_logical_device_spec_info.pNext = features.get<vk::PhysicalDeviceFeatures2>();
-
-		m_vkLogicalDevice = new gpu::VKLogicalDevice{m_vkPhysicalDevice, vk_logical_device_spec_info};
-		#pragma endregion
+		render::RenderContextSpecInfo render_context_spec_info{};
+		render_context_spec_info.binaryDir          = os::getBinaryDirectory();
+		render_context_spec_info.instanceExtensions = Window::getRequiredInstanceExtensions();
+		m_renderContext                             = new render::RenderContext{render_context_spec_info};
 
 		#pragma region create window
-		m_window = new Window{m_vkLogicalDevice, p_create_info.windowCreateInfo};
+		m_window = new Window{m_renderContext->getLogicalDevice(), p_create_info.windowCreateInfo};
 		m_window->setEventCallback([this](Event &e)
 		{
 			EventDispatcher dispatcher{e};
@@ -64,29 +40,17 @@ namespace toaster
 			});
 		});
 		#pragma endregion
-
-		m_globals = new Globals{m_vkLogicalDevice, os::getBinaryDirectory()};
 	}
 
 	Application::~Application() noexcept
 	{
-		m_vkLogicalDevice->getVulkanLogicalDevice().waitIdle();
-
-		m_vkLogicalDevice->performGarbageCollection(); // Collect the trash from the layers
 		for (IAppLayer *layer: m_layers)
 			removeLayer(layer);
 		m_layers.clear();
 
-		delete m_globals;
-
-		m_vkLogicalDevice->performGarbageCollection(); // Collect the trash from the globals
-
 		delete m_window;
+		delete m_renderContext;
 		Window::shutdownWindowingAPI();
-
-		delete m_vkLogicalDevice;
-		delete m_vkPhysicalDevice;
-		delete m_vkInstance;
 	}
 
 	auto Application::run() -> void
@@ -130,7 +94,7 @@ namespace toaster
 
 	auto Application::getLogicalDevice() const -> gpu::VKLogicalDevice *
 	{
-		return m_vkLogicalDevice;
+		return m_renderContext->getLogicalDevice();
 	}
 
 	auto Application::getCommandLineArgs() const noexcept -> const CommandLineArgMap &

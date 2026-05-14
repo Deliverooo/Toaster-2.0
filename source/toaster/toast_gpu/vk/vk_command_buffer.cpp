@@ -85,8 +85,8 @@ namespace toaster::gpu
 		m_commandBuffer.reset();
 	}
 
-	VKCommandBufferPFF::VKCommandBufferPFF(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, uint32 p_frames_in_flight,
-										   bool             p_fence_signaled) : m_device(p_device), m_queueType(p_queue_type), m_framesInFlightCount(p_frames_in_flight)
+	VKCommandBufferPFFPacked::VKCommandBufferPFFPacked(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, uint32 p_frames_in_flight,
+													   bool p_fence_signaled) : m_device(p_device), m_queueType(p_queue_type), m_framesInFlightCount(p_frames_in_flight)
 	{
 		TST_ASSERT_MSG(m_framesInFlightCount > 0, "Bradar what is dis?!");
 
@@ -105,19 +105,20 @@ namespace toaster::gpu
 		}
 	}
 
-	auto VKCommandBufferPFF::begin(uint32 p_frame_index) -> void
+	auto VKCommandBufferPFFPacked::begin(uint32 p_frame_index) -> void
 	{
 		constexpr vk::CommandBufferBeginInfo begin_info{};
 		m_commandBuffers.at(p_frame_index).begin(begin_info);
 	}
 
-	auto VKCommandBufferPFF::end(uint32 p_frame_index) -> void
+	auto VKCommandBufferPFFPacked::end(uint32 p_frame_index) -> void
 	{
 		m_commandBuffers.at(p_frame_index).end();
 	}
 
-	auto VKCommandBufferPFF::submit(uint32 p_frame_index, vk::PipelineStageFlags2 p_wait_stage_mask, const std::initializer_list<const vk::Semaphore> &p_wait_semaphores,
-									const std::initializer_list<const vk::Semaphore> &p_signal_semaphores) -> void
+	auto VKCommandBufferPFFPacked::submit(uint32                                            p_frame_index, vk::PipelineStageFlags2 p_wait_stage_mask,
+										  const std::initializer_list<const vk::Semaphore> &p_wait_semaphores,
+										  const std::initializer_list<const vk::Semaphore> &p_signal_semaphores) -> void
 	{
 		vk::CommandBufferSubmitInfo command_buffer_info{};
 		command_buffer_info.commandBuffer = m_commandBuffers.at(p_frame_index);
@@ -147,27 +148,27 @@ namespace toaster::gpu
 		m_device->getQueue(m_queueType).submit2(submit_info, m_waitFences[p_frame_index]);
 	}
 
-	auto VKCommandBufferPFF::getVulkanCommandBuffer(uint32 p_frame_index) -> vk::raii::CommandBuffer &
+	auto VKCommandBufferPFFPacked::getVulkanCommandBuffer(uint32 p_frame_index) -> vk::raii::CommandBuffer &
 	{
 		return m_commandBuffers.at(p_frame_index);
 	}
 
-	auto VKCommandBufferPFF::getWaitFence(uint32 p_frame_index) -> vk::raii::Fence &
+	auto VKCommandBufferPFFPacked::getWaitFence(uint32 p_frame_index) -> vk::raii::Fence &
 	{
 		return m_waitFences.at(p_frame_index);
 	}
 
-	auto VKCommandBufferPFF::waitForFence(uint32 p_frame_index) -> void
+	auto VKCommandBufferPFFPacked::waitForFence(uint32 p_frame_index) -> void
 	{
 		m_device->waitForFence(*m_waitFences.at(p_frame_index));
 	}
 
-	auto VKCommandBufferPFF::resetFence(uint32 p_frame_index) -> void
+	auto VKCommandBufferPFFPacked::resetFence(uint32 p_frame_index) -> void
 	{
 		m_device->getVulkanLogicalDevice().resetFences(*m_waitFences.at(p_frame_index));
 	}
 
-	auto VKCommandBufferPFF::resetCommandBuffer(uint32 p_frame_index) -> void
+	auto VKCommandBufferPFFPacked::resetCommandBuffer(uint32 p_frame_index) -> void
 	{
 		m_commandBuffers.at(p_frame_index).reset();
 	}

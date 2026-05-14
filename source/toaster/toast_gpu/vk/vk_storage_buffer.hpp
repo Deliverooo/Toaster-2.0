@@ -40,6 +40,7 @@ namespace toaster::gpu
 		VKStorageBufferPFF(VKLogicalDevice *p_device, uint64 p_size, uint32 p_frames_in_flight);
 
 		auto getSSBO(uint32 p_frame_index) -> RefPtr<VKStorageBuffer>;
+		auto getSSBO(uint32 p_frame_index)const  -> const RefPtr<VKStorageBuffer>;
 		auto setSSBO(uint32 p_frame_index, const RefPtr<VKStorageBuffer> &p_storage_buffer) -> void;
 
 		auto begin() -> std::vector<RefPtr<VKStorageBuffer> >::iterator;

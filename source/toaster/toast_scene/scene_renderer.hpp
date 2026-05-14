@@ -19,13 +19,12 @@ namespace toaster
 
 	class TST_API SceneRenderer
 	{
-		TST_GPU_OBJECT
 	public:
-		SceneRenderer(gpu::VKLogicalDevice *p_device, Globals *p_globals, const SceneRendererSpecInfo &p_spec_info);
+		SceneRenderer(render::RenderContext *p_render_ctx, const SceneRendererSpecInfo &p_spec_info);
 		~SceneRenderer();
 
-		auto begin(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix) -> void;
-		auto end(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto begin( uint32 p_frame_index, const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix) -> void;
+		auto end( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 		auto renderMesh(RefPtr<gpu::VKMesh> p_mesh, const glm::mat4 &p_transform) -> void;
 
 		auto getSpecInfo() const -> const SceneRendererSpecInfo &;
@@ -37,22 +36,22 @@ namespace toaster
 		auto getGeometryPositionsTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 		auto getGeometryNormalsTexture() const -> const RefPtr<gpu::VKTexture2D> &;
 
-		auto getRenderer2D() -> RefPtr<Renderer2D>;
+		auto getRenderer2D() -> RefPtr<render::Renderer2D>;
 
 		auto onResize(uint32 p_width, uint32 p_height) -> void;
 		auto setEnvironmentBackground(const RefPtr<gpu::VKTexture3D> &p_texture) -> void;
 
 	private:
-		auto _renderDepthPrePass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-		auto _renderLightCullingPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-		auto _renderSkyboxPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-		auto _renderGeometryPass(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderDepthPrePass( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderLightCullingPass( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderSkyboxPass( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderGeometryPass( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 
-		NonOwningPtr<Globals> m_globals{nullptr};
+		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
 
 		SceneRendererSpecInfo m_specInfo{};
 
-		RefPtr<Renderer2D> m_renderer2D{nullptr};
+		RefPtr<render::Renderer2D> m_renderer2D{nullptr};
 
 		#pragma region depth-pre
 		RefPtr<gpu::VKPipeline>   m_depthPrePipeline{nullptr};

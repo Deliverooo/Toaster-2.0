@@ -12,8 +12,11 @@ namespace toaster::gpu
 		VKMaterial(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader, const String &p_name = "Unknown?");
 		~VKMaterial();
 
-		auto set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void;
-		auto set(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void;
+		auto set(const String &p_name, RefPtr<VKTexture2D> &p_texture_2d) -> void;
+		auto set(const String &p_name, RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void;
+
+		auto setT(const String &p_name, VKTexture2D *p_texture_2d) -> void;
+		auto set(const String &p_name, VKTexture2D *p_texture_2d, uint32 p_array_index) -> void;
 
 		template<typename Type>
 		auto set(const String &p_name, const Type &p_type) -> void

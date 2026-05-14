@@ -22,7 +22,10 @@ namespace toaster
 	class SceneRenderer;
 	class ScriptableEntityCS; // Inside the scene.cpp file
 
-	class Globals;
+	namespace render
+	{
+		class RenderContext;
+	}
 
 	struct TST_API DirectionalLight
 	{
@@ -62,14 +65,14 @@ namespace toaster
 		using AddComponentFn   = void(*)(Entity *);
 		using ResetComponentFn = void(*)(Entity *);
 
-		Scene(gpu::VKLogicalDevice *p_device, Globals *p_globals, script::ScriptEngine *p_script_engine = nullptr, const String &p_name = "");
+		Scene(render::RenderContext * p_render_ctx, script::ScriptEngine *p_script_engine = nullptr, const String &p_name = "");
 		~Scene();
 
 		auto onUpdate(float32 p_dt) -> void;
 		auto onEvent(Event &p_event) -> void;
 
-		auto onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void;
-		auto onRender(const vk::raii::CommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
+		auto onRender( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void;
+		auto onRender( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
 					  const glm::mat4 &              p_projection) -> void;
 
 		auto setViewportSize(uint32 p_width, uint32 p_height) -> void;
@@ -102,9 +105,8 @@ namespace toaster
 		template<typename Type>
 		TST_API auto onComponentAdded(Entity p_entity, Type &p_component) -> void;
 
-		NonOwningPtr<gpu::VKLogicalDevice> m_device{nullptr};
-		NonOwningPtr<Globals>              m_globals{nullptr};
-		NonOwningPtr<script::ScriptEngine> m_scriptEngine{nullptr};
+		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
+		NonOwningPtr<script::ScriptEngine>  m_scriptEngine{nullptr};
 
 		entt::registry                         m_registry;
 		std::unordered_map<UUID, entt::entity> m_entityUUIDMap;
