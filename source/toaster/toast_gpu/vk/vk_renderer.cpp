@@ -282,7 +282,7 @@ namespace toaster::gpu::render
 		p_command_buffer.pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
 		const auto &submesh{p_mesh->getSubmeshes()[p_submesh_index]};
-		auto        material{p_mesh->getMaterials()[submesh.materialIndex]};
+		auto        material{p_mesh->getMaterialDatas()[submesh.materialIndex].material};
 
 		if (material) // You technically don't need to use a material if you don't want to
 		{

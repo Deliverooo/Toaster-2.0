@@ -170,10 +170,10 @@ namespace toaster::render
 			{
 				if (m_textureSlots[i])
 				{
-					m_quadMaterial->set("u_Textures", const_cast<gpu::VKTexture2D *>(m_textureSlots[i]), i);
+					m_quadMaterial->setTexture("u_Textures", const_cast<gpu::VKTexture2D *>(m_textureSlots[i]), i);
 				}
 				else
-					m_quadMaterial->set("u_Textures", const_cast<gpu::VKTexture2D *>(m_renderContext->getGlobals()->whiteTexture()), i);
+					m_quadMaterial->setTexture("u_Textures", const_cast<gpu::VKTexture2D *>(m_renderContext->getGlobals()->whiteTexture()), i);
 			}
 
 			m_renderContext->renderGeometry(p_cmd, p_frame_index, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial,

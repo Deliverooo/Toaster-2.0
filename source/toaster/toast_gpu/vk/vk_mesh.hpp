@@ -9,7 +9,7 @@
 
 namespace toaster::gpu
 {
-	struct MeshVertex
+	struct TST_GPU_API MeshVertex
 	{
 		glm::vec3 position;
 		glm::vec3 normal;
@@ -18,7 +18,7 @@ namespace toaster::gpu
 		glm::vec2 texCoord;
 	};
 
-	struct Submesh
+	struct TST_GPU_API Submesh
 	{
 		String name{};
 
@@ -32,7 +32,7 @@ namespace toaster::gpu
 		uint32 vertexCount{0u};
 	};
 
-	struct MeshNode
+	struct TST_GPU_API MeshNode
 	{
 		String    name{};
 		glm::mat4 localTransform{1.0f};
@@ -40,6 +40,13 @@ namespace toaster::gpu
 		std::vector<uint32> children;
 		std::vector<uint32> submeshes;
 		uint32              parent{UINT32_MAX};
+	};
+
+	struct TST_GPU_API MeshMaterialData
+	{
+		RefPtr<VKMaterial>  material{nullptr};
+		RefPtr<VKTexture2D> albedoMap{nullptr};
+		RefPtr<VKTexture2D> normalMap{nullptr};
 	};
 
 	class TST_GPU_API VKMesh
@@ -51,7 +58,7 @@ namespace toaster::gpu
 		auto getVertexBuffer() const -> const RefPtr<VKVertexBuffer> &;
 		auto getIndexBuffer() const -> const RefPtr<VKIndexBuffer> &;
 
-		auto getMaterials() const -> const std::vector<RefPtr<VKMaterial> > &;
+		auto getMaterialDatas() const -> const std::vector<MeshMaterialData> &;
 		auto getSubmeshes() const -> const std::vector<Submesh> &;
 
 		auto getVertices() const -> const std::vector<MeshVertex> &;
@@ -73,6 +80,6 @@ namespace toaster::gpu
 		RefPtr<VKVertexBuffer> m_vertexBuffer{nullptr};
 		RefPtr<VKIndexBuffer>  m_indexBuffer{nullptr};
 
-		std::vector<RefPtr<VKMaterial> > m_materials;
+		std::vector<MeshMaterialData> m_materialDatas;
 	};
 }

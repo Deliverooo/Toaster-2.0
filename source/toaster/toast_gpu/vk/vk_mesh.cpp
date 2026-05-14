@@ -112,7 +112,9 @@ namespace toaster::gpu
 			{
 				auto  ai_material      = scene->mMaterials[i];
 				auto  ai_material_name = ai_material->GetName();
-				auto &material{m_materials.emplace_back(m_device->alloc<VKMaterial>(p_shader, ai_material_name.data))};
+				auto &material_data{m_materialDatas.emplace_back()};
+				auto &material{material_data.material};
+				material = m_device->alloc<VKMaterial>(p_shader, ai_material_name.data);
 
 				aiString ai_tex_path;
 
@@ -159,7 +161,8 @@ namespace toaster::gpu
 
 					TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					material->set("u_AlbedoTexture", m_device->alloc<VKTexture2D>(texture_spec_info, texture_path));
+					material_data.albedoMap        = m_device->alloc<VKTexture2D>(texture_spec_info, texture_path);
+					material->setTexture("u_AlbedoTexture", material_data.albedoMap);
 					material->set("u_Material.albedoColour", glm::vec3{1.0f});
 				}
 				else
@@ -180,7 +183,8 @@ namespace toaster::gpu
 
 					TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					material->set("u_NormalTexture", m_device->alloc<VKTexture2D>(texture_spec_info, texture_path));
+					material_data.normalMap        = m_device->alloc<VKTexture2D>(texture_spec_info, texture_path);
+					material->setTexture("u_NormalTexture", material_data.normalMap);
 					material->set<uint32>("u_Material.hasNormalMap", 1u);
 				}
 				else
@@ -190,7 +194,7 @@ namespace toaster::gpu
 			}
 		}
 		else
-			m_materials.emplace_back(m_device->alloc<VKMaterial>(p_shader));
+			m_materialDatas.emplace_back(m_device->alloc<VKMaterial>(p_shader));
 
 		const vk::DeviceSize vertex_buffer_size{sizeof(MeshVertex) * m_vertices.size()};
 		m_vertexBuffer = m_device->alloc<VKVertexBuffer>(static_cast<void *>(m_vertices.data()), vertex_buffer_size);
@@ -209,9 +213,9 @@ namespace toaster::gpu
 		return m_indexBuffer;
 	}
 
-	auto VKMesh::getMaterials() const -> const std::vector<RefPtr<VKMaterial> > &
+	auto VKMesh::getMaterialDatas() const -> const std::vector<MeshMaterialData> &
 	{
-		return m_materials;
+		return m_materialDatas;
 	}
 
 	auto VKMesh::getSubmeshes() const -> const std::vector<Submesh> &

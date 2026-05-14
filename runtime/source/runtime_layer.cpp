@@ -170,13 +170,13 @@ namespace toaster
 			else
 				window.setWindowed();
 		}
-		// if (e.getKeyCode() == input::EKeyCode::eM)
-		// {
-		// 	io::filesystem::Path mesh_path{os::openFileDialog({{"Mesh", "fbx,obj"}})};
-		// 	Entity entity{m_scene->createEntity("I")};
-		// 	auto &mesh{entity.addComponent<MeshComponent>()};
-		// 	mesh.mesh = m_renderCtx->createObjectRef<gpu::VKMesh>(mesh_path, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"));
-		// }
+		if (e.getKeyCode() == input::EKeyCode::eM)
+		{
+			io::filesystem::Path mesh_path{os::openFileDialog({{"Mesh", "fbx,obj"}})};
+			Entity entity{m_scene->createEntity("I")};
+			auto &mesh{entity.addComponent<MeshComponent>()};
+			mesh.mesh = m_renderCtx->createObjectRef<gpu::VKMesh>(mesh_path, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"));
+		}
 
 		return false;
 	}

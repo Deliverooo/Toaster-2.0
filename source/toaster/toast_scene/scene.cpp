@@ -605,7 +605,7 @@ namespace toaster
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & mesh{entity.getComponent<MeshComponent>()};
-			return mesh.mesh->getMaterials().size() > p_index;
+			return mesh.mesh->getMaterialDatas().size() > p_index;
 		});
 		#pragma endregion
 
@@ -788,7 +788,7 @@ namespace toaster
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & mesh{entity.getComponent<MeshComponent>()};
-			auto & material{mesh.mesh->getMaterials().at(p_index)};
+			auto & material{mesh.mesh->getMaterialDatas().at(p_index).material};
 			*p_out_colour = material->get<glm::vec3>("u_Material.albedoColour");
 		});
 
@@ -796,7 +796,7 @@ namespace toaster
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & mesh{entity.getComponent<MeshComponent>()};
-			auto & material{mesh.mesh->getMaterials().at(p_index)};
+			auto & material{mesh.mesh->getMaterialDatas().at(p_index).material};
 			material->set("u_Material.albedoColour", *p_colour);
 		});
 		#pragma endregion

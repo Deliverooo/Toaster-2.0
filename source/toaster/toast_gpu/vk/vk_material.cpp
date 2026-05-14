@@ -40,22 +40,22 @@ namespace toaster::gpu
 		m_pushConstantStorageBuffer.release();
 	}
 
-	auto VKMaterial::set(const String &p_name, RefPtr<VKTexture2D> &p_texture_2d) -> void
+	auto VKMaterial::setTexture(const String &p_name, RefPtr<VKTexture2D> &p_texture_2d) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);
 	}
 
-	auto VKMaterial::set(const String &p_name, RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void
+	auto VKMaterial::setTexture(const String &p_name, RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d, p_array_index);
 	}
 
-	auto VKMaterial::set(const String &p_name, VKTexture2D *p_texture_2d) -> void
+	auto VKMaterial::setTexture(const String &p_name, VKTexture2D *p_texture_2d) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);
 	}
 
-	auto VKMaterial::set(const String &p_name, VKTexture2D *p_texture_2d, uint32 p_array_index) -> void
+	auto VKMaterial::setTexture(const String &p_name, VKTexture2D *p_texture_2d, uint32 p_array_index) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d, p_array_index);
 	}
