@@ -1,8 +1,5 @@
 set(SRC
 
-		renderer.hpp
-		renderer.cpp
-
 		renderer_2d.cpp
 		renderer_2d.hpp
 
@@ -14,6 +11,12 @@ set(SRC
 
 		render_context.cpp
 		render_context.hpp
+
+		material.cpp
+		material.hpp
+
+		mesh.cpp
+		mesh.hpp
 )
 
 list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")

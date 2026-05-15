@@ -25,7 +25,6 @@ namespace toaster
 		class VKUniformBufferPFF;
 	}
 
-	class Renderer2D;
 	class SceneRenderer;
 	class Scene;
 
@@ -45,22 +44,20 @@ namespace toaster
 		auto _onWindowFileDropEvent(WindowFileDropEvent &p_event) -> bool;
 		auto _onKeyPressEvent(KeyPressEvent &p_event) -> bool;
 
-		gpu::VKLogicalDevice *m_device{nullptr};
-
 		uint32 m_windowWidth{0u};
 		uint32 m_windowHeight{0u};
 
 		float32 m_time{0.0f};
 
-		RefPtr<gpu::VKPipeline>   m_fullscreenPipeline{nullptr};
-		RefPtr<gpu::VKRenderPass> m_fullscreenPass{nullptr};
-		RefPtr<gpu::VKMaterial>   m_fullscreenMaterial{nullptr};
+		gpu::PipelineHandle    m_fullscreenPipeline{nullptr};
+		gpu::RenderPassHandle  m_fullscreenPass{nullptr};
+		render::MaterialHandle m_fullscreenMaterial{nullptr};
 
 		RefPtr<Scene>                  m_scene{nullptr};
 		UniquePtr<SceneHierarchyPanel> m_sceneHierarchyPanel{nullptr};
 		RefPtr<SceneRenderer>          m_sceneRenderer{nullptr};
 
-		RefPtr<Renderer2D> m_renderer2D{nullptr};
+		RefPtr<render::Renderer2D> m_renderer2D{nullptr};
 
 		EditorCamera m_editorCamera;
 

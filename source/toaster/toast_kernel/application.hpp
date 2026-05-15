@@ -38,8 +38,7 @@ namespace toaster
 		auto close() noexcept -> void;
 
 		[[nodiscard]] auto getWindow() const noexcept -> Window &;
-		[[nodiscard]] auto getLogicalDevice() const -> gpu::VKLogicalDevice *;
-
+		[[nodiscard]] auto getRenderContext() const noexcept -> render::RenderContext *;
 		[[nodiscard]] auto getCommandLineArgs() const noexcept -> const CommandLineArgMap &;
 
 	private:
@@ -50,17 +49,10 @@ namespace toaster
 
 		CommandLineArgMap m_commandLineArgs;
 
-		render::RenderContext *m_renderContext{nullptr};
+		OwningPtr<render::RenderContext> m_renderContext{nullptr};
+		OwningPtr<Window>                m_window{nullptr};
 
-		// gpu::VKInstance *      m_vkInstance/**/{nullptr};
-		// gpu::VKPhysicalDevice *m_vkPhysicalDevice{nullptr};
-		// gpu::VKLogicalDevice * m_vkLogicalDevice{nullptr};
-
-		// render::Globals *m_globals{nullptr};
-
-		Window *m_window{nullptr};
-
-		std::vector<IAppLayer *> m_layers;
+		std::vector<OwningPtr<IAppLayer> > m_layers;
 
 		std::function<void()> m_cbBeginUIRender{nullptr};
 		std::function<void()> m_cbEndUIRender{nullptr};

@@ -7,7 +7,6 @@
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_gpu/vk/vk_command_buffer.hpp"
-#include "toast_gpu/vk/vk_renderer.hpp"
 #include "toast_render/globals.hpp"
 
 namespace toaster
@@ -27,29 +26,8 @@ namespace toaster
 
 		m_sceneDataUBOs       = m_renderCtx->createUniformBuffers<SceneDataUB>(render::RenderContext::maxFramesInFlight);
 		m_mappedSceneDataUBOs = m_sceneDataUBOs->mapAllMemory(sizeof(SceneDataUB));
-		// {
-		// constexpr vk::DeviceSize ubo_size{sizeof(CameraUB)};
-		// m_cameraUBOs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
-		// m_mappedCameraUBOs = m_cameraUBOs->mapAllMemory(ubo_size, 0);
-		// }
-		// {
-		// constexpr vk::DeviceSize ubo_size{sizeof(DirectionalLightUB)};
-		// m_directionalLightUBOs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
-		// m_mappedDirectionalLightUBOs = m_directionalLightUBOs->mapAllMemory(ubo_size, 0);
-		// }
-		// {
-		// constexpr vk::DeviceSize ubo_size{sizeof(PointLightUB)};
-		// m_pointLightUBOs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
-		// m_mappedPointLightUBOs = m_pointLightUBOs->mapAllMemory(ubo_size, 0);
-		// }
-		// {
-		// constexpr vk::DeviceSize ubo_size{sizeof(SceneDataUB)};
-		// m_sceneDataUBOs       = m_device->alloc<gpu::VKUniformBufferPFF>(ubo_size, m_device->getSpecInfo().maxFramesInFlight);
-		// m_mappedSceneDataUBOs = m_sceneDataUBOs->mapAllMemory(ubo_size, 0);
-		// }
 
 		m_skyboxMap = m_renderCtx->createEnvironmentMap(m_specInfo.resourceDirectory / "environments/overcast_soil_puresky_2k.hdr");
-		// m_skyboxMap = render::createEnvironmentMap(m_device, m_globals, m_specInfo.resourceDirectory / "environments/overcast_soil_puresky_2k.hdr");
 
 		#pragma region depth-pre
 		{
@@ -64,39 +42,38 @@ namespace toaster
 
 			depth_pre_pipeline_spec_info.depthFormat = vk::Format::eD32Sfloat;
 			depth_pre_pipeline_spec_info.shader      = m_renderCtx->getGlobals()->shaderLibrary().get("Depth-Pre");
-			m_depthPrePipeline                       = m_renderCtx->createObjectRef<gpu::VKPipeline>(depth_pre_pipeline_spec_info);
+			m_depthPrePipeline                       = m_renderCtx->createGPU<gpu::VKPipeline>(depth_pre_pipeline_spec_info);
 
-			m_depthPrePass = m_renderCtx->createObjectRef<gpu::VKRenderPass>(m_depthPrePipeline);
+			m_depthPrePass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_depthPrePipeline);
 			m_depthPrePass->setInput("Camera", m_cameraUBOs);
 
-			m_depthPrePass->bake(); // TODO: rename ts to toast
-			//						   Its funny because the engine is called Toaster...
+			m_depthPrePass->bake();
 
 			gpu::TextureSpecInfo depth_pre_attachment_texture_spec_info{};
 			depth_pre_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
 			depth_pre_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
 			depth_pre_attachment_texture_spec_info.format = vk::Format::eD32Sfloat;
-			m_depthPreAttachmentTexture                   = m_renderCtx->createObjectRef<gpu::VKTexture2D>(depth_pre_attachment_texture_spec_info);
+			m_depthPreAttachmentTexture                   = m_renderCtx->createGPU<gpu::VKTexture2D>(depth_pre_attachment_texture_spec_info);
 		}
 		#pragma endregion
 
 		#pragma region light culling
 		{
-			m_lightCullingPipeline = m_renderCtx->createObjectRef<gpu::VKComputePipeline>(m_renderCtx->getGlobals()->shaderLibrary().get("Compute-Test"));
+			m_lightCullingPipeline = m_renderCtx->createGPU<gpu::VKComputePipeline>(m_renderCtx->getGlobals()->shaderLibrary().get("Compute-Test"));
 
 			gpu::ImageSpecInfo compute_image_spec_info{};
 			compute_image_spec_info.width  = m_specInfo.viewportWidth;
 			compute_image_spec_info.height = m_specInfo.viewportHeight;
 			compute_image_spec_info.format = vk::Format::eR32G32B32A32Sfloat;
 			compute_image_spec_info.usage  = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
-			m_computeImage                 = m_renderCtx->createObjectRef<gpu::VKImage2D>(compute_image_spec_info);
+			m_computeImage                 = m_renderCtx->createGPU<gpu::VKImage2D>(compute_image_spec_info);
 
-			m_lightCullingPass = m_renderCtx->createObjectRef<gpu::VKComputePass>(m_lightCullingPipeline);
+			m_lightCullingPass = m_renderCtx->createGPU<gpu::VKComputePass>(m_lightCullingPipeline);
 			m_lightCullingPass->setInput("u_TestImage", m_computeImage);
 			m_lightCullingPass->setInput("u_CubemapImage", m_skyboxMap);
 			m_lightCullingPass->bake();
 
-			m_lightCullingMaterial = m_renderCtx->createObjectRef<gpu::VKMaterial>(m_renderCtx->getGlobals()->shaderLibrary().get("Compute-Test"));
+			m_lightCullingMaterial = make_reference<render::Material>(m_renderCtx, m_renderCtx->getGlobals()->shaderLibrary().get("Compute-Test"));
 		}
 		#pragma endregion
 
@@ -108,16 +85,15 @@ namespace toaster
 			skybox_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Skybox");
 			skybox_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
 			skybox_pipeline_spec_info.multisample        = false;
-			m_skyboxPipeline                             = m_renderCtx->createObjectRef<gpu::VKPipeline>(skybox_pipeline_spec_info);
+			m_skyboxPipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(skybox_pipeline_spec_info);
 
-			m_skyboxPass = m_renderCtx->createObjectRef<gpu::VKRenderPass>(m_skyboxPipeline);
+			m_skyboxPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_skyboxPipeline);
 			m_skyboxPass->setInput("Camera", m_cameraUBOs);
 			m_skyboxPass->setInput("u_CubemapImage", m_skyboxMap);
 
-			m_skyboxPass->bake(); // TODO: rename ts to toast
-			//						   Its funny because the engine is called Toaster...
+			m_skyboxPass->bake();
 
-			m_skyboxMaterial = m_renderCtx->createObjectRef<gpu::VKMaterial>(m_renderCtx->getGlobals()->shaderLibrary().get("Skybox"));
+			m_skyboxMaterial = make_reference<render::Material>(m_renderCtx, m_renderCtx->getGlobals()->shaderLibrary().get("Skybox"));
 		}
 		#pragma endregion
 
@@ -141,28 +117,27 @@ namespace toaster
 			geometry_pipeline_spec_info.depthCompare = vk::CompareOp::eEqual;
 			geometry_pipeline_spec_info.polygonMode  = vk::PolygonMode::eFill;
 			geometry_pipeline_spec_info.shader       = m_renderCtx->getGlobals()->shaderLibrary().get("Geometry");
-			m_geometryPipeline                       = m_renderCtx->createObjectRef<gpu::VKPipeline>(geometry_pipeline_spec_info);
+			m_geometryPipeline                       = m_renderCtx->createGPU<gpu::VKPipeline>(geometry_pipeline_spec_info);
 
-			m_geometryPass = m_renderCtx->createObjectRef<gpu::VKRenderPass>(m_geometryPipeline);
+			m_geometryPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs);
 			m_geometryPass->setInput("DirectionalLightData", m_directionalLightUBOs);
 			m_geometryPass->setInput("PointLightData", m_pointLightUBOs);
 			m_geometryPass->setInput("SceneData", m_sceneDataUBOs);
 
-			m_geometryPass->bake(); // TODO: rename ts to toast
-			//						   Its funny because the engine is called Toaster...
+			m_geometryPass->bake();
 
 			gpu::TextureSpecInfo geometry_positions_attachment_texture_spec_info{};
 			geometry_positions_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
 			geometry_positions_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
 			geometry_positions_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
-			m_geometryPositionsAttachmentTexture                   = m_renderCtx->createObjectRef<gpu::VKTexture2D>(geometry_positions_attachment_texture_spec_info);
+			m_geometryPositionsAttachmentTexture                   = m_renderCtx->createGPU<gpu::VKTexture2D>(geometry_positions_attachment_texture_spec_info);
 
 			gpu::TextureSpecInfo geometry_normals_attachment_texture_spec_info{};
 			geometry_normals_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
 			geometry_normals_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
 			geometry_normals_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
-			m_geometryNormalsAttachmentTexture                   = m_renderCtx->createObjectRef<gpu::VKTexture2D>(geometry_normals_attachment_texture_spec_info);
+			m_geometryNormalsAttachmentTexture                   = m_renderCtx->createGPU<gpu::VKTexture2D>(geometry_normals_attachment_texture_spec_info);
 		}
 		#pragma endregion
 
@@ -171,7 +146,7 @@ namespace toaster
 			resolve_colour_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
 			resolve_colour_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
 			resolve_colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
-			m_outputColourTexture                              = m_renderCtx->createObjectRef<gpu::VKTexture2D>(resolve_colour_attachment_texture_spec_info);
+			m_outputColourTexture                              = m_renderCtx->createGPU<gpu::VKTexture2D>(resolve_colour_attachment_texture_spec_info);
 		}
 
 		render::Renderer2DSpecInfo renderer_2d_create_info{};
@@ -188,8 +163,7 @@ namespace toaster
 		m_cameraUBOs->unmapAllMemory();
 	}
 
-	auto SceneRenderer::begin( uint32 p_frame_index, const glm::mat4 &p_view_matrix,
-							  const glm::mat4 &                            p_projection_matrix) -> void
+	auto SceneRenderer::begin(uint32 p_frame_index, const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix) -> void
 	{
 		CameraUB camera_ub{};
 		camera_ub.view       = p_view_matrix;
@@ -224,7 +198,7 @@ namespace toaster
 		std::memcpy(m_mappedSceneDataUBOs[p_frame_index], &scene_data_ub, sizeof(SceneDataUB));
 	}
 
-	auto SceneRenderer::end( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::end(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
 		_renderDepthPrePass(p_cmd, p_frame_index);
 		_renderLightCullingPass(p_cmd, p_frame_index);
@@ -240,7 +214,7 @@ namespace toaster
 		// LOG_INFO("{}", data);
 	}
 
-	auto SceneRenderer::renderMesh(RefPtr<gpu::VKMesh> p_mesh, const glm::mat4 &p_transform) -> void
+	auto SceneRenderer::renderMesh(const render::MeshHandle& p_mesh, const glm::mat4 &p_transform) -> void
 	{
 		DrawCommand &draw_command{m_meshDrawCommands.emplace_back()};
 		draw_command.mesh      = p_mesh;
@@ -252,27 +226,27 @@ namespace toaster
 		return m_specInfo;
 	}
 
-	auto SceneRenderer::getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &
+	auto SceneRenderer::getOutputColourTexture() const -> const gpu::Texture2DHandle &
 	{
 		return m_outputColourTexture;
 	}
 
-	auto SceneRenderer::getOutputDepthTexture() const -> const RefPtr<gpu::VKTexture2D> &
+	auto SceneRenderer::getOutputDepthTexture() const -> const gpu::Texture2DHandle &
 	{
 		return m_depthPreAttachmentTexture;
 	}
 
-	auto SceneRenderer::getOutputComputeImage() const -> const RefPtr<gpu::VKImage2D> &
+	auto SceneRenderer::getOutputComputeImage() const -> const gpu::Image2DHandle &
 	{
 		return m_computeImage;
 	}
 
-	auto SceneRenderer::getGeometryPositionsTexture() const -> const RefPtr<gpu::VKTexture2D> &
+	auto SceneRenderer::getGeometryPositionsTexture() const -> const gpu::Texture2DHandle &
 	{
 		return m_geometryPositionsAttachmentTexture;
 	}
 
-	auto SceneRenderer::getGeometryNormalsTexture() const -> const RefPtr<gpu::VKTexture2D> &
+	auto SceneRenderer::getGeometryNormalsTexture() const -> const gpu::Texture2DHandle &
 	{
 		return m_geometryNormalsAttachmentTexture;
 	}
@@ -303,7 +277,7 @@ namespace toaster
 		}
 	}
 
-	auto SceneRenderer::setEnvironmentBackground(const RefPtr<gpu::VKTexture3D> &p_texture) -> void
+	auto SceneRenderer::setEnvironmentBackground(const gpu::Texture3DHandle &p_texture) -> void
 	{
 		m_skyboxMap    = p_texture;
 		m_reloadSkybox = true;
@@ -371,19 +345,16 @@ namespace toaster
 		rendering_info.layerCount = 1;
 
 		gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		colour_attachment_info.clearValue = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
 		colour_attachment_info.image      = m_outputColourTexture->getImage();
 		colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eNone;
 		colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 
 		gpu::RenderingAttachmentInfo &positions_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		positions_attachment_info.clearValue = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
 		positions_attachment_info.image      = m_geometryPositionsAttachmentTexture->getImage();
 		positions_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
 		positions_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 
 		gpu::RenderingAttachmentInfo &normals_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		normals_attachment_info.clearValue = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
 		normals_attachment_info.image      = m_geometryNormalsAttachmentTexture->getImage();
 		normals_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
 		normals_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;

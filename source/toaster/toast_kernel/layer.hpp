@@ -12,10 +12,12 @@
 namespace toaster
 {
 	class Application;
+	class InputContext;
 
 	namespace render
 	{
 		class RenderContext;
+		class Globals;
 	}
 
 	/*!
@@ -69,5 +71,7 @@ namespace toaster
 	protected:
 		// Ts just makes things easier to acess
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
+		NonOwningPtr<const render::Globals> m_globals{nullptr};
+		NonOwningPtr<InputContext>          m_inputCtx{nullptr};
 	};
 }

@@ -33,14 +33,14 @@ namespace toaster::render
 		 */
 		auto shaderLibrary() const -> const ShaderLibrary &;
 
-		auto fullscreenQuadVertexBuffer() const -> const RefPtr<gpu::VKVertexBuffer> &;
-		auto fullscreenQuadIndexBuffer() const -> const RefPtr<gpu::VKIndexBuffer> &;
+		auto fullscreenQuadVertexBuffer() const -> const gpu::VertexBufferHandle &;
+		auto fullscreenQuadIndexBuffer() const -> const gpu::IndexBufferHandle &;
 
 		auto fullscreenQuadVertices() const -> const std::vector<QuadVertex> &;
 		auto fullscreenQuadIndices() const -> const std::vector<uint32> &;
 
-		auto whiteTexture() const -> const gpu::VKTexture2D *;
-		auto whiteTexture3D() const -> const gpu::VKTexture3D *;
+		auto whiteTexture() const -> const gpu::Texture2DHandle&;
+		auto whiteTexture3D() const -> const gpu::Texture3DHandle&;
 
 	private:
 		io::filesystem::Path m_binaryDir;
@@ -53,7 +53,7 @@ namespace toaster::render
 		std::vector<QuadVertex> m_quadVertices;
 		std::vector<uint32>     m_quadIndices;
 
-		UniquePtr<gpu::VKTexture2D> m_whiteTexture{nullptr};
-		UniquePtr<gpu::VKTexture3D> m_whiteTexture3D{nullptr};
+		gpu::Texture2DHandle m_whiteTexture{nullptr};
+		gpu::Texture3DHandle m_whiteTexture3D{nullptr};
 	};
 }

@@ -4,18 +4,18 @@
 #include "toast_gpu/vk/vk_swapchain.hpp"
 #include "toast_lib/events/key_event.hpp"
 #include "toast_render/globals.hpp"
-#include "toast_render/renderer.hpp"
 #include "toast_scene/components.hpp"
 #include "toast_scene/entity.hpp"
 #include "toast_scene/scene_renderer.hpp"
 
+#include "toast_render/renderer_2d.hpp"
 #include "toast_asset/asset_manager.hpp"
 
 #include <imgui.h>
 
-#include "toast_gpu/vk/vk_renderer.hpp"
 #include "toast_lib/math/colours.hpp"
 #include "toast_lib/os/terminal.hpp"
+#include "toast_render/render_context.hpp"
 namespace ig = ImGui;
 
 #include "glm/gtc/type_ptr.hpp"
@@ -37,8 +37,7 @@ namespace toaster
 	auto EditorLayer::onInit() -> void
 	{
 		const auto &app{getApp()};
-		m_device = app.getLogicalDevice();
-		const auto swapchain{app.getWindow().getSwapchain()};
+		const auto  swapchain{app.getWindow().getSwapchain()};
 
 		auto                 command_line_args{app.getCommandLineArgs()};
 		io::filesystem::Path binary_dir{os::getBinaryDirectory()};
@@ -47,12 +46,6 @@ namespace toaster
 		m_windowHeight = std::max(swapchain->getExtent().height, 1u);
 
 		m_editorCamera.setViewportSize(static_cast<float32>(m_windowWidth), static_cast<float32>(m_windowHeight));
-
-		swapchain->setBeginFrameCallback([](gpu::VKLogicalDevice *device, const uint32 frame_index) -> void
-		{
-			device->setCurrentFrameIndex(frame_index);
-			device->performGarbageCollection();
-		});
 
 		swapchain->setResizeCallback([this](const uint32 width, const uint32 height) -> void
 		{
@@ -63,7 +56,7 @@ namespace toaster
 			m_editorCamera.setViewportSize(static_cast<float32>(m_windowWidth), static_cast<float32>(m_windowHeight));
 		});
 
-		auto fullscreen_shader{Globals::getShaderLibrary().get("Composite")};
+		auto fullscreen_shader{m_globals->shaderLibrary().get("Composite")};
 
 		gpu::PipelineSpecInfo fullscreen_pipeline_create_info{};
 		fullscreen_pipeline_create_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
@@ -74,27 +67,27 @@ namespace toaster
 			{gpu::EBufferDataType::eFloat3, "a_Position"},
 			{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
 		};
-		m_fullscreenPipeline = m_device->alloc<gpu::VKPipeline>(fullscreen_pipeline_create_info);
-		m_fullscreenPass     = m_device->alloc<gpu::VKRenderPass>(m_fullscreenPipeline);
+		m_fullscreenPipeline = m_renderCtx->createGPU<gpu::VKPipeline>(fullscreen_pipeline_create_info);
+		m_fullscreenPass     = m_renderCtx->createGPU<gpu::VKRenderPass>(m_fullscreenPipeline);
 		m_fullscreenPass->bake();
 
-		m_fullscreenMaterial = m_device->alloc<gpu::VKMaterial>(fullscreen_shader);
+		m_fullscreenMaterial = m_renderCtx->create<render::Material>(fullscreen_shader);
 
-		m_scene = make_reference<Scene>(m_device, nullptr, "Main Scene");
+		m_scene = make_reference<Scene>(m_renderCtx, nullptr, "Main Scene");
 
-		m_sceneHierarchyPanel = make_unique<SceneHierarchyPanel>(m_device, m_scene);
+		m_sceneHierarchyPanel = make_unique<SceneHierarchyPanel>(m_renderCtx, m_scene);
 
 		SceneRendererSpecInfo scene_renderer_spec_info{};
 		scene_renderer_spec_info.viewportWidth     = m_windowWidth;
 		scene_renderer_spec_info.viewportHeight    = m_windowHeight;
 		scene_renderer_spec_info.scene             = m_scene.get();
 		scene_renderer_spec_info.resourceDirectory = binary_dir / "../resources";
-		m_sceneRenderer                            = make_reference<SceneRenderer>(m_device, scene_renderer_spec_info);
+		m_sceneRenderer                            = make_reference<SceneRenderer>(m_renderCtx, scene_renderer_spec_info);
 
-		Renderer2DSpecInfo renderer_2d_create_info{};
+		render::Renderer2DSpecInfo renderer_2d_create_info{};
 		renderer_2d_create_info.renderTargetWidth  = m_windowWidth;
 		renderer_2d_create_info.renderTargetHeight = m_windowHeight;
-		m_renderer2D                               = make_reference<Renderer2D>(m_device, renderer_2d_create_info);
+		m_renderer2D                               = make_reference<render::Renderer2D>(m_renderCtx, renderer_2d_create_info);
 
 		{
 			Entity orbo_entity{m_scene->createEntity()};
@@ -102,7 +95,7 @@ namespace toaster
 			transform_comp.translation = {0.0f, 0.0f, 0.0f};
 			transform_comp.scale       = {1.0f, 1.0f, 1.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
-			mc.mesh = m_device->alloc<gpu::VKMesh>(binary_dir / "../resources/meshes/Test_scene.fbx", Globals::getShaderLibrary().get("Geometry"));
+			mc.mesh = make_reference<render::Mesh>(m_renderCtx, binary_dir / "../resources/meshes/Test_scene.fbx", m_globals->shaderLibrary().get("Geometry"));
 		}
 		{
 			Entity point_light_entity{m_scene->createEntity()};
@@ -117,6 +110,7 @@ namespace toaster
 
 	auto EditorLayer::onDestroy() -> void
 	{
+		m_renderCtx->gpuWaitIdle();
 	}
 
 	auto EditorLayer::onUpdate(const float32 p_dt) -> void
@@ -129,12 +123,12 @@ namespace toaster
 		const auto &app{getApp()};
 		const auto  swapchain{app.getWindow().getSwapchain()};
 
-		const auto & cmd_buf{swapchain->getCurrentCommandBuffer()};
+		auto &       cmd_buf{swapchain->getCurrentCommandBuffer()};
 		const uint32 frame_index{swapchain->getFrameIndex()};
 
-		m_renderer2D->begin(cmd_buf, frame_index, {}, {});
-		m_renderer2D->submitQuad({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f});
-		m_renderer2D->end(cmd_buf, frame_index);
+		// m_renderer2D->begin(frame_index, {}, {});
+		// m_renderer2D->submitQuad({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f});
+		// m_renderer2D->end(cmd_buf, frame_index);
 
 		m_scene->onUpdate(p_dt);
 		m_scene->onRender(cmd_buf, frame_index, p_dt, m_sceneRenderer, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
@@ -160,9 +154,9 @@ namespace toaster
 
 		rendering_info.pDepthAttachment = &depth_attachment_info;
 
-		gpu::render::beginRendering(rendering_info, cmd_buf, frame_index, m_fullscreenPass);
-		render::renderFullscreenQuad(cmd_buf, frame_index, m_fullscreenPipeline, nullptr);
-		gpu::render::endRendering(rendering_info, cmd_buf);
+		m_renderCtx->beginRendering(cmd_buf, rendering_info, frame_index, m_fullscreenPass);
+		m_renderCtx->renderFullscreenQuad(cmd_buf, frame_index, m_fullscreenPipeline, nullptr);
+		m_renderCtx->endRendering(cmd_buf, rendering_info);
 	}
 
 	auto EditorLayer::onEvent(Event &p_event) -> void
@@ -222,8 +216,8 @@ namespace toaster
 		Entity selected_entity = m_sceneHierarchyPanel->getSelectedEntity();
 		if (selected_entity && m_gizmoType != -1)
 		{
-			auto w = ig::GetWindowWidth();
-			auto h = ig::GetWindowHeight();
+			// auto w = ig::GetWindowWidth();
+			// auto h = ig::GetWindowHeight();
 
 			igz::SetOrthographic(false);
 			igz::SetDrawlist(ig::GetForegroundDrawList());     // Draw to the main surface
@@ -267,7 +261,7 @@ namespace toaster
 				LOG_INFO("{}", path.string());
 
 				gpu::TextureSpecInfo texture_spec_info{};
-				m_sceneRenderer->setEnvironmentBackground(render::createEnvironmentMap(m_device, path));
+				m_sceneRenderer->setEnvironmentBackground(m_renderCtx->createEnvironmentMap(path));
 			}
 		}
 		ig::End();
@@ -290,20 +284,20 @@ namespace toaster
 			{
 				Entity e{m_scene->createEntity(io::filesystem::Path{path}.stem().string())};
 				auto & mc{e.addComponent<MeshComponent>()};
-				mc.mesh = m_device->alloc<gpu::VKMesh>(path, Globals::getShaderLibrary().get("Geometry"));
+				mc.mesh = m_renderCtx->create<render::Mesh>(path, m_globals->shaderLibrary().get("Geometry"));
 			}
 			if (path.ends_with(".png") || path.ends_with(".jpg") || path.ends_with(".jpeg") || path.ends_with(".bmp"))
 			{
 				Entity e{m_scene->createEntity(io::filesystem::Path{path}.stem().string())};
 				auto & src{e.addComponent<SpriteRendererComponent>()};
-				src.texture = m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path);
+				src.texture = m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path);
 			}
 			if (path.ends_with(".hdr") || path.ends_with(".exr"))
 			{
 				if (io::filesystem::exists(path))
 				{
 					LOG_INFO("{}", path);
-					m_sceneRenderer->setEnvironmentBackground(render::createEnvironmentMap(m_device, path));
+					m_sceneRenderer->setEnvironmentBackground(m_renderCtx->createEnvironmentMap(path));
 				}
 			}
 		}

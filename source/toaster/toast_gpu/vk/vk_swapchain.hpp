@@ -12,7 +12,7 @@ namespace toaster::gpu
 	{
 		TST_GPU_OBJECT
 	public:
-		using BeginFrameCB              = std::function<void(VKLogicalDevice *, uint32)>;
+		using BeginFrameCB              = void(*)(void *, uint32);
 		using ResizeCB                  = std::function<void(uint32, uint32)>;
 		using HandleMinimisationCB      = std::function<void()>;
 		using GetWindowBackBufferSizeCB = std::function<std::pair<uint32, uint32>()>;
@@ -49,6 +49,7 @@ namespace toaster::gpu
 		// Only use within the windowing API. E.g. when you set the glfwFramebufferResize callback
 		auto setFramebufferResized(bool p_resized) -> void;
 
+		auto setUserDataPointer(void *p_user_data) -> void;
 		auto setBeginFrameCallback(const BeginFrameCB &p_begin_frame_cb) -> void;
 		auto setResizeCallback(const ResizeCB &p_resize_cb) -> void;
 		auto setHandleMinimisationCallback(const HandleMinimisationCB &p_handle_minimisation_callback) -> void;
@@ -80,6 +81,7 @@ namespace toaster::gpu
 		vk::raii::DeviceMemory m_depthImageMemory{nullptr};
 		vk::raii::ImageView    m_depthImageView{nullptr};
 
+		void *                    m_userData{nullptr};
 		BeginFrameCB              m_beginFrameCallback{nullptr};
 		ResizeCB                  m_resizeCallback{nullptr};
 		HandleMinimisationCB      m_handleMinimisationCallback{nullptr};

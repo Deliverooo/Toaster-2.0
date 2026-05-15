@@ -25,4 +25,6 @@ namespace toaster::gpu
 		vk::raii::Buffer       m_vertexBuffer{nullptr};
 		vk::raii::DeviceMemory m_vertexBufferMemory{nullptr};
 	};
+
+	TST_GPU_DEFINE_HANDLE(VKVertexBuffer, VertexBuffer)
 }

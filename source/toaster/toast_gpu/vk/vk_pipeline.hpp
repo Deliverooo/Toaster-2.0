@@ -49,4 +49,6 @@ namespace toaster::gpu
 		vk::raii::Pipeline       m_graphicsPipeline{nullptr};
 		vk::raii::PipelineLayout m_pipelineLayout{nullptr};
 	};
+
+	TST_GPU_DEFINE_HANDLE(VKPipeline, Pipeline)
 }

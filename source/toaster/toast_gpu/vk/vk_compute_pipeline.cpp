@@ -48,4 +48,9 @@ namespace toaster::gpu
 	{
 		return m_pipelineLayout;
 	}
+
+	VKComputePipeline::operator vk::Pipeline() const
+	{
+		return *m_pipeline;
+	}
 }

@@ -73,32 +73,6 @@ namespace toaster::gpu
 		auto waitForFence(const vk::Fence &p_fence, uint64 p_timeout = UINT64_MAX) const -> void;
 		auto waitForFences(const std::initializer_list<const vk::Fence> &p_fences, bool p_wait_all = true, uint64 p_timeout = UINT64_MAX) const -> void;
 
-		// If you care about not getting crashes when allocating gpu objects mid-frame, you should use this instead of make_reference<Type>(ctx, ...)
-		template<typename Type, typename... TArgs>
-		auto alloc(TArgs &&... p_args) -> RefPtr<Type>
-		{
-			return allocate_reference<Type>([this](Type *p_ptr) -> void
-			{
-				auto deleter{
-					[p_ptr]() -> void
-					{
-						delete p_ptr;
-					}
-				};
-				m_pendingDeletions[m_currentFrameIndex].emplace_back(std::move(deleter));
-			}, this, std::forward<TArgs>(p_args)...);
-		}
-
-		template<typename TFunc>
-		auto submitResourceUpdate(TFunc &&p_func) -> void
-		{
-			auto fn{[p_func]() -> void { p_func(); }};
-			m_pendingResourceUpdates[m_currentFrameIndex].emplace_back(std::move(fn));
-		}
-
-		auto setCurrentFrameIndex(uint32 p_index) -> void;
-		auto performGarbageCollection() -> void;
-
 		[[nodiscard]] auto createShaderModule(const std::vector<uint8> &p_code) -> vk::raii::ShaderModule;
 		[[nodiscard]] auto createShaderModule(const std::vector<uint32> &p_code) -> vk::raii::ShaderModule;
 
@@ -151,9 +125,5 @@ namespace toaster::gpu
 		vk::raii::CommandPool m_graphicsCommandPool{nullptr};
 		vk::raii::CommandPool m_transferCommandPool{nullptr};
 		vk::raii::CommandPool m_computeCommandPool{nullptr};
-
-		std::vector<std::deque<std::function<void()> > > m_pendingDeletions;
-		std::vector<std::deque<std::function<void()> > > m_pendingResourceUpdates;
-		uint32                                           m_currentFrameIndex{0};
 	};
 }

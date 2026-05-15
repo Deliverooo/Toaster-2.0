@@ -130,6 +130,9 @@ namespace toaster
 		operator bool() { return m_ptr != nullptr; }
 		operator bool() const { return m_ptr != nullptr; }
 
+		operator Type *() { return m_ptr; }
+		operator const Type *() const { return m_ptr; }
+
 	private:
 		auto _incRef() -> void
 		{
@@ -190,98 +193,8 @@ namespace toaster
 	}
 
 	template<typename Type>
-	class NonOwningPtr
-	{
-	public:
-		NonOwningPtr(Type *p_ptr) : m_ptr(p_ptr)
-		{
-		}
+	using OwningPtr = Type *;
 
-		NonOwningPtr(std::nullptr_t) : m_ptr(nullptr)
-		{
-		}
-
-		NonOwningPtr(const NonOwningPtr &p_other) : m_ptr(p_other.m_ptr)
-		{
-		}
-
-		NonOwningPtr(NonOwningPtr &&p_other) noexcept : m_ptr(std::move(p_other.m_ptr))
-		{
-		}
-
-		auto operator=(std::nullptr_t) -> NonOwningPtr &
-		{
-			m_ptr = nullptr;
-			return *this;
-		}
-
-		auto operator=(const NonOwningPtr &p_other) -> NonOwningPtr &
-		{
-			if (this != &p_other)
-			{
-				m_ptr = p_other.m_ptr;
-			}
-			return *this;
-		}
-
-		template<typename TOther>
-		auto operator=(const NonOwningPtr<TOther> &p_other) -> NonOwningPtr &
-		{
-			if (this != &p_other)
-			{
-				m_ptr = p_other.m_ptr;
-			}
-			return *this;
-		}
-
-		template<typename TOther>
-		auto operator=(NonOwningPtr<TOther> &&p_other) noexcept -> NonOwningPtr &
-		{
-			if (this != &p_other)
-			{
-				m_ptr         = p_other.m_ptr;
-				p_other.m_ptr = nullptr;
-			}
-			return *this;
-		}
-
-		auto operator*() -> Type & { return *m_ptr; }
-		auto operator->() -> Type * { return m_ptr; }
-
-		auto operator*() const -> Type & { return *m_ptr; }
-		auto operator->() const -> Type * { return m_ptr; }
-
-		operator Type *() { return m_ptr; }
-		operator Type *() const { return m_ptr; }
-
-		auto get() -> Type * { return m_ptr; }
-		auto get() const -> Type * { return m_ptr; }
-
-		auto reset(Type *p_ptr = nullptr) -> void
-		{
-			m_ptr = p_ptr;
-		}
-
-		template<typename TOther>
-		auto as() -> NonOwningPtr<TOther>
-		{
-			return dynamic_cast<TOther *>(m_ptr);
-		}
-
-		auto operator==(const NonOwningPtr &p_other) const -> bool
-		{
-			return m_ptr == p_other.m_ptr;
-		}
-
-		auto operator!=(const NonOwningPtr &p_other) const -> bool
-		{
-			return m_ptr != p_other.m_ptr;
-		}
-
-		operator bool() { return m_ptr != nullptr; }
-		operator bool() const { return m_ptr != nullptr; }
-
-	private:
-		mutable Type *m_ptr{nullptr};
-	};
+	template<typename Type>
+	using NonOwningPtr = Type *;
 }

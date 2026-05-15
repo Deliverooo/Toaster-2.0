@@ -40,9 +40,6 @@ if (${WITH_VULKAN_BACKEND})
 			vk/vk_shader_compiler.cpp
 			vk/vk_shader_compiler.hpp
 
-			vk/vk_material.cpp
-			vk/vk_material.hpp
-
 			vk/vk_shader_resources.hpp
 
 			vk/vk_common.cpp
@@ -53,9 +50,6 @@ if (${WITH_VULKAN_BACKEND})
 
 			vk/vk_texture.cpp
 			vk/vk_texture.hpp
-
-			vk/vk_mesh.cpp
-			vk/vk_mesh.hpp
 
 			vk/vk_render_pass.cpp
 			vk/vk_render_pass.hpp
@@ -74,9 +68,6 @@ if (${WITH_VULKAN_BACKEND})
 
 			vk/vk_storage_buffer.cpp
 			vk/vk_storage_buffer.hpp
-
-			vk/vk_renderer.cpp
-			vk/vk_renderer.hpp
 	)
 endif ()
 

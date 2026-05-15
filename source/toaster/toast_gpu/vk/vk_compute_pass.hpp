@@ -23,14 +23,6 @@ namespace toaster::gpu
 		auto setInput(const String &p_name, RefPtr<VKImage2D> &p_image_2d) -> void;
 		auto setInput(const String &p_name, RefPtr<VKTexture3D> &p_texture_3d) -> void;
 
-		auto setInput(const String &p_name, const VKUniformBuffer *p_uniform_buffer) -> void;
-		auto setInput(const String &p_name, const VKUniformBufferPFF *p_uniform_buffer_pff) -> void;
-		auto setInput(const String &p_name, const VKStorageBuffer *p_storage_buffer) -> void;
-		auto setInput(const String &p_name, const VKStorageBufferPFF *p_storage_buffer_pff) -> void;
-		auto setInput(const String &p_name, const VKTexture2D *p_texture_2d) -> void;
-		auto setInput(const String &p_name, const VKImage2D *p_image_2d) -> void;
-		auto setInput(const String &p_name, const VKTexture3D *p_texture_3d) -> void;
-
 		// Only call when you have set all your required inputs :)
 		auto bake() -> void;
 		auto update(uint32 p_frame_index) -> void;
@@ -44,4 +36,6 @@ namespace toaster::gpu
 		RefPtr<VKComputePipeline>         m_pipeline{nullptr};
 		UniquePtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};
 	};
+
+	TST_GPU_DEFINE_HANDLE(VKComputePass, ComputePass)
 }

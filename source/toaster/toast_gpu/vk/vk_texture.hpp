@@ -56,12 +56,14 @@ namespace toaster::gpu
 		uint32 m_mipLevels{1u};
 
 		RefPtr<VKRawImage> m_image{nullptr};
-		vk::raii::Sampler  m_sampler{nullptr};
+		vk::raii::Sampler     m_sampler{nullptr};
 
 		Buffer m_textureData;
 
 		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};
 	};
+
+	TST_GPU_DEFINE_HANDLE(VKTexture2D, Texture2D);
 
 	class TST_GPU_API VKTexture3D final : public IGPUResource
 	{
@@ -99,6 +101,8 @@ namespace toaster::gpu
 
 		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};
 	};
+
+	TST_GPU_DEFINE_HANDLE(VKTexture3D, Texture3D);
 
 	namespace util
 	{

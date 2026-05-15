@@ -24,7 +24,13 @@ namespace toaster::gpu
 		m_commandBuffers[m_frameIndex].waitForFence();
 
 		if (m_beginFrameCallback)
-			m_beginFrameCallback(m_device, m_frameIndex);
+		{
+			m_beginFrameCallback(m_userData, m_frameIndex);
+		}
+		else
+		{
+			TST_PERMA_ASSERT(false);
+		}
 
 		// Reset the fence so we can signal it later
 		m_commandBuffers[m_frameIndex].resetFence();
@@ -187,6 +193,11 @@ namespace toaster::gpu
 	auto VKSwapchain::setBeginFrameCallback(const BeginFrameCB &p_begin_frame_cb) -> void
 	{
 		m_beginFrameCallback = p_begin_frame_cb;
+	}
+
+	auto VKSwapchain::setUserDataPointer(void *p_user_data) -> void
+	{
+		m_userData = p_user_data;
 	}
 
 	auto VKSwapchain::setResizeCallback(const ResizeCB &p_resize_cb) -> void

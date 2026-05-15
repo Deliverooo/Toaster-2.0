@@ -3,7 +3,8 @@
 #include "scene.hpp"
 #include "toast_gpu/vk/vk_compute_pass.hpp"
 #include "toast_gpu/vk/vk_compute_pipeline.hpp"
-#include "toast_gpu/vk/vk_mesh.hpp"
+#include "toast_gpu/vk/vk_render_pass.hpp"
+#include "toast_render/mesh.hpp"
 
 namespace toaster
 {
@@ -23,29 +24,29 @@ namespace toaster
 		SceneRenderer(render::RenderContext *p_render_ctx, const SceneRendererSpecInfo &p_spec_info);
 		~SceneRenderer();
 
-		auto begin( uint32 p_frame_index, const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix) -> void;
-		auto end( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-		auto renderMesh(RefPtr<gpu::VKMesh> p_mesh, const glm::mat4 &p_transform) -> void;
+		auto begin(uint32 p_frame_index, const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix) -> void;
+		auto end(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto renderMesh(const render::MeshHandle &p_mesh, const glm::mat4 &p_transform) -> void;
 
 		auto getSpecInfo() const -> const SceneRendererSpecInfo &;
-		auto getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &;
-		auto getOutputDepthTexture() const -> const RefPtr<gpu::VKTexture2D> &;
+		auto getOutputColourTexture() const -> const gpu::Texture2DHandle &;
+		auto getOutputDepthTexture() const -> const gpu::Texture2DHandle &;
 
 		auto getOutputComputeImage() const -> const RefPtr<gpu::VKImage2D> &;
 
-		auto getGeometryPositionsTexture() const -> const RefPtr<gpu::VKTexture2D> &;
-		auto getGeometryNormalsTexture() const -> const RefPtr<gpu::VKTexture2D> &;
+		auto getGeometryPositionsTexture() const -> const gpu::Texture2DHandle &;
+		auto getGeometryNormalsTexture() const -> const gpu::Texture2DHandle &;
 
 		auto getRenderer2D() -> RefPtr<render::Renderer2D>;
 
 		auto onResize(uint32 p_width, uint32 p_height) -> void;
-		auto setEnvironmentBackground(const RefPtr<gpu::VKTexture3D> &p_texture) -> void;
+		auto setEnvironmentBackground(const gpu::Texture3DHandle &p_texture) -> void;
 
 	private:
-		auto _renderDepthPrePass( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-		auto _renderLightCullingPass( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-		auto _renderSkyboxPass( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-		auto _renderGeometryPass( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderDepthPrePass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderLightCullingPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderSkyboxPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderGeometryPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
 
@@ -54,39 +55,38 @@ namespace toaster
 		RefPtr<render::Renderer2D> m_renderer2D{nullptr};
 
 		#pragma region depth-pre
-		RefPtr<gpu::VKPipeline>   m_depthPrePipeline{nullptr};
-		RefPtr<gpu::VKRenderPass> m_depthPrePass{nullptr};
+		gpu::PipelineHandle   m_depthPrePipeline{nullptr};
+		gpu::RenderPassHandle m_depthPrePass{nullptr};
 
-		RefPtr<gpu::VKTexture2D> m_depthPreAttachmentTexture{nullptr};
+		gpu::Texture2DHandle m_depthPreAttachmentTexture{nullptr};
 		#pragma endregion
 
 		#pragma region light culling
-		// RefPtr<gpu::VKShader>          m_lightCullingShader{nullptr};
-		RefPtr<gpu::VKComputePipeline> m_lightCullingPipeline{nullptr};
-		RefPtr<gpu::VKComputePass>     m_lightCullingPass{nullptr};
-		RefPtr<gpu::VKMaterial>        m_lightCullingMaterial{nullptr};
+		gpu::ComputePipelineHandle m_lightCullingPipeline{nullptr};
+		gpu::ComputePassHandle     m_lightCullingPass{nullptr};
+		render::MaterialHandle     m_lightCullingMaterial{nullptr};
 
-		RefPtr<gpu::VKImage2D> m_computeImage{nullptr};
+		gpu::Image2DHandle m_computeImage{nullptr};
 
 		#pragma endregion
 
 		#pragma region skybox
-		RefPtr<gpu::VKPipeline>   m_skyboxPipeline{nullptr};
-		RefPtr<gpu::VKRenderPass> m_skyboxPass{nullptr};
-		RefPtr<gpu::VKMaterial>   m_skyboxMaterial{nullptr};
-		RefPtr<gpu::VKTexture3D>  m_skyboxMap{nullptr};
-		bool                      m_reloadSkybox{false};
+		gpu::PipelineHandle    m_skyboxPipeline{nullptr};
+		gpu::RenderPassHandle  m_skyboxPass{nullptr};
+		render::MaterialHandle m_skyboxMaterial{nullptr};
+		gpu::Texture3DHandle   m_skyboxMap{nullptr};
+		bool                   m_reloadSkybox{false};
 		#pragma endregion
 
 		#pragma region geometry
-		RefPtr<gpu::VKPipeline>   m_geometryPipeline{nullptr};
-		RefPtr<gpu::VKRenderPass> m_geometryPass{nullptr};
+		gpu::PipelineHandle   m_geometryPipeline{nullptr};
+		gpu::RenderPassHandle m_geometryPass{nullptr};
 
-		RefPtr<gpu::VKTexture2D> m_geometryPositionsAttachmentTexture{nullptr};
-		RefPtr<gpu::VKTexture2D> m_geometryNormalsAttachmentTexture{nullptr};
+		gpu::Texture2DHandle m_geometryPositionsAttachmentTexture{nullptr};
+		gpu::Texture2DHandle m_geometryNormalsAttachmentTexture{nullptr};
 		#pragma endregion
 
-		RefPtr<gpu::VKTexture2D> m_outputColourTexture{nullptr};
+		gpu::Texture2DHandle m_outputColourTexture{nullptr};
 
 		struct CameraUB
 		{
@@ -94,8 +94,8 @@ namespace toaster
 			glm::mat4 proj;
 		};
 
-		RefPtr<gpu::VKUniformBufferPFF> m_cameraUBOs;
-		std::vector<void *>             m_mappedCameraUBOs;
+		gpu::UniformBufferPFFHandle m_cameraUBOs;
+		std::vector<void *>         m_mappedCameraUBOs;
 
 		struct DirectionalLightUB
 		{
@@ -106,8 +106,8 @@ namespace toaster
 			DirectionalLight directionalLights[c_maxDirectionalLights]{};
 		};
 
-		RefPtr<gpu::VKUniformBufferPFF> m_directionalLightUBOs;
-		std::vector<void *>             m_mappedDirectionalLightUBOs;
+		gpu::UniformBufferPFFHandle m_directionalLightUBOs;
+		std::vector<void *>         m_mappedDirectionalLightUBOs;
 
 		struct PointLightUB
 		{
@@ -118,21 +118,21 @@ namespace toaster
 			PointLight pointLights[c_maxPointLights]{};
 		};
 
-		RefPtr<gpu::VKUniformBufferPFF> m_pointLightUBOs;
-		std::vector<void *>             m_mappedPointLightUBOs;
+		gpu::UniformBufferPFFHandle m_pointLightUBOs;
+		std::vector<void *>         m_mappedPointLightUBOs;
 
 		struct SceneDataUB
 		{
 			glm::vec4 cameraPos{0.0f, 0.0f, 0.0f, 1.0f};
 		};
 
-		RefPtr<gpu::VKUniformBufferPFF> m_sceneDataUBOs;
-		std::vector<void *>             m_mappedSceneDataUBOs;
+		gpu::UniformBufferPFFHandle m_sceneDataUBOs;
+		std::vector<void *>         m_mappedSceneDataUBOs;
 
 		struct DrawCommand
 		{
-			RefPtr<gpu::VKMesh> mesh{nullptr};
-			glm::mat4           transform{1.0f};
+			render::MeshHandle mesh{nullptr};
+			glm::mat4          transform{1.0f};
 		};
 
 		std::vector<DrawCommand> m_meshDrawCommands;

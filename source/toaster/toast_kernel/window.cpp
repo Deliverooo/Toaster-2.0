@@ -26,6 +26,8 @@
 #include <windows.h>
 #include <vulkan/vulkan_win32.h>
 
+#include "toast_render/render_context.hpp"
+
 namespace toaster
 {
 	auto cstringArrayToVector(CString *p_arr, uint32 p_size) -> std::vector<CString>
@@ -79,7 +81,7 @@ namespace toaster
 		return {required_extensions.begin(), required_extensions.end()};
 	}
 
-	Window::Window(gpu::VKLogicalDevice *p_device, const WindowCreateInfo &p_create_info) : m_device(p_device)
+	Window::Window(render::RenderContext *p_render_ctx, const WindowCreateInfo &p_create_info) : m_renderCtx(p_render_ctx)
 	{
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
@@ -96,14 +98,14 @@ namespace toaster
 
 		#pragma region setup swapchain
 		VkSurfaceKHR surface;
-		if (auto err = glfwCreateWindowSurface(*m_device->getPhysicalDevice()->getInstance()->getVulkanInstance(), m_window, nullptr, &surface); err != VK_SUCCESS)
+		if (auto err = glfwCreateWindowSurface(*m_renderCtx->getBackendInstance()->getVulkanInstance(), m_window, nullptr, &surface); err != VK_SUCCESS)
 		{
 			LOG_ERROR("Failed to create window surface: {}", vk::to_string(static_cast<vk::Result>(err)));
 			TST_ASSERT(false);
 		}
 		m_windowSurface = surface;
 
-		m_swapchain = new gpu::VKSwapchain(m_device, &m_windowSurface);
+		m_swapchain = new gpu::VKSwapchain(m_renderCtx->getLogicalDevice(), &m_windowSurface);
 		m_swapchain->setGetWindowBackBufferSizeCallback([this]()
 		{
 			int32 width;
@@ -122,10 +124,13 @@ namespace toaster
 				glfwWaitEvents();
 			}
 		});
-		m_swapchain->setBeginFrameCallback([](gpu::VKLogicalDevice *device, const uint32 frame_index) -> void
+
+		m_swapchain->setUserDataPointer(m_renderCtx);
+		m_swapchain->setBeginFrameCallback(+[](void *p_user_data, const uint32 frame_index) -> void
 		{
-			device->setCurrentFrameIndex(frame_index);
-			device->performGarbageCollection();
+			auto ctx{static_cast<render::RenderContext *>(p_user_data)};
+			ctx->setCurrentFrameIndex(frame_index);
+			ctx->performGarbageCollection();
 		});
 		#pragma endregion
 
@@ -309,10 +314,10 @@ namespace toaster
 
 	Window::~Window()
 	{
-		m_device->getVulkanLogicalDevice().waitIdle();
+		m_renderCtx->gpuWaitIdle();
 		delete m_swapchain;
 
-		vkDestroySurfaceKHR(*m_device->getPhysicalDevice()->getInstance()->getVulkanInstance(), m_windowSurface, nullptr);
+		vkDestroySurfaceKHR(*m_renderCtx->getBackendInstance()->getVulkanInstance(), m_windowSurface, nullptr);
 
 		delete m_inputCtx;
 		m_callbackData.cbInputCtx = nullptr;

@@ -137,9 +137,6 @@ namespace toaster::gpu
 		m_computeCommandPool = {m_logicalDevice, compute_command_pool_create_info};
 
 		#pragma endregion
-
-		m_pendingDeletions.resize(m_specInfo.maxFramesInFlight);
-		m_pendingResourceUpdates.resize(m_specInfo.maxFramesInFlight);
 	}
 
 	auto VKLogicalDevice::getPhysicalDevice() const -> NonOwningPtr<VKPhysicalDevice>
@@ -249,32 +246,6 @@ namespace toaster::gpu
 		if (const vk::Result fence_result{m_logicalDevice.waitForFences({p_fences}, p_wait_all, p_timeout)}; fence_result != vk::Result::eSuccess)
 		{
 			TST_ASSERT_MSG(false, "Failed to wait for Fences");
-		}
-	}
-
-	auto VKLogicalDevice::setCurrentFrameIndex(const uint32 p_index) -> void
-	{
-		TST_ASSERT_MSG(p_index < m_specInfo.maxFramesInFlight, "Index is out of bounds!");
-		m_currentFrameIndex = p_index;
-	}
-
-	auto VKLogicalDevice::performGarbageCollection() -> void
-	{
-		if (!m_pendingResourceUpdates[m_currentFrameIndex].empty())
-		{
-			m_logicalDevice.waitIdle();
-			while (!m_pendingResourceUpdates[m_currentFrameIndex].empty())
-			{
-				auto func{std::move(m_pendingResourceUpdates[m_currentFrameIndex].front())};
-				m_pendingResourceUpdates[m_currentFrameIndex].pop_front();
-				func();
-			}
-		}
-		while (!m_pendingDeletions[m_currentFrameIndex].empty())
-		{
-			auto deleter{std::move(m_pendingDeletions[m_currentFrameIndex].front())};
-			m_pendingDeletions[m_currentFrameIndex].pop_front();
-			deleter();
 		}
 	}
 

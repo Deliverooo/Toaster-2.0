@@ -32,4 +32,7 @@ namespace toaster::gpu
 		RefPtr<VKPipeline>                m_pipeline{nullptr};
 		UniquePtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};
 	};
+	using RenderPassHandle = RefPtr<VKRenderPass>;
+
+	// TST_GPU_DEFINE_HANDLE(VKRenderPass, RenderPass);
 }

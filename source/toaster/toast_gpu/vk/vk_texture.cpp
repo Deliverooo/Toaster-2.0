@@ -23,7 +23,7 @@ namespace toaster::gpu
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = m_specInfo.format;
-		m_image                       = m_device->alloc<VKRawImage>(image_create_info);
+		m_image                       = make_reference<VKRawImage>(m_device, image_create_info);
 
 		createSampler(vk::ImageLayout::eShaderReadOnlyOptimal);
 	}
@@ -46,7 +46,7 @@ namespace toaster::gpu
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = m_specInfo.format;
-		m_image                       = m_device->alloc<VKRawImage>(image_create_info);
+		m_image                       = make_reference<VKRawImage>(m_device, image_create_info);
 
 		util::toTransferDst(m_image.get());
 		m_image->setData(m_textureData);
@@ -69,7 +69,7 @@ namespace toaster::gpu
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
 		image_create_info.format      = m_specInfo.format;
-		m_image                       = m_device->alloc<VKRawImage>(image_create_info);
+		m_image                       = make_reference<VKRawImage>(m_device, image_create_info);
 
 		setData(p_data, p_size);
 		util::transferDstToShaderRead(m_image.get());
@@ -164,7 +164,7 @@ namespace toaster::gpu
 		image_spec_info.layerCount = 6u;
 		image_spec_info.usage      = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
 									 vk::ImageUsageFlagBits::eStorage;
-		m_image = m_device->alloc<VKRawImage>(image_spec_info);
+		m_image = make_reference<VKRawImage>(m_device, image_spec_info);
 
 		createSampler(vk::ImageLayout::eGeneral);
 	}
@@ -188,7 +188,7 @@ namespace toaster::gpu
 		image_spec_info.layerCount = 6u;
 		image_spec_info.usage      = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
 									 vk::ImageUsageFlagBits::eStorage;
-		m_image = m_device->alloc<VKRawImage>(image_spec_info);
+		m_image = make_reference<VKRawImage>(m_device, image_spec_info);
 
 		util::toTransferDst(m_image.get());
 		m_image->setData(m_textureData);
@@ -210,7 +210,7 @@ namespace toaster::gpu
 		image_spec_info.layerCount = 6u;
 		image_spec_info.usage      = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
 									 vk::ImageUsageFlagBits::eStorage;
-		m_image = m_device->alloc<VKRawImage>(image_spec_info);
+		m_image = make_reference<VKRawImage>(m_device, image_spec_info);
 
 		util::toTransferDst(m_image.get());
 		m_image->setData(m_textureData);
@@ -302,6 +302,17 @@ namespace toaster::gpu
 			if (stbi_is_hdr(p_path.string().c_str()))
 			{
 				uint8 *data{reinterpret_cast<uint8 *>(stbi_loadf(p_path.string().c_str(), &width, &height, &num_channels, 4))};
+				if (!data)
+				{
+					uint32 fallback_data{0xFF00FFFF};
+					image_data.allocate(4u);
+					image_data.write(&fallback_data, 4u);
+					p_out_format = vk::Format::eR8G8B8A8Unorm;
+					p_out_width  = 1u;
+					p_out_height = 1u;
+
+					return image_data;
+				}
 				TST_ASSERT_MSG(width != 0 && height != 0, "Bradar, wat is dis?");
 				uint64 size{width * height * 4 * sizeof(float32)};
 				image_data.allocate(size);
@@ -312,8 +323,19 @@ namespace toaster::gpu
 			else
 			{
 				uint8 *data{stbi_load(p_path.string().c_str(), &width, &height, &num_channels, 4)};
+				if (!data)
+				{
+					uint32 fallback_data{0xFF00FFFF};
+					image_data.allocate(4u);
+					image_data.write(&fallback_data, 4u);
+					p_out_format = vk::Format::eR8G8B8A8Unorm;
+					p_out_width  = 1u;
+					p_out_height = 1u;
+
+					return image_data;
+				}
 				TST_ASSERT_MSG(width != 0 && height != 0, "Bradar, wat is dis?");
-				const uint64 size{width * height * 4u};
+				const uint64 size{width * height * sizeof(uint32)};
 				image_data.allocate(size);
 				image_data.write(data, size);
 

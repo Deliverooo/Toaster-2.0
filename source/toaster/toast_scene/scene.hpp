@@ -5,7 +5,6 @@
 #include "toast_lib/string.hpp"
 #include "toast_render/renderer_2d.hpp"
 
-#include "toast_gpu/vk/vk_mesh.hpp"
 #include "toast_lib/uuid.hpp"
 #include "toast_lib/events/event.hpp"
 

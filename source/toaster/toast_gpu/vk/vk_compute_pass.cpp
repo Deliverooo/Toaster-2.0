@@ -43,41 +43,6 @@ namespace toaster::gpu
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_3d);
 	}
 
-	auto VKComputePass::setInput(const String &p_name, const VKUniformBuffer *p_uniform_buffer) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_uniform_buffer);
-	}
-
-	auto VKComputePass::setInput(const String &p_name, const VKUniformBufferPFF *p_uniform_buffer_pff) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_uniform_buffer_pff);
-	}
-
-	auto VKComputePass::setInput(const String &p_name, const VKStorageBuffer *p_storage_buffer) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_storage_buffer);
-	}
-
-	auto VKComputePass::setInput(const String &p_name, const VKStorageBufferPFF *p_storage_buffer_pff) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_storage_buffer_pff);
-	}
-
-	auto VKComputePass::setInput(const String &p_name, const VKTexture2D *p_texture_2d) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);
-	}
-
-	auto VKComputePass::setInput(const String &p_name, const VKImage2D *p_image_2d) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_image_2d);
-	}
-
-	auto VKComputePass::setInput(const String &p_name, const VKTexture3D *p_texture_3d) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_texture_3d);
-	}
-
 	auto VKComputePass::bake() -> void
 	{
 		m_descriptorSetManager->bakeDescriptors();

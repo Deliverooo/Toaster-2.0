@@ -29,4 +29,6 @@ namespace toaster::gpu
 		vk::raii::Buffer       m_indexBuffer{nullptr};
 		vk::raii::DeviceMemory m_indexBufferMemory{nullptr};
 	};
+
+	TST_GPU_DEFINE_HANDLE(VKIndexBuffer, IndexBuffer)
 }

@@ -1,22 +1,22 @@
 #pragma once
 
-#include "vk_descriptor_set_manager.hpp"
-#include "vk_shader.hpp"
+#include "toaster_macros.hpp"
 
-namespace toaster::gpu
+#include "toast_gpu/vk/vk_descriptor_set_manager.hpp"
+#include "toast_gpu/vk/vk_shader.hpp"
+
+#include "render_context.hpp"
+
+namespace toaster::render
 {
-	class TST_GPU_API VKMaterial
+	class TST_API Material
 	{
-		TST_GPU_OBJECT
 	public:
-		VKMaterial(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader, const String &p_name = "Unknown?");
-		~VKMaterial();
+		Material(RenderContext *p_render_ctx, const gpu::ShaderHandle &p_shader, const String &p_name = "Unknown?");
+		~Material();
 
-		auto setTexture(const String &p_name, RefPtr<VKTexture2D> &p_texture_2d) -> void;
-		auto setTexture(const String &p_name, RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void;
-
-		auto setTexture(const String &p_name, VKTexture2D *p_texture_2d) -> void;
-		auto setTexture(const String &p_name, VKTexture2D *p_texture_2d, uint32 p_array_index) -> void;
+		auto setTexture(const String &p_name, const gpu::Texture2DHandle &p_texture_2d) -> void;
+		auto setTexture(const String &p_name, const gpu::Texture2DHandle &p_texture_2d, uint32 p_array_index) -> void;
 
 		template<typename Type>
 		auto set(const String &p_name, const Type &p_type) -> void
@@ -42,7 +42,7 @@ namespace toaster::gpu
 			return (Type &) m_pushConstantStorageBuffer.read<Type>(decl->offset);
 		}
 
-		template<GPUResource_c TResource>
+		template<gpu::GPUResource_c TResource>
 		auto getResource(const String &p_name) -> RefPtr<TResource>
 		{
 			return m_descriptorSetManager->getDescriptor<TResource>(p_name);
@@ -53,13 +53,17 @@ namespace toaster::gpu
 		auto getName() const -> String;
 
 	private:
-		auto _getPushConstantDeclaration(const String &p_name) -> const PushConstant *;
+		auto _getPushConstantDeclaration(const String &p_name) -> const gpu::PushConstant *;
 
-		RefPtr<VKShader> m_shader{nullptr};
-		String           m_name{};
+		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
 
-		UniquePtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};
+		gpu::ShaderHandle m_shader{nullptr};
+		String            m_name{};
+
+		UniquePtr<gpu::VKDescriptorSetManager> m_descriptorSetManager{nullptr};
 
 		Buffer m_pushConstantStorageBuffer{};
 	};
+
+	using MaterialHandle = RefPtr<Material>;
 }

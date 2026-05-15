@@ -2,22 +2,13 @@
 
 #include "fp_camera.hpp"
 #include "toaster/toast_kernel/layer.hpp"
-#include "toaster/toast_render/renderer_2d.hpp"
 
 #include "toaster/toast_lib/events/key_event.hpp"
-#include "toaster/toast_lib/events/mouse_event.hpp"
-#include "toaster/toast_lib/events/window_event.hpp"
 
-#include "toast_gpu/vk/vk_vertex_buffer.hpp"
+#include "toast_gpu/vk/vk_render_pass.hpp"
+#include "toast_gpu/vk/vk_pipeline.hpp"
 #include "toast_scene/scene_renderer.hpp"
-
-#include <mono/jit/jit.h>
-#include <mono/metadata/assembly.h>
-
-#include "toast_render/shader_library.hpp"
-#include "toast_scripting/script_common.hpp"
 #include "toast_scripting/script_engine.hpp"
-#include "toast_scripting/script_object.hpp"
 
 namespace toaster
 {
@@ -42,9 +33,9 @@ namespace toaster
 		RefPtr<Scene>         m_scene{nullptr};
 		RefPtr<SceneRenderer> m_sceneRenderer{nullptr};
 
-		RefPtr<gpu::VKPipeline>   m_fullscreenPipeline{nullptr};
-		RefPtr<gpu::VKRenderPass> m_fullscreenRenderPass{nullptr};
-		RefPtr<gpu::VKMaterial>   m_fullscreenMaterial{nullptr};
+		gpu::PipelineHandle    m_fullscreenPipeline{nullptr};
+		gpu::RenderPassHandle  m_fullscreenRenderPass{nullptr};
+		render::MaterialHandle m_fullscreenMaterial{nullptr};
 
 		FPCamera m_cameraTest;
 	};

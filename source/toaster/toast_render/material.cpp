@@ -1,10 +1,11 @@
-#include "vk_material.hpp"
-
+#include "material.hpp"
 #include <ranges>
+#include "render_context.hpp"
 
-namespace toaster::gpu
+namespace toaster::render
 {
-	VKMaterial::VKMaterial(VKLogicalDevice *p_device, const RefPtr<VKShader> &p_shader, const String &p_name) : m_device(p_device), m_shader(p_shader), m_name(p_name)
+	Material::Material(RenderContext *p_render_ctx, const gpu::ShaderHandle &p_shader, const String &p_name) : m_renderCtx(p_render_ctx), m_shader(p_shader),
+																											   m_name(p_name)
 	{
 		const auto &push_constant_buffers{m_shader->getReflectedPushConstantBuffers()};
 		if (!push_constant_buffers.empty())
@@ -17,13 +18,13 @@ namespace toaster::gpu
 			m_pushConstantStorageBuffer.zeroInitialize();
 		}
 
-		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_device, m_shader, 0, 0);
+		m_descriptorSetManager = make_unique<gpu::VKDescriptorSetManager>(m_renderCtx->getLogicalDevice(), m_shader, 0, 0);
 
 		for (const auto &[name, decl]: m_descriptorSetManager->getDescriptorDeclarations())
 		{
 			switch (decl.type)
 			{
-				case EDescriptorType::eSampler2D:
+				case gpu::EDescriptorType::eSampler2D:
 				{
 					for (uint32 i{0u}; i < decl.arraySize; ++i)
 						m_descriptorSetManager->setDescriptor(name, m_descriptorSetManager->getWhiteTexture(), i);
@@ -35,61 +36,48 @@ namespace toaster::gpu
 		m_descriptorSetManager->bakeDescriptors();
 	}
 
-	VKMaterial::~VKMaterial()
+	Material::~Material()
 	{
 		m_pushConstantStorageBuffer.release();
 	}
 
-	auto VKMaterial::setTexture(const String &p_name, RefPtr<VKTexture2D> &p_texture_2d) -> void
+	auto Material::setTexture(const String &p_name, const gpu::Texture2DHandle &p_texture_2d) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);
 	}
 
-	auto VKMaterial::setTexture(const String &p_name, RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void
+	auto Material::setTexture(const String &p_name, const gpu::Texture2DHandle &p_texture_2d, uint32 p_array_index) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d, p_array_index);
 	}
 
-	auto VKMaterial::setTexture(const String &p_name, VKTexture2D *p_texture_2d) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);
-	}
-
-	auto VKMaterial::setTexture(const String &p_name, VKTexture2D *p_texture_2d, uint32 p_array_index) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d, p_array_index);
-	}
-
-
-	auto VKMaterial::update(uint32 p_frame_index) -> void
+	auto Material::update(uint32 p_frame_index) -> void
 	{
 		m_descriptorSetManager->updateDescriptors(p_frame_index);
 	}
 
-
-
-	auto VKMaterial::getDescriptorSet(uint32 p_frame_index) -> vk::DescriptorSet
+	auto Material::getDescriptorSet(uint32 p_frame_index) -> vk::DescriptorSet
 	{
 		update(p_frame_index);
 		return m_descriptorSetManager->getDescriptorSets(p_frame_index)[0];
 	}
 
-	auto VKMaterial::hasDescriptorSets() const -> bool
+	auto Material::hasDescriptorSets() const -> bool
 	{
 		return m_descriptorSetManager->hasDescriptorSets();
 	}
 
-	auto VKMaterial::getPushConstantStorageBuffer() const -> const Buffer &
+	auto Material::getPushConstantStorageBuffer() const -> const Buffer &
 	{
 		return m_pushConstantStorageBuffer;
 	}
 
-	auto VKMaterial::getName() const -> String
+	auto Material::getName() const -> String
 	{
 		return m_name;
 	}
 
-	auto VKMaterial::_getPushConstantDeclaration(const String &p_name) -> const PushConstant *
+	auto Material::_getPushConstantDeclaration(const String &p_name) -> const gpu::PushConstant *
 	{
 		const auto &push_constant_buffers{m_shader->getReflectedPushConstantBuffers()};
 		if (!push_constant_buffers.empty())

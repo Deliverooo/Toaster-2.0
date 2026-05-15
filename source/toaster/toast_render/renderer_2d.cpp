@@ -2,10 +2,8 @@
 #include "renderer_2d.hpp"
 
 #include "globals.hpp"
-#include "renderer.hpp"
 #include "render_context.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
-#include "toast_gpu/vk/vk_renderer.hpp"
 
 namespace toaster::render
 {
@@ -29,16 +27,16 @@ namespace toaster::render
 		pipeline_create_info.shader             = quad_shader;
 		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
 		pipeline_create_info.multisample        = false;
-		m_quadPipeline                          = m_renderContext->createObjectRef<gpu::VKPipeline>(pipeline_create_info);
+		m_quadPipeline                          = m_renderContext->createGPU<gpu::VKPipeline>(pipeline_create_info);
 
 		m_cameraUBs       = m_renderContext->createUniformBuffers<CameraUB>(RenderContext::maxFramesInFlight);
 		m_mappedCameraUBs = m_cameraUBs->mapAllMemory(sizeof(CameraUB));
 
-		m_quadRenderPass = m_renderContext->createObjectRef<gpu::VKRenderPass>(m_quadPipeline);
+		m_quadRenderPass = m_renderContext->createGPU<gpu::VKRenderPass>(m_quadPipeline);
 		m_quadRenderPass->setInput("Camera", m_cameraUBs);
 		m_quadRenderPass->bake();
 
-		m_quadMaterial = m_renderContext->createObjectRef<gpu::VKMaterial>(quad_shader);
+		m_quadMaterial = make_reference<Material>(m_renderContext, quad_shader);
 
 		if (!m_createInfo.overrideAttachments)
 		{
@@ -46,14 +44,14 @@ namespace toaster::render
 			colour_attachment_texture_spec_info.width  = m_createInfo.renderTargetWidth;
 			colour_attachment_texture_spec_info.height = m_createInfo.renderTargetHeight;
 			colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
-			m_renderTargetTexture                      = m_renderContext->createObjectRef<gpu::VKTexture2D>(colour_attachment_texture_spec_info);
+			m_renderTargetTexture                      = m_renderContext->createGPU<gpu::VKTexture2D>(colour_attachment_texture_spec_info);
 
 			gpu::ImageSpecInfo depth_attachment_image_create_info{};
 			depth_attachment_image_create_info.width  = m_createInfo.renderTargetWidth;
 			depth_attachment_image_create_info.height = m_createInfo.renderTargetHeight;
 			depth_attachment_image_create_info.format = m_renderContext->getPhysicalDevice()->getDepthFormat();
 			depth_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-			m_renderTargetDepthImage                  = m_renderContext->createObjectRef<gpu::AttachmentImage>(depth_attachment_image_create_info);
+			m_renderTargetDepthImage                  = m_renderContext->createGPU<gpu::VKRawImage>(depth_attachment_image_create_info);
 		}
 		else
 		{
@@ -62,7 +60,7 @@ namespace toaster::render
 		}
 
 		vk::DeviceSize quad_vertex_buffer_size{sizeof(QuadVertex) * m_maxVertices};
-		m_quadVertexBuffer = m_renderContext->createObjectRef<gpu::VKVertexBuffer>(quad_vertex_buffer_size);
+		m_quadVertexBuffer = m_renderContext->createGPU<gpu::VKVertexBuffer>(quad_vertex_buffer_size);
 		m_quadVertexBase   = new QuadVertex[m_maxVertices];
 
 		auto   quad_indices{new uint32[m_maxIndices]};
@@ -81,7 +79,7 @@ namespace toaster::render
 		}
 
 		vk::DeviceSize index_buffer_size{m_maxIndices * sizeof(uint32)};
-		m_quadIndexBuffer = m_renderContext->createObjectRef<gpu::VKIndexBuffer>(quad_indices, index_buffer_size);
+		m_quadIndexBuffer = m_renderContext->createGPU<gpu::VKIndexBuffer>(quad_indices, index_buffer_size);
 
 		delete[] quad_indices;
 
@@ -104,8 +102,7 @@ namespace toaster::render
 		delete[] m_quadVertexBase;
 	}
 
-	auto Renderer2D::begin( uint32 p_frame_index, const tsm::float4x4 &p_view_matrix,
-							 const tsm::float4x4 &                  p_proj_matrix) -> void
+	auto Renderer2D::begin(uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void
 	{
 		CameraUB ubo{};
 		ubo.view       = p_view_matrix;
@@ -124,8 +121,8 @@ namespace toaster::render
 		m_stats.quadCount = 0u;
 	}
 
-	auto Renderer2D::end(gpu::VKCommandBuffer &        p_cmd, uint32 p_frame_index, gpu::RenderingAttachmentInfo *p_override_colour_attachment,
-						 gpu::RenderingAttachmentInfo *p_override_depth_attachment) -> void
+	auto Renderer2D::end(gpu::VKCommandBuffer &              p_cmd, uint32 p_frame_index, gpu::RenderingAttachmentInfo *p_override_colour_attachment,
+						 const gpu::RenderingAttachmentInfo *p_override_depth_attachment) -> void
 	{
 		if (m_createInfo.overrideAttachments && !p_override_colour_attachment && !p_override_depth_attachment)
 		{
@@ -152,7 +149,7 @@ namespace toaster::render
 			depth_attachment_info = *p_override_depth_attachment;
 		else
 		{
-			depth_attachment_info.image      = m_renderTargetDepthImage;
+			depth_attachment_info.image      = m_renderTargetDepthImage.get();
 			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
 			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
@@ -169,11 +166,9 @@ namespace toaster::render
 			for (uint32 i{0u}; i < m_textureSlots.size(); ++i)
 			{
 				if (m_textureSlots[i])
-				{
-					m_quadMaterial->setTexture("u_Textures", const_cast<gpu::VKTexture2D *>(m_textureSlots[i]), i);
-				}
+					m_quadMaterial->setTexture("u_Textures", m_textureSlots[i], i);
 				else
-					m_quadMaterial->setTexture("u_Textures", const_cast<gpu::VKTexture2D *>(m_renderContext->getGlobals()->whiteTexture()), i);
+					m_quadMaterial->setTexture("u_Textures", m_renderContext->getGlobals()->whiteTexture(), i);
 			}
 
 			m_renderContext->renderGeometry(p_cmd, p_frame_index, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial,
@@ -214,7 +209,7 @@ namespace toaster::render
 		m_stats.quadCount++;
 	}
 
-	auto Renderer2D::submitQuad(const tsm::float4x4 &p_transform, const RefPtr<gpu::VKTexture2D> &p_texture, const tsm::float4 &p_colour) -> void
+	auto Renderer2D::submitQuad(const tsm::float4x4 &p_transform, const gpu::Texture2DHandle &p_texture, const tsm::float4 &p_colour) -> void
 	{
 		if (m_quadIndexCount >= m_maxIndices)
 			_beginNewBatch();
@@ -238,7 +233,7 @@ namespace toaster::render
 		return m_stats;
 	}
 
-	auto Renderer2D::getOutputColourTexture() const -> const RefPtr<gpu::VKTexture2D> &
+	auto Renderer2D::getOutputColourTexture() const -> const gpu::Texture2DHandle &
 	{
 		return m_renderTargetTexture;
 	}
@@ -263,7 +258,7 @@ namespace toaster::render
 		m_quadVertexPtr  = m_quadVertexBase;
 	}
 
-	auto Renderer2D::_getTextureSlotIndex(const RefPtr<gpu::VKTexture2D> &p_texture) -> uint32
+	auto Renderer2D::_getTextureSlotIndex(const gpu::Texture2DHandle &p_texture) -> uint32
 	{
 		uint32 texture_index{0u};
 		for (uint32 i{1u}; i < m_textureSlotIndex; ++i)
@@ -279,7 +274,7 @@ namespace toaster::render
 		{
 			// LOG_TRACE("Setting new texture: {}", p_texture->getPath().string());
 			texture_index                      = m_textureSlotIndex;
-			m_textureSlots[m_textureSlotIndex] = p_texture.get();
+			m_textureSlots[m_textureSlotIndex] = p_texture;
 			++m_textureSlotIndex;
 		}
 

@@ -1,15 +1,16 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include "vk_index_buffer.hpp"
-#include "vk_material.hpp"
-#include "vk_texture.hpp"
-#include "vk_vertex_buffer.hpp"
+#include "toast_gpu/vk/vk_index_buffer.hpp"
+#include "toast_gpu/vk/vk_texture.hpp"
+#include "toast_gpu/vk/vk_vertex_buffer.hpp"
 #include "toast_lib/io/filesystem.hpp"
 
-namespace toaster::gpu
+#include "material.hpp"
+
+namespace toaster::render
 {
-	struct TST_GPU_API MeshVertex
+	struct TST_API MeshVertex
 	{
 		glm::vec3 position;
 		glm::vec3 normal;
@@ -18,7 +19,7 @@ namespace toaster::gpu
 		glm::vec2 texCoord;
 	};
 
-	struct TST_GPU_API Submesh
+	struct TST_API Submesh
 	{
 		String name{};
 
@@ -32,7 +33,7 @@ namespace toaster::gpu
 		uint32 vertexCount{0u};
 	};
 
-	struct TST_GPU_API MeshNode
+	struct TST_API MeshNode
 	{
 		String    name{};
 		glm::mat4 localTransform{1.0f};
@@ -42,21 +43,21 @@ namespace toaster::gpu
 		uint32              parent{UINT32_MAX};
 	};
 
-	struct TST_GPU_API MeshMaterialData
+	struct TST_API MeshMaterialData
 	{
-		RefPtr<VKMaterial>  material{nullptr};
-		RefPtr<VKTexture2D> albedoMap{nullptr};
-		RefPtr<VKTexture2D> normalMap{nullptr};
+		MaterialHandle       material{nullptr};
+		gpu::Texture2DHandle albedoMap{nullptr};
+		gpu::Texture2DHandle normalMap{nullptr};
 	};
 
-	class TST_GPU_API VKMesh
+	class TST_API Mesh
 	{
-		TST_GPU_OBJECT
 	public:
-		VKMesh(VKLogicalDevice *p_device, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader);
+		Mesh(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader);
+		~Mesh();
 
-		auto getVertexBuffer() const -> const RefPtr<VKVertexBuffer> &;
-		auto getIndexBuffer() const -> const RefPtr<VKIndexBuffer> &;
+		auto getVertexBuffer() const -> const gpu::VertexBufferHandle &;
+		auto getIndexBuffer() const -> const gpu::IndexBufferHandle &;
 
 		auto getMaterialDatas() const -> const std::vector<MeshMaterialData> &;
 		auto getSubmeshes() const -> const std::vector<Submesh> &;
@@ -69,6 +70,8 @@ namespace toaster::gpu
 	private:
 		auto _traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void;
 
+		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
+
 		io::filesystem::Path m_path;
 
 		std::vector<Submesh>  m_submeshes;
@@ -77,9 +80,11 @@ namespace toaster::gpu
 		std::vector<MeshVertex> m_vertices;
 		std::vector<uint32>     m_indices;
 
-		RefPtr<VKVertexBuffer> m_vertexBuffer{nullptr};
-		RefPtr<VKIndexBuffer>  m_indexBuffer{nullptr};
+		gpu::VertexBufferHandle m_vertexBuffer{nullptr};
+		gpu::IndexBufferHandle  m_indexBuffer{nullptr};
 
 		std::vector<MeshMaterialData> m_materialDatas;
 	};
+
+	using MeshHandle = RefPtr<Mesh>;
 }

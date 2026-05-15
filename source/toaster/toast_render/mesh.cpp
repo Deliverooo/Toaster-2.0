@@ -1,12 +1,12 @@
-#include "vk_mesh.hpp"
+#include "mesh.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
-#include "vk_logical_device.hpp"
+#include "render_context.hpp"
 
-namespace toaster::gpu
+namespace toaster::render
 {
 	static constexpr uint32 s_MeshImportFlags{
 		aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_GenNormals | aiProcess_GenUVCoords | aiProcess_OptimizeMeshes |
@@ -35,7 +35,7 @@ namespace toaster::gpu
 		return result;
 	}
 
-	VKMesh::VKMesh(VKLogicalDevice *p_dev, const io::filesystem::Path &p_path, const RefPtr<VKShader> &p_shader) : m_device(p_dev), m_path(p_path)
+	Mesh::Mesh(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader) : m_renderCtx(p_render_ctx), m_path(p_path)
 	{
 		Assimp::Importer importer;
 
@@ -103,6 +103,7 @@ namespace toaster::gpu
 			}
 
 			MeshNode &rootNode = m_nodes.emplace_back();
+			(void) rootNode;
 			_traverseNodes(scene->mRootNode, 0, glm::mat4{1.0f}, 0);
 		}
 
@@ -114,7 +115,7 @@ namespace toaster::gpu
 				auto  ai_material_name = ai_material->GetName();
 				auto &material_data{m_materialDatas.emplace_back()};
 				auto &material{material_data.material};
-				material = m_device->alloc<VKMaterial>(p_shader, ai_material_name.data);
+				material = make_reference<Material>(m_renderCtx, p_shader, ai_material_name.data);
 
 				aiString ai_tex_path;
 
@@ -159,9 +160,9 @@ namespace toaster::gpu
 					}
 					LOG_TRACE("\tAlbedo map path = {}{}", texture_path.string(), std::filesystem::exists(texture_path) ? "" : " --> NOT FOUND");
 
-					TextureSpecInfo texture_spec_info{};
+					gpu::TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					material_data.albedoMap        = m_device->alloc<VKTexture2D>(texture_spec_info, texture_path);
+					material_data.albedoMap        = m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path);
 					material->setTexture("u_AlbedoTexture", material_data.albedoMap);
 					material->set("u_Material.albedoColour", glm::vec3{1.0f});
 				}
@@ -181,9 +182,9 @@ namespace toaster::gpu
 					}
 					LOG_TRACE("\tAlbedo map path = {}{}", texture_path.string(), std::filesystem::exists(texture_path) ? "" : " --> NOT FOUND");
 
-					TextureSpecInfo texture_spec_info{};
+					gpu::TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					material_data.normalMap        = m_device->alloc<VKTexture2D>(texture_spec_info, texture_path);
+					material_data.normalMap        = m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path);
 					material->setTexture("u_NormalTexture", material_data.normalMap);
 					material->set<uint32>("u_Material.hasNormalMap", 1u);
 				}
@@ -194,51 +195,56 @@ namespace toaster::gpu
 			}
 		}
 		else
-			m_materialDatas.emplace_back(m_device->alloc<VKMaterial>(p_shader));
+			m_materialDatas.emplace_back(make_reference<Material>(m_renderCtx, p_shader));
 
 		const vk::DeviceSize vertex_buffer_size{sizeof(MeshVertex) * m_vertices.size()};
-		m_vertexBuffer = m_device->alloc<VKVertexBuffer>(static_cast<void *>(m_vertices.data()), vertex_buffer_size);
+		m_vertexBuffer = make_reference<gpu::VKVertexBuffer>(m_renderCtx->getLogicalDevice(), static_cast<void *>(m_vertices.data()), vertex_buffer_size);
 
 		const vk::DeviceSize index_buffer_size{sizeof(uint32) * m_indices.size()};
-		m_indexBuffer = m_device->alloc<VKIndexBuffer>(static_cast<void *>(m_indices.data()), index_buffer_size);
+		m_indexBuffer = make_reference<gpu::VKIndexBuffer>(m_renderCtx->getLogicalDevice(), static_cast<void *>(m_indices.data()), index_buffer_size);
 	}
 
-	auto VKMesh::getVertexBuffer() const -> const RefPtr<VKVertexBuffer> &
+	Mesh::~Mesh()
+	{
+
+	}
+
+	auto Mesh::getVertexBuffer() const -> const gpu::VertexBufferHandle &
 	{
 		return m_vertexBuffer;
 	}
 
-	auto VKMesh::getIndexBuffer() const -> const RefPtr<VKIndexBuffer> &
+	auto Mesh::getIndexBuffer() const -> const gpu::IndexBufferHandle &
 	{
 		return m_indexBuffer;
 	}
 
-	auto VKMesh::getMaterialDatas() const -> const std::vector<MeshMaterialData> &
+	auto Mesh::getMaterialDatas() const -> const std::vector<MeshMaterialData> &
 	{
 		return m_materialDatas;
 	}
 
-	auto VKMesh::getSubmeshes() const -> const std::vector<Submesh> &
+	auto Mesh::getSubmeshes() const -> const std::vector<Submesh> &
 	{
 		return m_submeshes;
 	}
 
-	auto VKMesh::getVertices() const -> const std::vector<MeshVertex> &
+	auto Mesh::getVertices() const -> const std::vector<MeshVertex> &
 	{
 		return m_vertices;
 	}
 
-	auto VKMesh::getIndices() const -> const std::vector<uint32> &
+	auto Mesh::getIndices() const -> const std::vector<uint32> &
 	{
 		return m_indices;
 	}
 
-	auto VKMesh::getFilepath() const -> const io::filesystem::Path &
+	auto Mesh::getFilepath() const -> const io::filesystem::Path &
 	{
 		return m_path;
 	}
 
-	auto VKMesh::_traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void
+	auto Mesh::_traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void
 	{
 		auto ai_node = static_cast<aiNode *>(p_assimp_node);
 

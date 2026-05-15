@@ -15,6 +15,7 @@
 #include <ImGuizmo.h>
 
 #include "toast_lib/os/terminal.hpp"
+#include "toast_render/render_context.hpp"
 namespace igz = ImGuizmo;
 
 namespace toaster
@@ -127,7 +128,7 @@ namespace toaster
 		style.FrameBorderSize = 1.0f;
 		style.IndentSpacing   = 11.0f;
 
-		auto       device{app.getLogicalDevice()};
+		auto       device{app.getRenderContext()->getLogicalDevice()};
 		const auto swapchain{app.getWindow().getSwapchain()};
 
 		vk::DescriptorPoolSize pool_sizes[] = {
@@ -247,15 +248,15 @@ namespace toaster
 		const vk::Viewport viewport{0.0f, 0.0f, static_cast<float32>(swapchain->getExtent().width), static_cast<float32>(swapchain->getExtent().height), 0.0f, 1.0f};
 		const vk::Rect2D   scissor{vk::Offset2D{0, 0}, swapchain->getExtent()};
 
-		command_buffer.beginRendering(rendering_info);
+		command_buffer.getVulkanCommandBuffer(). beginRendering(rendering_info);
 
-		command_buffer.setViewport(0, viewport);
-		command_buffer.setScissor(0, scissor);
+		command_buffer.getVulkanCommandBuffer().setViewport(0, viewport);
+		command_buffer.getVulkanCommandBuffer().setScissor(0, scissor);
 
 		ImDrawData *data = ig::GetDrawData();
-		ImGui_ImplVulkan_RenderDrawData(data, *command_buffer);
+		ImGui_ImplVulkan_RenderDrawData(data, *command_buffer.getVulkanCommandBuffer());
 
-		command_buffer.endRendering();
+		command_buffer.getVulkanCommandBuffer().endRendering();
 
 		ImGuiIO &io = ig::GetIO();
 		(void) io;

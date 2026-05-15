@@ -7,12 +7,12 @@ namespace toaster::gpu
 {
 	struct RenderingAttachmentInfo
 	{
-		RefPtr<VKRawImage> image{nullptr};
+		VKRawImage *image{nullptr};
 
 		vk::ImageView   imageView{nullptr};
 		vk::ImageLayout imageLayout{vk::ImageLayout::eUndefined};
 
-		RefPtr<VKRawImage>      resolveImage{nullptr};
+		VKRawImage *            resolveImage{nullptr};
 		vk::ResolveModeFlagBits resolveMode{vk::ResolveModeFlagBits::eNone};
 		vk::ImageView           resolveImageView{nullptr};
 		vk::ImageLayout         resolveImageLayout{vk::ImageLayout::eUndefined};

@@ -10,6 +10,7 @@
 
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_lib/uuid.hpp"
+#include "toast_render/mesh.hpp"
 #include "toast_scripting/script_common.hpp"
 #include "toast_scripting/script_object.hpp"
 
@@ -105,7 +106,7 @@ namespace toaster
 			mesh.reset(nullptr);
 		}
 
-		RefPtr<gpu::VKMesh> mesh{nullptr};
+		render::MeshHandle mesh{nullptr};
 	};
 
 	DEFINE_COMPONENT(CameraComponent)
@@ -196,6 +197,9 @@ namespace toaster
 }
 
 REGISTER_COMPONENT_HASH(UUIDComponent)
+
 REGISTER_COMPONENT_HASH(TransformComponent)
+
 REGISTER_COMPONENT_HASH(SpriteRendererComponent)
+
 REGISTER_COMPONENT_HASH(CameraComponent)

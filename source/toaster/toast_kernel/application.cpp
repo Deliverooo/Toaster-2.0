@@ -25,7 +25,7 @@ namespace toaster
 		m_renderContext                             = new render::RenderContext{render_context_spec_info};
 
 		#pragma region create window
-		m_window = new Window{m_renderContext->getLogicalDevice(), p_create_info.windowCreateInfo};
+		m_window = new Window(m_renderContext, p_create_info.windowCreateInfo);
 		m_window->setEventCallback([this](Event &e)
 		{
 			EventDispatcher dispatcher{e};
@@ -92,9 +92,9 @@ namespace toaster
 		return *m_window;
 	}
 
-	auto Application::getLogicalDevice() const -> gpu::VKLogicalDevice *
+	auto Application::getRenderContext() const noexcept -> render::RenderContext *
 	{
-		return m_renderContext->getLogicalDevice();
+		return m_renderContext;
 	}
 
 	auto Application::getCommandLineArgs() const noexcept -> const CommandLineArgMap &

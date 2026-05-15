@@ -83,16 +83,16 @@ namespace toaster
 		fullscreen_pipeline_spec_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
 		fullscreen_pipeline_spec_info.depthFormat        = swapchain->getDepthFormat();
 		fullscreen_pipeline_spec_info.shader             = fullscreen_shader;
-		fullscreen_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eNone; // We don't want to cull our viewport
+		fullscreen_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack; // We don't want to cull our viewport
 		fullscreen_pipeline_spec_info.vertexBufferLayout = gpu::BufferLayout{
 			{gpu::EBufferDataType::eFloat3, "a_Position"},
 			{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
 		};
-		m_fullscreenPipeline   = m_renderCtx->createObjectRef<gpu::VKPipeline>(fullscreen_pipeline_spec_info);
-		m_fullscreenRenderPass = m_renderCtx->createObjectRef<gpu::VKRenderPass>(m_fullscreenPipeline);
+		m_fullscreenPipeline   = m_renderCtx->createGPUObjectRef<gpu::VKPipeline>(fullscreen_pipeline_spec_info);
+		m_fullscreenRenderPass = m_renderCtx->createGPUObjectRef<gpu::VKRenderPass>(m_fullscreenPipeline);
 		m_fullscreenRenderPass->bake();
 
-		m_fullscreenMaterial = m_renderCtx->createObjectRef<gpu::VKMaterial>(m_renderCtx->getGlobals()->shaderLibrary().get("Composite"));
+		m_fullscreenMaterial = make_reference<render::Material>(m_renderCtx, m_renderCtx->getGlobals()->shaderLibrary().get("Composite"));
 
 		SceneRendererSpecInfo scene_renderer_spec_info{};
 		scene_renderer_spec_info.viewportWidth     = m_viewportWidth;
@@ -129,8 +129,6 @@ namespace toaster
 
 		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getOutputColourTexture());
 
-		m_fullscreenMaterial->set("u_Constants.res", glm::vec2{m_viewportWidth, m_viewportHeight});
-
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_viewportWidth, m_viewportHeight}};
 
@@ -143,9 +141,9 @@ namespace toaster
 		depth_attachment_info.imageView   = swapchain->getDepthImageView();
 		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
-		rendering_info.pDepthAttachment   = std::addressof(depth_attachment_info);
+		rendering_info.pDepthAttachment   = &depth_attachment_info;
 
-		m_renderCtx->beginRendering(command_buffer,rendering_info, frame_index, m_fullscreenRenderPass);
+		m_renderCtx->beginRendering(command_buffer, rendering_info, frame_index, m_fullscreenRenderPass);
 		m_renderCtx->renderFullscreenQuad(command_buffer, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);
 		m_renderCtx->endRendering(command_buffer, rendering_info);
 	}
@@ -168,14 +166,9 @@ namespace toaster
 			if (!window.isFullscreen())
 				window.setFullscreen();
 			else
+			{
 				window.setWindowed();
-		}
-		if (e.getKeyCode() == input::EKeyCode::eM)
-		{
-			io::filesystem::Path mesh_path{os::openFileDialog({{"Mesh", "fbx,obj"}})};
-			Entity entity{m_scene->createEntity("I")};
-			auto &mesh{entity.addComponent<MeshComponent>()};
-			mesh.mesh = m_renderCtx->createObjectRef<gpu::VKMesh>(mesh_path, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"));
+			}
 		}
 
 		return false;

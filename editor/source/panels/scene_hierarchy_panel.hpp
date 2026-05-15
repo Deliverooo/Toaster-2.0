@@ -8,7 +8,7 @@ namespace toaster
 	class SceneHierarchyPanel
 	{
 	public:
-		SceneHierarchyPanel(gpu::VKLogicalDevice *p_device, const RefPtr<Scene> &p_scene);
+		SceneHierarchyPanel(render::RenderContext *p_render_ctx, const RefPtr<Scene> &p_scene);
 		~SceneHierarchyPanel();
 
 		auto setScene(const RefPtr<Scene> &p_scene) -> void;
@@ -21,9 +21,9 @@ namespace toaster
 	private:
 		auto _drawEntityNode(Entity p_entity, uint32 p_frame_index) -> void;
 		auto _drawComponents(Entity p_entity, uint32 p_frame_index) -> void;
-		auto _drawMaterial(uint32 p_frame_index,const RefPtr<gpu::VKMaterial> &p_mat) -> void;
+		auto _drawMaterial(uint32 p_frame_index, const render::MaterialHandle &p_mat) -> void;
 
-		gpu::VKLogicalDevice *m_device{nullptr};
+		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
 
 		RefPtr<Scene> m_scene;
 

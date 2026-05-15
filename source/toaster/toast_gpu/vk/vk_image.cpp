@@ -106,7 +106,7 @@ namespace toaster::gpu
 
 	VKImage2D::VKImage2D(VKLogicalDevice *p_device, const ImageSpecInfo &p_spec_info) : m_device(p_device)
 	{
-		m_image = m_device->alloc<VKRawImage>(p_spec_info);
+		m_image = make_reference<VKRawImage>(m_device, p_spec_info);
 		util::undefinedToGeneral(m_image.get());
 		createSampler(vk::ImageLayout::eGeneral);
 	}
@@ -158,7 +158,7 @@ namespace toaster::gpu
 
 	namespace util
 	{
-		auto transitionImageLayout(AttachmentImage *p_image, vk::ImageLayout p_src_layout, vk::ImageLayout p_dst_layout) -> void
+		auto transitionImageLayout(VKRawImage *p_image, vk::ImageLayout p_src_layout, vk::ImageLayout p_dst_layout) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), getImageLayoutInfo(p_src_layout), getImageLayoutInfo(p_dst_layout),
 														p_image->getSpecInfo().layerCount, p_image->getSpecInfo().mipCount,
@@ -166,7 +166,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(p_dst_layout);
 		}
 
-		auto colourAttachmentToShaderRead(AttachmentImage *p_image) -> void
+		auto colourAttachmentToShaderRead(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), getImageLayoutInfo(vk::ImageLayout::eColorAttachmentOptimal),
 														getImageLayoutInfo(vk::ImageLayout::eShaderReadOnlyOptimal), p_image->getSpecInfo().layerCount,
@@ -174,7 +174,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 		}
 
-		auto colourAttachmentToTransferSrc(AttachmentImage *p_image) -> void
+		auto colourAttachmentToTransferSrc(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), getImageLayoutInfo(vk::ImageLayout::eColorAttachmentOptimal),
 														getImageLayoutInfo(vk::ImageLayout::eTransferSrcOptimal), p_image->getSpecInfo().layerCount,
@@ -182,7 +182,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferSrcOptimal);
 		}
 
-		auto colourAttachmentToTransferDst(AttachmentImage *p_image) -> void
+		auto colourAttachmentToTransferDst(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), getImageLayoutInfo(vk::ImageLayout::eColorAttachmentOptimal),
 														getImageLayoutInfo(vk::ImageLayout::eTransferDstOptimal), p_image->getSpecInfo().layerCount,
@@ -190,7 +190,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
 		}
 
-		auto colourAttachmentToGeneral(AttachmentImage *p_image) -> void
+		auto colourAttachmentToGeneral(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), getImageLayoutInfo(vk::ImageLayout::eColorAttachmentOptimal),
 														getImageLayoutInfo(vk::ImageLayout::eGeneral), p_image->getSpecInfo().layerCount, p_image->getSpecInfo().mipCount,
@@ -198,7 +198,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eGeneral);
 		}
 
-		auto depthAttachmentToShaderRead(AttachmentImage *p_image, bool p_read_only) -> void
+		auto depthAttachmentToShaderRead(VKRawImage *p_image, bool p_read_only) -> void
 		{
 			const vk::ImageLayout  old_layout{p_read_only ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal};
 			const vk::AccessFlags2 src_access_flags{p_read_only ? vk::AccessFlagBits2::eDepthStencilAttachmentRead : vk::AccessFlagBits2::eDepthStencilAttachmentWrite};
@@ -211,19 +211,19 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 		}
 
-		auto depthAttachmentToTransferSrc(AttachmentImage *p_image, bool p_read_only) -> void
+		auto depthAttachmentToTransferSrc(VKRawImage *p_image, bool p_read_only) -> void
 		{
 		}
 
-		auto depthAttachmentToTransferDst(AttachmentImage *p_image, bool p_read_only) -> void
+		auto depthAttachmentToTransferDst(VKRawImage *p_image, bool p_read_only) -> void
 		{
 		}
 
-		auto depthAttachmentToGeneral(AttachmentImage *p_image, bool p_read_only) -> void
+		auto depthAttachmentToGeneral(VKRawImage *p_image, bool p_read_only) -> void
 		{
 		}
 
-		auto shaderReadToColourAttachment(AttachmentImage *p_image) -> void
+		auto shaderReadToColourAttachment(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
 														vk::AccessFlagBits2::eShaderRead, vk::AccessFlagBits2::eColorAttachmentWrite,
@@ -232,7 +232,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 		}
 
-		auto shaderReadToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void
+		auto shaderReadToDepthAttachment(VKRawImage *p_image, bool p_read_only) -> void
 		{
 			const vk::ImageLayout  new_layout{p_read_only ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal};
 			const vk::AccessFlags2 dst_access_flags{p_read_only ? vk::AccessFlagBits2::eDepthStencilAttachmentRead : vk::AccessFlagBits2::eDepthStencilAttachmentWrite};
@@ -244,7 +244,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(new_layout);
 		}
 
-		auto shaderReadToTransferSrc(AttachmentImage *p_image) -> void
+		auto shaderReadToTransferSrc(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eTransferSrcOptimal,
 														vk::AccessFlagBits2::eShaderRead, vk::AccessFlagBits2::eTransferRead, vk::PipelineStageFlagBits2::eFragmentShader,
@@ -253,7 +253,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferSrcOptimal);
 		}
 
-		auto shaderReadToTransferDst(AttachmentImage *p_image) -> void
+		auto shaderReadToTransferDst(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eTransferDstOptimal,
 														vk::AccessFlagBits2::eShaderRead, vk::AccessFlagBits2::eTransferWrite,
@@ -262,19 +262,19 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
 		}
 
-		auto shaderReadToGeneral(AttachmentImage *p_image) -> void
+		auto shaderReadToGeneral(VKRawImage *p_image) -> void
 		{
 		}
 
-		auto transferSrcToColourAttachment(AttachmentImage *p_image) -> void
+		auto transferSrcToColourAttachment(VKRawImage *p_image) -> void
 		{
 		}
 
-		auto transferSrcToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void
+		auto transferSrcToDepthAttachment(VKRawImage *p_image, bool p_read_only) -> void
 		{
 		}
 
-		auto transferSrcToShaderRead(AttachmentImage *p_image) -> void
+		auto transferSrcToShaderRead(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
 														vk::AccessFlagBits2::eTransferRead, vk::AccessFlagBits2::eShaderRead, vk::PipelineStageFlagBits2::eTransfer,
@@ -283,7 +283,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 		}
 
-		auto transferSrcToTransferDst(AttachmentImage *p_image) -> void
+		auto transferSrcToTransferDst(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::eTransferDstOptimal,
 														vk::AccessFlagBits2::eTransferRead, vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eTransfer,
@@ -292,19 +292,19 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
 		}
 
-		auto transferSrcToGeneral(AttachmentImage *p_image) -> void
+		auto transferSrcToGeneral(VKRawImage *p_image) -> void
 		{
 		}
 
-		auto transferDstToColourAttachment(AttachmentImage *p_image) -> void
+		auto transferDstToColourAttachment(VKRawImage *p_image) -> void
 		{
 		}
 
-		auto transferDstToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void
+		auto transferDstToDepthAttachment(VKRawImage *p_image, bool p_read_only) -> void
 		{
 		}
 
-		auto transferDstToShaderRead(AttachmentImage *p_image) -> void
+		auto transferDstToShaderRead(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
 														vk::AccessFlagBits2::eTransferWrite, vk::AccessFlagBits2::eShaderRead, vk::PipelineStageFlagBits2::eTransfer,
@@ -313,11 +313,11 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 		}
 
-		auto transferDstToTransferSrc(AttachmentImage *p_image) -> void
+		auto transferDstToTransferSrc(VKRawImage *p_image) -> void
 		{
 		}
 
-		auto transferDstToGeneral(AttachmentImage *p_image) -> void
+		auto transferDstToGeneral(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eGeneral,
 														vk::AccessFlagBits2::eTransferWrite, vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite,
@@ -327,23 +327,23 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eGeneral);
 		}
 
-		auto generalToColourAttachment(AttachmentImage *p_image) -> void
+		auto generalToColourAttachment(VKRawImage *p_image) -> void
 		{
 		}
 
-		auto generalToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void
+		auto generalToDepthAttachment(VKRawImage *p_image, bool p_read_only) -> void
 		{
 		}
 
-		auto generalToShaderRead(AttachmentImage *p_image) -> void
+		auto generalToShaderRead(VKRawImage *p_image) -> void
 		{
 		}
 
-		auto generalToTransferSrc(AttachmentImage *p_image) -> void
+		auto generalToTransferSrc(VKRawImage *p_image) -> void
 		{
 		}
 
-		auto generalToTransferDst(AttachmentImage *p_image) -> void
+		auto generalToTransferDst(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eGeneral, vk::ImageLayout::eTransferDstOptimal,
 														vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite, vk::AccessFlagBits2::eTransferWrite,
@@ -353,7 +353,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
 		}
 
-		auto undefinedToColourAttachment(AttachmentImage *p_image) -> void
+		auto undefinedToColourAttachment(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal,
 														vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eColorAttachmentWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
@@ -362,7 +362,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eColorAttachmentOptimal);
 		}
 
-		auto undefinedToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void
+		auto undefinedToDepthAttachment(VKRawImage *p_image, bool p_read_only) -> void
 		{
 			const vk::ImageLayout  new_layout{p_read_only ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal};
 			const vk::AccessFlags2 dst_access_flags{p_read_only ? vk::AccessFlagBits2::eDepthStencilAttachmentRead : vk::AccessFlagBits2::eDepthStencilAttachmentWrite};
@@ -374,11 +374,11 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(new_layout);
 		}
 
-		auto undefinedToShaderRead(AttachmentImage *p_image) -> void
+		auto undefinedToShaderRead(VKRawImage *p_image) -> void
 		{
 		}
 
-		auto undefinedToTransferSrc(AttachmentImage *p_image) -> void
+		auto undefinedToTransferSrc(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferSrcOptimal,
 														vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eTransferRead, vk::PipelineStageFlagBits2::eTopOfPipe,
@@ -387,7 +387,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferSrcOptimal);
 		}
 
-		auto undefinedToTransferDst(AttachmentImage *p_image) -> void
+		auto undefinedToTransferDst(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal,
 														vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
@@ -396,7 +396,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eTransferDstOptimal);
 		}
 
-		auto undefinedToGeneral(AttachmentImage *p_image) -> void
+		auto undefinedToGeneral(VKRawImage *p_image) -> void
 		{
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral, vk::AccessFlagBits2::eNone,
 														vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite, vk::PipelineStageFlagBits2::eTopOfPipe,
@@ -405,7 +405,7 @@ namespace toaster::gpu
 			p_image->setCurrentImageLayout(vk::ImageLayout::eGeneral);
 		}
 
-		auto toColourAttachment(AttachmentImage *p_image) -> void
+		auto toColourAttachment(VKRawImage *p_image) -> void
 		{
 			vk::ImageLayout layout{p_image->getCurrentImageLayout()};
 			switch (layout)
@@ -437,7 +437,7 @@ namespace toaster::gpu
 			}
 		}
 
-		auto toDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void
+		auto toDepthAttachment(VKRawImage *p_image, bool p_read_only) -> void
 		{
 			vk::ImageLayout layout{p_image->getCurrentImageLayout()};
 			switch (layout)
@@ -469,7 +469,7 @@ namespace toaster::gpu
 			}
 		}
 
-		auto toShaderRead(AttachmentImage *p_image) -> void
+		auto toShaderRead(VKRawImage *p_image) -> void
 		{
 			vk::ImageLayout layout{p_image->getCurrentImageLayout()};
 			switch (layout)
@@ -501,7 +501,7 @@ namespace toaster::gpu
 			}
 		}
 
-		auto toTransferSrc(AttachmentImage *p_image) -> void
+		auto toTransferSrc(VKRawImage *p_image) -> void
 		{
 			vk::ImageLayout layout{p_image->getCurrentImageLayout()};
 			switch (layout)
@@ -533,7 +533,7 @@ namespace toaster::gpu
 			}
 		}
 
-		auto toTransferDst(AttachmentImage *p_image) -> void
+		auto toTransferDst(VKRawImage *p_image) -> void
 		{
 			vk::ImageLayout layout{p_image->getCurrentImageLayout()};
 			switch (layout)
@@ -565,7 +565,7 @@ namespace toaster::gpu
 			}
 		}
 
-		auto toGeneral(AttachmentImage *p_image) -> void
+		auto toGeneral(VKRawImage *p_image) -> void
 		{
 			vk::ImageLayout layout{p_image->getCurrentImageLayout()};
 			switch (layout)

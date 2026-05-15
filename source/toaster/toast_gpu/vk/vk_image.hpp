@@ -55,8 +55,7 @@ namespace toaster::gpu
 		vk::ImageLayout m_currentImageLayout{vk::ImageLayout::eUndefined};
 	};
 
-	using AttachmentImage       = VKRawImage;
-	using AttachmentImageHandle = RefPtr<VKRawImage>;
+	TST_GPU_DEFINE_HANDLE(VKRawImage, RawImage)
 
 	class TST_GPU_API VKImage2D : public IGPUResource
 	{
@@ -84,57 +83,59 @@ namespace toaster::gpu
 		vk::DescriptorImageInfo m_descriptorImageInfo{};
 	};
 
+	TST_GPU_DEFINE_HANDLE(VKImage2D, Image2D)
+
 	// For dynamic rendering I have to handle the image layout transitions manually, so this simplifies things...
 	namespace util
 	{
-		TST_GPU_API auto transitionImageLayout(AttachmentImage *p_image, vk::ImageLayout p_src_layout, vk::ImageLayout p_dst_layout) -> void;
+		TST_GPU_API auto transitionImageLayout(VKRawImage *p_image, vk::ImageLayout p_src_layout, vk::ImageLayout p_dst_layout) -> void;
 
-		TST_GPU_API auto colourAttachmentToShaderRead(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto colourAttachmentToTransferSrc(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto colourAttachmentToTransferDst(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto colourAttachmentToGeneral(AttachmentImage *p_image) -> void;
+		TST_GPU_API auto colourAttachmentToShaderRead(VKRawImage *p_image) -> void;
+		TST_GPU_API auto colourAttachmentToTransferSrc(VKRawImage *p_image) -> void;
+		TST_GPU_API auto colourAttachmentToTransferDst(VKRawImage *p_image) -> void;
+		TST_GPU_API auto colourAttachmentToGeneral(VKRawImage *p_image) -> void;
 
-		TST_GPU_API auto depthAttachmentToShaderRead(AttachmentImage *p_image, bool p_read_only) -> void;
-		TST_GPU_API auto depthAttachmentToTransferSrc(AttachmentImage *p_image, bool p_read_only) -> void;
-		TST_GPU_API auto depthAttachmentToTransferDst(AttachmentImage *p_image, bool p_read_only) -> void;
-		TST_GPU_API auto depthAttachmentToGeneral(AttachmentImage *p_image, bool p_read_only) -> void;
+		TST_GPU_API auto depthAttachmentToShaderRead(VKRawImage *p_image, bool p_read_only) -> void;
+		TST_GPU_API auto depthAttachmentToTransferSrc(VKRawImage *p_image, bool p_read_only) -> void;
+		TST_GPU_API auto depthAttachmentToTransferDst(VKRawImage *p_image, bool p_read_only) -> void;
+		TST_GPU_API auto depthAttachmentToGeneral(VKRawImage *p_image, bool p_read_only) -> void;
 
-		TST_GPU_API auto shaderReadToColourAttachment(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto shaderReadToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void;
-		TST_GPU_API auto shaderReadToTransferSrc(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto shaderReadToTransferDst(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto shaderReadToGeneral(AttachmentImage *p_image) -> void;
+		TST_GPU_API auto shaderReadToColourAttachment(VKRawImage *p_image) -> void;
+		TST_GPU_API auto shaderReadToDepthAttachment(VKRawImage *p_image, bool p_read_only) -> void;
+		TST_GPU_API auto shaderReadToTransferSrc(VKRawImage *p_image) -> void;
+		TST_GPU_API auto shaderReadToTransferDst(VKRawImage *p_image) -> void;
+		TST_GPU_API auto shaderReadToGeneral(VKRawImage *p_image) -> void;
 
-		TST_GPU_API auto transferSrcToColourAttachment(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto transferSrcToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void;
-		TST_GPU_API auto transferSrcToShaderRead(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto transferSrcToTransferDst(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto transferSrcToGeneral(AttachmentImage *p_image) -> void;
+		TST_GPU_API auto transferSrcToColourAttachment(VKRawImage *p_image) -> void;
+		TST_GPU_API auto transferSrcToDepthAttachment(VKRawImage *p_image, bool p_read_only) -> void;
+		TST_GPU_API auto transferSrcToShaderRead(VKRawImage *p_image) -> void;
+		TST_GPU_API auto transferSrcToTransferDst(VKRawImage *p_image) -> void;
+		TST_GPU_API auto transferSrcToGeneral(VKRawImage *p_image) -> void;
 
-		TST_GPU_API auto transferDstToColourAttachment(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto transferDstToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void;
-		TST_GPU_API auto transferDstToShaderRead(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto transferDstToTransferSrc(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto transferDstToGeneral(AttachmentImage *p_image) -> void;
+		TST_GPU_API auto transferDstToColourAttachment(VKRawImage *p_image) -> void;
+		TST_GPU_API auto transferDstToDepthAttachment(VKRawImage *p_image, bool p_read_only) -> void;
+		TST_GPU_API auto transferDstToShaderRead(VKRawImage *p_image) -> void;
+		TST_GPU_API auto transferDstToTransferSrc(VKRawImage *p_image) -> void;
+		TST_GPU_API auto transferDstToGeneral(VKRawImage *p_image) -> void;
 
-		TST_GPU_API auto generalToColourAttachment(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto generalToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void;
-		TST_GPU_API auto generalToShaderRead(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto generalToTransferSrc(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto generalToTransferDst(AttachmentImage *p_image) -> void;
+		TST_GPU_API auto generalToColourAttachment(VKRawImage *p_image) -> void;
+		TST_GPU_API auto generalToDepthAttachment(VKRawImage *p_image, bool p_read_only) -> void;
+		TST_GPU_API auto generalToShaderRead(VKRawImage *p_image) -> void;
+		TST_GPU_API auto generalToTransferSrc(VKRawImage *p_image) -> void;
+		TST_GPU_API auto generalToTransferDst(VKRawImage *p_image) -> void;
 
-		TST_GPU_API auto undefinedToColourAttachment(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto undefinedToDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void;
-		TST_GPU_API auto undefinedToShaderRead(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto undefinedToTransferSrc(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto undefinedToTransferDst(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto undefinedToGeneral(AttachmentImage *p_image) -> void;
+		TST_GPU_API auto undefinedToColourAttachment(VKRawImage *p_image) -> void;
+		TST_GPU_API auto undefinedToDepthAttachment(VKRawImage *p_image, bool p_read_only) -> void;
+		TST_GPU_API auto undefinedToShaderRead(VKRawImage *p_image) -> void;
+		TST_GPU_API auto undefinedToTransferSrc(VKRawImage *p_image) -> void;
+		TST_GPU_API auto undefinedToTransferDst(VKRawImage *p_image) -> void;
+		TST_GPU_API auto undefinedToGeneral(VKRawImage *p_image) -> void;
 
-		TST_GPU_API auto toColourAttachment(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto toDepthAttachment(AttachmentImage *p_image, bool p_read_only) -> void;
-		TST_GPU_API auto toShaderRead(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto toTransferSrc(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto toTransferDst(AttachmentImage *p_image) -> void;
-		TST_GPU_API auto toGeneral(AttachmentImage *p_image) -> void;
+		TST_GPU_API auto toColourAttachment(VKRawImage *p_image) -> void;
+		TST_GPU_API auto toDepthAttachment(VKRawImage *p_image, bool p_read_only) -> void;
+		TST_GPU_API auto toShaderRead(VKRawImage *p_image) -> void;
+		TST_GPU_API auto toTransferSrc(VKRawImage *p_image) -> void;
+		TST_GPU_API auto toTransferDst(VKRawImage *p_image) -> void;
+		TST_GPU_API auto toGeneral(VKRawImage *p_image) -> void;
 	}
 }

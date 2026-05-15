@@ -10,6 +10,7 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_render/globals.hpp"
+#include "toast_render/render_context.hpp"
 
 namespace toaster
 {
@@ -84,7 +85,7 @@ namespace toaster
 				if (ig::MenuItem("Reset"))
 				{
 					SceneHierarchyPanel *caller{(SceneHierarchyPanel *) p_caller_id};
-					caller->m_device->getVulkanLogicalDevice().waitIdle();
+					caller->m_renderCtx->gpuWaitIdle();
 					comp.reset();
 				}
 
@@ -102,7 +103,7 @@ namespace toaster
 		ig::PopID();
 	}
 
-	SceneHierarchyPanel::SceneHierarchyPanel(gpu::VKLogicalDevice *p_device, const RefPtr<Scene> &p_scene) : m_device(p_device), m_scene(p_scene)
+	SceneHierarchyPanel::SceneHierarchyPanel(render::RenderContext *p_render_ctx, const RefPtr<Scene> &p_scene) : m_renderCtx(p_render_ctx), m_scene(p_scene)
 	{
 	}
 
@@ -344,7 +345,7 @@ namespace toaster
 					LOG_INFO("{}", path.string());
 
 					gpu::TextureSpecInfo texture_spec_info{};
-					p_comp.texture = m_device->alloc<gpu::VKTexture2D>(texture_spec_info, path);
+					p_comp.texture = m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, path);
 				}
 			}
 		}, this);
@@ -359,15 +360,15 @@ namespace toaster
 				{
 					LOG_INFO("{}", path.string());
 
-					auto geometry_shader{Globals::getShaderLibrary().get("Geometry")};
-					p_comp.mesh = m_device->alloc<gpu::VKMesh>(path, geometry_shader);
+					auto geometry_shader{m_renderCtx->getGlobals()->shaderLibrary().get("Geometry")};
+					p_comp.mesh = m_renderCtx->create<render::Mesh>(path, geometry_shader);
 				}
 			}
 
 			if (p_comp.mesh)
 			{
 				for (auto &mat: p_comp.mesh->getMaterialDatas())
-					_drawMaterial(p_frame_index, mat);
+					_drawMaterial(p_frame_index, mat.material);
 			}
 		}, this);
 
@@ -394,7 +395,7 @@ namespace toaster
 		}, this);
 	}
 
-	auto SceneHierarchyPanel::_drawMaterial(uint32 p_frame_index, const RefPtr<gpu::VKMaterial> &p_mat) -> void
+	auto SceneHierarchyPanel::_drawMaterial(uint32 p_frame_index, const render::MaterialHandle &p_mat) -> void
 	{
 		ig::PushID(p_mat->getName().c_str());
 		ig::Text("Material: %s", p_mat->getName().c_str());
@@ -411,7 +412,7 @@ namespace toaster
 			if (io::filesystem::exists(path))
 			{
 				LOG_INFO("{}", path.string());
-				p_mat->set("u_AlbedoTexture", m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
+				p_mat->set("u_AlbedoTexture", m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
 			}
 		}
 
@@ -421,7 +422,7 @@ namespace toaster
 			if (io::filesystem::exists(path))
 			{
 				LOG_INFO("{}", path.string());
-				p_mat->set("u_NormalTexture", m_device->alloc<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
+				p_mat->set("u_NormalTexture", m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
 				p_mat->set("u_Material.hasNormalMap", 1u);
 			}
 		}

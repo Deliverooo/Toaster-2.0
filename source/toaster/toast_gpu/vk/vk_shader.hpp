@@ -81,4 +81,6 @@ namespace toaster::gpu
 		// Set -> pool sizes
 		std::unordered_map<uint32, std::vector<vk::DescriptorPoolSize> > m_poolSizes;
 	};
+
+	TST_GPU_DEFINE_HANDLE(VKShader, Shader)
 }

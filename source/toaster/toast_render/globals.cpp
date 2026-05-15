@@ -13,7 +13,7 @@ namespace toaster::render
 			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/depth-pre.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			InitialiserList bytecode = {vs_bytecode, ps_bytecode};
-			const auto      depth_pre_shader{m_device->alloc<gpu::VKShader>(shader_stages, bytecode, "Depth-Pre")};
+			const auto      depth_pre_shader{make_reference<gpu::VKShader>(m_device, shader_stages, bytecode, "Depth-Pre")};
 			m_shaderLibrary.add("Depth-Pre", depth_pre_shader); // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
 		}
 		{
@@ -21,7 +21,7 @@ namespace toaster::render
 			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/geometry.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			std::initializer_list bytecode = {vs_bytecode, ps_bytecode};
-			const auto            geometry_shader{m_device->alloc<gpu::VKShader>(shader_stages, bytecode, "Geometry")};
+			const auto            geometry_shader{make_reference<gpu::VKShader>(m_device, shader_stages, bytecode, "Geometry")};
 			m_shaderLibrary.add("Geometry", geometry_shader); // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
 		}
 		{
@@ -29,7 +29,7 @@ namespace toaster::render
 			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/composite.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
-			const auto                                     composite_shader{m_device->alloc<gpu::VKShader>(shader_stages, bytecode, "Composite")};
+			const auto                                     composite_shader{make_reference<gpu::VKShader>(m_device, shader_stages, bytecode, "Composite")};
 			m_shaderLibrary.add("Composite", composite_shader);
 		}
 		{
@@ -37,7 +37,7 @@ namespace toaster::render
 			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/skybox.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
-			const auto                                     skybox_shader{m_device->alloc<gpu::VKShader>(shader_stages, bytecode, "Skybox")};
+			const auto                                     skybox_shader{make_reference<gpu::VKShader>(m_device, shader_stages, bytecode, "Skybox")};
 			m_shaderLibrary.add("Skybox", skybox_shader);
 		}
 		{
@@ -45,7 +45,7 @@ namespace toaster::render
 			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/quad.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
-			const auto                                     quad_shader{m_device->alloc<gpu::VKShader>(shader_stages, bytecode, "Quad")};
+			const auto                                     quad_shader{make_reference<gpu::VKShader>(m_device, shader_stages, bytecode, "Quad")};
 			m_shaderLibrary.add("Quad", quad_shader);
 		}
 
@@ -54,7 +54,7 @@ namespace toaster::render
 			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {cs_bytecode};
 			auto                                           stage    = {vk::ShaderStageFlagBits::eCompute};
-			const auto                                     compute_test_shader{m_device->alloc<gpu::VKShader>(stage, bytecode, "Compute-Test")};
+			const auto                                     compute_test_shader{make_reference<gpu::VKShader>(m_device, stage, bytecode, "Compute-Test")};
 			m_shaderLibrary.add("Compute-Test", compute_test_shader);
 		}
 
@@ -63,7 +63,7 @@ namespace toaster::render
 			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {cs_bytecode};
 			auto                                           stage    = {vk::ShaderStageFlagBits::eCompute};
-			const auto                                     compute_test_shader{m_device->alloc<gpu::VKShader>(stage, bytecode, "Equirectangular_To_CubeMap")};
+			const auto                                     compute_test_shader{make_reference<gpu::VKShader>(m_device, stage, bytecode, "Equirectangular_To_CubeMap")};
 			m_shaderLibrary.add("Equirectangular_To_CubeMap", compute_test_shader);
 		}
 
@@ -75,20 +75,20 @@ namespace toaster::render
 		m_quadIndices = {0, 1, 3, 1, 2, 3};
 
 		vk::DeviceSize vbo_size{m_quadVertices.size() * sizeof(QuadVertex)};
-		m_quadVertexBuffer = m_device->alloc<gpu::VKVertexBuffer>(m_quadVertices.data(), vbo_size);
+		m_quadVertexBuffer = make_reference<gpu::VKVertexBuffer>(m_device, m_quadVertices.data(), vbo_size);
 
 		vk::DeviceSize ibo_size{m_quadIndices.size() * sizeof(uint32)};
-		m_quadIndexBuffer = m_device->alloc<gpu::VKIndexBuffer>(m_quadIndices.data(), ibo_size);
+		m_quadIndexBuffer = make_reference<gpu::VKIndexBuffer>(m_device, m_quadIndices.data(), ibo_size);
 
 		gpu::TextureSpecInfo white_texture_spec_info{};
 		white_texture_spec_info.width  = 1;
 		white_texture_spec_info.height = 1;
 		white_texture_spec_info.format = vk::Format::eR8G8B8A8Unorm;
 		uint32 white_texture_data{0xFFFFFFFF};
-		m_whiteTexture = make_unique<gpu::VKTexture2D>(m_device, white_texture_spec_info, &white_texture_data, sizeof(uint32));
+		m_whiteTexture = make_reference<gpu::VKTexture2D>(m_device, white_texture_spec_info, &white_texture_data, sizeof(uint32));
 
 		uint32 texture_3d_data[6]{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
-		m_whiteTexture3D = make_unique<gpu::VKTexture3D>(m_device, white_texture_spec_info, Buffer{texture_3d_data, sizeof(uint32) * 6});
+		m_whiteTexture3D = make_reference<gpu::VKTexture3D>(m_device, white_texture_spec_info, Buffer{texture_3d_data, sizeof(uint32) * 6});
 	}
 
 	Globals::~Globals()
@@ -100,12 +100,12 @@ namespace toaster::render
 		return m_shaderLibrary;
 	}
 
-	auto Globals::fullscreenQuadVertexBuffer() const -> const RefPtr<gpu::VKVertexBuffer> &
+	auto Globals::fullscreenQuadVertexBuffer() const -> const gpu::VertexBufferHandle &
 	{
 		return m_quadVertexBuffer;
 	}
 
-	auto Globals::fullscreenQuadIndexBuffer() const -> const RefPtr<gpu::VKIndexBuffer> &
+	auto Globals::fullscreenQuadIndexBuffer() const -> const gpu::IndexBufferHandle &
 	{
 		return m_quadIndexBuffer;
 	}
@@ -120,13 +120,13 @@ namespace toaster::render
 		return m_quadIndices;
 	}
 
-	auto Globals::whiteTexture() const -> const gpu::VKTexture2D *
+	auto Globals::whiteTexture() const -> const gpu::Texture2DHandle &
 	{
-		return m_whiteTexture.get();
+		return m_whiteTexture;
 	}
 
-	auto Globals::whiteTexture3D() const -> const gpu::VKTexture3D *
+	auto Globals::whiteTexture3D() const -> const gpu::Texture3DHandle &
 	{
-		return m_whiteTexture3D.get();
+		return m_whiteTexture3D;
 	}
 }

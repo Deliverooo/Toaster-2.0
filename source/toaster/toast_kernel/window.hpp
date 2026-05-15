@@ -9,6 +9,7 @@
 #include <utility> // std::pair
 #include <vulkan/vulkan_raii.hpp>
 
+#include "toast_lib/ptr.hpp"
 #include "toast_lib/string.hpp"
 #include "toast_lib/system_types.h"
 #include "toast_lib/events/event.hpp"
@@ -23,9 +24,11 @@ namespace toaster
 	namespace gpu
 	{
 		class VKSwapchain;
-		class VKInstance;
-		class VKPhysicalDevice;
-		class VKLogicalDevice;
+	}
+
+	namespace render
+	{
+		class RenderContext;
 	}
 
 	struct TST_API WindowCreateInfo
@@ -62,7 +65,7 @@ namespace toaster
 
 		static auto getRequiredInstanceExtensions() -> std::unordered_set<String>;
 
-		Window(gpu::VKLogicalDevice *p_device, const WindowCreateInfo &p_create_info);
+		Window(render::RenderContext *p_render_ctx, const WindowCreateInfo &p_create_info);
 		~Window();
 
 		auto beginFrame() -> void;
@@ -95,7 +98,7 @@ namespace toaster
 		[[nodiscard]] auto getInputContext() const -> InputContext *;
 
 	private:
-		gpu::VKLogicalDevice *m_device{nullptr};
+		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
 
 		vk::SurfaceKHR m_windowSurface{nullptr};
 

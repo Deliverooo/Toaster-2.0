@@ -64,7 +64,7 @@ namespace toaster::gpu
 		TST_ASSERT_MSG(p_frames_in_flight > 0, "Frames in flight cannot be 0");
 
 		for (uint32 i{0u}; i < m_framesInFlightCount; ++i)
-			m_storageBuffers.emplace_back(p_device->alloc<VKStorageBuffer>(p_size));
+			m_storageBuffers.emplace_back(make_reference<VKStorageBuffer>(p_device,p_size));
 	}
 
 	auto VKStorageBufferPFF::getSSBO(uint32 p_frame_index) -> RefPtr<VKStorageBuffer>

@@ -30,6 +30,7 @@ namespace toaster::gpu
 		vk::raii::DeviceMemory   m_bufferMemory{nullptr};
 		vk::DescriptorBufferInfo m_descriptorInfo{};
 	};
+	TST_GPU_DEFINE_HANDLE(VKStorageBuffer, StorageBuffer)
 
 	// Storage buffer, but it's per frame in flight
 	// Ts is easier to use than allocating them manually, so it just makes things more manageable
@@ -54,4 +55,6 @@ namespace toaster::gpu
 		std::vector<RefPtr<VKStorageBuffer> > m_storageBuffers;
 		uint32                                m_framesInFlightCount{0u};
 	};
+	TST_GPU_DEFINE_HANDLE(VKStorageBufferPFF, StorageBufferPFF)
+
 }
