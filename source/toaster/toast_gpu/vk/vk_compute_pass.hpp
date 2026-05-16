@@ -14,13 +14,14 @@ namespace toaster::gpu
 		TST_GPU_OBJECT
 	public:
 		VKComputePass(VKLogicalDevice *p_device, const RefPtr<VKComputePipeline> &p_pipeline);
+		~VKComputePass();
 
 		auto setInput(const String &p_name, RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
 		auto setInput(const String &p_name, RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void;
 		auto setInput(const String &p_name, RefPtr<VKStorageBuffer> &p_storage_buffer) -> void;
 		auto setInput(const String &p_name, RefPtr<VKStorageBufferPFF> &p_storage_buffer_pff) -> void;
 		auto setInput(const String &p_name, RefPtr<VKTexture2D> &p_texture_2d) -> void;
-		auto setInput(const String &p_name, RefPtr<VKImage2D> &p_image_2d) -> void;
+		auto setInput(const String &p_name, RefPtr<VKStorageImage> &p_image_2d) -> void;
 		auto setInput(const String &p_name, RefPtr<VKTexture3D> &p_texture_3d) -> void;
 
 		// Only call when you have set all your required inputs :)
@@ -34,7 +35,7 @@ namespace toaster::gpu
 
 	private:
 		RefPtr<VKComputePipeline>         m_pipeline{nullptr};
-		UniquePtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};
+		OwningPtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};
 	};
 
 	TST_GPU_DEFINE_HANDLE(VKComputePass, ComputePass)

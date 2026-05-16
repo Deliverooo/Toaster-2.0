@@ -45,8 +45,11 @@ if (${WITH_VULKAN_BACKEND})
 			vk/vk_common.cpp
 			vk/vk_common.hpp
 
-			vk/vk_image.cpp
-			vk/vk_image.hpp
+			vk/vk_raw_image.cpp
+			vk/vk_raw_image.hpp
+
+			vk/vk_storage_image.cpp
+			vk/vk_storage_image.hpp
 
 			vk/vk_texture.cpp
 			vk/vk_texture.hpp
@@ -78,25 +81,6 @@ target_sources(toast_gpu PRIVATE ${GPU_SRC})
 
 target_link_libraries(toast_gpu PUBLIC tst::toast_lib)
 target_link_libraries(toast_gpu PUBLIC stb)
-target_link_libraries(toast_gpu PUBLIC assimp::assimp)
-
-if (${WITH_OPENGL_BACKEND})
-	target_link_libraries(toast_gpu PUBLIC opengl-hpp)
-	target_link_libraries(toast_gpu PRIVATE Vulkan::shaderc_combined)
-
-	target_include_directories(toast_gpu PUBLIC "$ENV{VULKAN_SDK}/Include")
-
-	target_link_libraries(toast_gpu PUBLIC
-			debug "$ENV{VULKAN_SDK}/Lib/spirv-cross-cored.lib"
-			optimized "$ENV{VULKAN_SDK}/Lib/spirv-cross-core.lib"
-
-			debug "$ENV{VULKAN_SDK}/Lib/spirv-cross-glsld.lib"
-			optimized "$ENV{VULKAN_SDK}/Lib/spirv-cross-glsl.lib"
-
-			debug "$ENV{VULKAN_SDK}/Lib/spirv-cross-reflectd.lib"
-			optimized "$ENV{VULKAN_SDK}/Lib/spirv-cross-reflect.lib"
-	)
-endif ()
 
 if (${WITH_VULKAN_BACKEND})
 	target_link_libraries(toast_gpu PUBLIC Vulkan::Vulkan)
@@ -117,8 +101,6 @@ if (${WITH_VULKAN_BACKEND})
 endif ()
 
 add_library(tst::toast_gpu ALIAS toast_gpu)
-
-add_dependencies(toast_gpu tst::toast_shaders)
 
 add_compile_definitions(toast_gpu PUBLIC TST_GPU_BUILD_DLL)
 add_compile_definitions(toast_gpu PRIVATE TST_GPU_DLL_EXPORT)

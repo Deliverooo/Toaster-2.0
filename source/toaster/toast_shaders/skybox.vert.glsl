@@ -11,6 +11,8 @@ layout(std140, set = 1, binding = 0) uniform Camera
     mat4 u_Proj;
 };
 
+
+
 void main()
 {
     gl_Position = vec4(a_Position.xy, 0.0f, 1.0f);

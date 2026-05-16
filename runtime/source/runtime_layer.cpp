@@ -7,15 +7,11 @@
 
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
-#include "glm/gtc/type_ptr.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
-#include "toast_lib/command_queue.hpp"
 #include "toast_lib/os/terminal.hpp"
 #include "toast_render/render_context.hpp"
 #include "toast_scene/components.hpp"
 #include "toast_scene/scene_serializer.hpp"
-
-#include "toast_lib/os/file_dialog.hpp"
 
 namespace toaster
 {
@@ -52,8 +48,8 @@ namespace toaster
 
 		io::filesystem::Path script_asm_path{app.getCommandLineArgs()->get("--scriptAsm")};
 
-		io::filesystem::Path core_script_assembly_dll{script_asm_path.parent_path() / "Toaster.dll"};
-		io::filesystem::Path app_script_assembly_dll{script_asm_path};
+		io::filesystem::Path        core_script_assembly_dll{script_asm_path.parent_path() / "Toaster.dll"};
+		const io::filesystem::Path &app_script_assembly_dll{script_asm_path};
 
 		LOG_INFO("{}", app_script_assembly_dll.string());
 
@@ -71,8 +67,8 @@ namespace toaster
 		auto                  fullscreen_shader{m_renderCtx->getGlobals()->shaderLibrary().get("Composite")};
 		gpu::PipelineSpecInfo fullscreen_pipeline_spec_info{};
 		fullscreen_pipeline_spec_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
-		fullscreen_pipeline_spec_info.depthFormat        = swapchain->getDepthFormat();
 		fullscreen_pipeline_spec_info.shader             = fullscreen_shader;
+		fullscreen_pipeline_spec_info.depthCompare       = vk::CompareOp::eAlways;
 		fullscreen_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack; // We don't want to cull our viewport
 		fullscreen_pipeline_spec_info.vertexBufferLayout = gpu::BufferLayout{
 			{gpu::EBufferDataType::eFloat3, "a_Position"},
@@ -89,7 +85,7 @@ namespace toaster
 		scene_renderer_spec_info.viewportHeight    = m_viewportHeight;
 		scene_renderer_spec_info.scene             = m_scene.get();
 		scene_renderer_spec_info.resourceDirectory = binary_dir / "../resources";
-		m_sceneRenderer                            = toaster::make_reference<SceneRenderer>(m_renderCtx, scene_renderer_spec_info);
+		m_sceneRenderer                            = make_reference<SceneRenderer>(m_renderCtx, scene_renderer_spec_info);
 
 		SceneSerializer scene_serializer{m_scene, binary_dir};
 		String          scene_path{command_line_args->get("--scene")};
@@ -97,6 +93,8 @@ namespace toaster
 			scene_serializer.deserialize(binary_dir / "../resources/scenes/Test.tscene");
 		else
 			scene_serializer.deserialize(scene_path);
+
+		m_testTex = m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, binary_dir / "../resources/textures/Peeber.png");
 	}
 
 	auto RuntimeLayer::onDestroy() -> void
@@ -116,7 +114,15 @@ namespace toaster
 		m_scene->onUpdate(p_dt);
 		m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer);
 
-		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getOutputColourTexture());
+		auto tex{m_sceneRenderer->getOutputColourTexture()};
+		// if (m_inputCtx->isKeyPressed(input::EKeyCode::eP))
+		// {
+		// tex->saveToFile(os::getBinaryDirectory() / "Orbo.png");
+		// }
+
+		gpu::util::transitionImageLayout(tex->getImage().get(), tex->getImage()->getCurrentImageLayout(), vk::ImageLayout::eShaderReadOnlyOptimal);
+
+		m_fullscreenMaterial->setTexture("u_Texture", tex);
 
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_viewportWidth, m_viewportHeight}};
@@ -124,13 +130,7 @@ namespace toaster
 		auto &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
 		colour_attachment_info.imageView   = swapchain->getCurrentImageView();
 		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		colour_attachment_info.clearValue  = vk::ClearColorValue{0.0f, 1.0f, 1.0f, 1.0f};
-
-		gpu::RenderingAttachmentInfo depth_attachment_info{};
-		depth_attachment_info.imageView   = swapchain->getDepthImageView();
-		depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-		depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{1.0f, 0u};
-		rendering_info.pDepthAttachment   = &depth_attachment_info;
+		colour_attachment_info.clearValue  = vk::ClearColorValue{1.0f, 1.0f, 1.0f, 1.0f};
 
 		m_renderCtx->beginRendering(command_buffer, rendering_info, frame_index, m_fullscreenRenderPass);
 		m_renderCtx->renderFullscreenQuad(command_buffer, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);

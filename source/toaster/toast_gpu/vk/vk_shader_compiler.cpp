@@ -4,7 +4,7 @@
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
 
-namespace toaster::gpu::shader_compiler
+namespace toaster::gpu
 {
 	constexpr auto getShaderCShaderKind(vk::ShaderStageFlagBits p_stage) -> shaderc_shader_kind
 	{
@@ -31,7 +31,11 @@ namespace toaster::gpu::shader_compiler
 		return shaderc_vertex_shader;
 	}
 
-	auto compileToBytecodeFromString(vk::ShaderStageFlagBits p_stage, const String &p_source) -> VKShader::Bytecode
+	ShaderCompiler::ShaderCompiler(VKLogicalDevice *p_device) : m_device(p_device)
+	{
+	}
+
+	auto ShaderCompiler::compileToBytecodeFromString(vk::ShaderStageFlagBits p_stage, const String &p_source) const -> VKShader::Bytecode
 	{
 		const shaderc::Compiler compiler{};
 		shaderc::CompileOptions compile_options{};
@@ -58,7 +62,7 @@ namespace toaster::gpu::shader_compiler
 		return {compilation_result.begin(), compilation_result.end()};
 	}
 
-	auto compileToBytecodeFromFilepath(vk::ShaderStageFlagBits p_stage, const io::filesystem::Path &p_path) -> VKShader::Bytecode
+	auto ShaderCompiler::compileToBytecodeFromFilepath(vk::ShaderStageFlagBits p_stage, const io::filesystem::Path &p_path) const -> VKShader::Bytecode
 	{
 		String source{io::filesystem::readFile(p_path)};
 
@@ -89,8 +93,8 @@ namespace toaster::gpu::shader_compiler
 		return {compilation_result.begin(), compilation_result.end()};
 	}
 
-	auto compileToShaderFromStrings(VKLogicalDevice *p_device, InitialiserList<const vk::ShaderStageFlagBits> &p_stages, const InitialiserList<const String> &p_sources,
-									const String &   p_name) -> RefPtr<VKShader>
+	auto ShaderCompiler::compileToShaderFromStrings(InitialiserList<const vk::ShaderStageFlagBits> &p_stages, const InitialiserList<const String> &p_sources,
+													const String &                                  p_name) const -> ShaderHandle
 	{
 		VKShader::BytecodeMap bytecode_map;
 
@@ -107,11 +111,11 @@ namespace toaster::gpu::shader_compiler
 			++kit;
 			++vit;
 		}
-		return make_reference<VKShader>(p_device, bytecode_map, p_name);
+		return make_reference<VKShader>(m_device, bytecode_map, p_name);
 	}
 
-	auto compileToShaderFromPaths(VKLogicalDevice *                                  p_device, const InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
-								  const InitialiserList<const io::filesystem::Path> &p_paths, const String &p_name) -> RefPtr<VKShader>
+	auto ShaderCompiler::compileToShaderFromPaths(const InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
+												  const InitialiserList<const io::filesystem::Path> &   p_paths, const String &p_name) const -> ShaderHandle
 	{
 		VKShader::BytecodeMap bytecode_map;
 
@@ -128,6 +132,6 @@ namespace toaster::gpu::shader_compiler
 			++kit;
 			++vit;
 		}
-		return make_reference<VKShader>(p_device, bytecode_map, p_name);
+		return make_reference<VKShader>(m_device, bytecode_map, p_name);
 	}
 }

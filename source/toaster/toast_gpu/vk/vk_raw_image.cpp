@@ -1,6 +1,7 @@
-#include "vk_image.hpp"
+#include "vk_raw_image.hpp"
 
 #include "vk_logical_device.hpp"
+#include "stb/stb_image_write.h"
 
 namespace toaster::gpu
 {
@@ -49,6 +50,27 @@ namespace toaster::gpu
 	auto VKRawImage::getCurrentImageLayout() const -> vk::ImageLayout
 	{
 		return m_currentImageLayout;
+	}
+
+	auto VKRawImage::saveToFile(const io::filesystem::Path &p_path) -> void
+	{
+		vk::raii::Buffer       staging_buffer{nullptr};
+		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
+
+		const uint64 buffer_size{util::getBytesPerPixel(m_specInfo.format) * m_specInfo.width * m_specInfo.height};
+		m_device->createBuffer(buffer_size, vk::BufferUsageFlagBits::eTransferDst, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
+							   staging_buffer, staging_buffer_memory);
+
+		vk::ImageLayout previous_layout{m_currentImageLayout};
+		util::transitionImageLayout(this, m_currentImageLayout, vk::ImageLayout::eTransferSrcOptimal);
+		m_device->copyImageToBuffer(m_image, staging_buffer, {m_specInfo.width, m_specInfo.height, 1u}, m_specInfo.layerCount);
+		util::transitionImageLayout(this, vk::ImageLayout::eTransferSrcOptimal, previous_layout);
+
+		void *image_data{staging_buffer_memory.mapMemory(0u, buffer_size)};
+		int32 success{stbi_write_bmp(p_path.string().c_str(), m_specInfo.width, m_specInfo.height, 4, image_data)};
+		staging_buffer_memory.unmapMemory();
+
+		TST_PERMA_ASSERT_MSG(success, "No");
 	}
 
 	auto VKRawImage::setData(void *p_data, uint64 p_size) -> void
@@ -120,74 +142,14 @@ namespace toaster::gpu
 		m_imageView = m_device->createImageView(m_image, m_specInfo.format, aspect_flags, m_specInfo.layerCount, m_specInfo.mipCount);
 	}
 
-	VKImage2D::VKImage2D(VKLogicalDevice *p_device, const ImageSpecInfo &p_spec_info) : m_device(p_device)
-	{
-		m_image = make_reference<VKRawImage>(m_device, p_spec_info);
-		util::undefinedToGeneral(m_image.get());
-		createSampler(vk::ImageLayout::eGeneral);
-	}
-
-	VKImage2D::~VKImage2D()
-	{
-		m_device->deferDestruction([device = m_device, sampler = m_sampler]() mutable-> void
-		{
-			device->destroyObject(sampler);
-		});
-	}
-
-	auto VKImage2D::resize(uint32 p_width, uint32 p_height) -> void
-	{
-		m_image->resize(p_width, p_height);
-		util::undefinedToGeneral(m_image.get());
-		createSampler(vk::ImageLayout::eGeneral);
-	}
-
-	auto VKImage2D::setData(void *p_data, uint64 p_size) -> void
-	{
-		m_imageData.release();
-		m_imageData.allocate(p_size);
-		m_imageData = Buffer::copy(p_data, p_size);
-		m_image->setData(p_data, p_size);
-	}
-
-	auto VKImage2D::setData(const Buffer &p_buffer) -> void
-	{
-		setData(p_buffer.data(), p_buffer.size());
-	}
-
-	auto VKImage2D::createSampler(vk::ImageLayout p_override_layout) -> void
-	{
-		if (m_image->getCurrentImageLayout() == vk::ImageLayout::eTransferDstOptimal)
-			util::transferDstToShaderRead(m_image.get());
-
-		m_device->destroyObject<vk::Sampler>(m_sampler);
-		m_sampler             = nullptr;
-		m_descriptorImageInfo = vk::DescriptorImageInfo{};
-
-		m_sampler = m_device->createSampler();
-
-		m_descriptorImageInfo.imageLayout = (p_override_layout == vk::ImageLayout::eUndefined) ? m_image->getCurrentImageLayout() : p_override_layout;
-		m_descriptorImageInfo.imageView   = m_image->getImageView();
-		m_descriptorImageInfo.sampler     = m_sampler;
-	}
-
-	auto VKImage2D::getImage() const -> const RefPtr<VKRawImage> &
-	{
-		return m_image;
-	}
-
-	auto VKImage2D::getDescriptorInfo() const -> const vk::DescriptorImageInfo &
-	{
-		return m_descriptorImageInfo;
-	}
-
 	namespace util
 	{
-		auto transitionImageLayout(VKRawImage *p_image, vk::ImageLayout p_src_layout, vk::ImageLayout p_dst_layout) -> void
+		auto transitionImageLayout(VKRawImage *p_image, vk::ImageLayout p_src_layout, vk::ImageLayout p_dst_layout, vk::CommandBuffer p_override_command_buffer) -> void
 		{
+			TST_PERMA_ASSERT_MSG(p_image->getCurrentImageLayout() == p_src_layout, "Image is not in specified source layout!");
 			p_image->getDevice()->transitionImageLayout(p_image->getImage(), getImageLayoutInfo(p_src_layout), getImageLayoutInfo(p_dst_layout),
 														p_image->getSpecInfo().layerCount, p_image->getSpecInfo().mipCount,
-														getImageAspectMask(p_image->getSpecInfo().format));
+														getImageAspectMask(p_image->getSpecInfo().format), p_override_command_buffer);
 			p_image->setCurrentImageLayout(p_dst_layout);
 		}
 

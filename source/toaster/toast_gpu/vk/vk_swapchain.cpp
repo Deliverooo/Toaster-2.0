@@ -277,7 +277,7 @@ namespace toaster::gpu
 		swapchain_create_info.imageColorSpace  = m_swapchainSurfaceFormat.colorSpace;
 		swapchain_create_info.imageExtent      = m_swapchainExtent;
 		swapchain_create_info.imageArrayLayers = 1;
-		swapchain_create_info.imageUsage       = vk::ImageUsageFlagBits::eColorAttachment;
+		swapchain_create_info.imageUsage       = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst;
 		swapchain_create_info.imageSharingMode = vk::SharingMode::eExclusive;
 		swapchain_create_info.preTransform     = surface_caps.currentTransform;
 		swapchain_create_info.compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque;

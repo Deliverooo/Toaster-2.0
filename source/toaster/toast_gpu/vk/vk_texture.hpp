@@ -1,10 +1,7 @@
 #pragma once
 
-#include "vk_image.hpp"
+#include "vk_raw_image.hpp"
 #include "toast_gpu/resource.hpp"
-#include "toast_lib/buffer.hpp"
-#include "toast_lib/ptr.hpp"
-#include "toast_lib/io/filesystem.hpp"
 
 namespace toaster::gpu
 {
@@ -38,6 +35,8 @@ namespace toaster::gpu
 		auto setData(void *p_data, uint64 p_size) -> void;
 		auto setData(const Buffer &p_buffer) -> void;
 
+		auto saveToFile(const io::filesystem::Path &p_path) -> void;
+
 		// If you want to work with textures and don't want to immediately set the data you might want to deffer the sampler creation
 		auto createSampler(vk::ImageLayout p_override_layout = vk::ImageLayout::eUndefined) -> void; // Also creates the descriptor info
 
@@ -56,7 +55,7 @@ namespace toaster::gpu
 		uint32 m_mipLevels{1u};
 
 		RefPtr<VKRawImage> m_image{nullptr};
-		vk::Sampler     m_sampler{nullptr};
+		vk::Sampler        m_sampler{nullptr};
 
 		Buffer m_textureData;
 
@@ -96,16 +95,11 @@ namespace toaster::gpu
 
 		Buffer m_textureData;
 
-		RefPtr<VKRawImage> m_image{nullptr};
-		vk::Sampler  m_sampler{nullptr};
+		RawImageHandle m_image{nullptr};
+		vk::Sampler    m_sampler{nullptr};
 
 		vk::DescriptorImageInfo m_descriptorImageInfo{nullptr};
 	};
 
 	TST_GPU_DEFINE_HANDLE(VKTexture3D, Texture3D);
-
-	namespace util
-	{
-		TST_GPU_API auto loadTextureImage(const io::filesystem::Path &p_path, vk::Format &p_out_format, uint32 &p_out_width, uint32 &p_out_height) -> Buffer;
-	}
 }

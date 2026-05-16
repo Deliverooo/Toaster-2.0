@@ -140,7 +140,10 @@ namespace toaster::render
 
 				// Perform the layout transition on sampled attachment images
 				if ((image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
-					gpu::util::shaderReadToColourAttachment(image);
+				{
+					gpu::util::transitionImageLayout(image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+													 p_command_buffer.getVulkanCommandBuffer());
+				}
 
 				info.imageLayout = image->getCurrentImageLayout();
 			}
@@ -158,7 +161,10 @@ namespace toaster::render
 				// Perform the layout transition on sampled attachment images
 				if ((resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
 						resolve_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
-					gpu::util::shaderReadToColourAttachment(resolve_image);
+				{
+					gpu::util::transitionImageLayout(resolve_image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+													 p_command_buffer.getVulkanCommandBuffer());
+				}
 
 				info.resolveImageLayout = resolve_image->getCurrentImageLayout();
 			}
@@ -187,7 +193,9 @@ namespace toaster::render
 				if ((depth_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
 						depth_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
-					gpu::util::shaderReadToDepthAttachment(depth_image, p_rendering_info.depthReadOnly);
+					gpu::util::transitionImageLayout(depth_image, vk::ImageLayout::eShaderReadOnlyOptimal,
+													 p_rendering_info.depthReadOnly ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal,
+													 p_command_buffer.getVulkanCommandBuffer());
 				}
 
 				depth_attachment_info.imageLayout = depth_image->getCurrentImageLayout();
@@ -206,7 +214,8 @@ namespace toaster::render
 				if ((depth_resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
 						depth_resolve_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
-					gpu::util::shaderReadToDepthAttachment(depth_resolve_image, false);
+					gpu::util::transitionImageLayout(depth_resolve_image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eDepthAttachmentOptimal,
+													 p_command_buffer.getVulkanCommandBuffer());
 				}
 
 				depth_attachment_info.resolveImageLayout = depth_resolve_image->getCurrentImageLayout();
@@ -301,12 +310,14 @@ namespace toaster::render
 			auto image{rendering_attachment.image};
 			if ((image != nullptr) && (image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				gpu::util::colourAttachmentToShaderRead(image);
+				gpu::util::transitionImageLayout(image, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+												 p_command_buffer.getVulkanCommandBuffer());
 			}
 			auto resolve_image{rendering_attachment.resolveImage};
 			if ((resolve_image != nullptr) && (resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				gpu::util::colourAttachmentToShaderRead(resolve_image);
+				gpu::util::transitionImageLayout(resolve_image, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+												 p_command_buffer.getVulkanCommandBuffer());
 			}
 		}
 
@@ -316,12 +327,15 @@ namespace toaster::render
 
 			if ((depth_image != nullptr) && (depth_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				gpu::util::depthAttachmentToShaderRead(depth_image, p_rendering_info.depthReadOnly);
+				gpu::util::transitionImageLayout(depth_image,
+												 p_rendering_info.depthReadOnly ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal,
+												 vk::ImageLayout::eShaderReadOnlyOptimal, p_command_buffer.getVulkanCommandBuffer());
 			}
 			auto depth_resolve_image{p_rendering_info.pDepthAttachment->resolveImage};
 			if ((depth_resolve_image != nullptr) && (depth_resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
-				gpu::util::depthAttachmentToShaderRead(depth_resolve_image, false);
+				gpu::util::transitionImageLayout(depth_resolve_image, vk::ImageLayout::eDepthAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+												 p_command_buffer.getVulkanCommandBuffer());
 			}
 		}
 	}

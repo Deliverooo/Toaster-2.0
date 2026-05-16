@@ -3,6 +3,7 @@
 #include <stb/stb_image.h>
 
 #include "vk_logical_device.hpp"
+#include "stb/stb_image_write.h"
 
 namespace toaster::gpu
 {
@@ -13,8 +14,8 @@ namespace toaster::gpu
 		vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eSampled};
 		usage_flags |= util::getImageUsageFlags(m_specInfo.format, m_specInfo.sampleCount);
 
-		if (m_specInfo.usage == ETextureUsage::eShaderSampled)
-			usage_flags |= vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+		// if (m_specInfo.usage == ETextureUsage::eShaderSampled)
+		usage_flags |= vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
 		ImageSpecInfo image_create_info{};
 		image_create_info.width       = m_specInfo.width;
@@ -105,20 +106,26 @@ namespace toaster::gpu
 		setData(p_buffer.data(), p_buffer.size());
 	}
 
+	auto VKTexture2D::saveToFile(const io::filesystem::Path &p_path) -> void
+	{
+		m_image->saveToFile(p_path);
+	}
+
 	auto VKTexture2D::createSampler(vk::ImageLayout p_override_layout) -> void
 	{
 		if (m_image->getCurrentImageLayout() == vk::ImageLayout::eTransferDstOptimal)
 			util::transferDstToShaderRead(m_image.get());
 
-		m_device->destroyObject(m_sampler);
-		m_sampler             = nullptr;
-		m_descriptorImageInfo = vk::DescriptorImageInfo{};
-
+	// Do not destroy an existing sampler: descriptor sets may still reference it. Only create on first use.
+	if (!m_sampler)
+	{
 		m_sampler = m_device->createSampler();
+	}
 
-		m_descriptorImageInfo.imageLayout = (p_override_layout == vk::ImageLayout::eUndefined) ? m_image->getCurrentImageLayout() : p_override_layout;
-		m_descriptorImageInfo.imageView   = m_image->getImageView();
-		m_descriptorImageInfo.sampler     = m_sampler;
+	// Update descriptor info (image view/layout may change on resize)
+	m_descriptorImageInfo.imageLayout = (p_override_layout == vk::ImageLayout::eUndefined) ? m_image->getCurrentImageLayout() : p_override_layout;
+	m_descriptorImageInfo.imageView   = m_image->getImageView();
+	m_descriptorImageInfo.sampler     = m_sampler;
 	}
 
 	auto VKTexture2D::getSpecInfo() const -> const TextureSpecInfo &
@@ -259,15 +266,16 @@ namespace toaster::gpu
 		if (m_image->getCurrentImageLayout() == vk::ImageLayout::eTransferDstOptimal)
 			util::transferDstToShaderRead(m_image.get());
 
-		m_device->destroyObject<vk::Sampler>(m_sampler);
-		m_sampler             = nullptr;
-		m_descriptorImageInfo = vk::DescriptorImageInfo{};
-
+	// Do not destroy an existing sampler: descriptor sets may still reference it. Only create on first use.
+	if (!m_sampler)
+	{
 		m_sampler = m_device->createSampler();
+	}
 
-		m_descriptorImageInfo.imageLayout = (p_override_layout == vk::ImageLayout::eUndefined) ? m_image->getCurrentImageLayout() : p_override_layout;
-		m_descriptorImageInfo.imageView   = m_image->getImageView();
-		m_descriptorImageInfo.sampler     = m_sampler;
+	// Update descriptor info (image view/layout may change on resize)
+	m_descriptorImageInfo.imageLayout = (p_override_layout == vk::ImageLayout::eUndefined) ? m_image->getCurrentImageLayout() : p_override_layout;
+	m_descriptorImageInfo.imageView   = m_image->getImageView();
+	m_descriptorImageInfo.sampler     = m_sampler;
 	}
 
 	auto VKTexture3D::getPath() const -> const io::filesystem::Path &

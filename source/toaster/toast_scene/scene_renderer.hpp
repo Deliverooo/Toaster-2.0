@@ -32,11 +32,7 @@ namespace toaster
 		auto getOutputColourTexture() const -> const gpu::Texture2DHandle &;
 		auto getOutputDepthTexture() const -> const gpu::Texture2DHandle &;
 
-		auto getOutputComputeImage() const -> const RefPtr<gpu::VKImage2D> &;
-
-		auto getGeometryPositionsTexture() const -> const gpu::Texture2DHandle &;
-		auto getGeometryNormalsTexture() const -> const gpu::Texture2DHandle &;
-
+		auto getOutputComputeImage() const -> const RefPtr<gpu::VKStorageImage> &;
 		auto getRenderer2D() -> RefPtr<render::Renderer2D>;
 
 		auto onResize(uint32 p_width, uint32 p_height) -> void;
@@ -66,7 +62,7 @@ namespace toaster
 		gpu::ComputePassHandle     m_lightCullingPass{nullptr};
 		render::MaterialHandle     m_lightCullingMaterial{nullptr};
 
-		gpu::Image2DHandle m_computeImage{nullptr};
+		gpu::StorageImageHandle m_computeImage{nullptr};
 
 		#pragma endregion
 
@@ -81,9 +77,6 @@ namespace toaster
 		#pragma region geometry
 		gpu::PipelineHandle   m_geometryPipeline{nullptr};
 		gpu::RenderPassHandle m_geometryPass{nullptr};
-
-		gpu::Texture2DHandle m_geometryPositionsAttachmentTexture{nullptr};
-		gpu::Texture2DHandle m_geometryNormalsAttachmentTexture{nullptr};
 		#pragma endregion
 
 		gpu::Texture2DHandle m_outputColourTexture{nullptr};

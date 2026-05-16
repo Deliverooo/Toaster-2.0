@@ -5,13 +5,21 @@
 
 #include "toast_lib/io/filesystem.hpp"
 
-namespace toaster::gpu::shader_compiler
+namespace toaster::gpu
 {
-	TST_GPU_API auto compileToBytecodeFromString(vk::ShaderStageFlagBits p_stage, const String &p_source) -> VKShader::Bytecode;
-	TST_GPU_API auto compileToBytecodeFromFilepath(vk::ShaderStageFlagBits p_stage, const io::filesystem::Path &p_path) -> VKShader::Bytecode;
+	class TST_GPU_API ShaderCompiler
+	{
+		TST_GPU_OBJECT
+	public:
+		ShaderCompiler(VKLogicalDevice *p_device);
 
-	TST_GPU_API auto compileToShaderFromStrings(VKLogicalDevice *p_device, InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
-												const InitialiserList<const String> &p_sources, const String &p_name = "Compiled shader") -> RefPtr<VKShader>;
-	TST_GPU_API auto compileToShaderFromPaths(VKLogicalDevice *                                  p_device, const InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
-											  const InitialiserList<const io::filesystem::Path> &p_paths, const String &p_name = "Compiled shader") -> RefPtr<VKShader>;
+		[[nodiscard]] auto compileToBytecodeFromString(vk::ShaderStageFlagBits p_stage, const String &p_source) const -> VKShader::Bytecode;
+		[[nodiscard]] auto compileToBytecodeFromFilepath(vk::ShaderStageFlagBits p_stage, const io::filesystem::Path &p_path) const -> VKShader::Bytecode;
+
+		[[nodiscard]] auto compileToShaderFromStrings(InitialiserList<const vk::ShaderStageFlagBits> &p_stages, const InitialiserList<const String> &p_sources,
+													  const String &                                  p_name = "Compiled shader") const -> ShaderHandle;
+		[[nodiscard]] auto compileToShaderFromPaths(const InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
+													const InitialiserList<const io::filesystem::Path> &   p_paths,
+													const String &                                        p_name = "Compiled shader") const -> ShaderHandle;
+	};
 }

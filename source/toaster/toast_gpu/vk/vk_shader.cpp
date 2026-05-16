@@ -87,11 +87,6 @@ namespace toaster::gpu
 		return *this;
 	}
 
-	auto VKShader::getDevice() const -> NonOwningPtr<VKLogicalDevice>
-	{
-		return m_device;
-	}
-
 	auto VKShader::getPipelineShaderStageCreateInfoMap() const -> const PipelineCreateInfoMap &
 	{
 		return m_shaderCreateInfos;

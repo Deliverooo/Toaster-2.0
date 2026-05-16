@@ -22,6 +22,8 @@ target_link_libraries(Toaster PUBLIC argparse)
 
 target_link_libraries(Toaster PUBLIC dwmapi) # For window colour
 
+add_dependencies(Toaster toast_shaders)
+
 set_target_properties(Toaster PROPERTIES COMPILE_WARNING_AS_ERROR ON)
 
 set(DOTNET_VERSION "10.0.7")

@@ -577,35 +577,59 @@ namespace toaster::gpu
 		cmd.waitForFence();
 	}
 
-	auto VKLogicalDevice::transitionImageLayout(vk::raii::Image &p_image, const ImageLayoutInfo &p_src_layout_info, const ImageLayoutInfo &p_dst_layout_info,
-												uint32           p_layer_count, uint32           p_mip_levels, vk::ImageAspectFlags        p_aspect_flags) -> void
+	auto VKLogicalDevice::copyImageToBuffer(vk::raii::Image &p_src_image, vk::raii::Buffer &p_dst_buffer, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void
 	{
-		vk::ImageMemoryBarrier2 image_memory_barrier{};
-		image_memory_barrier.oldLayout           = p_src_layout_info.layout;
-		image_memory_barrier.newLayout           = p_dst_layout_info.layout;
-		image_memory_barrier.srcAccessMask       = p_src_layout_info.accessMask;
-		image_memory_barrier.dstAccessMask       = p_dst_layout_info.accessMask;
-		image_memory_barrier.srcStageMask        = p_src_layout_info.stageMask;
-		image_memory_barrier.dstStageMask        = p_dst_layout_info.stageMask;
-		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
-		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
-		image_memory_barrier.image               = p_image;
-		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, p_layer_count};
+		vk::BufferImageCopy2 image_copy{};
+		image_copy.bufferOffset      = 0;
+		image_copy.bufferRowLength   = 0;
+		image_copy.bufferImageHeight = 0;
+		image_copy.imageOffset       = vk::Offset3D{0, 0, 0};
+		image_copy.imageExtent       = p_image_extent;
+		image_copy.imageSubresource  = {vk::ImageAspectFlagBits::eColor, 0, 0, p_layer_count};
 
-		vk::DependencyInfo dependency_info{};
-		dependency_info.imageMemoryBarrierCount = 1;
-		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
+		vk::CopyImageToBufferInfo2 image_buffer_copy{};
+		image_buffer_copy.srcImage       = p_src_image;
+		image_buffer_copy.srcImageLayout = vk::ImageLayout::eTransferSrcOptimal;
+		image_buffer_copy.dstBuffer      = p_dst_buffer;
+		image_buffer_copy.regionCount    = 1;
+		image_buffer_copy.pRegions       = &image_copy;
 
-		VKCommandBuffer cmd{this, vk::QueueFlagBits::eGraphics};
+		VKCommandBuffer cmd{this, vk::QueueFlagBits::eTransfer};
 		cmd.begin();
-		cmd.getVulkanCommandBuffer().pipelineBarrier2(dependency_info);
+		cmd.getVulkanCommandBuffer().copyImageToBuffer2(image_buffer_copy);
 		cmd.end();
 		cmd.submit();
 		cmd.waitForFence();
 	}
 
-	auto VKLogicalDevice::transitionImageLayout(vk::Image &p_image, const ImageLayoutInfo &p_src_layout_info, const ImageLayoutInfo &p_dst_layout_info,
-												uint32     p_layer_count, uint32           p_mip_levels, vk::ImageAspectFlags        p_aspect_flags) -> void
+	auto VKLogicalDevice::copyImageToBuffer(const vk::Image &p_src_image, const vk::Buffer &p_dst_buffer, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void
+	{
+		vk::BufferImageCopy2 image_copy{};
+		image_copy.bufferOffset      = 0;
+		image_copy.bufferRowLength   = 0;
+		image_copy.bufferImageHeight = 0;
+		image_copy.imageOffset       = vk::Offset3D{0, 0, 0};
+		image_copy.imageExtent       = p_image_extent;
+		image_copy.imageSubresource  = {vk::ImageAspectFlagBits::eColor, 0, 0, p_layer_count};
+
+		vk::CopyImageToBufferInfo2 image_buffer_copy{};
+		image_buffer_copy.srcImage       = p_src_image;
+		image_buffer_copy.srcImageLayout = vk::ImageLayout::eTransferSrcOptimal;
+		image_buffer_copy.dstBuffer      = p_dst_buffer;
+		image_buffer_copy.regionCount    = 1;
+		image_buffer_copy.pRegions       = &image_copy;
+
+		VKCommandBuffer cmd{this, vk::QueueFlagBits::eTransfer};
+		cmd.begin();
+		cmd.getVulkanCommandBuffer().copyImageToBuffer2(image_buffer_copy);
+		cmd.end();
+		cmd.submit();
+		cmd.waitForFence();
+	}
+
+	auto VKLogicalDevice::transitionImageLayout(vk::raii::Image & p_image, const ImageLayoutInfo &p_src_layout_info, const ImageLayoutInfo &p_dst_layout_info,
+												uint32            p_layer_count, uint32           p_mip_levels, vk::ImageAspectFlags        p_aspect_flags,
+												vk::CommandBuffer p_override_command_buffer) -> void
 	{
 		vk::ImageMemoryBarrier2 image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_src_layout_info.layout;
@@ -623,12 +647,54 @@ namespace toaster::gpu
 		dependency_info.imageMemoryBarrierCount = 1;
 		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
 
-		VKCommandBuffer cmd{this, vk::QueueFlagBits::eGraphics};
-		cmd.begin();
-		cmd.getVulkanCommandBuffer().pipelineBarrier2(dependency_info);
-		cmd.end();
-		cmd.submit();
-		cmd.waitForFence();
+		if (!p_override_command_buffer)
+		{
+			VKCommandBuffer cmd{this, vk::QueueFlagBits::eGraphics};
+			cmd.begin();
+			cmd.getVulkanCommandBuffer().pipelineBarrier2(dependency_info);
+			cmd.end();
+			cmd.submit();
+			cmd.waitForFence();
+		}
+		else
+		{
+			p_override_command_buffer.pipelineBarrier2(dependency_info);
+		}
+	}
+
+	auto VKLogicalDevice::transitionImageLayout(vk::Image &       p_image, const ImageLayoutInfo &p_src_layout_info, const ImageLayoutInfo &p_dst_layout_info,
+												uint32            p_layer_count, uint32           p_mip_levels, vk::ImageAspectFlags        p_aspect_flags,
+												vk::CommandBuffer p_override_command_buffer) -> void
+	{
+		vk::ImageMemoryBarrier2 image_memory_barrier{};
+		image_memory_barrier.oldLayout           = p_src_layout_info.layout;
+		image_memory_barrier.newLayout           = p_dst_layout_info.layout;
+		image_memory_barrier.srcAccessMask       = p_src_layout_info.accessMask;
+		image_memory_barrier.dstAccessMask       = p_dst_layout_info.accessMask;
+		image_memory_barrier.srcStageMask        = p_src_layout_info.stageMask;
+		image_memory_barrier.dstStageMask        = p_dst_layout_info.stageMask;
+		image_memory_barrier.srcQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.dstQueueFamilyIndex = vk::QueueFamilyIgnored;
+		image_memory_barrier.image               = p_image;
+		image_memory_barrier.subresourceRange    = {p_aspect_flags, 0, p_mip_levels, 0, p_layer_count};
+
+		vk::DependencyInfo dependency_info{};
+		dependency_info.imageMemoryBarrierCount = 1;
+		dependency_info.pImageMemoryBarriers    = &image_memory_barrier;
+
+		if (!p_override_command_buffer)
+		{
+			VKCommandBuffer cmd{this, vk::QueueFlagBits::eGraphics};
+			cmd.begin();
+			cmd.getVulkanCommandBuffer().pipelineBarrier2(dependency_info);
+			cmd.end();
+			cmd.submit();
+			cmd.waitForFence();
+		}
+		else
+		{
+			p_override_command_buffer.pipelineBarrier2(dependency_info);
+		}
 	}
 
 	auto VKLogicalDevice::transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,

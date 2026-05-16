@@ -5,7 +5,15 @@ namespace toaster::gpu
 {
 	VKComputePass::VKComputePass(VKLogicalDevice *p_device, const RefPtr<VKComputePipeline> &p_pipeline) : m_device(p_device), m_pipeline(p_pipeline)
 	{
-		m_descriptorSetManager = make_unique<VKDescriptorSetManager>(m_device, m_pipeline->getShader(), 1, 3);
+		m_descriptorSetManager = new VKDescriptorSetManager{m_device, m_pipeline->getShader(), 1, 3};
+	}
+
+	VKComputePass::~VKComputePass()
+	{
+		m_device->deferDestruction([dsm = m_descriptorSetManager]()mutable -> void
+		{
+			delete dsm;
+		});
 	}
 
 	auto VKComputePass::setInput(const String &p_name, RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void
@@ -33,7 +41,7 @@ namespace toaster::gpu
 		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);
 	}
 
-	auto VKComputePass::setInput(const String &p_name, RefPtr<VKImage2D> &p_image_2d) -> void
+	auto VKComputePass::setInput(const String &p_name, RefPtr<VKStorageImage> &p_image_2d) -> void
 	{
 		m_descriptorSetManager->setDescriptor(p_name, p_image_2d);
 	}

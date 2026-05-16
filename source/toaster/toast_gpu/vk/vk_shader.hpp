@@ -12,6 +12,7 @@ namespace toaster::gpu
 {
 	class TST_GPU_API VKShader
 	{
+		TST_GPU_OBJECT
 	public:
 		struct ReflectionData
 		{
@@ -38,8 +39,6 @@ namespace toaster::gpu
 		VKShader(VKShader &&p_other)      = delete;
 		auto operator=(VKShader &&p_other) noexcept -> VKShader &;
 
-		[[nodiscard]] auto getDevice() const -> NonOwningPtr<VKLogicalDevice>;
-
 		[[nodiscard]] auto getPipelineShaderStageCreateInfoMap() const -> const PipelineCreateInfoMap &;
 		[[nodiscard]] auto getPipelineShaderStageCreateInfos() const -> std::vector<vk::PipelineShaderStageCreateInfo>;
 		[[nodiscard]] auto getPipelineShaderStageCreateInfo(vk::ShaderStageFlagBits p_stage) const -> const vk::PipelineShaderStageCreateInfo &;
@@ -61,8 +60,6 @@ namespace toaster::gpu
 	private:
 		auto _reflect(vk::ShaderStageFlagBits p_stage, Bytecode p_bytecode) -> void;
 		auto _createDescriptors() -> void;
-
-		NonOwningPtr<VKLogicalDevice> m_device{nullptr};
 
 		String m_name;
 

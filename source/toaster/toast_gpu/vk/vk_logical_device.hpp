@@ -123,10 +123,13 @@ namespace toaster::gpu
 		auto copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void;
 		auto copyBufferToImage(const vk::Buffer &p_src_buffer, const vk::Image &p_dst_image, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void;
 
+		auto copyImageToBuffer(vk::raii::Image &p_src_image, vk::raii::Buffer &p_dst_buffer, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void;
+		auto copyImageToBuffer(const vk::Image &p_src_image, const vk::Buffer &p_dst_buffer, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void;
+
 		auto transitionImageLayout(vk::raii::Image &p_image, const ImageLayoutInfo &   p_src_layout_info, const ImageLayoutInfo &p_dst_layout_info, uint32 p_layer_count,
-								   uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void;
+								   uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags, vk::CommandBuffer p_override_command_buffer = nullptr) -> void;
 		auto transitionImageLayout(vk::Image &p_image, const ImageLayoutInfo &   p_src_layout_info, const ImageLayoutInfo &p_dst_layout_info, uint32 p_layer_count,
-								   uint32     p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void;
+								   uint32     p_mip_levels, vk::ImageAspectFlags p_aspect_flags, vk::CommandBuffer         p_override_command_buffer = nullptr) -> void;
 
 		auto transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
 								   vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask,
@@ -195,7 +198,6 @@ namespace toaster::gpu
 	template<>
 	inline auto VKLogicalDevice::destroyObject<vk::Sampler>(vk::Sampler &p_sampler) const -> void
 	{
-
 		((vk::Device) m_logicalDevice).destroySampler(p_sampler);
 	}
 	#pragma endregion

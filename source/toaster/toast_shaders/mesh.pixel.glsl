@@ -11,8 +11,6 @@ layout(location = 3) in vec3 v_Normal;
 layout(location = 4) in mat3 v_WorldNormals;
 
 layout(location = 0) out vec4 o_Colour;
-layout(location = 1) out vec4 o_Position;
-layout(location = 2) out vec4 o_Normal;
 
 layout(set = 0, binding = 0) uniform sampler2D u_AlbedoTexture;
 layout(set = 0, binding = 1) uniform sampler2D u_NormalTexture;
@@ -175,9 +173,6 @@ vec3 calcPointLights(vec3 p_point)
 
 void main()
 {
-    o_Position = vec4(v_WorldPos, 1.0f);
-    o_Normal   = vec4(normalize(v_Normal), 1.0f);
-
     params.normal = normalize(v_Normal);// We have to normalise our normal
     if (u_Material.hasNormalMap != 0u)
     {

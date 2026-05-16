@@ -12,11 +12,12 @@ namespace toaster::gpu
 		TST_GPU_OBJECT
 	public:
 		VKRenderPass(VKLogicalDevice *p_device, const RefPtr<VKPipeline> &p_pipeline);
+		~VKRenderPass();
 
 		auto setInput(const String &p_name, const RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
 		auto setInput(const String &p_name, const RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void;
 		auto setInput(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void;
-		auto setInput(const String &p_name, const RefPtr<VKImage2D> &p_image_2d) -> void;
+		auto setInput(const String &p_name, const RefPtr<VKStorageImage> &p_image_2d) -> void;
 		auto setInput(const String &p_name, const RefPtr<VKTexture3D> &p_texture_3d) -> void;
 
 		// Only call when you have set all your required inputs :)
@@ -30,8 +31,9 @@ namespace toaster::gpu
 
 	private:
 		RefPtr<VKPipeline>                m_pipeline{nullptr};
-		UniquePtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};
+		OwningPtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};
 	};
+
 	using RenderPassHandle = RefPtr<VKRenderPass>;
 
 	// TST_GPU_DEFINE_HANDLE(VKRenderPass, RenderPass);

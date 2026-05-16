@@ -14,7 +14,7 @@ namespace toaster::gpu
 		eStorageBufferPFF,
 		eTexture2D,
 		eTexture3D,
-		eImage2D
+		eStorageImage
 	};
 
 	class TST_GPU_API IGPUResource
@@ -31,4 +31,6 @@ namespace toaster::gpu
 		public:\
 			[[nodiscard]] virtual auto getResourceType() const -> ::toaster::gpu::EGPUResourceType override\
 														{ return ::toaster::gpu::EGPUResourceType::e##__typename; } private:
+
+	TST_GPU_DEFINE_HANDLE(IGPUResource, GPUResource)
 }

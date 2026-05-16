@@ -4,9 +4,9 @@
 
 #include <vulkan/vulkan_raii.hpp>
 
-#include "toast_gpu/resource.hpp"
 #include "toast_lib/buffer.hpp"
 #include "toast_lib/core_basic.hpp"
+#include "toast_lib/io/filesystem.hpp"
 
 namespace toaster::gpu
 {
@@ -38,8 +38,10 @@ namespace toaster::gpu
 
 		[[nodiscard]] auto getSpecInfo() const -> const ImageSpecInfo &;
 
-		auto setCurrentImageLayout(vk::ImageLayout p_layout) -> void;
-		auto getCurrentImageLayout() const -> vk::ImageLayout;
+		auto               setCurrentImageLayout(vk::ImageLayout p_layout) -> void;
+		[[nodiscard]] auto getCurrentImageLayout() const -> vk::ImageLayout;
+
+		auto saveToFile(const io::filesystem::Path &p_path) -> void;
 
 		auto setData(void *p_data, uint64 p_size) -> void;
 		auto setData(const Buffer &p_buffer) -> void;
@@ -58,39 +60,14 @@ namespace toaster::gpu
 
 	TST_GPU_DEFINE_HANDLE(VKRawImage, RawImage)
 
-	class TST_GPU_API VKImage2D : public IGPUResource
-	{
-		TST_GPU_OBJECT
-		TST_GPU_RESOURCE(Image2D)
-	public:
-		VKImage2D(VKLogicalDevice *p_device, const ImageSpecInfo &p_spec_info);
-		~VKImage2D();
-
-		auto resize(uint32 p_width, uint32 p_height) -> void;
-		auto setData(void *p_data, uint64 p_size) -> void;
-		auto setData(const Buffer &p_buffer) -> void;
-
-		// If you want to work with textures and don't want to immediately set the data you might want to deffer the sampler creation
-		auto createSampler(vk::ImageLayout p_override_layout = vk::ImageLayout::eUndefined) -> void; // Also creates the descriptor info
-
-		auto getImage() const -> const RefPtr<VKRawImage> &;
-		auto getDescriptorInfo() const -> const vk::DescriptorImageInfo &;
-
-	private:
-		RefPtr<VKRawImage> m_image{nullptr};
-
-		vk::Sampler m_sampler{nullptr};
-		Buffer      m_imageData;
-
-		vk::DescriptorImageInfo m_descriptorImageInfo{};
-	};
-
-	TST_GPU_DEFINE_HANDLE(VKImage2D, Image2D)
-
-	// For dynamic rendering I have to handle the image layout transitions manually, so this simplifies things...
 	namespace util
 	{
-		TST_GPU_API auto transitionImageLayout(VKRawImage *p_image, vk::ImageLayout p_src_layout, vk::ImageLayout p_dst_layout) -> void;
+		TST_GPU_API auto loadTextureImage(const io::filesystem::Path &p_path, vk::Format &p_out_format, uint32 &p_out_width, uint32 &p_out_height) -> Buffer;
+
+		// For dynamic rendering I have to handle the image layout transitions manually, so this simplifies things...
+		// Prefer this over the other functions
+		TST_GPU_API auto transitionImageLayout(VKRawImage *      p_image, vk::ImageLayout p_src_layout, vk::ImageLayout p_dst_layout,
+											   vk::CommandBuffer p_override_command_buffer = nullptr) -> void;
 
 		TST_GPU_API auto colourAttachmentToShaderRead(VKRawImage *p_image) -> void;
 		TST_GPU_API auto colourAttachmentToTransferSrc(VKRawImage *p_image) -> void;
