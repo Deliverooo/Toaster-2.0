@@ -6,6 +6,6 @@ namespace toaster
 	class RuntimeApplication : public Application
 	{
 	public:
-		RuntimeApplication(const ApplicationCreateInfo &p_create_info, const CommandLineArgMap &p_command_line_args);
+		RuntimeApplication(const ApplicationCreateInfo &p_create_info, const CommandLineArgs* p_command_line_args);
 	};
 }

@@ -18,6 +18,8 @@ target_compile_definitions(Toaster PUBLIC GLFW_DLL)
 target_link_libraries(Toaster PUBLIC EnTT::EnTT)
 target_link_libraries(Toaster PRIVATE yaml-cpp::yaml-cpp)
 
+target_link_libraries(Toaster PUBLIC argparse)
+
 target_link_libraries(Toaster PUBLIC dwmapi) # For window colour
 
 set_target_properties(Toaster PROPERTIES COMPILE_WARNING_AS_ERROR ON)

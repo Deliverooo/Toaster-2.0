@@ -4,7 +4,8 @@
 
 namespace toaster
 {
-	EditorApplication::EditorApplication(const ApplicationCreateInfo &p_create_info, const CommandLineArgMap &p_command_line_args) : Application(p_create_info, p_command_line_args)
+	EditorApplication::EditorApplication(const ApplicationCreateInfo &p_create_info, const CommandLineArgs *p_command_line_args) : Application(p_create_info,
+																																			   p_command_line_args)
 	{
 		addLayer(IAppLayer::alloc<EditorLayer>(this));
 

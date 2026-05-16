@@ -115,7 +115,7 @@ namespace toaster::render
 				auto  ai_material_name = ai_material->GetName();
 				auto &material_data{m_materialDatas.emplace_back()};
 				auto &material{material_data.material};
-				material = make_reference<Material>(m_renderCtx, p_shader, ai_material_name.data);
+				material = m_renderCtx->create<Material>(p_shader, ai_material_name.data);
 
 				aiString ai_tex_path;
 
@@ -195,7 +195,7 @@ namespace toaster::render
 			}
 		}
 		else
-			m_materialDatas.emplace_back(make_reference<Material>(m_renderCtx, p_shader));
+			m_materialDatas.emplace_back(m_renderCtx->create<Material>(p_shader));
 
 		const vk::DeviceSize vertex_buffer_size{sizeof(MeshVertex) * m_vertices.size()};
 		m_vertexBuffer = make_reference<gpu::VKVertexBuffer>(m_renderCtx->getLogicalDevice(), static_cast<void *>(m_vertices.data()), vertex_buffer_size);
@@ -206,7 +206,6 @@ namespace toaster::render
 
 	Mesh::~Mesh()
 	{
-
 	}
 
 	auto Mesh::getVertexBuffer() const -> const gpu::VertexBufferHandle &

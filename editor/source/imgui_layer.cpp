@@ -46,8 +46,8 @@ namespace toaster
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
 		// io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Viewports
 
-		io.FontDefault = io.Fonts->AddFontFromFileTTF(io::filesystem::Path{binary_directory / "../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf"}.string().c_str(),
-													  0, nullptr, io.Fonts->GetGlyphRangesJapanese());
+		io.FontDefault = io.Fonts->AddFontFromFileTTF(io::filesystem::Path{binary_directory / "../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Regular.ttf"}.string().
+													  c_str(), 0, nullptr, io.Fonts->GetGlyphRangesJapanese());
 		io.Fonts->AddFontFromFileTTF(io::filesystem::Path{binary_directory / "../resources/fonts/Noto_Sans_JP/static/NotoSansJP-Bold.ttf"}.string().c_str(), 0, nullptr,
 									 io.Fonts->GetGlyphRangesJapanese());
 
@@ -248,7 +248,7 @@ namespace toaster
 		const vk::Viewport viewport{0.0f, 0.0f, static_cast<float32>(swapchain->getExtent().width), static_cast<float32>(swapchain->getExtent().height), 0.0f, 1.0f};
 		const vk::Rect2D   scissor{vk::Offset2D{0, 0}, swapchain->getExtent()};
 
-		command_buffer.getVulkanCommandBuffer(). beginRendering(rendering_info);
+		command_buffer.getVulkanCommandBuffer().beginRendering(rendering_info);
 
 		command_buffer.getVulkanCommandBuffer().setViewport(0, viewport);
 		command_buffer.getVulkanCommandBuffer().setScissor(0, scissor);
@@ -257,7 +257,6 @@ namespace toaster
 		ImGui_ImplVulkan_RenderDrawData(data, *command_buffer.getVulkanCommandBuffer());
 
 		command_buffer.getVulkanCommandBuffer().endRendering();
-
 		ImGuiIO &io = ig::GetIO();
 		(void) io;
 

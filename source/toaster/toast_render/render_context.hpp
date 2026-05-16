@@ -58,18 +58,16 @@ namespace toaster::render
 
 		// If you care about not getting crashes when allocating gpu objects mid-frame, you should use this instead of make_reference<Type>(ctx, ...)
 		template<typename TObj, typename... TArgs>
-		[[nodiscard]] auto create(TArgs &&... p_args)  -> RefPtr<TObj>
+		[[nodiscard]] auto create(TArgs &&... p_args) -> RefPtr<TObj>
 		{
 			return allocate_reference<TObj>([this](TObj *p_ptr) -> void
 			{
-				LOG_ERROR("Deleting: {}", typeid(TObj).name());
-				auto deleter{
-					[p_ptr]() -> void
-					{
-						delete p_ptr;
-					}
-				};
-				m_pendingDeletions[m_currentFrameIndex].emplace_back(std::move(deleter));
+				m_pendingDeletionFns[m_currentFrameIndex].emplace_back(+[](void *ptr) -> void
+				{
+					auto obj{(TObj *) ptr};
+					delete obj;
+				});
+				m_pendingDeletionPtrs[m_currentFrameIndex].emplace_back(p_ptr);
 			}, this, std::forward<TArgs>(p_args)...);
 		}
 
@@ -77,17 +75,14 @@ namespace toaster::render
 		template<typename TObj, typename... TArgs>
 		[[nodiscard]] auto createGPU(TArgs &&... p_args) const -> RefPtr<TObj>
 		{
-			LOG_ERROR("Deleting: {}", typeid(TObj).name());
-
 			return allocate_reference<TObj>([this](TObj *p_ptr) -> void
 			{
-				auto deleter{
-					[p_ptr]() -> void
-					{
-						delete p_ptr;
-					}
-				};
-				m_pendingDeletions[m_currentFrameIndex].emplace_back(std::move(deleter));
+				m_pendingDeletionFns[m_currentFrameIndex].emplace_back(+[](void *ptr) -> void
+				{
+					auto obj{(TObj *) ptr};
+					delete obj;
+				});
+				m_pendingDeletionPtrs[m_currentFrameIndex].emplace_back(p_ptr);
 			}, m_logicalDevice, std::forward<TArgs>(p_args)...);
 		}
 
@@ -149,8 +144,8 @@ namespace toaster::render
 
 		OwningPtr<Globals> m_globals{nullptr};
 
-		mutable std::vector<std::deque<std::function<void()> > > m_pendingDeletions;
-		mutable std::vector<std::deque<std::function<void()> > > m_pendingResourceUpdates;
-		mutable uint32                                           m_currentFrameIndex{0};
+		mutable std::vector<std::deque<void(*)(void *)> > m_pendingDeletionFns;
+		mutable std::vector<std::deque<void *> >          m_pendingDeletionPtrs;
+		mutable uint32                                    m_currentFrameIndex{0};
 	};
 }

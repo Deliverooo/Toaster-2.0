@@ -381,7 +381,6 @@ namespace toaster
 	{
 		TST_PERMA_ASSERT_MSG(!m_entityUUIDMap.contains(p_uuid), "Bradar wat is dis?");
 		auto entity{Entity{m_registry.create(), this}};
-		LOG_ERROR("{}", (uint32)(entt::entity)entity);
 
 		entity.addComponent<UUIDComponent>(p_uuid);
 

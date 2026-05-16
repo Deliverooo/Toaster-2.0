@@ -8,6 +8,7 @@
 
 #include "material.hpp"
 #include "mesh.hpp"
+
 namespace toaster::render
 {
 	RenderContext::RenderContext(const RenderContextSpecInfo &p_spec_info) : m_specInfo(p_spec_info)
@@ -43,7 +44,8 @@ namespace toaster::render
 
 		m_globals = new Globals{m_logicalDevice, m_specInfo.binaryDir};
 
-		m_pendingDeletions.resize(maxFramesInFlight);
+		m_pendingDeletionFns.resize(maxFramesInFlight);
+		m_pendingDeletionPtrs.resize(maxFramesInFlight);
 	}
 
 	RenderContext::~RenderContext()
@@ -91,11 +93,13 @@ namespace toaster::render
 
 	auto RenderContext::performGarbageCollection() -> void
 	{
-		while (!m_pendingDeletions[m_currentFrameIndex].empty())
+		while (!m_pendingDeletionFns[m_currentFrameIndex].empty())
 		{
-			auto deleter{std::move(m_pendingDeletions[m_currentFrameIndex].front())};
-			m_pendingDeletions[m_currentFrameIndex].pop_front();
-			deleter();
+			auto deleter{std::move(m_pendingDeletionFns[m_currentFrameIndex].front())};
+			auto ptr{m_pendingDeletionPtrs[m_currentFrameIndex].front()};
+			m_pendingDeletionFns[m_currentFrameIndex].pop_front();
+			m_pendingDeletionPtrs[m_currentFrameIndex].pop_front();
+			deleter(ptr);
 		}
 	}
 

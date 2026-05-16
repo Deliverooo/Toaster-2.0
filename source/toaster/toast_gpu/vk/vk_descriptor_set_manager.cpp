@@ -13,7 +13,7 @@ namespace toaster::gpu
 		texture_spec_info.width        = 1u;
 		texture_spec_info.height       = 1u;
 		texture_spec_info.format       = vk::Format::eR8G8B8A8Unorm;
-		texture_spec_info.generateMips = false;
+		texture_spec_info.generateMips = false;	
 		uint32 texture_data{0xFFFFFFFF};
 		m_whiteTexture = make_reference<VKTexture2D>(m_device, texture_spec_info, &texture_data, sizeof(uint32));
 
@@ -123,7 +123,7 @@ namespace toaster::gpu
 			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
 
-	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const Texture2DHandle &p_texture_2d) -> void
+	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d) -> void
 	{
 		if (const auto decl{getDescriptorDeclaration(p_name)})
 			m_descriptorResources.at(decl->set)[decl->binding] = p_texture_2d;
@@ -131,7 +131,7 @@ namespace toaster::gpu
 			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
 
-	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const Texture2DHandle &p_texture_2d, uint32 p_array_index) -> void
+	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKTexture2D> &p_texture_2d, uint32 p_array_index) -> void
 	{
 		const auto decl{getDescriptorDeclaration(p_name)};
 		TST_ASSERT_MSG(p_array_index < decl->arraySize, "Out of bounds");
@@ -149,7 +149,7 @@ namespace toaster::gpu
 			LOG_WARN("Descriptor was not found: {}", p_name);
 	}
 
-	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const Texture3DHandle &p_texture_3d) -> void
+	auto VKDescriptorSetManager::setDescriptor(const String &p_name, const RefPtr<VKTexture3D> &p_texture_3d) -> void
 	{
 		if (const auto decl{getDescriptorDeclaration(p_name)})
 			m_descriptorResources.at(decl->set)[decl->binding] = p_texture_3d;
@@ -195,15 +195,6 @@ namespace toaster::gpu
 				auto &descriptor_set{
 					m_descriptorSets[frame_index].emplace_back(std::move(m_device->getVulkanLogicalDevice().allocateDescriptorSets(descriptor_set_allocate_info).front()))
 				};
-
-				for (const auto &desc: m_descriptorSets[frame_index])
-				{
-					vk::DebugUtilsObjectNameInfoEXT name_info{};
-					name_info.pObjectName = "Descriptro fdakjofj";
-					name_info.objectType   = desc.objectType;
-					name_info.objectHandle = reinterpret_cast<uint64_t>(static_cast<VkDescriptorSet>(*desc));
-					m_device->getVulkanLogicalDevice().setDebugUtilsObjectNameEXT(name_info);
-				}
 
 				auto &                                             write_descriptor_sets{m_writeDescriptorMap[frame_index].at(set)};
 				std::vector<std::vector<vk::DescriptorImageInfo> > descriptor_image_infos;
@@ -360,7 +351,7 @@ namespace toaster::gpu
 						{
 							auto texture_2d{resource.resources[i].as<VKTexture2D>()};
 							if (!texture_2d)
-								texture_2d = m_whiteTexture.get();
+								texture_2d = m_whiteTexture;
 							const auto &image_info{texture_2d->getDescriptorInfo()};
 							if (image_info.imageView != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[i])
 							{
@@ -500,12 +491,12 @@ namespace toaster::gpu
 		return m_descriptorDeclarations;
 	}
 
-	auto VKDescriptorSetManager::getWhiteTexture() const -> const Texture2DHandle &
+	auto VKDescriptorSetManager::getWhiteTexture() const -> const RefPtr<VKTexture2D> &
 	{
 		return m_whiteTexture;
 	}
 
-	auto VKDescriptorSetManager::getWhiteTexture3D() const -> const Texture3DHandle &
+	auto VKDescriptorSetManager::getWhiteTexture3D() const -> const RefPtr<VKTexture3D> &
 	{
 		return m_whiteTexture3D;
 	}

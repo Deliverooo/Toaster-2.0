@@ -14,7 +14,7 @@
 
 namespace toaster
 {
-	Application::Application(const ApplicationCreateInfo &p_create_info, const CommandLineArgMap &p_command_line_args) : m_createInfo(p_create_info),
+	Application::Application(const ApplicationCreateInfo &p_create_info,const CommandLineArgs *p_command_line_args) : m_createInfo(p_create_info),
 																														 m_commandLineArgs(p_command_line_args)
 	{
 		Window::initWindowingAPI();
@@ -97,7 +97,7 @@ namespace toaster
 		return m_renderContext;
 	}
 
-	auto Application::getCommandLineArgs() const noexcept -> const CommandLineArgMap &
+	auto Application::getCommandLineArgs() const noexcept -> const CommandLineArgs *
 	{
 		return m_commandLineArgs;
 	}

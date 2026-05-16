@@ -10,6 +10,8 @@
 
 #include "toast_lib/ptr.hpp"
 
+#include <argparse/argparse.hpp>
+
 namespace toaster
 {
 	class WindowCloseEvent;
@@ -26,12 +28,12 @@ namespace toaster
 		WindowCreateInfo windowCreateInfo{};
 	};
 
-	using CommandLineArgMap = std::unordered_map<String, String>;
+	using CommandLineArgs = argparse::ArgumentParser;
 
 	class TST_API Application
 	{
 	public:
-		Application(const ApplicationCreateInfo &p_create_info, const CommandLineArgMap &p_command_line_args);
+		Application(const ApplicationCreateInfo &p_create_info, const CommandLineArgs *p_command_line_args);
 		~Application() noexcept;
 
 		auto run() -> void;
@@ -39,7 +41,7 @@ namespace toaster
 
 		[[nodiscard]] auto getWindow() const noexcept -> Window &;
 		[[nodiscard]] auto getRenderContext() const noexcept -> render::RenderContext *;
-		[[nodiscard]] auto getCommandLineArgs() const noexcept -> const CommandLineArgMap &;
+		[[nodiscard]] auto getCommandLineArgs() const noexcept -> const CommandLineArgs *;
 
 	private:
 		auto onWindowCloseEvent(WindowCloseEvent &p_event) -> bool;
@@ -47,7 +49,9 @@ namespace toaster
 
 		ApplicationCreateInfo m_createInfo{};
 
-		CommandLineArgMap m_commandLineArgs;
+		// CommandLineArgMap                            m_commandLineArgs;
+
+		NonOwningPtr<const CommandLineArgs> m_commandLineArgs{nullptr};
 
 		OwningPtr<render::RenderContext> m_renderContext{nullptr};
 		OwningPtr<Window>                m_window{nullptr};

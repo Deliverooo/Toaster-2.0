@@ -42,6 +42,8 @@ namespace toaster::gpu
 		void *pNext{nullptr};
 	};
 
+	using DeletionQueue = std::vector<std::deque<std::function<void()> > >;
+
 	class TST_GPU_API VKLogicalDevice
 	{
 	public:

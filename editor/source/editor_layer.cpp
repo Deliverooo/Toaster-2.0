@@ -39,7 +39,6 @@ namespace toaster
 		const auto &app{getApp()};
 		const auto  swapchain{app.getWindow().getSwapchain()};
 
-		auto                 command_line_args{app.getCommandLineArgs()};
 		io::filesystem::Path binary_dir{os::getBinaryDirectory()};
 
 		m_windowWidth  = std::max(swapchain->getExtent().width, 1u);
@@ -95,7 +94,7 @@ namespace toaster
 			transform_comp.translation = {0.0f, 0.0f, 0.0f};
 			transform_comp.scale       = {1.0f, 1.0f, 1.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
-			mc.mesh = make_reference<render::Mesh>(m_renderCtx, binary_dir / "../resources/meshes/Test_scene.fbx", m_globals->shaderLibrary().get("Geometry"));
+			mc.mesh = m_renderCtx->create<render::Mesh>(binary_dir / "../resources/meshes/Test_scene.fbx", m_globals->shaderLibrary().get("Geometry"));
 		}
 		{
 			Entity point_light_entity{m_scene->createEntity()};
@@ -125,10 +124,6 @@ namespace toaster
 
 		auto &       cmd_buf{swapchain->getCurrentCommandBuffer()};
 		const uint32 frame_index{swapchain->getFrameIndex()};
-
-		// m_renderer2D->begin(frame_index, {}, {});
-		// m_renderer2D->submitQuad({0.0f, 0.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 0.0f, 1.0f, 1.0f});
-		// m_renderer2D->end(cmd_buf, frame_index);
 
 		m_scene->onUpdate(p_dt);
 		m_scene->onRender(cmd_buf, frame_index, p_dt, m_sceneRenderer, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());

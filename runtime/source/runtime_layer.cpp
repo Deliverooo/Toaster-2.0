@@ -4,13 +4,11 @@
 #include "toaster/toast_kernel/input.hpp"
 #include "toaster/toast_lib/io/file_stream.hpp"
 #include "toaster/toast_render/globals.hpp"
-#include "toaster/toast_render/renderer.hpp"
 
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
 #include "glm/gtc/type_ptr.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
-#include "toast_gpu/vk/vk_renderer.hpp"
 #include "toast_lib/os/terminal.hpp"
 #include "toast_render/render_context.hpp"
 #include "toast_scene/components.hpp"
@@ -51,19 +49,10 @@ namespace toaster
 		LOG_INFO("Binary directory: {}", binary_dir.string());
 		#pragma region script + scene setup
 
-		io::filesystem::Path core_script_assembly_dll{};
-		io::filesystem::Path app_script_assembly_dll{};
-		if (app.getCommandLineArgs().size() > 1) // Custom app script dll
-		{
-			// When compiling, the Toaster.dll should automatically be in the same directory as the app one... :)
-			core_script_assembly_dll = io::filesystem::Path{command_line_args["scriptAsm"]}.parent_path() / "Toaster.dll";
-			app_script_assembly_dll  = command_line_args["scriptAsm"];
-		}
-		else
-		{
-			core_script_assembly_dll = binary_dir / "../scripts/Toaster/bin/Debug/net48/Toaster.dll";  // Fallback to the prebuild toaster dll
-			app_script_assembly_dll  = binary_dir / "../examples/Sandbox/bin/Debug/net48/Sandbox.dll"; // Fallback to the demo script
-		}
+		io::filesystem::Path script_asm_path{app.getCommandLineArgs()->get("--scriptAsm")};
+
+		io::filesystem::Path core_script_assembly_dll{script_asm_path.parent_path() / "Toaster.dll"};
+		io::filesystem::Path app_script_assembly_dll{script_asm_path};
 
 		LOG_INFO("{}", app_script_assembly_dll.string());
 
@@ -88,8 +77,8 @@ namespace toaster
 			{gpu::EBufferDataType::eFloat3, "a_Position"},
 			{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
 		};
-		m_fullscreenPipeline   = m_renderCtx->createGPUObjectRef<gpu::VKPipeline>(fullscreen_pipeline_spec_info);
-		m_fullscreenRenderPass = m_renderCtx->createGPUObjectRef<gpu::VKRenderPass>(m_fullscreenPipeline);
+		m_fullscreenPipeline   = m_renderCtx->createGPU<gpu::VKPipeline>(fullscreen_pipeline_spec_info);
+		m_fullscreenRenderPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_fullscreenPipeline);
 		m_fullscreenRenderPass->bake();
 
 		m_fullscreenMaterial = make_reference<render::Material>(m_renderCtx, m_renderCtx->getGlobals()->shaderLibrary().get("Composite"));
@@ -102,8 +91,7 @@ namespace toaster
 		m_sceneRenderer                            = toaster::make_reference<SceneRenderer>(m_renderCtx, scene_renderer_spec_info);
 
 		SceneSerializer scene_serializer{m_scene, binary_dir};
-
-		String scene_path{command_line_args["startupScene"]};
+		String          scene_path{command_line_args->get("--scene")};
 		if (scene_path == "__NONE__")
 			scene_serializer.deserialize(binary_dir / "../resources/scenes/Test.tscene");
 		else

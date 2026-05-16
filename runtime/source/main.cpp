@@ -1,11 +1,8 @@
-#include <iostream>
-
 #include "runtime_application.hpp"
 
 #include <argparse/argparse.hpp>
 
 #include "toast_lib/logging.hpp"
-#include "toast_lib/toast_assert.h"
 #include "toast_lib/os/file_dialog.hpp"
 #include "toast_lib/os/terminal.hpp"
 
@@ -26,10 +23,6 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	parser.add_argument("--scene").help("The startup scene (.tscene)").default_value("__NONE__");
 	parser.parse_args(__argc, __argv);
 
-	std::unordered_map<toaster::String, toaster::String> command_line_args;
-	command_line_args["scriptAsm"]    = parser.get<toaster::String>("--scriptAsm");
-	command_line_args["startupScene"] = parser.get<toaster::String>("--scene");
-
 	toaster::ApplicationCreateInfo app_create_info{};
 	app_create_info.windowCreateInfo.width          = 1920;
 	app_create_info.windowCreateInfo.height         = 1080;
@@ -37,8 +30,10 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	app_create_info.windowCreateInfo.iconPath       = binary_directory / "../resources/textures/OrboCloseup.png";
 	app_create_info.windowCreateInfo.startMaximized = true;
 
-	toaster::RuntimeApplication app{app_create_info, command_line_args};
-	app.run();
+	{
+		toaster::RuntimeApplication app{app_create_info, &parser};
+		app.run();
+	}
 
 	return 0;
 }
