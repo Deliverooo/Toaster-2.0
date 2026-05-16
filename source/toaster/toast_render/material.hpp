@@ -60,7 +60,7 @@ namespace toaster::render
 		gpu::ShaderHandle m_shader{nullptr};
 		String            m_name{};
 
-		UniquePtr<gpu::VKDescriptorSetManager> m_descriptorSetManager{nullptr};
+		OwningPtr<gpu::VKDescriptorSetManager> m_descriptorSetManager{nullptr};
 
 		Buffer m_pushConstantStorageBuffer{};
 	};

@@ -25,6 +25,7 @@ namespace toaster
 		auto end() -> void;
 
 		auto setBlockEvents(bool p_block) -> void;
+		auto getDescriptorPool() -> vk::raii::DescriptorPool &;
 
 	private:
 		bool m_blockEvents{false};

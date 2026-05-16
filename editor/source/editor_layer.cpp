@@ -74,8 +74,6 @@ namespace toaster
 
 		m_scene = make_reference<Scene>(m_renderCtx, nullptr, "Main Scene");
 
-		m_sceneHierarchyPanel = make_unique<SceneHierarchyPanel>(m_renderCtx, m_scene);
-
 		SceneRendererSpecInfo scene_renderer_spec_info{};
 		scene_renderer_spec_info.viewportWidth     = m_windowWidth;
 		scene_renderer_spec_info.viewportHeight    = m_windowHeight;
@@ -105,6 +103,8 @@ namespace toaster
 			auto &plc{point_light_entity.addComponent<PointLightComponent>()};
 			plc.radiance = xyz(tsm::colours::green);
 		}
+
+		m_testTex = m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, binary_dir / "../resources/textures/Peeber.png");
 	}
 
 	auto EditorLayer::onDestroy() -> void
@@ -162,6 +162,14 @@ namespace toaster
 
 		if (m_canOperateCamera)
 			m_editorCamera.onEvent(p_event);
+	}
+
+	auto EditorLayer::onUIInit(void *p_user_data) -> void
+	{
+		m_textureManager = make_unique<ui::UITextureManager>(m_renderCtx, static_cast<vk::DescriptorPool>(static_cast<VkDescriptorPool>(p_user_data)));
+		m_testTexIg      = m_textureManager->registerOrGetTexture("Test", m_testTex);
+
+		m_sceneHierarchyPanel = make_unique<SceneHierarchyPanel>(m_renderCtx, m_scene, m_textureManager.get());
 	}
 
 	auto EditorLayer::onUIRender() -> void
@@ -259,6 +267,7 @@ namespace toaster
 				m_sceneRenderer->setEnvironmentBackground(m_renderCtx->createEnvironmentMap(path));
 			}
 		}
+		ig::Image(m_textureManager->getTexture("Test"), m_textureManager->getTextureSize("Test"));
 		ig::End();
 
 		if (ig::IsWindowFocused(ImGuiFocusedFlags_AnyWindow) || ig::IsAnyItemHovered())

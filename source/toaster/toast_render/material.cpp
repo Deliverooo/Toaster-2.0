@@ -18,7 +18,7 @@ namespace toaster::render
 			m_pushConstantStorageBuffer.zeroInitialize();
 		}
 
-		m_descriptorSetManager = make_unique<gpu::VKDescriptorSetManager>(m_renderCtx->getLogicalDevice(), m_shader, 0, 0);
+		m_descriptorSetManager = new gpu::VKDescriptorSetManager{m_renderCtx->getLogicalDevice(), m_shader, 0, 0};
 
 		for (const auto &[name, decl]: m_descriptorSetManager->getDescriptorDeclarations())
 		{
@@ -39,6 +39,11 @@ namespace toaster::render
 	Material::~Material()
 	{
 		m_pushConstantStorageBuffer.release();
+
+		m_renderCtx->getLogicalDevice()->deferDestruction([dsm = m_descriptorSetManager]()mutable -> void
+		{
+			delete dsm;
+		});
 	}
 
 	auto Material::setTexture(const String &p_name, const gpu::Texture2DHandle &p_texture_2d) -> void

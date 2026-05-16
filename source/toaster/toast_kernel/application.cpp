@@ -14,8 +14,8 @@
 
 namespace toaster
 {
-	Application::Application(const ApplicationCreateInfo &p_create_info,const CommandLineArgs *p_command_line_args) : m_createInfo(p_create_info),
-																														 m_commandLineArgs(p_command_line_args)
+	Application::Application(const ApplicationCreateInfo &p_create_info, const CommandLineArgs *p_command_line_args) : m_createInfo(p_create_info),
+																													   m_commandLineArgs(p_command_line_args)
 	{
 		Window::initWindowingAPI();
 
@@ -55,6 +55,9 @@ namespace toaster
 
 	auto Application::run() -> void
 	{
+		for (IAppLayer *layer: m_layers)
+			layer->onUIInit(m_onUIInitUserData);
+
 		while (m_isRunning)
 		{
 			const auto startTime{static_cast<float32>(glfwGetTime())};
@@ -134,6 +137,11 @@ namespace toaster
 		p_layer->onDestroy();
 		m_layers.erase(std::ranges::find(m_layers, p_layer));
 		delete p_layer;
+	}
+
+	auto Application::setOnUIInitUserData(void *p_user_data) -> void
+	{
+		m_onUIInitUserData = p_user_data;
 	}
 
 	auto Application::setBeginUIRenderCallback(const std::function<void()> &p_cb_begin_ui_render) -> void

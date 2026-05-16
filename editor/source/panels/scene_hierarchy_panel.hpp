@@ -5,10 +5,15 @@
 
 namespace toaster
 {
+	namespace ui
+	{
+		class UITextureManager;
+	}
+
 	class SceneHierarchyPanel
 	{
 	public:
-		SceneHierarchyPanel(render::RenderContext *p_render_ctx, const RefPtr<Scene> &p_scene);
+		SceneHierarchyPanel(render::RenderContext *p_render_ctx, const RefPtr<Scene> &p_scene, ui::UITextureManager *p_texture_manager);
 		~SceneHierarchyPanel();
 
 		auto setScene(const RefPtr<Scene> &p_scene) -> void;
@@ -24,8 +29,8 @@ namespace toaster
 		auto _drawMaterial(uint32 p_frame_index, const render::MaterialHandle &p_mat) -> void;
 
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
-
-		RefPtr<Scene> m_scene;
+		RefPtr<Scene>                       m_scene{nullptr};
+		NonOwningPtr<ui::UITextureManager>  m_textureManager{nullptr};
 
 		Entity m_selectedEntity;
 

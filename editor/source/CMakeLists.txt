@@ -21,6 +21,10 @@ set(SRC
 		ui/ui_widgets.cpp
 		ui/ui_widgets.hpp
 
+
+		ui/ui_texture_manager.cpp
+		ui/ui_texture_manager.hpp
+
 		ui/colours.hpp
 )
 

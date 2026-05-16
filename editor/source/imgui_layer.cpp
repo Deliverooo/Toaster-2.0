@@ -272,4 +272,9 @@ namespace toaster
 	{
 		m_blockEvents = p_block;
 	}
+
+	auto ImGuiLayer::getDescriptorPool() -> vk::raii::DescriptorPool &
+	{
+		return m_descriptorPool;
+	}
 }

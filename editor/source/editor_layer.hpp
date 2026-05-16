@@ -10,6 +10,8 @@
 
 #include <imgui.h>
 
+#include "ui/ui_texture_manager.hpp"
+
 namespace ig = ImGui;
 
 namespace toaster
@@ -38,6 +40,7 @@ namespace toaster
 		virtual auto onUpdate(float32 p_dt) -> void override;
 		virtual auto onEvent(Event &p_event) -> void override;
 
+		virtual auto onUIInit(void *p_user_data) -> void override;
 		virtual auto onUIRender() -> void override;
 
 	private:
@@ -58,6 +61,10 @@ namespace toaster
 		RefPtr<SceneRenderer>          m_sceneRenderer{nullptr};
 
 		RefPtr<render::Renderer2D> m_renderer2D{nullptr};
+
+		UniquePtr<ui::UITextureManager> m_textureManager{nullptr};
+		gpu::Texture2DHandle            m_testTex{nullptr};
+		ImTextureID                     m_testTexIg;
 
 		EditorCamera m_editorCamera;
 

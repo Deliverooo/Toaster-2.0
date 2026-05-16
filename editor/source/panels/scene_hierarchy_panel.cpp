@@ -1,11 +1,10 @@
 #include "scene_hierarchy_panel.hpp"
 #include "toaster/toast_scene/components.hpp"
 
-#include "imgui_internal.h"
 #include "toaster/toast_lib/logging.hpp"
 #include "toaster/toast_lib/os/file_dialog.hpp"
 
-#include "../ui/ui_utils.hpp"
+#include "../ui/ui_texture_manager.hpp"
 #include "../ui/ui_widgets.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
@@ -103,7 +102,8 @@ namespace toaster
 		ig::PopID();
 	}
 
-	SceneHierarchyPanel::SceneHierarchyPanel(render::RenderContext *p_render_ctx, const RefPtr<Scene> &p_scene) : m_renderCtx(p_render_ctx), m_scene(p_scene)
+	SceneHierarchyPanel::SceneHierarchyPanel(render::RenderContext *p_render_ctx, const RefPtr<Scene> &p_scene,
+											 ui::UITextureManager * p_texture_manager) : m_renderCtx(p_render_ctx), m_scene(p_scene), m_textureManager(p_texture_manager)
 	{
 	}
 
@@ -400,11 +400,9 @@ namespace toaster
 		ig::PushID(p_mat->getName().c_str());
 		ig::Text("Material: %s", p_mat->getName().c_str());
 
-		auto albedo_map{p_mat->getResource<gpu::VKTexture2D>("u_AlbedoTexture")};
-		if (albedo_map)
-		{
-			ig::Image(ImTextureRef(p_mat->getDescriptorSet(p_frame_index)), ImVec2{100, 100}, ImVec2{0, 0}, ImVec2{1, 1});
-		}
+		auto        albedo_map{p_mat->getResource<gpu::VKTexture2D>("u_AlbedoTexture")};
+		ImTextureID tex_id{m_textureManager->registerOrGetTexture("SHP_Albedo_Mat_" + p_mat->getName(), albedo_map)};
+		ig::Image(tex_id, ImVec2{100.0f, 100.0f}, ImVec2{0, 0}, ImVec2{1, 1});
 
 		if (ig::Button("Albedo texture", ImVec2{ig::GetContentRegionAvail().x, 0}))
 		{
@@ -412,7 +410,7 @@ namespace toaster
 			if (io::filesystem::exists(path))
 			{
 				LOG_INFO("{}", path.string());
-				p_mat->set("u_AlbedoTexture", m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
+				p_mat->setTexture("u_AlbedoTexture", m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
 			}
 		}
 
@@ -422,7 +420,7 @@ namespace toaster
 			if (io::filesystem::exists(path))
 			{
 				LOG_INFO("{}", path.string());
-				p_mat->set("u_NormalTexture", m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
+				p_mat->setTexture("u_NormalTexture", m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
 				p_mat->set("u_Material.hasNormalMap", 1u);
 			}
 		}

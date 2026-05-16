@@ -1,5 +1,6 @@
 #include "editor_application.hpp"
 #include "editor_layer.hpp"
+
 #include "imgui_layer.hpp"
 
 namespace toaster
@@ -11,6 +12,7 @@ namespace toaster
 
 		m_imGuiLayer = IAppLayer::alloc<ImGuiLayer>(this);
 		addLayer(m_imGuiLayer);
+		setOnUIInitUserData(static_cast<vk::DescriptorPool>(m_imGuiLayer->getDescriptorPool()));
 
 		setBeginUIRenderCallback([&]() -> void { m_imGuiLayer->begin(); });
 		setEndUIRenderCallback([&]() -> void { m_imGuiLayer->end(); });

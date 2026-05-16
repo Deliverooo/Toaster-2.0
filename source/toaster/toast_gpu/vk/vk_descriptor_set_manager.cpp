@@ -196,6 +196,12 @@ namespace toaster::gpu
 					m_descriptorSets[frame_index].emplace_back(std::move(m_device->getVulkanLogicalDevice().allocateDescriptorSets(descriptor_set_allocate_info).front()))
 				};
 
+				vk::DebugUtilsObjectNameInfoEXT name_info{};
+				name_info.objectType   = vk::ObjectType::eDescriptorSet;
+				name_info.objectHandle = (uint64) (VkDescriptorSet) *descriptor_set;
+				name_info.pObjectName  = "name";
+				m_device->getVulkanLogicalDevice().setDebugUtilsObjectNameEXT(name_info);
+
 				auto &                                             write_descriptor_sets{m_writeDescriptorMap[frame_index].at(set)};
 				std::vector<std::vector<vk::DescriptorImageInfo> > descriptor_image_infos;
 				uint32                                             descriptor_image_info_index{0u};

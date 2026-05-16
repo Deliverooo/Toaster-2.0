@@ -58,6 +58,7 @@ namespace toaster
 
 		std::vector<OwningPtr<IAppLayer> > m_layers;
 
+		void *                m_onUIInitUserData{nullptr};
 		std::function<void()> m_cbBeginUIRender{nullptr};
 		std::function<void()> m_cbEndUIRender{nullptr};
 
@@ -73,6 +74,7 @@ namespace toaster
 		auto addLayer(IAppLayer *p_layer) -> void;
 		auto removeLayer(IAppLayer *p_layer) -> void;
 
+		auto setOnUIInitUserData(void *p_user_data) -> void;
 		auto setBeginUIRenderCallback(const std::function<void()> &p_cb_begin_ui_render) -> void;
 		auto setEndUIRenderCallback(const std::function<void()> &p_cb_end_ui_render) -> void;
 	};

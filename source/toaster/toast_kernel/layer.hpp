@@ -59,6 +59,11 @@ namespace toaster
 		virtual auto onUpdate(float32 p_dt) -> void = 0;
 		virtual auto onEvent(Event &p_event) -> void = 0;
 
+		virtual auto onUIInit(void* p_user_data) -> void
+		{
+			(void)p_user_data;
+		}
+
 		virtual auto onUIRender() -> void
 		{
 		}

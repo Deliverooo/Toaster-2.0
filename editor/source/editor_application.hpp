@@ -3,6 +3,8 @@
 
 namespace toaster
 {
+	class ImGuiLayer;
+
 	class EditorApplication final : public Application
 	{
 	public:
@@ -12,6 +14,6 @@ namespace toaster
 		auto setBlockUIEvents(bool p_block_ui_events) const -> void;
 
 	private:
-		class ImGuiLayer *m_imGuiLayer{nullptr};
+		ImGuiLayer *m_imGuiLayer{nullptr};
 	};
 }
