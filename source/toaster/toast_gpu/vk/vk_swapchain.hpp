@@ -18,6 +18,7 @@ namespace toaster::gpu
 		using GetWindowBackBufferSizeCB = std::function<std::pair<uint32, uint32>()>;
 
 		VKSwapchain(VKLogicalDevice *p_dev, vk::SurfaceKHR *p_surface);
+		~VKSwapchain();
 
 		auto beginFrame() -> void;
 		auto endFrame() -> void;
@@ -26,10 +27,10 @@ namespace toaster::gpu
 		[[nodiscard]] auto getImageIndex() const -> uint32;
 
 		[[nodiscard]] auto getImage(uint32 p_index) -> vk::Image &;
-		[[nodiscard]] auto getImageView(uint32 p_index) -> vk::raii::ImageView &;
+		[[nodiscard]] auto getImageView(uint32 p_index) -> vk::ImageView &;
 
 		[[nodiscard]] auto getCurrentImage() -> vk::Image &;
-		[[nodiscard]] auto getCurrentImageView() -> vk::raii::ImageView &;
+		[[nodiscard]] auto getCurrentImageView() -> vk::ImageView &;
 
 		[[nodiscard]] auto getDepthImage() -> vk::raii::Image &;
 		[[nodiscard]] auto getDepthImageView() -> vk::raii::ImageView &;
@@ -65,12 +66,12 @@ namespace toaster::gpu
 
 		vk::SurfaceKHR *m_windowSurface{nullptr};
 
-		vk::raii::SwapchainKHR           m_swapchain{nullptr};
-		std::vector<vk::Image>           m_swapchainImages;
-		std::vector<vk::raii::ImageView> m_swapchainImageViews;
-		vk::SurfaceFormatKHR             m_swapchainSurfaceFormat;
-		vk::Extent2D                     m_swapchainExtent;
-		uint32                           m_minImageCount{0u};
+		vk::raii::SwapchainKHR     m_swapchain{nullptr};
+		std::vector<vk::Image>     m_swapchainImages;
+		std::vector<vk::ImageView> m_swapchainImageViews;
+		vk::SurfaceFormatKHR       m_swapchainSurfaceFormat;
+		vk::Extent2D               m_swapchainExtent;
+		uint32                     m_minImageCount{0u};
 
 		std::vector<vk::raii::Semaphore> m_imageAvailableSemaphores;
 		std::vector<vk::raii::Semaphore> m_renderFinishedSemaphores;

@@ -13,7 +13,7 @@ namespace toaster::gpu
 		texture_spec_info.width        = 1u;
 		texture_spec_info.height       = 1u;
 		texture_spec_info.format       = vk::Format::eR8G8B8A8Unorm;
-		texture_spec_info.generateMips = false;	
+		texture_spec_info.generateMips = false;
 		uint32 texture_data{0xFFFFFFFF};
 		m_whiteTexture = make_reference<VKTexture2D>(m_device, texture_spec_info, &texture_data, sizeof(uint32));
 
@@ -243,7 +243,7 @@ namespace toaster::gpu
 						{
 							auto storage_buffer{resource.resources[0].as<VKStorageBufferPFF>()};
 							TST_ASSERT(storage_buffer);
-							write_descriptor.pBufferInfo               = &storage_buffer->getSSBO(frame_index)->getDescriptorInfo();
+							write_descriptor.pBufferInfo               = &storage_buffer->getDescriptorInfo(frame_index);
 							stored_write_descriptor.resourceHandles[0] = write_descriptor.pBufferInfo->buffer;
 
 							if (!write_descriptor.pBufferInfo->buffer)
@@ -340,7 +340,7 @@ namespace toaster::gpu
 					}
 					case EGPUResourceType::eStorageBufferPFF:
 					{
-						const auto &buffer_info{resource.resources[0].as<VKStorageBufferPFF>()->getSSBO(p_frame_index)->getDescriptorInfo()};
+						const auto &buffer_info{resource.resources[0].as<VKStorageBufferPFF>()->getDescriptorInfo(p_frame_index)};
 						if (buffer_info.buffer != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
 							m_invalidDescriptorResources[set][binding] = resource;
 						break;
@@ -420,8 +420,8 @@ namespace toaster::gpu
 					case EGPUResourceType::eStorageBufferPFF:
 					{
 						auto storage_buffer{resource.resources[0].as<VKStorageBufferPFF>()};
-						write_descriptor.wds.pBufferInfo    = &storage_buffer->getSSBO(p_frame_index)->getDescriptorInfo();
-						write_descriptor.resourceHandles[0] = storage_buffer->getSSBO(p_frame_index)->getDescriptorInfo().buffer;
+						write_descriptor.wds.pBufferInfo    = &storage_buffer->getDescriptorInfo(p_frame_index);
+						write_descriptor.resourceHandles[0] = storage_buffer->getDescriptorInfo(p_frame_index).buffer;
 						break;
 					}
 					case EGPUResourceType::eTexture2D:

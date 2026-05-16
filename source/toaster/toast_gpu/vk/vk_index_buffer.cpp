@@ -29,21 +29,30 @@ namespace toaster::gpu
 							   m_indexBuffer, m_indexBufferMemory);
 	}
 
-	auto VKIndexBuffer::getBuffer() -> vk::raii::Buffer &
+	VKIndexBuffer::~VKIndexBuffer()
+	{
+		m_device->deferDestruction([device = m_device, buffer = m_indexBuffer, buffer_memory = m_indexBufferMemory]()mutable -> void
+		{
+			device->destroyObject(buffer);
+			device->destroyObject(buffer_memory);
+		});
+	}
+
+	auto VKIndexBuffer::getBuffer() -> vk::Buffer &
 	{
 		return m_indexBuffer;
 	}
 
-	auto VKIndexBuffer::getBufferMemory() -> vk::raii::DeviceMemory &
+	auto VKIndexBuffer::getBufferMemory() -> vk::DeviceMemory &
 	{
 		return m_indexBufferMemory;
 	}
 
 	auto VKIndexBuffer::setData(void *p_data, uint64 p_size, uint64 p_offset) -> void
 	{
-		void *mapped = m_indexBufferMemory.mapMemory(p_offset, p_size, {});
+		void *mapped = m_device->mapMemory(m_indexBufferMemory, p_offset, p_size, {});
 		std::memcpy(mapped, p_data, p_size);
-		m_indexBufferMemory.unmapMemory();
+		m_device->unmapMemory(m_indexBufferMemory);
 	}
 
 	auto VKIndexBuffer::bind(const vk::raii::CommandBuffer &p_command_buffer, vk::IndexType p_index_type) -> void

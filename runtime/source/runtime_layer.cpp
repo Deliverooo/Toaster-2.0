@@ -97,24 +97,6 @@ namespace toaster
 			scene_serializer.deserialize(binary_dir / "../resources/scenes/Test.tscene");
 		else
 			scene_serializer.deserialize(scene_path);
-
-		CommandQueue command_queue{};
-		command_queue.enqueue([]() -> void
-		{
-			LOG_INFO("Orbo");
-		});
-
-		command_queue.enqueue([]() -> void
-		{
-			LOG_INFO("Peeb");
-		});
-
-		command_queue.enqueue([]() -> void
-		{
-			LOG_INFO("Ee");
-		});
-
-		command_queue.execute();
 	}
 
 	auto RuntimeLayer::onDestroy() -> void

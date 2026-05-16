@@ -54,48 +54,18 @@ namespace toaster::render
 		#pragma endregion
 
 		auto setCurrentFrameIndex(uint32 p_index) -> void;
-		auto performGarbageCollection() -> void;
+		auto performGarbageCollection() const -> void;
 
-		// If you care about not getting crashes when allocating gpu objects mid-frame, you should use this instead of make_reference<Type>(ctx, ...)
 		template<typename TObj, typename... TArgs>
 		[[nodiscard]] auto create(TArgs &&... p_args) -> RefPtr<TObj>
 		{
-			return allocate_reference<TObj>([this](TObj *p_ptr) -> void
-			{
-				m_pendingDeletionFns[m_currentFrameIndex].emplace_back(+[](void *ptr) -> void
-				{
-					auto obj{(TObj *) ptr};
-					delete obj;
-				});
-				m_pendingDeletionPtrs[m_currentFrameIndex].emplace_back(p_ptr);
-			}, this, std::forward<TArgs>(p_args)...);
+			return make_reference<TObj>(this, std::forward<TArgs>(p_args)...);
 		}
 
-		// If you care about not getting crashes when allocating gpu objects mid-frame, you should use this instead of make_reference<Type>(ctx, ...)
 		template<typename TObj, typename... TArgs>
 		[[nodiscard]] auto createGPU(TArgs &&... p_args) const -> RefPtr<TObj>
 		{
-			return allocate_reference<TObj>([this](TObj *p_ptr) -> void
-			{
-				m_pendingDeletionFns[m_currentFrameIndex].emplace_back(+[](void *ptr) -> void
-				{
-					auto obj{(TObj *) ptr};
-					delete obj;
-				});
-				m_pendingDeletionPtrs[m_currentFrameIndex].emplace_back(p_ptr);
-			}, m_logicalDevice, std::forward<TArgs>(p_args)...);
-		}
-
-		template<typename TObj, typename... TArgs>
-		[[nodiscard]] auto createGPUObjectRef(TArgs &&... p_args) const -> RefPtr<TObj>
-		{
-			return create<TObj>(std::forward<TArgs>(p_args)...);
-		}
-
-		template<typename TObj, typename... TArgs>
-		[[nodiscard]] auto createGPUObject(TArgs &&... p_args) const -> TObj
-		{
-			return TObj{m_logicalDevice, std::forward<TArgs>(p_args)...};
+			return make_reference<TObj>(m_logicalDevice, std::forward<TArgs>(p_args)...);
 		}
 
 		template<typename TUBOStruct>
@@ -143,9 +113,5 @@ namespace toaster::render
 		OwningPtr<gpu::VKLogicalDevice>  m_logicalDevice{nullptr};
 
 		OwningPtr<Globals> m_globals{nullptr};
-
-		mutable std::vector<std::deque<void(*)(void *)> > m_pendingDeletionFns;
-		mutable std::vector<std::deque<void *> >          m_pendingDeletionPtrs;
-		mutable uint32                                    m_currentFrameIndex{0};
 	};
 }

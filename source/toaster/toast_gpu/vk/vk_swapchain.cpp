@@ -18,6 +18,13 @@ namespace toaster::gpu
 		_createDepthResources();
 	}
 
+	VKSwapchain::~VKSwapchain()
+	{
+		for (auto &view: m_swapchainImageViews)
+			m_device->destroyObject(view);
+		m_swapchainImageViews.clear();
+	}
+
 	auto VKSwapchain::beginFrame() -> void
 	{
 		// Wait for the previous frame to be finished before rendering this one
@@ -114,7 +121,7 @@ namespace toaster::gpu
 		return m_swapchainImages[p_index];
 	}
 
-	auto VKSwapchain::getImageView(uint32 p_index) -> vk::raii::ImageView &
+	auto VKSwapchain::getImageView(uint32 p_index) -> vk::ImageView &
 	{
 		TST_ASSERT_MSG(p_index < m_swapchainImageViews.size(), "Out of bounds");
 		return m_swapchainImageViews[p_index];
@@ -125,7 +132,7 @@ namespace toaster::gpu
 		return m_swapchainImages[m_imageIndex];
 	}
 
-	auto VKSwapchain::getCurrentImageView() -> vk::raii::ImageView &
+	auto VKSwapchain::getCurrentImageView() -> vk::ImageView &
 	{
 		return m_swapchainImageViews[m_imageIndex];
 	}
@@ -298,6 +305,8 @@ namespace toaster::gpu
 		// Wait for the GPU to finish processing anything before recreating, so nothing that depends on the swapchain becomes invalid
 		m_device->getVulkanLogicalDevice().waitIdle();
 
+		for (auto &view: m_swapchainImageViews)
+			m_device->destroyObject(view);
 		m_swapchainImageViews.clear();
 
 		_create();

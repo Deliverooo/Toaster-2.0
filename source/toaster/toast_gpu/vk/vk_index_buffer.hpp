@@ -17,17 +17,18 @@ namespace toaster::gpu
 		// I'm such a diddyblud
 		VKIndexBuffer(VKLogicalDevice *p_device, void *p_data, uint64 p_size);
 		VKIndexBuffer(VKLogicalDevice *p_device, uint64 p_size);
+		~VKIndexBuffer();
 
-		auto getBuffer() -> vk::raii::Buffer &;
-		auto getBufferMemory() -> vk::raii::DeviceMemory &;
+		auto getBuffer() -> vk::Buffer &;
+		auto getBufferMemory() -> vk::DeviceMemory &;
 
 		auto setData(void *p_data, uint64 p_size, uint64 p_offset) -> void;
 
 		auto bind(const vk::raii::CommandBuffer &p_command_buffer, vk::IndexType p_index_type) -> void;
 
 	private:
-		vk::raii::Buffer       m_indexBuffer{nullptr};
-		vk::raii::DeviceMemory m_indexBufferMemory{nullptr};
+		vk::Buffer       m_indexBuffer{nullptr};
+		vk::DeviceMemory m_indexBufferMemory{nullptr};
 	};
 
 	TST_GPU_DEFINE_HANDLE(VKIndexBuffer, IndexBuffer)

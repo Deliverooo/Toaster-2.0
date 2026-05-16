@@ -46,11 +46,11 @@ namespace toaster
 	public:
 		using CommandFunc = void(*)(void *);
 
-		CommandQueue() : m_allocator(10485760)
+		CommandQueue(const uint64 p_size = 10485760u /*10 MB*/) : m_allocator(p_size)
 		{
 		}
 
-		template<typename TFunc>
+		template<typename TFunc> requires std::is_trivially_destructible_v<TFunc> && std::invocable<TFunc>
 		auto enqueue(TFunc &&p_func) -> void
 		{
 			auto cmd{
@@ -64,15 +64,14 @@ namespace toaster
 			};
 			*reinterpret_cast<CommandFunc *>(m_allocator.m_ptr) = cmd;
 			m_allocator.m_ptr                                   += sizeof(CommandFunc);
-			*reinterpret_cast<uint32_t *>(m_allocator.m_ptr)    = sizeof(p_func);
-			m_allocator.m_ptr                                   += sizeof(uint32_t);
+			*reinterpret_cast<uint32 *>(m_allocator.m_ptr)      = sizeof(p_func);
+			m_allocator.m_ptr                                   += sizeof(uint32);
 
-			void *memory{m_allocator.m_ptr};
-			m_allocator.m_ptr += sizeof(p_func);
+			void *memory{m_allocator.alloc(sizeof(p_func))};
 
 			++m_commandCount;
 
-			new(memory) TFunc(std::forward<TFunc>((TFunc &&) p_func));
+			new(memory) TFunc(std::forward<TFunc>(p_func));
 		}
 
 		auto execute() -> void

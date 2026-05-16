@@ -80,7 +80,10 @@ namespace toaster::gpu
 	{
 		m_textureData.release();
 
-		// m_device->destroyObj()
+		m_device->deferDestruction([device = m_device, sampler = m_sampler]() mutable-> void
+		{
+			device->destroyObject(sampler);
+		});
 	}
 
 	auto VKTexture2D::resize(uint32 p_width, uint32 p_height) -> void
@@ -107,6 +110,7 @@ namespace toaster::gpu
 		if (m_image->getCurrentImageLayout() == vk::ImageLayout::eTransferDstOptimal)
 			util::transferDstToShaderRead(m_image.get());
 
+		m_device->destroyObject(m_sampler);
 		m_sampler             = nullptr;
 		m_descriptorImageInfo = vk::DescriptorImageInfo{};
 
@@ -137,7 +141,7 @@ namespace toaster::gpu
 		return m_image;
 	}
 
-	auto VKTexture2D::getSampler() -> vk::raii::Sampler &
+	auto VKTexture2D::getSampler() -> vk::Sampler &
 	{
 		return m_sampler;
 	}
@@ -224,6 +228,11 @@ namespace toaster::gpu
 	VKTexture3D::~VKTexture3D()
 	{
 		m_textureData.release();
+
+		m_device->deferDestruction([device = m_device, sampler = m_sampler]() mutable-> void
+		{
+			device->destroyObject(sampler);
+		});
 	}
 
 	auto VKTexture3D::resize(uint32 p_width, uint32 p_height) -> void
@@ -250,6 +259,7 @@ namespace toaster::gpu
 		if (m_image->getCurrentImageLayout() == vk::ImageLayout::eTransferDstOptimal)
 			util::transferDstToShaderRead(m_image.get());
 
+		m_device->destroyObject<vk::Sampler>(m_sampler);
 		m_sampler             = nullptr;
 		m_descriptorImageInfo = vk::DescriptorImageInfo{};
 
@@ -275,7 +285,7 @@ namespace toaster::gpu
 		return m_image;
 	}
 
-	auto VKTexture3D::getSampler() -> vk::raii::Sampler &
+	auto VKTexture3D::getSampler() -> vk::Sampler &
 	{
 		return m_sampler;
 	}

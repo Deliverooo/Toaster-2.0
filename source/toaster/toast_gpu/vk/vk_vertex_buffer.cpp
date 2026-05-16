@@ -31,8 +31,11 @@ namespace toaster::gpu
 
 	VKVertexBuffer::~VKVertexBuffer()
 	{
-		m_device->destroy(m_vertexBuffer);
-		m_device->destroy(m_vertexBufferMemory);
+		m_device->deferDestruction([device = m_device, buffer = m_vertexBuffer, buffer_memory = m_vertexBufferMemory]() mutable-> void
+		{
+			device->destroyObject(buffer);
+			device->destroyObject(buffer_memory);
+		});
 	}
 
 	auto VKVertexBuffer::getBuffer() -> vk::Buffer &

@@ -11,17 +11,27 @@ namespace toaster::gpu
 		recreate();
 	}
 
-	auto VKRawImage::getImage() -> vk::raii::Image &
+	VKRawImage::~VKRawImage()
+	{
+		m_device->deferDestruction([device = m_device, image = m_image, image_memory = m_imageMemory, image_view = m_imageView]()mutable -> void
+		{
+			device->destroyObject(image);
+			device->destroyObject(image_memory);
+			device->destroyObject(image_view);
+		});
+	}
+
+	auto VKRawImage::getImage() -> vk::Image &
 	{
 		return m_image;
 	}
 
-	auto VKRawImage::getImageMemory() -> vk::raii::DeviceMemory &
+	auto VKRawImage::getImageMemory() -> vk::DeviceMemory &
 	{
 		return m_imageMemory;
 	}
 
-	auto VKRawImage::getImageView() -> vk::raii::ImageView &
+	auto VKRawImage::getImageView() -> vk::ImageView &
 	{
 		return m_imageView;
 	}
@@ -72,6 +82,12 @@ namespace toaster::gpu
 
 	auto VKRawImage::recreate() -> void
 	{
+		m_device->deferDestruction([device = m_device, image = m_image, image_memory = m_imageMemory, image_view = m_imageView]() mutable-> void
+		{
+			device->destroyObject<vk::Image>(image);
+			device->destroyObject<vk::DeviceMemory>(image_memory);
+			device->destroyObject<vk::ImageView>(image_view);
+		});
 		m_image       = nullptr;
 		m_imageMemory = nullptr;
 		m_imageView   = nullptr;
@@ -101,7 +117,7 @@ namespace toaster::gpu
 			util::undefinedToGeneral(this);
 		}
 
-		m_imageView = m_device->createImageView(m_image, m_specInfo.format, aspect_flags, m_specInfo.mipCount, m_specInfo.layerCount);
+		m_imageView = m_device->createImageView(m_image, m_specInfo.format, aspect_flags, m_specInfo.layerCount, m_specInfo.mipCount);
 	}
 
 	VKImage2D::VKImage2D(VKLogicalDevice *p_device, const ImageSpecInfo &p_spec_info) : m_device(p_device)
@@ -109,6 +125,14 @@ namespace toaster::gpu
 		m_image = make_reference<VKRawImage>(m_device, p_spec_info);
 		util::undefinedToGeneral(m_image.get());
 		createSampler(vk::ImageLayout::eGeneral);
+	}
+
+	VKImage2D::~VKImage2D()
+	{
+		m_device->deferDestruction([device = m_device, sampler = m_sampler]() mutable-> void
+		{
+			device->destroyObject(sampler);
+		});
 	}
 
 	auto VKImage2D::resize(uint32 p_width, uint32 p_height) -> void
@@ -136,6 +160,7 @@ namespace toaster::gpu
 		if (m_image->getCurrentImageLayout() == vk::ImageLayout::eTransferDstOptimal)
 			util::transferDstToShaderRead(m_image.get());
 
+		m_device->destroyObject<vk::Sampler>(m_sampler);
 		m_sampler             = nullptr;
 		m_descriptorImageInfo = vk::DescriptorImageInfo{};
 

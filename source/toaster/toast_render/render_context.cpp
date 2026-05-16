@@ -43,9 +43,6 @@ namespace toaster::render
 		#pragma endregion
 
 		m_globals = new Globals{m_logicalDevice, m_specInfo.binaryDir};
-
-		m_pendingDeletionFns.resize(maxFramesInFlight);
-		m_pendingDeletionPtrs.resize(maxFramesInFlight);
 	}
 
 	RenderContext::~RenderContext()
@@ -88,24 +85,15 @@ namespace toaster::render
 	auto RenderContext::setCurrentFrameIndex(uint32 p_index) -> void
 	{
 		TST_PERMA_ASSERT_MSG(p_index < maxFramesInFlight, "Index is out of bounds!");
-		m_currentFrameIndex = p_index;
 		m_logicalDevice->setCurrentFrameIndex(p_index);
 	}
 
-	auto RenderContext::performGarbageCollection() -> void
+	auto RenderContext::performGarbageCollection() const -> void
 	{
-		while (!m_pendingDeletionFns[m_currentFrameIndex].empty())
-		{
-			auto deleter{std::move(m_pendingDeletionFns[m_currentFrameIndex].front())};
-			auto ptr{m_pendingDeletionPtrs[m_currentFrameIndex].front()};
-			m_pendingDeletionFns[m_currentFrameIndex].pop_front();
-			m_pendingDeletionPtrs[m_currentFrameIndex].pop_front();
-			deleter(ptr);
-		}
 		m_logicalDevice->performGarbageCollection();
 	}
 
-	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) const -> RefPtr<gpu::VKTexture3D>
+	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) const -> gpu::Texture3DHandle
 	{
 		auto env_tex{createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, p_path)};
 
@@ -122,7 +110,7 @@ namespace toaster::render
 		equirectangular_to_cubemap_pass->setInput("o_Cubemap", env_map);
 		equirectangular_to_cubemap_pass->bake();
 
-		auto command_buffer{createGPUObject<gpu::VKCommandBuffer>(vk::QueueFlagBits::eCompute)};
+		gpu::VKCommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
 
 		beginCompute(command_buffer, 0, equirectangular_to_cubemap_pass);

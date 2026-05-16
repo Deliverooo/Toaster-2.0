@@ -30,10 +30,11 @@ namespace toaster::gpu
 		TST_GPU_OBJECT
 	public:
 		VKRawImage(VKLogicalDevice *p_ctx, const ImageSpecInfo &p_spec_info);
+		~VKRawImage();
 
-		auto getImage() -> vk::raii::Image &;
-		auto getImageMemory() -> vk::raii::DeviceMemory &;
-		auto getImageView() -> vk::raii::ImageView &;
+		auto getImage() -> vk::Image &;
+		auto getImageMemory() -> vk::DeviceMemory &;
+		auto getImageView() -> vk::ImageView &;
 
 		[[nodiscard]] auto getSpecInfo() const -> const ImageSpecInfo &;
 
@@ -48,9 +49,9 @@ namespace toaster::gpu
 	private:
 		ImageSpecInfo m_specInfo{};
 
-		vk::raii::Image        m_image{nullptr};
-		vk::raii::DeviceMemory m_imageMemory{nullptr};
-		vk::raii::ImageView    m_imageView{nullptr};
+		vk::Image        m_image{nullptr};
+		vk::DeviceMemory m_imageMemory{nullptr};
+		vk::ImageView    m_imageView{nullptr};
 
 		vk::ImageLayout m_currentImageLayout{vk::ImageLayout::eUndefined};
 	};
@@ -63,6 +64,7 @@ namespace toaster::gpu
 		TST_GPU_RESOURCE(Image2D)
 	public:
 		VKImage2D(VKLogicalDevice *p_device, const ImageSpecInfo &p_spec_info);
+		~VKImage2D();
 
 		auto resize(uint32 p_width, uint32 p_height) -> void;
 		auto setData(void *p_data, uint64 p_size) -> void;
@@ -77,8 +79,8 @@ namespace toaster::gpu
 	private:
 		RefPtr<VKRawImage> m_image{nullptr};
 
-		vk::raii::Sampler m_sampler{nullptr};
-		Buffer            m_imageData;
+		vk::Sampler m_sampler{nullptr};
+		Buffer      m_imageData;
 
 		vk::DescriptorImageInfo m_descriptorImageInfo{};
 	};
