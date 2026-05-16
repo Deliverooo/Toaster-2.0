@@ -89,6 +89,7 @@ namespace toaster::render
 	{
 		TST_PERMA_ASSERT_MSG(p_index < maxFramesInFlight, "Index is out of bounds!");
 		m_currentFrameIndex = p_index;
+		m_logicalDevice->setCurrentFrameIndex(p_index);
 	}
 
 	auto RenderContext::performGarbageCollection() -> void
@@ -101,6 +102,7 @@ namespace toaster::render
 			m_pendingDeletionPtrs[m_currentFrameIndex].pop_front();
 			deleter(ptr);
 		}
+		m_logicalDevice->performGarbageCollection();
 	}
 
 	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) const -> RefPtr<gpu::VKTexture3D>

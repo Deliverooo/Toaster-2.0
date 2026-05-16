@@ -139,6 +139,15 @@ namespace toaster::gpu
 		#pragma endregion
 	}
 
+	auto VKLogicalDevice::setCurrentFrameIndex(uint32 p_index) -> void
+	{
+		m_currentFrameIndex = p_index;
+	}
+
+	auto VKLogicalDevice::performGarbageCollection() -> void
+	{
+	}
+
 	auto VKLogicalDevice::getPhysicalDevice() const -> NonOwningPtr<VKPhysicalDevice>
 	{
 		return m_physicalDevice;
@@ -267,6 +276,16 @@ namespace toaster::gpu
 		return {m_logicalDevice, shader_module_create_info};
 	}
 
+	auto VKLogicalDevice::mapMemory(vk::DeviceMemory p_memory, vk::DeviceSize p_offset, vk::DeviceSize p_size, vk::MemoryMapFlags p_flags) const -> void *
+	{
+		return ((vk::Device) m_logicalDevice).mapMemory(p_memory, p_offset, p_size, p_flags);
+	}
+
+	auto VKLogicalDevice::unmapMemory(vk::DeviceMemory p_memory) const -> void
+	{
+		((vk::Device) m_logicalDevice).unmapMemory(p_memory);
+	}
+
 	auto VKLogicalDevice::createBuffer(vk::DeviceSize    p_size, vk::BufferUsageFlags          p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
 									   vk::raii::Buffer &p_out_buffer, vk::raii::DeviceMemory &p_out_memory) -> void
 	{
@@ -289,6 +308,30 @@ namespace toaster::gpu
 		p_out_memory = {m_logicalDevice, memory_allocate_info};
 
 		p_out_buffer.bindMemory(p_out_memory, 0u);
+	}
+
+	auto VKLogicalDevice::createBuffer(vk::DeviceSize p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::Buffer &p_out_buffer,
+									   vk::DeviceMemory &p_out_memory) -> void
+	{
+		vk::BufferCreateInfo buffer_create_info{};
+		buffer_create_info.size        = p_size;
+		buffer_create_info.usage       = p_usage_flags;
+		buffer_create_info.sharingMode = vk::SharingMode::eConcurrent;
+
+		buffer_create_info.queueFamilyIndexCount = 2;
+		uint32 qfi[]                             = {m_queueFamilyIndices.graphics, m_queueFamilyIndices.transfer};
+		buffer_create_info.pQueueFamilyIndices   = qfi;
+
+		p_out_buffer = ((vk::Device) m_logicalDevice).createBuffer(buffer_create_info);
+
+		vk::MemoryRequirements memory_requirements = ((vk::Device) m_logicalDevice).getBufferMemoryRequirements(p_out_buffer);
+		vk::MemoryAllocateInfo memory_allocate_info{};
+		memory_allocate_info.memoryTypeIndex = m_physicalDevice->findMemoryType(memory_requirements.memoryTypeBits, p_memory_properties);
+		memory_allocate_info.allocationSize  = memory_requirements.size;
+
+		p_out_memory = ((vk::Device) m_logicalDevice).allocateMemory(memory_allocate_info);
+
+		((vk::Device) m_logicalDevice).bindBufferMemory(p_out_buffer, p_out_memory, 0u);
 	}
 
 	auto VKLogicalDevice::createImage(const ImageExtent &p_image_extent, uint32 p_layer_count, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count,
@@ -384,6 +427,27 @@ namespace toaster::gpu
 	}
 
 	auto VKLogicalDevice::copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) -> void
+	{
+		vk::BufferCopy2 buffer_copy{};
+		buffer_copy.size      = static_cast<uint32>(p_size);
+		buffer_copy.srcOffset = 0;
+		buffer_copy.dstOffset = 0;
+
+		vk::CopyBufferInfo2 copy_info{};
+		copy_info.srcBuffer   = p_src_buffer;
+		copy_info.dstBuffer   = p_dst_buffer;
+		copy_info.regionCount = 1;
+		copy_info.pRegions    = &buffer_copy;
+
+		VKCommandBuffer cmd{this, vk::QueueFlagBits::eTransfer};
+		cmd.begin();
+		cmd.getVulkanCommandBuffer().copyBuffer2(copy_info);
+		cmd.end();
+		cmd.submit();
+		cmd.waitForFence();
+	}
+
+	auto VKLogicalDevice::copyBuffer(const vk::Buffer &p_src_buffer, const vk::Buffer &p_dst_buffer, vk::DeviceSize p_size) -> void
 	{
 		vk::BufferCopy2 buffer_copy{};
 		buffer_copy.size      = static_cast<uint32>(p_size);

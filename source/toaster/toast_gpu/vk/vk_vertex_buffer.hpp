@@ -13,17 +13,18 @@ namespace toaster::gpu
 	public:
 		VKVertexBuffer(VKLogicalDevice *p_device, void *p_data, uint64 p_size);
 		VKVertexBuffer(VKLogicalDevice *p_device, uint64 p_size);
+		~VKVertexBuffer();
 
-		auto getBuffer() -> vk::raii::Buffer &;
-		auto getBufferMemory() -> vk::raii::DeviceMemory &;
+		auto getBuffer() -> vk::Buffer &;
+		auto getBufferMemory() -> vk::DeviceMemory &;
 
 		auto setData(void *p_data, uint64 p_size, uint64 p_offset) -> void;
 
 		auto bind(const vk::raii::CommandBuffer &p_command_buffer) -> void;
 
 	private:
-		vk::raii::Buffer       m_vertexBuffer{nullptr};
-		vk::raii::DeviceMemory m_vertexBufferMemory{nullptr};
+		vk::Buffer       m_vertexBuffer{nullptr};
+		vk::DeviceMemory m_vertexBufferMemory{nullptr};
 	};
 
 	TST_GPU_DEFINE_HANDLE(VKVertexBuffer, VertexBuffer)

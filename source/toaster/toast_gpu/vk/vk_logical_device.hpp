@@ -42,8 +42,6 @@ namespace toaster::gpu
 		void *pNext{nullptr};
 	};
 
-	using DeletionQueue = std::vector<std::deque<std::function<void()> > >;
-
 	class TST_GPU_API VKLogicalDevice
 	{
 	public:
@@ -55,6 +53,25 @@ namespace toaster::gpu
 		};
 
 		VKLogicalDevice(VKPhysicalDevice *p_physical_device, const VKLogicalDeviceSpecInfo &p_spec_info);
+
+		template<typename TFunc>
+		auto deferDestruction(TFunc &&p_func) -> void
+		{
+			// auto cmd{
+			// 	+[](void *p_ptr) -> void
+			// 	{
+			// 		auto func{(TFunc *) p_ptr};
+			// 		(*func)();
+			//
+			// 		func->~TFunc();
+			// 	}
+			// };
+			// auto buffer{m_deletionQueue[m_currentFrameIndex].alloc(cmd, sizeof(p_func))};
+			// new(buffer) TFunc(std::forward<TFunc>((TFunc &&) p_func));
+		}
+
+		auto setCurrentFrameIndex(uint32 p_index) -> void;
+		auto performGarbageCollection() -> void;
 
 		[[nodiscard]] auto getPhysicalDevice() const -> NonOwningPtr<VKPhysicalDevice>;
 		[[nodiscard]] auto getSpecInfo() const -> const VKLogicalDeviceSpecInfo &;
@@ -78,8 +95,22 @@ namespace toaster::gpu
 		[[nodiscard]] auto createShaderModule(const std::vector<uint8> &p_code) -> vk::raii::ShaderModule;
 		[[nodiscard]] auto createShaderModule(const std::vector<uint32> &p_code) -> vk::raii::ShaderModule;
 
-		auto createBuffer(vk::DeviceSize p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Buffer &p_out_buffer,
+		#pragma region vulkan non-raii wrappers
+		auto mapMemory(vk::DeviceMemory p_memory, vk::DeviceSize p_offset, vk::DeviceSize p_size, vk::MemoryMapFlags p_flags) const -> void *;
+		auto unmapMemory(vk::DeviceMemory p_memory) const -> void;
+
+		template<typename TVKObj>
+		auto destroy(TVKObj p_obj) const -> void
+		{
+			TST_PERMA_ASSERT(false);
+		}
+		#pragma endregion
+
+		auto createBuffer(vk::DeviceSize          p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Buffer &p_out_buffer,
 						  vk::raii::DeviceMemory &p_out_memory) -> void;
+		auto createBuffer(vk::DeviceSize    p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::Buffer &p_out_buffer,
+						  vk::DeviceMemory &p_out_memory) -> void;
+
 		auto createImage(const ImageExtent &p_image_extent, uint32 p_layer_count, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count, vk::Format p_format,
 						 vk::ImageTiling p_image_tiling, vk::ImageUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Image &p_out_image,
 						 vk::raii::DeviceMemory &p_out_memory) -> void;
@@ -90,6 +121,8 @@ namespace toaster::gpu
 		[[nodiscard]] auto createSampler() -> vk::raii::Sampler;
 
 		auto copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) -> void;
+		auto copyBuffer(const vk::Buffer &p_src_buffer, const vk::Buffer &p_dst_buffer, vk::DeviceSize p_size) -> void;
+
 		auto copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void;
 
 		auto transitionImageLayout(vk::raii::Image &p_image, const ImageLayoutInfo &   p_src_layout_info, const ImageLayoutInfo &p_dst_layout_info, uint32 p_layer_count,
@@ -127,5 +160,21 @@ namespace toaster::gpu
 		vk::raii::CommandPool m_graphicsCommandPool{nullptr};
 		vk::raii::CommandPool m_transferCommandPool{nullptr};
 		vk::raii::CommandPool m_computeCommandPool{nullptr};
+
+		uint32 m_currentFrameIndex{0u};
 	};
+
+	#pragma region destroy
+	template<>
+	inline auto VKLogicalDevice::destroy<vk::Buffer>(vk::Buffer p_buffer) const -> void
+	{
+		((vk::Device) m_logicalDevice).destroyBuffer(p_buffer);
+	}
+
+	template<>
+	inline auto VKLogicalDevice::destroy<vk::DeviceMemory>(vk::DeviceMemory p_memory) const -> void
+	{
+		((vk::Device) m_logicalDevice).freeMemory(p_memory);
+	}
+	#pragma endregion
 }

@@ -79,6 +79,8 @@ namespace toaster::gpu
 	VKTexture2D::~VKTexture2D()
 	{
 		m_textureData.release();
+
+		// m_device->destroyObj()
 	}
 
 	auto VKTexture2D::resize(uint32 p_width, uint32 p_height) -> void
