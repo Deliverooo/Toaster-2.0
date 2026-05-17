@@ -37,6 +37,7 @@ namespace toaster::gpu
 
 		// Goto vk_shader.cpp #define TST_SHADER_LOG_TRACE for usage... if true, prints shader reflection data
 		bool printShaderDebugInfo{true};
+		bool printDebugInfo{true};
 
 		uint32 maxFramesInFlight{3u};
 

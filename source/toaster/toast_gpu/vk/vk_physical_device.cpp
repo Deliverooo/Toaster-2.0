@@ -47,13 +47,15 @@ namespace toaster::gpu
 		m_depthFormat = findSupportedFormat({vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint}, vk::ImageTiling::eOptimal,
 											vk::FormatFeatureFlagBits::eDepthStencilAttachment);
 
-		LOG_INFO("Using physical device: {} | Device ID: {}\n", props.deviceName.data(), props.deviceID);
-
-		LOG_INFO("Available device extensions:");
-		auto extension_props = m_physicalDevice.enumerateDeviceExtensionProperties();
-		for (auto ext: extension_props)
-			LOG_INFO("\t{}", ext.extensionName.data());
-		LOG_INFO("");
+		if (m_specInfo.printDebugInfo)
+		{
+			LOG_INFO("Using physical device: {} | Device ID: {}\n", props.deviceName.data(), props.deviceID);
+			LOG_INFO("Available device extensions:");
+			auto extension_props = m_physicalDevice.enumerateDeviceExtensionProperties();
+			for (auto ext: extension_props)
+				LOG_INFO("\t{}", ext.extensionName.data());
+			LOG_INFO("");
+		}
 	}
 
 	auto VKPhysicalDevice::getInstance() const -> NonOwningPtr<VKInstance>
@@ -193,9 +195,12 @@ namespace toaster::gpu
 			});
 		});
 
-		for (const auto &ext: available_device_extensions)
+		if (m_specInfo.printDebugInfo)
 		{
-			LOG_TRACE("{}", ext.extensionName.data());
+			for (const auto &ext: available_device_extensions)
+			{
+				LOG_TRACE("{}", ext.extensionName.data());
+			}
 		}
 
 		auto features = p_physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,

@@ -1,17 +1,15 @@
 #pragma once
 
-#include "toast_lib/string.hpp"
-
 #include <utility>
+#include <glm/gtx/quaternion.hpp>
 
 #include "scene_camera.hpp"
-#include "scriptable_entity.hpp"
-#include "glm/gtx/quaternion.hpp"
+#include "glm/gtx/matrix_decompose.hpp"
 
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_lib/uuid.hpp"
+#include "toast_lib/math/math_matrix.hpp"
 #include "toast_render/mesh.hpp"
-#include "toast_scripting/script_common.hpp"
 #include "toast_scripting/script_object.hpp"
 
 #define DEFINE_COMPONENT(__name) struct TST_API __name
@@ -34,6 +32,19 @@ namespace toaster
 		}
 
 		UUID uuid;
+	};
+
+	DEFINE_COMPONENT(RelationshipComponent)
+	{
+		RelationshipComponent()  = default;
+		~RelationshipComponent() = default;
+
+		RelationshipComponent(const UUID p_parent_uuid) : parentUUID(p_parent_uuid)
+		{
+		}
+
+		UUID              parentUUID{UINT64_MAX}; // Invalid or doesn't have parent
+		std::vector<UUID> children;
 	};
 
 	DEFINE_COMPONENT(TagComponent)
@@ -65,6 +76,14 @@ namespace toaster
 		[[nodiscard]] auto getTransform() const -> glm::mat4
 		{
 			return glm::translate(glm::mat4{1.0f}, translation) * glm::toMat4(rotation) * glm::scale(glm::mat4{1.0f}, scale);
+		}
+
+		auto setTransform(const glm::mat4 &p_transform) -> void
+		{
+			glm::vec3 skew{0.0f};
+			glm::vec4 perspective{0.0f};
+			glm::decompose(p_transform, scale, rotation, translation, skew, perspective);
+			// tsm::decomposeTransform(p_transform, translation, rotation, scale);
 		}
 
 		auto reset() -> void
@@ -165,28 +184,6 @@ namespace toaster
 			multiplier = 1.0f;
 			angle      = 67.0f;
 			range      = 12.0f;
-		}
-	};
-
-	DEFINE_COMPONENT(NativeScriptComponent)
-	{
-		ScriptableEntity *instance{nullptr};
-
-		using InstantiateFn = ScriptableEntity *(*)();
-		InstantiateFn instantiateFn{nullptr};
-
-		using DestroyFn = void(*)(NativeScriptComponent *);
-		DestroyFn destroyFn{nullptr};
-
-		template<c_ScriptableEntity Type>
-		auto bind() -> void
-		{
-			instantiateFn = []() -> ScriptableEntity * { return static_cast<ScriptableEntity *>(new Type()); };
-			destroyFn     = [](NativeScriptComponent *p_ncs) -> void
-			{
-				delete p_ncs->instance;
-				p_ncs->instance = nullptr;
-			};
 		}
 	};
 

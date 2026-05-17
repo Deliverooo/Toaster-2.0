@@ -25,7 +25,7 @@ namespace toaster
 		~SceneRenderer();
 
 		auto begin(uint32 p_frame_index, const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix) -> void;
-		auto end(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto end(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void;
 		auto renderMesh(const render::MeshHandle &p_mesh, const glm::mat4 &p_transform) -> void;
 
 		auto getSpecInfo() const -> const SceneRendererSpecInfo &;
@@ -39,11 +39,11 @@ namespace toaster
 		auto setEnvironmentBackground(const gpu::Texture3DHandle &p_texture) -> void;
 
 	private:
-		auto _renderDepthPrePass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-		auto _renderLightCullingPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-		auto _renderSkyboxPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-		auto _renderGeometryPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
-		auto _renderAntiAliasingPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderDepthPrePass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void;
+		auto _renderLightCullingPass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void;
+		auto _renderSkyboxPass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void;
+		auto _renderGeometryPass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void;
+		auto _renderAntiAliasingPass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void;
 
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
 

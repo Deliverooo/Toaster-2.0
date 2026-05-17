@@ -57,7 +57,7 @@ namespace toaster::render
 		~Renderer2D();
 
 		auto begin(uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void;
-		auto end(gpu::VKCommandBuffer &        p_cmd, uint32 p_frame_index, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr, const gpu::RenderingAttachmentInfo *p_override_depth_attachment                                                             = nullptr) -> void;
+		auto end(gpu::VKCommandBuffer *        p_cmd, uint32 p_frame_index, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr, const gpu::RenderingAttachmentInfo *p_override_depth_attachment                                                             = nullptr) -> void;
 
 		auto submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
 		auto submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;

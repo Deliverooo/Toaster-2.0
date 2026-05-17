@@ -361,14 +361,16 @@ namespace toaster
 					LOG_INFO("{}", path.string());
 
 					auto geometry_shader{m_renderCtx->getGlobals()->shaderLibrary().get("Geometry")};
-					p_comp.mesh = m_renderCtx->create<render::Mesh>(path, geometry_shader);
+					p_comp.mesh = m_renderCtx->create<render::MeshData>(path, geometry_shader);
 				}
 			}
 
 			if (p_comp.mesh)
 			{
-				for (auto &mat: p_comp.mesh->getMaterials())
-					_drawMaterial(p_frame_index, mat.material);
+				for (auto &[index, material]: p_comp.mesh->getMaterials().data())
+				{
+					_drawMaterial(p_frame_index, material);
+				}
 			}
 		}, this);
 
@@ -395,13 +397,14 @@ namespace toaster
 		}, this);
 	}
 
-	auto SceneHierarchyPanel::_drawMaterial(uint32 p_frame_index, const render::MaterialHandle &p_mat) -> void
+	auto SceneHierarchyPanel::_drawMaterial(uint32 p_frame_index, render::MeshMaterialData &p_mat) -> void
 	{
-		ig::PushID(p_mat->getName().c_str());
-		ig::Text("Material: %s", p_mat->getName().c_str());
+		ig::PushID(p_mat.name.c_str());
+		ig::Text("Material: %s", p_mat.name.c_str());
 
-		auto        albedo_map{p_mat->getResource<gpu::VKTexture2D>("u_AlbedoTexture")};
-		ImTextureID tex_id{m_textureManager->registerOrGetTexture("SHP_Albedo_Mat_" + p_mat->getName(), albedo_map)};
+		if (!p_mat.albedoMap)
+			p_mat.albedoMap = p_mat.material->getResource<gpu::VKTexture2D>("u_AlbedoTexture");
+		ImTextureID tex_id{m_textureManager->registerOrGetTexture("SHP_Albedo_Mat_" + p_mat.name, p_mat.albedoMap)};
 		ig::Image(tex_id, ImVec2{100.0f, 100.0f}, ImVec2{0, 0}, ImVec2{1, 1});
 
 		if (ig::Button("Albedo texture", ImVec2{ig::GetContentRegionAvail().x, 0}))
@@ -410,7 +413,8 @@ namespace toaster
 			if (io::filesystem::exists(path))
 			{
 				LOG_INFO("{}", path.string());
-				p_mat->setTexture("u_AlbedoTexture", m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
+				p_mat.albedoMap = m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path);
+				p_mat.material->setTexture("u_AlbedoTexture", p_mat.albedoMap);
 			}
 		}
 
@@ -420,25 +424,26 @@ namespace toaster
 			if (io::filesystem::exists(path))
 			{
 				LOG_INFO("{}", path.string());
-				p_mat->setTexture("u_NormalTexture", m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path));
-				p_mat->set("u_Material.hasNormalMap", 1u);
+				p_mat.normalMap = m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, path);
+				p_mat.material->setTexture("u_NormalTexture", p_mat.normalMap);
+				p_mat.material->set("u_Material.hasNormalMap", 1u);
 			}
 		}
 
 		ig::Separator();
-		glm::vec3 &colour{p_mat->get<glm::vec3>("u_Material.albedoColour")};
+		glm::vec3 &colour{p_mat.material->get<glm::vec3>("u_Material.albedoColour")};
 		if (ui::colourEdit3("Colour", glm::value_ptr(colour)))
-			p_mat->set("u_Material.albedoColour", colour);
+			p_mat.material->set("u_Material.albedoColour", colour);
 
 		ig::Separator();
-		float32 &roughness{p_mat->get<float32>("u_Material.roughness")};
+		float32 &roughness{p_mat.material->get<float32>("u_Material.roughness")};
 		if (ui::dragFloat("Roughness", &roughness, "##Roughness", 0.01f, 0.001f, 1.0f))
-			p_mat->set("u_Material.roughness", roughness);
+			p_mat.material->set("u_Material.roughness", roughness);
 
 		ig::Separator();
-		float32 &metalness{p_mat->get<float32>("u_Material.metalness")};
+		float32 &metalness{p_mat.material->get<float32>("u_Material.metalness")};
 		if (ui::dragFloat("Metalness", &metalness, "##Metalness", 0.01f, 0.001f, 1.0f))
-			p_mat->set("u_Material.metalness", metalness);
+			p_mat.material->set("u_Material.metalness", metalness);
 
 		ig::Separator();
 		ig::PopID();

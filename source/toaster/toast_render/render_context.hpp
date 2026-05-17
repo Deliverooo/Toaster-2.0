@@ -26,13 +26,15 @@ namespace toaster::render
 {
 	class Globals;
 	class Material;
-	class Mesh;
+	class MeshData;
 
 	struct TST_API RenderContextSpecInfo
 	{
 		std::unordered_set<String> instanceExtensions; // Get with Window::getRequiredInstanceExtensions()
 
 		io::filesystem::Path binaryDir;
+		bool                 printDebugInfo{true};
+		bool                 createGlobals{true}; // You will have to compile the shaders for this to work
 	};
 
 	class TST_API RenderContext
@@ -56,12 +58,14 @@ namespace toaster::render
 		auto setCurrentFrameIndex(uint32 p_index) -> void;
 		auto performGarbageCollection() const -> void;
 
+		// Use for objects that take the render context into their constructor
 		template<typename TObj, typename... TArgs>
 		[[nodiscard]] auto create(TArgs &&... p_args) -> RefPtr<TObj>
 		{
 			return make_reference<TObj>(this, std::forward<TArgs>(p_args)...);
 		}
 
+		// Use for objects that take the logical device into their constructor
 		template<typename TObj, typename... TArgs>
 		[[nodiscard]] auto createGPU(TArgs &&... p_args) const -> RefPtr<TObj>
 		{
@@ -96,26 +100,33 @@ namespace toaster::render
 			return createGPU<gpu::VKUniformBufferPFF>(ubo_size, p_count);
 		}
 
+		[[nodiscard]] auto createAttachmentImage(uint32     p_width, uint32 p_height, vk::ImageAspectFlags p_image_aspect_flags,
+												 vk::Format p_format = vk::Format::eUndefined) const -> gpu::RawImageHandle;
+		[[nodiscard]] auto createMultisampleAttachmentImage(uint32     p_width, uint32 p_height, vk::ImageAspectFlags p_image_aspect_flags,
+															vk::Format p_format = vk::Format::eUndefined) const -> gpu::RawImageHandle;
+		[[nodiscard]] auto createAttachmentTexture(uint32     p_width, uint32 p_height, vk::ImageAspectFlags p_image_aspect_flags,
+												   vk::Format p_format = vk::Format::eUndefined) const -> gpu::Texture2DHandle;
+
 		[[nodiscard]] auto createEnvironmentMap(const io::filesystem::Path &p_path) const -> gpu::Texture3DHandle;
 
 		#pragma region render logic
-		auto beginRendering(gpu::VKCommandBuffer &p_command_buffer, const gpu::RenderingInfo &p_rendering_info, uint32 p_frame_index,
+		auto beginRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, uint32 p_frame_index,
 							gpu::VKRenderPass *   p_render_pass) const -> void;
-		auto endRendering(gpu::VKCommandBuffer &p_command_buffer, const gpu::RenderingInfo &p_rendering_info) const -> void;
+		auto endRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info) const -> void;
 
-		auto beginCompute(gpu::VKCommandBuffer &p_command_buffer, uint32 p_frame_index, gpu::VKComputePass *p_compute_pass) const -> void;
-		auto dispatchCompute(gpu::VKCommandBuffer &p_command_buffer, uint32 p_frame_index, const gpu::VKComputePass *p_compute_pass, Material *p_material,
+		auto beginCompute(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, gpu::VKComputePass *p_compute_pass) const -> void;
+		auto dispatchCompute(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, const gpu::VKComputePass *p_compute_pass, Material *p_material,
 							 uint32                p_work_group_x, uint32   p_work_group_y, uint32                   p_work_group_z) const -> void;
 
-		auto renderGeometry(gpu::VKCommandBuffer &p_command_buffer, uint32 p_frame_index, gpu::VKPipeline *p_pipeline, gpu::VKVertexBuffer *p_vertex_buffer,
+		auto renderGeometry(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, gpu::VKPipeline *p_pipeline, gpu::VKVertexBuffer *p_vertex_buffer,
 							gpu::VKIndexBuffer *  p_index_buffer, uint32   p_index_count, Material *       p_material, const glm::mat4 &    p_transform) const -> void;
 
-		auto renderFullscreenQuad(gpu::VKCommandBuffer &p_command_buffer, uint32 p_frame_index, gpu::VKPipeline *p_pipeline, Material *p_material) const -> void;
+		auto renderFullscreenQuad(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, gpu::VKPipeline *p_pipeline, Material *p_material) const -> void;
 
-		auto renderMesh(gpu::VKCommandBuffer &p_command_buffer, uint32 p_frame_index, const Mesh *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline,
+		auto renderMesh(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, const MeshData *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline,
 						const glm::mat4 &     p_transform) const -> void;
 
-		auto renderMesh(gpu::VKCommandBuffer &p_command_buffer, uint32 p_frame_index, const Mesh *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline,
+		auto renderMesh(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, const MeshData *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline,
 						const glm::mat4 &     p_transform, Material *  p_override_material) const -> void;
 		#pragma endregion
 

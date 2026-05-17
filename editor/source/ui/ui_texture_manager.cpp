@@ -26,12 +26,16 @@ namespace toaster::ui
 		{
 			if (it->second.textureRef->getDescriptorInfo() != p_texture->getDescriptorInfo())
 			{
-				// LOG_ERROR("oRB");
+				m_renderCtx->getLogicalDevice()->deferDestruction([device = m_renderCtx->getLogicalDevice(), ds = it->second.descriptorSet, pool = m_descriptorPool
+																  ]() mutable -> void
+																  {
+																	  static_cast<vk::Device>(device->getVulkanLogicalDevice()).freeDescriptorSets(pool, {ds});
+																  });
 				it->second.descriptorSet = nullptr;
 				it->second.textureRef.reset();
 			}
 			else
-				return reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(*m_textureInfoMap[p_name].descriptorSet));
+				return reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(m_textureInfoMap[p_name].descriptorSet));
 		}
 
 		// Allocate descriptor set
@@ -41,16 +45,16 @@ namespace toaster::ui
 		vk::DescriptorSetLayout dsl[]{*m_descriptorSetLayout};
 		alloc_info.pSetLayouts = dsl;
 
-		vk::raii::DescriptorSet descriptor_set = std::move(m_renderCtx->getLogicalDevice()->getVulkanLogicalDevice().allocateDescriptorSets(alloc_info).front());
+		vk::DescriptorSet descriptor_set = ((vk::Device) m_renderCtx->getLogicalDevice()->getVulkanLogicalDevice()).allocateDescriptorSets(alloc_info).front();
 
 		vk::DebugUtilsObjectNameInfoEXT name_info{};
 		name_info.objectType   = vk::ObjectType::eDescriptorSet;
-		name_info.objectHandle = (uint64) (VkDescriptorSet) *descriptor_set;
+		name_info.objectHandle = (uint64) (VkDescriptorSet) descriptor_set;
 		name_info.pObjectName  = p_name.c_str();
 		m_renderCtx->getLogicalDevice()->getVulkanLogicalDevice().setDebugUtilsObjectNameEXT(name_info);
 
 		vk::WriteDescriptorSet write_set{};
-		write_set.dstSet          = *descriptor_set;
+		write_set.dstSet          = descriptor_set;
 		write_set.descriptorCount = 1;
 		write_set.descriptorType  = vk::DescriptorType::eCombinedImageSampler;
 		write_set.pImageInfo      = &p_texture->getDescriptorInfo();
@@ -61,12 +65,12 @@ namespace toaster::ui
 		// Store texture info
 		m_textureInfoMap[p_name] = {
 			p_texture,
-			std::move(descriptor_set),
+			descriptor_set,
 			ImVec2{static_cast<float32>(p_texture->getSpecInfo().width), static_cast<float32>(p_texture->getSpecInfo().height)}
 		};
 
 		// Return the descriptor set as ImTextureID
-		return reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(*m_textureInfoMap[p_name].descriptorSet));
+		return reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(m_textureInfoMap[p_name].descriptorSet));
 	}
 
 	auto UITextureManager::hasTexture(const String &p_name) const -> bool
@@ -80,7 +84,7 @@ namespace toaster::ui
 		{
 		}
 
-		return reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(*m_textureInfoMap.at(p_name).descriptorSet));
+		return reinterpret_cast<ImTextureID>(static_cast<VkDescriptorSet>(m_textureInfoMap.at(p_name).descriptorSet));
 	}
 
 	auto UITextureManager::getTextureSize(const String &p_name) const -> ImVec2

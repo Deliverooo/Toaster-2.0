@@ -59,24 +59,20 @@ namespace toaster
 		virtual auto onUpdate(float32 p_dt) -> void = 0;
 		virtual auto onEvent(Event &p_event) -> void = 0;
 
-		virtual auto onUIInit(void* p_user_data) -> void
+		virtual auto onUIInit(void *p_user_data) -> void
 		{
-			(void)p_user_data;
+			(void) p_user_data;
 		}
 
 		virtual auto onUIRender() -> void
 		{
 		}
 
-		virtual auto getApp() -> Application &;
-
-	private:
-		Application *m_appParent{nullptr};
-
 	protected:
 		// Ts just makes things easier to acess
-		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
-		NonOwningPtr<const render::Globals> m_globals{nullptr};
-		NonOwningPtr<InputContext>          m_inputCtx{nullptr};
+		const NonOwningPtr<Application>           m_app{nullptr};
+		const NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
+		const NonOwningPtr<const render::Globals> m_globals{nullptr};
+		const NonOwningPtr<InputContext>          m_inputCtx{nullptr};
 	};
 }

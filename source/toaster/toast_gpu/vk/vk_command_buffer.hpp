@@ -16,6 +16,7 @@ namespace toaster::gpu
 
 		auto begin() -> void;
 		auto end() -> void;
+		auto endAndSubmit() -> void; // Used for one-time commands or basic things
 		auto submit(vk::PipelineStageFlags2                           p_wait_stage_mask   = vk::PipelineStageFlagBits2::eNone,
 					const std::initializer_list<const vk::Semaphore> &p_wait_semaphores   = {},
 					const std::initializer_list<const vk::Semaphore> &p_signal_semaphores = {}) -> void;

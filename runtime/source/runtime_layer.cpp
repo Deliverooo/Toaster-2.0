@@ -15,19 +15,16 @@
 
 namespace toaster
 {
-	RuntimeLayer::RuntimeLayer(Application *p_app) : IAppLayer(p_app), m_cameraTest(p_app->getWindow().getInputContext(), 90.0f, 1.777f, 0.1f, 100.0f)
+	RuntimeLayer::RuntimeLayer(Application *p_app) : IAppLayer(p_app)
 	{
 	}
 
 	auto RuntimeLayer::onInit() -> void
 	{
-		auto &app = getApp();
-		auto  input_ctx{app.getWindow().getInputContext()};
+		auto swapchain{m_app->getWindow().getSwapchain()};
 
-		auto swapchain{app.getWindow().getSwapchain()};
 		m_viewportWidth  = swapchain->getExtent().width;
 		m_viewportHeight = swapchain->getExtent().height;
-		m_cameraTest.setViewportSize(m_viewportWidth, m_viewportHeight);
 
 		swapchain->setResizeCallback([this](const uint32 width, const uint32 height) -> void
 		{
@@ -37,39 +34,32 @@ namespace toaster
 			m_scene->setViewportSize(width, height);
 
 			m_sceneRenderer->onResize(width, height);
-			m_cameraTest.setViewportSize(width, height);
 		});
 
-		auto                 command_line_args{app.getCommandLineArgs()};
+		auto                 command_line_args{m_app->getCommandLineArgs()};
 		io::filesystem::Path binary_dir{os::getBinaryDirectory()};
 
-		LOG_INFO("Binary directory: {}", binary_dir.string());
 		#pragma region script + scene setup
-
-		io::filesystem::Path script_asm_path{app.getCommandLineArgs()->get("--scriptAsm")};
-
-		io::filesystem::Path        core_script_assembly_dll{script_asm_path.parent_path() / "Toaster.dll"};
-		const io::filesystem::Path &app_script_assembly_dll{script_asm_path};
-
-		LOG_INFO("{}", app_script_assembly_dll.string());
+		io::filesystem::Path script_asm_path{m_app->getCommandLineArgs()->get("--scriptAsm")};
+		io::filesystem::Path core_script_assembly_dll{script_asm_path.parent_path() / "Toaster.dll"};
+		LOG_INFO("{}", script_asm_path.string());
 
 		script::ScriptEngineSpecInfo script_engine_spec_info{};
 		script_engine_spec_info.rootDomainName   = "ToasterRootDomain";
 		script_engine_spec_info.appDomainName    = "ToasterAppDomain";
 		script_engine_spec_info.coreAssemblyPath = core_script_assembly_dll;
-		script_engine_spec_info.appAssemblyPath  = app_script_assembly_dll;
+		script_engine_spec_info.appAssemblyPath  = script_asm_path;
 		m_scriptEngine                           = make_unique<script::ScriptEngine>(script_engine_spec_info);
 
 		m_scene = make_reference<Scene>(m_renderCtx, m_scriptEngine.get(), "New Scene");
-		input_ctx->registerScriptMethods(m_scriptEngine.get());
+		m_inputCtx->registerScriptMethods(m_scriptEngine.get());
 		#pragma endregion
 
-		auto                  fullscreen_shader{m_renderCtx->getGlobals()->shaderLibrary().get("Composite")};
+		auto                  fullscreen_shader{m_globals->shaderLibrary().get("Composite")};
 		gpu::PipelineSpecInfo fullscreen_pipeline_spec_info{};
 		fullscreen_pipeline_spec_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
 		fullscreen_pipeline_spec_info.shader             = fullscreen_shader;
-		fullscreen_pipeline_spec_info.depthCompare       = vk::CompareOp::eAlways;
-		fullscreen_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack; // We don't want to cull our viewport
+		fullscreen_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
 		fullscreen_pipeline_spec_info.vertexBufferLayout = gpu::BufferLayout{
 			{gpu::EBufferDataType::eFloat3, "a_Position"},
 			{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
@@ -78,7 +68,8 @@ namespace toaster
 		m_fullscreenRenderPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_fullscreenPipeline);
 		m_fullscreenRenderPass->bake();
 
-		m_fullscreenMaterial = make_reference<render::Material>(m_renderCtx, m_renderCtx->getGlobals()->shaderLibrary().get("Composite"));
+		// Ts is not used yet. It would be used for post-processing effects.
+		m_fullscreenMaterial = m_renderCtx->create<render::Material>(m_globals->shaderLibrary().get("Composite"));
 
 		SceneRendererSpecInfo scene_renderer_spec_info{};
 		scene_renderer_spec_info.viewportWidth     = m_viewportWidth;
@@ -104,23 +95,14 @@ namespace toaster
 
 	auto RuntimeLayer::onUpdate(const float32 p_dt) -> void
 	{
-		auto &app       = getApp();
-		auto  swapchain = app.getWindow().getSwapchain();
+		auto         swapchain = m_app->getWindow().getSwapchain();
+		const uint32 frame_index{swapchain->getFrameIndex()};
+		auto &       command_buffer = swapchain->getCurrentCommandBuffer();
 
-		uint32 frame_index{swapchain->getFrameIndex()};
-		auto & command_buffer = swapchain->getCurrentCommandBuffer();
-
-		m_cameraTest.onUpdate(p_dt);
 		m_scene->onUpdate(p_dt);
-		m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer);
+		m_scene->onRender(&command_buffer, frame_index, p_dt, m_sceneRenderer);
 
-		auto tex{m_sceneRenderer->getFinalColourTexture()};
-		if (m_inputCtx->isKeyPressed(input::EKeyCode::eF2))
-		{
-			tex->saveToFile(os::getBinaryDirectory() / "New_Screenshot.bmp");
-		}
-
-		m_fullscreenMaterial->setTexture("u_Texture", tex);
+		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getFinalColourTexture());
 
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_viewportWidth, m_viewportHeight}};
@@ -130,9 +112,9 @@ namespace toaster
 		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		colour_attachment_info.clearValue  = vk::ClearColorValue{1.0f, 1.0f, 1.0f, 1.0f};
 
-		m_renderCtx->beginRendering(command_buffer, rendering_info, frame_index, m_fullscreenRenderPass);
-		m_renderCtx->renderFullscreenQuad(command_buffer, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);
-		m_renderCtx->endRendering(command_buffer, rendering_info);
+		m_renderCtx->beginRendering(&command_buffer, rendering_info, frame_index, m_fullscreenRenderPass);
+		m_renderCtx->renderFullscreenQuad(&command_buffer, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);
+		m_renderCtx->endRendering(&command_buffer, rendering_info);
 	}
 
 	auto RuntimeLayer::onEvent(Event &p_event) -> void
@@ -145,17 +127,13 @@ namespace toaster
 
 	auto RuntimeLayer::_onKeyPressEvent(KeyPressEvent &e) -> bool
 	{
-		auto &app{getApp()};
-		auto &window{app.getWindow()};
-
+		auto &window{m_app->getWindow()};
 		if (e.getKeyCode() == input::EKeyCode::eF11)
 		{
 			if (!window.isFullscreen())
 				window.setFullscreen();
 			else
-			{
 				window.setWindowed();
-			}
 		}
 
 		return false;

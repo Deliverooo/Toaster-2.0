@@ -4,6 +4,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
+#include "globals.hpp"
 #include "render_context.hpp"
 
 namespace toaster::render
@@ -64,8 +65,8 @@ namespace toaster::render
 		return m_materialDatas.at(p_index);
 	}
 
-	Mesh::Mesh(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader) : m_renderCtx(p_render_ctx), m_path(p_path),
-																													 m_materials(p_render_ctx)
+	MeshData::MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader) : m_renderCtx(p_render_ctx), m_path(p_path),
+																															 m_materials(p_render_ctx)
 	{
 		Assimp::Importer importer;
 
@@ -144,10 +145,8 @@ namespace toaster::render
 				auto ai_material      = scene->mMaterials[i];
 				auto ai_material_name = ai_material->GetName();
 
-				auto &mat_data{m_materials.hasMaterial(i) ? m_materials.getMaterial(i) : m_materials.addMaterial(i, p_shader, ai_material_name.data)};
+				auto &mat_data{m_materials.addMaterial(i, p_shader, ai_material_name.data)};
 				auto &material{mat_data.material};
-				auto &albedo_map{mat_data.albedoMap};
-				auto &normal_map{mat_data.normalMap};
 
 				glm::vec3 albedo_colour{0.8f};
 				aiColor3D ai_colour;
@@ -193,8 +192,8 @@ namespace toaster::render
 
 					gpu::TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					albedo_map                     = m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path);
-					material->setTexture("u_AlbedoTexture", albedo_map);
+
+					mat_data.setAlbedoMap(m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path));
 					material->set("u_Material.albedoColour", glm::vec3{1.0f});
 				}
 				else
@@ -211,12 +210,10 @@ namespace toaster::render
 						LOG_TRACE("\tNormal map path = {} --> NOT FOUND", texture_path.string());
 						texture_path = parent_path / texture_path.filename();
 					}
-					LOG_TRACE("\tAlbedo map path = {}{}", texture_path.string(), std::filesystem::exists(texture_path) ? "" : " --> NOT FOUND");
 
 					gpu::TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					normal_map                     = m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path);
-					material->setTexture("u_NormalTexture", normal_map);
+					mat_data.setNormalMap(m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path));
 					material->set<uint32>("u_Material.hasNormalMap", 1u);
 				}
 				else
@@ -232,42 +229,47 @@ namespace toaster::render
 		m_indexBuffer  = m_renderCtx->createIndexBuffer(m_indices);
 	}
 
-	auto Mesh::getVertexBuffer() const -> const gpu::VertexBufferHandle &
+	auto MeshData::getVertexBuffer() const -> const gpu::VertexBufferHandle &
 	{
 		return m_vertexBuffer;
 	}
 
-	auto Mesh::getIndexBuffer() const -> const gpu::IndexBufferHandle &
+	auto MeshData::getIndexBuffer() const -> const gpu::IndexBufferHandle &
 	{
 		return m_indexBuffer;
 	}
 
-	auto Mesh::getMaterials() const -> const MaterialList &
+	auto MeshData::getMaterials() -> MaterialList &
 	{
 		return m_materials;
 	}
 
-	auto Mesh::getSubmeshes() const -> const std::vector<Submesh> &
+	auto MeshData::getMaterials() const -> const MaterialList &
+	{
+		return m_materials;
+	}
+
+	auto MeshData::getSubmeshes() const -> const std::vector<Submesh> &
 	{
 		return m_submeshes;
 	}
 
-	auto Mesh::getVertices() const -> const std::vector<MeshVertex> &
+	auto MeshData::getVertices() const -> const std::vector<MeshVertex> &
 	{
 		return m_vertices;
 	}
 
-	auto Mesh::getIndices() const -> const std::vector<uint32> &
+	auto MeshData::getIndices() const -> const std::vector<uint32> &
 	{
 		return m_indices;
 	}
 
-	auto Mesh::getFilepath() const -> const io::filesystem::Path &
+	auto MeshData::getFilepath() const -> const io::filesystem::Path &
 	{
 		return m_path;
 	}
 
-	auto Mesh::_traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void
+	auto MeshData::_traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void
 	{
 		auto ai_node = static_cast<aiNode *>(p_assimp_node);
 
@@ -297,5 +299,23 @@ namespace toaster::render
 			m_nodes[p_node_index].children[i] = child_index;
 			_traverseNodes(ai_node->mChildren[i], child_index, transform, p_level + 1);
 		}
+	}
+
+	StaticMesh::StaticMesh(RenderContext *p_render_ctx, const RefPtr<MeshData> &p_mesh_data) : m_renderCtx(p_render_ctx), m_meshData(p_mesh_data)
+	{
+	}
+
+	auto StaticMesh::getMeshData() const -> const RefPtr<MeshData> &
+	{
+		return m_meshData;
+	}
+
+	DynamicMesh::DynamicMesh(RenderContext *p_render_ctx, const RefPtr<MeshData> &p_mesh_data) : m_renderCtx(p_render_ctx), m_meshData(p_mesh_data)
+	{
+	}
+
+	auto DynamicMesh::getMeshData() const -> const RefPtr<MeshData> &
+	{
+		return m_meshData;
 	}
 }

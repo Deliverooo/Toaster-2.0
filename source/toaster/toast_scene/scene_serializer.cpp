@@ -384,7 +384,7 @@ namespace toaster
 
 				if (exists(mesh_path))
 				{
-					mc.mesh = make_reference<render::Mesh>(p_scene->m_renderCtx, mesh_path, p_scene->m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"));
+					mc.mesh = make_reference<render::MeshData>(p_scene->m_renderCtx, mesh_path, p_scene->m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"));
 				}
 				else
 				{

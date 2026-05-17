@@ -8,6 +8,8 @@ namespace toaster::gpu
 		using ExtensionSet = std::unordered_set<String>;
 
 		ExtensionSet requiredExtensions;
+
+		bool printDebugInfo{true};
 	};
 
 	class TST_GPU_API VKPhysicalDevice

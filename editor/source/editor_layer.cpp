@@ -36,8 +36,7 @@ namespace toaster
 
 	auto EditorLayer::onInit() -> void
 	{
-		const auto &app{getApp()};
-		const auto  swapchain{app.getWindow().getSwapchain()};
+		const auto swapchain{m_app->getWindow().getSwapchain()};
 
 		io::filesystem::Path binary_dir{os::getBinaryDirectory()};
 
@@ -86,17 +85,22 @@ namespace toaster
 		renderer_2d_create_info.renderTargetHeight = m_windowHeight;
 		m_renderer2D                               = make_reference<render::Renderer2D>(m_renderCtx, renderer_2d_create_info);
 
+		Entity parent_entity{m_scene->createEntity("Master")};
 		{
 			Entity orbo_entity{m_scene->createEntity()};
-			auto & transform_comp{orbo_entity.getComponent<TransformComponent>()};
+			orbo_entity.setParent(parent_entity);
+
+			auto &transform_comp{orbo_entity.getComponent<TransformComponent>()};
 			transform_comp.translation = {0.0f, 0.0f, 0.0f};
 			transform_comp.scale       = {1.0f, 1.0f, 1.0f};
 			auto &mc{orbo_entity.addComponent<MeshComponent>()};
-			mc.mesh = m_renderCtx->create<render::Mesh>(binary_dir / "../resources/meshes/Test_scene.fbx", m_globals->shaderLibrary().get("Geometry"));
+			mc.mesh = m_renderCtx->create<render::MeshData>(binary_dir / "../resources/meshes/Test_scene.fbx", m_globals->shaderLibrary().get("Geometry"));
 		}
 		{
 			Entity point_light_entity{m_scene->createEntity()};
-			auto & transform_comp{point_light_entity.getComponent<TransformComponent>()};
+			point_light_entity.setParent(parent_entity);
+
+			auto &transform_comp{point_light_entity.getComponent<TransformComponent>()};
 			transform_comp.translation = {0.0f, 0.5f, -1.0f};
 			auto &src{point_light_entity.addComponent<SpriteRendererComponent>()};
 			src.colour = tsm::colours::red;
@@ -119,14 +123,13 @@ namespace toaster
 		if (m_canOperateCamera)
 			m_editorCamera.onUpdate(p_dt);
 
-		const auto &app{getApp()};
-		const auto  swapchain{app.getWindow().getSwapchain()};
+		const auto swapchain{m_app->getWindow().getSwapchain()};
 
 		auto &       cmd_buf{swapchain->getCurrentCommandBuffer()};
 		const uint32 frame_index{swapchain->getFrameIndex()};
 
 		m_scene->onUpdate(p_dt);
-		m_scene->onRender(cmd_buf, frame_index, p_dt, m_sceneRenderer, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
+		m_scene->onRender(&cmd_buf, frame_index, p_dt, m_sceneRenderer, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
 
 		m_fullscreenPass->setInput("u_Texture", m_sceneRenderer->getFinalColourTexture());
 
@@ -149,9 +152,9 @@ namespace toaster
 
 		rendering_info.pDepthAttachment = &depth_attachment_info;
 
-		m_renderCtx->beginRendering(cmd_buf, rendering_info, frame_index, m_fullscreenPass);
-		m_renderCtx->renderFullscreenQuad(cmd_buf, frame_index, m_fullscreenPipeline, nullptr);
-		m_renderCtx->endRendering(cmd_buf, rendering_info);
+		m_renderCtx->beginRendering(&cmd_buf, rendering_info, frame_index, m_fullscreenPass);
+		m_renderCtx->renderFullscreenQuad(&cmd_buf, frame_index, m_fullscreenPipeline, nullptr);
+		m_renderCtx->endRendering(&cmd_buf, rendering_info);
 	}
 
 	auto EditorLayer::onEvent(Event &p_event) -> void
@@ -174,10 +177,8 @@ namespace toaster
 
 	auto EditorLayer::onUIRender() -> void
 	{
-		const auto &app{getApp()};
-		auto        input_ctx{app.getWindow().getInputContext()};
-		const auto  swapchain{app.getWindow().getSwapchain()};
-		uint32      frame_index{swapchain->getFrameIndex()};
+		const auto swapchain{m_app->getWindow().getSwapchain()};
+		uint32     frame_index{swapchain->getFrameIndex()};
 
 		#pragma region Setup Dockspace
 		static bool               p_open          = true;
@@ -226,7 +227,7 @@ namespace toaster
 			igz::SetDrawlist(ig::GetForegroundDrawList());     // Draw to the main surface
 			igz::SetRect(0, 0, m_windowWidth, m_windowHeight); // Full window area
 
-			bool snap_transform = input_ctx->isKeyDown(input::EKeyCode::eLeftControl);
+			bool snap_transform = m_inputCtx->isKeyDown(input::EKeyCode::eLeftControl);
 
 			auto &    tc               = selected_entity.getComponent<TransformComponent>();
 			glm::mat4 entity_transform = tc.getTransform();
@@ -288,7 +289,7 @@ namespace toaster
 			{
 				Entity e{m_scene->createEntity(io::filesystem::Path{path}.stem().string())};
 				auto & mc{e.addComponent<MeshComponent>()};
-				mc.mesh = m_renderCtx->create<render::Mesh>(path, m_globals->shaderLibrary().get("Geometry"));
+				mc.mesh = m_renderCtx->create<render::MeshData>(path, m_globals->shaderLibrary().get("Geometry"));
 			}
 			if (path.ends_with(".png") || path.ends_with(".jpg") || path.ends_with(".jpeg") || path.ends_with(".bmp"))
 			{
@@ -310,8 +311,6 @@ namespace toaster
 
 	auto EditorLayer::_onKeyPressEvent(KeyPressEvent &p_event) -> bool
 	{
-		auto input_ctx{getApp().getWindow().getInputContext()};
-
 		if (!m_canOperateCamera || !ig::IsAnyItemHovered())
 		{
 			switch (p_event.getKeyCode())
@@ -331,7 +330,7 @@ namespace toaster
 				case input::EKeyCode::eL:
 				{
 					// Switch between world and local space transforming for the gizmos
-					if (input_ctx->isKeyDown(input::EKeyCode::eLeftAlt))
+					if (m_inputCtx->isKeyDown(input::EKeyCode::eLeftAlt))
 					{
 						if (m_gizmoMode == igz::MODE::LOCAL)
 							m_gizmoMode = igz::MODE::WORLD;
@@ -344,7 +343,7 @@ namespace toaster
 			}
 		}
 		if (p_event.getKeyCode() == input::EKeyCode::eEscape)
-			getApp().close();
+			m_app->close();
 		return false;
 	}
 }

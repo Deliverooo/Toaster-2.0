@@ -7,7 +7,6 @@ namespace toaster::gpu
 
 	VKInstance::VKInstance(const VKInstanceSpecInfo &p_spec_info) : m_specInfo(p_spec_info)
 	{
-
 		if (!m_specInfo.debugCallback)
 			m_specInfo.debugCallback = &_debugCallback; // Fallback to the default one :)
 
@@ -41,10 +40,13 @@ namespace toaster::gpu
 			TST_PERMA_ASSERT(false);
 		}
 
-		LOG_INFO("Available instance extensions:");
-		for (auto &prop: extension_props)
-			LOG_INFO("\t{}", prop.extensionName.data());
-		LOG_INFO("");
+		if (m_specInfo.printDebugInfo)
+		{
+			LOG_INFO("Available instance extensions:");
+			for (auto &prop: extension_props)
+				LOG_INFO("\t{}", prop.extensionName.data());
+			LOG_INFO("");
+		}
 
 		std::vector<CString> required_validation_layers;
 		if (m_specInfo.enableValidationLayers)
@@ -77,7 +79,7 @@ namespace toaster::gpu
 				vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
 			};
 			constexpr vk::DebugUtilsMessageTypeFlagsEXT message_type_flags{
-				vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
+				vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
 			};
 			debug_messenger_create_info.messageSeverity = severity_flags;
 			debug_messenger_create_info.messageType     = message_type_flags;

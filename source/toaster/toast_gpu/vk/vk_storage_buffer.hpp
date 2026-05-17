@@ -22,6 +22,16 @@ namespace toaster::gpu
 		auto mapMemory(uint64 p_offset, uint64 p_size) -> void *;
 		auto unmapMemory() -> void;
 
+		template<typename TStorage>
+		auto getStorage() -> TStorage
+		{
+			const void *mapped{mapMemory(0u, sizeof(TStorage))};
+			TStorage    storage;
+			std::memcpy(&storage, mapped, sizeof(TStorage));
+			unmapMemory();
+			return std::move(storage);
+		}
+
 		auto resize(uint64 p_size) -> void;
 
 		[[nodiscard]] auto getDescriptorInfo() const -> const vk::DescriptorBufferInfo &;

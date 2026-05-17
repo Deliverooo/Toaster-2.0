@@ -2,6 +2,7 @@
 
 #include "toaster/toast_scene/entity.hpp"
 #include "toaster/toast_scene/scene.hpp"
+#include "toast_render/mesh.hpp"
 
 namespace toaster
 {
@@ -26,7 +27,7 @@ namespace toaster
 	private:
 		auto _drawEntityNode(Entity p_entity, uint32 p_frame_index) -> void;
 		auto _drawComponents(Entity p_entity, uint32 p_frame_index) -> void;
-		auto _drawMaterial(uint32 p_frame_index, const render::MaterialHandle &p_mat) -> void;
+		auto _drawMaterial(uint32 p_frame_index, render::MeshMaterialData &p_mat) -> void;
 
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
 		RefPtr<Scene>                       m_scene{nullptr};

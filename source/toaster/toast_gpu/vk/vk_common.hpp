@@ -42,6 +42,25 @@ namespace toaster::gpu
 			return usage_flags;
 		}
 
+		constexpr auto getImageUsageFlags(vk::ImageAspectFlags p_aspect_flags) -> vk::ImageUsageFlags
+		{
+			vk::ImageUsageFlags usage_flags{};
+			usage_flags |= (p_aspect_flags & vk::ImageAspectFlagBits::eDepth || p_aspect_flags & vk::ImageAspectFlagBits::eStencil)
+							   ? vk::ImageUsageFlagBits::eDepthStencilAttachment
+							   : vk::ImageUsageFlagBits{0};
+			usage_flags |= (p_aspect_flags & vk::ImageAspectFlagBits::eColor) ? vk::ImageUsageFlagBits::eColorAttachment : vk::ImageUsageFlagBits{0};
+			return usage_flags;
+		}
+
+		constexpr auto getDefaultFormat(vk::ImageAspectFlags p_aspect_flags) -> vk::Format
+		{
+			if (p_aspect_flags & vk::ImageAspectFlagBits::eColor)
+				return vk::Format::eR8G8B8A8Srgb;
+			if (p_aspect_flags & vk::ImageAspectFlagBits::eDepth)
+				return vk::Format::eD32Sfloat;
+			return vk::Format::eUndefined;
+		}
+
 		constexpr auto getBytesPerPixel([[maybe_unused]] vk::Format p_format) -> uint32
 		{
 			switch (p_format)

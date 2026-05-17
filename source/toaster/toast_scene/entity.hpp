@@ -1,8 +1,9 @@
 #pragma once
 
-
 #include <entt/entt.hpp>
 #include "scene.hpp"
+
+#include "components.hpp"
 
 namespace toaster
 {
@@ -99,6 +100,52 @@ namespace toaster
 		operator entt::entity() const { return m_handle; }
 
 		auto operator==(Entity p_entity) const -> bool { return m_handle == p_entity.m_handle; }
+
+		auto getUUID() const -> UUID { return getComponent<UUIDComponent>().uuid; }
+		auto getTag() const -> const String & { return getComponent<TagComponent>().tag; }
+
+		auto getTransform() const -> glm::mat4 { return getComponent<TransformComponent>().getTransform(); }
+		auto getTranslation() const -> const glm::vec3 & { return getComponent<TransformComponent>().translation; }
+		auto getOrientation() const -> const glm::quat & { return getComponent<TransformComponent>().rotation; }
+		auto getScale() const -> const glm::vec3 & { return getComponent<TransformComponent>().scale; }
+
+		auto getParent() const -> Entity { return m_scene->getEntityByUUID(getParentUUID()); }
+		auto getParentUUID() const -> UUID { return getComponent<RelationshipComponent>().parentUUID; }
+
+		auto setParent(Entity p_parent) -> void
+		{
+			auto current_parent{getParent()};
+			if (current_parent == p_parent)
+				return;
+
+			if (current_parent)
+				current_parent.removeChild(*this);
+
+			setParentUUID(p_parent.getUUID());
+			if (p_parent)
+			{
+				auto &parent_children{p_parent.getChildren()};
+				if (std::ranges::find(parent_children, getUUID()) == parent_children.end())
+					parent_children.emplace_back(getUUID());
+			}
+		}
+
+		auto setParentUUID(UUID p_parent_uuid) -> void { getComponent<RelationshipComponent>().parentUUID = p_parent_uuid; }
+
+		auto getChildren() const -> const std::vector<UUID> & { return getComponent<RelationshipComponent>().children; }
+		auto getChildren() -> std::vector<UUID> & { return getComponent<RelationshipComponent>().children; }
+
+		auto removeChild(Entity p_child) -> bool
+		{
+			const auto child_uuid{p_child.getUUID()};
+			auto &     children{getChildren()};
+			if (const auto it{std::ranges::find(children, child_uuid)}; it != children.end())
+			{
+				children.erase(it);
+				return true;
+			}
+			return false;
+		}
 
 	private:
 		entt::entity m_handle{entt::null};

@@ -13,36 +13,42 @@ namespace toaster::render
 {
 	RenderContext::RenderContext(const RenderContextSpecInfo &p_spec_info) : m_specInfo(p_spec_info)
 	{
+		bool use_present{m_specInfo.instanceExtensions.contains(VK_KHR_SURFACE_EXTENSION_NAME)};
 		#pragma region create vulkan objects
 		gpu::VKInstanceSpecInfo vk_instance_spec_info{};
 		vk_instance_spec_info.appName            = "Toaster-2.0 -> Vulkan";
 		vk_instance_spec_info.requiredExtensions = m_specInfo.instanceExtensions;
+		vk_instance_spec_info.printDebugInfo     = m_specInfo.printDebugInfo;
 		m_backendInstance                        = new gpu::VKInstance{vk_instance_spec_info};
 
 		std::unordered_set<String> required_device_extensions{
-			vk::KHRSwapchainExtensionName,
 			vk::KHRDynamicRenderingExtensionName,
-			vk::KHRTimelineSemaphoreExtensionName,
-			vk::EXTCustomBorderColorExtensionName,
 			vk::KHRMaintenance6ExtensionName,
 			vk::KHRLoadStoreOpNoneExtensionName,
 			vk::KHRShaderNonSemanticInfoExtensionName
 		};
+		if (use_present)
+			required_device_extensions.insert(vk::KHRSwapchainExtensionName);
+
 		gpu::VKPhysicalDeviceSpecInfo vk_physical_device_spec_info{};
 		vk_physical_device_spec_info.requiredExtensions = required_device_extensions;
+		vk_physical_device_spec_info.printDebugInfo     = m_specInfo.printDebugInfo;
 
 		m_physicalDevice = new gpu::VKPhysicalDevice{m_backendInstance, vk_physical_device_spec_info};
 
 		gpu::VKLogicalDeviceSpecInfo vk_logical_device_spec_info{};
-		vk_logical_device_spec_info.usePresent         = true;
-		vk_logical_device_spec_info.requiredExtensions = required_device_extensions;
+		vk_logical_device_spec_info.usePresent           = use_present;
+		vk_logical_device_spec_info.requiredExtensions   = required_device_extensions;
+		vk_logical_device_spec_info.printDebugInfo       = m_specInfo.printDebugInfo;
+		vk_logical_device_spec_info.printShaderDebugInfo = m_specInfo.printDebugInfo;
 		auto features{gpu::VKLogicalDeviceSpecInfo::getDefaultFeatures()};
 		vk_logical_device_spec_info.pNext = features.get<vk::PhysicalDeviceFeatures2>();
 
 		m_logicalDevice = new gpu::VKLogicalDevice{m_physicalDevice, vk_logical_device_spec_info};
 		#pragma endregion
 
-		m_globals = new Globals{m_logicalDevice, m_specInfo.binaryDir};
+		if (m_specInfo.createGlobals)
+			m_globals = new Globals{m_logicalDevice, m_specInfo.binaryDir};
 	}
 
 	RenderContext::~RenderContext()
@@ -93,6 +99,49 @@ namespace toaster::render
 		m_logicalDevice->performGarbageCollection();
 	}
 
+	auto RenderContext::createAttachmentImage(uint32     p_width, uint32 p_height, vk::ImageAspectFlags p_image_aspect_flags,
+											  vk::Format p_format) const -> gpu::RawImageHandle
+	{
+		if (p_format == vk::Format::eUndefined)
+			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
+
+		gpu::ImageSpecInfo attachment_image_spec_info{};
+		attachment_image_spec_info.width  = p_width;
+		attachment_image_spec_info.height = p_height;
+		attachment_image_spec_info.format = p_format;
+		attachment_image_spec_info.usage  = gpu::util::getImageUsageFlags(p_image_aspect_flags);
+		return createGPU<gpu::VKRawImage>(attachment_image_spec_info);
+	}
+
+	auto RenderContext::createMultisampleAttachmentImage(uint32     p_width, uint32 p_height, vk::ImageAspectFlags p_image_aspect_flags,
+														 vk::Format p_format) const -> gpu::RawImageHandle
+	{
+		if (p_format == vk::Format::eUndefined)
+			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
+
+		gpu::ImageSpecInfo attachment_image_spec_info{};
+		attachment_image_spec_info.width       = p_width;
+		attachment_image_spec_info.height      = p_height;
+		attachment_image_spec_info.format      = p_format;
+		attachment_image_spec_info.sampleCount = m_physicalDevice->getMaxUsableSampleCount();
+		attachment_image_spec_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | gpu::util::getImageUsageFlags(p_image_aspect_flags);
+		return createGPU<gpu::VKRawImage>(attachment_image_spec_info);
+	}
+
+	auto RenderContext::createAttachmentTexture(uint32     p_width, uint32 p_height, vk::ImageAspectFlags p_image_aspect_flags,
+												vk::Format p_format) const -> gpu::Texture2DHandle
+	{
+		if (p_format == vk::Format::eUndefined)
+			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
+
+		gpu::TextureSpecInfo attachment_texture_spec_info{};
+		attachment_texture_spec_info.width        = p_width;
+		attachment_texture_spec_info.height       = p_height;
+		attachment_texture_spec_info.format       = p_format;
+		attachment_texture_spec_info.generateMips = false;
+		return createGPU<gpu::VKTexture2D>(attachment_texture_spec_info);
+	}
+
 	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) const -> gpu::Texture3DHandle
 	{
 		auto env_tex{createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, p_path)};
@@ -113,8 +162,8 @@ namespace toaster::render
 		gpu::VKCommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
 
-		beginCompute(command_buffer, 0, equirectangular_to_cubemap_pass);
-		dispatchCompute(command_buffer, 0, equirectangular_to_cubemap_pass, nullptr, skybox_resolution / 32, skybox_resolution / 32, 6);
+		beginCompute(&command_buffer, 0, equirectangular_to_cubemap_pass);
+		dispatchCompute(&command_buffer, 0, equirectangular_to_cubemap_pass, nullptr, skybox_resolution / 32, skybox_resolution / 32, 6);
 
 		command_buffer.end();
 		command_buffer.submit();
@@ -123,7 +172,7 @@ namespace toaster::render
 		return env_map;
 	}
 
-	auto RenderContext::beginRendering(gpu::VKCommandBuffer &p_command_buffer, const gpu::RenderingInfo &p_rendering_info, uint32 p_frame_index,
+	auto RenderContext::beginRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, uint32 p_frame_index,
 									   gpu::VKRenderPass *   p_render_pass) const -> void
 	{
 		TST_ASSERT_MSG(p_render_pass, "Render pass is null");
@@ -142,7 +191,7 @@ namespace toaster::render
 				if ((image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
 					gpu::util::transitionImageLayout(image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
-													 p_command_buffer.getVulkanCommandBuffer());
+													 p_command_buffer->getVulkanCommandBuffer());
 				}
 
 				info.imageLayout = image->getCurrentImageLayout();
@@ -163,7 +212,7 @@ namespace toaster::render
 						resolve_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
 					gpu::util::transitionImageLayout(resolve_image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
-													 p_command_buffer.getVulkanCommandBuffer());
+													 p_command_buffer->getVulkanCommandBuffer());
 				}
 
 				info.resolveImageLayout = resolve_image->getCurrentImageLayout();
@@ -195,7 +244,7 @@ namespace toaster::render
 				{
 					gpu::util::transitionImageLayout(depth_image, vk::ImageLayout::eShaderReadOnlyOptimal,
 													 p_rendering_info.depthReadOnly ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal,
-													 p_command_buffer.getVulkanCommandBuffer());
+													 p_command_buffer->getVulkanCommandBuffer());
 				}
 
 				depth_attachment_info.imageLayout = depth_image->getCurrentImageLayout();
@@ -215,7 +264,7 @@ namespace toaster::render
 						depth_resolve_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
 				{
 					gpu::util::transitionImageLayout(depth_resolve_image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eDepthAttachmentOptimal,
-													 p_command_buffer.getVulkanCommandBuffer());
+													 p_command_buffer->getVulkanCommandBuffer());
 				}
 
 				depth_attachment_info.resolveImageLayout = depth_resolve_image->getCurrentImageLayout();
@@ -287,22 +336,22 @@ namespace toaster::render
 		};
 		const vk::Rect2D scissor{rendering_offset, rendering_extent};
 
-		p_command_buffer.getVulkanCommandBuffer().beginRendering(rendering_info);
-		p_command_buffer.getVulkanCommandBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, p_render_pass->getPipeline()->getPipeline());
-		p_command_buffer.getVulkanCommandBuffer().setViewport(0, viewport);
-		p_command_buffer.getVulkanCommandBuffer().setScissor(0, scissor);
+		p_command_buffer->getVulkanCommandBuffer().beginRendering(rendering_info);
+		p_command_buffer->getVulkanCommandBuffer().bindPipeline(vk::PipelineBindPoint::eGraphics, p_render_pass->getPipeline()->getPipeline());
+		p_command_buffer->getVulkanCommandBuffer().setViewport(0, viewport);
+		p_command_buffer->getVulkanCommandBuffer().setScissor(0, scissor);
 
 		p_render_pass->update(p_frame_index);
 
 		const auto descriptor_sets = p_render_pass->getDescriptorSets(p_frame_index);
 		if (!descriptor_sets.empty())
-			p_command_buffer.getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_render_pass->getPipeline()->getPipelineLayout(),
-																		 p_render_pass->getStartSetIndex(), descriptor_sets, nullptr);
+			p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_render_pass->getPipeline()->getPipelineLayout(),
+																		  p_render_pass->getStartSetIndex(), descriptor_sets, nullptr);
 	}
 
-	auto RenderContext::endRendering(gpu::VKCommandBuffer &p_command_buffer, const gpu::RenderingInfo &p_rendering_info) const -> void
+	auto RenderContext::endRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info) const -> void
 	{
-		p_command_buffer.getVulkanCommandBuffer().endRendering();
+		p_command_buffer->getVulkanCommandBuffer().endRendering();
 
 		// Perform the layout transition on sampled attachment images
 		for (const auto &rendering_attachment: p_rendering_info.colourAttachments)
@@ -311,13 +360,13 @@ namespace toaster::render
 			if ((image != nullptr) && (image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
 				gpu::util::transitionImageLayout(image, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-												 p_command_buffer.getVulkanCommandBuffer());
+												 p_command_buffer->getVulkanCommandBuffer());
 			}
 			auto resolve_image{rendering_attachment.resolveImage};
 			if ((resolve_image != nullptr) && (resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
 				gpu::util::transitionImageLayout(resolve_image, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-												 p_command_buffer.getVulkanCommandBuffer());
+												 p_command_buffer->getVulkanCommandBuffer());
 			}
 		}
 
@@ -329,46 +378,46 @@ namespace toaster::render
 			{
 				gpu::util::transitionImageLayout(depth_image,
 												 p_rendering_info.depthReadOnly ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal,
-												 vk::ImageLayout::eShaderReadOnlyOptimal, p_command_buffer.getVulkanCommandBuffer());
+												 vk::ImageLayout::eShaderReadOnlyOptimal, p_command_buffer->getVulkanCommandBuffer());
 			}
 			auto depth_resolve_image{p_rendering_info.pDepthAttachment->resolveImage};
 			if ((depth_resolve_image != nullptr) && (depth_resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
 				gpu::util::transitionImageLayout(depth_resolve_image, vk::ImageLayout::eDepthAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
-												 p_command_buffer.getVulkanCommandBuffer());
+												 p_command_buffer->getVulkanCommandBuffer());
 			}
 		}
 	}
 
-	auto RenderContext::beginCompute(gpu::VKCommandBuffer &p_command_buffer, uint32 p_frame_index, gpu::VKComputePass *p_compute_pass) const -> void
+	auto RenderContext::beginCompute(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, gpu::VKComputePass *p_compute_pass) const -> void
 	{
-		p_command_buffer.getVulkanCommandBuffer().bindPipeline(vk::PipelineBindPoint::eCompute, *p_compute_pass->getPipeline());
+		p_command_buffer->getVulkanCommandBuffer().bindPipeline(vk::PipelineBindPoint::eCompute, *p_compute_pass->getPipeline());
 
 		p_compute_pass->update(p_frame_index);
 
 		const auto descriptor_sets = p_compute_pass->getDescriptorSets(p_frame_index);
 		if (!descriptor_sets.empty())
-			p_command_buffer.getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eCompute, p_compute_pass->getPipeline()->getPipelineLayout(),
-																		 p_compute_pass->getStartSetIndex(), descriptor_sets, nullptr);
+			p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eCompute, p_compute_pass->getPipeline()->getPipelineLayout(),
+																		  p_compute_pass->getStartSetIndex(), descriptor_sets, nullptr);
 	}
 
-	auto RenderContext::dispatchCompute(gpu::VKCommandBuffer &p_command_buffer, uint32 p_frame_index, const gpu::VKComputePass *p_compute_pass, Material *p_material,
+	auto RenderContext::dispatchCompute(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, const gpu::VKComputePass *p_compute_pass, Material *p_material,
 										uint32                p_work_group_x, uint32   p_work_group_y, uint32                   p_work_group_z) const -> void
 	{
 		if (p_material)
 			if (p_material->hasDescriptorSets())
 				if (const auto descriptor_set{p_material->getDescriptorSet(p_frame_index)})
-					p_command_buffer.getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eCompute, p_compute_pass->getPipeline()->getPipelineLayout(), 0,
-																				 descriptor_set, nullptr);
+					p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eCompute, p_compute_pass->getPipeline()->getPipelineLayout(), 0,
+																				  descriptor_set, nullptr);
 
-		p_command_buffer.getVulkanCommandBuffer().dispatch(p_work_group_x, p_work_group_y, p_work_group_z);
+		p_command_buffer->getVulkanCommandBuffer().dispatch(p_work_group_x, p_work_group_y, p_work_group_z);
 	}
 
-	auto RenderContext::renderGeometry(gpu::VKCommandBuffer &p_command_buffer, uint32 p_frame_index, gpu::VKPipeline *p_pipeline, gpu::VKVertexBuffer *p_vertex_buffer,
+	auto RenderContext::renderGeometry(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, gpu::VKPipeline *p_pipeline, gpu::VKVertexBuffer *p_vertex_buffer,
 									   gpu::VKIndexBuffer *  p_index_buffer, uint32   p_index_count, Material *p_material, const glm::mat4 &p_transform) const -> void
 	{
 		// Push the constants
-		p_command_buffer.getVulkanCommandBuffer().pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
+		p_command_buffer->getVulkanCommandBuffer().pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
 		if (p_material)
 		{
@@ -376,8 +425,8 @@ namespace toaster::render
 			{
 				// Bind the material descriptor set (0)
 				vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(p_frame_index)};
-				p_command_buffer.getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
-																			 material_descriptor_set, {});
+				p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
+																			  material_descriptor_set, {});
 			}
 
 			const auto &push_constants{p_material->getPushConstantStorageBuffer()};
@@ -390,18 +439,18 @@ namespace toaster::render
 				push_constants_info.offset     = sizeof(glm::mat4);
 				push_constants_info.pValues    = push_constants.data();
 
-				p_command_buffer.getVulkanCommandBuffer().pushConstants2(push_constants_info);
+				p_command_buffer->getVulkanCommandBuffer().pushConstants2(push_constants_info);
 			}
 		}
 		// Bind the vertex and index buffers
-		p_vertex_buffer->bind(p_command_buffer.getVulkanCommandBuffer());
-		p_index_buffer->bind(p_command_buffer.getVulkanCommandBuffer(), vk::IndexType::eUint32);
+		p_vertex_buffer->bind(p_command_buffer->getVulkanCommandBuffer());
+		p_index_buffer->bind(p_command_buffer->getVulkanCommandBuffer(), vk::IndexType::eUint32);
 
 		// Finally, draw indexed :)
-		p_command_buffer.getVulkanCommandBuffer().drawIndexed(p_index_count, 1, 0, 0, 0);
+		p_command_buffer->getVulkanCommandBuffer().drawIndexed(p_index_count, 1, 0, 0, 0);
 	}
 
-	auto RenderContext::renderFullscreenQuad(gpu::VKCommandBuffer &p_command_buffer, uint32 p_frame_index, gpu::VKPipeline *p_pipeline,
+	auto RenderContext::renderFullscreenQuad(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, gpu::VKPipeline *p_pipeline,
 											 Material *            p_material) const -> void
 	{
 		if (p_material) // You technically don't need to use a material if you don't want to
@@ -410,8 +459,8 @@ namespace toaster::render
 			{
 				// Bind the material descriptor set (0)
 				vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(p_frame_index)};
-				p_command_buffer.getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
-																			 material_descriptor_set, {});
+				p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
+																			  material_descriptor_set, {});
 			}
 
 			const auto &push_constants{p_material->getPushConstantStorageBuffer()};
@@ -423,22 +472,22 @@ namespace toaster::render
 				push_constants_info.size       = push_constants.size();
 				push_constants_info.offset     = 0u;
 				push_constants_info.pValues    = push_constants.data();
-				p_command_buffer.getVulkanCommandBuffer().pushConstants2(push_constants_info);
+				p_command_buffer->getVulkanCommandBuffer().pushConstants2(push_constants_info);
 			}
 		}
 		// Bind the vertex and index buffers
-		m_globals->fullscreenQuadVertexBuffer()->bind(p_command_buffer.getVulkanCommandBuffer());
-		m_globals->fullscreenQuadIndexBuffer()->bind(p_command_buffer.getVulkanCommandBuffer(), vk::IndexType::eUint32);
+		m_globals->fullscreenQuadVertexBuffer()->bind(p_command_buffer->getVulkanCommandBuffer());
+		m_globals->fullscreenQuadIndexBuffer()->bind(p_command_buffer->getVulkanCommandBuffer(), vk::IndexType::eUint32);
 
 		// Finally, draw indexed :)
-		p_command_buffer.getVulkanCommandBuffer().drawIndexed(m_globals->fullscreenQuadIndices().size(), 1, 0, 0, 0);
+		p_command_buffer->getVulkanCommandBuffer().drawIndexed(m_globals->fullscreenQuadIndices().size(), 1, 0, 0, 0);
 	}
 
-	auto RenderContext::renderMesh(gpu::VKCommandBuffer &p_command_buffer, uint32 p_frame_index, const Mesh *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline,
-								   const glm::mat4 &     p_transform) const -> void
+	auto RenderContext::renderMesh(gpu::VKCommandBuffer *p_command_buffer, uint32     p_frame_index, const MeshData *p_mesh, uint32 p_submesh_index,
+								   gpu::VKPipeline *     p_pipeline, const glm::mat4 &p_transform) const -> void
 	{
 		// Push the constants
-		p_command_buffer.getVulkanCommandBuffer().pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
+		p_command_buffer->getVulkanCommandBuffer().pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
 		const auto &submesh{p_mesh->getSubmeshes()[p_submesh_index]};
 		auto        material{p_mesh->getMaterials().getMaterial(submesh.materialIndex).material};
@@ -449,8 +498,8 @@ namespace toaster::render
 			{
 				// Bind the material descriptor set (0)
 				vk::DescriptorSet material_descriptor_set{material->getDescriptorSet(p_frame_index)};
-				p_command_buffer.getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
-																			 material_descriptor_set, {});
+				p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
+																			  material_descriptor_set, {});
 			}
 
 			const auto &push_constants{material->getPushConstantStorageBuffer()};
@@ -463,22 +512,22 @@ namespace toaster::render
 				push_constants_info.offset     = sizeof(glm::mat4);
 				push_constants_info.pValues    = push_constants.data();
 
-				p_command_buffer.getVulkanCommandBuffer().pushConstants2(push_constants_info);
+				p_command_buffer->getVulkanCommandBuffer().pushConstants2(push_constants_info);
 			}
 		}
 		// Bind the vertex and index buffers
-		p_mesh->getVertexBuffer()->bind(p_command_buffer.getVulkanCommandBuffer());
-		p_mesh->getIndexBuffer()->bind(p_command_buffer.getVulkanCommandBuffer(), vk::IndexType::eUint32);
+		p_mesh->getVertexBuffer()->bind(p_command_buffer->getVulkanCommandBuffer());
+		p_mesh->getIndexBuffer()->bind(p_command_buffer->getVulkanCommandBuffer(), vk::IndexType::eUint32);
 
 		// Finally, draw indexed :)
-		p_command_buffer.getVulkanCommandBuffer().drawIndexed(submesh.indexCount, 1, submesh.baseIndex, submesh.baseVertex, 0);
+		p_command_buffer->getVulkanCommandBuffer().drawIndexed(submesh.indexCount, 1, submesh.baseIndex, submesh.baseVertex, 0);
 	}
 
-	auto RenderContext::renderMesh(gpu::VKCommandBuffer &p_command_buffer, uint32 p_frame_index, const Mesh *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline,
-								   const glm::mat4 &     p_transform, Material *  p_override_material) const -> void
+	auto RenderContext::renderMesh(gpu::VKCommandBuffer *p_command_buffer, uint32     p_frame_index, const MeshData *p_mesh, uint32 p_submesh_index,
+								   gpu::VKPipeline *     p_pipeline, const glm::mat4 &p_transform, Material *        p_override_material) const -> void
 	{
 		// Push the constants
-		p_command_buffer.getVulkanCommandBuffer().pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
+		p_command_buffer->getVulkanCommandBuffer().pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
 		const auto &submesh{p_mesh->getSubmeshes()[p_submesh_index]};
 
@@ -488,8 +537,8 @@ namespace toaster::render
 			{
 				// Bind the material descriptor set (0)
 				vk::DescriptorSet material_descriptor_set{p_override_material->getDescriptorSet(p_frame_index)};
-				p_command_buffer.getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
-																			 material_descriptor_set, {});
+				p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
+																			  material_descriptor_set, {});
 			}
 
 			const auto &push_constants{p_override_material->getPushConstantStorageBuffer()};
@@ -502,14 +551,14 @@ namespace toaster::render
 				push_constants_info.offset     = sizeof(glm::mat4);
 				push_constants_info.pValues    = push_constants.data();
 
-				p_command_buffer.getVulkanCommandBuffer().pushConstants2(push_constants_info);
+				p_command_buffer->getVulkanCommandBuffer().pushConstants2(push_constants_info);
 			}
 		}
 		// Bind the vertex and index buffers
-		p_mesh->getVertexBuffer()->bind(p_command_buffer.getVulkanCommandBuffer());
-		p_mesh->getIndexBuffer()->bind(p_command_buffer.getVulkanCommandBuffer(), vk::IndexType::eUint32);
+		p_mesh->getVertexBuffer()->bind(p_command_buffer->getVulkanCommandBuffer());
+		p_mesh->getIndexBuffer()->bind(p_command_buffer->getVulkanCommandBuffer(), vk::IndexType::eUint32);
 
 		// Finally, draw indexed :)
-		p_command_buffer.getVulkanCommandBuffer().drawIndexed(submesh.indexCount, 1, submesh.baseIndex, static_cast<int32>(submesh.baseVertex), 0);
+		p_command_buffer->getVulkanCommandBuffer().drawIndexed(submesh.indexCount, 1, submesh.baseIndex, static_cast<int32>(submesh.baseVertex), 0);
 	}
 }

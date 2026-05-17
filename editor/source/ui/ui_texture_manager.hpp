@@ -25,9 +25,9 @@ namespace toaster::ui
 
 		struct TextureInfo
 		{
-			gpu::Texture2DHandle    textureRef{nullptr};
-			vk::raii::DescriptorSet descriptorSet{nullptr};
-			ImVec2                  size{0.0f, 0.0f};
+			gpu::Texture2DHandle textureRef{nullptr};
+			vk::DescriptorSet    descriptorSet{nullptr};
+			ImVec2               size{0.0f, 0.0f};
 		};
 
 		std::unordered_map<String, TextureInfo> m_textureInfoMap;

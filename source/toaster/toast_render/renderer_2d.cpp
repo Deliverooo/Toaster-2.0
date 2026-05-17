@@ -26,7 +26,6 @@ namespace toaster::render
 		pipeline_create_info.vertexBufferLayout = m_quadVertexBufferLayout;
 		pipeline_create_info.shader             = quad_shader;
 		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
-		pipeline_create_info.multisample        = false;
 		m_quadPipeline                          = m_renderContext->createGPU<gpu::VKPipeline>(pipeline_create_info);
 
 		m_cameraUBs       = m_renderContext->createUniformBuffers<CameraUB>(RenderContext::maxFramesInFlight);
@@ -40,18 +39,10 @@ namespace toaster::render
 
 		if (!m_createInfo.overrideAttachments)
 		{
-			gpu::TextureSpecInfo colour_attachment_texture_spec_info{};
-			colour_attachment_texture_spec_info.width  = m_createInfo.renderTargetWidth;
-			colour_attachment_texture_spec_info.height = m_createInfo.renderTargetHeight;
-			colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
-			m_renderTargetTexture                      = m_renderContext->createGPU<gpu::VKTexture2D>(colour_attachment_texture_spec_info);
-
-			gpu::ImageSpecInfo depth_attachment_image_create_info{};
-			depth_attachment_image_create_info.width  = m_createInfo.renderTargetWidth;
-			depth_attachment_image_create_info.height = m_createInfo.renderTargetHeight;
-			depth_attachment_image_create_info.format = m_renderContext->getPhysicalDevice()->getDepthFormat();
-			depth_attachment_image_create_info.usage  = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-			m_renderTargetDepthImage                  = m_renderContext->createGPU<gpu::VKRawImage>(depth_attachment_image_create_info);
+			m_renderTargetTexture = m_renderContext->createAttachmentTexture(m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight,
+																			 vk::ImageAspectFlagBits::eColor);
+			m_renderTargetDepthImage = m_renderContext->createAttachmentImage(m_createInfo.renderTargetWidth, m_createInfo.renderTargetHeight,
+																			  vk::ImageAspectFlagBits::eDepth);
 		}
 		else
 		{
@@ -121,7 +112,7 @@ namespace toaster::render
 		m_stats.quadCount = 0u;
 	}
 
-	auto Renderer2D::end(gpu::VKCommandBuffer &              p_cmd, uint32 p_frame_index, gpu::RenderingAttachmentInfo *p_override_colour_attachment,
+	auto Renderer2D::end(gpu::VKCommandBuffer *              p_cmd, uint32 p_frame_index, gpu::RenderingAttachmentInfo *p_override_colour_attachment,
 						 const gpu::RenderingAttachmentInfo *p_override_depth_attachment) -> void
 	{
 		if (m_createInfo.overrideAttachments && !p_override_colour_attachment && !p_override_depth_attachment)
@@ -138,10 +129,7 @@ namespace toaster::render
 		else
 		{
 			gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-			colour_attachment_info.image      = m_renderTargetTexture->getImage();
-			colour_attachment_info.clearValue = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
-			colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
-			colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+			colour_attachment_info.image = m_renderTargetTexture->getImage();
 		}
 
 		gpu::RenderingAttachmentInfo depth_attachment_info{};
@@ -149,9 +137,7 @@ namespace toaster::render
 			depth_attachment_info = *p_override_depth_attachment;
 		else
 		{
-			depth_attachment_info.image      = m_renderTargetDepthImage.get();
-			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
-			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+			depth_attachment_info.image      = m_renderTargetDepthImage;
 			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
 		}
 		rendering_info.pDepthAttachment = &depth_attachment_info;

@@ -13,6 +13,8 @@ namespace toaster::gpu
 		m_descriptorInfo.buffer = m_buffer;
 		m_descriptorInfo.offset = 0;
 		m_descriptorInfo.range  = p_size;
+
+		TST_PERMA_ASSERT(m_buffer);
 	}
 
 	VKStorageBuffer::~VKStorageBuffer()

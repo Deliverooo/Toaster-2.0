@@ -1,24 +1,36 @@
 #include <iostream>
 
-#include "toaster/toast_scripting/script_engine.hpp"
+#include "toast_gpu/vk/vk_shader_compiler.hpp"
+#include "toast_render/render_context.hpp"
 
 auto main(int32 p_argc, char **p_argv) -> int32
 {
-	std::vector<toaster::String> command_line_args;
-	command_line_args.resize(p_argc);
-	for (uint32 i{0u}; i < p_argc; ++i)
-		command_line_args[i] = p_argv[i];
+	toaster::render::RenderContextSpecInfo render_context_spec_info{};
+	render_context_spec_info.binaryDir      = p_argv[0];
+	render_context_spec_info.printDebugInfo = true;
+	render_context_spec_info.createGlobals  = false;
+	toaster::render::RenderContext render_context{render_context_spec_info};
 
-	toaster::io::filesystem::Path binary_dir{command_line_args[0]};
-	binary_dir = binary_dir.parent_path();
+	toaster::gpu::ShaderCompiler shader_compiler{render_context.getLogicalDevice()};
+	auto                         shader{shader_compiler.compileToShaderFromPaths({vk::ShaderStageFlagBits::eCompute}, {"../resources/shaders/test.comp.glsl"})};
 
-	toaster::io::filesystem::Path core_script_assembly_dll{binary_dir / "../test/script/bin/Debug/net10.0/Test.dll"};
+	auto compute_pipeline{render_context.createGPU<toaster::gpu::VKComputePipeline>(shader)};
+	auto compute_pass{render_context.createGPU<toaster::gpu::VKComputePass>(compute_pipeline)};
 
-	toaster::script::clr::CLRScriptEngineSpecInfo clr_script_engine_spec_info{};
-	clr_script_engine_spec_info.coreAssemblyPath = core_script_assembly_dll;
-	toaster::script::clr::CLRScriptEngine clr_script_engine{clr_script_engine_spec_info};
+	auto storage_buffer{render_context.createGPU<toaster::gpu::VKStorageBuffer>(sizeof(int32))};
+	compute_pass->setInput("StorageBuffer", storage_buffer);
+	compute_pass->bake();
 
+	auto command_buffer{render_context.createGPU<toaster::gpu::VKCommandBuffer>(vk::QueueFlagBits::eCompute)};
+	command_buffer->begin();
+	render_context.beginCompute(command_buffer, 0, compute_pass);
+	render_context.dispatchCompute(command_buffer, 0, compute_pass, nullptr, 1, 1, 1);
+	command_buffer->endAndSubmit();
+
+	auto storage{storage_buffer->getStorage<int32>()};
+	LOG_INFO("{}", storage);
+
+	render_context.performGarbageCollection();
 	std::cin.get();
-
 	return 0;
 }

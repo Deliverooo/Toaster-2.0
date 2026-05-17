@@ -19,6 +19,7 @@ namespace toaster::gpu
 		vk::PFN_DebugUtilsMessengerCallbackEXT debugCallback{nullptr};
 
 		bool enableValidationLayers{true};
+		bool printDebugInfo{true};
 	};
 
 	class TST_GPU_API VKInstance

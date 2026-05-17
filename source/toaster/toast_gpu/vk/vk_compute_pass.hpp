@@ -13,28 +13,28 @@ namespace toaster::gpu
 	{
 		TST_GPU_OBJECT
 	public:
-		VKComputePass(VKLogicalDevice *p_device, const RefPtr<VKComputePipeline> &p_pipeline);
+		VKComputePass(VKLogicalDevice *p_device, const ComputePipelineHandle &p_pipeline);
 		~VKComputePass();
 
-		auto setInput(const String &p_name, RefPtr<VKUniformBuffer> &p_uniform_buffer) -> void;
-		auto setInput(const String &p_name, RefPtr<VKUniformBufferPFF> &p_uniform_buffer_pff) -> void;
-		auto setInput(const String &p_name, RefPtr<VKStorageBuffer> &p_storage_buffer) -> void;
-		auto setInput(const String &p_name, RefPtr<VKStorageBufferPFF> &p_storage_buffer_pff) -> void;
-		auto setInput(const String &p_name, RefPtr<VKTexture2D> &p_texture_2d) -> void;
-		auto setInput(const String &p_name, RefPtr<VKStorageImage> &p_image_2d) -> void;
-		auto setInput(const String &p_name, RefPtr<VKTexture3D> &p_texture_3d) -> void;
+		auto setInput(const String &p_name, const UniformBufferHandle &p_uniform_buffer) -> void;
+		auto setInput(const String &p_name, const UniformBufferPFFHandle &p_uniform_buffer_pff) -> void;
+		auto setInput(const String &p_name, const StorageBufferHandle &p_storage_buffer) -> void;
+		auto setInput(const String &p_name, const StorageBufferPFFHandle &p_storage_buffer_pff) -> void;
+		auto setInput(const String &p_name, const Texture2DHandle &p_texture_2d) -> void;
+		auto setInput(const String &p_name, const StorageImageHandle &p_image_2d) -> void;
+		auto setInput(const String &p_name, const Texture3DHandle &p_texture_3d) -> void;
 
 		// Only call when you have set all your required inputs :)
 		auto bake() -> void;
 		auto update(uint32 p_frame_index) -> void;
 
-		auto               getPipeline() const -> const RefPtr<VKComputePipeline> &;
+		auto               getPipeline() const -> const ComputePipelineHandle &;
 		[[nodiscard]] auto getDescriptorSets(uint32 p_frame_index) const -> std::vector<vk::DescriptorSet>;
 		[[nodiscard]] auto getStartSetIndex() const -> uint32;
 		[[nodiscard]] auto getEndSetIndex() const -> uint32;
 
 	private:
-		RefPtr<VKComputePipeline>         m_pipeline{nullptr};
+		ComputePipelineHandle             m_pipeline{nullptr};
 		OwningPtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};
 	};
 

@@ -34,7 +34,6 @@ namespace toaster
 
 	auto ImGuiLayer::onInit() -> void
 	{
-		const auto &app{getApp()};
 		IMGUI_CHECKVERSION();
 		ig::CreateContext();
 		ImGuiIO &io{ig::GetIO()};
@@ -128,8 +127,7 @@ namespace toaster
 		style.FrameBorderSize = 1.0f;
 		style.IndentSpacing   = 11.0f;
 
-		auto       device{app.getRenderContext()->getLogicalDevice()};
-		const auto swapchain{app.getWindow().getSwapchain()};
+		const auto swapchain{m_app->getWindow().getSwapchain()};
 
 		vk::DescriptorPoolSize pool_sizes[] = {
 			{vk::DescriptorType::eSampler, 1000},
@@ -155,9 +153,10 @@ namespace toaster
 		descriptor_pool_create_info.maxSets       = max_sets;
 		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 
+		auto device{m_renderCtx->getLogicalDevice()};
 		m_descriptorPool = device->getVulkanLogicalDevice().createDescriptorPool(descriptor_pool_create_info);
 
-		ImGui_ImplGlfw_InitForVulkan(app.getWindow().getNativeWindow(), true);
+		ImGui_ImplGlfw_InitForVulkan(m_app->getWindow().getNativeWindow(), true);
 
 		ImGui_ImplVulkan_InitInfo init_info{};
 		init_info.Instance        = *device->getPhysicalDevice()->getInstance()->getVulkanInstance();
@@ -217,8 +216,7 @@ namespace toaster
 
 	auto ImGuiLayer::end() -> void
 	{
-		const auto &app{getApp()};
-		const auto  swapchain{app.getWindow().getSwapchain()};
+		const auto swapchain{m_app->getWindow().getSwapchain()};
 
 		ig::Render();
 

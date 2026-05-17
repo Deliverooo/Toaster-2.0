@@ -12,11 +12,23 @@ namespace toaster::render
 {
 	struct TST_API MeshVertex
 	{
-		glm::vec3 position;
-		glm::vec3 normal;
-		glm::vec3 tangent;
-		glm::vec3 bitangent;
-		glm::vec2 texCoord;
+		glm::vec3 position{0.0f};
+		glm::vec3 normal{0.0f};
+		glm::vec3 tangent{0.0f};
+		glm::vec3 bitangent{0.0f};
+		glm::vec2 texCoord{0.0f};
+	};
+
+	struct TST_API BoneInfluence
+	{
+		glm::uvec4 boneIds{0u};
+		glm::vec4  boneWeights{0.0f};
+	};
+
+	struct TST_API BoneInfo
+	{
+		glm::mat4 inverseBindPose{1.0f};
+		uint32    boneIndex{0u};
 	};
 
 	struct TST_API Submesh
@@ -45,6 +57,18 @@ namespace toaster::render
 
 	struct TST_API MeshMaterialData
 	{
+		auto setAlbedoMap(const gpu::Texture2DHandle &p_albedo_map) -> void
+		{
+			albedoMap = p_albedo_map;
+			material->setTexture("u_AlbedoTexture", albedoMap);
+		}
+
+		auto setNormalMap(const gpu::Texture2DHandle &p_normal_map) -> void
+		{
+			normalMap = p_normal_map;
+			material->setTexture("u_NormalTexture", normalMap);
+		}
+
 		String               name{};
 		MaterialHandle       material{nullptr};
 		gpu::Texture2DHandle albedoMap{nullptr};
@@ -66,20 +90,23 @@ namespace toaster::render
 		auto begin() const { return m_materialDatas.begin(); }
 		auto end() const { return m_materialDatas.begin(); }
 
+		auto data() -> std::unordered_map<uint32, MeshMaterialData> & { return m_materialDatas; }
+
 	private:
 		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
 
 		std::unordered_map<uint32, MeshMaterialData> m_materialDatas;
 	};
 
-	class TST_API Mesh
+	class TST_API MeshData
 	{
 	public:
-		Mesh(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader);
+		MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader);
 
 		auto getVertexBuffer() const -> const gpu::VertexBufferHandle &;
 		auto getIndexBuffer() const -> const gpu::IndexBufferHandle &;
 
+		auto getMaterials() -> MaterialList &;
 		auto getMaterials() const -> const MaterialList &;
 		auto getSubmeshes() const -> const std::vector<Submesh> &;
 
@@ -107,5 +134,31 @@ namespace toaster::render
 		MaterialList m_materials;
 	};
 
-	using MeshHandle = RefPtr<Mesh>;
+	using MeshHandle = RefPtr<MeshData>;
+
+	class TST_API StaticMesh
+	{
+	public:
+		StaticMesh(RenderContext *p_render_ctx, const RefPtr<MeshData> &p_mesh_data);
+
+		auto getMeshData() const -> const RefPtr<MeshData> &;
+
+	private:
+		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
+
+		RefPtr<MeshData> m_meshData{nullptr};
+	};
+
+	class TST_API DynamicMesh
+	{
+	public:
+		DynamicMesh(RenderContext *p_render_ctx, const RefPtr<MeshData> &p_mesh_data);
+
+		auto getMeshData() const -> const RefPtr<MeshData> &;
+
+	private:
+		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
+
+		RefPtr<MeshData> m_meshData{nullptr};
+	};
 }

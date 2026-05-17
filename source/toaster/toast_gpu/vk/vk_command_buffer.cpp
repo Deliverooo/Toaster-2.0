@@ -29,6 +29,13 @@ namespace toaster::gpu
 		m_commandBuffer.end();
 	}
 
+	auto VKCommandBuffer::endAndSubmit() -> void
+	{
+		m_commandBuffer.end();
+		submit();
+		waitForFence();
+	}
+
 	auto VKCommandBuffer::submit(vk::PipelineStageFlags2                           p_wait_stage_mask, const std::initializer_list<const vk::Semaphore> &p_wait_semaphores,
 								 const std::initializer_list<const vk::Semaphore> &p_signal_semaphores) -> void
 	{

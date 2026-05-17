@@ -38,7 +38,5 @@ namespace toaster
 		render::MaterialHandle m_fullscreenMaterial{nullptr};
 
 		gpu::Texture2DHandle m_testTex{nullptr};
-
-		FPCamera m_cameraTest;
 	};
 }

@@ -2,6 +2,7 @@
 
 #include <entt/entt.hpp>
 
+#include "components.hpp"
 #include "toast_lib/string.hpp"
 #include "toast_render/renderer_2d.hpp"
 
@@ -70,8 +71,8 @@ namespace toaster
 		auto onUpdate(float32 p_dt) -> void;
 		auto onEvent(Event &p_event) -> void;
 
-		auto onRender( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void;
-		auto onRender( gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
+		auto onRender( gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void;
+		auto onRender( gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
 					  const glm::mat4 &              p_projection) -> void;
 
 		auto setViewportSize(uint32 p_width, uint32 p_height) -> void;
@@ -82,6 +83,9 @@ namespace toaster
 
 		auto getEntityByUUID(UUID p_uuid) -> Entity;
 		auto getEntityByName(const String &p_name) -> Entity;
+
+		auto getEntityWorldTransformMatrix(Entity p_entity) const -> glm::mat4;
+		auto getEntityWorldTransformComponent(Entity p_entity) const -> TransformComponent;
 
 		auto getMainCameraEntity() -> Entity;
 

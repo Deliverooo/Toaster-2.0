@@ -110,10 +110,12 @@ namespace toaster::gpu
 		if (m_queueFamilyIndices.graphics == m_queueFamilyIndices.compute)
 			m_computeQueue = {m_logicalDevice, m_queueFamilyIndices.compute, 1};
 
-		LOG_TRACE("Graphics queue family index {}", m_queueFamilyIndices.graphics);
-		LOG_TRACE("Transfer queue family index {}", m_queueFamilyIndices.transfer);
-		LOG_TRACE("Compute queue family index {}", m_queueFamilyIndices.compute);
-
+		if (m_specInfo.printDebugInfo)
+		{
+			LOG_TRACE("Graphics queue family index {}", m_queueFamilyIndices.graphics);
+			LOG_TRACE("Transfer queue family index {}", m_queueFamilyIndices.transfer);
+			LOG_TRACE("Compute queue family index {}", m_queueFamilyIndices.compute);
+		}
 		#pragma region create command pools
 		// Graphics
 		vk::CommandPoolCreateInfo graphics_command_pool_create_info{};

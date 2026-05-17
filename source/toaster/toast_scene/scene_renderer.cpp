@@ -47,24 +47,12 @@ namespace toaster
 
 			m_depthPrePass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_depthPrePipeline);
 			m_depthPrePass->setInput("Camera", m_cameraUBOs);
-
 			m_depthPrePass->bake();
 
-			gpu::ImageSpecInfo depth_attachment_image_spec_info{};
-			depth_attachment_image_spec_info.width       = m_specInfo.viewportWidth;
-			depth_attachment_image_spec_info.height      = m_specInfo.viewportHeight;
-			depth_attachment_image_spec_info.format      = vk::Format::eD32Sfloat;
-			depth_attachment_image_spec_info.sampleCount = m_renderCtx->getPhysicalDevice()->getMaxUsableSampleCount();
-			depth_attachment_image_spec_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment;
-			m_depthPreAttachmentImage                    = m_renderCtx->createGPU<gpu::VKRawImage>(depth_attachment_image_spec_info);
-
-			LOG_ERROR("{}", vk::to_string(m_depthPreAttachmentImage->getSpecInfo().sampleCount));
-
-			gpu::TextureSpecInfo depth_pre_resolve_attachment_texture_spec_info{};
-			depth_pre_resolve_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
-			depth_pre_resolve_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
-			depth_pre_resolve_attachment_texture_spec_info.format = vk::Format::eD32Sfloat;
-			m_depthPreResolveAttachmentTexture                    = m_renderCtx->createGPU<gpu::VKTexture2D>(depth_pre_resolve_attachment_texture_spec_info);
+			m_depthPreAttachmentImage = m_renderCtx->createMultisampleAttachmentImage(m_specInfo.viewportWidth, m_specInfo.viewportHeight,
+																					  vk::ImageAspectFlagBits::eDepth);
+			m_depthPreResolveAttachmentTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportWidth, m_specInfo.viewportHeight,
+																					  vk::ImageAspectFlagBits::eDepth);
 		}
 		#pragma endregion
 
@@ -155,22 +143,8 @@ namespace toaster
 		}
 		#pragma endregion
 
-		{
-			gpu::ImageSpecInfo colour_attachment_image_spec_info{};
-			colour_attachment_image_spec_info.width       = m_specInfo.viewportWidth;
-			colour_attachment_image_spec_info.height      = m_specInfo.viewportHeight;
-			colour_attachment_image_spec_info.format      = vk::Format::eR8G8B8A8Srgb;
-			colour_attachment_image_spec_info.sampleCount = m_renderCtx->getPhysicalDevice()->getMaxUsableSampleCount();
-			colour_attachment_image_spec_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
-			m_colourImage                                 = m_renderCtx->createGPU<gpu::VKRawImage>(colour_attachment_image_spec_info);
-		}
-		{
-			gpu::TextureSpecInfo colour_attachment_texture_spec_info{};
-			colour_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
-			colour_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
-			colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
-			m_resolveColourTexture                     = m_renderCtx->createGPU<gpu::VKTexture2D>(colour_attachment_texture_spec_info);
-		}
+		m_colourImage          = m_renderCtx->createMultisampleAttachmentImage(m_specInfo.viewportWidth, m_specInfo.viewportHeight, vk::ImageAspectFlagBits::eColor);
+		m_resolveColourTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportWidth, m_specInfo.viewportHeight, vk::ImageAspectFlagBits::eColor);
 
 		render::Renderer2DSpecInfo renderer_2d_create_info{};
 		renderer_2d_create_info.renderTargetWidth   = m_specInfo.viewportWidth;
@@ -221,7 +195,7 @@ namespace toaster
 		std::memcpy(m_mappedSceneDataUBOs[p_frame_index], &scene_data_ub, sizeof(SceneDataUB));
 	}
 
-	auto SceneRenderer::end(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::end(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void
 	{
 		if (m_reloadSkybox)
 		{
@@ -297,7 +271,7 @@ namespace toaster
 		m_reloadSkybox = true;
 	}
 
-	auto SceneRenderer::_renderDepthPrePass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::_renderDepthPrePass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void
 	{
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
@@ -326,13 +300,13 @@ namespace toaster
 		m_renderCtx->endRendering(p_cmd, rendering_info);
 	}
 
-	auto SceneRenderer::_renderLightCullingPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::_renderLightCullingPass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void
 	{
 		m_renderCtx->beginCompute(p_cmd, p_frame_index, m_lightCullingPass);
 		m_renderCtx->dispatchCompute(p_cmd, p_frame_index, m_lightCullingPass, m_lightCullingMaterial, m_specInfo.viewportWidth, m_specInfo.viewportHeight, 1);
 	}
 
-	auto SceneRenderer::_renderSkyboxPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::_renderSkyboxPass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void
 	{
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
@@ -351,7 +325,7 @@ namespace toaster
 		m_renderCtx->endRendering(p_cmd, rendering_info);
 	}
 
-	auto SceneRenderer::_renderGeometryPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::_renderGeometryPass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void
 	{
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea    = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
@@ -385,7 +359,7 @@ namespace toaster
 		m_renderCtx->endRendering(p_cmd, rendering_info);
 	}
 
-	auto SceneRenderer::_renderAntiAliasingPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::_renderAntiAliasingPass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void
 	{
 		m_antiAliasingPass->setInput("u_Texture", m_resolveColourTexture);
 
