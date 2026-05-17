@@ -128,7 +128,7 @@ namespace toaster
 		m_scene->onUpdate(p_dt);
 		m_scene->onRender(cmd_buf, frame_index, p_dt, m_sceneRenderer, m_editorCamera.getViewMatrix(), m_editorCamera.getProjectionMatrix());
 
-		m_fullscreenPass->setInput("u_Texture", m_sceneRenderer->getOutputColourTexture());
+		m_fullscreenPass->setInput("u_Texture", m_sceneRenderer->getFinalColourTexture());
 
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_windowWidth, m_windowHeight}};

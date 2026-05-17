@@ -274,7 +274,7 @@ namespace toaster
 
 			gpu::RenderingAttachmentInfo colour_attachment_info{};
 			colour_attachment_info.clearValue = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
-			colour_attachment_info.image      = p_scene_renderer->getOutputColourTexture()->getImage();
+			colour_attachment_info.image      = p_scene_renderer->getFinalColourTexture()->getImage();
 			colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eNone;
 			colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 
@@ -344,7 +344,7 @@ namespace toaster
 
 			gpu::RenderingAttachmentInfo colour_attachment_info{};
 			colour_attachment_info.clearValue = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
-			colour_attachment_info.image      = p_scene_renderer->getOutputColourTexture()->getImage();
+			colour_attachment_info.image      = p_scene_renderer->getFinalColourTexture()->getImage();
 			colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eNone;
 			colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 

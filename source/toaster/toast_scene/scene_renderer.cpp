@@ -41,6 +41,7 @@ namespace toaster
 			};
 
 			depth_pre_pipeline_spec_info.depthFormat = vk::Format::eD32Sfloat;
+			depth_pre_pipeline_spec_info.multisample = true;
 			depth_pre_pipeline_spec_info.shader      = m_renderCtx->getGlobals()->shaderLibrary().get("Depth-Pre");
 			m_depthPrePipeline                       = m_renderCtx->createGPU<gpu::VKPipeline>(depth_pre_pipeline_spec_info);
 
@@ -49,11 +50,21 @@ namespace toaster
 
 			m_depthPrePass->bake();
 
-			gpu::TextureSpecInfo depth_pre_attachment_texture_spec_info{};
-			depth_pre_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
-			depth_pre_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
-			depth_pre_attachment_texture_spec_info.format = vk::Format::eD32Sfloat;
-			m_depthPreAttachmentTexture                   = m_renderCtx->createGPU<gpu::VKTexture2D>(depth_pre_attachment_texture_spec_info);
+			gpu::ImageSpecInfo depth_attachment_image_spec_info{};
+			depth_attachment_image_spec_info.width       = m_specInfo.viewportWidth;
+			depth_attachment_image_spec_info.height      = m_specInfo.viewportHeight;
+			depth_attachment_image_spec_info.format      = vk::Format::eD32Sfloat;
+			depth_attachment_image_spec_info.sampleCount = m_renderCtx->getPhysicalDevice()->getMaxUsableSampleCount();
+			depth_attachment_image_spec_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment;
+			m_depthPreAttachmentImage                    = m_renderCtx->createGPU<gpu::VKRawImage>(depth_attachment_image_spec_info);
+
+			LOG_ERROR("{}", vk::to_string(m_depthPreAttachmentImage->getSpecInfo().sampleCount));
+
+			gpu::TextureSpecInfo depth_pre_resolve_attachment_texture_spec_info{};
+			depth_pre_resolve_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
+			depth_pre_resolve_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
+			depth_pre_resolve_attachment_texture_spec_info.format = vk::Format::eD32Sfloat;
+			m_depthPreResolveAttachmentTexture                    = m_renderCtx->createGPU<gpu::VKTexture2D>(depth_pre_resolve_attachment_texture_spec_info);
 		}
 		#pragma endregion
 
@@ -84,8 +95,8 @@ namespace toaster
 			skybox_pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
 			skybox_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Skybox");
 			skybox_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
+			skybox_pipeline_spec_info.multisample        = true;
 			skybox_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
-			skybox_pipeline_spec_info.multisample        = false;
 			m_skyboxPipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(skybox_pipeline_spec_info);
 
 			m_skyboxPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_skyboxPipeline);
@@ -111,6 +122,7 @@ namespace toaster
 			geometry_pipeline_spec_info.colourAttachments = {vk::Format::eR8G8B8A8Srgb};
 			geometry_pipeline_spec_info.depthFormat       = vk::Format::eD32Sfloat;
 			geometry_pipeline_spec_info.depthWrite        = false;
+			geometry_pipeline_spec_info.multisample       = true;
 			geometry_pipeline_spec_info.depthCompare      = vk::CompareOp::eLessOrEqual;
 			geometry_pipeline_spec_info.polygonMode       = vk::PolygonMode::eFill;
 			geometry_pipeline_spec_info.shader            = m_renderCtx->getGlobals()->shaderLibrary().get("Geometry");
@@ -126,12 +138,37 @@ namespace toaster
 		}
 		#pragma endregion
 
+		#pragma region anti aliasing
 		{
-			gpu::TextureSpecInfo resolve_colour_attachment_texture_spec_info{};
-			resolve_colour_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
-			resolve_colour_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
-			resolve_colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
-			m_outputColourTexture                              = m_renderCtx->createGPU<gpu::VKTexture2D>(resolve_colour_attachment_texture_spec_info);
+			gpu::PipelineSpecInfo anti_aliasing_pipeline_spec_info{};
+			anti_aliasing_pipeline_spec_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
+			anti_aliasing_pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
+			anti_aliasing_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Anti-Aliasing");
+			anti_aliasing_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
+			anti_aliasing_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
+			anti_aliasing_pipeline_spec_info.multisample        = false;
+			m_antiAliasingPipeline                              = m_renderCtx->createGPU<gpu::VKPipeline>(anti_aliasing_pipeline_spec_info);
+
+			m_antiAliasingPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_antiAliasingPipeline);
+			m_antiAliasingPass->bake();
+		}
+		#pragma endregion
+
+		{
+			gpu::ImageSpecInfo colour_attachment_image_spec_info{};
+			colour_attachment_image_spec_info.width       = m_specInfo.viewportWidth;
+			colour_attachment_image_spec_info.height      = m_specInfo.viewportHeight;
+			colour_attachment_image_spec_info.format      = vk::Format::eR8G8B8A8Srgb;
+			colour_attachment_image_spec_info.sampleCount = m_renderCtx->getPhysicalDevice()->getMaxUsableSampleCount();
+			colour_attachment_image_spec_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | vk::ImageUsageFlagBits::eColorAttachment;
+			m_colourImage                                 = m_renderCtx->createGPU<gpu::VKRawImage>(colour_attachment_image_spec_info);
+		}
+		{
+			gpu::TextureSpecInfo colour_attachment_texture_spec_info{};
+			colour_attachment_texture_spec_info.width  = m_specInfo.viewportWidth;
+			colour_attachment_texture_spec_info.height = m_specInfo.viewportHeight;
+			colour_attachment_texture_spec_info.format = vk::Format::eR8G8B8A8Srgb;
+			m_resolveColourTexture                     = m_renderCtx->createGPU<gpu::VKTexture2D>(colour_attachment_texture_spec_info);
 		}
 
 		render::Renderer2DSpecInfo renderer_2d_create_info{};
@@ -189,10 +226,9 @@ namespace toaster
 		_renderLightCullingPass(p_cmd, p_frame_index);
 		_renderSkyboxPass(p_cmd, p_frame_index);
 		_renderGeometryPass(p_cmd, p_frame_index);
+		// _renderAntiAliasingPass(p_cmd, p_frame_index);
 
 		m_meshDrawCommands.clear();
-
-		TST_PERMA_ASSERT(m_outputColourTexture->getImage()->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal);
 	}
 
 	auto SceneRenderer::renderMesh(const render::MeshHandle &p_mesh, const glm::mat4 &p_transform) -> void
@@ -207,14 +243,14 @@ namespace toaster
 		return m_specInfo;
 	}
 
-	auto SceneRenderer::getOutputColourTexture() const -> const gpu::Texture2DHandle &
+	auto SceneRenderer::getFinalColourTexture() const -> const gpu::Texture2DHandle &
 	{
-		return m_outputColourTexture;
+		return m_resolveColourTexture;
 	}
 
 	auto SceneRenderer::getOutputDepthTexture() const -> const gpu::Texture2DHandle &
 	{
-		return m_depthPreAttachmentTexture;
+		return m_depthPreResolveAttachmentTexture;
 	}
 
 	auto SceneRenderer::getOutputComputeImage() const -> const gpu::StorageImageHandle &
@@ -236,11 +272,13 @@ namespace toaster
 			m_specInfo.viewportWidth  = p_width;
 			m_specInfo.viewportHeight = p_height;
 
-			m_depthPreAttachmentTexture->resize(p_width, p_height);
+			m_depthPreAttachmentImage->resize(p_width, p_height);
+			m_depthPreResolveAttachmentTexture->resize(p_width, p_height);
 
 			m_computeImage->resize(p_width, p_height);
 
-			m_outputColourTexture->resize(p_width, p_height);
+			m_colourImage->resize(p_width, p_height);
+			m_resolveColourTexture->resize(p_width, p_height);
 
 			m_renderer2D->onResize(p_width, p_height);
 		}
@@ -259,11 +297,14 @@ namespace toaster
 		rendering_info.layerCount = 1;
 
 		gpu::RenderingAttachmentInfo depth_attachment_info{};
-		depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
-		depth_attachment_info.image      = m_depthPreAttachmentTexture->getImage();
-		depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
-		depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
-		rendering_info.pDepthAttachment  = &depth_attachment_info;
+		depth_attachment_info.clearValue   = vk::ClearDepthStencilValue{1.0f, 0u};
+		depth_attachment_info.image        = m_depthPreAttachmentImage;
+		depth_attachment_info.loadOp       = vk::AttachmentLoadOp::eClear;
+		depth_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
+		depth_attachment_info.resolveImage = m_depthPreResolveAttachmentTexture->getImage();
+		depth_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eMin;
+
+		rendering_info.pDepthAttachment = &depth_attachment_info;
 
 		m_renderCtx->beginRendering(p_cmd, rendering_info, p_frame_index, m_depthPrePass);
 
@@ -297,10 +338,12 @@ namespace toaster
 		rendering_info.layerCount = 1;
 
 		gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		colour_attachment_info.clearValue = vk::ClearColorValue{1.0f, 0.0f, 0.0f, 1.0f};
-		colour_attachment_info.image      = m_outputColourTexture->getImage();
-		colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
-		colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+		colour_attachment_info.clearValue   = vk::ClearColorValue{1.0f, 0.0f, 0.0f, 1.0f};
+		colour_attachment_info.image        = m_colourImage;
+		colour_attachment_info.loadOp       = vk::AttachmentLoadOp::eClear;
+		colour_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
+		colour_attachment_info.resolveImage = m_resolveColourTexture->getImage();
+		colour_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eAverage;
 
 		m_renderCtx->beginRendering(p_cmd, rendering_info, p_frame_index, m_skyboxPass);
 		m_renderCtx->renderFullscreenQuad(p_cmd, p_frame_index, m_skyboxPipeline, m_skyboxMaterial);
@@ -315,16 +358,19 @@ namespace toaster
 		rendering_info.depthReadOnly = true;
 
 		gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		colour_attachment_info.image   = m_outputColourTexture->getImage();
-		colour_attachment_info.loadOp  = vk::AttachmentLoadOp::eLoad;
-		colour_attachment_info.storeOp = vk::AttachmentStoreOp::eStore;
+		colour_attachment_info.image        = m_colourImage;
+		colour_attachment_info.loadOp       = vk::AttachmentLoadOp::eLoad;
+		colour_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
+		colour_attachment_info.resolveImage = m_resolveColourTexture->getImage();
+		colour_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eAverage;
 
 		gpu::RenderingAttachmentInfo depth_attachment_info{};
-		depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
-		depth_attachment_info.image      = m_depthPreAttachmentTexture->getImage();
-		depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eLoad;
-		depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eDontCare;
-		rendering_info.pDepthAttachment  = &depth_attachment_info;
+		depth_attachment_info.clearValue   = vk::ClearDepthStencilValue{1.0f, 0u};
+		depth_attachment_info.image        = m_depthPreAttachmentImage;
+		depth_attachment_info.loadOp       = vk::AttachmentLoadOp::eLoad;
+		depth_attachment_info.storeOp      = vk::AttachmentStoreOp::eDontCare;
+		depth_attachment_info.resolveImage = m_depthPreResolveAttachmentTexture->getImage();
+		rendering_info.pDepthAttachment    = &depth_attachment_info;
 
 		m_renderCtx->beginRendering(p_cmd, rendering_info, p_frame_index, m_geometryPass);
 
@@ -335,6 +381,25 @@ namespace toaster
 				m_renderCtx->renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_geometryPipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform);
 			}
 		}
+		m_renderCtx->endRendering(p_cmd, rendering_info);
+	}
+
+	auto SceneRenderer::_renderAntiAliasingPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void
+	{
+		m_antiAliasingPass->setInput("u_Texture", m_resolveColourTexture);
+
+		gpu::RenderingInfo rendering_info{};
+		rendering_info.renderArea = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
+		rendering_info.layerCount = 1;
+
+		gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
+		colour_attachment_info.clearValue = vk::ClearColorValue{1.0f, 0.0f, 0.0f, 1.0f};
+		colour_attachment_info.image      = m_resolveColourTexture->getImage();
+		colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
+		colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+
+		m_renderCtx->beginRendering(p_cmd, rendering_info, p_frame_index, m_antiAliasingPass);
+		m_renderCtx->renderFullscreenQuad(p_cmd, p_frame_index, m_antiAliasingPipeline, nullptr);
 		m_renderCtx->endRendering(p_cmd, rendering_info);
 	}
 }

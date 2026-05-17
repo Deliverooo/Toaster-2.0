@@ -29,7 +29,7 @@ namespace toaster
 		auto renderMesh(const render::MeshHandle &p_mesh, const glm::mat4 &p_transform) -> void;
 
 		auto getSpecInfo() const -> const SceneRendererSpecInfo &;
-		auto getOutputColourTexture() const -> const gpu::Texture2DHandle &;
+		auto getFinalColourTexture() const -> const gpu::Texture2DHandle &;
 		auto getOutputDepthTexture() const -> const gpu::Texture2DHandle &;
 
 		auto getOutputComputeImage() const -> const RefPtr<gpu::VKStorageImage> &;
@@ -43,6 +43,7 @@ namespace toaster
 		auto _renderLightCullingPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 		auto _renderSkyboxPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 		auto _renderGeometryPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
+		auto _renderAntiAliasingPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void;
 
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
 
@@ -54,7 +55,8 @@ namespace toaster
 		gpu::PipelineHandle   m_depthPrePipeline{nullptr};
 		gpu::RenderPassHandle m_depthPrePass{nullptr};
 
-		gpu::Texture2DHandle m_depthPreAttachmentTexture{nullptr};
+		gpu::RawImageHandle  m_depthPreAttachmentImage{nullptr};
+		gpu::Texture2DHandle m_depthPreResolveAttachmentTexture{nullptr};
 		#pragma endregion
 
 		#pragma region light culling
@@ -79,7 +81,13 @@ namespace toaster
 		gpu::RenderPassHandle m_geometryPass{nullptr};
 		#pragma endregion
 
-		gpu::Texture2DHandle m_outputColourTexture{nullptr};
+		#pragma region anti aliasing
+		gpu::PipelineHandle   m_antiAliasingPipeline{nullptr};
+		gpu::RenderPassHandle m_antiAliasingPass{nullptr};
+		#pragma endregion
+
+		gpu::RawImageHandle  m_colourImage{nullptr};
+		gpu::Texture2DHandle m_resolveColourTexture{nullptr};
 
 		struct CameraUB
 		{

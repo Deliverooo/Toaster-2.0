@@ -38,6 +38,8 @@ namespace toaster::gpu
 
 		[[nodiscard]] auto getSpecInfo() const -> const ImageSpecInfo &;
 
+		auto isMultisample() const -> bool;
+
 		auto               setCurrentImageLayout(vk::ImageLayout p_layout) -> void;
 		[[nodiscard]] auto getCurrentImageLayout() const -> vk::ImageLayout;
 

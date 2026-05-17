@@ -16,6 +16,7 @@ namespace toaster
 	{
 		if (m_shaders.contains(p_name))
 			return m_shaders.at(p_name);
+		TST_PERMA_ASSERT(false);
 		return nullptr;
 	}
 }

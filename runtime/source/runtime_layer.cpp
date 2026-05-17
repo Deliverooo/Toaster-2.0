@@ -114,11 +114,11 @@ namespace toaster
 		m_scene->onUpdate(p_dt);
 		m_scene->onRender(command_buffer, frame_index, p_dt, m_sceneRenderer);
 
-		auto tex{m_sceneRenderer->getOutputColourTexture()};
-		// if (m_inputCtx->isKeyPressed(input::EKeyCode::eP))
-		// {
-		// tex->saveToFile(os::getBinaryDirectory() / "Orbo.png");
-		// }
+		auto tex{m_sceneRenderer->getFinalColourTexture()};
+		if (m_inputCtx->isKeyPressed(input::EKeyCode::eF2))
+		{
+			tex->saveToFile(os::getBinaryDirectory() / "New_Screenshot.bmp");
+		}
 
 		gpu::util::transitionImageLayout(tex->getImage().get(), tex->getImage()->getCurrentImageLayout(), vk::ImageLayout::eShaderReadOnlyOptimal);
 

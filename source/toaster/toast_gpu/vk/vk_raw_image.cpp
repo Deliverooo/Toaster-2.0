@@ -42,6 +42,11 @@ namespace toaster::gpu
 		return m_specInfo;
 	}
 
+	auto VKRawImage::isMultisample() const -> bool
+	{
+		return m_specInfo.sampleCount != vk::SampleCountFlagBits::e1;
+	}
+
 	auto VKRawImage::setCurrentImageLayout(vk::ImageLayout p_layout) -> void
 	{
 		m_currentImageLayout = p_layout;

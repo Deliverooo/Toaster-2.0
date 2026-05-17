@@ -48,7 +48,14 @@ namespace toaster::render
 			const auto                                     quad_shader{make_reference<gpu::VKShader>(m_device, shader_stages, bytecode, "Quad")};
 			m_shaderLibrary.add("Quad", quad_shader);
 		}
-
+		{
+			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/anti-aliasing.vert.glsl.spv")};
+			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/anti-aliasing.pixel.glsl.spv")};
+			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
+			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
+			const auto                                     anti_aliasing_shader{make_reference<gpu::VKShader>(m_device, shader_stages, bytecode, "Anti-Aliasing")};
+			m_shaderLibrary.add("Anti-Aliasing", anti_aliasing_shader);
+		}
 		{
 			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/test.comp.glsl.spv")};
 			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
@@ -57,7 +64,6 @@ namespace toaster::render
 			const auto                                     compute_test_shader{make_reference<gpu::VKShader>(m_device, stage, bytecode, "Compute-Test")};
 			m_shaderLibrary.add("Compute-Test", compute_test_shader);
 		}
-
 		{
 			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/equirectangular_to_cubemap.comp.glsl.spv")};
 			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
