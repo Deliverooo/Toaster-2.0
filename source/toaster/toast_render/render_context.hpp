@@ -68,6 +68,20 @@ namespace toaster::render
 			return make_reference<TObj>(m_logicalDevice, std::forward<TArgs>(p_args)...);
 		}
 
+		template<typename TVertex>
+		[[nodiscard]] auto createVertexBuffer(const std::vector<TVertex> &p_vertices) const -> gpu::VertexBufferHandle
+		{
+			const uint64 vbo_size{sizeof(TVertex) * p_vertices.size()};
+			return createGPU<gpu::VKVertexBuffer>(static_cast<const void *>(p_vertices.data()), vbo_size);
+		}
+
+		template<typename TIndex>
+		[[nodiscard]] auto createIndexBuffer(const std::vector<TIndex> &p_indices) const -> gpu::IndexBufferHandle
+		{
+			const uint64 ibo_size{sizeof(TIndex) * p_indices.size()};
+			return createGPU<gpu::VKIndexBuffer>(static_cast<const void *>(p_indices.data()), ibo_size);
+		}
+
 		template<typename TUBOStruct>
 		[[nodiscard]] auto createUniformBuffer() const -> gpu::UniformBufferHandle
 		{

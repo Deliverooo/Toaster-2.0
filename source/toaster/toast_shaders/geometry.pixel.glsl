@@ -15,6 +15,8 @@ layout(location = 0) out vec4 o_Colour;
 layout(set = 0, binding = 0) uniform sampler2D u_AlbedoTexture;
 layout(set = 0, binding = 1) uniform sampler2D u_NormalTexture;
 
+layout (set = 2, binding = 0) uniform samplerCube u_EnvironmentMap;
+
 layout(push_constant) uniform Material
 {
     layout(offset = 64) vec3 albedoColour;
@@ -198,5 +200,15 @@ void main()
     lo += calcPointLights(v_WorldPos);
 
     vec3 final_colour = lo;
+//
+//    vec3 kS = fresnelSchlick(params.nDotV);
+//    vec3 kD = 1.0 - kS;
+//    kD *= 1.0 - params.metalness;
+//    vec3 irradiance = texture(u_EnvironmentMap, params.normal).rgb;
+//    vec3 diffuse      = irradiance * params.albedo;
+//    vec3 ambient = (kD * diffuse);
+//
+//    final_colour += ambient;
+
     o_Colour = vec4(final_colour, 1.0f);
 }

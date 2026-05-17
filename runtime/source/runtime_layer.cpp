@@ -83,7 +83,7 @@ namespace toaster
 		SceneRendererSpecInfo scene_renderer_spec_info{};
 		scene_renderer_spec_info.viewportWidth     = m_viewportWidth;
 		scene_renderer_spec_info.viewportHeight    = m_viewportHeight;
-		scene_renderer_spec_info.scene             = m_scene.get();
+		scene_renderer_spec_info.scene             = m_scene;
 		scene_renderer_spec_info.resourceDirectory = binary_dir / "../resources";
 		m_sceneRenderer                            = make_reference<SceneRenderer>(m_renderCtx, scene_renderer_spec_info);
 
@@ -119,8 +119,6 @@ namespace toaster
 		{
 			tex->saveToFile(os::getBinaryDirectory() / "New_Screenshot.bmp");
 		}
-
-		gpu::util::transitionImageLayout(tex->getImage().get(), tex->getImage()->getCurrentImageLayout(), vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		m_fullscreenMaterial->setTexture("u_Texture", tex);
 

@@ -35,7 +35,37 @@ namespace toaster::render
 		return result;
 	}
 
-	Mesh::Mesh(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader) : m_renderCtx(p_render_ctx), m_path(p_path)
+	MaterialList::MaterialList(RenderContext *p_render_ctx) : m_renderCtx(p_render_ctx)
+	{
+	}
+
+	auto MaterialList::addMaterial(uint32 p_index, const gpu::ShaderHandle &p_shader, const String &p_name) -> MeshMaterialData &
+	{
+		auto &mat{m_materialDatas[p_index]};
+		mat.material = m_renderCtx->create<Material>(p_shader, p_name);
+		mat.name     = p_name;
+		return mat;
+	}
+
+	auto MaterialList::hasMaterial(uint32 p_index) const -> bool
+	{
+		return m_materialDatas.contains(p_index);
+	}
+
+	auto MaterialList::getMaterial(uint32 p_index) -> MeshMaterialData &
+	{
+		TST_PERMA_ASSERT(hasMaterial(p_index));
+		return m_materialDatas[p_index];
+	}
+
+	auto MaterialList::getMaterial(uint32 p_index) const -> const MeshMaterialData &
+	{
+		TST_PERMA_ASSERT(hasMaterial(p_index));
+		return m_materialDatas.at(p_index);
+	}
+
+	Mesh::Mesh(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader) : m_renderCtx(p_render_ctx), m_path(p_path),
+																													 m_materials(p_render_ctx)
 	{
 		Assimp::Importer importer;
 
@@ -111,13 +141,13 @@ namespace toaster::render
 		{
 			for (uint32 i{0u}; i < scene->mNumMaterials; ++i)
 			{
-				auto  ai_material      = scene->mMaterials[i];
-				auto  ai_material_name = ai_material->GetName();
-				auto &material_data{m_materialDatas.emplace_back()};
-				auto &material{material_data.material};
-				material = m_renderCtx->create<Material>(p_shader, ai_material_name.data);
+				auto ai_material      = scene->mMaterials[i];
+				auto ai_material_name = ai_material->GetName();
 
-				aiString ai_tex_path;
+				auto &mat_data{m_materials.hasMaterial(i) ? m_materials.getMaterial(i) : m_materials.addMaterial(i, p_shader, ai_material_name.data)};
+				auto &material{mat_data.material};
+				auto &albedo_map{mat_data.albedoMap};
+				auto &normal_map{mat_data.normalMap};
 
 				glm::vec3 albedo_colour{0.8f};
 				aiColor3D ai_colour;
@@ -145,7 +175,8 @@ namespace toaster::render
 				LOG_TRACE("\tROUGHNESS = {}", roughness);
 				LOG_TRACE("\tMETALNESS = {}", metalness);
 
-				bool has_albedo_map = ai_material->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &ai_tex_path) == AI_SUCCESS;
+				aiString ai_tex_path;
+				bool     has_albedo_map = ai_material->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &ai_tex_path) == AI_SUCCESS;
 				if (!has_albedo_map)
 					has_albedo_map = ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &ai_tex_path) == AI_SUCCESS;
 
@@ -162,16 +193,16 @@ namespace toaster::render
 
 					gpu::TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					material_data.albedoMap        = m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path);
-					material->setTexture("u_AlbedoTexture", material_data.albedoMap);
+					albedo_map                     = m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path);
+					material->setTexture("u_AlbedoTexture", albedo_map);
 					material->set("u_Material.albedoColour", glm::vec3{1.0f});
 				}
 				else
+				{
 					LOG_WARN("Mesh material does not have an albedo map");
+				}
 
-				bool has_normal_map = ai_material->GetTexture(aiTextureType_NORMALS, 0, &ai_tex_path) == AI_SUCCESS;
-
-				if (has_normal_map)
+				if (ai_material->GetTexture(aiTextureType_NORMALS, 0, &ai_tex_path) == AI_SUCCESS)
 				{
 					auto parent_path  = p_path.parent_path();
 					auto texture_path = parent_path / ai_tex_path.C_Str();
@@ -184,8 +215,8 @@ namespace toaster::render
 
 					gpu::TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					material_data.normalMap        = m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path);
-					material->setTexture("u_NormalTexture", material_data.normalMap);
+					normal_map                     = m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path);
+					material->setTexture("u_NormalTexture", normal_map);
 					material->set<uint32>("u_Material.hasNormalMap", 1u);
 				}
 				else
@@ -195,17 +226,10 @@ namespace toaster::render
 			}
 		}
 		else
-			m_materialDatas.emplace_back(m_renderCtx->create<Material>(p_shader));
+			m_materials.addMaterial(0, p_shader, "Default");
 
-		const vk::DeviceSize vertex_buffer_size{sizeof(MeshVertex) * m_vertices.size()};
-		m_vertexBuffer = make_reference<gpu::VKVertexBuffer>(m_renderCtx->getLogicalDevice(), static_cast<void *>(m_vertices.data()), vertex_buffer_size);
-
-		const vk::DeviceSize index_buffer_size{sizeof(uint32) * m_indices.size()};
-		m_indexBuffer = make_reference<gpu::VKIndexBuffer>(m_renderCtx->getLogicalDevice(), static_cast<void *>(m_indices.data()), index_buffer_size);
-	}
-
-	Mesh::~Mesh()
-	{
+		m_vertexBuffer = m_renderCtx->createVertexBuffer(m_vertices);
+		m_indexBuffer  = m_renderCtx->createIndexBuffer(m_indices);
 	}
 
 	auto Mesh::getVertexBuffer() const -> const gpu::VertexBufferHandle &
@@ -218,9 +242,9 @@ namespace toaster::render
 		return m_indexBuffer;
 	}
 
-	auto Mesh::getMaterialDatas() const -> const std::vector<MeshMaterialData> &
+	auto Mesh::getMaterials() const -> const MaterialList &
 	{
-		return m_materialDatas;
+		return m_materials;
 	}
 
 	auto Mesh::getSubmeshes() const -> const std::vector<Submesh> &

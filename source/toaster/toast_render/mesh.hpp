@@ -45,21 +45,42 @@ namespace toaster::render
 
 	struct TST_API MeshMaterialData
 	{
+		String               name{};
 		MaterialHandle       material{nullptr};
 		gpu::Texture2DHandle albedoMap{nullptr};
 		gpu::Texture2DHandle normalMap{nullptr};
+	};
+
+	class TST_API MaterialList
+	{
+	public:
+		MaterialList(RenderContext *p_render_ctx);
+
+		auto addMaterial(uint32 p_index, const gpu::ShaderHandle &p_shader, const String &p_name) -> MeshMaterialData &;
+		auto hasMaterial(uint32 p_index) const -> bool;
+		auto getMaterial(uint32 p_index) -> MeshMaterialData &;
+		auto getMaterial(uint32 p_index) const -> const MeshMaterialData &;
+
+		auto begin() { return m_materialDatas.begin(); }
+		auto end() { return m_materialDatas.begin(); }
+		auto begin() const { return m_materialDatas.begin(); }
+		auto end() const { return m_materialDatas.begin(); }
+
+	private:
+		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
+
+		std::unordered_map<uint32, MeshMaterialData> m_materialDatas;
 	};
 
 	class TST_API Mesh
 	{
 	public:
 		Mesh(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader);
-		~Mesh();
 
 		auto getVertexBuffer() const -> const gpu::VertexBufferHandle &;
 		auto getIndexBuffer() const -> const gpu::IndexBufferHandle &;
 
-		auto getMaterialDatas() const -> const std::vector<MeshMaterialData> &;
+		auto getMaterials() const -> const MaterialList &;
 		auto getSubmeshes() const -> const std::vector<Submesh> &;
 
 		auto getVertices() const -> const std::vector<MeshVertex> &;
@@ -83,7 +104,7 @@ namespace toaster::render
 		gpu::VertexBufferHandle m_vertexBuffer{nullptr};
 		gpu::IndexBufferHandle  m_indexBuffer{nullptr};
 
-		std::vector<MeshMaterialData> m_materialDatas;
+		MaterialList m_materials;
 	};
 
 	using MeshHandle = RefPtr<Mesh>;

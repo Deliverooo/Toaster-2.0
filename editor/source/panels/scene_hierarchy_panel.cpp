@@ -367,7 +367,7 @@ namespace toaster
 
 			if (p_comp.mesh)
 			{
-				for (auto &mat: p_comp.mesh->getMaterialDatas())
+				for (auto &mat: p_comp.mesh->getMaterials())
 					_drawMaterial(p_frame_index, mat.material);
 			}
 		}, this);

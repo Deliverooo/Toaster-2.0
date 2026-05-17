@@ -4,7 +4,7 @@
 
 namespace toaster::gpu
 {
-	VKIndexBuffer::VKIndexBuffer(VKLogicalDevice *p_device, void *p_data, uint64 p_size) : m_device(p_device)
+	VKIndexBuffer::VKIndexBuffer(VKLogicalDevice *p_device, const void *p_data, uint64 p_size) : m_device(p_device)
 	{
 		TST_ASSERT_MSG(p_device, "Context cannot be null");
 

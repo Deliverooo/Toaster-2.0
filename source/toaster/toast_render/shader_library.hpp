@@ -15,11 +15,11 @@ namespace toaster
 		ShaderLibrary()  = default;
 		~ShaderLibrary() = default;
 
-		auto add(const String &p_name, const RefPtr<gpu::VKShader> &p_shader) -> void;
+		auto add(const String &p_name, const gpu::ShaderHandle &p_shader) -> void;
 
-		[[nodiscard]] auto get(const String &p_name) const -> RefPtr<gpu::VKShader>;
+		[[nodiscard]] auto get(const String &p_name) const -> gpu::ShaderHandle;
 
 	private:
-		std::unordered_map<String, RefPtr<gpu::VKShader> > m_shaders;
+		std::unordered_map<String, gpu::ShaderHandle> m_shaders;
 	};
 }

@@ -245,6 +245,21 @@ namespace toaster::gpu
 		return m_graphicsCommandPool;
 	}
 
+	auto VKLogicalDevice::presentKHR(const vk::SwapchainKHR *p_swapchain, const uint32 *p_image_indices, std::vector<vk::Semaphore> p_wait_semaphores) const -> vk::Result
+	{
+		vk::PresentInfoKHR present_info{};
+		present_info.waitSemaphoreCount = 1;
+		present_info.pWaitSemaphores    = p_wait_semaphores.data();
+		present_info.swapchainCount     = 1;
+		present_info.pSwapchains        = p_swapchain;
+		present_info.pImageIndices      = p_image_indices;
+
+		// For some reason, Vulkan-hpp classifies vk::Result::eErrorOutOfDateKHR as an error and automatically throws an exception
+		// So this is what I came up with to bypass that :)
+		return static_cast<vk::Result>(m_graphicsQueue.getDispatcher()->vkQueuePresentKHR(static_cast<VkQueue>(*m_graphicsQueue),
+																						  reinterpret_cast<const VkPresentInfoKHR *>(&present_info)));
+	}
+
 	auto VKLogicalDevice::waitForFence(const vk::Fence &p_fence, uint64 p_timeout) const -> void
 	{
 		if (const vk::Result fence_result{m_logicalDevice.waitForFences({p_fence}, true, p_timeout)}; fence_result != vk::Result::eSuccess)
@@ -281,12 +296,12 @@ namespace toaster::gpu
 
 	auto VKLogicalDevice::mapMemory(vk::DeviceMemory p_memory, vk::DeviceSize p_offset, vk::DeviceSize p_size, vk::MemoryMapFlags p_flags) const -> void *
 	{
-		return ((vk::Device) m_logicalDevice).mapMemory(p_memory, p_offset, p_size, p_flags);
+		return (static_cast<vk::Device>(m_logicalDevice)).mapMemory(p_memory, p_offset, p_size, p_flags);
 	}
 
 	auto VKLogicalDevice::unmapMemory(vk::DeviceMemory p_memory) const -> void
 	{
-		((vk::Device) m_logicalDevice).unmapMemory(p_memory);
+		(static_cast<vk::Device>(m_logicalDevice)).unmapMemory(p_memory);
 	}
 
 	auto VKLogicalDevice::createBuffer(vk::DeviceSize    p_size, vk::BufferUsageFlags          p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
@@ -325,16 +340,16 @@ namespace toaster::gpu
 		uint32 qfi[]                             = {m_queueFamilyIndices.graphics, m_queueFamilyIndices.transfer};
 		buffer_create_info.pQueueFamilyIndices   = qfi;
 
-		p_out_buffer = ((vk::Device) m_logicalDevice).createBuffer(buffer_create_info);
+		p_out_buffer = (static_cast<vk::Device>(m_logicalDevice)).createBuffer(buffer_create_info);
 
-		vk::MemoryRequirements memory_requirements = ((vk::Device) m_logicalDevice).getBufferMemoryRequirements(p_out_buffer);
+		vk::MemoryRequirements memory_requirements = (static_cast<vk::Device>(m_logicalDevice)).getBufferMemoryRequirements(p_out_buffer);
 		vk::MemoryAllocateInfo memory_allocate_info{};
 		memory_allocate_info.memoryTypeIndex = m_physicalDevice->findMemoryType(memory_requirements.memoryTypeBits, p_memory_properties);
 		memory_allocate_info.allocationSize  = memory_requirements.size;
 
-		p_out_memory = ((vk::Device) m_logicalDevice).allocateMemory(memory_allocate_info);
+		p_out_memory = (static_cast<vk::Device>(m_logicalDevice)).allocateMemory(memory_allocate_info);
 
-		((vk::Device) m_logicalDevice).bindBufferMemory(p_out_buffer, p_out_memory, 0u);
+		(static_cast<vk::Device>(m_logicalDevice)).bindBufferMemory(p_out_buffer, p_out_memory, 0u);
 	}
 
 	auto VKLogicalDevice::createImage(const ImageExtent &p_image_extent, uint32 p_layer_count, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count,
@@ -390,15 +405,15 @@ namespace toaster::gpu
 		uint32 qfi[]                            = {m_queueFamilyIndices.graphics, m_queueFamilyIndices.transfer};
 		image_create_info.pQueueFamilyIndices   = qfi;
 
-		p_out_image                                = ((vk::Device) m_logicalDevice).createImage(image_create_info);
-		vk::MemoryRequirements memory_requirements = ((vk::Device) m_logicalDevice).getImageMemoryRequirements(p_out_image);
+		p_out_image                                = (static_cast<vk::Device>(m_logicalDevice)).createImage(image_create_info);
+		vk::MemoryRequirements memory_requirements = (static_cast<vk::Device>(m_logicalDevice)).getImageMemoryRequirements(p_out_image);
 		vk::MemoryAllocateInfo memory_allocate_info{};
 		memory_allocate_info.allocationSize  = memory_requirements.size;
 		memory_allocate_info.memoryTypeIndex = m_physicalDevice->findMemoryType(memory_requirements.memoryTypeBits, p_memory_properties);
 
-		p_out_memory = ((vk::Device) m_logicalDevice).allocateMemory(memory_allocate_info);
+		p_out_memory = (static_cast<vk::Device>(m_logicalDevice)).allocateMemory(memory_allocate_info);
 
-		((vk::Device) m_logicalDevice).bindImageMemory(p_out_image, p_out_memory, 0u);
+		(static_cast<vk::Device>(m_logicalDevice)).bindImageMemory(p_out_image, p_out_memory, 0u);
 	}
 
 	auto VKLogicalDevice::createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_mip_levels,
@@ -434,7 +449,7 @@ namespace toaster::gpu
 		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{p_aspect_flags, 0, p_mip_levels, 0, p_layer_count};
 		image_view_create_info.format           = p_format;
 
-		return ((vk::Device) m_logicalDevice).createImageView(image_view_create_info);
+		return (static_cast<vk::Device>(m_logicalDevice)).createImageView(image_view_create_info);
 	}
 
 	auto VKLogicalDevice::createSamplerRaii() -> vk::raii::Sampler
@@ -482,7 +497,7 @@ namespace toaster::gpu
 		sampler_create_info.borderColor             = vk::BorderColor::eFloatOpaqueWhite;
 		sampler_create_info.unnormalizedCoordinates = false;
 
-		return ((vk::Device) m_logicalDevice).createSampler(sampler_create_info);
+		return (static_cast<vk::Device>(m_logicalDevice)).createSampler(sampler_create_info);
 	}
 
 	auto VKLogicalDevice::copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) -> void

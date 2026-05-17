@@ -31,13 +31,7 @@ namespace toaster::gpu
 		m_commandBuffers[m_frameIndex].waitForFence();
 
 		if (m_beginFrameCallback)
-		{
 			m_beginFrameCallback(m_userData, m_frameIndex);
-		}
-		else
-		{
-			TST_PERMA_ASSERT(false);
-		}
 
 		// Reset the fence so we can signal it later
 		m_commandBuffers[m_frameIndex].resetFence();
@@ -82,18 +76,7 @@ namespace toaster::gpu
 		m_commandBuffers[m_frameIndex].submit(vk::PipelineStageFlagBits2::eColorAttachmentOutput, {*m_imageAvailableSemaphores[m_frameIndex]},
 											  {*m_renderFinishedSemaphores[m_frameIndex]});
 
-		vk::PresentInfoKHR present_info{};
-		present_info.waitSemaphoreCount = 1;
-		present_info.pWaitSemaphores    = &*m_renderFinishedSemaphores[m_frameIndex];
-		present_info.swapchainCount     = 1;
-		present_info.pSwapchains        = &*m_swapchain;
-		present_info.pImageIndices      = &m_imageIndex;
-
-		// For some reason, Vulkan-hpp classifies vk::Result::eErrorOutOfDateKHR as an error and automatically throws an exception
-		// So this is what I came up with to bypass that :)
-		auto res = static_cast<vk::Result>(m_device->getGraphicsQueue().getDispatcher()->vkQueuePresentKHR(static_cast<VkQueue>(*m_device->getGraphicsQueue()),
-																										   reinterpret_cast<const VkPresentInfoKHR *>(&present_info)));
-
+		const vk::Result res{m_device->presentKHR(&*m_swapchain, &m_imageIndex, {*m_renderFinishedSemaphores[m_frameIndex]})};
 		if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR || m_framebufferResized)
 		{
 			m_framebufferResized = false;

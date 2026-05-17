@@ -1,11 +1,11 @@
 #pragma once
 
-#include "toast_lib/system_types.h"
+#include "toast_lib/uuid.hpp"
 
 namespace toaster::asset
 {
-	using AssetID = uint64;
-	constexpr AssetID c_invalidAssetID{UINT64_MAX};
+	using AssetID = UUID;
+	const AssetID c_invalidAssetID{UINT64_MAX};
 
 	struct Asset
 	{

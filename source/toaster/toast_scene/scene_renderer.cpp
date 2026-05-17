@@ -133,6 +133,7 @@ namespace toaster
 			m_geometryPass->setInput("DirectionalLightData", m_directionalLightUBOs);
 			m_geometryPass->setInput("PointLightData", m_pointLightUBOs);
 			m_geometryPass->setInput("SceneData", m_sceneDataUBOs);
+			m_geometryPass->setInput("u_EnvironmentMap", m_skyboxMap);
 
 			m_geometryPass->bake();
 		}
@@ -222,6 +223,12 @@ namespace toaster
 
 	auto SceneRenderer::end(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
+		if (m_reloadSkybox)
+		{
+			m_skyboxPass->setInput("u_CubemapImage", m_skyboxMap);
+			m_geometryPass->setInput("u_EnvironmentMap", m_skyboxMap);
+			m_reloadSkybox = false;
+		}
 		_renderDepthPrePass(p_cmd, p_frame_index);
 		_renderLightCullingPass(p_cmd, p_frame_index);
 		_renderSkyboxPass(p_cmd, p_frame_index);
@@ -327,12 +334,6 @@ namespace toaster
 
 	auto SceneRenderer::_renderSkyboxPass(gpu::VKCommandBuffer &p_cmd, uint32 p_frame_index) -> void
 	{
-		if (m_reloadSkybox)
-		{
-			m_skyboxPass->setInput("u_CubemapImage", m_skyboxMap);
-			m_reloadSkybox = false;
-		}
-
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
 		rendering_info.layerCount = 1;

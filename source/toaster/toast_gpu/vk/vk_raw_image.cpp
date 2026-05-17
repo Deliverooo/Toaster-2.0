@@ -5,9 +5,9 @@
 
 namespace toaster::gpu
 {
-	VKRawImage::VKRawImage(VKLogicalDevice *p_dev, const ImageSpecInfo &p_spec_info) : m_device(p_dev), m_specInfo(p_spec_info)
+	VKRawImage::VKRawImage(VKLogicalDevice *p_device, const ImageSpecInfo &p_spec_info) : m_device(p_device), m_specInfo(p_spec_info)
 	{
-		TST_ASSERT_MSG(p_dev, "Device cannot be null");
+		TST_ASSERT_MSG(p_device, "Device cannot be null");
 
 		recreate();
 	}
@@ -86,11 +86,11 @@ namespace toaster::gpu
 		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
 							   staging_buffer, staging_buffer_memory);
 
-		void *mapped = staging_buffer_memory.mapMemory(0, p_size, {});
+		void *mapped{staging_buffer_memory.mapMemory(0, p_size, {})};
 		std::memcpy(mapped, p_data, p_size);
 		staging_buffer_memory.unmapMemory();
 
-		util::toTransferDst(this);
+		util::transitionImageLayout(this, m_currentImageLayout, vk::ImageLayout::eTransferDstOptimal);
 		m_device->copyBufferToImage(staging_buffer, m_image, {m_specInfo.width, m_specInfo.height, 1u}, m_specInfo.layerCount);
 	}
 
@@ -130,19 +130,13 @@ namespace toaster::gpu
 		m_device->createImage({m_specInfo.width, m_specInfo.height, 1u}, m_specInfo.layerCount, m_specInfo.mipCount, m_specInfo.sampleCount, m_specInfo.format,
 							  image_tiling, m_specInfo.usage, vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
 
-		vk::ImageAspectFlags aspect_flags{util::getImageAspectMask(m_specInfo.format)};
+		const vk::ImageAspectFlags aspect_flags{util::getImageAspectMask(m_specInfo.format)};
 		if (m_specInfo.usage & vk::ImageUsageFlagBits::eColorAttachment)
-		{
-			util::undefinedToColourAttachment(this);
-		}
+			util::transitionImageLayout(this, vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal);
 		else if (m_specInfo.usage & vk::ImageUsageFlagBits::eDepthStencilAttachment)
-		{
-			util::undefinedToDepthAttachment(this, false);
-		}
+			util::transitionImageLayout(this, vk::ImageLayout::eUndefined, vk::ImageLayout::eDepthAttachmentOptimal);
 		else if (m_specInfo.usage & vk::ImageUsageFlagBits::eStorage)
-		{
-			util::undefinedToGeneral(this);
-		}
+			util::transitionImageLayout(this, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
 
 		m_imageView = m_device->createImageView(m_image, m_specInfo.format, aspect_flags, m_specInfo.layerCount, m_specInfo.mipCount);
 	}

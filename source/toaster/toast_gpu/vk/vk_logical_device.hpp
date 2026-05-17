@@ -81,6 +81,8 @@ namespace toaster::gpu
 		[[nodiscard]] auto getComputeCommandPool() -> vk::raii::CommandPool &;
 		[[nodiscard]] auto getCommandPool(vk::QueueFlagBits p_queue_type) -> vk::raii::CommandPool &;
 
+		auto presentKHR(const vk::SwapchainKHR *p_swapchain, const uint32 *p_image_indices, std::vector<vk::Semaphore> p_wait_semaphores) const -> vk::Result;
+
 		auto waitForFence(const vk::Fence &p_fence, uint64 p_timeout = UINT64_MAX) const -> void;
 		auto waitForFences(const std::initializer_list<const vk::Fence> &p_fences, bool p_wait_all = true, uint64 p_timeout = UINT64_MAX) const -> void;
 
@@ -174,31 +176,31 @@ namespace toaster::gpu
 	template<>
 	inline auto VKLogicalDevice::destroyObject<vk::DeviceMemory>(vk::DeviceMemory &p_memory) const -> void
 	{
-		((vk::Device) m_logicalDevice).freeMemory(p_memory);
+		(static_cast<vk::Device>(m_logicalDevice)).freeMemory(p_memory);
 	}
 
 	template<>
 	inline auto VKLogicalDevice::destroyObject<vk::Buffer>(vk::Buffer &p_buffer) const -> void
 	{
-		((vk::Device) m_logicalDevice).destroyBuffer(p_buffer);
+		(static_cast<vk::Device>(m_logicalDevice)).destroyBuffer(p_buffer);
 	}
 
 	template<>
 	inline auto VKLogicalDevice::destroyObject<vk::Image>(vk::Image &p_image) const -> void
 	{
-		((vk::Device) m_logicalDevice).destroyImage(p_image);
+		(static_cast<vk::Device>(m_logicalDevice)).destroyImage(p_image);
 	}
 
 	template<>
 	inline auto VKLogicalDevice::destroyObject<vk::ImageView>(vk::ImageView &p_image_view) const -> void
 	{
-		((vk::Device) m_logicalDevice).destroyImageView(p_image_view);
+		static_cast<vk::Device>(m_logicalDevice).destroyImageView(p_image_view);
 	}
 
 	template<>
 	inline auto VKLogicalDevice::destroyObject<vk::Sampler>(vk::Sampler &p_sampler) const -> void
 	{
-		((vk::Device) m_logicalDevice).destroySampler(p_sampler);
+		static_cast<vk::Device>(m_logicalDevice).destroySampler(p_sampler);
 	}
 	#pragma endregion
 }

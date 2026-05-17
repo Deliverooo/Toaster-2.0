@@ -15,7 +15,7 @@ namespace toaster::gpu
 	public:
 		// Note to self, always remember to upload the indices instead of just passing in the size...
 		// I'm such a diddyblud
-		VKIndexBuffer(VKLogicalDevice *p_device, void *p_data, uint64 p_size);
+		VKIndexBuffer(VKLogicalDevice *p_device, const void *p_data, uint64 p_size);
 		VKIndexBuffer(VKLogicalDevice *p_device, uint64 p_size);
 		~VKIndexBuffer();
 
