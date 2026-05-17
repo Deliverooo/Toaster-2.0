@@ -220,41 +220,53 @@ namespace toaster
 
 		if (!main_camera)
 		{
-			// LOG_WARN("Scene has no main camera!");
+			// Fixes vulkan validation error messages...
+			auto       output_colour_image{p_scene_renderer->getFinalColourTexture()->getImage()};
+			const auto current_image_layout{output_colour_image->getCurrentImageLayout()};
+			if (current_image_layout != vk::ImageLayout::eShaderReadOnlyOptimal)
+				gpu::util::transitionImageLayout(output_colour_image, output_colour_image->getCurrentImageLayout(), vk::ImageLayout::eShaderReadOnlyOptimal);
+			TST_PERMA_ASSERT(output_colour_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal);
 			return;
 		}
 
 		m_lightEnvironment.pointLights.clear();
 		m_lightEnvironment.directionalLights.clear();
-
 		{
-			for (const auto group{m_registry.group<TransformComponent>(entt::get<DirectionalLightComponent>)}; const auto entity: group)
+			for (const auto group{m_registry.group(entt::get<DirectionalLightComponent>)}; const auto entity: group)
 			{
-				auto      [transform, directional_light]{group.get<TransformComponent, DirectionalLightComponent>(entity)};
-				glm::vec3 forward = transform.rotation * glm::vec3(0.0f, 0.0f, -1.0f);
+				auto directional_light{group.get<DirectionalLightComponent>(entity)};
+
+				Entity e{entity, this};
+				auto   tc{getEntityWorldTransformComponent(e)};
+
+				glm::mat4 rotation{glm::toMat4(tc.orientation)};
+				glm::vec4 forward{rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)};
+				glm::vec3 direction{glm::normalize(glm::vec3(forward))};
 				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
-																	  glm::vec4(forward, 1.0f),
+																	  glm::vec4(direction, 1.0f),
 																	  glm::vec4(directional_light.radiance, directional_light.multiplier)
 																  });
 			}
 		}
 		{
-			for (const auto view{m_registry.view<TransformComponent, PointLightComponent>()}; const auto entity: view)
+			for (const auto view{m_registry.view<PointLightComponent>()}; const auto entity: view)
 			{
-				auto [transform, point_light]{view.get<TransformComponent, PointLightComponent>(entity)};
+				auto   point_light{view.get<PointLightComponent>(entity)};
+				Entity e{entity, this};
+				auto   tc{getEntityWorldTransformComponent(e)};
 
-				m_lightEnvironment.pointLights.emplace_back(PointLight{glm::vec4(transform.translation, 1.0f), glm::vec4(point_light.radiance, point_light.multiplier)});
+				m_lightEnvironment.pointLights.emplace_back(PointLight{glm::vec4(tc.translation, 1.0f), glm::vec4(point_light.radiance, point_light.multiplier)});
 			}
 		}
-
 		glm::mat4 camera_view{glm::inverse(camera_transform)};
 		{
 			p_scene_renderer->begin(p_frame_index, camera_view, main_camera->getProjectionMatrix());
-			for (const auto view{m_registry.view<TransformComponent, MeshComponent>()}; const auto entity: view)
+			for (const auto view{m_registry.view<MeshComponent>()}; const auto entity: view)
 			{
-				if (auto [transform, mesh]{view.get<TransformComponent, MeshComponent>(entity)}; mesh.mesh)
+				if (auto mesh{view.get<MeshComponent>(entity)}; mesh.mesh)
 				{
-					p_scene_renderer->renderMesh(mesh.mesh, transform.getTransform());
+					Entity e{entity, this};
+					p_scene_renderer->renderMesh(mesh.mesh, getEntityWorldTransformMatrix(e));
 				}
 			}
 			p_scene_renderer->end(p_cmd, p_frame_index);
@@ -264,13 +276,17 @@ namespace toaster
 			auto renderer_2d{p_scene_renderer->getRenderer2D()};
 			renderer_2d->begin(p_frame_index, camera_view, main_camera->getProjectionMatrix());
 
-			for (const auto view{m_registry.view<TransformComponent, SpriteRendererComponent>()}; const auto entity: view)
+			for (const auto view{m_registry.view<SpriteRendererComponent>()}; const auto entity: view)
 			{
-				auto [transform, src]{view.get<TransformComponent, SpriteRendererComponent>(entity)};
+				auto src{view.get<SpriteRendererComponent>(entity)};
+
+				Entity    e{entity, this};
+				glm::mat4 transform{getEntityWorldTransformMatrix(e)};
+
 				if (src.texture)
-					renderer_2d->submitQuad(transform.getTransform(), src.texture, src.colour);
+					renderer_2d->submitQuad(transform, src.texture, src.colour);
 				else
-					renderer_2d->submitQuad(transform.getTransform(), src.colour);
+					renderer_2d->submitQuad(transform, src.colour);
 			}
 
 			gpu::RenderingAttachmentInfo colour_attachment_info{};
@@ -304,7 +320,7 @@ namespace toaster
 				Entity e{entity, this};
 				auto   tc{getEntityWorldTransformComponent(e)};
 
-				glm::mat4 rotation{glm::toMat4(tc.rotation)};
+				glm::mat4 rotation{glm::toMat4(tc.orientation)};
 				glm::vec4 forward{rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)};
 				glm::vec3 direction{glm::normalize(glm::vec3(forward))};
 				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
@@ -591,14 +607,14 @@ namespace toaster
 		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetRotation", +[](uint64 p_entity_id, glm::vec4 *p_out_rotation) -> void
 		{
 			Entity           entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
-			const glm::quat &rotation{entity.getComponent<TransformComponent>().rotation};
+			const glm::quat &rotation{entity.getComponent<TransformComponent>().orientation};
 			*p_out_rotation = glm::vec4{rotation.x, rotation.y, rotation.z, rotation.w};
 		});
 
 		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetRotation", +[](uint64 p_entity_id, const glm::vec4 *p_rotation) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
-			entity.getComponent<TransformComponent>().rotation = glm::quat{p_rotation->w, p_rotation->x, p_rotation->y, p_rotation->z};
+			entity.getComponent<TransformComponent>().orientation = glm::quat{p_rotation->w, p_rotation->x, p_rotation->y, p_rotation->z};
 		});
 
 		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetScale", +[](uint64 p_entity_id, glm::vec3 *p_out_scale) -> void
@@ -870,6 +886,12 @@ namespace toaster
 	}
 
 	ON_COMPONENT_ADDED(MeshComponent)
+	{
+		(void) p_entity;
+		(void) p_component;
+	}
+
+	ON_COMPONENT_ADDED(SubmeshComponent)
 	{
 		(void) p_entity;
 		(void) p_component;

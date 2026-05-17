@@ -16,6 +16,9 @@ set(SRC
 
 		scene_renderer.cpp
 		scene_renderer.hpp
+
+		scene_importer.cpp
+		scene_importer.hpp
 )
 
 list(TRANSFORM SRC PREPEND "${CMAKE_CURRENT_SOURCE_DIR}/")

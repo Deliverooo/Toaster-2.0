@@ -27,6 +27,8 @@ public class Player : Entity
 	{
 		m_Time += p_dt;
 		const float speed = 2.0f;
+        
+        if(Input.Is)
 
 		//SpriteRenderer.Colour = new Vec4(col, col, 1.0f, 1.0f);
 		// float col = (float)System.Math.Abs(System.Math.Sin(m_Time));

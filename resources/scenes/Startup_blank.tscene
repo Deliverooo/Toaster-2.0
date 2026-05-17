@@ -1,0 +1,11 @@
+Scene: New Scene
+Entities:
+  - Entity: 67
+    TagComponent:
+      Tag: Camera controller
+    TransformComponent:
+      Translation: [0, 0, 0]
+      Rotation: [1, 0, 0, 0]
+      Scale: [1, 1, 1]
+    ScriptComponent:
+      ClassName: Sandbox.CameraController

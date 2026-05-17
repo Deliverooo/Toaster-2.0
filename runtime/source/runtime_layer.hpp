@@ -36,7 +36,5 @@ namespace toaster
 		gpu::PipelineHandle    m_fullscreenPipeline{nullptr};
 		gpu::RenderPassHandle  m_fullscreenRenderPass{nullptr};
 		render::MaterialHandle m_fullscreenMaterial{nullptr};
-
-		gpu::Texture2DHandle m_testTex{nullptr};
 	};
 }

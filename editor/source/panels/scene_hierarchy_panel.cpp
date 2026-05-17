@@ -13,12 +13,11 @@
 
 namespace toaster
 {
-	static auto drawVec3Ctrl(const String &p_label, glm::vec3 *p_vec, const glm::vec3 &p_reset = glm::vec3{1.0f}, const char *p_vec1_label = "X",
-							 const char *  p_vec2_label                                        = "Y", const char *            p_vec3_label = "Z") -> bool
+	static auto drawVec2Ctrl(const String &p_label, glm::vec2 *p_vec, const glm::vec2 &p_reset = glm::vec2{1.0f}, CString p_axis_x_label = "X",
+							 CString       p_axis_y_label                                      = "Y") -> bool
 	{
-		const String vec1_str_id = String("##") + p_vec1_label;
-		const String vec2_str_id = String("##") + p_vec2_label;
-		const String vec3_str_id = String("##") + p_vec3_label;
+		const String axis_x_str_id = String("##") + p_axis_x_label;
+		const String axis_y_str_id = String("##") + p_axis_y_label;
 
 		ImGuiIO &io        = ig::GetIO();
 		auto     bold_font = io.Fonts->Fonts[1];
@@ -28,9 +27,87 @@ namespace toaster
 		ig::PushID(p_label.c_str());
 
 		ig::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.5f);
-		ret |= ui::dragFloatWithReset(p_label + " " + p_vec1_label, &p_vec->x, vec1_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.x);
-		ret |= ui::dragFloatWithReset(p_vec2_label, &p_vec->y, vec2_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.y);
-		ret |= ui::dragFloatWithReset(p_vec3_label, &p_vec->z, vec3_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.z);
+		ret |= ui::dragFloatWithReset(p_label + " " + p_axis_x_label, &p_vec->x, axis_x_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.x);
+		ret |= ui::dragFloatWithReset(p_axis_y_label, &p_vec->y, axis_y_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.y);
+		ig::PopStyleVar();
+
+		ig::PopID();
+
+		return ret;
+	}
+
+	static auto drawVec3Ctrl(const String &p_label, glm::vec3 *p_vec, const glm::vec3 &p_reset = glm::vec3{1.0f}, CString p_axis_x_label = "X",
+							 CString       p_axis_y_label                                      = "Y", CString             p_axis_z_label = "Z") -> bool
+	{
+		const String axis_x_str_id = String("##") + p_axis_x_label;
+		const String axis_y_str_id = String("##") + p_axis_y_label;
+		const String axis_z_str_id = String("##") + p_axis_z_label;
+
+		ImGuiIO &io        = ig::GetIO();
+		auto     bold_font = io.Fonts->Fonts[1];
+
+		bool ret{false};
+
+		ig::PushID(p_label.c_str());
+
+		ig::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.5f);
+		ret |= ui::dragFloatWithReset(p_label + " " + p_axis_x_label, &p_vec->x, axis_x_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.x);
+		ret |= ui::dragFloatWithReset(p_axis_y_label, &p_vec->y, axis_y_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.y);
+		ret |= ui::dragFloatWithReset(p_axis_z_label, &p_vec->z, axis_z_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.z);
+		ig::PopStyleVar();
+
+		ig::PopID();
+
+		return ret;
+	}
+
+	static auto drawVec4Ctrl(const String &p_label, glm::vec4 *p_vec, const glm::vec4 &p_reset = glm::vec4{1.0f}, CString p_axis_x_label = "X",
+							 CString       p_axis_y_label                                      = "Y", CString p_axis_z_label = "Z", CString p_axis_w_label = "W") -> bool
+	{
+		const String axis_x_str_id = String("##") + p_axis_x_label;
+		const String axis_y_str_id = String("##") + p_axis_y_label;
+		const String axis_z_str_id = String("##") + p_axis_z_label;
+		const String axis_w_str_id = String("##") + p_axis_w_label;
+
+		ImGuiIO &io        = ig::GetIO();
+		auto     bold_font = io.Fonts->Fonts[1];
+
+		bool ret{false};
+
+		ig::PushID(p_label.c_str());
+
+		ig::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.5f);
+		ret |= ui::dragFloatWithReset(p_label + " " + p_axis_x_label, &p_vec->x, axis_x_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.x);
+		ret |= ui::dragFloatWithReset(p_axis_y_label, &p_vec->y, axis_y_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.y);
+		ret |= ui::dragFloatWithReset(p_axis_z_label, &p_vec->z, axis_z_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.z);
+		ret |= ui::dragFloatWithReset(p_axis_z_label, &p_vec->w, axis_w_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.w);
+		ig::PopStyleVar();
+
+		ig::PopID();
+
+		return ret;
+	}
+
+	static auto drawQuatCtrl(const String &p_label, glm::quat *p_vec, const glm::quat &p_reset = glm::quat{1.0f, 0.0f, 0.0f, 0.0f}, CString p_axis_x_label = "X",
+							 CString       p_axis_y_label                                      = "Y", CString p_axis_z_label = "Z", CString p_axis_w_label = "W") -> bool
+	{
+		const String axis_x_str_id = String("##") + p_axis_x_label;
+		const String axis_y_str_id = String("##") + p_axis_y_label;
+		const String axis_z_str_id = String("##") + p_axis_z_label;
+		const String axis_w_str_id = String("##") + p_axis_w_label;
+
+		ImGuiIO &io        = ig::GetIO();
+		auto     bold_font = io.Fonts->Fonts[1];
+
+		bool ret{false};
+
+		ig::PushID(p_label.c_str());
+
+		ig::PushStyleVar(ImGuiStyleVar_FrameRounding, 2.5f);
+		ret |= ui::dragFloatWithReset(p_label + " " + p_axis_x_label, &p_vec->x, axis_x_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.x);
+		ret |= ui::dragFloatWithReset(p_axis_y_label, &p_vec->y, axis_y_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.y);
+		ret |= ui::dragFloatWithReset(p_axis_z_label, &p_vec->z, axis_z_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.z);
+		ret |= ui::dragFloatWithReset(p_axis_w_label, &p_vec->w, axis_w_str_id.c_str(), 0.1f, 0, 0, "%.3f", p_reset.w);
 		ig::PopStyleVar();
 
 		ig::PopID();
@@ -261,9 +338,14 @@ namespace toaster
 			drawVec3Ctrl("Position", &p_comp.translation, glm::vec3{0.0f});
 			ig::Separator();
 
-			glm::vec3 rotation_euler{glm::eulerAngles(p_comp.rotation)};
+			glm::quat orientation{p_comp.orientation};
+			glm::vec3 rotation_euler{glm::eulerAngles(orientation)};
 			if (drawVec3Ctrl("Rotation", &rotation_euler, glm::vec3{0.0f}))
-				p_comp.rotation = glm::quat{rotation_euler};
+				orientation = glm::quat{rotation_euler};
+
+			const glm::quat delta_rotation{orientation - p_comp.orientation};
+			p_comp.orientation += delta_rotation;
+
 			ig::Separator();
 			drawVec3Ctrl("Scale", &p_comp.scale, glm::vec3{1.0f});
 			ig::Separator();

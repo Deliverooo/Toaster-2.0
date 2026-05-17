@@ -240,7 +240,7 @@ namespace toaster
 
 			const auto &transform = p_entity.getComponent<TransformComponent>();
 			p_out << YAML::Key << "Translation" << YAML::Value << transform.translation;
-			p_out << YAML::Key << "Rotation" << YAML::Value << transform.rotation;
+			p_out << YAML::Key << "Rotation" << YAML::Value << transform.orientation;
 			p_out << YAML::Key << "Scale" << YAML::Value << transform.scale;
 
 			p_out << YAML::EndMap;
@@ -353,7 +353,7 @@ namespace toaster
 			{
 				auto &tc       = out_entity.getComponent<TransformComponent>();
 				tc.translation = transform_comp["Translation"].as<glm::vec3>();
-				tc.rotation    = transform_comp["Rotation"].as<glm::quat>();
+				tc.orientation    = transform_comp["Rotation"].as<glm::quat>();
 				tc.scale       = transform_comp["Scale"].as<glm::vec3>();
 			}
 

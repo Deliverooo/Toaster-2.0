@@ -1,14 +1,13 @@
 #pragma once
 
 #include <utility>
+#include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/quaternion.hpp>
 
 #include "scene_camera.hpp"
-#include "glm/gtx/matrix_decompose.hpp"
 
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_lib/uuid.hpp"
-#include "toast_lib/math/math_matrix.hpp"
 #include "toast_render/mesh.hpp"
 #include "toast_scripting/script_object.hpp"
 
@@ -75,26 +74,26 @@ namespace toaster
 
 		[[nodiscard]] auto getTransform() const -> glm::mat4
 		{
-			return glm::translate(glm::mat4{1.0f}, translation) * glm::toMat4(rotation) * glm::scale(glm::mat4{1.0f}, scale);
+			return glm::translate(glm::mat4{1.0f}, translation) * glm::toMat4(orientation) * glm::scale(glm::mat4{1.0f}, scale);
 		}
 
 		auto setTransform(const glm::mat4 &p_transform) -> void
 		{
 			glm::vec3 skew{0.0f};
 			glm::vec4 perspective{0.0f};
-			glm::decompose(p_transform, scale, rotation, translation, skew, perspective);
+			glm::decompose(p_transform, scale, orientation, translation, skew, perspective);
 			// tsm::decomposeTransform(p_transform, translation, rotation, scale);
 		}
 
 		auto reset() -> void
 		{
 			translation = glm::vec3{0.0f, 0.0f, 0.0f};
-			rotation    = glm::quat{1.0f, 0.0f, 0.0f, 0.0f};
+			orientation = glm::quat{1.0f, 0.0f, 0.0f, 0.0f};
 			scale       = glm::vec3{1.0f, 1.0f, 1.0f};
 		}
 
 		glm::vec3 translation{0.0f};
-		glm::quat rotation{1.0f, 0.0f, 0.0f, 0.0f};
+		glm::quat orientation{1.0f, 0.0f, 0.0f, 0.0f};
 		glm::vec3 scale{1.0f};
 	};
 
@@ -126,6 +125,20 @@ namespace toaster
 		}
 
 		render::MeshHandle mesh{nullptr};
+	};
+
+	DEFINE_COMPONENT(SubmeshComponent)
+	{
+		SubmeshComponent()  = default;
+		~SubmeshComponent() = default;
+
+		auto reset() -> void
+		{
+			mesh.reset(nullptr);
+		}
+
+		render::MeshHandle mesh{nullptr};
+		uint32             submeshIndex{0u};
 	};
 
 	DEFINE_COMPONENT(CameraComponent)

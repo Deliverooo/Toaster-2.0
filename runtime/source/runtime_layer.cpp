@@ -11,6 +11,8 @@
 #include "toast_lib/os/terminal.hpp"
 #include "toast_render/render_context.hpp"
 #include "toast_scene/components.hpp"
+#include "toast_scene/entity.hpp"
+#include "toast_scene/scene_importer.hpp"
 #include "toast_scene/scene_serializer.hpp"
 
 namespace toaster
@@ -81,11 +83,12 @@ namespace toaster
 		SceneSerializer scene_serializer{m_scene, binary_dir};
 		String          scene_path{command_line_args->get("--scene")};
 		if (scene_path == "__NONE__")
-			scene_serializer.deserialize(binary_dir / "../resources/scenes/Test.tscene");
+			scene_serializer.deserialize(binary_dir / "../resources/scenes/Startup_blank.tscene");
 		else
 			scene_serializer.deserialize(scene_path);
 
-		m_testTex = m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, binary_dir / "../resources/textures/Peeber.png");
+		// SceneImporter scene_importer{m_scene};
+		// scene_importer.importFromFile(binary_dir / "../resources/meshes/Test_scene.fbx");
 	}
 
 	auto RuntimeLayer::onDestroy() -> void

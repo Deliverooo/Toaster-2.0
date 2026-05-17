@@ -28,6 +28,8 @@ namespace igz = ImGuizmo;
 #include "toast_lib/math/math_matrix.hpp"
 #include "toast_lib/os/file_dialog.hpp"
 
+#include "toast_scene/scene_importer.hpp"
+
 namespace toaster
 {
 	EditorLayer::EditorLayer(Application *p_app) : IAppLayer(p_app), m_editorCamera(p_app->getWindow().getInputContext(), 90.0f, 1.777f, 0.1f, 100.0f)
@@ -72,6 +74,7 @@ namespace toaster
 		m_fullscreenMaterial = m_renderCtx->create<render::Material>(fullscreen_shader);
 
 		m_scene = make_reference<Scene>(m_renderCtx, nullptr, "Main Scene");
+		SceneImporter scene_importer{m_scene};
 
 		SceneRendererSpecInfo scene_renderer_spec_info{};
 		scene_renderer_spec_info.viewportWidth     = m_windowWidth;
@@ -247,9 +250,9 @@ namespace toaster
 
 				tsm::decomposeTransform(entity_transform, translation, rotation, scale);
 
-				const glm::quat delta_rotation{rotation - tc.rotation};
+				const glm::quat delta_rotation{rotation - tc.orientation};
 				tc.translation = translation;
-				tc.rotation    += delta_rotation;
+				tc.orientation += delta_rotation;
 				tc.scale       = scale;
 			}
 		}
@@ -262,13 +265,19 @@ namespace toaster
 			auto path = os::openFileDialog({{"HDRI/Environment Map", "hdr,exr"}});
 			if (io::filesystem::exists(path))
 			{
-				LOG_INFO("{}", path.string());
-
-				gpu::TextureSpecInfo texture_spec_info{};
 				m_sceneRenderer->setEnvironmentBackground(m_renderCtx->createEnvironmentMap(path));
 			}
 		}
-		ig::Image(m_textureManager->getTexture("Test"), m_textureManager->getTextureSize("Test"));
+		ig::Text("Import scene fbx");
+		if (ig::Button("Scene", ImVec2{ig::GetContentRegionAvail().x, 0}))
+		{
+			auto path = os::openFileDialog({{"Scene fbx", "fbx,gltf"}});
+			if (io::filesystem::exists(path))
+			{
+				SceneImporter scene_importer{m_scene};
+				scene_importer.importFromFile(path);
+			}
+		}
 		ig::End();
 
 		if (ig::IsWindowFocused(ImGuiFocusedFlags_AnyWindow) || ig::IsAnyItemHovered())

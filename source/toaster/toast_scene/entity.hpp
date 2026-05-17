@@ -106,7 +106,7 @@ namespace toaster
 
 		auto getTransform() const -> glm::mat4 { return getComponent<TransformComponent>().getTransform(); }
 		auto getTranslation() const -> const glm::vec3 & { return getComponent<TransformComponent>().translation; }
-		auto getOrientation() const -> const glm::quat & { return getComponent<TransformComponent>().rotation; }
+		auto getOrientation() const -> const glm::quat & { return getComponent<TransformComponent>().orientation; }
 		auto getScale() const -> const glm::vec3 & { return getComponent<TransformComponent>().scale; }
 
 		auto getParent() const -> Entity { return m_scene->getEntityByUUID(getParentUUID()); }
