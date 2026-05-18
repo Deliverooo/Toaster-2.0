@@ -67,7 +67,7 @@ namespace toaster::log
 		}
 		else if constexpr (log_level == ELogLevel::eInfo)
 		{
-			fmt::print(fmt::fg(fmt::terminal_color::green), "{}\n", formatted);
+			fmt::print(fmt::fg(fmt::terminal_color::bright_green), "{}\n", formatted);
 		}
 		else if constexpr (log_level == ELogLevel::eWarning)
 		{

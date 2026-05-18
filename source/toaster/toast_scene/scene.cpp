@@ -90,6 +90,10 @@ namespace toaster
 			MonoImage *          image{m_scriptEngine->getAppImage()};
 			const MonoTableInfo *type_definitions{mono_image_get_table_info(image, MONO_TABLE_TYPEDEF)};
 			m_baseEntityClass = make_reference<script::Class>(m_scriptEngine, "Toaster", "Entity", script::EClassScope::eCore);
+
+			// Register the default classes from the core library
+			m_entityClassMap["Toaster.CameraController"] = make_reference<script::Class>(m_scriptEngine, "Toaster", "CameraController", script::EClassScope::eCore);
+
 			for (uint32 row{0u}; row < mono_table_info_get_rows(type_definitions); ++row)
 			{
 				uint32 cols[MONO_TYPEDEF_SIZE]{};

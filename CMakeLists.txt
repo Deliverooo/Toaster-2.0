@@ -115,5 +115,5 @@ add_subdirectory(source)
 
 add_subdirectory(runtime)
 add_subdirectory(editor)
-add_subdirectory(launcher)
+add_subdirectory(build)
 add_subdirectory(test)

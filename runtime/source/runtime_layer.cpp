@@ -43,7 +43,7 @@ namespace toaster
 
 		#pragma region script + scene setup
 		io::filesystem::Path script_asm_path{m_app->getCommandLineArgs()->get("--scriptAsm")};
-		io::filesystem::Path core_script_assembly_dll{script_asm_path.parent_path() / "Toaster.dll"};
+		io::filesystem::Path core_script_assembly_dll{io::filesystem::Path{binary_dir / "script/Toaster.dll"}};
 		LOG_INFO("{}", script_asm_path.string());
 
 		script::ScriptEngineSpecInfo script_engine_spec_info{};
