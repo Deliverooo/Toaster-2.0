@@ -6,17 +6,21 @@
 
 using namespace toaster;
 
+constexpr auto c_dotnetFrameworkVersion{"net48"};
+constexpr auto c_dotnetLanguageVersion{"10.0"};
+constexpr auto c_dotnetProfile{"Debug"};
+
 constexpr auto c_csprojTemplate{
 	R"(<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net48</TargetFramework>
-		<LangVersion>10.0</LangVersion>
+		<TargetFramework>{0}</TargetFramework>
+		<LangVersion>{1}</LangVersion>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 <ItemGroup>
   <Reference Include="Toaster">
-    <HintPath>{0}</HintPath>
+    <HintPath>{2}</HintPath>
   </Reference>
 </ItemGroup>
 </Project>)"
@@ -41,11 +45,11 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	const auto working_directory{os::getBinaryDirectory()};
 	// LOG_INFO("Working dir: {}", working_directory.string());
 
-	argparse::ArgumentParser parser{"Toaster launcher", "2.718281828"};
+	argparse::ArgumentParser parser{"Toaster build (tstb)", "2.718281828"};
 
 	argparse::ArgumentParser new_command{"new"};
 	new_command.add_description("Create a new project");
-	new_command.add_argument("--name", "-n").help("The name of the project to create").required();
+	new_command.add_argument("--name", "-n").help("The name of the project to create").default_value("New_Project");
 	new_command.add_argument("--sceneName", "-sn").help("The name of the default scene to create").default_value("New_Scene");
 
 	parser.add_subparser(new_command);
@@ -62,11 +66,13 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 	if (parser.is_subcommand_used("new"))
 	{
-		if (!std::filesystem::exists(working_directory / "script/Toaster.dll"))
+		io::filesystem::Path toaster_dll{fmt::format("{0}/script/{1}/{2}/Toaster.dll", working_directory.string(), c_dotnetProfile, c_dotnetFrameworkVersion)};
+		if (!std::filesystem::exists(toaster_dll))
 		{
-			LOG_ERROR("No toaster assembly was found!");
+			LOG_ERROR("Toaster.dll does not exist at '{}'. Please run build_scripts.bat", toaster_dll.string());
 			return -1;
 		}
+
 		auto project_name{new_command.get<String>("-n")};
 
 		#pragma region create directories
@@ -108,14 +114,15 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		}
 		#pragma endregion
 
-		io::filesystem::writeFile(project_root / fmt::format("{}.tproj", project_name), "Orbo is sigma!");
+		io::filesystem::writeFile(project_root / fmt::format("{0}.tproj", project_name), "Orbo is sigma!");
 
 		LOG_INFO("Creating .csproj");
+
 		// Create the .csproj manually so I can use net48, then build with dotnet
-		io::filesystem::writeFile(resource_directory / "scripts" / fmt::format("{}.csproj", project_name),
-								  fmt::format(c_csprojTemplate, io::filesystem::Path{working_directory / "script/Toaster.dll"}.string()));
+		io::filesystem::writeFile(resource_directory / "scripts" / fmt::format("{0}.csproj", project_name),
+								  fmt::format(c_csprojTemplate, c_dotnetFrameworkVersion, c_dotnetLanguageVersion, toaster_dll.string()));
 		LOG_INFO("Building C# assembly");
-		String build_scripts_command{fmt::format("cd {} && dotnet build", io::filesystem::Path{resource_directory / "scripts"}.string())};
+		String build_scripts_command{fmt::format("cd {0} && dotnet build", io::filesystem::Path{resource_directory / "scripts"}.string())};
 		int32  err{std::system(build_scripts_command.c_str())};
 		if (err == -1)
 		{
