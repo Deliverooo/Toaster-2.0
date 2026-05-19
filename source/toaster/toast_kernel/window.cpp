@@ -81,7 +81,7 @@ namespace toaster
 		return {required_extensions.begin(), required_extensions.end()};
 	}
 
-	Window::Window(render::RenderContext *p_render_ctx, const WindowCreateInfo &p_create_info) : m_renderCtx(p_render_ctx)
+	Window::Window(render::RenderContext *p_render_ctx, const WindowSpecInfo &p_spec_info) : m_renderCtx(p_render_ctx)
 	{
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
@@ -90,11 +90,11 @@ namespace toaster
 
 		glfwWindowHint(GLFW_SAMPLES, 4);
 
-		m_callbackData.width  = p_create_info.width;
-		m_callbackData.height = p_create_info.height;
-		m_callbackData.title  = p_create_info.title;
+		m_callbackData.width  = p_spec_info.width;
+		m_callbackData.height = p_spec_info.height;
+		m_callbackData.title  = p_spec_info.title;
 
-		m_window = glfwCreateWindow(static_cast<int32>(p_create_info.width), static_cast<int32>(p_create_info.height), p_create_info.title.c_str(), nullptr, nullptr);
+		m_window = glfwCreateWindow(static_cast<int32>(p_spec_info.width), static_cast<int32>(p_spec_info.height), p_spec_info.title.c_str(), nullptr, nullptr);
 
 		#pragma region setup swapchain
 		VkSurfaceKHR surface;
@@ -291,22 +291,22 @@ namespace toaster
 		#undef GET_CB_DATA
 		#pragma endregion
 
-		if (!p_create_info.iconPath.empty())
+		if (!p_spec_info.iconPath.empty())
 		{
 			GLFWimage window_icon[1]{};
 
 			int32 nr_channels{};
-			window_icon[0].pixels = stbi_load(p_create_info.iconPath.string().c_str(), &window_icon[0].width, &window_icon[0].height, &nr_channels, 4);
+			window_icon[0].pixels = stbi_load(p_spec_info.iconPath.string().c_str(), &window_icon[0].width, &window_icon[0].height, &nr_channels, 4);
 			if (window_icon[0].pixels)
 			{
 				glfwSetWindowIcon(m_window, 1, window_icon);
 				stbi_image_free(window_icon[0].pixels);
 			}
 			else
-				LOG_ERROR("Failed to load image icon. Path: {}", p_create_info.iconPath.string());
+				LOG_ERROR("Failed to load image icon. Path: {}", p_spec_info.iconPath.string());
 		}
 
-		if (p_create_info.startMaximized)
+		if (p_spec_info.startMaximized)
 			maximize();
 
 		showWindow();

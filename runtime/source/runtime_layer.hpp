@@ -7,6 +7,7 @@
 
 #include "toast_gpu/vk/vk_render_pass.hpp"
 #include "toast_gpu/vk/vk_pipeline.hpp"
+#include "toast_project/project.hpp"
 #include "toast_scene/scene_renderer.hpp"
 #include "toast_scripting/script_engine.hpp"
 
@@ -28,13 +29,14 @@ namespace toaster
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
 
+		UniquePtr<Project> m_project{nullptr};
+
 		UniquePtr<script::ScriptEngine> m_scriptEngine{nullptr};
 
 		RefPtr<Scene>         m_scene{nullptr};
 		RefPtr<SceneRenderer> m_sceneRenderer{nullptr};
 
-		gpu::PipelineHandle    m_fullscreenPipeline{nullptr};
-		gpu::RenderPassHandle  m_fullscreenRenderPass{nullptr};
-		render::MaterialHandle m_fullscreenMaterial{nullptr};
+		gpu::PipelineHandle   m_fullscreenPipeline{nullptr};
+		gpu::RenderPassHandle m_fullscreenRenderPass{nullptr};
 	};
 }

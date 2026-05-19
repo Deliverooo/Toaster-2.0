@@ -24,12 +24,12 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	parser.add_argument("--scene").help("The startup scene (.tscene)").default_value("__NONE__");
 	parser.parse_args(__argc, __argv);
 
-	toaster::ApplicationCreateInfo app_create_info{};
-	app_create_info.windowCreateInfo.width          = 1920;
-	app_create_info.windowCreateInfo.height         = 1080;
-	app_create_info.windowCreateInfo.title          = "Toaster Vπ - Editor";
-	app_create_info.windowCreateInfo.iconPath       = binary_directory / "../resources/textures/OrboCloseup.png";
-	app_create_info.windowCreateInfo.startMaximized = true;
+	toaster::ApplicationSpecInfo app_create_info{};
+	app_create_info.windowSpecInfo.width          = 1920;
+	app_create_info.windowSpecInfo.height         = 1080;
+	app_create_info.windowSpecInfo.title          = "Toaster Vπ - Editor";
+	app_create_info.windowSpecInfo.iconPath       = binary_directory / "../resources/textures/OrboCloseup.png";
+	app_create_info.windowSpecInfo.startMaximized = true;
 
 	{
 		toaster::EditorApplication app{app_create_info, &parser};

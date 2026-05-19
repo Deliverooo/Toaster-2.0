@@ -1,5 +1,6 @@
 set(SRC
 		main.cpp
+		toaster_build.rc
 )
 
 add_executable(tstb ${SRC})

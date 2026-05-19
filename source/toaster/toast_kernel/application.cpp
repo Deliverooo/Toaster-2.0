@@ -14,18 +14,19 @@
 
 namespace toaster
 {
-	Application::Application(const ApplicationCreateInfo &p_create_info, const CommandLineArgs *p_command_line_args) : m_createInfo(p_create_info),
-																													   m_commandLineArgs(p_command_line_args)
+	Application::Application(const ApplicationSpecInfo &p_spec_info, const CommandLineArgs *p_command_line_args) : m_specInfo(p_spec_info),
+																												   m_commandLineArgs(p_command_line_args)
 	{
 		Window::initWindowingAPI();
 
 		render::RenderContextSpecInfo render_context_spec_info{};
 		render_context_spec_info.binaryDir          = os::getBinaryDirectory();
 		render_context_spec_info.instanceExtensions = Window::getRequiredInstanceExtensions();
+		render_context_spec_info.printDebugInfo     = m_specInfo.printGPUDebugInfo;
 		m_renderContext                             = new render::RenderContext{render_context_spec_info};
 
 		#pragma region create window
-		m_window = new Window(m_renderContext, p_create_info.windowCreateInfo);
+		m_window = new Window(m_renderContext, m_specInfo.windowSpecInfo);
 		m_window->setEventCallback([this](Event &e)
 		{
 			EventDispatcher dispatcher{e};

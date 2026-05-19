@@ -23,9 +23,11 @@ namespace toaster
 		class RenderContext;
 	}
 
-	struct TST_API ApplicationCreateInfo
+	struct TST_API ApplicationSpecInfo
 	{
-		WindowCreateInfo windowCreateInfo{};
+		WindowSpecInfo windowSpecInfo{};
+
+		bool printGPUDebugInfo{true};
 	};
 
 	using CommandLineArgs = argparse::ArgumentParser;
@@ -33,7 +35,7 @@ namespace toaster
 	class TST_API Application
 	{
 	public:
-		Application(const ApplicationCreateInfo &p_create_info, const CommandLineArgs *p_command_line_args);
+		Application(const ApplicationSpecInfo &p_spec_info, const CommandLineArgs *p_command_line_args);
 		~Application() noexcept;
 
 		auto run() -> void;
@@ -47,9 +49,7 @@ namespace toaster
 		auto onWindowCloseEvent(WindowCloseEvent &p_event) -> bool;
 		auto onWindowResizeEvent(WindowResizeEvent &p_event) -> bool;
 
-		ApplicationCreateInfo m_createInfo{};
-
-		// CommandLineArgMap                            m_commandLineArgs;
+		ApplicationSpecInfo m_specInfo{};
 
 		NonOwningPtr<const CommandLineArgs> m_commandLineArgs{nullptr};
 

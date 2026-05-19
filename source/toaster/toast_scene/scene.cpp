@@ -115,21 +115,7 @@ namespace toaster
 
 			for (const auto &[class_name, klass]: m_entityClassMap)
 			{
-				LOG_INFO("Found Entity class: {} ", class_name);
-
-				void *          iterator{nullptr};
-				MonoClassField *field{nullptr};
-				while ((field = mono_class_get_fields(klass->getClass(), &iterator)) != nullptr)
-				{
-					CString name{mono_field_get_name(field)};
-					LOG_INFO("Field: {}", name);
-
-					MonoType *type{mono_field_get_type(field)};
-					LOG_INFO("Type: {}", mono_type_get_name(type));
-
-					// uint32 flags{mono_field_get_flags(field)};
-					// LOG_INFO("{}", !!(flags & MONO_FIELD_ATTR_PUBLIC));
-				}
+				DEBUG_LOG_INFO("Found Entity class: {} ", class_name);
 			}
 
 			#define REGISTER_COMPONENT_TYPE(__type) {MonoType *managed_type{mono_reflection_type_from_name((char *) "Toaster."#__type, m_scriptEngine->getCoreImage())};\

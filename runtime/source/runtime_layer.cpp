@@ -42,21 +42,35 @@ namespace toaster
 		auto                 command_line_args{m_app->getCommandLineArgs()};
 		io::filesystem::Path binary_dir{os::getBinaryDirectory()};
 
+		m_project = make_unique<Project>();
+		ProjectSerializer project_serializer{m_project.get()};
+		project_serializer.deserialize(command_line_args->get("--project"));
+		m_project->printInfo();
+
 		#pragma region script + scene setup
-		io::filesystem::Path script_asm_path{m_app->getCommandLineArgs()->get("--scriptAsm")};
-		LOG_INFO("{}", script_asm_path.string());
+		io::filesystem::Path script_asm_path{
+			fmt::format("{0}/bin/{1}/net48/{2}.dll", m_project->getFullScriptDirectory(), script::c_scriptConfigProfile, m_project->getSpecInfo().name)
+		};
+		LOG_INFO("Attempting to load script assembly: {}", script_asm_path);
+		TST_PERMA_ASSERT_MSG(io::filesystem::exists(script_asm_path), "Script dll does not exist");
 
 		script::ScriptEngineSpecInfo script_engine_spec_info{};
 		script_engine_spec_info.rootDomainName   = "ToasterRootDomain";
 		script_engine_spec_info.appDomainName    = "ToasterAppDomain";
-		script_engine_spec_info.coreAssemblyPath = binary_dir / "script/Debug/net48/Toaster.dll";
+		script_engine_spec_info.coreAssemblyPath = binary_dir / fmt::format("script/{0}/net48/Toaster.dll", script::c_scriptConfigProfile);
 		script_engine_spec_info.appAssemblyPath  = script_asm_path;
 		m_scriptEngine                           = make_unique<script::ScriptEngine>(script_engine_spec_info);
 
-		m_scene = make_reference<Scene>(m_renderCtx, m_scriptEngine.get(), "New Scene");
+		m_scene = make_reference<Scene>(m_renderCtx, m_scriptEngine.get(), m_project->getSpecInfo().startupSceneName);
 		m_inputCtx->registerScriptMethods(m_scriptEngine.get());
+
+		io::filesystem::Path scene_path{fmt::format("{0}/{1}.tscene", m_project->getFullSceneDirectory(), m_project->getSpecInfo().startupSceneName)};
+		LOG_INFO("Attempting to load scene: {}", scene_path);
+		SceneSerializer scene_serializer{m_scene, binary_dir};
+		scene_serializer.deserialize(scene_path);
 		#pragma endregion
 
+		#pragma region render stuff setup
 		auto                  fullscreen_shader{m_globals->shaderLibrary().get("Composite")};
 		gpu::PipelineSpecInfo fullscreen_pipeline_spec_info{};
 		fullscreen_pipeline_spec_info.colourAttachments  = {swapchain->getSurfaceFormat().format};
@@ -70,35 +84,13 @@ namespace toaster
 		m_fullscreenRenderPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_fullscreenPipeline);
 		m_fullscreenRenderPass->bake();
 
-		// Ts is not used yet. It would be used for post-processing effects.
-		m_fullscreenMaterial = m_renderCtx->create<render::Material>(m_globals->shaderLibrary().get("Composite"));
-
 		SceneRendererSpecInfo scene_renderer_spec_info{};
 		scene_renderer_spec_info.viewportWidth     = m_viewportWidth;
 		scene_renderer_spec_info.viewportHeight    = m_viewportHeight;
 		scene_renderer_spec_info.scene             = m_scene;
 		scene_renderer_spec_info.resourceDirectory = binary_dir / "../resources";
 		m_sceneRenderer                            = make_reference<SceneRenderer>(m_renderCtx, scene_renderer_spec_info);
-
-		SceneSerializer scene_serializer{m_scene, binary_dir};
-		scene_serializer.deserialize(command_line_args->get("--scene"));
-
-		// {
-		// ProjectSpecInfo project_spec_info{};
-		// project_spec_info.name             = "Orbo's Exodus";
-		// project_spec_info.startupSceneName = "Peebworld";
-		// Project proj{"../examples/New_Project/New_Project.tproj", project_spec_info};
-		// ProjectSerializer project_serializer{&proj};
-		// project_serializer.serialize();
-		// proj.printInfo();
-		// }
-
-		{
-			Project           proj{};
-			ProjectSerializer project_serializer{&proj};
-			project_serializer.deserialize("../examples/New_Project/New_Project.tproj");
-			proj.printInfo();
-		}
+		#pragma endregion
 	}
 
 	auto RuntimeLayer::onDestroy() -> void
@@ -126,7 +118,7 @@ namespace toaster
 		colour_attachment_info.clearValue  = vk::ClearColorValue{1.0f, 1.0f, 1.0f, 1.0f};
 
 		m_renderCtx->beginRendering(&command_buffer, rendering_info, frame_index, m_fullscreenRenderPass);
-		m_renderCtx->renderFullscreenQuad(&command_buffer, frame_index, m_fullscreenPipeline, m_fullscreenMaterial);
+		m_renderCtx->renderFullscreenQuad(&command_buffer, frame_index, m_fullscreenPipeline, nullptr);
 		m_renderCtx->endRendering(&command_buffer, rendering_info);
 	}
 

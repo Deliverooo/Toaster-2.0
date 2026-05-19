@@ -1,8 +1,8 @@
-Scene: New Scene
+Scene: New_Scene
 Entities:
   - Entity: 67
     TagComponent:
-      Tag: Camera controller
+      Tag: Camera Controller
     TransformComponent:
       Translation: [0, 0, 0]
       Rotation: [1, 0, 0, 0]

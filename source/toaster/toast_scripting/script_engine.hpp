@@ -14,6 +14,8 @@
 
 namespace toaster::script
 {
+	constexpr auto c_scriptConfigProfile{"Debug"}; // TODO: Release / debug script things...
+
 	struct TST_API ScriptEngineSpecInfo
 	{
 		String rootDomainName{"Root"};
@@ -103,7 +105,5 @@ namespace toaster::script
 			load_assembly_fn        m_loadAssemblyFn{nullptr};
 			get_function_pointer_fn m_getFunctionPointerFn{nullptr};
 		};
-
-
 	}
 }

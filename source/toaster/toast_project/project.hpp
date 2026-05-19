@@ -30,7 +30,8 @@ namespace toaster
 		auto getFullSceneDirectory() const -> io::filesystem::Path;
 		auto getFullMeshDirectory() const -> io::filesystem::Path;
 
-		auto getPath() const -> const io::filesystem::Path &;
+		auto getPath() const -> const io::filesystem::Path &; // Returns the path to the .tproj file
+		auto getRootPath() const -> io::filesystem::Path;     // Returns the directory that the .tproj file is in
 		auto getSpecInfo() const -> const ProjectSpecInfo &;
 
 		auto printInfo() const -> void;

@@ -14,22 +14,27 @@ namespace toaster
 
 	auto Project::getFullScriptDirectory() const -> io::filesystem::Path
 	{
-		return m_path / m_specInfo.scriptDirectory;
+		return getRootPath() / m_specInfo.scriptDirectory;
 	}
 
 	auto Project::getFullSceneDirectory() const -> io::filesystem::Path
 	{
-		return m_path / m_specInfo.sceneDirectory;
+		return getRootPath() / m_specInfo.sceneDirectory;
 	}
 
 	auto Project::getFullMeshDirectory() const -> io::filesystem::Path
 	{
-		return m_path / m_specInfo.meshDirectory;
+		return getRootPath() / m_specInfo.meshDirectory;
 	}
 
 	auto Project::getPath() const -> const io::filesystem::Path &
 	{
 		return m_path;
+	}
+
+	auto Project::getRootPath() const -> io::filesystem::Path
+	{
+		return m_path.parent_path();
 	}
 
 	auto Project::getSpecInfo() const -> const ProjectSpecInfo &

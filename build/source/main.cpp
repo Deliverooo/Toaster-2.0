@@ -3,6 +3,7 @@
 #include "toast_lib/logging.hpp"
 #include "toast_lib/toast_assert.h"
 #include "toast_lib/os/terminal.hpp"
+#include "toast_project/project.hpp"
 
 using namespace toaster;
 
@@ -77,7 +78,8 @@ auto main(int32 p_argc, char **p_argv) -> int32
 			return -1;
 		}
 
-		auto project_name{new_command.get<String>("-n")};
+		auto project_name{new_command.get<String>("--name")};
+		auto scene_name{new_command.get<String>("--sceneName")};
 
 		#pragma region create directories
 		LOG_INFO("Creating new project: '{}'", project_name);
@@ -118,7 +120,13 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		}
 		#pragma endregion
 
-		io::filesystem::writeFile(project_root / fmt::format("{0}.tproj", project_name), "Orbo is sigma!");
+		// Serialize the new project
+		ProjectSpecInfo project_spec_info{};
+		project_spec_info.name             = project_name;
+		project_spec_info.startupSceneName = scene_name;
+		Project           new_project{fmt::format("{0}.tproj", project_root / project_name), project_spec_info};
+		ProjectSerializer project_serializer{&new_project};
+		project_serializer.serialize();
 
 		LOG_INFO("Creating .csproj");
 
@@ -134,7 +142,6 @@ auto main(int32 p_argc, char **p_argv) -> int32
 			return -1;
 		}
 
-		auto scene_name{new_command.get<String>("--sceneName")};
 		LOG_INFO("Creating default scene");
 		io::filesystem::writeFile(resource_directory / "scenes" / fmt::format("{}.tscene", scene_name), fmt::format(c_tsceneTemplate, scene_name));
 	}

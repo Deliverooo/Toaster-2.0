@@ -92,11 +92,11 @@ namespace toaster::log
 	#define DEBUG_LOG_ERROR(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eError>(__VA_ARGS__)
 	#define DEBUG_LOG_FATAL(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eFatal>(__VA_ARGS__)
 	#else
-	#define LOGD_TRACE(...)
-	#define LOGD_INFO(...)
-	#define LOGD_WARN(...)
-	#define LOGD_ERROR(...)
-	#define LOGD_FATAL(...)
+	#define DEBUG_LOG_TRACE(...)
+	#define DEBUG_LOG_INFO(...)
+	#define DEBUG_LOG_WARN(...)
+	#define DEBUG_LOG_ERROR(...)
+	#define DEBUG_LOG_FATAL(...)
 	#endif
 
 	#define LOG_TRACE(...) ::toaster::log::printMessage<::toaster::log::ELogLevel::eTrace>(__VA_ARGS__)

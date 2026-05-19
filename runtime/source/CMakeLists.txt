@@ -6,6 +6,7 @@ set(SRC
 		runtime_layer.hpp
 		fp_camera.cpp
 		fp_camera.hpp
+		toaster_runtime.rc
 )
 
 add_executable(toaster_runtime ${SRC})

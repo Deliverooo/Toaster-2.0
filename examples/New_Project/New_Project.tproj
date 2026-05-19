@@ -1,1 +1,6 @@
-Project: New_Project
+Project:
+  Name: New_Project
+  ScriptDirectory: resources/scripts
+  SceneDirectory: resources/scenes
+  MeshDirectory: resources/meshes
+  StartupSceneName: New_Scene

@@ -31,7 +31,7 @@ namespace toaster
 		class RenderContext;
 	}
 
-	struct TST_API WindowCreateInfo
+	struct TST_API WindowSpecInfo
 	{
 		uint32 width{1920u};
 		uint32 height{1080u};
@@ -65,7 +65,7 @@ namespace toaster
 
 		static auto getRequiredInstanceExtensions() -> std::unordered_set<String>;
 
-		Window(render::RenderContext *p_render_ctx, const WindowCreateInfo &p_create_info);
+		Window(render::RenderContext *p_render_ctx, const WindowSpecInfo &p_spec_info);
 		~Window();
 
 		auto beginFrame() -> void;
