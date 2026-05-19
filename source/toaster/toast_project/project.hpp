@@ -1,0 +1,61 @@
+#pragma once
+
+#include "toaster_macros.hpp"
+
+#include "toast_lib/ptr.hpp"
+#include "toast_lib/string.hpp"
+#include "toast_lib/io/filesystem.hpp"
+
+namespace toaster
+{
+	struct TST_API ProjectSpecInfo
+	{
+		String name{"New_Project"};
+
+		// These are strings because they are only the names of the directories relative to the actual .tproj file
+		String scriptDirectory{"resources/scripts"};
+		String sceneDirectory{"resources/scenes"};
+		String meshDirectory{"resources/meshes"};
+
+		String startupSceneName{"New_Scene"};
+	};
+
+	class TST_API Project
+	{
+	public:
+		Project() = default;
+		Project(const io::filesystem::Path &p_path, const ProjectSpecInfo &p_spec_info);
+
+		auto getFullScriptDirectory() const -> io::filesystem::Path;
+		auto getFullSceneDirectory() const -> io::filesystem::Path;
+		auto getFullMeshDirectory() const -> io::filesystem::Path;
+
+		auto getPath() const -> const io::filesystem::Path &;
+		auto getSpecInfo() const -> const ProjectSpecInfo &;
+
+		auto printInfo() const -> void;
+
+	private:
+		// The actual path to the .tproj file on disk. All other paths are relative to this one
+		io::filesystem::Path m_path{};
+
+		ProjectSpecInfo m_specInfo{};
+
+		friend class ProjectSerializer;
+	};
+
+	class TST_API ProjectSerializer
+	{
+	public:
+		ProjectSerializer(Project *p_project);
+
+		// Serializes the project to the path provided in the project's constructor (Project::m_path)
+		auto serialize() const -> void;
+
+		// Most of the time you will be using deserialize because it is uncommon to create a new project at runtime unless you are writing a launcher
+		auto deserialize(const io::filesystem::Path &p_path) -> void;
+
+	private:
+		NonOwningPtr<Project> m_project{nullptr};
+	};
+}

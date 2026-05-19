@@ -43,7 +43,6 @@ Entities:
 auto main(int32 p_argc, char **p_argv) -> int32
 {
 	const auto working_directory{os::getBinaryDirectory()};
-	// LOG_INFO("Working dir: {}", working_directory.string());
 
 	argparse::ArgumentParser parser{"Toaster build (tstb)", "2.718281828"};
 
@@ -52,7 +51,12 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	new_command.add_argument("--name", "-n").help("The name of the project to create").default_value("New_Project");
 	new_command.add_argument("--sceneName", "-sn").help("The name of the default scene to create").default_value("New_Scene");
 
+	argparse::ArgumentParser remove_command{"rm"};
+	remove_command.add_description("remove a project");
+	remove_command.add_argument("--name", "-n").help("The name of the project to remove").required();
+
 	parser.add_subparser(new_command);
+	parser.add_subparser(remove_command);
 
 	try
 	{
@@ -66,10 +70,10 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 	if (parser.is_subcommand_used("new"))
 	{
-		io::filesystem::Path toaster_dll{fmt::format("{0}/script/{1}/{2}/Toaster.dll", working_directory.string(), c_dotnetProfile, c_dotnetFrameworkVersion)};
+		io::filesystem::Path toaster_dll{fmt::format("{0}/script/{1}/{2}/Toaster.dll", working_directory, c_dotnetProfile, c_dotnetFrameworkVersion)};
 		if (!std::filesystem::exists(toaster_dll))
 		{
-			LOG_ERROR("Toaster.dll does not exist at '{}'. Please run build_scripts.bat", toaster_dll.string());
+			LOG_ERROR("Toaster.dll does not exist at '{}'. Please run build_scripts.bat", toaster_dll);
 			return -1;
 		}
 
@@ -120,9 +124,9 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 		// Create the .csproj manually so I can use net48, then build with dotnet
 		io::filesystem::writeFile(resource_directory / "scripts" / fmt::format("{0}.csproj", project_name),
-								  fmt::format(c_csprojTemplate, c_dotnetFrameworkVersion, c_dotnetLanguageVersion, toaster_dll.string()));
+								  fmt::format(c_csprojTemplate, c_dotnetFrameworkVersion, c_dotnetLanguageVersion, toaster_dll));
 		LOG_INFO("Building C# assembly");
-		String build_scripts_command{fmt::format("cd {0} && dotnet build", io::filesystem::Path{resource_directory / "scripts"}.string())};
+		String build_scripts_command{fmt::format("cd {0} && dotnet build", io::filesystem::Path{resource_directory / "scripts"})};
 		int32  err{std::system(build_scripts_command.c_str())};
 		if (err == -1)
 		{
@@ -133,6 +137,41 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		auto scene_name{new_command.get<String>("--sceneName")};
 		LOG_INFO("Creating default scene");
 		io::filesystem::writeFile(resource_directory / "scenes" / fmt::format("{}.tscene", scene_name), fmt::format(c_tsceneTemplate, scene_name));
+	}
+	else if (parser.is_subcommand_used("rm"))
+	{
+		io::filesystem::Path project_dir{remove_command.get("--name")};
+		if (!io::filesystem::exists(project_dir))
+		{
+			LOG_ERROR("Project directory '{}' does not exist", project_dir);
+		}
+
+		String confirm{"N"};
+		LOG_WARN("Are you sure?: (Y / N)");
+		std::cin >> confirm;
+		if (confirm == "N" || confirm == "n")
+		{
+			LOG_INFO("ok...");
+			return 0;
+		}
+		else if (confirm == "Y" || confirm == "y")
+		{
+			std::error_code err{};
+			std::uintmax_t  remove_count{std::filesystem::remove_all(project_dir, err)};
+			if (err)
+			{
+				LOG_ERROR("Failed to remove project | Error: {}", err.message());
+				return -1;
+			}
+
+			LOG_INFO("Successfully removed project: {} files", remove_count);
+			return 0;
+		}
+		else
+		{
+			LOG_ERROR("Invalid option.");
+			return -1;
+		}
 	}
 	else
 	{

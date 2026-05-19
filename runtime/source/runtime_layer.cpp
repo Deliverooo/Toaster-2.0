@@ -9,6 +9,7 @@
 
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_lib/os/terminal.hpp"
+#include "toast_project/project.hpp"
 #include "toast_render/render_context.hpp"
 #include "toast_scene/components.hpp"
 #include "toast_scene/entity.hpp"
@@ -43,13 +44,12 @@ namespace toaster
 
 		#pragma region script + scene setup
 		io::filesystem::Path script_asm_path{m_app->getCommandLineArgs()->get("--scriptAsm")};
-		io::filesystem::Path core_script_assembly_dll{io::filesystem::Path{binary_dir / "script/Toaster.dll"}};
 		LOG_INFO("{}", script_asm_path.string());
 
 		script::ScriptEngineSpecInfo script_engine_spec_info{};
 		script_engine_spec_info.rootDomainName   = "ToasterRootDomain";
 		script_engine_spec_info.appDomainName    = "ToasterAppDomain";
-		script_engine_spec_info.coreAssemblyPath = core_script_assembly_dll;
+		script_engine_spec_info.coreAssemblyPath = binary_dir / "script/Debug/net48/Toaster.dll";
 		script_engine_spec_info.appAssemblyPath  = script_asm_path;
 		m_scriptEngine                           = make_unique<script::ScriptEngine>(script_engine_spec_info);
 
@@ -81,14 +81,24 @@ namespace toaster
 		m_sceneRenderer                            = make_reference<SceneRenderer>(m_renderCtx, scene_renderer_spec_info);
 
 		SceneSerializer scene_serializer{m_scene, binary_dir};
-		String          scene_path{command_line_args->get("--scene")};
-		if (scene_path == "__NONE__")
-			scene_serializer.deserialize(binary_dir / "../resources/scenes/Startup_blank.tscene");
-		else
-			scene_serializer.deserialize(scene_path);
+		scene_serializer.deserialize(command_line_args->get("--scene"));
 
-		// SceneImporter scene_importer{m_scene};
-		// scene_importer.importFromFile(binary_dir / "../resources/meshes/Test_scene.fbx");
+		// {
+		// ProjectSpecInfo project_spec_info{};
+		// project_spec_info.name             = "Orbo's Exodus";
+		// project_spec_info.startupSceneName = "Peebworld";
+		// Project proj{"../examples/New_Project/New_Project.tproj", project_spec_info};
+		// ProjectSerializer project_serializer{&proj};
+		// project_serializer.serialize();
+		// proj.printInfo();
+		// }
+
+		{
+			Project           proj{};
+			ProjectSerializer project_serializer{&proj};
+			project_serializer.deserialize("../examples/New_Project/New_Project.tproj");
+			proj.printInfo();
+		}
 	}
 
 	auto RuntimeLayer::onDestroy() -> void

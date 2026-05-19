@@ -20,7 +20,9 @@ auto main(int32 p_argc, char **p_argv) -> int32
 																										binary_directory /
 																										"../examples/Sandbox/bin/Debug/net48/Sandbox.dll"
 																									}.string());
-	parser.add_argument("--scene").help("The startup scene (.tscene)").default_value("__NONE__");
+	parser.add_argument("--scene").help("The startup scene (.tscene)").default_value(toaster::io::filesystem::Path{
+																						 binary_directory / "../resources/scenes/Startup_blank.tscene"
+																					 }.string());
 	parser.parse_args(__argc, __argv);
 
 	toaster::ApplicationCreateInfo app_create_info{};

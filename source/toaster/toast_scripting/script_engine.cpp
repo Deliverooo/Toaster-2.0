@@ -101,10 +101,10 @@ namespace toaster::script
 			MonoClass *script_class{mono_class_from_name(image, name_space, type_name)};
 			if (mono_class_is_subclass_of(entity_class, script_class, false))
 			{
-				LOGD_ERROR("Is entity");
+				LOG_ERROR("Is entity");
 			}
-			// auto method_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_METHOD_LIST])};
-			// LOGD_INFO("Namespace: {} | Type: {} | Method: {}", name_space, type_name, method_name);
+			auto method_name{mono_metadata_string_heap(image, cols[MONO_TYPEDEF_METHOD_LIST])};
+			LOG_INFO("Namespace: {} | Type: {} | Method: {}", name_space, type_name, method_name);
 		}
 	}
 
