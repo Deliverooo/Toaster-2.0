@@ -253,9 +253,7 @@ namespace toaster
 
 			const auto &src = p_entity.getComponent<SpriteRendererComponent>();
 			p_out << YAML::Key << "Colour" << YAML::Value << src.colour;
-
-			auto texture_path = src.texture ? relative(src.texture->getPath(), m_binaryDir) : "Null";
-			p_out << YAML::Key << "TexturePath" << YAML::Value << texture_path.string();
+			p_out << YAML::Key << "TextureAssetID" << YAML::Value << src.textureAssetID;
 			p_out << YAML::Key << "TilingFactor" << YAML::Value << src.tilingFactor;
 
 			p_out << YAML::EndMap;
@@ -356,20 +354,10 @@ namespace toaster
 			auto sprite_comp = entity["SpriteRendererComponent"];
 			if (sprite_comp)
 			{
-				auto &src  = out_entity.addComponent<SpriteRendererComponent>();
-				src.colour = sprite_comp["Colour"].as<glm::vec4>();
-
-				auto texture_path = sprite_comp["TexturePath"].as<String>();
-				if (texture_path != "Null")
-				{
-					src.texture = p_scene->m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, m_binaryDir / texture_path);
-				}
-				else
-					src.texture = nullptr;
-
-				LOG_TRACE("Sprite texture: {}", texture_path);
-
-				src.tilingFactor = sprite_comp["TilingFactor"].as<float32>();
+				auto &src          = out_entity.addComponent<SpriteRendererComponent>();
+				src.colour         = sprite_comp["Colour"].as<glm::vec4>();
+				src.textureAssetID = sprite_comp["TextureAssetID"].as<uint64>();
+				src.tilingFactor   = sprite_comp["TilingFactor"].as<float32>();
 			}
 
 			auto mesh_comp{entity["MeshComponent"]};

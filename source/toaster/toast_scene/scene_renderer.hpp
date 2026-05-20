@@ -29,8 +29,11 @@ namespace toaster
 		auto renderMesh(const render::MeshHandle &p_mesh, const glm::mat4 &p_transform) -> void;
 
 		auto getSpecInfo() const -> const SceneRendererSpecInfo &;
-		auto getFinalColourTexture() const -> const gpu::Texture2DHandle &;
-		auto getOutputDepthTexture() const -> const gpu::Texture2DHandle &;
+
+		auto getMSAAOutputColourImage() -> gpu::RawImageHandle &;
+		auto getMSAAOutputDepthImage() -> gpu::RawImageHandle &;
+		auto getResolveOutputColourTexture() const -> const gpu::Texture2DHandle &;
+		auto getResolveOutputDepthTexture() const -> const gpu::Texture2DHandle &;
 
 		auto getOutputComputeImage() const -> const RefPtr<gpu::VKStorageImage> &;
 		auto getRenderer2D() -> RefPtr<render::Renderer2D>;

@@ -150,6 +150,7 @@ namespace toaster
 		renderer_2d_create_info.renderTargetWidth   = m_specInfo.viewportWidth;
 		renderer_2d_create_info.renderTargetHeight  = m_specInfo.viewportHeight;
 		renderer_2d_create_info.overrideAttachments = true;
+		renderer_2d_create_info.msaa                = true;
 		m_renderer2D                                = make_reference<render::Renderer2D>(m_renderCtx, renderer_2d_create_info);
 	}
 
@@ -224,12 +225,22 @@ namespace toaster
 		return m_specInfo;
 	}
 
-	auto SceneRenderer::getFinalColourTexture() const -> const gpu::Texture2DHandle &
+	auto SceneRenderer::getMSAAOutputColourImage() -> gpu::RawImageHandle &
+	{
+		return m_colourImage;
+	}
+
+	auto SceneRenderer::getMSAAOutputDepthImage() -> gpu::RawImageHandle &
+	{
+		return m_depthPreAttachmentImage;
+	}
+
+	auto SceneRenderer::getResolveOutputColourTexture() const -> const gpu::Texture2DHandle &
 	{
 		return m_resolveColourTexture;
 	}
 
-	auto SceneRenderer::getOutputDepthTexture() const -> const gpu::Texture2DHandle &
+	auto SceneRenderer::getResolveOutputDepthTexture() const -> const gpu::Texture2DHandle &
 	{
 		return m_depthPreResolveAttachmentTexture;
 	}

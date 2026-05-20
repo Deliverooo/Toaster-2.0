@@ -5,6 +5,7 @@
 #include "scriptable_entity.hpp"
 #include "glm/gtx/euler_angles.hpp"
 #include "toast_asset/mesh_asset.hpp"
+#include "toast_asset/texture_asset.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 
 #include "toast_lib/logging.hpp"
@@ -216,7 +217,7 @@ namespace toaster
 		if (!main_camera)
 		{
 			// Fixes vulkan validation error messages...
-			auto       output_colour_image{p_scene_renderer->getFinalColourTexture()->getImage()};
+			auto       output_colour_image{p_scene_renderer->getResolveOutputColourTexture()->getImage()};
 			const auto current_image_layout{output_colour_image->getCurrentImageLayout()};
 			if (current_image_layout != vk::ImageLayout::eShaderReadOnlyOptimal)
 				gpu::util::transitionImageLayout(output_colour_image, output_colour_image->getCurrentImageLayout(), vk::ImageLayout::eShaderReadOnlyOptimal);
@@ -281,23 +282,28 @@ namespace toaster
 				Entity    e{entity, this};
 				glm::mat4 transform{getEntityWorldTransformMatrix(e)};
 
-				if (src.texture)
-					renderer_2d->submitQuad(transform, src.texture, src.colour);
+				auto texture_asset{m_project->getAssetManager().getAsset<asset::Texture2DAsset>(src.textureAssetID)};
+				if (texture_asset)
+					renderer_2d->submitQuad(transform, texture_asset->getTexture(), src.colour);
 				else
 					renderer_2d->submitQuad(transform, src.colour);
 			}
 
 			gpu::RenderingAttachmentInfo colour_attachment_info{};
-			colour_attachment_info.clearValue = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
-			colour_attachment_info.image      = p_scene_renderer->getFinalColourTexture()->getImage();
-			colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eNone;
-			colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+			colour_attachment_info.clearValue   = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
+			colour_attachment_info.image        = p_scene_renderer->getMSAAOutputColourImage();
+			colour_attachment_info.loadOp       = vk::AttachmentLoadOp::eNone;
+			colour_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
+			colour_attachment_info.resolveImage = p_scene_renderer->getResolveOutputColourTexture()->getImage();
+			colour_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eAverage;
 
 			gpu::RenderingAttachmentInfo depth_attachment_info{};
-			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
-			depth_attachment_info.image      = p_scene_renderer->getOutputDepthTexture()->getImage();
-			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eLoad;
-			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
+			depth_attachment_info.clearValue   = vk::ClearDepthStencilValue{1.0f, 0u};
+			depth_attachment_info.image        = p_scene_renderer->getMSAAOutputDepthImage();
+			depth_attachment_info.loadOp       = vk::AttachmentLoadOp::eLoad;
+			depth_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
+			depth_attachment_info.resolveImage = p_scene_renderer->getResolveOutputDepthTexture()->getImage();
+			depth_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eMin;
 
 			renderer_2d->end(p_cmd, p_frame_index, &colour_attachment_info, &depth_attachment_info);
 		}
@@ -365,21 +371,22 @@ namespace toaster
 				Entity    e{entity, this};
 				glm::mat4 transform{getEntityWorldTransformMatrix(e)};
 
-				if (src.texture)
-					renderer_2d->submitQuad(transform, src.texture, src.colour);
+				auto texture_asset{m_project->getAssetManager().getAsset<asset::Texture2DAsset>(src.textureAssetID)};
+				if (texture_asset)
+					renderer_2d->submitQuad(transform, texture_asset->getTexture(), src.colour);
 				else
 					renderer_2d->submitQuad(transform, src.colour);
 			}
 
 			gpu::RenderingAttachmentInfo colour_attachment_info{};
 			colour_attachment_info.clearValue = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
-			colour_attachment_info.image      = p_scene_renderer->getFinalColourTexture()->getImage();
+			colour_attachment_info.image      = p_scene_renderer->getResolveOutputColourTexture()->getImage();
 			colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eNone;
 			colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 
 			gpu::RenderingAttachmentInfo depth_attachment_info{};
 			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
-			depth_attachment_info.image      = p_scene_renderer->getOutputDepthTexture()->getImage();
+			depth_attachment_info.image      = p_scene_renderer->getResolveOutputDepthTexture()->getImage();
 			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eLoad;
 			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 
@@ -650,8 +657,9 @@ namespace toaster
 		m_scriptEngine->registerMethod("Toaster.MeshComponent::HasMaterialInternal", +[](uint64 p_entity_id, uint32 p_index) -> bool
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
-			auto & mesh{entity.getComponent<MeshComponent>()};
-			return mesh.mesh->getMaterials().hasMaterial(p_index);
+			auto & mc{entity.getComponent<MeshComponent>()};
+			auto   mesh{s_activeScene->m_project->getAssetManager().getAsset<asset::MeshAsset>(mc.meshAssetID)->getMesh()};
+			return mesh->getMaterials().hasMaterial(p_index);
 		});
 		#pragma endregion
 
@@ -833,16 +841,18 @@ namespace toaster
 		m_scriptEngine->registerMethod("Toaster.Material::GetAlbedoColour", +[](uint64 p_entity_id, uint32 p_index, glm::vec3 *p_out_colour) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
-			auto & mesh{entity.getComponent<MeshComponent>()};
-			auto & material{mesh.mesh->getMaterials().getMaterial(p_index).material};
+			auto & mc{entity.getComponent<MeshComponent>()};
+			auto   mesh{s_activeScene->m_project->getAssetManager().getAsset<asset::MeshAsset>(mc.meshAssetID)->getMesh()};
+			auto & material{mesh->getMaterials().getMaterial(p_index).material};
 			*p_out_colour = material->get<glm::vec3>("u_Material.albedoColour");
 		});
 
 		m_scriptEngine->registerMethod("Toaster.Material::SetAlbedoColour", +[](uint64 p_entity_id, uint32 p_index, glm::vec3 *p_colour) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
-			auto & mesh{entity.getComponent<MeshComponent>()};
-			auto & material{mesh.mesh->getMaterials().getMaterial(p_index).material};
+			auto & mc{entity.getComponent<MeshComponent>()};
+			auto   mesh{s_activeScene->m_project->getAssetManager().getAsset<asset::MeshAsset>(mc.meshAssetID)->getMesh()};
+			auto & material{mesh->getMaterials().getMaterial(p_index).material};
 			material->set("u_Material.albedoColour", *p_colour);
 		});
 		#pragma endregion

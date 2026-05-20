@@ -103,14 +103,14 @@ namespace toaster
 
 		auto reset() -> void
 		{
-			colour       = glm::vec4{1.0f};
-			texture      = nullptr;
-			tilingFactor = 1.0f;
+			colour         = glm::vec4{1.0f};
+			textureAssetID = asset::c_invalidAssetID;
+			tilingFactor   = 1.0f;
 		}
 
-		glm::vec4                colour{1.0f};
-		RefPtr<gpu::VKTexture2D> texture{nullptr};
-		float32                  tilingFactor{1.0f};
+		glm::vec4      colour{1.0f};
+		asset::AssetID textureAssetID{asset::c_invalidAssetID};
+		float32        tilingFactor{1.0f};
 	};
 
 	DEFINE_COMPONENT(MeshComponent)
@@ -120,11 +120,10 @@ namespace toaster
 
 		auto reset() -> void
 		{
-			mesh.reset(nullptr);
-			meshAssetID = {};
+			meshAssetID = asset::c_invalidAssetID;
 		}
 
-		asset::AssetID     meshAssetID{asset::c_invalidAssetID};
+		asset::AssetID meshAssetID{asset::c_invalidAssetID};
 	};
 
 	DEFINE_COMPONENT(SubmeshComponent)

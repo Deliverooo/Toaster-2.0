@@ -25,6 +25,7 @@ namespace toaster::render
 		pipeline_create_info.depthFormat        = m_renderContext->getPhysicalDevice()->getDepthFormat();
 		pipeline_create_info.vertexBufferLayout = m_quadVertexBufferLayout;
 		pipeline_create_info.shader             = quad_shader;
+		pipeline_create_info.multisample        = m_createInfo.msaa;
 		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
 		m_quadPipeline                          = m_renderContext->createGPU<gpu::VKPipeline>(pipeline_create_info);
 

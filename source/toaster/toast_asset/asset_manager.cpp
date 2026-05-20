@@ -124,7 +124,7 @@ namespace toaster::asset
 
 	auto AssetManager::importTexture2DAsset(const AssetManager *p_asm, const AssetMetadata &p_metadata) -> AssetHandle
 	{
-		io::filesystem::Path full_path{p_asm->m_project->getRootDirectory() / "resources" / p_metadata.path};
+		io::filesystem::Path full_path{p_asm->m_project->getRootDirectory() / p_metadata.path};
 		LOG_INFO("Loading texture 2d asset: {}", full_path);
 		gpu::TextureSpecInfo texture_spec_info{};
 		Buffer               texture_data{gpu::util::loadTextureImage(full_path, texture_spec_info.format, texture_spec_info.width, texture_spec_info.height)};
@@ -136,7 +136,7 @@ namespace toaster::asset
 
 	auto AssetManager::importTexture3DAsset(const AssetManager *p_asm, const AssetMetadata &p_metadata) -> AssetHandle
 	{
-		io::filesystem::Path full_path{p_asm->m_project->getRootDirectory() / "resources" / p_metadata.path};
+		io::filesystem::Path full_path{p_asm->m_project->getRootDirectory() / p_metadata.path};
 		LOG_INFO("Loading texture 3d asset: {}", full_path);
 
 		gpu::TextureSpecInfo texture_spec_info{};

@@ -16,7 +16,6 @@
 #include "toast_render/render_context.hpp"
 #include "toast_scene/components.hpp"
 #include "toast_scene/entity.hpp"
-#include "toast_scene/scene_importer.hpp"
 #include "toast_scene/scene_serializer.hpp"
 
 namespace toaster
@@ -115,7 +114,7 @@ namespace toaster
 		m_scene->onUpdate(p_dt);
 		m_scene->onRender(&command_buffer, frame_index, p_dt, m_sceneRenderer);
 
-		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getFinalColourTexture());
+		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getResolveOutputColourTexture());
 
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_viewportWidth, m_viewportHeight}};
