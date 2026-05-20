@@ -133,6 +133,7 @@ auto newProject(const argparse::ArgumentParser &p_new_command) -> int32
 	// Create the .csproj manually so I can use net48, then build with dotnet
 	io::filesystem::writeFile(resource_directory / "scripts" / fmt::format("{0}.csproj", project_name),
 							  fmt::format(c_csprojTemplate, c_dotnetFrameworkVersion, c_dotnetLanguageVersion, toaster_dll));
+
 	LOG_INFO("Building C# assembly");
 	String build_scripts_command{fmt::format("cd {0} && dotnet build", io::filesystem::Path{resource_directory / "scripts"})};
 	int32  err{std::system(build_scripts_command.c_str())};
@@ -184,10 +185,8 @@ auto removeProject(const argparse::ArgumentParser &p_remove_command) -> int32
 	return -1;
 }
 
-auto buildAssets(const argparse::ArgumentParser &p_build_assets_command) -> int32
+auto getTProjPath() -> io::filesystem::Path
 {
-	LOG_INFO("Attempting to build assets");
-
 	const auto working_directory{std::filesystem::current_path()};
 
 	io::filesystem::Path tproj_file_path{};
@@ -202,6 +201,57 @@ auto buildAssets(const argparse::ArgumentParser &p_build_assets_command) -> int3
 			}
 		}
 	}
+	return tproj_file_path;
+}
+
+auto updateAssetRegistry(const io::filesystem::Path &p_tproj_path) -> int32
+{
+	Project           project{};
+	ProjectSerializer project_serializer{&project};
+	project_serializer.deserialize(p_tproj_path);
+	auto &asset_manager{project.getAssetManager()};
+
+	asset_manager.deserializeFromFile(project.getFullAssetRegistryPath());
+	std::unordered_set<io::filesystem::Path> asset_paths_set;
+	for (const auto &dir_it: std::filesystem::recursive_directory_iterator{project.getRootDirectory()})
+	{
+		if (dir_it.is_regular_file())
+		{
+			io::filesystem::EFileType file_type{io::filesystem::getFileType(dir_it.path())};
+			if (file_type == io::filesystem::EFileType::eImage || file_type == io::filesystem::EFileType::eMesh || file_type ==
+				io::filesystem::EFileType::eEnvironmentMap)
+			{
+				asset_paths_set.insert(std::filesystem::relative(dir_it.path(), project.getRootDirectory()));
+			}
+		}
+	}
+
+	for (const auto &path: asset_paths_set)
+	{
+		LOG_INFO("{}", path);
+	}
+
+	for (auto &[id, metadata]: asset_manager.getAssetMetadataRegistry())
+	{
+		// Asset path is invalid, so remove
+		if (!asset_paths_set.contains(metadata.path))
+			asset_manager.removeAsset(id);
+	}
+
+	asset_manager.printAssetRegistry();
+
+	asset_manager.serializeToFile(project.getFullAssetRegistryPath());
+
+	return 0;
+}
+
+auto buildAssets(const argparse::ArgumentParser &p_build_assets_command) -> int32
+{
+	LOG_INFO("Attempting to build assets");
+
+	const auto working_directory{std::filesystem::current_path()};
+
+	io::filesystem::Path tproj_file_path{getTProjPath()};
 	if (!std::filesystem::exists(tproj_file_path))
 	{
 		LOG_ERROR("Current directory does not contain a .tproj file!");
@@ -213,10 +263,47 @@ auto buildAssets(const argparse::ArgumentParser &p_build_assets_command) -> int3
 	project_serializer.deserialize(tproj_file_path);
 	auto &asset_manager{project.getAssetManager()};
 
+	asset_manager.deserializeFromFile(project.getFullAssetRegistryPath());
+	std::unordered_set<io::filesystem::Path> asset_paths_set;
 	for (const auto &dir_it: std::filesystem::recursive_directory_iterator{project.getRootDirectory()})
 	{
 		if (dir_it.is_regular_file())
 		{
+			io::filesystem::EFileType file_type{io::filesystem::getFileType(dir_it.path())};
+			if (file_type == io::filesystem::EFileType::eImage || file_type == io::filesystem::EFileType::eMesh || file_type ==
+				io::filesystem::EFileType::eEnvironmentMap)
+			{
+				asset_paths_set.insert(std::filesystem::relative(dir_it.path(), project.getRootDirectory()));
+			}
+		}
+	}
+	asset_manager.printAssetRegistry();
+
+	std::unordered_map<io::filesystem::Path, asset::AssetID> path_asset_id_map;
+
+	asset_manager.removeAssetIf([&asset_paths_set](const auto &pair)-> bool
+	{
+		return !asset_paths_set.contains(pair.second.path);
+	});
+
+	for (auto &[id, metadata]: asset_manager.getAssetMetadataRegistry())
+	{
+		path_asset_id_map[metadata.path] = id;
+		// Asset path is invalid, so remove
+		if (!asset_paths_set.contains(metadata.path))
+			asset_manager.removeAsset(id);
+	}
+
+	for (const auto &[path, id]: path_asset_id_map)
+		LOG_WARN("Path id: {}", path);
+
+	for (const auto &dir_it: std::filesystem::recursive_directory_iterator{project.getRootDirectory()})
+	{
+		if (dir_it.is_regular_file())
+		{
+			if (!path_asset_id_map.contains(dir_it.path()))
+				continue;
+
 			io::filesystem::EFileType file_type{io::filesystem::getFileType(dir_it.path())};
 			switch (file_type)
 			{
@@ -255,7 +342,38 @@ auto buildAssets(const argparse::ArgumentParser &p_build_assets_command) -> int3
 	}
 	asset_manager.serializeToFile(project.getFullAssetRegistryPath());
 
+	asset_manager.printAssetRegistry();
+
 	return 0;
+}
+
+auto build(const argparse::ArgumentParser &p_build_command) -> int32
+{
+	LOG_INFO("Attempting to build project");
+
+	const auto working_directory{std::filesystem::current_path()};
+
+	io::filesystem::Path tproj_file_path{getTProjPath()};
+	if (!std::filesystem::exists(tproj_file_path))
+	{
+		LOG_ERROR("Current directory does not contain a .tproj file!");
+		return -1;
+	}
+
+	Project           project{};
+	ProjectSerializer project_serializer{&project};
+	project_serializer.deserialize(tproj_file_path);
+
+	LOG_INFO("Building C# assembly");
+	String build_scripts_command{fmt::format("cd {0} && dotnet build", project.getFullScriptDirectory())};
+	int32  err{std::system(build_scripts_command.c_str())};
+	if (err == -1)
+	{
+		LOG_ERROR("Failed to build script projects!");
+		return -1;
+	}
+
+	return buildAssets(p_build_command);
 }
 
 auto main(int32 p_argc, char **p_argv) -> int32
@@ -279,6 +397,14 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	build_assets_command.add_description("build the meta asset files for a project");
 	parser.add_subparser(build_assets_command);
 
+	argparse::ArgumentParser build_command{"build"};
+	build_command.add_description("build the C# assemblies aswell as the assets for a project");
+	parser.add_subparser(build_command);
+
+	argparse::ArgumentParser update_command{"update"};
+	update_command.add_description("update the asset registry and remove unused assets for a project");
+	parser.add_subparser(update_command);
+
 	try
 	{
 		parser.parse_args(p_argc, p_argv);
@@ -297,6 +423,20 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 	if (parser.is_subcommand_used("buildAssets"))
 		return buildAssets(build_assets_command);
+
+	if (parser.is_subcommand_used("build"))
+		return build(build_command);
+
+	if (parser.is_subcommand_used("update"))
+	{
+		io::filesystem::Path tproj_file_path{getTProjPath()};
+		if (!std::filesystem::exists(tproj_file_path))
+		{
+			LOG_ERROR("Current directory does not contain a .tproj file!");
+			return -1;
+		}
+		return updateAssetRegistry(tproj_file_path);
+	}
 
 	LOG_WARN("What are you trying to do? use the new command or type --help for help");
 	return 0;

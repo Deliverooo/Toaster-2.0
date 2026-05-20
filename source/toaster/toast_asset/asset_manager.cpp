@@ -70,6 +70,25 @@ namespace toaster::asset
 		m_assetMetadataRegistry[p_asset_id] = p_metadata;
 	}
 
+	auto AssetManager::getAssetMetadataRegistry() const -> const std::unordered_map<AssetID, AssetMetadata> &
+	{
+		return m_assetMetadataRegistry;
+	}
+
+	auto AssetManager::removeAsset(AssetID p_asset_id) -> void
+	{
+		LOG_WARN("Removing asset: {}", (uint64)p_asset_id);
+		if (!isAssetIDValid(p_asset_id))
+		{
+			LOG_ERROR("Asset id {} is invalid", static_cast<uint64>(p_asset_id));
+			return;
+		}
+		m_assetMetadataRegistry.erase(p_asset_id);
+
+		if (isAssetLoaded(p_asset_id))
+			m_loadedAssets.erase(p_asset_id);
+	}
+
 	auto AssetManager::serializeToFile(const io::filesystem::Path &p_path) const -> void
 	{
 		YAML::Emitter out{};

@@ -27,6 +27,13 @@ namespace toaster::asset
 			return getAsset(p_asset_id).as<TAsset>();
 		}
 
+		template<typename TFunc>
+		auto removeAssetIf(TFunc &&p_func) -> void
+		{
+			std::erase_if(m_assetMetadataRegistry, std::forward<TFunc>(p_func));
+			// std::ranges::remove_if(m_loadedAssets, std::forward<TFunc>(p_func));
+		}
+
 		// Returns true if the asset id has an associated AssetMetadata struct. This will not necessarily mean that the asset actually exists in memory tho
 		auto isAssetIDValid(AssetID p_asset_id) const -> bool;
 		// Returns true if the asset id actually maps to an asset currently loaded into memory. if true, isAssetIDValid(...) will also be true
@@ -34,6 +41,9 @@ namespace toaster::asset
 
 		auto getAssetMetadata(AssetID p_asset_id) const -> const AssetMetadata &;
 		auto addAssetMetadata(AssetID p_asset_id, const AssetMetadata &p_metadata) -> void;
+
+		auto getAssetMetadataRegistry() const -> const std::unordered_map<AssetID, AssetMetadata> &;
+		auto removeAsset(AssetID p_asset_id) -> void;
 
 		auto serializeToFile(const io::filesystem::Path &p_path) const -> void;
 		auto deserializeFromFile(const io::filesystem::Path &p_path) -> void;
