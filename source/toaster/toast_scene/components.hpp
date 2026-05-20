@@ -9,6 +9,7 @@
 
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_lib/uuid.hpp"
+#include "toast_lib/math/math_matrix.hpp"
 #include "toast_render/mesh.hpp"
 #include "toast_scripting/script_object.hpp"
 
@@ -80,10 +81,7 @@ namespace toaster
 
 		auto setTransform(const glm::mat4 &p_transform) -> void
 		{
-			glm::vec3 skew{0.0f};
-			glm::vec4 perspective{0.0f};
-			glm::decompose(p_transform, scale, orientation, translation, skew, perspective);
-			// tsm::decomposeTransform(p_transform, translation, rotation, scale);
+			tsm::decomposeTransform(p_transform, translation, orientation, scale);
 		}
 
 		auto reset() -> void
@@ -126,7 +124,6 @@ namespace toaster
 			meshAssetID = {};
 		}
 
-		render::MeshHandle mesh{nullptr};
 		asset::AssetID     meshAssetID{asset::c_invalidAssetID};
 	};
 

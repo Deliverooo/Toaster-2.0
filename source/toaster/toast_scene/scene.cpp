@@ -261,7 +261,6 @@ namespace toaster
 				auto mesh_comp{view.get<MeshComponent>(entity)};
 
 				auto mesh_asset{m_project->getAssetManager().getAsset<asset::MeshAsset>(mesh_comp.meshAssetID)};
-				// TST_PERMA_ASSERT(mesh_asset);
 				if (mesh_asset)
 				{
 					Entity e{entity, this};

@@ -59,7 +59,7 @@ namespace toaster
 		io::filesystem::Path script_asm_path{
 			fmt::format("{0}/bin/{1}/net48/{2}.dll", m_project->getFullScriptDirectory(), script::c_scriptConfigProfile, m_project->getSpecInfo().name)
 		};
-		LOG_INFO("Attempting to load script assembly: {}", script_asm_path);
+		DEBUG_LOG_INFO("Attempting to load script assembly: {}", script_asm_path);
 		TST_PERMA_ASSERT_MSG(io::filesystem::exists(script_asm_path), "Script dll does not exist");
 
 		script::ScriptEngineSpecInfo script_engine_spec_info{};
@@ -73,7 +73,7 @@ namespace toaster
 		m_inputCtx->registerScriptMethods(m_scriptEngine.get());
 
 		io::filesystem::Path scene_path{fmt::format("{0}/{1}.tscene", m_project->getFullSceneDirectory(), m_project->getSpecInfo().startupSceneName)};
-		LOG_INFO("Attempting to load scene: {}", scene_path);
+		DEBUG_LOG_INFO("Attempting to load scene: {}", scene_path);
 		SceneSerializer scene_serializer{m_scene, binary_dir};
 		scene_serializer.deserialize(scene_path);
 		#pragma endregion
