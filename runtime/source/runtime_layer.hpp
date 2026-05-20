@@ -4,6 +4,7 @@
 #include "toaster/toast_kernel/layer.hpp"
 
 #include "toaster/toast_lib/events/key_event.hpp"
+#include "toast_asset/asset_manager.hpp"
 
 #include "toast_gpu/vk/vk_render_pass.hpp"
 #include "toast_gpu/vk/vk_pipeline.hpp"

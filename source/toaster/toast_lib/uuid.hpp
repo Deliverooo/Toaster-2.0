@@ -11,7 +11,10 @@ namespace toaster
 	{
 	public:
 		UUID();
-		UUID(uint64 p_uuid);
+
+		constexpr UUID(uint64 p_uuid) : m_uuid(p_uuid)
+		{
+		}
 
 		operator uint64() const;
 

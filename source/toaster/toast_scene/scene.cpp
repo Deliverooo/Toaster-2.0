@@ -4,12 +4,14 @@
 #include "scene_renderer.hpp"
 #include "scriptable_entity.hpp"
 #include "glm/gtx/euler_angles.hpp"
+#include "toast_asset/mesh_asset.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 
 #include "toast_lib/logging.hpp"
 #include "toast_render/globals.hpp"
 
 #include "toast_lib/events/window_event.hpp"
+#include "toast_project/project.hpp"
 
 #define TST_ENABLE_2D_SCENE_RENDERING 1
 
@@ -79,9 +81,12 @@ namespace toaster
 
 	static Scene *s_activeScene{nullptr};
 
-	Scene::Scene(render::RenderContext *p_render_ctx, script::ScriptEngine *p_script_engine, const String &p_name) : m_renderCtx(p_render_ctx),
-																													 m_scriptEngine(p_script_engine),
-																													 m_name(p_name.empty() ? "Untitled Scene" : p_name)
+	Scene::Scene(Project *p_project, render::RenderContext *p_render_ctx, script::ScriptEngine *p_script_engine, const String &p_name) : m_project(p_project),
+																																		 m_renderCtx(p_render_ctx),
+																																		 m_scriptEngine(p_script_engine),
+																																		 m_name(p_name.empty()
+																																					? "Untitled Scene"
+																																					: p_name)
 	{
 		s_activeScene = this;
 
@@ -253,10 +258,14 @@ namespace toaster
 			p_scene_renderer->begin(p_frame_index, camera_view, main_camera->getProjectionMatrix());
 			for (const auto view{m_registry.view<MeshComponent>()}; const auto entity: view)
 			{
-				if (auto mesh{view.get<MeshComponent>(entity)}; mesh.mesh)
+				auto mesh_comp{view.get<MeshComponent>(entity)};
+
+				auto mesh_asset{m_project->getAssetManager().getAsset<asset::MeshAsset>(mesh_comp.meshAssetID)};
+				// TST_PERMA_ASSERT(mesh_asset);
+				if (mesh_asset)
 				{
 					Entity e{entity, this};
-					p_scene_renderer->renderMesh(mesh.mesh, getEntityWorldTransformMatrix(e));
+					p_scene_renderer->renderMesh(mesh_asset->getMesh(), getEntityWorldTransformMatrix(e));
 				}
 			}
 			p_scene_renderer->end(p_cmd, p_frame_index);
@@ -333,10 +342,14 @@ namespace toaster
 			p_scene_renderer->begin(p_frame_index, p_view, p_projection);
 			for (const auto view{m_registry.view<MeshComponent>()}; const auto entity: view)
 			{
-				if (auto mesh{view.get<MeshComponent>(entity)}; mesh.mesh)
+				auto mesh_comp{view.get<MeshComponent>(entity)};
+
+				auto mesh_asset{m_project->getAssetManager().getAsset<asset::MeshAsset>(mesh_comp.meshAssetID)};
+				TST_PERMA_ASSERT(mesh_asset);
+				if (mesh_asset)
 				{
 					Entity e{entity, this};
-					p_scene_renderer->renderMesh(mesh.mesh, getEntityWorldTransformMatrix(e));
+					p_scene_renderer->renderMesh(mesh_asset->getMesh(), getEntityWorldTransformMatrix(e));
 				}
 			}
 			p_scene_renderer->end(p_cmd, p_frame_index);

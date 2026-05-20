@@ -77,6 +77,26 @@ namespace toaster::gpu
 		createSampler();
 	}
 
+	VKTexture2D::VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, const Buffer &p_data) : m_device(p_device), m_specInfo(p_spec_info),
+																													m_path(""), m_textureData(p_data)
+	{
+		TST_ASSERT_MSG(m_device, "Device cannot be null");
+
+		ImageSpecInfo image_create_info{};
+		image_create_info.width       = m_specInfo.width;
+		image_create_info.height      = m_specInfo.height;
+		image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+		image_create_info.mipCount    = m_mipLevels;
+		image_create_info.sampleCount = m_specInfo.sampleCount;
+		image_create_info.format      = m_specInfo.format;
+		m_image                       = make_reference<VKRawImage>(m_device, image_create_info);
+
+		util::toTransferDst(m_image.get());
+		m_image->setData(m_textureData);
+		util::transferDstToShaderRead(m_image.get());
+		createSampler();
+	}
+
 	VKTexture2D::~VKTexture2D()
 	{
 		m_textureData.release();
@@ -116,16 +136,16 @@ namespace toaster::gpu
 		if (m_image->getCurrentImageLayout() == vk::ImageLayout::eTransferDstOptimal)
 			util::transferDstToShaderRead(m_image.get());
 
-	// Do not destroy an existing sampler: descriptor sets may still reference it. Only create on first use.
-	if (!m_sampler)
-	{
-		m_sampler = m_device->createSampler();
-	}
+		// Do not destroy an existing sampler: descriptor sets may still reference it. Only create on first use.
+		if (!m_sampler)
+		{
+			m_sampler = m_device->createSampler();
+		}
 
-	// Update descriptor info (image view/layout may change on resize)
-	m_descriptorImageInfo.imageLayout = (p_override_layout == vk::ImageLayout::eUndefined) ? m_image->getCurrentImageLayout() : p_override_layout;
-	m_descriptorImageInfo.imageView   = m_image->getImageView();
-	m_descriptorImageInfo.sampler     = m_sampler;
+		// Update descriptor info (image view/layout may change on resize)
+		m_descriptorImageInfo.imageLayout = (p_override_layout == vk::ImageLayout::eUndefined) ? m_image->getCurrentImageLayout() : p_override_layout;
+		m_descriptorImageInfo.imageView   = m_image->getImageView();
+		m_descriptorImageInfo.sampler     = m_sampler;
 	}
 
 	auto VKTexture2D::getSpecInfo() const -> const TextureSpecInfo &
@@ -266,16 +286,16 @@ namespace toaster::gpu
 		if (m_image->getCurrentImageLayout() == vk::ImageLayout::eTransferDstOptimal)
 			util::transferDstToShaderRead(m_image.get());
 
-	// Do not destroy an existing sampler: descriptor sets may still reference it. Only create on first use.
-	if (!m_sampler)
-	{
-		m_sampler = m_device->createSampler();
-	}
+		// Do not destroy an existing sampler: descriptor sets may still reference it. Only create on first use.
+		if (!m_sampler)
+		{
+			m_sampler = m_device->createSampler();
+		}
 
-	// Update descriptor info (image view/layout may change on resize)
-	m_descriptorImageInfo.imageLayout = (p_override_layout == vk::ImageLayout::eUndefined) ? m_image->getCurrentImageLayout() : p_override_layout;
-	m_descriptorImageInfo.imageView   = m_image->getImageView();
-	m_descriptorImageInfo.sampler     = m_sampler;
+		// Update descriptor info (image view/layout may change on resize)
+		m_descriptorImageInfo.imageLayout = (p_override_layout == vk::ImageLayout::eUndefined) ? m_image->getCurrentImageLayout() : p_override_layout;
+		m_descriptorImageInfo.imageView   = m_image->getImageView();
+		m_descriptorImageInfo.sampler     = m_sampler;
 	}
 
 	auto VKTexture3D::getPath() const -> const io::filesystem::Path &
@@ -324,6 +344,7 @@ namespace toaster::gpu
 				uint8 *data{reinterpret_cast<uint8 *>(stbi_loadf(p_path.string().c_str(), &width, &height, &num_channels, 4))};
 				if (!data)
 				{
+					DEBUG_LOG_ERROR("Failed to load texture: {}", p_path);
 					uint32 fallback_data{0xFF00FFFF};
 					image_data.allocate(4u);
 					image_data.write(&fallback_data, 4u);
@@ -345,6 +366,8 @@ namespace toaster::gpu
 				uint8 *data{stbi_load(p_path.string().c_str(), &width, &height, &num_channels, 4)};
 				if (!data)
 				{
+					DEBUG_LOG_ERROR("Failed to load texture: {}", p_path);
+
 					uint32 fallback_data{0xFF00FFFF};
 					image_data.allocate(4u);
 					image_data.write(&fallback_data, 4u);

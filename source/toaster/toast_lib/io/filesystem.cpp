@@ -108,4 +108,40 @@ namespace toaster::io::filesystem
 		}
 		out.close();
 	}
+
+	auto getFileType(const Path &p_path) -> EFileType
+	{
+		const String extension{p_path.extension().string()};
+
+		if (extension == ".txt" || extension == ".md")
+			return EFileType::eText;
+
+		if (extension == ".fbx" || extension == ".obj" || extension == ".glb" || extension == ".gltf")
+			return EFileType::eMesh;
+
+		if (extension == ".png" || extension == ".jpg" || extension == ".bmp" || extension == ".jpeg")
+			return EFileType::eImage;
+
+		if (extension == ".exr" || extension == ".hdr")
+			return EFileType::eEnvironmentMap;
+
+		if (extension == ".mp4" || extension == ".mov" || extension == ".mkv")
+			return EFileType::eVideo;
+
+		return EFileType::eOther;
+	}
+
+	auto getFileTypeString(EFileType p_file_type) -> String
+	{
+		switch (p_file_type)
+		{
+			case EFileType::eText: return "Text";
+			case EFileType::eMesh: return "Mesh";
+			case EFileType::eImage: return "Image";
+			case EFileType::eEnvironmentMap: return "Environment Map";
+			case EFileType::eVideo: return "Video";
+			case EFileType::eOther: return "Other";
+		}
+		return "Wat is dis?";
+	}
 }

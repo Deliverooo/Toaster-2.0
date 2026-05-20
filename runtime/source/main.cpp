@@ -20,7 +20,6 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	parser.add_argument("--project", "-p").help("The path to the Toaster project file (.tproj)").
 			default_value("C:/dev/Toaster-2.0/examples/New_Project/New_Project.tproj");
 
-
 	parser.parse_args(__argc, __argv);
 
 	toaster::ApplicationSpecInfo app_create_info{};
@@ -29,7 +28,11 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	app_create_info.windowSpecInfo.title          = "Toaster Vπ - Runtime";
 	app_create_info.windowSpecInfo.iconPath       = binary_directory / "../resources/textures/OrboCloseup.png";
 	app_create_info.windowSpecInfo.startMaximized = true;
-	app_create_info.printGPUDebugInfo               = false;
+	#ifndef NDEBUG
+	app_create_info.printGPUDebugInfo = true;
+	#else
+	app_create_info.printGPUDebugInfo = false;
+	#endif
 
 	{
 		toaster::RuntimeApplication app{app_create_info, &parser};

@@ -26,9 +26,10 @@ namespace toaster::gpu
 		TST_GPU_OBJECT
 		TST_GPU_RESOURCE(Texture2D)
 	public:
-		VKTexture2D(VKLogicalDevice *p_dev, const TextureSpecInfo &p_spec_info);
-		VKTexture2D(VKLogicalDevice *p_dev, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
-		VKTexture2D(VKLogicalDevice *p_dev, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size);
+		VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info);
+		VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
+		VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, void *p_data, uint64 p_size);
+		VKTexture2D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, const Buffer &p_data);
 		virtual ~VKTexture2D() override;
 
 		auto resize(uint32 p_width, uint32 p_height) -> void;

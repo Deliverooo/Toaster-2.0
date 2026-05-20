@@ -8,23 +8,39 @@
 
 namespace toaster
 {
-	Project::Project(const io::filesystem::Path &p_path, const ProjectSpecInfo &p_spec_info) : m_path(p_path), m_specInfo(p_spec_info)
+	Project::Project()
 	{
+		m_assetManager = make_unique<asset::AssetManager>(this);
+	}
+
+	Project::Project(render::RenderContext *p_render_ctx)
+	{
+		m_assetManager = make_unique<asset::AssetManager>(this, p_render_ctx);
+	}
+
+	auto Project::getFullAssetRegistryPath() const -> io::filesystem::Path
+	{
+		return getRootDirectory() / m_specInfo.assetRegistryPath;
 	}
 
 	auto Project::getFullScriptDirectory() const -> io::filesystem::Path
 	{
-		return getRootPath() / m_specInfo.scriptDirectory;
+		return getRootDirectory() / m_specInfo.scriptDirectory;
 	}
 
 	auto Project::getFullSceneDirectory() const -> io::filesystem::Path
 	{
-		return getRootPath() / m_specInfo.sceneDirectory;
+		return getRootDirectory() / m_specInfo.sceneDirectory;
 	}
 
 	auto Project::getFullMeshDirectory() const -> io::filesystem::Path
 	{
-		return getRootPath() / m_specInfo.meshDirectory;
+		return getRootDirectory() / m_specInfo.meshDirectory;
+	}
+
+	auto Project::getFullTextureDirectory() const -> io::filesystem::Path
+	{
+		return getRootDirectory() / m_specInfo.textureDirectory;
 	}
 
 	auto Project::getPath() const -> const io::filesystem::Path &
@@ -32,7 +48,7 @@ namespace toaster
 		return m_path;
 	}
 
-	auto Project::getRootPath() const -> io::filesystem::Path
+	auto Project::getRootDirectory() const -> io::filesystem::Path
 	{
 		return m_path.parent_path();
 	}
@@ -40,6 +56,11 @@ namespace toaster
 	auto Project::getSpecInfo() const -> const ProjectSpecInfo &
 	{
 		return m_specInfo;
+	}
+
+	auto Project::getAssetManager() const -> asset::AssetManager &
+	{
+		return *m_assetManager;
 	}
 
 	auto Project::printInfo() const -> void
@@ -69,9 +90,11 @@ namespace toaster
 		out << YAML::Key << "Project" << YAML::BeginMap;
 
 		out << YAML::Key << "Name" << YAML::Value << project_spec_info.name;
+		out << YAML::Key << "AssetRegistryPath" << YAML::Value << project_spec_info.assetRegistryPath;
 		out << YAML::Key << "ScriptDirectory" << YAML::Value << project_spec_info.scriptDirectory;
 		out << YAML::Key << "SceneDirectory" << YAML::Value << project_spec_info.sceneDirectory;
 		out << YAML::Key << "MeshDirectory" << YAML::Value << project_spec_info.meshDirectory;
+		out << YAML::Key << "TextureDirectory" << YAML::Value << project_spec_info.textureDirectory;
 		out << YAML::Key << "StartupSceneName" << YAML::Value << project_spec_info.startupSceneName;
 
 		out << YAML::EndMap;
@@ -95,10 +118,12 @@ namespace toaster
 			return;
 		}
 
-		project_spec_info.name             = project_node["Name"].as<String>();
-		project_spec_info.scriptDirectory  = project_node["ScriptDirectory"].as<String>();
-		project_spec_info.sceneDirectory   = project_node["SceneDirectory"].as<String>();
-		project_spec_info.meshDirectory    = project_node["MeshDirectory"].as<String>();
-		project_spec_info.startupSceneName = project_node["StartupSceneName"].as<String>();
+		project_spec_info.name              = project_node["Name"].as<String>();
+		project_spec_info.assetRegistryPath = project_node["AssetRegistryPath"].as<String>();
+		project_spec_info.scriptDirectory   = project_node["ScriptDirectory"].as<String>();
+		project_spec_info.sceneDirectory    = project_node["SceneDirectory"].as<String>();
+		project_spec_info.meshDirectory     = project_node["MeshDirectory"].as<String>();
+		project_spec_info.meshDirectory     = project_node["TextureDirectory"].as<String>();
+		project_spec_info.startupSceneName  = project_node["StartupSceneName"].as<String>();
 	}
 }

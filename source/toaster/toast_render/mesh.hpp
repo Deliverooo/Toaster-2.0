@@ -101,6 +101,7 @@ namespace toaster::render
 	class TST_API MeshData
 	{
 	public:
+		MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path);
 		MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader);
 		MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const void *p_scene);
 

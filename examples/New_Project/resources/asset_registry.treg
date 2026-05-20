@@ -1,0 +1,13 @@
+AssetRegistry:
+  - AssetID: 8165216044832441163
+    AssetPath: resources\meshes\brick_wall_001_diffuse_4k.png
+    AssetType: Texture 2D
+  - AssetID: 13628114035760803365
+    AssetPath: resources\meshes\Normal_test.fbx
+    AssetType: Mesh
+  - AssetID: 11818061171360354127
+    AssetPath: resources\meshes\brick_wall_001_nor_gl_4k.png
+    AssetType: Texture 2D
+  - AssetID: 13524138977350680758
+    AssetPath: resources\meshes\brick_wall_001_nor_dx_4k.png
+    AssetType: Texture 2D

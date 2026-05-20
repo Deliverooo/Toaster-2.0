@@ -8,5 +8,6 @@ auto printAssertFailed(const char *file, const int line, const char *function, c
 
 auto printAssertFailedMsg(const char *file, const int line, const char *function, const char *expression, const char *message) -> void
 {
-	LOG_FATAL("Assertion failed in: [{} : {}] : {} -> expr: \"{}\"\n \t{}\n", file, line, function, expression, message);
+	LOG_FATAL("{}", message);
+	LOG_FATAL("Assertion failed in: [{} : {}] : {} -> expr: \"{}\"\n \t", file, line, function, expression);
 }

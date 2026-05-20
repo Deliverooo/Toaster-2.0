@@ -5,6 +5,7 @@
 #include <glm/gtx/quaternion.hpp>
 
 #include "scene_camera.hpp"
+#include "toast_asset/asset.hpp"
 
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_lib/uuid.hpp"
@@ -122,9 +123,11 @@ namespace toaster
 		auto reset() -> void
 		{
 			mesh.reset(nullptr);
+			meshAssetID = {};
 		}
 
 		render::MeshHandle mesh{nullptr};
+		asset::AssetID     meshAssetID{asset::c_invalidAssetID};
 	};
 
 	DEFINE_COMPONENT(SubmeshComponent)

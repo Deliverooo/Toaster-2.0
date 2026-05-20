@@ -172,6 +172,36 @@ namespace toaster::render
 		return env_map;
 	}
 
+	auto RenderContext::createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) const -> gpu::Texture3DHandle
+	{
+		auto env_tex{createGPU<gpu::VKTexture2D>(p_spec_info, p_data)};
+
+		constexpr uint32     skybox_resolution{2048};
+		gpu::TextureSpecInfo skybox_texture_map_spec_info{};
+		skybox_texture_map_spec_info.width  = skybox_resolution;
+		skybox_texture_map_spec_info.height = skybox_resolution;
+		skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+		RefPtr<gpu::VKTexture3D> env_map    = createGPU<gpu::VKTexture3D>(skybox_texture_map_spec_info);
+
+		auto equirectangular_to_cubemap_pipeline{createGPU<gpu::VKComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
+		auto equirectangular_to_cubemap_pass{createGPU<gpu::VKComputePass>(equirectangular_to_cubemap_pipeline)};
+		equirectangular_to_cubemap_pass->setInput("u_EquirectangularMap", env_tex);
+		equirectangular_to_cubemap_pass->setInput("o_Cubemap", env_map);
+		equirectangular_to_cubemap_pass->bake();
+
+		gpu::VKCommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
+		command_buffer.begin();
+
+		beginCompute(&command_buffer, 0, equirectangular_to_cubemap_pass);
+		dispatchCompute(&command_buffer, 0, equirectangular_to_cubemap_pass, nullptr, skybox_resolution / 32, skybox_resolution / 32, 6);
+
+		command_buffer.end();
+		command_buffer.submit();
+		command_buffer.waitForFence();
+
+		return env_map;
+	}
+
 	auto RenderContext::beginRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, uint32 p_frame_index,
 									   gpu::VKRenderPass *   p_render_pass) const -> void
 	{

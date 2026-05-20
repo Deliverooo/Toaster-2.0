@@ -18,6 +18,7 @@ namespace toaster
 		class Object;
 	}
 
+	class Project;
 	class Entity;
 	class SceneRenderer;
 	class ScriptableEntityCS; // Inside the scene.cpp file
@@ -65,7 +66,7 @@ namespace toaster
 		using AddComponentFn   = void(*)(Entity *);
 		using ResetComponentFn = void(*)(Entity *);
 
-		Scene(render::RenderContext *p_render_ctx, script::ScriptEngine *p_script_engine = nullptr, const String &p_name = "");
+		Scene(Project *p_project, render::RenderContext *p_render_ctx, script::ScriptEngine *p_script_engine = nullptr, const String &p_name = "");
 		~Scene();
 
 		auto onUpdate(float32 p_dt) -> void;
@@ -108,6 +109,7 @@ namespace toaster
 		template<typename Type>
 		TST_API auto onComponentAdded(Entity p_entity, Type &p_component) -> void;
 
+		NonOwningPtr<Project>               m_project{nullptr};
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
 		NonOwningPtr<script::ScriptEngine>  m_scriptEngine{nullptr};
 

@@ -200,15 +200,16 @@ void main()
     lo += calcPointLights(v_WorldPos);
 
     vec3 final_colour = lo;
-//
-//    vec3 kS = fresnelSchlick(params.nDotV);
-//    vec3 kD = 1.0 - kS;
-//    kD *= 1.0 - params.metalness;
-//    vec3 irradiance = texture(u_EnvironmentMap, params.normal).rgb;
-//    vec3 diffuse      = irradiance * params.albedo;
-//    vec3 ambient = (kD * diffuse);
-//
-//    final_colour += ambient;
+    //
+    //    vec3 kS = fresnelSchlick(params.nDotV);
+    //    vec3 kD = 1.0 - kS;
+    //    kD *= 1.0 - params.metalness;
+    //    vec3 irradiance = texture(u_EnvironmentMap, params.normal).rgb;
+    //    vec3 diffuse      = irradiance * params.albedo;
+    //    vec3 ambient = (kD * diffuse);
+    //
+    //    final_colour += ambient;
+
 
     o_Colour = vec4(final_colour, 1.0f);
 }

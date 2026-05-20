@@ -12,10 +12,6 @@ namespace toaster
 	{
 	}
 
-	UUID::UUID(uint64 p_uuid) : m_uuid(p_uuid)
-	{
-	}
-
 	UUID::operator uint64() const
 	{
 		return m_uuid;

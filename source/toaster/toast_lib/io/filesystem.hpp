@@ -22,6 +22,20 @@ namespace toaster::io::filesystem
 
 	auto readFileAndSkipBOM(const Path &p_path) -> String;
 	auto writeFile(const Path &p_path, const String &p_data) -> void;
+
+	// I will add more
+	enum class EFileType
+	{
+		eText,
+		eMesh,
+		eImage,
+		eEnvironmentMap,
+		eVideo,
+		eOther
+	};
+
+	auto getFileType(const Path &p_path) -> EFileType;
+	auto getFileTypeString(EFileType p_file_type) -> String;
 }
 
 #include<fmt/format.h>

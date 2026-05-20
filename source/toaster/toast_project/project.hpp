@@ -1,6 +1,7 @@
 #pragma once
 
 #include "toaster_macros.hpp"
+#include "toast_asset/asset_manager.hpp"
 
 #include "toast_lib/ptr.hpp"
 #include "toast_lib/string.hpp"
@@ -12,10 +13,13 @@ namespace toaster
 	{
 		String name{"New_Project"};
 
+		String assetRegistryPath{"resources/asset_registry.treg"};
+
 		// These are strings because they are only the names of the directories relative to the actual .tproj file
 		String scriptDirectory{"resources/scripts"};
 		String sceneDirectory{"resources/scenes"};
 		String meshDirectory{"resources/meshes"};
+		String textureDirectory{"resources/textures"};
 
 		String startupSceneName{"New_Scene"};
 	};
@@ -23,16 +27,20 @@ namespace toaster
 	class TST_API Project
 	{
 	public:
-		Project() = default;
-		Project(const io::filesystem::Path &p_path, const ProjectSpecInfo &p_spec_info);
+		Project();
+		Project(render::RenderContext *p_render_ctx);
 
+		auto getFullAssetRegistryPath() const -> io::filesystem::Path;
 		auto getFullScriptDirectory() const -> io::filesystem::Path;
 		auto getFullSceneDirectory() const -> io::filesystem::Path;
 		auto getFullMeshDirectory() const -> io::filesystem::Path;
+		auto getFullTextureDirectory() const -> io::filesystem::Path;
 
-		auto getPath() const -> const io::filesystem::Path &; // Returns the path to the .tproj file
-		auto getRootPath() const -> io::filesystem::Path;     // Returns the directory that the .tproj file is in
+		auto getPath() const -> const io::filesystem::Path &;  // Returns the path to the .tproj file
+		auto getRootDirectory() const -> io::filesystem::Path; // Returns the directory that the .tproj file is in
 		auto getSpecInfo() const -> const ProjectSpecInfo &;
+
+		auto getAssetManager() const -> asset::AssetManager &;
 
 		auto printInfo() const -> void;
 
@@ -41,6 +49,8 @@ namespace toaster
 		io::filesystem::Path m_path{};
 
 		ProjectSpecInfo m_specInfo{};
+
+		UniquePtr<asset::AssetManager> m_assetManager{nullptr};
 
 		friend class ProjectSerializer;
 	};

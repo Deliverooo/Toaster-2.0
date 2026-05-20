@@ -108,6 +108,7 @@ namespace toaster::render
 												   vk::Format p_format = vk::Format::eUndefined) const -> gpu::Texture2DHandle;
 
 		[[nodiscard]] auto createEnvironmentMap(const io::filesystem::Path &p_path) const -> gpu::Texture3DHandle;
+		[[nodiscard]] auto createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) const -> gpu::Texture3DHandle;
 
 		#pragma region render logic
 		auto beginRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, uint32 p_frame_index,

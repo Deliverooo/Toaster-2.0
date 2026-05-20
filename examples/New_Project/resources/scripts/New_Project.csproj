@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net48</TargetFramework>
+		<LangVersion>10.0</LangVersion>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+<ItemGroup>
+  <Reference Include="Toaster">
+    <HintPath>C:\dev\Toaster-2.0\bin/script/Debug/net48/Toaster.dll</HintPath>
+  </Reference>
+</ItemGroup>
+</Project>

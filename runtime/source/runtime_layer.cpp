@@ -4,6 +4,9 @@
 #include "toaster/toast_kernel/input.hpp"
 #include "toaster/toast_lib/io/file_stream.hpp"
 #include "toaster/toast_render/globals.hpp"
+#include "toast_asset/asset.hpp"
+#include "toast_asset/mesh_asset.hpp"
+#include "toast_asset/texture_asset.hpp"
 
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
@@ -42,10 +45,15 @@ namespace toaster
 		auto                 command_line_args{m_app->getCommandLineArgs()};
 		io::filesystem::Path binary_dir{os::getBinaryDirectory()};
 
-		m_project = make_unique<Project>();
+		m_project = make_unique<Project>(m_renderCtx);
 		ProjectSerializer project_serializer{m_project.get()};
 		project_serializer.deserialize(command_line_args->get("--project"));
 		m_project->printInfo();
+
+		auto &asset_manager{m_project->getAssetManager()};
+
+		asset_manager.deserializeFromFile(m_project->getFullAssetRegistryPath());
+		asset_manager.printAssetRegistry();
 
 		#pragma region script + scene setup
 		io::filesystem::Path script_asm_path{
@@ -61,7 +69,7 @@ namespace toaster
 		script_engine_spec_info.appAssemblyPath  = script_asm_path;
 		m_scriptEngine                           = make_unique<script::ScriptEngine>(script_engine_spec_info);
 
-		m_scene = make_reference<Scene>(m_renderCtx, m_scriptEngine.get(), m_project->getSpecInfo().startupSceneName);
+		m_scene = make_reference<Scene>(m_project.get(), m_renderCtx, m_scriptEngine.get(), m_project->getSpecInfo().startupSceneName);
 		m_inputCtx->registerScriptMethods(m_scriptEngine.get());
 
 		io::filesystem::Path scene_path{fmt::format("{0}/{1}.tscene", m_project->getFullSceneDirectory(), m_project->getSpecInfo().startupSceneName)};

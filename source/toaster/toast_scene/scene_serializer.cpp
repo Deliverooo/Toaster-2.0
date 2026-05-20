@@ -12,6 +12,7 @@
 
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
+#include "toast_project/project.hpp"
 #include "toast_render/globals.hpp"
 #include "toast_render/render_context.hpp"
 
@@ -266,12 +267,7 @@ namespace toaster
 
 			p_out << YAML::Key << "MeshComponent";
 			p_out << YAML::BeginMap;
-
-			auto mesh_path{mc.mesh->getFilepath()};
-			if (exists(mesh_path))
-				p_out << YAML::Key << "MeshPath" << YAML::Value << relative(mesh_path, m_binaryDir).string();
-			else
-				p_out << YAML::Key << "MeshPath" << YAML::Value << "Null";
+			p_out << YAML::Key << "MeshAssetID" << YAML::Value << mc.meshAssetID;
 			p_out << YAML::EndMap;
 		}
 
@@ -353,7 +349,7 @@ namespace toaster
 			{
 				auto &tc       = out_entity.getComponent<TransformComponent>();
 				tc.translation = transform_comp["Translation"].as<glm::vec3>();
-				tc.orientation    = transform_comp["Rotation"].as<glm::quat>();
+				tc.orientation = transform_comp["Rotation"].as<glm::quat>();
 				tc.scale       = transform_comp["Scale"].as<glm::vec3>();
 			}
 
@@ -380,16 +376,11 @@ namespace toaster
 			if (mesh_comp)
 			{
 				auto &mc{out_entity.addComponent<MeshComponent>()};
-				auto  mesh_path{m_binaryDir / io::filesystem::Path{mesh_comp["MeshPath"].as<String>()}};
 
-				if (exists(mesh_path))
-				{
-					mc.mesh = make_reference<render::MeshData>(p_scene->m_renderCtx, mesh_path, p_scene->m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"));
-				}
-				else
-				{
-					LOG_ERROR("Mesh path does not exist: {}", mesh_path.string());
-				}
+				asset::AssetID mesh_asset_id{mesh_comp["MeshAssetID"].as<uint64>()};
+
+				TST_PERMA_ASSERT(p_scene->m_project->getAssetManager().isAssetIDValid(mesh_asset_id));
+				mc.meshAssetID = mesh_asset_id;
 			}
 
 			auto camera_comp = entity["CameraComponent"];
