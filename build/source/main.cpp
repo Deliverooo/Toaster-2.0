@@ -248,9 +248,6 @@ auto updateAssetRegistry(const io::filesystem::Path &p_tproj_path) -> int32
 auto buildAssets(const argparse::ArgumentParser &p_build_assets_command) -> int32
 {
 	LOG_INFO("Attempting to build assets");
-
-	const auto working_directory{std::filesystem::current_path()};
-
 	io::filesystem::Path tproj_file_path{getTProjPath()};
 	if (!std::filesystem::exists(tproj_file_path))
 	{
@@ -264,90 +261,59 @@ auto buildAssets(const argparse::ArgumentParser &p_build_assets_command) -> int3
 	auto &asset_manager{project.getAssetManager()};
 
 	asset_manager.deserializeFromFile(project.getFullAssetRegistryPath());
-	std::unordered_set<io::filesystem::Path> asset_paths_set;
+
+	// Remove any assets whose path don't exist if flag is specified
+	if (p_build_assets_command.get<bool>("--removeInvalid"))
+		asset_manager.removeInvalidAssets();
+
+	// We don't want to add assets that are already in the registry, so skip them.
 	for (const auto &dir_it: std::filesystem::recursive_directory_iterator{project.getRootDirectory()})
 	{
 		if (dir_it.is_regular_file())
 		{
-			io::filesystem::EFileType file_type{io::filesystem::getFileType(dir_it.path())};
-			if (file_type == io::filesystem::EFileType::eImage || file_type == io::filesystem::EFileType::eMesh || file_type ==
-				io::filesystem::EFileType::eEnvironmentMap)
-			{
-				asset_paths_set.insert(std::filesystem::relative(dir_it.path(), project.getRootDirectory()));
-			}
-		}
-	}
-	asset_manager.printAssetRegistry();
-
-	std::unordered_map<io::filesystem::Path, asset::AssetID> path_asset_id_map;
-
-	asset_manager.removeAssetIf([&asset_paths_set](const auto &pair)-> bool
-	{
-		return !asset_paths_set.contains(pair.second.path);
-	});
-
-	for (auto &[id, metadata]: asset_manager.getAssetMetadataRegistry())
-	{
-		path_asset_id_map[metadata.path] = id;
-		// Asset path is invalid, so remove
-		if (!asset_paths_set.contains(metadata.path))
-			asset_manager.removeAsset(id);
-	}
-
-	for (const auto &[path, id]: path_asset_id_map)
-		LOG_WARN("Path id: {}", path);
-
-	for (const auto &dir_it: std::filesystem::recursive_directory_iterator{project.getRootDirectory()})
-	{
-		if (dir_it.is_regular_file())
-		{
-			if (!path_asset_id_map.contains(dir_it.path()))
+			// The asset registry stores paths relative to the root directory of the project
+			io::filesystem::Path registry_asset_path{std::filesystem::relative(dir_it.path(), project.getRootDirectory())};
+			if (asset_manager.hasAnyAssetsWithPath(registry_asset_path))
 				continue;
 
-			io::filesystem::EFileType file_type{io::filesystem::getFileType(dir_it.path())};
-			switch (file_type)
+			switch (io::filesystem::getFileType(dir_it.path()))
 			{
-				case io::filesystem::EFileType::eText: { break; }
-				case io::filesystem::EFileType::eMesh:
-				{
-					io::filesystem::Path mesh_path{dir_it.path()};
-					mesh_path = std::filesystem::relative(mesh_path, project.getRootDirectory());
-					asset::AssetMetadata metadata{mesh_path, asset::EAssetType::eMesh};
-					asset_manager.addAssetMetadata({}, metadata);
-					LOG_INFO("Found mesh asset file: {}", metadata.path);
-					break;
-				}
 				case io::filesystem::EFileType::eImage:
 				{
-					io::filesystem::Path texture_path{dir_it.path()};
-					texture_path = std::filesystem::relative(texture_path, project.getRootDirectory());
-					asset::AssetMetadata metadata{texture_path, asset::EAssetType::eTexture2D};
+					asset::AssetMetadata metadata{registry_asset_path, asset::EAssetType::eTexture2D};
 					asset_manager.addAssetMetadata({}, metadata);
 					LOG_INFO("Found image asset file: {}", metadata.path);
 					break;
 				}
 				case io::filesystem::EFileType::eEnvironmentMap:
 				{
-					io::filesystem::Path environment_path{dir_it.path()};
-					environment_path = std::filesystem::relative(environment_path, project.getRootDirectory());
-					asset::AssetMetadata metadata{environment_path, asset::EAssetType::eTexture3D};
+					asset::AssetMetadata metadata{registry_asset_path, asset::EAssetType::eTexture3D};
 					asset_manager.addAssetMetadata({}, metadata);
 					LOG_INFO("Found environment map asset file: {}", metadata.path);
 					break;
 				}
-				case io::filesystem::EFileType::eVideo: { break; }
-				case io::filesystem::EFileType::eOther: { break; }
+				case io::filesystem::EFileType::eMesh:
+				{
+					asset::AssetMetadata metadata{registry_asset_path, asset::EAssetType::eMesh};
+					asset_manager.addAssetMetadata({}, metadata);
+					LOG_INFO("Found mesh asset file: {}", metadata.path);
+					break;
+				}
+				default: break;
 			}
 		}
 	}
+
+	// Serialize the new registry to the original path
 	asset_manager.serializeToFile(project.getFullAssetRegistryPath());
 
+	// This is the new asset registry
 	asset_manager.printAssetRegistry();
 
 	return 0;
 }
 
-auto build(const argparse::ArgumentParser &p_build_command) -> int32
+auto buildAssemblies(const argparse::ArgumentParser &p_build_command) -> int32
 {
 	LOG_INFO("Attempting to build project");
 
@@ -395,9 +361,10 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 	argparse::ArgumentParser build_assets_command{"buildAssets"};
 	build_assets_command.add_description("build the meta asset files for a project");
+	build_assets_command.add_argument("--removeInvalid").default_value(false).implicit_value(true).help("Remove any assets whose path don't exist if flag is specified");
 	parser.add_subparser(build_assets_command);
 
-	argparse::ArgumentParser build_command{"build"};
+	argparse::ArgumentParser build_command{"buildAssemblies"};
 	build_command.add_description("build the C# assemblies aswell as the assets for a project");
 	parser.add_subparser(build_command);
 
@@ -424,8 +391,8 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	if (parser.is_subcommand_used("buildAssets"))
 		return buildAssets(build_assets_command);
 
-	if (parser.is_subcommand_used("build"))
-		return build(build_command);
+	if (parser.is_subcommand_used("buildAssemblies"))
+		return buildAssemblies(build_command);
 
 	if (parser.is_subcommand_used("update"))
 	{

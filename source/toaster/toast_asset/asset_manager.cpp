@@ -34,6 +34,7 @@ namespace toaster::asset
 		const auto &metadata{m_assetMetadataRegistry.at(p_asset_id)};
 		AssetHandle asset_handle{s_assetImporters.at(metadata.type)(this, metadata)};
 		m_loadedAssets[p_asset_id] = asset_handle;
+		m_pathAssetIDMap[metadata.path].emplace(asset_handle);
 		if (!asset_handle)
 			return nullptr;
 
@@ -70,6 +71,11 @@ namespace toaster::asset
 		m_assetMetadataRegistry[p_asset_id] = p_metadata;
 	}
 
+	auto AssetManager::getPathAssetIDRegistry() const -> const std::unordered_map<io::filesystem::Path, std::unordered_set<AssetID> > &
+	{
+		return m_pathAssetIDMap;
+	}
+
 	auto AssetManager::getAssetMetadataRegistry() const -> const std::unordered_map<AssetID, AssetMetadata> &
 	{
 		return m_assetMetadataRegistry;
@@ -87,6 +93,35 @@ namespace toaster::asset
 
 		if (isAssetLoaded(p_asset_id))
 			m_loadedAssets.erase(p_asset_id);
+	}
+
+	auto AssetManager::removeInvalidAssets() -> void
+	{
+		std::unordered_set<AssetID> removed_ids;
+		std::erase_if(m_assetMetadataRegistry, [&removed_ids](const auto &pair) -> bool
+		{
+			if (!std::filesystem::exists(pair.second.path))
+			{
+				removed_ids.insert(pair.first);
+				return true;
+			}
+			return false;
+		});
+
+		std::erase_if(m_loadedAssets, [&removed_ids](const auto &pair) -> bool
+		{
+			return removed_ids.contains(pair.first);
+		});
+	}
+
+	auto AssetManager::hasAnyAssetsWithPath(const io::filesystem::Path &p_path) const -> bool
+	{
+		for (const auto &[path, type]: m_assetMetadataRegistry | std::views::values)
+		{
+			if (path == p_path)
+				return true;
+		}
+		return false;
 	}
 
 	auto AssetManager::serializeToFile(const io::filesystem::Path &p_path) const -> void
@@ -133,12 +168,12 @@ namespace toaster::asset
 
 	auto AssetManager::printAssetRegistry() const -> void
 	{
+		LOG_INFO("Asset Registry -> [");
 		for (const auto &[id, metadata]: m_assetMetadataRegistry)
 		{
-			LOG_INFO("AssetID: {}", (uint64)id);
-			LOG_INFO("\tAssetPath: {}", metadata.path);
-			LOG_INFO("\tAssetType: {}", assetTypeToString(metadata.type));
+			LOG_TRACE("ID: {} | Path: {} | Type: {}", (uint64)id, metadata.path, assetTypeToString(metadata.type));
 		}
+		LOG_INFO("]");
 	}
 
 	auto AssetManager::importTexture2DAsset(const AssetManager *p_asm, const AssetMetadata &p_metadata) -> AssetHandle

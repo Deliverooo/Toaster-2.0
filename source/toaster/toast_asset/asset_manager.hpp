@@ -42,8 +42,14 @@ namespace toaster::asset
 		auto getAssetMetadata(AssetID p_asset_id) const -> const AssetMetadata &;
 		auto addAssetMetadata(AssetID p_asset_id, const AssetMetadata &p_metadata) -> void;
 
+		auto getPathAssetIDRegistry() const -> const std::unordered_map<io::filesystem::Path, std::unordered_set<AssetID> > &;
 		auto getAssetMetadataRegistry() const -> const std::unordered_map<AssetID, AssetMetadata> &;
 		auto removeAsset(AssetID p_asset_id) -> void;
+
+		// Removes assets whose paths don't exist
+		auto removeInvalidAssets() -> void;
+
+		auto hasAnyAssetsWithPath(const io::filesystem::Path &p_path) const -> bool;
 
 		auto serializeToFile(const io::filesystem::Path &p_path) const -> void;
 		auto deserializeFromFile(const io::filesystem::Path &p_path) -> void;
@@ -56,6 +62,9 @@ namespace toaster::asset
 
 		std::unordered_map<AssetID, AssetMetadata> m_assetMetadataRegistry;
 		std::unordered_map<AssetID, AssetHandle>   m_loadedAssets; // The assets that have been loaded from a file into the application
+
+		// Maps a path to a list of assets that use it
+		std::unordered_map<io::filesystem::Path, std::unordered_set<AssetID> > m_pathAssetIDMap;
 
 		static auto importTexture2DAsset(const AssetManager *p_asm, const AssetMetadata &p_metadata) -> AssetHandle;
 		static auto importTexture3DAsset(const AssetManager *p_asm, const AssetMetadata &p_metadata) -> AssetHandle;
