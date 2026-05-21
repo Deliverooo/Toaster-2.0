@@ -23,8 +23,6 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 	message(FATAL_ERROR "In-source builds are not allowed. Please create a separate build directory.")
 endif ()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/platform")
-
 # Project definition
 project(Toaster)
 
@@ -46,20 +44,13 @@ find_package(Vulkan REQUIRED COMPONENTS glslangValidator shaderc_combined SPIRV-
 if (NOT ${Vulkan_FOUND} OR NOT ${Vulkan_glslangValidator_FOUND} OR NOT ${Vulkan_shaderc_combined_FOUND} OR NOT ${Vulkan_SPIRV-Tools_FOUND})
 	message(FATAL_ERROR "Vulkan enabled as a graphics backend, but cannot be found or cannot find required components!")
 	message(FATAL_ERROR "Try (re)installing the Vulkan SDK and checking that the shader components are selected")
-
 else ()
 	message(NOTICE "Found Vulkan :)")
 endif ()
 
-
-# C/C++ flags
-set(PLATFORM_CFLAGS)
-
 # these are added to later on.
 set(C_WARNINGS)
 set(CXX_WARNINGS)
-
-set(PLATFORM_LINKLIBS "")
 
 if (CMAKE_C_COMPILER_ID STREQUAL "MSVC")
 	# Most MSVC warnings are C & C++.
@@ -106,8 +97,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Do not enable compiler specific language extensions.
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_C_FLAGS "${C_WARNINGS} ${CMAKE_C_FLAGS} ${PLATFORM_CFLAGS}")
-set(CMAKE_CXX_FLAGS "${CXX_WARNINGS} ${CMAKE_CXX_FLAGS} ${PLATFORM_CFLAGS}")
+set(CMAKE_C_FLAGS "${C_WARNINGS} ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CXX_WARNINGS} ${CMAKE_CXX_FLAGS}")
 
 add_subdirectory(extern)
 

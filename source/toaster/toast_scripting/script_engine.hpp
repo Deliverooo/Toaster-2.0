@@ -6,10 +6,6 @@
 
 #include <mono/jit/jit.h>
 
-#include <coreclr_delegates.h>
-#include <hostfxr.h>
-#include <nethost.h>
-
 #include "toast_lib/ptr.hpp"
 
 namespace toaster::script
