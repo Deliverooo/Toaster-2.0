@@ -133,6 +133,9 @@ namespace toaster
 
 		SceneLightEnvironment m_lightEnvironment;
 
+		// The asset the represents the .hdr / environment map file for the scene renderer to use
+		asset::AssetID m_sceneEnvironment{asset::c_invalidAssetID};
+
 		friend class ScriptableEntityCS;
 		friend class Entity;
 		friend class SceneSerializer;

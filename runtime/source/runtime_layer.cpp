@@ -54,7 +54,6 @@ namespace toaster
 		asset_manager.deserializeFromFile(m_project->getFullAssetRegistryPath());
 		asset_manager.printAssetRegistry();
 
-		#pragma region script + scene setup
 		io::filesystem::Path script_asm_path{
 			fmt::format("{0}/bin/{1}/net48/{2}.dll", m_project->getFullScriptDirectory(), script::c_scriptConfigProfile, m_project->getSpecInfo().name)
 		};
@@ -71,11 +70,10 @@ namespace toaster
 		m_scene = make_reference<Scene>(m_project.get(), m_renderCtx, m_scriptEngine.get(), m_project->getSpecInfo().startupSceneName);
 		m_inputCtx->registerScriptMethods(m_scriptEngine.get());
 
-		io::filesystem::Path scene_path{fmt::format("{0}/{1}.tscene", m_project->getFullSceneDirectory(), m_project->getSpecInfo().startupSceneName)};
+		auto scene_path{m_project->getFullStartupScenePath()};
 		DEBUG_LOG_INFO("Attempting to load scene: {}", scene_path);
-		SceneSerializer scene_serializer{m_scene, binary_dir};
+		SceneSerializer scene_serializer{m_scene};
 		scene_serializer.deserialize(scene_path);
-		#pragma endregion
 
 		#pragma region render stuff setup
 		auto                  fullscreen_shader{m_globals->shaderLibrary().get("Composite")};
@@ -95,7 +93,7 @@ namespace toaster
 		scene_renderer_spec_info.viewportWidth     = m_viewportWidth;
 		scene_renderer_spec_info.viewportHeight    = m_viewportHeight;
 		scene_renderer_spec_info.scene             = m_scene;
-		scene_renderer_spec_info.resourceDirectory = binary_dir / "../resources";
+		scene_renderer_spec_info.resourceDirectory = m_project->getFullResourcesDirectory();
 		m_sceneRenderer                            = make_reference<SceneRenderer>(m_renderCtx, scene_renderer_spec_info);
 		#pragma endregion
 	}

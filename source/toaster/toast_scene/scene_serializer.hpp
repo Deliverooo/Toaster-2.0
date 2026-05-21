@@ -13,7 +13,7 @@ namespace toaster
 	class TST_API SceneSerializer
 	{
 	public:
-		SceneSerializer(const RefPtr<Scene> &p_scene, const io::filesystem::Path &p_binary_dir);
+		SceneSerializer(const RefPtr<Scene> &p_scene);
 
 		auto serialize(const io::filesystem::Path &p_filepath) -> void;
 		auto serializeToYAML(YAML::Emitter &p_out) -> void;
@@ -26,6 +26,5 @@ namespace toaster
 		auto _deserializeEntities(YAML::Node &p_entities, const RefPtr<Scene> &p_scene) -> void;
 
 		RefPtr<Scene>        m_scene;
-		io::filesystem::Path m_binaryDir;
 	};
 }

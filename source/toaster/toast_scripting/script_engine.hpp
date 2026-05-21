@@ -68,42 +68,4 @@ namespace toaster::script
 		MonoImage *m_coreImage{nullptr};
 		MonoImage *m_appImage{nullptr};
 	};
-
-	namespace clr
-	{
-		struct TST_API CLRScriptEngineSpecInfo
-		{
-			io::filesystem::Path coreAssemblyPath{};
-			io::filesystem::Path appAssemblyPath{};
-		};
-
-		class TST_API CLRScriptEngine
-		{
-		public:
-			CLRScriptEngine(const CLRScriptEngineSpecInfo &p_spec_info);
-			~CLRScriptEngine();
-
-			template<typename TFunc>
-			auto getFunctionPointer(const toaster::String &p_type_name, const toaster::String &p_method_name) -> TFunc
-			{
-				TFunc func{nullptr};
-				m_getFunctionPointerFn(convertUtf8ToWide(p_type_name).c_str(), convertUtf8ToWide(p_method_name).c_str(), UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr,
-									   (void **) &func);
-
-				return func;
-			}
-
-		private:
-			CLRScriptEngineSpecInfo m_specInfo{};
-
-			hostfxr_handle m_hostFxrContext{nullptr};
-
-			hostfxr_initialize_for_runtime_config_fn m_initFn{nullptr};
-			hostfxr_get_runtime_delegate_fn          m_getRuntimeDelegateFn{nullptr};
-			hostfxr_close_fn                         m_closeFn{nullptr};
-
-			load_assembly_fn        m_loadAssemblyFn{nullptr};
-			get_function_pointer_fn m_getFunctionPointerFn{nullptr};
-		};
-	}
 }

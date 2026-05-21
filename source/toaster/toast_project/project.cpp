@@ -18,6 +18,11 @@ namespace toaster
 		m_assetManager = make_unique<asset::AssetManager>(this, p_render_ctx);
 	}
 
+	auto Project::getFullResourcesDirectory() const -> io::filesystem::Path
+	{
+		return getRootDirectory() / "resources";
+	}
+
 	auto Project::getFullAssetRegistryPath() const -> io::filesystem::Path
 	{
 		return getRootDirectory() / m_specInfo.assetRegistryPath;
@@ -41,6 +46,16 @@ namespace toaster
 	auto Project::getFullTextureDirectory() const -> io::filesystem::Path
 	{
 		return getRootDirectory() / m_specInfo.textureDirectory;
+	}
+
+	auto Project::getStartupScenePath() const -> io::filesystem::Path
+	{
+		return fmt::format("{0}/{1}.tscene", m_specInfo.sceneDirectory, m_specInfo.startupSceneName);
+	}
+
+	auto Project::getFullStartupScenePath() const -> io::filesystem::Path
+	{
+		return fmt::format("{0}/{1}.tscene", getFullSceneDirectory(), m_specInfo.startupSceneName);
 	}
 
 	auto Project::getPath() const -> const io::filesystem::Path &

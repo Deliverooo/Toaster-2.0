@@ -30,11 +30,15 @@ namespace toaster
 		Project();
 		Project(render::RenderContext *p_render_ctx);
 
+		auto getFullResourcesDirectory() const -> io::filesystem::Path;
 		auto getFullAssetRegistryPath() const -> io::filesystem::Path;
 		auto getFullScriptDirectory() const -> io::filesystem::Path;
 		auto getFullSceneDirectory() const -> io::filesystem::Path;
 		auto getFullMeshDirectory() const -> io::filesystem::Path;
 		auto getFullTextureDirectory() const -> io::filesystem::Path;
+
+		auto getStartupScenePath() const -> io::filesystem::Path;
+		auto getFullStartupScenePath() const -> io::filesystem::Path;
 
 		auto getPath() const -> const io::filesystem::Path &;  // Returns the path to the .tproj file
 		auto getRootDirectory() const -> io::filesystem::Path; // Returns the directory that the .tproj file is in

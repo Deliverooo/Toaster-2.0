@@ -155,7 +155,7 @@ namespace YAML
 
 namespace toaster
 {
-	SceneSerializer::SceneSerializer(const RefPtr<Scene> &p_scene, const io::filesystem::Path &p_binary_dir) : m_scene(p_scene), m_binaryDir(p_binary_dir)
+	SceneSerializer::SceneSerializer(const RefPtr<Scene> &p_scene) : m_scene(p_scene)
 	{
 		TST_PERMA_ASSERT_MSG(p_scene, "Scene is null");
 	}
@@ -171,7 +171,12 @@ namespace toaster
 	auto SceneSerializer::serializeToYAML(YAML::Emitter &p_out) -> void
 	{
 		p_out << YAML::BeginMap;
-		p_out << YAML::Key << "Scene" << YAML::Value << m_scene->getName();
+
+		p_out << YAML::Key << "Scene" << YAML::BeginMap;
+		p_out << YAML::Key << "Name" << YAML::Value << m_scene->getName();
+
+		p_out << YAML::Key << "SceneEnvironmentAssetID" << YAML::Value << m_scene->m_sceneEnvironment;
+
 		p_out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 
 		for (auto entity: m_scene->getRegistry().view<entt::entity>())
@@ -184,6 +189,7 @@ namespace toaster
 		}
 
 		p_out << YAML::EndSeq;
+		p_out << YAML::EndMap;
 		p_out << YAML::EndMap;
 	}
 
@@ -209,13 +215,16 @@ namespace toaster
 	{
 		YAML::Node data = YAML::Load(p_yaml_string);
 
-		const auto scene_name = data["Scene"];
-		if (!scene_name)
+		const auto scene_node = data["Scene"];
+		if (!scene_node)
 			return false;
 
-		m_scene->setName(scene_name.as<String>());
+		m_scene->setName(scene_node["Name"].as<String>());
 
-		auto entities = data["Entities"];
+		// Load the scene environment asset id
+		m_scene->m_sceneEnvironment = scene_node["SceneEnvironmentAssetID"].as<uint64>();
+
+		auto entities = scene_node["Entities"];
 		if (entities)
 			_deserializeEntities(entities, m_scene);
 

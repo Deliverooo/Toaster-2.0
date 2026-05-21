@@ -2,11 +2,14 @@
 #include "scene_renderer.hpp"
 #include "scene_renderer.hpp"
 #include "scene_renderer.hpp"
+
+#include "toast_asset/texture_asset.hpp"
 #include "toast_render/render_context.hpp"
 
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_gpu/vk/vk_command_buffer.hpp"
+#include "toast_project/project.hpp"
 #include "toast_render/globals.hpp"
 
 namespace toaster
@@ -27,7 +30,11 @@ namespace toaster
 		m_sceneDataUBOs       = m_renderCtx->createUniformBuffers<SceneDataUB>(render::RenderContext::maxFramesInFlight);
 		m_mappedSceneDataUBOs = m_sceneDataUBOs->mapAllMemory(sizeof(SceneDataUB));
 
-		m_skyboxMap = m_renderCtx->createEnvironmentMap(m_specInfo.resourceDirectory / "environments/overcast_soil_puresky_2k.hdr");
+		auto env_asset{m_specInfo.scene->m_project->getAssetManager().getAsset<asset::Texture3DAsset>(m_specInfo.scene->m_sceneEnvironment)};
+		if (env_asset)
+			m_skyboxMap = env_asset->getTexture();
+		else
+			m_skyboxMap = m_renderCtx->getGlobals()->whiteTexture3D();
 
 		#pragma region depth-pre
 		{

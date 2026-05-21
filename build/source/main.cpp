@@ -28,17 +28,19 @@ constexpr auto c_csprojTemplate{
 };
 
 constexpr auto c_tsceneTemplate{
-	R"(Scene: {0}
-Entities:
-  - Entity: 67
-    TagComponent:
-      Tag: Camera Controller
-    TransformComponent:
-      Translation: [0, 0, 0]
-      Rotation: [1, 0, 0, 0]
-      Scale: [1, 1, 1]
-    ScriptComponent:
-      ClassName: Toaster.CameraController)"
+	R"(Scene:
+  Name: {0}
+  SceneEnvironmentAssetID: 5772156649
+  Entities:
+    - Entity: 2718281828459
+      TagComponent:
+        Tag: Camera Controller
+      TransformComponent:
+        Translation: [0, 0, 0]
+        Rotation: [1, 0, 0, 0]
+        Scale: [1, 1, 1]
+      ScriptComponent:
+        ClassName: Toaster.CameraController)"
 };
 
 constexpr auto c_tprojTemplate{
@@ -52,7 +54,10 @@ constexpr auto c_tprojTemplate{
   StartupSceneName: {1})"
 };
 
-constexpr auto c_assetRegistryTemplate{R"(AssetRegistry:)"};
+constexpr auto c_assetRegistryTemplate{
+	R"(AssetRegistry:
+  [])"
+};
 
 constexpr auto c_gitignoreData{
 	R"(.vs/
@@ -75,50 +80,26 @@ auto newProject(const argparse::ArgumentParser &p_new_command) -> int32
 	auto project_name{p_new_command.get<String>("--name")};
 	auto scene_name{p_new_command.get<String>("--sceneName")};
 
-	#pragma region create directories
 	LOG_INFO("Creating new project: '{}'", project_name);
-	io::filesystem::Path project_root{project_name};
-	if (!std::filesystem::create_directory(project_root))
-	{
-		LOG_ERROR("Directory already exists or creation failed");
-		return -1;
-	}
-	io::filesystem::Path resource_directory{project_root / "resources"};
 
-	LOG_INFO("Creating resources directory");
-	if (!std::filesystem::create_directory(resource_directory))
-	{
-		LOG_ERROR("Directory already exists or creation failed");
-		return -1;
-	}
+	#pragma region create directories
 
-	LOG_INFO("Creating scripts directory");
-	if (!std::filesystem::create_directory(resource_directory / "scripts"))
-	{
-		LOG_ERROR("Directory already exists or creation failed");
-		return -1;
-	}
+	#define CREATE_DIRECTORY(__path, __info)\
+			LOG_INFO("Creating {} directory", #__info); do { if (!std::filesystem::create_directory(__path)) {\
+			LOG_ERROR("Directory already exists or creation failed"); return -1; } } while(false)
 
-	LOG_INFO("Creating scenes directory");
-	if (!std::filesystem::create_directory(resource_directory / "scenes"))
-	{
-		LOG_ERROR("Directory already exists or creation failed");
-		return -1;
-	}
+	const io::filesystem::Path project_root{project_name};
+	CREATE_DIRECTORY(project_root, project root);
+	const io::filesystem::Path resource_directory{project_root / "resources"};
 
-	LOG_INFO("Creating meshes directory");
-	if (!std::filesystem::create_directory(resource_directory / "meshes"))
-	{
-		LOG_ERROR("Directory already exists or creation failed");
-		return -1;
-	}
+	CREATE_DIRECTORY(resource_directory, resources);
+	CREATE_DIRECTORY(resource_directory / "scripts", scripts);
+	CREATE_DIRECTORY(resource_directory / "scenes", scenes);
+	CREATE_DIRECTORY(resource_directory / "meshes", meshes);
+	CREATE_DIRECTORY(resource_directory / "textures", textures);
+	CREATE_DIRECTORY(resource_directory / "environments", environments);
 
-	LOG_INFO("Creating textures directory");
-	if (!std::filesystem::create_directory(resource_directory / "textures"))
-	{
-		LOG_ERROR("Directory already exists or creation failed");
-		return -1;
-	}
+	#undef CREATE_DIRECTORY
 	#pragma endregion
 
 	// Serializing the project with the project serializer class would require a valid project, which would require a valid render::RenderContext.
@@ -145,6 +126,9 @@ auto newProject(const argparse::ArgumentParser &p_new_command) -> int32
 
 	LOG_INFO("Creating default scene");
 	io::filesystem::writeFile(resource_directory / "scenes" / fmt::format("{}.tscene", scene_name), fmt::format(c_tsceneTemplate, scene_name));
+
+	LOG_INFO("Creating utility build scripts");
+	io::filesystem::writeFile(project_root / "build_assets.bat", "tstb buildAssets");
 
 	LOG_INFO("Creating .gitignore");
 	io::filesystem::writeFile(project_root / ".gitignore", c_gitignoreData);
