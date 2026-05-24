@@ -30,21 +30,21 @@ namespace toaster
 		Project();
 		Project(render::RenderContext *p_render_ctx);
 
-		auto getFullResourcesDirectory() const -> io::filesystem::Path;
-		auto getFullAssetRegistryPath() const -> io::filesystem::Path;
-		auto getFullScriptDirectory() const -> io::filesystem::Path;
-		auto getFullSceneDirectory() const -> io::filesystem::Path;
-		auto getFullMeshDirectory() const -> io::filesystem::Path;
-		auto getFullTextureDirectory() const -> io::filesystem::Path;
+		[[nodiscard]] auto getFullResourcesDirectory() const -> io::filesystem::Path;
+		[[nodiscard]] auto getFullAssetRegistryPath() const -> io::filesystem::Path;
+		[[nodiscard]] auto getFullScriptDirectory() const -> io::filesystem::Path;
+		[[nodiscard]] auto getFullSceneDirectory() const -> io::filesystem::Path;
+		[[nodiscard]] auto getFullMeshDirectory() const -> io::filesystem::Path;
+		[[nodiscard]] auto getFullTextureDirectory() const -> io::filesystem::Path;
 
-		auto getStartupScenePath() const -> io::filesystem::Path;
-		auto getFullStartupScenePath() const -> io::filesystem::Path;
+		[[nodiscard]] auto getStartupScenePath() const -> io::filesystem::Path;
+		[[nodiscard]] auto getFullStartupScenePath() const -> io::filesystem::Path;
 
-		auto getPath() const -> const io::filesystem::Path &;  // Returns the path to the .tproj file
-		auto getRootDirectory() const -> io::filesystem::Path; // Returns the directory that the .tproj file is in
-		auto getSpecInfo() const -> const ProjectSpecInfo &;
+		[[nodiscard]] auto getPath() const -> const io::filesystem::Path &;  // Returns the path to the .tproj file
+		[[nodiscard]] auto getRootDirectory() const -> io::filesystem::Path; // Returns the directory that the .tproj file is in
+		[[nodiscard]] auto getSpecInfo() const -> const ProjectSpecInfo &;
 
-		auto getAssetManager() const -> asset::AssetManager &;
+		[[nodiscard]] auto getAssetManager() const -> asset::AssetManager &;
 
 		auto printInfo() const -> void;
 

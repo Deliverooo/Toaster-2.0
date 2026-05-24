@@ -1,7 +1,12 @@
-1. Take a look at the transform components and try to make their rotations' be quaternion so I can better transform stuff.
-2. Resolve the coordinate system to be idealy the same as OpenGL's, so that I can use my OpenGL stuff with Toaster.
-3. With the coordinates being correct, I can now write a basic Blinn Phong shader to test the directional lights with the renderer.
-4. After the directional lights have been tested and work, I will introduce the point lights to work with the Blinn Phong shader.
-5. Integrate ImGuizmo back into the editor so that I can more easily transform stuff.
+1. Possibly material serialization + material assets so you can edit the materials and their properties from a yaml file.
+The material assets will have asset handle references to the albedo, normal and other maps. Maybe you should be able to use tstb to 'compile' a mesh into a .tmesh
+file and multiple material files. These material files will obviously be per mesh and not per scene/project, because that is how it also works in blender. The mesh files
+will be referenced inside the asset registry instead of the direct filepath to the mesh source. Maybe the textures loaded with the mesh will also be serialized at build-time
+to a custom .ttexture file.
 
-6. Weird ahh validation error to do with the image layout causing artifacts when resizing... :(((
+2. Eventually I would probably like to somehow bake the meshes into maybe another format (.tmesh.bin) at build-time by using binary serialization. I have no idea how
+to do this, but maybe in the future I will.
+
+3. Physics using Jolt.
+
+4. Animation. I have no idea how to do this either.

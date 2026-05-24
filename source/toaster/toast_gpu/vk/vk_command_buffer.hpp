@@ -29,6 +29,8 @@ namespace toaster::gpu
 
 		auto resetCommandBuffer() -> void;
 
+		operator vk::CommandBuffer() const { return *m_commandBuffer; }
+
 	private:
 		vk::raii::CommandBuffer m_commandBuffer{nullptr};
 		vk::raii::Fence         m_waitFence{nullptr};

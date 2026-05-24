@@ -1,8 +1,8 @@
 Scene:
   Name: New_Scene
-  SceneEnvironmentAssetID: 421871987
+  SceneEnvironmentAssetID: 3877774774569566873
   Entities:
-    - Entity: 67
+    - Entity: 2718281828459
       TagComponent:
         Tag: Camera Controller
       TransformComponent:
@@ -11,22 +11,32 @@ Scene:
         Scale: [1, 1, 1]
       ScriptComponent:
         ClassName: Toaster.CameraController
-    - Entity: 41
+    - Entity: 2718281828
       TagComponent:
-        Tag: Normal Test
+        Tag: Test
       TransformComponent:
         Translation: [0, 0, 0]
         Rotation: [1, 0, 0, 0]
         Scale: [1, 1, 1]
       MeshComponent:
-        MeshAssetID: 13628114035760803365
+        MeshAssetID: 15457594507797315606
     - Entity: 42
       TagComponent:
         Tag: Son
       TransformComponent:
         Translation: [0, 0, 0]
-        Rotation: [1, 0, 0, 0]
+        Rotation: [0.912499, -0.09236, -0.398483, 0.005274]
         Scale: [1, 1, 1]
       DirectionalLightComponent:
         Radiance: [1, 1, 1]
         Multiplier: 3.0
+    - Entity: 43
+      TagComponent:
+        Tag: Point Light
+      TransformComponent:
+        Translation: [0, 4, 0]
+        Rotation: [1, 0, 0, 0]
+        Scale: [1, 1, 1]
+      PointLightComponent:
+        Radiance: [0.4, 1, 1]
+        Multiplier: 50.0

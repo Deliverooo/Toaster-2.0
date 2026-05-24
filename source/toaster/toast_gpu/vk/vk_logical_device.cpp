@@ -143,6 +143,11 @@ namespace toaster::gpu
 		m_pendingDeletionCommandQueues.resize(m_specInfo.maxFramesInFlight);
 	}
 
+	auto VKLogicalDevice::getCurrentFrameIndex() const -> uint32
+	{
+		return m_currentFrameIndex;
+	}
+
 	auto VKLogicalDevice::setCurrentFrameIndex(uint32 p_index) -> void
 	{
 		m_currentFrameIndex = p_index;
@@ -331,7 +336,7 @@ namespace toaster::gpu
 	}
 
 	auto VKLogicalDevice::createBuffer(vk::DeviceSize p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::Buffer &p_out_buffer,
-									   vk::DeviceMemory &p_out_memory) -> void
+									   vk::DeviceMemory &p_out_memory) const -> void
 	{
 		vk::BufferCreateInfo buffer_create_info{};
 		buffer_create_info.size        = p_size;
@@ -388,7 +393,7 @@ namespace toaster::gpu
 
 	auto VKLogicalDevice::createImage(const ImageExtent &p_image_extent, uint32 p_layer_count, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count,
 									  vk::Format p_format, vk::ImageTiling p_image_tiling, vk::ImageUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
-									  vk::Image &p_out_image, vk::DeviceMemory &p_out_memory) -> void
+									  vk::Image &p_out_image, vk::DeviceMemory &p_out_memory) const -> void
 	{
 		vk::ImageCreateInfo image_create_info{};
 		image_create_info.extent        = p_image_extent;
@@ -437,7 +442,7 @@ namespace toaster::gpu
 	}
 
 	auto VKLogicalDevice::createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_layer_count,
-										  uint32     p_mip_levels) -> vk::ImageView
+										  uint32     p_mip_levels) const -> vk::ImageView
 	{
 		vk::ImageViewCreateInfo image_view_create_info{};
 		image_view_create_info.viewType   = (p_layer_count > 1) ? vk::ImageViewType::eCube : vk::ImageViewType::e2D;;
@@ -462,9 +467,9 @@ namespace toaster::gpu
 		sampler_create_info.magFilter               = vk::Filter::eLinear;
 		sampler_create_info.minFilter               = vk::Filter::eLinear;
 		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eClampToEdge;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eClampToEdge;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eClampToEdge;
+		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
 		sampler_create_info.mipLodBias              = 0.0f;
 		sampler_create_info.anisotropyEnable        = true;
 		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
@@ -745,7 +750,7 @@ namespace toaster::gpu
 	auto VKLogicalDevice::transitionImageLayout(vk::raii::CommandBuffer &p_cmd, vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 												vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
 												vk::PipelineStageFlags2  p_dst_stage_mask, uint32 p_layer_count, uint32 p_mip_levels,
-												vk::ImageAspectFlags     p_aspect_flags) -> void
+												vk::ImageAspectFlags     p_aspect_flags) const -> void
 	{
 		vk::ImageMemoryBarrier2 image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;
@@ -797,7 +802,7 @@ namespace toaster::gpu
 	auto VKLogicalDevice::transitionImageLayout(vk::raii::CommandBuffer &p_cmd, vk::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 												vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
 												vk::PipelineStageFlags2  p_dst_stage_mask, uint32 p_layer_count, uint32 p_mip_levels,
-												vk::ImageAspectFlags     p_aspect_flags) -> void
+												vk::ImageAspectFlags     p_aspect_flags) const -> void
 	{
 		vk::ImageMemoryBarrier2 image_memory_barrier{};
 		image_memory_barrier.oldLayout           = p_old_layout;

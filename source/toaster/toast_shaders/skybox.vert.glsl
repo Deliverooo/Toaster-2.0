@@ -5,13 +5,12 @@ layout(location = 1) in vec2 a_TexCoord;
 
 layout(location = 0) out vec3 v_Position;
 
-layout(std140, set = 1, binding = 0) uniform Camera
+layout(std140, set = 1, binding = 1) uniform Camera
 {
     mat4 u_View;
     mat4 u_Proj;
+    mat4 u_InvProj;
 };
-
-
 
 void main()
 {

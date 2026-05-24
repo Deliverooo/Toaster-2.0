@@ -55,8 +55,9 @@ namespace toaster::render
 		auto gpuWaitIdle() const -> void;
 		#pragma endregion
 
-		auto setCurrentFrameIndex(uint32 p_index) -> void;
-		auto performGarbageCollection() const -> void;
+		[[nodiscard]] auto getCurrentFrameIndex() const -> uint32;
+		auto               setCurrentFrameIndex(uint32 p_index) -> void;
+		auto               performGarbageCollection() const -> void;
 
 		// Use for objects that take the render context into their constructor
 		template<typename TObj, typename... TArgs>
@@ -111,24 +112,25 @@ namespace toaster::render
 		[[nodiscard]] auto createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) const -> gpu::Texture3DHandle;
 
 		#pragma region render logic
-		auto beginRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, uint32 p_frame_index,
-							gpu::VKRenderPass *   p_render_pass) const -> void;
+		auto beginRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, gpu::VKRenderPass *p_render_pass,
+							uint32                p_frame_index = UINT32_MAX) const -> void;
 		auto endRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info) const -> void;
 
-		auto beginCompute(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, gpu::VKComputePass *p_compute_pass) const -> void;
-		auto dispatchCompute(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, const gpu::VKComputePass *p_compute_pass, Material *p_material,
-							 uint32                p_work_group_x, uint32   p_work_group_y, uint32                   p_work_group_z) const -> void;
+		auto beginCompute(gpu::VKCommandBuffer *p_command_buffer, gpu::VKComputePass *p_compute_pass, uint32 p_frame_index = UINT32_MAX) const -> void;
+		auto dispatchCompute(gpu::VKCommandBuffer *p_command_buffer, const gpu::VKComputePass *p_compute_pass, Material *p_material, uint32 p_work_group_x,
+							 uint32                p_work_group_y, uint32                      p_work_group_z, uint32    p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderGeometry(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, gpu::VKPipeline *p_pipeline, gpu::VKVertexBuffer *p_vertex_buffer,
-							gpu::VKIndexBuffer *  p_index_buffer, uint32   p_index_count, Material *       p_material, const glm::mat4 &    p_transform) const -> void;
+		auto renderGeometry(gpu::VKCommandBuffer *p_command_buffer, gpu::VKPipeline *p_pipeline, gpu::VKVertexBuffer *p_vertex_buffer, gpu::VKIndexBuffer *p_index_buffer,
+							uint32                p_index_count, Material *p_material, const glm::mat4 &p_transform, uint32 p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderFullscreenQuad(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, gpu::VKPipeline *p_pipeline, Material *p_material) const -> void;
+		auto renderFullscreenQuad(gpu::VKCommandBuffer *p_command_buffer, gpu::VKPipeline *p_pipeline, Material *p_material,
+								  uint32                p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderMesh(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, const MeshData *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline,
-						const glm::mat4 &     p_transform) const -> void;
+		auto renderMesh(gpu::VKCommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline, const glm::mat4 &p_transform,
+						uint32                p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderMesh(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, const MeshData *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline,
-						const glm::mat4 &     p_transform, Material *  p_override_material) const -> void;
+		auto renderMesh(gpu::VKCommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline, const glm::mat4 &p_transform,
+						Material *            p_override_material, uint32       p_frame_index = UINT32_MAX) const -> void;
 		#pragma endregion
 
 	private:

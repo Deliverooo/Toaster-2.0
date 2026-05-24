@@ -47,7 +47,7 @@ namespace toaster::gpu
 		m_device->unmapMemory(m_bufferMemory);
 	}
 
-	auto VKUniformBuffer::mapMemory(uint64 p_size, uint64 p_offset) -> void *
+	auto VKUniformBuffer::mapMemory(uint64 p_size, uint64 p_offset) -> UBOMappedData
 	{
 		return m_device->mapMemory(m_bufferMemory, p_offset, p_size, {});
 	}
@@ -121,9 +121,9 @@ namespace toaster::gpu
 		m_device->unmapMemory(m_uniformBufferMemories.at(p_frame_index));
 	}
 
-	auto VKUniformBufferPFF::mapAllMemory(uint64 p_size, uint64 p_offset) -> std::vector<void *>
+	auto VKUniformBufferPFF::mapAllMemory(uint64 p_size, uint64 p_offset) -> UBOMappedDataPFF
 	{
-		std::vector<void *> mapped{};
+		UBOMappedDataPFF mapped{};
 		for (auto &memory: m_uniformBufferMemories)
 			mapped.emplace_back(m_device->mapMemory(memory, p_offset, p_size, {}));
 		return mapped;

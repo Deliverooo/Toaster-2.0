@@ -88,6 +88,11 @@ namespace toaster::render
 		m_logicalDevice->getVulkanLogicalDevice().waitIdle();
 	}
 
+	auto RenderContext::getCurrentFrameIndex() const -> uint32
+	{
+		return m_logicalDevice->getCurrentFrameIndex();
+	}
+
 	auto RenderContext::setCurrentFrameIndex(uint32 p_index) -> void
 	{
 		TST_PERMA_ASSERT_MSG(p_index < maxFramesInFlight, "Index is out of bounds!");
@@ -162,8 +167,8 @@ namespace toaster::render
 		gpu::VKCommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
 
-		beginCompute(&command_buffer, 0, equirectangular_to_cubemap_pass);
-		dispatchCompute(&command_buffer, 0, equirectangular_to_cubemap_pass, nullptr, skybox_resolution / 32, skybox_resolution / 32, 6);
+		beginCompute(&command_buffer, equirectangular_to_cubemap_pass, 0);
+		dispatchCompute(&command_buffer, equirectangular_to_cubemap_pass, nullptr, skybox_resolution / 32, skybox_resolution / 32, 6, 0);
 
 		command_buffer.end();
 		command_buffer.submit();
@@ -192,8 +197,8 @@ namespace toaster::render
 		gpu::VKCommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
 
-		beginCompute(&command_buffer, 0, equirectangular_to_cubemap_pass);
-		dispatchCompute(&command_buffer, 0, equirectangular_to_cubemap_pass, nullptr, skybox_resolution / 32, skybox_resolution / 32, 6);
+		beginCompute(&command_buffer, equirectangular_to_cubemap_pass, 0);
+		dispatchCompute(&command_buffer, equirectangular_to_cubemap_pass, nullptr, skybox_resolution / 32, skybox_resolution / 32, 6, 0);
 
 		command_buffer.end();
 		command_buffer.submit();
@@ -202,10 +207,12 @@ namespace toaster::render
 		return env_map;
 	}
 
-	auto RenderContext::beginRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, uint32 p_frame_index,
-									   gpu::VKRenderPass *   p_render_pass) const -> void
+	auto RenderContext::beginRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, gpu::VKRenderPass *p_render_pass,
+									   uint32                p_frame_index) const -> void
 	{
 		TST_ASSERT_MSG(p_render_pass, "Render pass is null");
+
+		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
 		std::vector<vk::RenderingAttachmentInfo> colour_rendering_attachment_infos{};
 		for (const auto &rendering_attachment: p_rendering_info.colourAttachments)
@@ -371,9 +378,9 @@ namespace toaster::render
 		p_command_buffer->getVulkanCommandBuffer().setViewport(0, viewport);
 		p_command_buffer->getVulkanCommandBuffer().setScissor(0, scissor);
 
-		p_render_pass->update(p_frame_index);
+		p_render_pass->update(frame_index);
 
-		const auto descriptor_sets = p_render_pass->getDescriptorSets(p_frame_index);
+		const auto descriptor_sets = p_render_pass->getDescriptorSets(frame_index);
 		if (!descriptor_sets.empty())
 			p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_render_pass->getPipeline()->getPipelineLayout(),
 																		  p_render_pass->getStartSetIndex(), descriptor_sets, nullptr);
@@ -419,33 +426,40 @@ namespace toaster::render
 		}
 	}
 
-	auto RenderContext::beginCompute(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, gpu::VKComputePass *p_compute_pass) const -> void
+	auto RenderContext::beginCompute(gpu::VKCommandBuffer *p_command_buffer, gpu::VKComputePass *p_compute_pass, uint32 p_frame_index) const -> void
 	{
+		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
+
 		p_command_buffer->getVulkanCommandBuffer().bindPipeline(vk::PipelineBindPoint::eCompute, *p_compute_pass->getPipeline());
 
-		p_compute_pass->update(p_frame_index);
+		p_compute_pass->update(frame_index);
 
-		const auto descriptor_sets = p_compute_pass->getDescriptorSets(p_frame_index);
+		const auto descriptor_sets = p_compute_pass->getDescriptorSets(frame_index);
 		if (!descriptor_sets.empty())
 			p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eCompute, p_compute_pass->getPipeline()->getPipelineLayout(),
 																		  p_compute_pass->getStartSetIndex(), descriptor_sets, nullptr);
 	}
 
-	auto RenderContext::dispatchCompute(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, const gpu::VKComputePass *p_compute_pass, Material *p_material,
-										uint32                p_work_group_x, uint32   p_work_group_y, uint32                   p_work_group_z) const -> void
+	auto RenderContext::dispatchCompute(gpu::VKCommandBuffer *p_command_buffer, const gpu::VKComputePass *p_compute_pass, Material *p_material, uint32 p_work_group_x,
+										uint32                p_work_group_y, uint32                      p_work_group_z, uint32    p_frame_index) const -> void
 	{
+		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
+
 		if (p_material)
 			if (p_material->hasDescriptorSets())
-				if (const auto descriptor_set{p_material->getDescriptorSet(p_frame_index)})
+				if (const auto descriptor_set{p_material->getDescriptorSet(frame_index)})
 					p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eCompute, p_compute_pass->getPipeline()->getPipelineLayout(), 0,
 																				  descriptor_set, nullptr);
 
 		p_command_buffer->getVulkanCommandBuffer().dispatch(p_work_group_x, p_work_group_y, p_work_group_z);
 	}
 
-	auto RenderContext::renderGeometry(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, gpu::VKPipeline *p_pipeline, gpu::VKVertexBuffer *p_vertex_buffer,
-									   gpu::VKIndexBuffer *  p_index_buffer, uint32   p_index_count, Material *p_material, const glm::mat4 &p_transform) const -> void
+	auto RenderContext::renderGeometry(gpu::VKCommandBuffer *p_command_buffer, gpu::VKPipeline *p_pipeline, gpu::VKVertexBuffer *p_vertex_buffer,
+									   gpu::VKIndexBuffer *  p_index_buffer, uint32             p_index_count, Material *        p_material, const glm::mat4 &p_transform,
+									   uint32                p_frame_index) const -> void
 	{
+		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
+
 		// Push the constants
 		p_command_buffer->getVulkanCommandBuffer().pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
@@ -454,7 +468,7 @@ namespace toaster::render
 			if (p_material->hasDescriptorSets())
 			{
 				// Bind the material descriptor set (0)
-				vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(p_frame_index)};
+				vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(frame_index)};
 				p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
 																			  material_descriptor_set, {});
 			}
@@ -480,15 +494,17 @@ namespace toaster::render
 		p_command_buffer->getVulkanCommandBuffer().drawIndexed(p_index_count, 1, 0, 0, 0);
 	}
 
-	auto RenderContext::renderFullscreenQuad(gpu::VKCommandBuffer *p_command_buffer, uint32 p_frame_index, gpu::VKPipeline *p_pipeline,
-											 Material *            p_material) const -> void
+	auto RenderContext::renderFullscreenQuad(gpu::VKCommandBuffer *p_command_buffer, gpu::VKPipeline *p_pipeline, Material *p_material,
+											 uint32                p_frame_index) const -> void
 	{
+		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
+
 		if (p_material) // You technically don't need to use a material if you don't want to
 		{
 			if (p_material->hasDescriptorSets())
 			{
 				// Bind the material descriptor set (0)
-				vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(p_frame_index)};
+				vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(frame_index)};
 				p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
 																			  material_descriptor_set, {});
 			}
@@ -513,9 +529,11 @@ namespace toaster::render
 		p_command_buffer->getVulkanCommandBuffer().drawIndexed(m_globals->fullscreenQuadIndices().size(), 1, 0, 0, 0);
 	}
 
-	auto RenderContext::renderMesh(gpu::VKCommandBuffer *p_command_buffer, uint32     p_frame_index, const MeshData *p_mesh, uint32 p_submesh_index,
-								   gpu::VKPipeline *     p_pipeline, const glm::mat4 &p_transform) const -> void
+	auto RenderContext::renderMesh(gpu::VKCommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline,
+								   const glm::mat4 &     p_transform, uint32               p_frame_index) const -> void
 	{
+		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
+
 		// Push the constants
 		p_command_buffer->getVulkanCommandBuffer().pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
@@ -527,7 +545,7 @@ namespace toaster::render
 			if (material->hasDescriptorSets())
 			{
 				// Bind the material descriptor set (0)
-				vk::DescriptorSet material_descriptor_set{material->getDescriptorSet(p_frame_index)};
+				vk::DescriptorSet material_descriptor_set{material->getDescriptorSet(frame_index)};
 				p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
 																			  material_descriptor_set, {});
 			}
@@ -553,9 +571,10 @@ namespace toaster::render
 		p_command_buffer->getVulkanCommandBuffer().drawIndexed(submesh.indexCount, 1, submesh.baseIndex, submesh.baseVertex, 0);
 	}
 
-	auto RenderContext::renderMesh(gpu::VKCommandBuffer *p_command_buffer, uint32     p_frame_index, const MeshData *p_mesh, uint32 p_submesh_index,
-								   gpu::VKPipeline *     p_pipeline, const glm::mat4 &p_transform, Material *        p_override_material) const -> void
+	auto RenderContext::renderMesh(gpu::VKCommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32              p_submesh_index, gpu::VKPipeline *p_pipeline,
+								   const glm::mat4 &     p_transform, Material *           p_override_material, uint32 p_frame_index) const -> void
 	{
+		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 		// Push the constants
 		p_command_buffer->getVulkanCommandBuffer().pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
@@ -566,7 +585,7 @@ namespace toaster::render
 			if (p_override_material->hasDescriptorSets())
 			{
 				// Bind the material descriptor set (0)
-				vk::DescriptorSet material_descriptor_set{p_override_material->getDescriptorSet(p_frame_index)};
+				vk::DescriptorSet material_descriptor_set{p_override_material->getDescriptorSet(frame_index)};
 				p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
 																			  material_descriptor_set, {});
 			}

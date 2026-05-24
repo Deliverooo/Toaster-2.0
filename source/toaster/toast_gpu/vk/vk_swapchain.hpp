@@ -4,10 +4,31 @@
 #include <vulkan/vulkan_raii.hpp>
 
 #include "vk_command_buffer.hpp"
+#include "vk_common.hpp"
 #include "toast_lib/system_types.h"
 
 namespace toaster::gpu
 {
+	// This is after presenting, so the layout becomes undefined
+	constexpr ImageLayoutInfo c_swapchainEndFrameLayoutInfo{vk::ImageLayout::eUndefined, vk::AccessFlagBits2::eNone, vk::PipelineStageFlagBits2::eColorAttachmentOutput};
+	constexpr ImageLayoutInfo c_swapchainEndFrameDepthLayoutInfo{
+		vk::ImageLayout::eUndefined,
+		vk::AccessFlagBits2::eNone,
+		vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests
+	};
+
+	constexpr ImageLayoutInfo c_swapchainBeginFrameLayoutInfo{
+		vk::ImageLayout::eColorAttachmentOptimal,
+		vk::AccessFlagBits2::eColorAttachmentWrite,
+		vk::PipelineStageFlagBits2::eColorAttachmentOutput
+	};
+
+	constexpr ImageLayoutInfo c_swapchainPresentSrcLayoutInfo{
+		vk::ImageLayout::ePresentSrcKHR,
+		vk::AccessFlagBits2::eNone,
+		vk::PipelineStageFlagBits2::eColorAttachmentOutput
+	};
+
 	class TST_GPU_API VKSwapchain
 	{
 		TST_GPU_OBJECT

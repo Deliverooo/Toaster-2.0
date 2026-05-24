@@ -248,7 +248,7 @@ auto buildAssets(const argparse::ArgumentParser &p_build_assets_command) -> int3
 
 	// Remove any assets whose path don't exist if flag is specified
 	if (p_build_assets_command.get<bool>("--removeInvalid"))
-		asset_manager.removeInvalidAssets();
+		asset_manager.removeAssetsWithInvalidPaths();
 
 	// We don't want to add assets that are already in the registry, so skip them.
 	for (const auto &dir_it: std::filesystem::recursive_directory_iterator{project.getRootDirectory()})

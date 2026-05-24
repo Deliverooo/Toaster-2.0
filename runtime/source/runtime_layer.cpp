@@ -105,12 +105,11 @@ namespace toaster
 
 	auto RuntimeLayer::onUpdate(const float32 p_dt) -> void
 	{
-		auto         swapchain = m_app->getWindow().getSwapchain();
-		const uint32 frame_index{swapchain->getFrameIndex()};
-		auto &       command_buffer = swapchain->getCurrentCommandBuffer();
+		auto  swapchain      = m_app->getWindow().getSwapchain();
+		auto &command_buffer = swapchain->getCurrentCommandBuffer();
 
 		m_scene->onUpdate(p_dt);
-		m_scene->onRender(&command_buffer, frame_index, p_dt, m_sceneRenderer);
+		m_scene->onRender(&command_buffer, p_dt, m_sceneRenderer);
 
 		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getResolveOutputColourTexture());
 
@@ -122,8 +121,8 @@ namespace toaster
 		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		colour_attachment_info.clearValue  = vk::ClearColorValue{1.0f, 1.0f, 1.0f, 1.0f};
 
-		m_renderCtx->beginRendering(&command_buffer, rendering_info, frame_index, m_fullscreenRenderPass);
-		m_renderCtx->renderFullscreenQuad(&command_buffer, frame_index, m_fullscreenPipeline, nullptr);
+		m_renderCtx->beginRendering(&command_buffer, rendering_info, m_fullscreenRenderPass);
+		m_renderCtx->renderFullscreenQuad(&command_buffer, m_fullscreenPipeline, nullptr);
 		m_renderCtx->endRendering(&command_buffer, rendering_info);
 	}
 

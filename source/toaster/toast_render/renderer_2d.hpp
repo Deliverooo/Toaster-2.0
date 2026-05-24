@@ -57,9 +57,9 @@ namespace toaster::render
 		explicit Renderer2D(RenderContext *p_render_ctx, const Renderer2DSpecInfo &p_create_info);
 		~Renderer2D();
 
-		auto begin(uint32 p_frame_index, const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void;
-		auto end(gpu::VKCommandBuffer *              p_cmd, uint32 p_frame_index, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
-				 const gpu::RenderingAttachmentInfo *p_override_depth_attachment                                                             = nullptr) -> void;
+		auto begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void;
+		auto end(gpu::VKCommandBuffer *              p_cmd, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
+				 const gpu::RenderingAttachmentInfo *p_override_depth_attachment                                       = nullptr) -> void;
 
 		auto submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
 		auto submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
@@ -75,9 +75,9 @@ namespace toaster::render
 		auto _beginNewBatch() -> void;
 		auto _getTextureSlotIndex(const gpu::Texture2DHandle &p_texture) -> uint32;
 
-		NonOwningPtr<RenderContext> m_renderContext{nullptr};
+		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
 
-		Renderer2DSpecInfo m_createInfo;
+		Renderer2DSpecInfo m_specInfo{};
 		uint32             m_maxVertices;
 		uint32             m_maxIndices;
 

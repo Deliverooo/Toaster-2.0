@@ -14,7 +14,15 @@ namespace toaster::render
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			InitialiserList bytecode = {vs_bytecode, ps_bytecode};
 			const auto      depth_pre_shader{make_reference<gpu::VKShader>(m_device, shader_stages, bytecode, "Depth-Pre")};
-			m_shaderLibrary.add("Depth-Pre", depth_pre_shader); // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
+			m_shaderLibrary.add("Depth-Pre", depth_pre_shader);
+		}
+		{
+			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/ambient_occlusion.comp.glsl.spv")};
+			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
+			std::initializer_list bytecode = {cs_bytecode};
+			auto                  stage    = {vk::ShaderStageFlagBits::eCompute};
+			const auto            vbao_shader{make_reference<gpu::VKShader>(m_device, stage, bytecode, "Ambient_Occlusion")};
+			m_shaderLibrary.add("Ambient_Occlusion", vbao_shader);
 		}
 		{
 			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/geometry.vert.glsl.spv")};

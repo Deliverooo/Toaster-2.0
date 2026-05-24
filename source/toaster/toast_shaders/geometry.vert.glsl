@@ -16,6 +16,7 @@ layout(std140, set = 1, binding = 1) uniform Camera
 {
     mat4 u_View;
     mat4 u_Proj;
+    mat4 u_InvProj;
 };
 
 layout (push_constant) uniform Transform

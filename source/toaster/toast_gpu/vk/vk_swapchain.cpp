@@ -27,14 +27,16 @@ namespace toaster::gpu
 
 	auto VKSwapchain::beginFrame() -> void
 	{
+		auto &current_command_buffer{m_commandBuffers[m_frameIndex]};
+
 		// Wait for the previous frame to be finished before rendering this one
-		m_commandBuffers[m_frameIndex].waitForFence();
+		current_command_buffer.waitForFence();
 
 		if (m_beginFrameCallback)
 			m_beginFrameCallback(m_userData, m_frameIndex);
 
 		// Reset the fence so we can signal it later
-		m_commandBuffers[m_frameIndex].resetFence();
+		current_command_buffer.resetFence();
 
 		auto [res, image_index] = m_swapchain.acquireNextImage(UINT64_MAX, *m_imageAvailableSemaphores[m_frameIndex], nullptr);
 		m_imageIndex            = image_index;
@@ -47,34 +49,29 @@ namespace toaster::gpu
 		if (res != vk::Result::eSuccess)
 			TST_ASSERT_MSG(false, "Failed to acquire swapchain image!");
 
-		m_commandBuffers[m_frameIndex].resetCommandBuffer();
-		m_commandBuffers[m_frameIndex].begin();
+		current_command_buffer.resetCommandBuffer();
+		current_command_buffer.begin();
 
-		m_device->transitionImageLayout(m_commandBuffers[m_frameIndex].getVulkanCommandBuffer(), m_swapchainImages[m_imageIndex], vk::ImageLayout::eUndefined,
-										vk::ImageLayout::eColorAttachmentOptimal, vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eColorAttachmentWrite,
-										vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1, 1,
-										vk::ImageAspectFlagBits::eColor);
+		m_device->transitionImageLayout(m_swapchainImages[m_imageIndex], c_swapchainEndFrameLayoutInfo, c_swapchainBeginFrameLayoutInfo, 1, 1,
+										vk::ImageAspectFlagBits::eColor, current_command_buffer);
 
-		m_device->transitionImageLayout(m_commandBuffers[m_frameIndex].getVulkanCommandBuffer(), m_depthImage, vk::ImageLayout::eUndefined,
-										vk::ImageLayout::eDepthAttachmentOptimal, vk::AccessFlagBits2::eNone, vk::AccessFlagBits2::eDepthStencilAttachmentWrite,
-										vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests,
-										vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests, 1, 1,
-										vk::ImageAspectFlagBits::eDepth);
+		m_device->transitionImageLayout(m_depthImage, c_swapchainEndFrameDepthLayoutInfo, util::getImageLayoutInfo(vk::ImageLayout::eDepthAttachmentOptimal), 1, 1,
+										vk::ImageAspectFlagBits::eDepth, current_command_buffer);
 	}
 
 	auto VKSwapchain::endFrame() -> void
 	{
-		m_device->transitionImageLayout(m_commandBuffers[m_frameIndex].getVulkanCommandBuffer(), m_swapchainImages[m_imageIndex],
-										vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR, vk::AccessFlagBits2::eColorAttachmentWrite,
-										vk::AccessFlagBits2::eNone, vk::PipelineStageFlagBits2::eColorAttachmentOutput,
-										vk::PipelineStageFlagBits2::eColorAttachmentOutput, 1, 1, vk::ImageAspectFlagBits::eColor);
+		auto &current_command_buffer{m_commandBuffers[m_frameIndex]};
 
-		m_commandBuffers[m_frameIndex].end();
+		m_device->transitionImageLayout(m_swapchainImages[m_imageIndex], c_swapchainBeginFrameLayoutInfo, c_swapchainPresentSrcLayoutInfo, 1, 1,
+										vk::ImageAspectFlagBits::eColor, current_command_buffer);
+
+		current_command_buffer.end();
 
 		// Waits for the image to be acquired before executing
 		// When we submit the work to the GPU we signal a fence then wait on it before beginning the next frame
-		m_commandBuffers[m_frameIndex].submit(vk::PipelineStageFlagBits2::eColorAttachmentOutput, {*m_imageAvailableSemaphores[m_frameIndex]},
-											  {*m_renderFinishedSemaphores[m_frameIndex]});
+		current_command_buffer.submit(vk::PipelineStageFlagBits2::eColorAttachmentOutput, {*m_imageAvailableSemaphores[m_frameIndex]},
+									  {*m_renderFinishedSemaphores[m_frameIndex]});
 
 		const vk::Result res{m_device->presentKHR(&*m_swapchain, &m_imageIndex, {*m_renderFinishedSemaphores[m_frameIndex]})};
 		if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR || m_framebufferResized)
@@ -83,7 +80,7 @@ namespace toaster::gpu
 			_recreateSwapchain();
 		}
 		else if (res != vk::Result::eSuccess)
-			TST_ASSERT_MSG(false, "Failed to present swapchain image!");
+			TST_PERMA_ASSERT_MSG(false, "Failed to present swapchain image!");
 
 		m_frameIndex = (m_frameIndex + 1) % m_device->getSpecInfo().maxFramesInFlight;
 	}
@@ -231,13 +228,9 @@ namespace toaster::gpu
 
 	auto VKSwapchain::_create() -> void
 	{
-		auto &                     physical_device = m_device->getPhysicalDevice()->getVulkanPhysicalDevice();
-		vk::SurfaceCapabilitiesKHR surface_caps    = physical_device.getSurfaceCapabilitiesKHR(*m_windowSurface);
+		const auto physical_device{m_device->getPhysicalDevice()};
 
-		auto available_surface_formats = physical_device.getSurfaceFormatsKHR(*m_windowSurface);
-		auto available_present_modes   = physical_device.getSurfacePresentModesKHR(*m_windowSurface);
-
-		m_swapchainSurfaceFormat = m_device->getPhysicalDevice()->chooseSwapchainSurfaceFormat(*m_windowSurface);
+		m_swapchainSurfaceFormat = physical_device->chooseSwapchainSurfaceFormat(*m_windowSurface);
 
 		uint32 width{0u};
 		uint32 height{0u};
@@ -249,9 +242,8 @@ namespace toaster::gpu
 			width  = w;
 			height = h;
 		}
-		m_swapchainExtent = m_device->getPhysicalDevice()->chooseSwapchainExtent(*m_windowSurface, width, height);
-
-		m_minImageCount = m_device->getPhysicalDevice()->chooseSwapchainMinImageCount(*m_windowSurface);
+		m_swapchainExtent = physical_device->chooseSwapchainExtent(*m_windowSurface, width, height);
+		m_minImageCount   = physical_device->chooseSwapchainMinImageCount(*m_windowSurface);
 
 		vk::SwapchainCreateInfoKHR swapchain_create_info{};
 		swapchain_create_info.surface          = *m_windowSurface;
@@ -262,9 +254,9 @@ namespace toaster::gpu
 		swapchain_create_info.imageArrayLayers = 1;
 		swapchain_create_info.imageUsage       = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst;
 		swapchain_create_info.imageSharingMode = vk::SharingMode::eExclusive;
-		swapchain_create_info.preTransform     = surface_caps.currentTransform;
+		swapchain_create_info.preTransform     = physical_device->getVulkanPhysicalDevice().getSurfaceCapabilitiesKHR(*m_windowSurface).currentTransform;
 		swapchain_create_info.compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-		swapchain_create_info.presentMode      = m_device->getPhysicalDevice()->chooseSwapchainPresentMode(*m_windowSurface);
+		swapchain_create_info.presentMode      = physical_device->chooseSwapchainPresentMode(*m_windowSurface);
 		swapchain_create_info.clipped          = true;
 
 		if (*m_swapchain)

@@ -72,8 +72,8 @@ namespace toaster
 		auto onUpdate(float32 p_dt) -> void;
 		auto onEvent(Event &p_event) -> void;
 
-		auto onRender(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void;
-		auto onRender(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
+		auto onRender(gpu::VKCommandBuffer *p_cmd, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void;
+		auto onRender(gpu::VKCommandBuffer *p_cmd, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
 					  const glm::mat4 &     p_projection) -> void;
 
 		auto setViewportSize(uint32 p_width, uint32 p_height) -> void;

@@ -8,6 +8,8 @@
 
 namespace toaster::gpu
 {
+	using UBOMappedData = void *;
+
 	class TST_GPU_API VKUniformBuffer final : public IGPUResource
 	{
 		TST_GPU_OBJECT
@@ -23,7 +25,7 @@ namespace toaster::gpu
 
 		auto setData(void *p_data, uint64 p_size, uint64 p_offset) -> void;
 
-		auto mapMemory(uint64 p_size, uint64 p_offset) -> void *;
+		auto mapMemory(uint64 p_size, uint64 p_offset) -> UBOMappedData;
 		auto unmapMemory() -> void;
 
 		template<typename TStorage>
@@ -44,6 +46,8 @@ namespace toaster::gpu
 
 	TST_GPU_DEFINE_HANDLE(VKUniformBuffer, UniformBuffer)
 
+	using UBOMappedDataPFF = std::vector<void *>;
+
 	// Uniform buffer, but it's per frame in flight
 	// Ts is easier to use than allocating them manually, so it just makes things more manageable
 	// Typically you wouldn't really use a single uniform buffer anyway, so use this instead.
@@ -63,7 +67,7 @@ namespace toaster::gpu
 		auto mapMemory(uint32 p_frame_index, uint64 p_size, uint64 p_offset = 0u) -> void *;
 		auto unmapMemory(uint32 p_frame_index) -> void;
 
-		auto mapAllMemory(uint64 p_size, uint64 p_offset = 0u) -> std::vector<void *>;
+		auto mapAllMemory(uint64 p_size, uint64 p_offset = 0u) -> UBOMappedDataPFF;
 		auto unmapAllMemory() -> void;
 
 	private:

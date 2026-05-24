@@ -202,7 +202,7 @@ namespace toaster
 		}
 	}
 
-	auto Scene::onRender(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void
+	auto Scene::onRender(gpu::VKCommandBuffer *p_cmd, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void
 	{
 		Camera *  main_camera{nullptr};
 		glm::mat4 camera_transform{1.0f};
@@ -256,7 +256,7 @@ namespace toaster
 		}
 		glm::mat4 camera_view{glm::inverse(camera_transform)};
 		{
-			p_scene_renderer->begin(p_frame_index, camera_view, main_camera->getProjectionMatrix());
+			p_scene_renderer->begin(camera_view, main_camera->getProjectionMatrix());
 			for (const auto view{m_registry.view<MeshComponent>()}; const auto entity: view)
 			{
 				auto mesh_comp{view.get<MeshComponent>(entity)};
@@ -268,12 +268,12 @@ namespace toaster
 					p_scene_renderer->renderMesh(mesh_asset->getMesh(), getEntityWorldTransformMatrix(e));
 				}
 			}
-			p_scene_renderer->end(p_cmd, p_frame_index);
+			p_scene_renderer->end(p_cmd);
 		}
 		#if TST_ENABLE_2D_SCENE_RENDERING
 		{
 			auto renderer_2d{p_scene_renderer->getRenderer2D()};
-			renderer_2d->begin(p_frame_index, camera_view, main_camera->getProjectionMatrix());
+			renderer_2d->begin(camera_view, main_camera->getProjectionMatrix());
 
 			for (const auto view{m_registry.view<SpriteRendererComponent>()}; const auto entity: view)
 			{
@@ -305,12 +305,12 @@ namespace toaster
 			depth_attachment_info.resolveImage = p_scene_renderer->getResolveOutputDepthTexture()->getImage();
 			depth_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eMin;
 
-			renderer_2d->end(p_cmd, p_frame_index, &colour_attachment_info, &depth_attachment_info);
+			renderer_2d->end(p_cmd,&colour_attachment_info, &depth_attachment_info);
 		}
 		#endif
 	}
 
-	auto Scene::onRender(gpu::VKCommandBuffer *p_cmd, uint32            p_frame_index, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer,
+	auto Scene::onRender(gpu::VKCommandBuffer *p_cmd, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer,
 						 const glm::mat4 &     p_view, const glm::mat4 &p_projection) -> void
 	{
 		m_lightEnvironment.pointLights.clear();
@@ -344,7 +344,7 @@ namespace toaster
 			}
 		}
 		{
-			p_scene_renderer->begin(p_frame_index, p_view, p_projection);
+			p_scene_renderer->begin(p_view, p_projection);
 			for (const auto view{m_registry.view<MeshComponent>()}; const auto entity: view)
 			{
 				auto mesh_comp{view.get<MeshComponent>(entity)};
@@ -357,12 +357,12 @@ namespace toaster
 					p_scene_renderer->renderMesh(mesh_asset->getMesh(), getEntityWorldTransformMatrix(e));
 				}
 			}
-			p_scene_renderer->end(p_cmd, p_frame_index);
+			p_scene_renderer->end(p_cmd);
 		}
 		#if TST_ENABLE_2D_SCENE_RENDERING
 		{
 			auto renderer_2d{p_scene_renderer->getRenderer2D()};
-			renderer_2d->begin(p_frame_index, p_view, p_projection);
+			renderer_2d->begin(p_view, p_projection);
 
 			for (const auto view{m_registry.view<SpriteRendererComponent>()}; const auto entity: view)
 			{
@@ -390,7 +390,7 @@ namespace toaster
 			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eLoad;
 			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
 
-			renderer_2d->end(p_cmd, p_frame_index, &colour_attachment_info, &depth_attachment_info);
+			renderer_2d->end(p_cmd, &colour_attachment_info, &depth_attachment_info);
 		}
 		#endif
 	}

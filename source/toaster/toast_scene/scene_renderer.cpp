@@ -60,6 +60,37 @@ namespace toaster
 																					  vk::ImageAspectFlagBits::eDepth);
 			m_depthPreResolveAttachmentTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportWidth, m_specInfo.viewportHeight,
 																					  vk::ImageAspectFlagBits::eDepth);
+
+			m_geometryNormalsAttachmentImage = m_renderCtx->createMultisampleAttachmentImage(m_specInfo.viewportWidth, m_specInfo.viewportHeight,
+																							 vk::ImageAspectFlagBits::eColor, vk::Format::eR16G16B16A16Sfloat);
+			m_geometryNormalsResolveAttachmentTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportWidth, m_specInfo.viewportHeight,
+																							 vk::ImageAspectFlagBits::eColor, vk::Format::eR16G16B16A16Sfloat);
+		}
+		#pragma endregion
+
+		#pragma region ambient occlusion
+		{
+			m_aoPipeline = m_renderCtx->createGPU<gpu::VKComputePipeline>(m_renderCtx->getGlobals()->shaderLibrary().get("Ambient_Occlusion"));
+
+			m_aoPass = m_renderCtx->createGPU<gpu::VKComputePass>(m_aoPipeline);
+
+			gpu::ImageSpecInfo ao_output_image_spec_info{};
+			ao_output_image_spec_info.width  = m_specInfo.viewportWidth;
+			ao_output_image_spec_info.height = m_specInfo.viewportHeight;
+			ao_output_image_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+			ao_output_image_spec_info.usage  = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+			m_aoOutputImage                  = m_renderCtx->createGPU<gpu::VKStorageImage>(ao_output_image_spec_info);
+
+			m_aoPass->setInput("o_Occlusion", m_aoOutputImage);
+			m_aoPass->setInput("Camera", m_cameraUBOs);
+
+			m_aoFrameDataMaterial = m_renderCtx->create<render::Material>(m_renderCtx->getGlobals()->shaderLibrary().get("Ambient_Occlusion"), "VBAO");
+			m_aoFrameDataMaterial->set(".u_Radius", 2.718f);
+			m_aoFrameDataMaterial->set(".u_Thickness", 0.31415f);
+			m_aoFrameDataMaterial->set(".u_NumSlices", 4);
+			m_aoFrameDataMaterial->set(".u_NumSamplesPerSlice", 5);
+
+			m_aoPass->bake();
 		}
 		#pragma endregion
 
@@ -129,24 +160,9 @@ namespace toaster
 			m_geometryPass->setInput("PointLightData", m_pointLightUBOs);
 			m_geometryPass->setInput("SceneData", m_sceneDataUBOs);
 			m_geometryPass->setInput("u_EnvironmentMap", m_skyboxMap);
+			m_geometryPass->setInput("u_AOTexture", m_aoOutputImage);
 
 			m_geometryPass->bake();
-		}
-		#pragma endregion
-
-		#pragma region anti aliasing
-		{
-			gpu::PipelineSpecInfo anti_aliasing_pipeline_spec_info{};
-			anti_aliasing_pipeline_spec_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
-			anti_aliasing_pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
-			anti_aliasing_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Anti-Aliasing");
-			anti_aliasing_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
-			anti_aliasing_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
-			anti_aliasing_pipeline_spec_info.multisample        = false;
-			m_antiAliasingPipeline                              = m_renderCtx->createGPU<gpu::VKPipeline>(anti_aliasing_pipeline_spec_info);
-
-			m_antiAliasingPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_antiAliasingPipeline);
-			m_antiAliasingPass->bake();
 		}
 		#pragma endregion
 
@@ -168,13 +184,16 @@ namespace toaster
 		m_cameraUBOs->unmapAllMemory();
 	}
 
-	auto SceneRenderer::begin(uint32 p_frame_index, const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix) -> void
+	auto SceneRenderer::begin(const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix) -> void
 	{
+		uint32 frame_index{m_renderCtx->getCurrentFrameIndex()};
+
 		CameraUB camera_ub{};
 		camera_ub.view       = p_view_matrix;
 		camera_ub.proj       = p_projection_matrix;
 		camera_ub.proj[1][1] *= -1.0f; // Silly opengl
-		std::memcpy(m_mappedCameraUBOs[p_frame_index], &camera_ub, sizeof(CameraUB));
+		camera_ub.invProj    = p_projection_matrix;
+		std::memcpy(m_mappedCameraUBOs[frame_index], &camera_ub, sizeof(CameraUB));
 
 		const auto &[directional_lights, point_lights]{m_specInfo.scene->getLightEnvironment()};
 		{
@@ -185,7 +204,7 @@ namespace toaster
 				directional_light_ub.directionalLights[i].direction = directional_lights[i].direction;
 				directional_light_ub.directionalLights[i].radiance  = directional_lights[i].radiance;
 			}
-			std::memcpy(m_mappedDirectionalLightUBOs[p_frame_index], &directional_light_ub, sizeof(DirectionalLightUB));
+			std::memcpy(m_mappedDirectionalLightUBOs[frame_index], &directional_light_ub, sizeof(DirectionalLightUB));
 		}
 		{
 			PointLightUB point_light_ub{};
@@ -195,15 +214,15 @@ namespace toaster
 				point_light_ub.pointLights[i].position = point_lights[i].position;
 				point_light_ub.pointLights[i].radiance = point_lights[i].radiance;
 			}
-			std::memcpy(m_mappedPointLightUBOs[p_frame_index], &point_light_ub, sizeof(PointLightUB));
+			std::memcpy(m_mappedPointLightUBOs[frame_index], &point_light_ub, sizeof(PointLightUB));
 		}
 
 		SceneDataUB scene_data_ub{};
 		scene_data_ub.cameraPos = glm::inverse(p_view_matrix)[3];
-		std::memcpy(m_mappedSceneDataUBOs[p_frame_index], &scene_data_ub, sizeof(SceneDataUB));
+		std::memcpy(m_mappedSceneDataUBOs[frame_index], &scene_data_ub, sizeof(SceneDataUB));
 	}
 
-	auto SceneRenderer::end(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::end(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		if (m_reloadSkybox)
 		{
@@ -211,11 +230,12 @@ namespace toaster
 			m_geometryPass->setInput("u_EnvironmentMap", m_skyboxMap);
 			m_reloadSkybox = false;
 		}
-		_renderDepthPrePass(p_cmd, p_frame_index);
-		_renderLightCullingPass(p_cmd, p_frame_index);
-		_renderSkyboxPass(p_cmd, p_frame_index);
-		_renderGeometryPass(p_cmd, p_frame_index);
-		// _renderAntiAliasingPass(p_cmd, p_frame_index);
+
+		_renderDepthPrePass(p_cmd);
+		_renderAOPass(p_cmd);
+		_renderLightCullingPass(p_cmd);
+		_renderSkyboxPass(p_cmd);
+		_renderGeometryPass(p_cmd);
 
 		m_meshDrawCommands.clear();
 	}
@@ -242,6 +262,11 @@ namespace toaster
 		return m_depthPreAttachmentImage;
 	}
 
+	auto SceneRenderer::getMSAAOutputGeometryNormalsImage() -> gpu::RawImageHandle &
+	{
+		return m_geometryNormalsAttachmentImage;
+	}
+
 	auto SceneRenderer::getResolveOutputColourTexture() const -> const gpu::Texture2DHandle &
 	{
 		return m_resolveColourTexture;
@@ -250,6 +275,16 @@ namespace toaster
 	auto SceneRenderer::getResolveOutputDepthTexture() const -> const gpu::Texture2DHandle &
 	{
 		return m_depthPreResolveAttachmentTexture;
+	}
+
+	auto SceneRenderer::getResolveOutputGeometryNormalsTexture() const -> const gpu::Texture2DHandle &
+	{
+		return m_geometryNormalsResolveAttachmentTexture;
+	}
+
+	auto SceneRenderer::getOutputAOImage() const -> const gpu::StorageImageHandle &
+	{
+		return m_aoOutputImage;
 	}
 
 	auto SceneRenderer::getOutputComputeImage() const -> const gpu::StorageImageHandle &
@@ -274,6 +309,11 @@ namespace toaster
 			m_depthPreAttachmentImage->resize(p_width, p_height);
 			m_depthPreResolveAttachmentTexture->resize(p_width, p_height);
 
+			m_geometryNormalsAttachmentImage->resize(p_width, p_height);
+			m_geometryNormalsResolveAttachmentTexture->resize(p_width, p_height);
+
+			m_aoOutputImage->resize(p_width, p_height);
+
 			m_computeImage->resize(p_width, p_height);
 
 			m_colourImage->resize(p_width, p_height);
@@ -289,7 +329,7 @@ namespace toaster
 		m_reloadSkybox = true;
 	}
 
-	auto SceneRenderer::_renderDepthPrePass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::_renderDepthPrePass(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
@@ -302,29 +342,52 @@ namespace toaster
 		depth_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
 		depth_attachment_info.resolveImage = m_depthPreResolveAttachmentTexture->getImage();
 		depth_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eMin;
+		rendering_info.pDepthAttachment    = &depth_attachment_info;
 
-		rendering_info.pDepthAttachment = &depth_attachment_info;
+		gpu::RenderingAttachmentInfo &geo_normals_attachment_info{rendering_info.colourAttachments.emplace_back()};
+		geo_normals_attachment_info.clearValue   = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f};
+		geo_normals_attachment_info.image        = m_geometryNormalsAttachmentImage;
+		geo_normals_attachment_info.loadOp       = vk::AttachmentLoadOp::eClear;
+		geo_normals_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
+		geo_normals_attachment_info.resolveImage = m_geometryNormalsResolveAttachmentTexture->getImage();
+		geo_normals_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eAverage;
 
-		m_renderCtx->beginRendering(p_cmd, rendering_info, p_frame_index, m_depthPrePass);
+		m_renderCtx->beginRendering(p_cmd, rendering_info, m_depthPrePass);
 
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
 			{
-				m_renderCtx->renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_depthPrePipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform,
-										nullptr);
+				m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_depthPrePipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform, nullptr);
 			}
 		}
 		m_renderCtx->endRendering(p_cmd, rendering_info);
 	}
 
-	auto SceneRenderer::_renderLightCullingPass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::_renderAOPass(gpu::VKCommandBuffer *p_cmd) -> void
 	{
-		m_renderCtx->beginCompute(p_cmd, p_frame_index, m_lightCullingPass);
-		m_renderCtx->dispatchCompute(p_cmd, p_frame_index, m_lightCullingPass, m_lightCullingMaterial, m_specInfo.viewportWidth, m_specInfo.viewportHeight, 1);
+		// Used for random noise generation in the VBAO shader
+		static uint32 s_frameIndex{0u};
+		m_aoFrameDataMaterial->set(".u_FrameIndex", s_frameIndex);
+
+		m_aoPass->setInput("u_DepthTex", m_depthPreResolveAttachmentTexture);
+		m_aoPass->setInput("u_NormalsTex", m_geometryNormalsResolveAttachmentTexture);
+
+		const uint32     work_groups_x{(m_specInfo.viewportWidth + 15u) / 16u};
+		const uint32     work_groups_y{(m_specInfo.viewportHeight + 15u) / 16u};
+		constexpr uint32 work_groups_z{1u};
+
+		m_renderCtx->beginCompute(p_cmd, m_aoPass);
+		m_renderCtx->dispatchCompute(p_cmd, m_aoPass, m_aoFrameDataMaterial, work_groups_x, work_groups_y, work_groups_z);
 	}
 
-	auto SceneRenderer::_renderSkyboxPass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::_renderLightCullingPass(gpu::VKCommandBuffer *p_cmd) -> void
+	{
+		m_renderCtx->beginCompute(p_cmd, m_lightCullingPass);
+		m_renderCtx->dispatchCompute(p_cmd, m_lightCullingPass, m_lightCullingMaterial, m_specInfo.viewportWidth, m_specInfo.viewportHeight, 1);
+	}
+
+	auto SceneRenderer::_renderSkyboxPass(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
@@ -338,12 +401,12 @@ namespace toaster
 		colour_attachment_info.resolveImage = m_resolveColourTexture->getImage();
 		colour_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eAverage;
 
-		m_renderCtx->beginRendering(p_cmd, rendering_info, p_frame_index, m_skyboxPass);
-		m_renderCtx->renderFullscreenQuad(p_cmd, p_frame_index, m_skyboxPipeline, m_skyboxMaterial);
+		m_renderCtx->beginRendering(p_cmd, rendering_info, m_skyboxPass);
+		m_renderCtx->renderFullscreenQuad(p_cmd, m_skyboxPipeline, m_skyboxMaterial);
 		m_renderCtx->endRendering(p_cmd, rendering_info);
 	}
 
-	auto SceneRenderer::_renderGeometryPass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void
+	auto SceneRenderer::_renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea    = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
@@ -365,34 +428,15 @@ namespace toaster
 		depth_attachment_info.resolveImage = m_depthPreResolveAttachmentTexture->getImage();
 		rendering_info.pDepthAttachment    = &depth_attachment_info;
 
-		m_renderCtx->beginRendering(p_cmd, rendering_info, p_frame_index, m_geometryPass);
+		m_renderCtx->beginRendering(p_cmd, rendering_info, m_geometryPass);
 
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
 			{
-				m_renderCtx->renderMesh(p_cmd, p_frame_index, draw_cmd.mesh, i, m_geometryPipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform);
+				m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_geometryPipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform);
 			}
 		}
-		m_renderCtx->endRendering(p_cmd, rendering_info);
-	}
-
-	auto SceneRenderer::_renderAntiAliasingPass(gpu::VKCommandBuffer *p_cmd, uint32 p_frame_index) -> void
-	{
-		m_antiAliasingPass->setInput("u_Texture", m_resolveColourTexture);
-
-		gpu::RenderingInfo rendering_info{};
-		rendering_info.renderArea = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
-		rendering_info.layerCount = 1;
-
-		gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		colour_attachment_info.clearValue = vk::ClearColorValue{1.0f, 0.0f, 0.0f, 1.0f};
-		colour_attachment_info.image      = m_resolveColourTexture->getImage();
-		colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eClear;
-		colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
-
-		m_renderCtx->beginRendering(p_cmd, rendering_info, p_frame_index, m_antiAliasingPass);
-		m_renderCtx->renderFullscreenQuad(p_cmd, p_frame_index, m_antiAliasingPipeline, nullptr);
 		m_renderCtx->endRendering(p_cmd, rendering_info);
 	}
 }

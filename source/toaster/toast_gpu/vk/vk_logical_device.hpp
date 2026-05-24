@@ -63,8 +63,9 @@ namespace toaster::gpu
 			m_pendingDeletionCommandQueues[m_currentFrameIndex].enqueue(std::forward<TFunc>(p_func));
 		}
 
-		auto setCurrentFrameIndex(uint32 p_index) -> void;
-		auto performGarbageCollection() -> void;
+		[[nodiscard]] auto getCurrentFrameIndex() const -> uint32;
+		auto               setCurrentFrameIndex(uint32 p_index) -> void;
+		auto               performGarbageCollection() -> void;
 
 		[[nodiscard]] auto getPhysicalDevice() const -> NonOwningPtr<VKPhysicalDevice>;
 		[[nodiscard]] auto getSpecInfo() const -> const VKLogicalDeviceSpecInfo &;
@@ -91,8 +92,8 @@ namespace toaster::gpu
 		[[nodiscard]] auto createShaderModule(const std::vector<uint32> &p_code) -> vk::raii::ShaderModule;
 
 		#pragma region vulkan non-raii wrappers
-		auto mapMemory(vk::DeviceMemory p_memory, vk::DeviceSize p_offset, vk::DeviceSize p_size, vk::MemoryMapFlags p_flags) const -> void *;
-		auto unmapMemory(vk::DeviceMemory p_memory) const -> void;
+		[[nodiscard]] auto mapMemory(vk::DeviceMemory p_memory, vk::DeviceSize p_offset, vk::DeviceSize p_size, vk::MemoryMapFlags p_flags) const -> void *;
+		auto               unmapMemory(vk::DeviceMemory p_memory) const -> void;
 
 		template<typename TVKObj>
 		auto destroyObject(TVKObj &p_obj) const -> void
@@ -104,7 +105,7 @@ namespace toaster::gpu
 		auto createBuffer(vk::DeviceSize          p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Buffer &p_out_buffer,
 						  vk::raii::DeviceMemory &p_out_memory) -> void;
 		auto createBuffer(vk::DeviceSize    p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::Buffer &p_out_buffer,
-						  vk::DeviceMemory &p_out_memory) -> void;
+						  vk::DeviceMemory &p_out_memory) const -> void;
 
 		auto createImage(const ImageExtent &p_image_extent, uint32 p_layer_count, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count, vk::Format p_format,
 						 vk::ImageTiling p_image_tiling, vk::ImageUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Image &p_out_image,
@@ -112,11 +113,11 @@ namespace toaster::gpu
 
 		auto createImage(const ImageExtent &p_image_extent, uint32 p_layer_count, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count, vk::Format p_format,
 						 vk::ImageTiling    p_image_tiling, vk::ImageUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::Image &p_out_image,
-						 vk::DeviceMemory & p_out_memory) -> void;
+						 vk::DeviceMemory & p_out_memory) const -> void;
 		[[nodiscard]] auto createImageView(vk::raii::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_layer_count,
 										   uint32           p_mip_levels) -> vk::raii::ImageView;
 		[[nodiscard]] auto createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_layer_count,
-										   uint32     p_mip_levels) -> vk::ImageView;
+										   uint32     p_mip_levels) const -> vk::ImageView;
 		[[nodiscard]] auto createSamplerRaii() -> vk::raii::Sampler;
 		[[nodiscard]] auto createSampler() -> vk::Sampler;
 
@@ -139,13 +140,15 @@ namespace toaster::gpu
 								   uint32 p_layer_count, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void;
 		auto transitionImageLayout(vk::raii::CommandBuffer &p_cmd, vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 								   vk::AccessFlags2 p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-								   vk::PipelineStageFlags2 p_dst_stage_mask, uint32 p_layer_count, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void;
+								   vk::PipelineStageFlags2 p_dst_stage_mask, uint32 p_layer_count, uint32 p_mip_levels,
+								   vk::ImageAspectFlags p_aspect_flags) const -> void;
 		auto transitionImageLayout(vk::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
 								   vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask,
 								   uint32 p_layer_count, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void;
-		auto transitionImageLayout(vk::raii::CommandBuffer &p_cmd, vk::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
+		auto transitionImageLayout(vk::raii::CommandBuffer &p_cmd, vk::Image &                  p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
 								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-								   vk::PipelineStageFlags2  p_dst_stage_mask, uint32 p_layer_count, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void;
+								   vk::PipelineStageFlags2  p_dst_stage_mask, uint32            p_layer_count, uint32 p_mip_levels,
+								   vk::ImageAspectFlags     p_aspect_flags) const -> void;
 
 		auto generateMipmaps(vk::raii::Image &p_src_image, const ImageExtent &p_image_extent, uint32 p_mip_levels) -> void;
 		auto generateMipmaps(vk::Image &p_src_image, const ImageExtent &p_image_extent, uint32 p_mip_levels) -> void;

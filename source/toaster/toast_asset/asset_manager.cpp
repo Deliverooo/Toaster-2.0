@@ -34,7 +34,6 @@ namespace toaster::asset
 		const auto &metadata{m_assetMetadataRegistry.at(p_asset_id)};
 		AssetHandle asset_handle{s_assetImporters.at(metadata.type)(this, metadata)};
 		m_loadedAssets[p_asset_id] = asset_handle;
-		m_pathAssetIDMap[metadata.path].emplace(asset_handle);
 		if (!asset_handle)
 			return nullptr;
 
@@ -71,12 +70,7 @@ namespace toaster::asset
 		m_assetMetadataRegistry[p_asset_id] = p_metadata;
 	}
 
-	auto AssetManager::getPathAssetIDRegistry() const -> const std::unordered_map<io::filesystem::Path, std::unordered_set<AssetID> > &
-	{
-		return m_pathAssetIDMap;
-	}
-
-	auto AssetManager::getAssetMetadataRegistry() const -> const std::unordered_map<AssetID, AssetMetadata> &
+	auto AssetManager::getAssetMetadataRegistry() const -> const MetadataRegistry &
 	{
 		return m_assetMetadataRegistry;
 	}
@@ -95,7 +89,7 @@ namespace toaster::asset
 			m_loadedAssets.erase(p_asset_id);
 	}
 
-	auto AssetManager::removeInvalidAssets() -> void
+	auto AssetManager::removeAssetsWithInvalidPaths() -> void
 	{
 		std::unordered_set<AssetID> removed_ids;
 		std::erase_if(m_assetMetadataRegistry, [&removed_ids](const auto &pair) -> bool
