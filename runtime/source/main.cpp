@@ -13,14 +13,20 @@ INT WINAPI WinMain([[maybe_unused]] HINSTANCE hInstance, [[maybe_unused]] HINSTA
 auto main(int32 p_argc, char **p_argv) -> int32
 {
 	#endif
+
 	auto binary_directory{toaster::os::getBinaryDirectory()};
+
+	toaster::log::setOutputFile((binary_directory / "runtime_log.tlog").string());
+
+	fmt::println(toaster::log::getOutputFile(), "gusihgjkewhgoiw");
+	LOG_ERROR("gjishfoiwqjg");
 
 	argparse::ArgumentParser parser{"Toaster", "3.141592653589793284"};
 
 	parser.add_argument("--project", "-p").help("The path to the Toaster project file (.tproj)").
 			default_value("C:/dev/Toaster-2.0/examples/New_Project/New_Project.tproj");
 
-	parser.parse_args(__argc, __argv);
+	parser.parse_args(p_argc, p_argv);
 
 	toaster::ApplicationSpecInfo app_create_info{};
 	app_create_info.windowSpecInfo.width          = 1920;
@@ -38,6 +44,8 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		toaster::RuntimeApplication app{app_create_info, &parser};
 		app.run();
 	}
+
+	toaster::log::shutdown();
 
 	return 0;
 }

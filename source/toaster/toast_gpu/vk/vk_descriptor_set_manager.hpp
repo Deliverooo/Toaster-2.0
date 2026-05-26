@@ -37,42 +37,18 @@ namespace toaster::gpu
 
 		DescriptorResource() = default;
 
-		DescriptorResource(const UniformBufferHandle &p_uniform_buffer) : resources(std::vector<GPUResourceHandle>(1, p_uniform_buffer)),
-																		  type(EGPUResourceType::eUniformBuffer)
+		template<GPUResource_c TResource>
+		DescriptorResource(const RefPtr<TResource> &p_resource) : resources(std::vector<GPUResourceHandle>(1, p_resource.template as<IGPUResource>())),
+																  type(p_resource->getResourceType())
 		{
 		}
 
-		DescriptorResource(const UniformBufferPFFHandle &p_uniform_buffer_pff) : resources(std::vector<GPUResourceHandle>(1, p_uniform_buffer_pff)),
-																				 type(EGPUResourceType::eUniformBufferPFF)
+		// You should only use this for texture 2ds!
+		template<GPUResource_c TResource>
+		auto set(const RefPtr<TResource> &p_resource, uint32 p_index) -> void
 		{
-		}
-
-		DescriptorResource(const StorageBufferHandle &p_storage_buffer) : resources(std::vector<GPUResourceHandle>(1, p_storage_buffer)),
-																		  type(EGPUResourceType::eStorageBuffer)
-		{
-		}
-
-		DescriptorResource(const StorageBufferPFFHandle &p_storage_buffer_pff) : resources(std::vector<GPUResourceHandle>(1, p_storage_buffer_pff)),
-																				 type(EGPUResourceType::eStorageBufferPFF)
-		{
-		}
-
-		DescriptorResource(const Texture2DHandle &p_texture_2d) : resources(std::vector<GPUResourceHandle>(1, p_texture_2d)), type(EGPUResourceType::eTexture2D)
-		{
-		}
-
-		DescriptorResource(const StorageImageHandle &p_image_2d) : resources(std::vector<GPUResourceHandle>(1, p_image_2d)), type(EGPUResourceType::eStorageImage)
-		{
-		}
-
-		DescriptorResource(const Texture3DHandle &p_texture_3d) : resources(std::vector<GPUResourceHandle>(1, p_texture_3d)), type(EGPUResourceType::eTexture3D)
-		{
-		}
-
-		auto set(const Texture2DHandle &p_texture_2d, uint32 p_index) -> void
-		{
-			type               = EGPUResourceType::eTexture2D;
-			resources[p_index] = p_texture_2d.as<IGPUResource>();
+			type               = p_resource->getResourceType();
+			resources[p_index] = p_resource.template as<IGPUResource>(); // Workaround to prevent wierd const related compile error
 		}
 	};
 
@@ -82,14 +58,22 @@ namespace toaster::gpu
 	public:
 		VKDescriptorSetManager(VKLogicalDevice *p_device, const ShaderHandle &p_shader, uint32 p_start_set, uint32 p_end_set);
 
-		auto setDescriptor(const String &p_name, const UniformBufferHandle &p_uniform_buffer) -> void;
-		auto setDescriptor(const String &p_name, const UniformBufferPFFHandle &p_uniform_buffer_pff) -> void;
-		auto setDescriptor(const String &p_name, const StorageBufferHandle &p_storage_buffer) -> void;
-		auto setDescriptor(const String &p_name, const StorageBufferPFFHandle &p_storage_buffer_pff) -> void;
-		auto setDescriptor(const String &p_name, const Texture2DHandle &p_texture_2d) -> void;
-		auto setDescriptor(const String &p_name, const Texture2DHandle &p_texture_2d, uint32 p_array_index) -> void;
-		auto setDescriptor(const String &p_name, const StorageImageHandle &p_image_2d) -> void;
-		auto setDescriptor(const String &p_name, const Texture3DHandle &p_texture_3d) -> void;
+		template<GPUResource_c TResource>
+		auto setDescriptor(const String &p_name, const RefPtr<TResource> &p_resource, uint32 p_array_index = UINT32_MAX) -> void
+		{
+			const auto decl{getDescriptorDeclaration(p_name)};
+			TST_ASSERT_MSG((p_array_index == UINT32_MAX) ||(p_array_index < decl->arraySize), "Out of bounds");
+
+			if (decl)
+			{
+				if (p_array_index == UINT32_MAX)
+					m_descriptorResources.at(decl->set)[decl->binding] = p_resource;
+				else
+					m_descriptorResources.at(decl->set)[decl->binding].set(p_resource, p_array_index);
+			}
+			else
+				LOG_WARN("Descriptor was not found: {}", p_name);
+		}
 
 		template<GPUResource_c TResource>
 		auto getDescriptor(const String &p_name) -> RefPtr<TResource>

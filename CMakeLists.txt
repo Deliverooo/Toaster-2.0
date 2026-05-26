@@ -26,6 +26,8 @@ endif ()
 # Project definition
 project(Toaster)
 
+message(STATUS "Generator platform ${CMAKE_GENERATOR_PLATFORM}")
+
 if (DEFINED WITH_VULKAN_BACKEND)
 	message(NOTICE "WARNING: WITH_VULKAN_BACKEND was already defined as: ${WITH_VULKAN_BACKEND}")
 endif ()

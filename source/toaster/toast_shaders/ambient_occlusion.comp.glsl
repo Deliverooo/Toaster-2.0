@@ -25,83 +25,79 @@ layout(push_constant) uniform Constants
 };
 
 
-// Converts screen space depth to view space coordinates
-vec3 GetViewPos(vec2 uv) {
+// Reconstruct View-Space position from screen-space coordinates and depth
+vec3 getViewPos(vec2 uv) {
     float depth = texture(u_DepthTex, uv).r;
-    vec4 clipPos = vec4(uv * 2.0 - 1.0, depth, 1.0);
-    vec4 viewPos = u_InvProj * clipPos;
+    // Convert to Normalized Device Coordinates (NDC)
+    vec4 ndc = vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
+    vec4 viewPos = u_InvProj * ndc;
     return viewPos.xyz / viewPos.w;
 }
 
-float Hash21(vec2 p)
-{
-    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+// AO Parameters
+const int SAMPLES = 8;
+const float RADIUS = 0.5; // Sampling radius
+const float BIAS = 0.02;  // Helps reduce self-shadowing artifacts
+
+// Fast pseudo-random generator
+float rand(vec2 co) {
+    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 void main()
 {
-    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
-    vec2 uv = (vec2(texelCoord) + 0.5) / vec2(textureSize(u_DepthTex, 0));
+    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 texSize = textureSize(u_DepthTex, 0);
 
-    vec3 viewPos = GetViewPos(uv);
-    vec3 viewNormal = normalize(texture(u_NormalsTex, uv).xyz);
+    // Bounds check
+    if (pixelCoords.x >= texSize.x || pixelCoords.y >= texSize.y) return;
 
-    // Initial visibility bitmask: 0 = completely visible, 1 = occluded
-    // Using a 32-bit integer representing 32 angular sectors of a 180-degree hemisphere slice
-    uint visibilityBitmask = 0u;
+    // Map pixel to [0.0, 1.0] UV coordinates
+    vec2 uv = (vec2(pixelCoords) + vec2(0.5)) / vec2(texSize);
 
-    // Interleaved gradient noise or blue noise for sampling angle rotation
-    float noise = Hash21(vec2(texelCoord) + vec2(float(u_FrameIndex) * 17.0));
-    float randomAngle = noise * 6.28318530718;
+    // Get view space position of target pixel
+    vec3 originPos = getViewPos(uv);
 
-    for (int s = 0; s < u_NumSlices; ++s) {
-        float sliceAngle = (float(s) / float(u_NumSlices)) * 3.14159265 + randomAngle;
-        vec2 sliceDir = vec2(cos(sliceAngle), sin(sliceAngle));
+    // Quick random angle rotation based on pixel coordinates
+    float angle = rand(uv) * 6.2831853;
+    vec2 rotation = vec2(cos(angle), sin(angle));
 
-        for (int i = 1; i <= u_NumSamplesPerSlice; ++i) {
-            // Step out along the slice direction in screen space
-            float stepDist = (float(i) / float(u_NumSamplesPerSlice)) * u_Radius;
-            vec2 sampleUV = uv + (sliceDir * stepDist / viewPos.z);// Scale by depth
+    float occlusion = 0.0;
 
-            vec3 sampleViewPos = GetViewPos(sampleUV);
-            vec3 horizonVec = sampleViewPos - viewPos;
+    // 2D disk sample direction offsets
+    vec2 sampleOffsets[8] = vec2[](
+    vec2(1.0, 0.0), vec2(-1.0, 0.0), vec2(0.0, 1.0), vec2(0.0, -1.0),
+    vec2(0.7, 0.7), vec2(-0.7, -0.7), vec2(0.7, -0.7), vec2(-0.7, 0.7)
+    );
 
-            // Calculate the angle of this horizon vector relative to the slice tangent
-            float distanceSq = dot(horizonVec, horizonVec);
+    for (int i = 0; i < SAMPLES; ++i) {
+        // Rotate the offset direction to hide banding artifacts
+        vec2 rotatedOffset = vec2(
+        sampleOffsets[i].x * rotation.x - sampleOffsets[i].y * rotation.y,
+        sampleOffsets[i].x * rotation.y + sampleOffsets[i].y * rotation.x
+        );
 
-            if (distanceSq < u_Radius * u_Radius) {
-                // Project the sample onto our 2D slice plane to evaluate the angular sector
-                float angle = atan(horizonVec.z, length(horizonVec.xy));
+        // Scale offset based on sample depth to adjust real-world radius size
+        vec2 sampleUV = uv + (rotatedOffset * RADIUS) / -originPos.z;
 
-                // Map angle [-PI/2, PI/2] to bitmask sector range [0, 31]
-                float normalizedAngle = (angle + 1.570796) / 3.14159265;
-                int frontSector = clamp(int(normalizedAngle * 32.0), 0, 31);
+        // Retrieve neighboring geometry position
+        vec3 samplePos = getViewPos(sampleUV);
 
-                // Account for object thickness to build the back-face sector boundary
-                float backAngle = atan((horizonVec.z - u_Thickness), length(horizonVec.xy));
-                float normalizedBackAngle = (backAngle + 1.570796) / 3.14159265;
-                int backSector = clamp(int(normalizedBackAngle * 32.0), 0, 31);
+        // Vector pointing from origin pixel to sample point geometry
+        vec3 v = samplePos - originPos;
 
-                // Create a bitmask for the range [backSector, frontSector]
-                uint sampleMask = 0u;
-                for (int bit = backSector; bit <= frontSector; ++bit) {
-                    sampleMask |= (1u << bit);
-                }
+        // Compute occlusion factor using a classic range check
+        // If sample point is significantly far behind, ignore it to prevent haloing
+        float dist = length(v);
+        float rangeCheck = smoothstep(0.0, 1.0, RADIUS / dist);
 
-                // Accumulate the occluded sectors into our master bitmask
-                visibilityBitmask |= sampleMask;
-            }
-        }
+        // Accumulate occlusion if the sample point is in front of origin depth
+        occlusion += (v.z >= BIAS ? 1.0 : 0.0) * rangeCheck;
     }
 
-    // Evaluate final ambient occlusion by counting the remaining unoccluded bits (zeros)
-    // bitCount returns the number of set bits (ones), which represent occlusion
-    int occludedSectors = bitCount(visibilityBitmask);
-    float ambientOcclusion = 1.0 - (float(occludedSectors) / 32.0);
+    // Normalize and invert the result (1.0 = completely unoccluded, 0.0 = fully occluded)
+    float aoFactor = 1.0 - (occlusion / float(SAMPLES));
 
-    // Apply lighting/normal weight alignment adjustments here if desired
-
-    //    imageStore(o_Occlusion, texelCoord, vec4(0.0f, 1.0f, 0.0f, 1.0f));
-
-    imageStore(o_Occlusion, texelCoord, vec4(vec3(ambientOcclusion), 1.0f));
+    // Write out the result
+    imageStore(o_Occlusion, pixelCoords, vec4(aoFactor));
 }

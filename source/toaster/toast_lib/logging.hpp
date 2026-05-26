@@ -4,6 +4,10 @@
 #include <fmt/format.h>
 #include <glm/glm.hpp>
 
+#include "fmt/os.h"
+
+#include <memory>
+
 template<>
 struct fmt::formatter<glm::vec2>
 {
@@ -57,29 +61,64 @@ namespace toaster::log
 		eFatal
 	};
 
+	auto getOutputFile() -> std::FILE *;
+	auto setOutputFile(const std::string &p_filepath) -> void;
+
+	auto shutdown() -> void;
+
 	template<ELogLevel log_level, typename... TArgs>
 	auto printMessage(fmt::format_string<TArgs...> format, TArgs &&... args) -> void
 	{
 		std::string formatted = fmt::format(format, std::forward<TArgs>(args)...);
 		if constexpr (log_level == ELogLevel::eTrace)
 		{
-			fmt::print(fmt::fg(fmt::terminal_color::cyan), "{}\n", formatted);
+			if (getOutputFile())
+			{
+				fmt::print(getOutputFile(), "{}\n", formatted);
+				std::fflush(getOutputFile());
+			}
+			else
+				fmt::print(fmt::fg(fmt::terminal_color::cyan), "{}\n", formatted);
 		}
 		else if constexpr (log_level == ELogLevel::eInfo)
 		{
-			fmt::print(fmt::fg(fmt::terminal_color::bright_green), "{}\n", formatted);
+			if (getOutputFile())
+			{
+				fmt::print(getOutputFile(), "{}\n", formatted);
+				std::fflush(getOutputFile());
+			}
+			else
+				fmt::print(fmt::fg(fmt::terminal_color::bright_green), "{}\n", formatted);
 		}
 		else if constexpr (log_level == ELogLevel::eWarning)
 		{
-			fmt::print(fmt::fg(fmt::terminal_color::yellow), "{}\n", formatted);
+			if (getOutputFile())
+			{
+				fmt::print(getOutputFile(), "{}\n", formatted);
+				std::fflush(getOutputFile());
+			}
+			else
+				fmt::print(fmt::fg(fmt::terminal_color::yellow), "{}\n", formatted);
 		}
 		else if constexpr (log_level == ELogLevel::eError)
 		{
-			fmt::print(fmt::fg(fmt::terminal_color::red), "{}\n", formatted);
+			if (getOutputFile())
+			{
+				fmt::print(getOutputFile(), "{}\n", formatted);
+				std::fflush(getOutputFile());
+			}
+			else
+				fmt::print(fmt::fg(fmt::terminal_color::red), "{}\n", formatted);
 		}
 		else if constexpr (log_level == ELogLevel::eFatal)
 		{
-			fmt::print(fmt::fg(fmt::terminal_color::bright_red), "{}\n", formatted);
+			if (getOutputFile())
+			{
+				fmt::print(getOutputFile(), "{}\n", formatted);
+				std::fflush(getOutputFile());
+			}
+			else
+				fmt::print(fmt::fg(fmt::terminal_color::bright_red), "{}\n", formatted);
 		}
 	}
 
