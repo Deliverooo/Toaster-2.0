@@ -153,6 +153,16 @@ namespace toaster::gpu
 		auto generateMipmaps(vk::raii::Image &p_src_image, const ImageExtent &p_image_extent, uint32 p_mip_levels) -> void;
 		auto generateMipmaps(vk::Image &p_src_image, const ImageExtent &p_image_extent, uint32 p_mip_levels) -> void;
 
+		template<typename TObj>
+		auto setDebugObjectName(TObj &p_obj, const String &p_name) -> void
+		{
+			vk::DebugUtilsObjectNameInfoEXT name_info{};
+			name_info.objectType   = TObj::objectType;
+			name_info.objectHandle = reinterpret_cast<uint64>((typename TObj::NativeType) p_obj);
+			name_info.pObjectName  = p_name.c_str();
+			m_logicalDevice.setDebugUtilsObjectNameEXT(name_info);
+		}
+
 		operator vk::raii::Device &() { return m_logicalDevice; }
 
 	private:

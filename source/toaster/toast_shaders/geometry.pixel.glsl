@@ -202,8 +202,8 @@ void main()
 
     vec3 final_colour = lo;
 
-    vec2 screen_uv = gl_FragCoord.xy / vec2(1920, 1080);
-    final_colour *= texture(u_AOTexture, screen_uv).r;
+//    vec2 screen_uv = gl_FragCoord.xy / vec2(1920, 1080);
+//    final_colour *= texture(u_AOTexture, screen_uv).r;
 
     o_Colour = vec4(final_colour, 1.0f);
 }

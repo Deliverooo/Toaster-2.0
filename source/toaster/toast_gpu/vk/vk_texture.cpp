@@ -107,6 +107,18 @@ namespace toaster::gpu
 		});
 	}
 
+	auto VKTexture2D::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void
+	{
+		p_write_descriptor.pImageInfo = &m_descriptorImageInfo;
+		if (!p_write_descriptor.pImageInfo->imageView)
+			TST_ASSERT_MSG(false, "Oh no");
+	}
+
+	auto VKTexture2D::getDescriptorResourceHandle([[maybe_unused]] uint32 p_frame_index) -> void *
+	{
+		return m_descriptorImageInfo.imageView;
+	}
+
 	auto VKTexture2D::resize(uint32 p_width, uint32 p_height) -> void
 	{
 		m_image->resize(p_width, p_height);
@@ -260,6 +272,18 @@ namespace toaster::gpu
 		{
 			device->destroyObject(sampler);
 		});
+	}
+
+	auto VKTexture3D::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void
+	{
+		p_write_descriptor.pImageInfo = &m_descriptorImageInfo;
+		if (!p_write_descriptor.pImageInfo->imageView)
+			TST_ASSERT_MSG(false, "Oh no");
+	}
+
+	auto VKTexture3D::getDescriptorResourceHandle([[maybe_unused]] uint32 p_frame_index) -> void *
+	{
+		return m_descriptorImageInfo.imageView;
 	}
 
 	auto VKTexture3D::resize(uint32 p_width, uint32 p_height) -> void

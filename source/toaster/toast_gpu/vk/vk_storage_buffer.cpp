@@ -26,6 +26,18 @@ namespace toaster::gpu
 		});
 	}
 
+	auto VKStorageBuffer::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void
+	{
+		p_write_descriptor.pBufferInfo = &m_descriptorInfo;
+		if (!p_write_descriptor.pBufferInfo->buffer)
+			TST_ASSERT_MSG(false, "Oh no");
+	}
+
+	auto VKStorageBuffer::getDescriptorResourceHandle([[maybe_unused]] uint32 p_frame_index) -> void *
+	{
+		return m_descriptorInfo.buffer;
+	}
+
 	auto VKStorageBuffer::getBuffer() -> vk::Buffer &
 	{
 		return m_buffer;
@@ -101,6 +113,18 @@ namespace toaster::gpu
 				device->destroyObject(m);
 			});
 		}
+	}
+
+	auto VKStorageBufferPFF::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void
+	{
+		p_write_descriptor.pBufferInfo = &m_descriptorBufferInfos[m_device->getCurrentFrameIndex()];
+		if (!p_write_descriptor.pBufferInfo->buffer)
+			TST_ASSERT_MSG(false, "Oh no");
+	}
+
+	auto VKStorageBufferPFF::getDescriptorResourceHandle(uint32 p_frame_index) -> void *
+	{
+		return m_descriptorBufferInfos[p_frame_index].buffer;
 	}
 
 	auto VKStorageBufferPFF::getBuffer(uint32 p_frame_index) -> vk::Buffer &

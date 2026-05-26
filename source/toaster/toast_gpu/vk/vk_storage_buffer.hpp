@@ -16,6 +16,9 @@ namespace toaster::gpu
 		VKStorageBuffer(VKLogicalDevice *p_device, uint64 p_size);
 		~VKStorageBuffer();
 
+		virtual auto populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void override;
+		virtual auto getDescriptorResourceHandle(uint32 p_frame_index) -> void * override;
+
 		auto getBuffer() -> vk::Buffer &;
 		auto getBufferMemory() -> vk::DeviceMemory &;
 
@@ -54,6 +57,9 @@ namespace toaster::gpu
 	public:
 		VKStorageBufferPFF(VKLogicalDevice *p_device, uint64 p_size, uint32 p_frames_in_flight);
 		~VKStorageBufferPFF();
+
+		virtual auto populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void override;
+		virtual auto getDescriptorResourceHandle(uint32 p_frame_index) -> void * override;
 
 		[[nodiscard]] auto getBuffer(uint32 p_frame_index) -> vk::Buffer &;
 		[[nodiscard]] auto getBufferMemory(uint32 p_frame_index) -> vk::DeviceMemory &;

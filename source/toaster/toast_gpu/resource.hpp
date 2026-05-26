@@ -3,6 +3,8 @@
 #include <concepts>
 #include "toast_gpu.hpp"
 
+#include <vulkan/vulkan.hpp>
+
 namespace toaster::gpu
 {
 	enum class EGPUResourceType
@@ -23,6 +25,10 @@ namespace toaster::gpu
 		virtual ~IGPUResource() = default;
 
 		[[nodiscard]] virtual auto getResourceType() const -> EGPUResourceType = 0;
+
+		// See vk_descriptor_set_manager.cpp for usage
+		virtual auto populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void = 0;
+		virtual auto getDescriptorResourceHandle(uint32 p_frame_index = 0) -> void * = 0;
 	};
 
 	template<typename Type> concept GPUResource_c = std::derived_from<Type, IGPUResource>;
