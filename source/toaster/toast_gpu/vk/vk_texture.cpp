@@ -107,7 +107,7 @@ namespace toaster::gpu
 		});
 	}
 
-	auto VKTexture2D::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void
+	auto VKTexture2D::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor, uint32 p_frame_index) -> void
 	{
 		p_write_descriptor.pImageInfo = &m_descriptorImageInfo;
 		if (!p_write_descriptor.pImageInfo->imageView)
@@ -274,7 +274,7 @@ namespace toaster::gpu
 		});
 	}
 
-	auto VKTexture3D::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void
+	auto VKTexture3D::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor, uint32 p_frame_index) -> void
 	{
 		p_write_descriptor.pImageInfo = &m_descriptorImageInfo;
 		if (!p_write_descriptor.pImageInfo->imageView)

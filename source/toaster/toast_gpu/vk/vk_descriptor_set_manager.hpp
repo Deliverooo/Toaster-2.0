@@ -56,6 +56,12 @@ namespace toaster::gpu
 	{
 		TST_GPU_OBJECT
 	public:
+		struct WriteDescriptor
+		{
+			vk::WriteDescriptorSet wds{};
+			std::vector<void *>    resourceHandles;
+		};
+
 		VKDescriptorSetManager(VKLogicalDevice *p_device, const ShaderHandle &p_shader, uint32 p_start_set, uint32 p_end_set);
 
 		template<GPUResource_c TResource>
@@ -105,18 +111,17 @@ namespace toaster::gpu
 	private:
 		static auto _getDescriptorType(vk::DescriptorType p_type) -> EDescriptorType;
 		static auto _getResourceType(vk::DescriptorType p_type) -> EGPUResourceType;
+		static auto _getDescriptorImageSamplerType(vk::DescriptorType p_type, uint32 p_dimension) -> EDescriptorType;
+
+		static auto _populateWriteDescriptorTexture2DArray(WriteDescriptor &p_write_descriptor, const DescriptorResource &p_resource,
+														   std::vector<std::vector<vk::DescriptorImageInfo> > &p_descriptor_image_infos,
+														   uint32 &p_descriptor_image_info_index, uint32 p_frame_index) -> void;
 
 		ShaderHandle m_shader{nullptr};
 		uint32       m_startSet{0u};
 		uint32       m_endSet{3u};
 
 		vk::raii::DescriptorPool m_descriptorPool{nullptr};
-
-		struct WriteDescriptor
-		{
-			vk::WriteDescriptorSet wds{};
-			std::vector<void *>    resourceHandles;
-		};
 
 		std::vector<std::unordered_map<uint32, std::unordered_map<uint32, WriteDescriptor> > > m_writeDescriptorMap;
 		std::unordered_map<String, DescriptorDeclaration>                                      m_descriptorDeclarations;

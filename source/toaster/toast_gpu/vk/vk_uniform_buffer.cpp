@@ -25,7 +25,7 @@ namespace toaster::gpu
 		});
 	}
 
-	auto VKUniformBuffer::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void
+	auto VKUniformBuffer::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor, uint32 p_frame_index) -> void
 	{
 		p_write_descriptor.pBufferInfo = &m_descriptorInfo;
 		if (!p_write_descriptor.pBufferInfo->buffer)
@@ -108,9 +108,9 @@ namespace toaster::gpu
 		}
 	}
 
-	auto VKUniformBufferPFF::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void
+	auto VKUniformBufferPFF::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor, uint32 p_frame_index) -> void
 	{
-		p_write_descriptor.pBufferInfo = &m_descriptorBufferInfos[m_device->getCurrentFrameIndex()];
+		p_write_descriptor.pBufferInfo = &m_descriptorBufferInfos[p_frame_index];
 		if (!p_write_descriptor.pBufferInfo->buffer)
 			TST_ASSERT_MSG(false, "Oh no");
 	}
@@ -133,6 +133,11 @@ namespace toaster::gpu
 	auto VKUniformBufferPFF::getDescriptorInfo(uint32 p_frame_index) const -> const vk::DescriptorBufferInfo &
 	{
 		return m_descriptorBufferInfos.at(p_frame_index);
+	}
+
+	auto VKUniformBufferPFF::getFramesInFlightCount() const -> uint32
+	{
+		return m_framesInFlightCount;
 	}
 
 	auto VKUniformBufferPFF::mapMemory(uint32 p_frame_index, uint64 p_size, uint64 p_offset) -> void *

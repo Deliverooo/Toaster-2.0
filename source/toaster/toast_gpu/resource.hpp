@@ -19,6 +19,13 @@ namespace toaster::gpu
 		eStorageImage
 	};
 
+	// struct WriteDescriptor
+	// {
+	// 	vk::WriteDescriptorSet wds{};
+	// 	// These are just pointers to the actual descriptors of the resource (e.g. The image view of a texture 2d)
+	// 	std::vector<void *>    resourceHandles;
+	// };
+
 	class TST_GPU_API IGPUResource
 	{
 	public:
@@ -27,8 +34,8 @@ namespace toaster::gpu
 		[[nodiscard]] virtual auto getResourceType() const -> EGPUResourceType = 0;
 
 		// See vk_descriptor_set_manager.cpp for usage
-		virtual auto populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void = 0;
-		virtual auto getDescriptorResourceHandle(uint32 p_frame_index = 0) -> void * = 0;
+		virtual auto populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor, uint32 p_frame_index) -> void = 0;
+		virtual auto getDescriptorResourceHandle(uint32 p_frame_index) -> void * = 0;
 	};
 
 	template<typename Type> concept GPUResource_c = std::derived_from<Type, IGPUResource>;

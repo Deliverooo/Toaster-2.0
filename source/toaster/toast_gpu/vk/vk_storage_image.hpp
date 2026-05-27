@@ -15,7 +15,7 @@ namespace toaster::gpu
 		VKStorageImage(VKLogicalDevice *p_device, const ImageSpecInfo &p_spec_info);
 		~VKStorageImage();
 
-		virtual auto populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void override;
+		virtual auto populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor, uint32 p_frame_index) -> void override;
 		virtual auto getDescriptorResourceHandle(uint32 p_frame_index) -> void * override;
 
 		auto resize(uint32 p_width, uint32 p_height) -> void;

@@ -26,7 +26,7 @@ namespace toaster::gpu
 		});
 	}
 
-	auto VKStorageBuffer::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void
+	auto VKStorageBuffer::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor, uint32 p_frame_index) -> void
 	{
 		p_write_descriptor.pBufferInfo = &m_descriptorInfo;
 		if (!p_write_descriptor.pBufferInfo->buffer)
@@ -115,9 +115,9 @@ namespace toaster::gpu
 		}
 	}
 
-	auto VKStorageBufferPFF::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void
+	auto VKStorageBufferPFF::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor, uint32 p_frame_index) -> void
 	{
-		p_write_descriptor.pBufferInfo = &m_descriptorBufferInfos[m_device->getCurrentFrameIndex()];
+		p_write_descriptor.pBufferInfo = &m_descriptorBufferInfos[p_frame_index];
 		if (!p_write_descriptor.pBufferInfo->buffer)
 			TST_ASSERT_MSG(false, "Oh no");
 	}

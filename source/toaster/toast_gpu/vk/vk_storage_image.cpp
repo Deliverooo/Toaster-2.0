@@ -19,7 +19,7 @@ namespace toaster::gpu
 		});
 	}
 
-	auto VKStorageImage::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor) -> void
+	auto VKStorageImage::populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor, uint32 p_frame_index) -> void
 	{
 		p_write_descriptor.pImageInfo = &m_descriptorImageInfo;
 		if (!p_write_descriptor.pImageInfo->imageView)

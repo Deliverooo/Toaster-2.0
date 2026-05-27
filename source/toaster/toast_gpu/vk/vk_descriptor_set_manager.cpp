@@ -1,8 +1,7 @@
 #include "vk_descriptor_set_manager.hpp"
-
-#include <ranges>
-
 #include "vk_logical_device.hpp"
+
+#include "toast_lib/map.hpp"
 
 namespace toaster::gpu
 {
@@ -41,51 +40,32 @@ namespace toaster::gpu
 				descriptor_declaration.set       = set;
 				descriptor_declaration.binding   = binding;
 				descriptor_declaration.arraySize = write_descriptor.descriptorCount;
-				descriptor_declaration.type      = _getDescriptorType(write_descriptor.descriptorType);
+				// This will be the final type of the descriptor unless it is an image sampler, see _getDescriptorImageSamplerType()
+				descriptor_declaration.type = _getDescriptorType(write_descriptor.descriptorType);
 
 				DescriptorResource &descriptor_resource{m_descriptorResources[set][binding]};
 				descriptor_resource.resources.resize(write_descriptor.descriptorCount);
 				descriptor_resource.type = _getResourceType(write_descriptor.descriptorType);
 
+				// For samplers, they are different types depending on their dimension
 				if (descriptor_set.imageSamplers.contains(binding))
 				{
-					auto & sampler{descriptor_set.imageSamplers.at(binding)};
-					uint32 dimension{sampler.dimension};
-					if (write_descriptor.descriptorType == vk::DescriptorType::eSampledImage || write_descriptor.descriptorType ==
-						vk::DescriptorType::eCombinedImageSampler)
-					{
-						switch (dimension)
-						{
-							case 1:
-								break;
-							case 2: descriptor_declaration.type = EDescriptorType::eSampler2D;
-								break;
-							case 3: descriptor_declaration.type = EDescriptorType::eSampler3D;
-								break;
-							default: break;
-						}
-					}
-					else if (write_descriptor.descriptorType == vk::DescriptorType::eStorageImage)
-					{
-						switch (dimension)
-						{
-							case 1:
-								break;
-							case 2: descriptor_declaration.type = EDescriptorType::eImage2D;
-								break;
-							case 3: descriptor_declaration.type = EDescriptorType::eImage3D;
-								break;
-							default: break;
-						}
-					}
+					auto &sampler{descriptor_set.imageSamplers.at(binding)};
+					descriptor_declaration.type = _getDescriptorImageSamplerType(write_descriptor.descriptorType, sampler.dimension);
 				}
+				TST_ASSERT(descriptor_declaration.type != EDescriptorType::eUnknown);
 
+				// Create default resources so you can actually set the resource descriptor during rendering
 				if (descriptor_declaration.type == EDescriptorType::eSampler2D)
+				{
 					for (uint32 i{0u}; i < descriptor_resource.resources.size(); ++i)
 						descriptor_resource.resources[i] = m_whiteTexture.as<IGPUResource>();
+				}
 				else if (descriptor_declaration.type == EDescriptorType::eSampler3D)
+				{
 					for (uint32 i{0u}; i < descriptor_resource.resources.size(); ++i)
 						descriptor_resource.resources[i] = m_whiteTexture3D.as<IGPUResource>();
+				}
 
 				for (uint32 frame_index{0u}; frame_index < m_device->getSpecInfo().maxFramesInFlight; ++frame_index)
 					m_writeDescriptorMap[frame_index][set][binding] = {write_descriptor, std::vector<void *>{write_descriptor.descriptorCount}};
@@ -138,8 +118,10 @@ namespace toaster::gpu
 
 				auto &write_descriptor_sets{m_writeDescriptorMap[frame_index].at(set)};
 
+				// The image infos need to be here so they don't go out of scope when iterating through the resources
 				std::vector<std::vector<vk::DescriptorImageInfo> > descriptor_image_infos;
 				uint32                                             descriptor_image_info_index{0u};
+
 				for (const auto &[binding, resource]: resources)
 				{
 					auto &stored_write_descriptor{write_descriptor_sets.at(binding)};
@@ -148,28 +130,19 @@ namespace toaster::gpu
 					write_descriptor.dstSet = descriptor_set;
 
 					GPUResourceHandle resource_handle{resource.resources[0]};
-					if (resource_handle.as<VKTexture2D>())
-					{
-						descriptor_image_infos.emplace_back(resource.resources.size());
-
-						for (uint32 i{0u}; i < resource.resources.size(); ++i)
-						{
-							stored_write_descriptor.resourceHandles[i]             = resource_handle->getDescriptorResourceHandle();
-							descriptor_image_infos[descriptor_image_info_index][i] = resource.resources[i].as<VKTexture2D>()->getDescriptorInfo();
-						}
-
-						write_descriptor.pImageInfo = descriptor_image_infos[descriptor_image_info_index].data();
-						++descriptor_image_info_index;
-					}
+					if (resource.type == EGPUResourceType::eTexture2D)
+						_populateWriteDescriptorTexture2DArray(stored_write_descriptor, resource, descriptor_image_infos, descriptor_image_info_index, frame_index);
 					else
 					{
-						resource_handle->populateWriteDescriptor(write_descriptor);
+						stored_write_descriptor.resourceHandles[0] = resource_handle->getDescriptorResourceHandle(frame_index);
+						resource_handle->populateWriteDescriptor(write_descriptor, frame_index);
 					}
 				}
 
-				std::vector<vk::WriteDescriptorSet> write_descriptors;
-				for (auto &write_descriptor: write_descriptor_sets | std::views::values)
-					write_descriptors.emplace_back(write_descriptor.wds);
+				auto write_descriptors{
+					write_descriptor_sets | std::views::values | std::ranges::to<std::vector>() | std::views::transform(&WriteDescriptor::wds) | std::ranges::to<
+						std::vector>()
+				};
 
 				if (!write_descriptors.empty())
 					m_device->getVulkanLogicalDevice().updateDescriptorSets(write_descriptors, {});
@@ -183,67 +156,23 @@ namespace toaster::gpu
 		{
 			for (const auto &[binding, resource]: resources)
 			{
-				switch (resource.type)
+				if (resource.resources[0].as<VKTexture2D>())
 				{
-					case EGPUResourceType::eUniformBuffer:
+					for (uint32 i{0u}; i < resource.resources.size(); ++i)
 					{
-						const auto &buffer_info{resource.resources[0].as<VKUniformBuffer>()->getDescriptorInfo()};
-						if (buffer_info.buffer != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
-							m_invalidDescriptorResources[set][binding] = resource;
-						break;
-					}
-					case EGPUResourceType::eUniformBufferPFF:
-					{
-						const auto &buffer_info{resource.resources[0].as<VKUniformBufferPFF>()->getDescriptorInfo(p_frame_index)};
-						if (buffer_info.buffer != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
-							m_invalidDescriptorResources[set][binding] = resource;
-						break;
-					}
-					case EGPUResourceType::eStorageBuffer:
-					{
-						const auto &buffer_info{resource.resources[0].as<VKStorageBuffer>()->getDescriptorInfo()};
-						if (buffer_info.buffer != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
-							m_invalidDescriptorResources[set][binding] = resource;
-						break;
-					}
-					case EGPUResourceType::eStorageBufferPFF:
-					{
-						const auto &buffer_info{resource.resources[0].as<VKStorageBufferPFF>()->getDescriptorInfo(p_frame_index)};
-						if (buffer_info.buffer != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
-							m_invalidDescriptorResources[set][binding] = resource;
-						break;
-					}
-					case EGPUResourceType::eTexture2D:
-					{
-						for (uint32 i{0u}; i < resource.resources.size(); ++i)
+						void *descriptor_resource_handle{resource.resources[i]->getDescriptorResourceHandle(p_frame_index)};
+						if (descriptor_resource_handle != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[i])
 						{
-							auto texture_2d{resource.resources[i].as<VKTexture2D>()};
-							if (!texture_2d)
-								texture_2d = m_whiteTexture;
-							const auto &image_info{texture_2d->getDescriptorInfo()};
-							if (image_info.imageView != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[i])
-							{
-								m_invalidDescriptorResources[set][binding] = resource;
-								break;
-							}
+							m_invalidDescriptorResources[set][binding] = resource;
+							break;
 						}
-						break;
 					}
-					case EGPUResourceType::eStorageImage:
-					{
-						const auto &image_info{resource.resources[0].as<VKStorageImage>()->getDescriptorInfo()};
-						if (image_info.imageView != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
-							m_invalidDescriptorResources[set][binding] = resource;
-						break;
-					}
-					case EGPUResourceType::eTexture3D:
-					{
-						const auto &image_info{resource.resources[0].as<VKTexture3D>()->getDescriptorInfo()};
-						if (image_info.imageView != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
-							m_invalidDescriptorResources[set][binding] = resource;
-						break;
-					}
-					default: break;
+				}
+				else
+				{
+					void *descriptor_resource_handle{resource.resources[0]->getDescriptorResourceHandle(p_frame_index)};
+					if (descriptor_resource_handle != m_writeDescriptorMap[p_frame_index].at(set).at(binding).resourceHandles[0])
+						m_invalidDescriptorResources[set][binding] = resource;
 				}
 			}
 		}
@@ -255,84 +184,25 @@ namespace toaster::gpu
 		{
 			std::vector<vk::WriteDescriptorSet> write_descriptor_sets;
 			write_descriptor_sets.reserve(resources.size());
+
 			std::vector<std::vector<vk::DescriptorImageInfo> > descriptor_image_infos;
 			uint32                                             descriptor_image_info_index{0u};
-
 			for (const auto &[binding, resource]: resources)
 			{
 				auto &write_descriptor{m_writeDescriptorMap[p_frame_index].at(set).at(binding)};
 
-				switch (resource.type)
+				GPUResourceHandle resource_handle{resource.resources[0]};
+				if (resource_handle.as<VKTexture2D>())
+					_populateWriteDescriptorTexture2DArray(write_descriptor, resource, descriptor_image_infos, descriptor_image_info_index, p_frame_index);
+				else
 				{
-					case EGPUResourceType::eUniformBuffer:
-					{
-						auto uniform_buffer{resource.resources[0].as<VKUniformBuffer>()};
-						write_descriptor.wds.pBufferInfo    = &uniform_buffer->getDescriptorInfo();
-						write_descriptor.resourceHandles[0] = uniform_buffer->getDescriptorInfo().buffer;
-						break;
-					}
-					case EGPUResourceType::eUniformBufferPFF:
-					{
-						auto uniform_buffer{resource.resources[0].as<VKUniformBufferPFF>()};
-						write_descriptor.wds.pBufferInfo    = &uniform_buffer->getDescriptorInfo(p_frame_index);
-						write_descriptor.resourceHandles[0] = uniform_buffer->getDescriptorInfo(p_frame_index).buffer;
-						break;
-					}
-					case EGPUResourceType::eStorageBuffer:
-					{
-						auto storage_buffer{resource.resources[0].as<VKStorageBuffer>()};
-						write_descriptor.wds.pBufferInfo    = &storage_buffer->getDescriptorInfo();
-						write_descriptor.resourceHandles[0] = storage_buffer->getDescriptorInfo().buffer;
-						break;
-					}
-					case EGPUResourceType::eStorageBufferPFF:
-					{
-						auto storage_buffer{resource.resources[0].as<VKStorageBufferPFF>()};
-						write_descriptor.wds.pBufferInfo    = &storage_buffer->getDescriptorInfo(p_frame_index);
-						write_descriptor.resourceHandles[0] = storage_buffer->getDescriptorInfo(p_frame_index).buffer;
-						break;
-					}
-					case EGPUResourceType::eTexture2D:
-					{
-						if (resource.resources.size() > 1)
-						{
-							descriptor_image_infos.emplace_back(resource.resources.size());
-							for (uint32 i{0u}; i < resource.resources.size(); ++i)
-							{
-								auto texture_2d{resource.resources[i].as<VKTexture2D>()};
-								descriptor_image_infos[descriptor_image_info_index][i] = texture_2d->getDescriptorInfo();
-								write_descriptor.resourceHandles[i]                    = descriptor_image_infos[descriptor_image_info_index][i].imageView;
-							}
-							write_descriptor.wds.pImageInfo = descriptor_image_infos[descriptor_image_info_index].data();
-							++descriptor_image_info_index;
-						}
-						else
-						{
-							auto texture_2d{resource.resources[0].as<VKTexture2D>()};
-							write_descriptor.wds.pImageInfo     = &texture_2d->getDescriptorInfo();
-							write_descriptor.resourceHandles[0] = texture_2d->getDescriptorInfo().imageView;
-						}
-						break;
-					}
-					case EGPUResourceType::eStorageImage:
-					{
-						auto image_2d{resource.resources[0].as<VKStorageImage>()};
-						write_descriptor.wds.pImageInfo     = &image_2d->getDescriptorInfo();
-						write_descriptor.resourceHandles[0] = image_2d->getDescriptorInfo().imageView;
-						break;
-					}
-					case EGPUResourceType::eTexture3D:
-					{
-						auto texture_3d{resource.resources[0].as<VKTexture3D>()};
-						write_descriptor.wds.pImageInfo     = &texture_3d->getDescriptorInfo();
-						write_descriptor.resourceHandles[0] = texture_3d->getDescriptorInfo().imageView;
-						break;
-					}
-					default: break;
+					resource_handle->populateWriteDescriptor(write_descriptor.wds, p_frame_index);
+					write_descriptor.resourceHandles[0] = resource_handle->getDescriptorResourceHandle(p_frame_index);
 				}
 
 				write_descriptor_sets.emplace_back(write_descriptor.wds);
 			}
+
 			m_device->getVulkanLogicalDevice().updateDescriptorSets(write_descriptor_sets, {});
 		}
 		m_invalidDescriptorResources.clear();
@@ -414,5 +284,54 @@ namespace toaster::gpu
 			default: return EGPUResourceType::eUnknown;
 		}
 		return EGPUResourceType::eUnknown;
+	}
+
+	auto VKDescriptorSetManager::_getDescriptorImageSamplerType(vk::DescriptorType p_type, uint32 p_dimension) -> EDescriptorType
+	{
+		if (p_type == vk::DescriptorType::eSampledImage || p_type == vk::DescriptorType::eCombinedImageSampler)
+		{
+			switch (p_dimension)
+			{
+				case 1:
+					break;
+				case 2: return EDescriptorType::eSampler2D;
+					break;
+				case 3: return EDescriptorType::eSampler3D;
+					break;
+				default: break;
+			}
+		}
+		else if (p_type == vk::DescriptorType::eStorageImage)
+		{
+			switch (p_dimension)
+			{
+				case 1:
+					break;
+				case 2: return EDescriptorType::eImage2D;
+					break;
+				case 3: return EDescriptorType::eImage3D;
+					break;
+				default: break;
+			}
+		}
+
+		return _getDescriptorType(p_type);
+	}
+
+	auto VKDescriptorSetManager::_populateWriteDescriptorTexture2DArray(WriteDescriptor &p_write_descriptor, const DescriptorResource &p_resource,
+																		std::vector<std::vector<vk::DescriptorImageInfo> > &p_descriptor_image_infos,
+																		uint32 &p_descriptor_image_info_index, uint32 p_frame_index) -> void
+	{
+		auto &current_image_infos{p_descriptor_image_infos.emplace_back()};
+		current_image_infos.resize(p_resource.resources.size());
+
+		for (uint32 i{0u}; i < p_resource.resources.size(); ++i)
+		{
+			current_image_infos[i]                = p_resource.resources[i].as<VKTexture2D>()->getDescriptorInfo();
+			p_write_descriptor.resourceHandles[i] = p_resource.resources[i]->getDescriptorResourceHandle(p_frame_index);
+		}
+
+		p_write_descriptor.wds.pImageInfo = current_image_infos.data();
+		++p_descriptor_image_info_index;
 	}
 }
