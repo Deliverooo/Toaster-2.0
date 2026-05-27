@@ -5,10 +5,8 @@
 
 namespace toaster::gpu
 {
-	VKDescriptorSetManager::VKDescriptorSetManager(VKLogicalDevice *p_device, const ShaderHandle &p_shader, uint32 p_start_set, uint32 p_end_set) : m_device(p_device),
-																																					m_shader(p_shader),
-																																					m_startSet(p_start_set),
-																																					m_endSet(p_end_set)
+	VKDescriptorSetManager::VKDescriptorSetManager(VKLogicalDevice *p_device, const DescriptorSetManagerSpecInfo &p_spec_info) : m_device(p_device),
+																																 m_specInfo(p_spec_info)
 	{
 		TextureSpecInfo texture_spec_info{};
 		texture_spec_info.width        = 1u;
@@ -22,10 +20,10 @@ namespace toaster::gpu
 		m_whiteTexture3D = make_reference<VKTexture3D>(m_device, texture_spec_info);
 		m_whiteTexture3D->setData(Buffer{texture_3d_data, sizeof(uint32) * 6});
 
-		const auto &descriptor_sets{m_shader->getReflectedShaderDescriptorSets()};
+		const auto &descriptor_sets{m_specInfo.shader->getReflectedShaderDescriptorSets()};
 		m_writeDescriptorMap.resize(m_device->getSpecInfo().maxFramesInFlight);
 
-		for (uint32 set{m_startSet}; set <= m_endSet; ++set)
+		for (uint32 set{m_specInfo.startSet}; set <= m_specInfo.endSet; ++set)
 		{
 			if (set >= descriptor_sets.size())
 				break;
@@ -41,17 +39,17 @@ namespace toaster::gpu
 				descriptor_declaration.binding   = binding;
 				descriptor_declaration.arraySize = write_descriptor.descriptorCount;
 				// This will be the final type of the descriptor unless it is an image sampler, see _getDescriptorImageSamplerType()
-				descriptor_declaration.type = _getDescriptorType(write_descriptor.descriptorType);
+				descriptor_declaration.type = getDescriptorType(write_descriptor.descriptorType);
 
 				DescriptorResource &descriptor_resource{m_descriptorResources[set][binding]};
 				descriptor_resource.resources.resize(write_descriptor.descriptorCount);
-				descriptor_resource.type = _getResourceType(write_descriptor.descriptorType);
+				descriptor_resource.type = getResourceType(write_descriptor.descriptorType);
 
 				// For samplers, they are different types depending on their dimension
 				if (descriptor_set.imageSamplers.contains(binding))
 				{
 					auto &sampler{descriptor_set.imageSamplers.at(binding)};
-					descriptor_declaration.type = _getDescriptorImageSamplerType(write_descriptor.descriptorType, sampler.dimension);
+					descriptor_declaration.type = getDescriptorImageSamplerType(write_descriptor.descriptorType, sampler.dimension);
 				}
 				TST_ASSERT(descriptor_declaration.type != EDescriptorType::eUnknown);
 
@@ -102,7 +100,7 @@ namespace toaster::gpu
 		{
 			for (uint32 frame_index{0u}; frame_index < m_device->getSpecInfo().maxFramesInFlight; ++frame_index)
 			{
-				const vk::raii::DescriptorSetLayout &descriptor_set_layout{m_shader->getDescriptorSetLayout(set)};
+				const vk::raii::DescriptorSetLayout &descriptor_set_layout{m_specInfo.shader->getDescriptorSetLayout(set)};
 				vk::DescriptorSetAllocateInfo        descriptor_set_allocate_info{};
 				descriptor_set_allocate_info.descriptorPool     = m_descriptorPool;
 				descriptor_set_allocate_info.descriptorSetCount = 1;
@@ -244,78 +242,9 @@ namespace toaster::gpu
 		return !m_descriptorSets.empty() && !m_descriptorSets[0].empty();
 	}
 
-	auto VKDescriptorSetManager::getStartSetIndex() const -> uint32
+	auto VKDescriptorSetManager::getSpecInfo() const -> const DescriptorSetManagerSpecInfo &
 	{
-		return m_startSet;
-	}
-
-	auto VKDescriptorSetManager::getEndSetIndex() const -> uint32
-	{
-		return m_endSet;
-	}
-
-	auto VKDescriptorSetManager::_getDescriptorType(vk::DescriptorType p_type) -> EDescriptorType
-	{
-		switch (p_type)
-		{
-			case vk::DescriptorType::eUniformBuffer: return EDescriptorType::eUniformBuffer;
-			case vk::DescriptorType::eStorageBuffer: return EDescriptorType::eStorageBuffer;
-			case vk::DescriptorType::eCombinedImageSampler:
-			case vk::DescriptorType::eSampledImage:
-				return EDescriptorType::eSampler2D;
-			case vk::DescriptorType::eStorageImage:
-				return EDescriptorType::eImage2D;
-			default: return EDescriptorType::eUnknown;
-		}
-		return EDescriptorType::eUnknown;
-	}
-
-	auto VKDescriptorSetManager::_getResourceType(vk::DescriptorType p_type) -> EGPUResourceType
-	{
-		switch (p_type)
-		{
-			case vk::DescriptorType::eUniformBuffer: return EGPUResourceType::eUniformBuffer;
-			case vk::DescriptorType::eStorageBuffer: return EGPUResourceType::eStorageBuffer;
-			case vk::DescriptorType::eCombinedImageSampler:
-			case vk::DescriptorType::eSampledImage:
-				return EGPUResourceType::eTexture2D;
-			case vk::DescriptorType::eStorageImage:
-				return EGPUResourceType::eStorageImage;
-			default: return EGPUResourceType::eUnknown;
-		}
-		return EGPUResourceType::eUnknown;
-	}
-
-	auto VKDescriptorSetManager::_getDescriptorImageSamplerType(vk::DescriptorType p_type, uint32 p_dimension) -> EDescriptorType
-	{
-		if (p_type == vk::DescriptorType::eSampledImage || p_type == vk::DescriptorType::eCombinedImageSampler)
-		{
-			switch (p_dimension)
-			{
-				case 1:
-					break;
-				case 2: return EDescriptorType::eSampler2D;
-					break;
-				case 3: return EDescriptorType::eSampler3D;
-					break;
-				default: break;
-			}
-		}
-		else if (p_type == vk::DescriptorType::eStorageImage)
-		{
-			switch (p_dimension)
-			{
-				case 1:
-					break;
-				case 2: return EDescriptorType::eImage2D;
-					break;
-				case 3: return EDescriptorType::eImage3D;
-					break;
-				default: break;
-			}
-		}
-
-		return _getDescriptorType(p_type);
+		return m_specInfo;
 	}
 
 	auto VKDescriptorSetManager::_populateWriteDescriptorTexture2DArray(WriteDescriptor &p_write_descriptor, const DescriptorResource &p_resource,

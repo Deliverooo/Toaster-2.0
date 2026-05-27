@@ -6,7 +6,13 @@ namespace toaster::gpu
 {
 	VKRenderPass::VKRenderPass(VKLogicalDevice *p_device, const PipelineHandle &p_pipeline) : m_device(p_device), m_pipeline(p_pipeline)
 	{
-		m_descriptorSetManager = new VKDescriptorSetManager{m_device, m_pipeline->getSpecInfo().shader, 1, 3};
+		TST_PERMA_ASSERT_MSG(p_device, "Device cannot be null");
+
+		DescriptorSetManagerSpecInfo dsm_spec_info{};
+		dsm_spec_info.shader   = m_pipeline->getSpecInfo().shader;
+		dsm_spec_info.startSet = 1;
+		dsm_spec_info.endSet   = 3;
+		m_descriptorSetManager = new VKDescriptorSetManager{m_device, dsm_spec_info};
 	}
 
 	VKRenderPass::~VKRenderPass()
@@ -65,11 +71,11 @@ namespace toaster::gpu
 
 	auto VKRenderPass::getStartSetIndex() const -> uint32
 	{
-		return m_descriptorSetManager->getStartSetIndex();
+		return m_descriptorSetManager->getSpecInfo().startSet;
 	}
 
 	auto VKRenderPass::getEndSetIndex() const -> uint32
 	{
-		return m_descriptorSetManager->getEndSetIndex();
+		return m_descriptorSetManager->getSpecInfo().endSet;
 	}
 }

@@ -18,7 +18,11 @@ namespace toaster::render
 			m_pushConstantStorageBuffer.zeroInitialize();
 		}
 
-		m_descriptorSetManager = new gpu::VKDescriptorSetManager{m_renderCtx->getLogicalDevice(), m_shader, 0, 0};
+		gpu::DescriptorSetManagerSpecInfo dsm_spec_info{};
+		dsm_spec_info.shader   = m_shader;
+		dsm_spec_info.startSet = 0;
+		dsm_spec_info.endSet   = 0;
+		m_descriptorSetManager = new gpu::VKDescriptorSetManager{m_renderCtx->getLogicalDevice(), dsm_spec_info};
 
 		for (const auto &[name, decl]: m_descriptorSetManager->getDescriptorDeclarations())
 		{

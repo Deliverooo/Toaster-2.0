@@ -10,17 +10,6 @@ namespace toaster::gpu
 {
 	class VKLogicalDevice;
 
-	enum class EDescriptorType
-	{
-		eUnknown,
-		eUniformBuffer,
-		eStorageBuffer,
-		eSampler2D,
-		eSampler3D,
-		eImage2D,
-		eImage3D
-	};
-
 	struct DescriptorDeclaration
 	{
 		String          name{};
@@ -30,39 +19,18 @@ namespace toaster::gpu
 		EDescriptorType type{EDescriptorType::eUnknown};
 	};
 
-	struct TST_GPU_API DescriptorResource
+	struct DescriptorSetManagerSpecInfo
 	{
-		std::vector<GPUResourceHandle> resources;
-		EGPUResourceType               type{EGPUResourceType::eUnknown};
-
-		DescriptorResource() = default;
-
-		template<GPUResource_c TResource>
-		DescriptorResource(const RefPtr<TResource> &p_resource) : resources(std::vector<GPUResourceHandle>(1, p_resource.template as<IGPUResource>())),
-																  type(p_resource->getResourceType())
-		{
-		}
-
-		// You should only use this for texture 2ds!
-		template<GPUResource_c TResource>
-		auto set(const RefPtr<TResource> &p_resource, uint32 p_index) -> void
-		{
-			type               = p_resource->getResourceType();
-			resources[p_index] = p_resource.template as<IGPUResource>(); // Workaround to prevent wierd const related compile error
-		}
+		ShaderHandle shader{nullptr};
+		uint32       startSet{0u};
+		uint32       endSet{3u};
 	};
 
 	class TST_GPU_API VKDescriptorSetManager
 	{
 		TST_GPU_OBJECT
 	public:
-		struct WriteDescriptor
-		{
-			vk::WriteDescriptorSet wds{};
-			std::vector<void *>    resourceHandles;
-		};
-
-		VKDescriptorSetManager(VKLogicalDevice *p_device, const ShaderHandle &p_shader, uint32 p_start_set, uint32 p_end_set);
+		VKDescriptorSetManager(VKLogicalDevice *p_device, const DescriptorSetManagerSpecInfo &p_spec_info);
 
 		template<GPUResource_c TResource>
 		auto setDescriptor(const String &p_name, const RefPtr<TResource> &p_resource, uint32 p_array_index = UINT32_MAX) -> void
@@ -105,21 +73,14 @@ namespace toaster::gpu
 
 		auto hasDescriptorSets() const -> bool;
 
-		auto getStartSetIndex() const -> uint32;
-		auto getEndSetIndex() const -> uint32;
+		auto getSpecInfo() const -> const DescriptorSetManagerSpecInfo &;
 
 	private:
-		static auto _getDescriptorType(vk::DescriptorType p_type) -> EDescriptorType;
-		static auto _getResourceType(vk::DescriptorType p_type) -> EGPUResourceType;
-		static auto _getDescriptorImageSamplerType(vk::DescriptorType p_type, uint32 p_dimension) -> EDescriptorType;
-
 		static auto _populateWriteDescriptorTexture2DArray(WriteDescriptor &p_write_descriptor, const DescriptorResource &p_resource,
 														   std::vector<std::vector<vk::DescriptorImageInfo> > &p_descriptor_image_infos,
 														   uint32 &p_descriptor_image_info_index, uint32 p_frame_index) -> void;
 
-		ShaderHandle m_shader{nullptr};
-		uint32       m_startSet{0u};
-		uint32       m_endSet{3u};
+		DescriptorSetManagerSpecInfo m_specInfo{};
 
 		vk::raii::DescriptorPool m_descriptorPool{nullptr};
 
