@@ -2,9 +2,10 @@
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
-layout(set = 2, binding = 0) uniform sampler2D u_DepthTex;
+layout(set = 2, binding = 0) uniform sampler2D u_PositionsTex;
 layout(set = 2, binding = 1) uniform sampler2D u_NormalsTex;
-layout(set = 2, binding = 2) uniform writeonly image2D o_Occlusion;
+layout(set = 2, binding = 2) uniform sampler2D u_NoiseTex;
+layout(set = 2, binding = 3) uniform writeonly image2D o_Occlusion;
 
 layout(std140, set = 1, binding = 1) uniform Camera
 {
@@ -13,91 +14,89 @@ layout(std140, set = 1, binding = 1) uniform Camera
     mat4 u_InvProj;
 };
 
+layout(std140, set = 3, binding = 0) uniform SSAOKernel
+{
+    vec4 u_Samples[64];
+};
+
 layout(push_constant) uniform Constants
 {
-    layout(offset = 0) float u_Radius;
-    layout(offset = 4) float u_Thickness;
-
-    layout(offset = 8) uint u_FrameIndex;
-
-    layout(offset = 12) int u_NumSlices;
-    layout(offset = 16) int u_NumSamplesPerSlice;
+    float u_Radius;
+    float u_Bias;
+    vec2 u_NoiseScale;
 };
 
 
-// Reconstruct View-Space position from screen-space coordinates and depth
-vec3 getViewPos(vec2 uv) {
-    float depth = texture(u_DepthTex, uv).r;
-    // Convert to Normalized Device Coordinates (NDC)
-    vec4 ndc = vec4(uv * 2.0 - 1.0, depth * 2.0 - 1.0, 1.0);
-    vec4 viewPos = u_InvProj * ndc;
-    return viewPos.xyz / viewPos.w;
+float linearizeDepth(float p_depth_sample)
+{
+    float near = 0.1f;
+    float far = 1000.0f;
+    return (2.0 * near) / (far + near - p_depth_sample * (far - near));
 }
 
-// AO Parameters
-const int SAMPLES = 8;
-const float RADIUS = 0.5; // Sampling radius
-const float BIAS = 0.02;  // Helps reduce self-shadowing artifacts
-
-// Fast pseudo-random generator
-float rand(vec2 co) {
-    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+vec3 getPositionAtUV(vec2 p_uv)
+{
+    return texture(u_PositionsTex, p_uv).xyz;
+//    float depth = texture(u_DepthTex, p_uv).r;
+//    vec4 ndc = vec4(p_uv.x * 2.0f - 1.0f, (1.0f - p_uv.y) * 2.0f - 1.0f, depth, 1.0f);
+//
+//    vec4 view_pos_clip = u_InvProj * ndc;
+//    vec3 view_pos = view_pos_clip.xyz / view_pos_clip.w;
+//    return view_pos;
 }
 
 void main()
 {
-    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 texSize = textureSize(u_DepthTex, 0);
+    float radius = u_Radius;
+    //    float radius = 0.5f;
+    float bias = u_Bias;
+    //    float bias = 0.025f;
+    vec2 noise_scale = u_NoiseScale;
+    //    vec2 noise_scale = vec2(1/240.0f, 1/135.0f);
 
-    // Bounds check
-    if (pixelCoords.x >= texSize.x || pixelCoords.y >= texSize.y) return;
+    ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 image_size = imageSize(o_Occlusion);
 
-    // Map pixel to [0.0, 1.0] UV coordinates
-    vec2 uv = (vec2(pixelCoords) + vec2(0.5)) / vec2(texSize);
+    if (pixel_coords.x >= image_size.x || pixel_coords.y >= image_size.y) return;
 
-    // Get view space position of target pixel
-    vec3 originPos = getViewPos(uv);
+    vec2 uv = (vec3(pixel_coords, 0.0f).xy + 0.5f) / vec2(image_size);
 
-    // Quick random angle rotation based on pixel coordinates
-    float angle = rand(uv) * 6.2831853;
-    vec2 rotation = vec2(cos(angle), sin(angle));
+    vec3 frag_pos = getPositionAtUV(uv);
+    vec3 normal = texture(u_NormalsTex, uv).xyz;
 
-    float occlusion = 0.0;
+    vec3 random_vec = texture(u_NoiseTex, uv * noise_scale).xyz;
 
-    // 2D disk sample direction offsets
-    vec2 sampleOffsets[8] = vec2[](
-    vec2(1.0, 0.0), vec2(-1.0, 0.0), vec2(0.0, 1.0), vec2(0.0, -1.0),
-    vec2(0.7, 0.7), vec2(-0.7, -0.7), vec2(0.7, -0.7), vec2(-0.7, 0.7)
-    );
+    vec3 tangent = normalize(random_vec - normal * dot(random_vec, normal));
+    vec3 bitangent = cross(normal, tangent);
+    mat3 TBN = mat3(tangent, bitangent, normal);
 
-    for (int i = 0; i < SAMPLES; ++i) {
-        // Rotate the offset direction to hide banding artifacts
-        vec2 rotatedOffset = vec2(
-        sampleOffsets[i].x * rotation.x - sampleOffsets[i].y * rotation.y,
-        sampleOffsets[i].x * rotation.y + sampleOffsets[i].y * rotation.x
-        );
+    float occlusion = 0.0f;
+    int kernel_size = 64;
 
-        // Scale offset based on sample depth to adjust real-world radius size
-        vec2 sampleUV = uv + (rotatedOffset * RADIUS) / -originPos.z;
+    for (int i = 0; i < kernel_size; i++)
+    {
+        vec3 sample_pos = TBN * u_Samples[i].xyz;
+        sample_pos = frag_pos + sample_pos * radius;
 
-        // Retrieve neighboring geometry position
-        vec3 samplePos = getViewPos(sampleUV);
+        vec4 offset = vec4(sample_pos, 1.0f);
+        offset  = u_Proj * offset;
+        offset.xyz /= abs(offset.w);
 
-        // Vector pointing from origin pixel to sample point geometry
-        vec3 v = samplePos - originPos;
+        offset.x = offset.x * 0.5f + 0.5f;
+        offset.y = 1.0f - (offset.y * 0.5f + 0.5f);
 
-        // Compute occlusion factor using a classic range check
-        // If sample point is significantly far behind, ignore it to prevent haloing
-        float dist = length(v);
-        float rangeCheck = smoothstep(0.0, 1.0, RADIUS / dist);
+        if (offset.x < 0.0f || offset.x > 1.0f || offset.y < 0.0f || offset.y > 1.0f)
+        {
+            continue;
+        }
 
-        // Accumulate occlusion if the sample point is in front of origin depth
-        occlusion += (v.z >= BIAS ? 1.0 : 0.0) * rangeCheck;
+        float sample_depth = getPositionAtUV(offset.xy).z;
+
+        float range_check = smoothstep(0.0f, 1.0f, radius / abs(frag_pos.z - sample_depth));
+        occlusion += (sample_depth >= sample_pos.z + bias ? 1.0f : 0.0f) * range_check;
     }
 
-    // Normalize and invert the result (1.0 = completely unoccluded, 0.0 = fully occluded)
-    float aoFactor = 1.0 - (occlusion / float(SAMPLES));
+    float final_occlusion = 1.0f - (occlusion / float(kernel_size));
 
-    // Write out the result
-    imageStore(o_Occlusion, pixelCoords, vec4(aoFactor));
+    imageStore(o_Occlusion, pixel_coords, vec4(vec3(final_occlusion), 1.0f));
 }

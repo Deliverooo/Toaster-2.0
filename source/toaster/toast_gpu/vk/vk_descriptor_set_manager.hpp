@@ -1,10 +1,10 @@
 #pragma once
 
+#include "vk_common.hpp"
 #include "vk_shader.hpp"
 #include "vk_storage_buffer.hpp"
 #include "vk_storage_image.hpp"
 #include "vk_texture.hpp"
-#include "vk_uniform_buffer.hpp"
 
 namespace toaster::gpu
 {
@@ -84,13 +84,14 @@ namespace toaster::gpu
 
 		vk::raii::DescriptorPool m_descriptorPool{nullptr};
 
-		std::vector<std::unordered_map<uint32, std::unordered_map<uint32, WriteDescriptor> > > m_writeDescriptorMap;
-		std::unordered_map<String, DescriptorDeclaration>                                      m_descriptorDeclarations;
+		std::unordered_map<String, DescriptorDeclaration>  m_descriptorDeclarations;
+		PerFrameVec<SetMap<BindingMap<WriteDescriptor> > > m_writeDescriptorMap;
 
-		std::unordered_map<uint32, std::unordered_map<uint32, DescriptorResource> > m_descriptorResources;
-		std::unordered_map<uint32, std::unordered_map<uint32, DescriptorResource> > m_invalidDescriptorResources;
+		SetMap<BindingMap<DescriptorResource> > m_descriptorResources;
+		SetMap<BindingMap<DescriptorResource> > m_invalidDescriptorResources;
 
-		std::vector<std::vector<vk::raii::DescriptorSet> > m_descriptorSets;
+		// Each frame has multiple descriptor sets equal to the amount used in the shader
+		PerFrameVec<std::vector<vk::raii::DescriptorSet> > m_descriptorSets;
 
 		Texture2DHandle m_whiteTexture{nullptr};
 		Texture3DHandle m_whiteTexture3D{nullptr};

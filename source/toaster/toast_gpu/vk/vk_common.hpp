@@ -146,4 +146,13 @@ namespace toaster::gpu
 
 		TST_GPU_API constexpr auto getImageLayoutInfo(vk::ImageLayout p_layout) -> const ImageLayoutInfo &;
 	}
+
+	template<typename Type>
+	using PerFrameVec = std::vector<Type>;
+
+	template<typename Type>
+	using SetMap = std::unordered_map<uint32, Type>;
+
+	template<typename Type>
+	using BindingMap = std::unordered_map<uint32, Type>;
 }

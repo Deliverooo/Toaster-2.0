@@ -98,6 +98,18 @@ add_custom_target(shader_headers_target DEPENDS "${SHADER_HEADERS_TARGET_SRC}")
 
 add_library(toast_shaders INTERFACE)
 
+target_include_directories(toast_shaders INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
+#set(XE_GTAO_SOURCES
+#		${CMAKE_CURRENT_SOURCE_DIR}/XeGTAO/vaNoise.hlsl
+#		${CMAKE_CURRENT_SOURCE_DIR}/XeGTAO/vaPostProcessShared.h
+#		${CMAKE_CURRENT_SOURCE_DIR}/XeGTAO/vaShared.hlsl
+#		${CMAKE_CURRENT_SOURCE_DIR}/XeGTAO/vaSharedTypes.h
+#		${CMAKE_CURRENT_SOURCE_DIR}/XeGTAO/XeGTAO.h
+#		${CMAKE_CURRENT_SOURCE_DIR}/XeGTAO/XeGTAO.hlsli
+#)
+#target_sources(toast_shaders INTERFACE ${XE_GTAO_SOURCES})
+
 add_dependencies(toast_shaders shader_headers_target)
 
 add_library(tst::toast_shaders ALIAS toast_shaders)

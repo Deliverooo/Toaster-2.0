@@ -20,11 +20,14 @@ layout (push_constant) uniform Transform
 
 
 layout(location = 0) out vec3 v_Normal;
+layout(location = 1) out vec3 v_Position;
 
 invariant gl_Position;
 void main()
 {
-    gl_Position = u_Proj * u_View * _Transform_.model * vec4(a_Position, 1.0f);
+    vec4 view_position =  u_View * _Transform_.model * vec4(a_Position, 1.0f);
+    gl_Position = u_Proj * view_position;
 
     v_Normal = mat3(transpose(inverse(_Transform_.model))) * a_Normal;
+    v_Position = view_position.xyz;
 }

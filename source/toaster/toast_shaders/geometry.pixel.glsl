@@ -5,7 +5,7 @@
 #define PI 3.1415926535f
 
 layout(location = 0) in vec3 v_WorldPos;
-layout(location = 1) in vec3 v_Colour;
+layout(location = 1) in vec3 v_Position;
 layout(location = 2) in vec2 v_TexCoord;
 layout(location = 3) in vec3 v_Normal;
 layout(location = 4) in mat3 v_WorldNormals;
@@ -201,9 +201,8 @@ void main()
     lo += calcPointLights(v_WorldPos);
 
     vec3 final_colour = lo;
-
-//    vec2 screen_uv = gl_FragCoord.xy / vec2(1920, 1080);
-//    final_colour *= texture(u_AOTexture, screen_uv).r;
+        vec2 screen_uv = gl_FragCoord.xy / vec2(1920, 1080);
+        final_colour *= texture(u_AOTexture, screen_uv).rgb;
 
     o_Colour = vec4(final_colour, 1.0f);
 }

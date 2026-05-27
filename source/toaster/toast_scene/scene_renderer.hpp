@@ -33,10 +33,14 @@ namespace toaster
 		auto getMSAAOutputColourImage() -> gpu::RawImageHandle &;
 		auto getMSAAOutputDepthImage() -> gpu::RawImageHandle &;
 		auto getMSAAOutputGeometryNormalsImage() -> gpu::RawImageHandle &;
+		auto getMSAAOutputGeometryPositionsImage() -> gpu::RawImageHandle &;
 
 		auto getResolveOutputColourTexture() const -> const gpu::Texture2DHandle &;
 		auto getResolveOutputDepthTexture() const -> const gpu::Texture2DHandle &;
 		auto getResolveOutputGeometryNormalsTexture() const -> const gpu::Texture2DHandle &;
+		auto getResolveOutputGeometryPositionsTexture() const -> const gpu::Texture2DHandle &;
+
+		auto getSSAONoiseTexture() const -> const gpu::Texture2DHandle &;
 
 		auto getOutputAOImage() const -> const gpu::StorageImageHandle &;
 
@@ -68,12 +72,27 @@ namespace toaster
 
 		gpu::RawImageHandle  m_geometryNormalsAttachmentImage{nullptr};
 		gpu::Texture2DHandle m_geometryNormalsResolveAttachmentTexture{nullptr};
+
+		gpu::RawImageHandle  m_geometryPositionsAttachmentImage{nullptr};
+		gpu::Texture2DHandle m_geometryPositionsResolveAttachmentTexture{nullptr};
 		#pragma endregion
 
 		#pragma region ambient occlusion
 		gpu::ComputePipelineHandle m_aoPipeline{nullptr};
 		gpu::ComputePassHandle     m_aoPass{nullptr};
 		render::MaterialHandle     m_aoFrameDataMaterial{nullptr};
+
+		struct SSAOKernel
+		{
+			static constexpr uint32 c_SSAOSampleCount{64};
+			glm::vec4               samples[c_SSAOSampleCount];
+
+			SSAOKernel();
+		};
+
+		UniquePtr<SSAOKernel> m_ssaoKernel{nullptr};
+
+		gpu::Texture2DHandle m_ssaoNoiseTexture{nullptr};
 
 		gpu::StorageImageHandle m_aoOutputImage{nullptr};
 		#pragma endregion

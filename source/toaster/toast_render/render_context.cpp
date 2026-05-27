@@ -446,10 +446,25 @@ namespace toaster::render
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
 		if (p_material)
+		{
 			if (p_material->hasDescriptorSets())
 				if (const auto descriptor_set{p_material->getDescriptorSet(frame_index)})
 					p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eCompute, p_compute_pass->getPipeline()->getPipelineLayout(), 0,
 																				  descriptor_set, nullptr);
+
+			const auto &push_constants{p_material->getPushConstantStorageBuffer()};
+			if (push_constants.size() > 0)
+			{
+				vk::PushConstantsInfo push_constants_info{};
+				push_constants_info.layout     = p_compute_pass->getPipeline()->getPipelineLayout();
+				push_constants_info.stageFlags = vk::ShaderStageFlagBits::eCompute;
+				push_constants_info.size       = push_constants.size();
+				push_constants_info.offset     = 0u;
+				push_constants_info.pValues    = push_constants.data();
+
+				p_command_buffer->getVulkanCommandBuffer().pushConstants2(push_constants_info);
+			}
+		}
 
 		p_command_buffer->getVulkanCommandBuffer().dispatch(p_work_group_x, p_work_group_y, p_work_group_z);
 	}
