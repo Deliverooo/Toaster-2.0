@@ -42,7 +42,7 @@ namespace toaster
 
 		auto getSSAONoiseTexture() const -> const gpu::Texture2DHandle &;
 
-		auto getOutputAOImage() const -> const gpu::StorageImageHandle &;
+		auto getOutputAOTexture() const -> const gpu::Texture2DHandle &;
 
 		auto getOutputComputeImage() const -> const gpu::StorageImageHandle &;
 		auto getRenderer2D() -> RefPtr<render::Renderer2D>;
@@ -78,9 +78,13 @@ namespace toaster
 		#pragma endregion
 
 		#pragma region ambient occlusion
-		gpu::ComputePipelineHandle m_aoPipeline{nullptr};
-		gpu::ComputePassHandle     m_aoPass{nullptr};
-		render::MaterialHandle     m_aoFrameDataMaterial{nullptr};
+
+		gpu::PipelineHandle   m_ssaoPipeline{nullptr};
+		gpu::RenderPassHandle m_ssaoPass{nullptr};
+
+		render::MaterialHandle m_aoFrameDataMaterial{nullptr};
+		// gpu::ComputePipelineHandle m_aoPipeline{nullptr};
+		// gpu::ComputePassHandle     m_aoPass{nullptr};
 
 		struct SSAOKernel
 		{
@@ -94,7 +98,7 @@ namespace toaster
 
 		gpu::Texture2DHandle m_ssaoNoiseTexture{nullptr};
 
-		gpu::StorageImageHandle m_aoOutputImage{nullptr};
+		gpu::Texture2DHandle m_aoOutputTexture{nullptr};
 		#pragma endregion
 
 		#pragma region light culling

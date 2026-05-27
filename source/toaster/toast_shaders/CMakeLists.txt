@@ -20,6 +20,9 @@ if (${WITH_VULKAN_BACKEND})
 			${CMAKE_CURRENT_SOURCE_DIR}/anti-aliasing.vert.glsl
 			${CMAKE_CURRENT_SOURCE_DIR}/anti-aliasing.pixel.glsl
 
+			${CMAKE_CURRENT_SOURCE_DIR}/ssao.vert.glsl
+			${CMAKE_CURRENT_SOURCE_DIR}/ssao.pixel.glsl
+
 			${CMAKE_CURRENT_SOURCE_DIR}/test.comp.glsl
 			${CMAKE_CURRENT_SOURCE_DIR}/light_culling.comp.glsl
 			${CMAKE_CURRENT_SOURCE_DIR}/equirectangular_to_cubemap.comp.glsl

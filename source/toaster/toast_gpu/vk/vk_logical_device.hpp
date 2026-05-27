@@ -118,8 +118,10 @@ namespace toaster::gpu
 										   uint32           p_mip_levels) -> vk::raii::ImageView;
 		[[nodiscard]] auto createImageView(vk::Image &p_src_image, vk::Format p_format, vk::ImageAspectFlags p_aspect_flags, uint32 p_layer_count,
 										   uint32     p_mip_levels) const -> vk::ImageView;
-		[[nodiscard]] auto createSamplerRaii() -> vk::raii::Sampler;
-		[[nodiscard]] auto createSampler() -> vk::Sampler;
+		[[nodiscard]] auto createSamplerRaii(vk::Filter             p_filter       = vk::Filter::eLinear,
+											 vk::SamplerAddressMode p_address_mode = vk::SamplerAddressMode::eRepeat) -> vk::raii::Sampler;
+		[[nodiscard]] auto createSampler(vk::Filter             p_filter       = vk::Filter::eLinear,
+										 vk::SamplerAddressMode p_address_mode = vk::SamplerAddressMode::eRepeat) -> vk::Sampler;
 
 		auto copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) -> void;
 		auto copyBuffer(const vk::Buffer &p_src_buffer, const vk::Buffer &p_dst_buffer, vk::DeviceSize p_size) -> void;

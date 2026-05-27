@@ -151,7 +151,7 @@ namespace toaster::gpu
 		// Do not destroy an existing sampler: descriptor sets may still reference it. Only create on first use.
 		if (!m_sampler)
 		{
-			m_sampler = m_device->createSampler();
+			m_sampler = m_device->createSampler(m_specInfo.samplerFilter, m_specInfo.samplerAddressMode);
 		}
 
 		// Update descriptor info (image view/layout may change on resize)
@@ -313,7 +313,7 @@ namespace toaster::gpu
 		// Do not destroy an existing sampler: descriptor sets may still reference it. Only create on first use.
 		if (!m_sampler)
 		{
-			m_sampler = m_device->createSampler();
+			m_sampler = m_device->createSampler(m_specInfo.samplerFilter, m_specInfo.samplerAddressMode);
 		}
 
 		// Update descriptor info (image view/layout may change on resize)

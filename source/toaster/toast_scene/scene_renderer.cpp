@@ -13,6 +13,8 @@
 #include "toast_render/globals.hpp"
 #include <random>
 
+#include "toast_lib/math/colours.hpp"
+
 namespace toaster
 {
 	SceneRenderer::SceneRenderer(render::RenderContext *p_render_ctx, const SceneRendererSpecInfo &p_spec_info) : m_renderCtx(p_render_ctx), m_specInfo(p_spec_info)
@@ -80,56 +82,59 @@ namespace toaster
 
 		#pragma region ambient occlusion
 		{
-			m_aoPipeline = m_renderCtx->createGPU<gpu::VKComputePipeline>(m_renderCtx->getGlobals()->shaderLibrary().get("Ambient_Occlusion"));
+			gpu::PipelineSpecInfo ssao_pipeline_spec_info{};
+			ssao_pipeline_spec_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
+			ssao_pipeline_spec_info.colourAttachments  = {vk::Format::eR16G16B16A16Sfloat};
+			ssao_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Graphics");
+			ssao_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
+			ssao_pipeline_spec_info.multisample        = false;
+			ssao_pipeline_spec_info.depthTest          = false;
+			ssao_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
+			m_ssaoPipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(ssao_pipeline_spec_info);
 
-			m_aoPass = m_renderCtx->createGPU<gpu::VKComputePass>(m_aoPipeline);
+			m_ssaoPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_ssaoPipeline);
 
-			gpu::ImageSpecInfo ao_output_image_spec_info{};
-			ao_output_image_spec_info.width  = m_specInfo.viewportWidth;
-			ao_output_image_spec_info.height = m_specInfo.viewportHeight;
-			ao_output_image_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
-			ao_output_image_spec_info.usage  = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
-			m_aoOutputImage                  = m_renderCtx->createGPU<gpu::VKStorageImage>(ao_output_image_spec_info);
-
-			m_aoPass->setInput("o_Occlusion", m_aoOutputImage);
-			m_aoPass->setInput("Camera", m_cameraUBOs);
+			m_aoOutputTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportWidth, m_specInfo.viewportHeight, vk::ImageAspectFlagBits::eColor,
+																	 vk::Format::eR16G16B16A16Sfloat);
+			m_ssaoPass->setInput("Camera", m_cameraUBOs);
 
 			m_ssaoKernel = make_unique<SSAOKernel>(); // Generates the random rotation vectors
 			auto ssao_kernel_ubo{m_renderCtx->createGPU<gpu::VKUniformBuffer>(sizeof(SSAOKernel))};
 			ssao_kernel_ubo->setData(m_ssaoKernel->samples, sizeof(SSAOKernel), 0);
-			m_aoPass->setInput("SSAOKernel", ssao_kernel_ubo);
-
-			for (uint32 i{0u}; i < SSAOKernel::c_SSAOSampleCount; ++i)
-			{
-				LOG_WARN("{}", glm::xyz(m_ssaoKernel->samples[i]));
-			}
+			m_ssaoPass->setInput("SSAOKernel", ssao_kernel_ubo);
 
 			constexpr uint32 s_noise_texture_side_size{8u};
 
 			gpu::TextureSpecInfo noise_texture_spec_info{};
-			noise_texture_spec_info.width        = s_noise_texture_side_size;
-			noise_texture_spec_info.height       = s_noise_texture_side_size;
-			noise_texture_spec_info.format       = vk::Format::eR16G16B16A16Sfloat;
-			noise_texture_spec_info.generateMips = false;
+			noise_texture_spec_info.width              = s_noise_texture_side_size;
+			noise_texture_spec_info.height             = s_noise_texture_side_size;
+			noise_texture_spec_info.format             = vk::Format::eR32G32B32A32Sfloat;
+			noise_texture_spec_info.generateMips       = false;
+			noise_texture_spec_info.samplerFilter      = vk::Filter::eNearest;
+			noise_texture_spec_info.samplerAddressMode = vk::SamplerAddressMode::eRepeat;
 
 			static std::uniform_real_distribution<float32> randomFloats(0.0f, 1.0f);
 			static std::random_device                      randomDevice{};
 			static std::mt19937                            generator{randomDevice()};
-			std::vector<glm::vec4>                         ssaoNoise;
+			std::vector<glm::vec4>                            ssaoNoise;
 
 			for (uint32_t i = 0; i < s_noise_texture_side_size * s_noise_texture_side_size; i++)
 			{
-				glm::vec3 noise(randomFloats(generator) * 2.0f - 1.0f, randomFloats(generator) * 2.0f - 1.0f, 0.0f);
-				ssaoNoise.push_back(glm::vec4(noise, 0.0f));
+				float32 x{randomFloats(generator) * 2.0f - 1.0f};
+				float32 y{randomFloats(generator) * 2.0f - 1.0f};
+				float32 z{0.0f};
+
+				auto &noise{ssaoNoise.emplace_back()};
+				noise = {x, y, z, 1.0f};
 			}
 			m_ssaoNoiseTexture = m_renderCtx->createGPU<gpu::VKTexture2D>(noise_texture_spec_info, ssaoNoise.data(), ssaoNoise.size() * sizeof(glm::vec4));
-			m_aoPass->setInput("u_NoiseTex", m_ssaoNoiseTexture);
+			m_ssaoPass->setInput("u_NoiseTex", m_ssaoNoiseTexture);
 
-			m_aoFrameDataMaterial = m_renderCtx->create<render::Material>(m_renderCtx->getGlobals()->shaderLibrary().get("Ambient_Occlusion"), "SSAO");
+			m_aoFrameDataMaterial = m_renderCtx->create<render::Material>(m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Graphics"), "SSAO");
 			m_aoFrameDataMaterial->set(".u_Radius", 0.5f);
 			m_aoFrameDataMaterial->set(".u_Bias", 0.025f);
 
-			m_aoPass->bake();
+			m_ssaoPass->bake();
 		}
 		#pragma endregion
 
@@ -199,7 +204,7 @@ namespace toaster
 			m_geometryPass->setInput("PointLightData", m_pointLightUBOs);
 			m_geometryPass->setInput("SceneData", m_sceneDataUBOs);
 			m_geometryPass->setInput("u_EnvironmentMap", m_skyboxMap);
-			m_geometryPass->setInput("u_AOTexture", m_aoOutputImage);
+			m_geometryPass->setInput("u_AOTexture", m_aoOutputTexture);
 
 			m_geometryPass->bake();
 		}
@@ -336,9 +341,9 @@ namespace toaster
 		return m_ssaoNoiseTexture;
 	}
 
-	auto SceneRenderer::getOutputAOImage() const -> const gpu::StorageImageHandle &
+	auto SceneRenderer::getOutputAOTexture() const -> const gpu::Texture2DHandle &
 	{
-		return m_aoOutputImage;
+		return m_aoOutputTexture;
 	}
 
 	auto SceneRenderer::getOutputComputeImage() const -> const gpu::StorageImageHandle &
@@ -369,7 +374,7 @@ namespace toaster
 			m_geometryPositionsAttachmentImage->resize(p_width, p_height);
 			m_geometryPositionsResolveAttachmentTexture->resize(p_width, p_height);
 
-			m_aoOutputImage->resize(p_width, p_height);
+			m_aoOutputTexture->resize(p_width, p_height);
 
 			m_computeImage->resize(p_width, p_height);
 
@@ -435,18 +440,22 @@ namespace toaster
 			static_cast<float32>(m_ssaoNoiseTexture->getSpecInfo().width) / static_cast<float32>(m_specInfo.viewportWidth),
 			static_cast<float32>(m_ssaoNoiseTexture->getSpecInfo().height) / static_cast<float32>(m_specInfo.viewportHeight)
 		};
-		LOG_WARN("NS: {}", noise_scale);
 		m_aoFrameDataMaterial->set(".u_NoiseScale", noise_scale);
 
-		m_aoPass->setInput("u_PositionsTex", m_geometryPositionsResolveAttachmentTexture);
-		m_aoPass->setInput("u_NormalsTex", m_geometryNormalsResolveAttachmentTexture);
+		m_ssaoPass->setInput("u_PositionsTex", m_geometryPositionsResolveAttachmentTexture);
+		m_ssaoPass->setInput("u_NormalsTex", m_geometryNormalsResolveAttachmentTexture);
 
-		const uint32     work_groups_x{(m_specInfo.viewportWidth + 15u) / 16u};
-		const uint32     work_groups_y{(m_specInfo.viewportHeight + 15u) / 16u};
-		constexpr uint32 work_groups_z{1u};
+		gpu::RenderingInfo rendering_info{};
+		rendering_info.renderArea = vk::Rect2D{{m_specInfo.viewportOffsetX, m_specInfo.viewportOffsetY}, {m_specInfo.viewportWidth, m_specInfo.viewportHeight}};
+		rendering_info.layerCount = 1;
 
-		m_renderCtx->beginCompute(p_cmd, m_aoPass);
-		m_renderCtx->dispatchCompute(p_cmd, m_aoPass, m_aoFrameDataMaterial, work_groups_x, work_groups_y, work_groups_z);
+		gpu::RenderingAttachmentInfo &out_ssao_attachment_info{rendering_info.colourAttachments.emplace_back()};
+		out_ssao_attachment_info.clearValue = vk::ClearColorValue{1.0f, 1.0, 1.0f, 1.0f};
+		out_ssao_attachment_info.image      = m_aoOutputTexture->getImage();
+
+		m_renderCtx->beginRendering(p_cmd, rendering_info, m_ssaoPass);
+		m_renderCtx->renderFullscreenQuad(p_cmd, m_ssaoPipeline, m_aoFrameDataMaterial);
+		m_renderCtx->endRendering(p_cmd, rendering_info);
 	}
 
 	auto SceneRenderer::_renderLightCullingPass(gpu::VKCommandBuffer *p_cmd) -> void

@@ -65,6 +65,14 @@ namespace toaster::render
 			m_shaderLibrary.add("Anti-Aliasing", anti_aliasing_shader);
 		}
 		{
+			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/ssao.vert.glsl.spv")};
+			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/ssao.pixel.glsl.spv")};
+			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
+			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
+			const auto                                     ssao_shader{make_reference<gpu::VKShader>(m_device, shader_stages, bytecode, "SSAO_Graphics")};
+			m_shaderLibrary.add("SSAO_Graphics", ssao_shader);
+		}
+		{
 			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/test.comp.glsl.spv")};
 			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {cs_bytecode};

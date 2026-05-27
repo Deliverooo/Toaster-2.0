@@ -459,17 +459,17 @@ namespace toaster::gpu
 		return (static_cast<vk::Device>(m_logicalDevice)).createImageView(image_view_create_info);
 	}
 
-	auto VKLogicalDevice::createSamplerRaii() -> vk::raii::Sampler
+	auto VKLogicalDevice::createSamplerRaii(vk::Filter p_filter, vk::SamplerAddressMode p_address_mode) -> vk::raii::Sampler
 	{
 		const auto physical_device_props = m_physicalDevice->getVulkanPhysicalDevice().getProperties();
 
 		vk::SamplerCreateInfo sampler_create_info{};
-		sampler_create_info.magFilter               = vk::Filter::eLinear;
-		sampler_create_info.minFilter               = vk::Filter::eLinear;
+		sampler_create_info.magFilter               = p_filter;
+		sampler_create_info.minFilter               = p_filter;
 		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+		sampler_create_info.addressModeU            = p_address_mode;
+		sampler_create_info.addressModeV            = p_address_mode;
+		sampler_create_info.addressModeW            = p_address_mode;
 		sampler_create_info.mipLodBias              = 0.0f;
 		sampler_create_info.anisotropyEnable        = true;
 		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
@@ -483,17 +483,17 @@ namespace toaster::gpu
 		return {m_logicalDevice, sampler_create_info};
 	}
 
-	auto VKLogicalDevice::createSampler() -> vk::Sampler
+	auto VKLogicalDevice::createSampler(vk::Filter p_filter, vk::SamplerAddressMode p_address_mode) -> vk::Sampler
 	{
 		const auto physical_device_props = m_physicalDevice->getVulkanPhysicalDevice().getProperties();
 
 		vk::SamplerCreateInfo sampler_create_info{};
-		sampler_create_info.magFilter               = vk::Filter::eLinear;
-		sampler_create_info.minFilter               = vk::Filter::eLinear;
+		sampler_create_info.magFilter               = p_filter;
+		sampler_create_info.minFilter               = p_filter;
 		sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
-		sampler_create_info.addressModeU            = vk::SamplerAddressMode::eClampToEdge;
-		sampler_create_info.addressModeV            = vk::SamplerAddressMode::eClampToEdge;
-		sampler_create_info.addressModeW            = vk::SamplerAddressMode::eClampToEdge;
+		sampler_create_info.addressModeU            = p_address_mode;
+		sampler_create_info.addressModeV            = p_address_mode;
+		sampler_create_info.addressModeW            = p_address_mode;
 		sampler_create_info.mipLodBias              = 0.0f;
 		sampler_create_info.anisotropyEnable        = true;
 		sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;

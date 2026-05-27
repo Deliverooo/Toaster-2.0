@@ -18,6 +18,9 @@ namespace toaster::gpu
 		vk::SampleCountFlagBits sampleCount{vk::SampleCountFlagBits::e1};
 		ETextureUsage           usage{ETextureUsage::eRenderAttachmentSampled};
 
+		vk::Filter             samplerFilter{vk::Filter::eLinear};
+		vk::SamplerAddressMode samplerAddressMode{vk::SamplerAddressMode::eRepeat};
+
 		bool generateMips{true};
 	};
 
