@@ -39,6 +39,8 @@ namespace toaster
 		else
 			m_skyboxMap = m_renderCtx->getGlobals()->whiteTexture3D();
 
+		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMap(m_skyboxMap);
+
 		#pragma region depth-pre
 		{
 			gpu::PipelineSpecInfo depth_pre_pipeline_spec_info{};
@@ -53,6 +55,7 @@ namespace toaster
 			depth_pre_pipeline_spec_info.depthFormat       = vk::Format::eD32Sfloat;
 			depth_pre_pipeline_spec_info.colourAttachments = {vk::Format::eR16G16B16A16Sfloat, vk::Format::eR16G16B16A16Sfloat};
 			depth_pre_pipeline_spec_info.multisample       = true;
+			depth_pre_pipeline_spec_info.cullMode          = vk::CullModeFlagBits::eBack;
 			depth_pre_pipeline_spec_info.shader            = m_renderCtx->getGlobals()->shaderLibrary().get("Depth-Pre");
 			m_depthPrePipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(depth_pre_pipeline_spec_info);
 
@@ -116,7 +119,7 @@ namespace toaster
 			static std::uniform_real_distribution<float32> randomFloats(0.0f, 1.0f);
 			static std::random_device                      randomDevice{};
 			static std::mt19937                            generator{randomDevice()};
-			std::vector<glm::vec4>                            ssaoNoise;
+			std::vector<glm::vec4>                         ssaoNoise;
 
 			for (uint32_t i = 0; i < s_noise_texture_side_size * s_noise_texture_side_size; i++)
 			{
@@ -191,10 +194,12 @@ namespace toaster
 			};
 			geometry_pipeline_spec_info.colourAttachments = {vk::Format::eR8G8B8A8Srgb};
 			geometry_pipeline_spec_info.depthFormat       = vk::Format::eD32Sfloat;
-			geometry_pipeline_spec_info.depthWrite        = false;
-			geometry_pipeline_spec_info.multisample       = true;
+			geometry_pipeline_spec_info.depthWrite        = false; // The depth buffer is gathered from the depth pre-pass
+			geometry_pipeline_spec_info.depthTest         = true;
 			geometry_pipeline_spec_info.depthCompare      = vk::CompareOp::eLessOrEqual;
+			geometry_pipeline_spec_info.multisample       = true;
 			geometry_pipeline_spec_info.polygonMode       = vk::PolygonMode::eFill;
+			geometry_pipeline_spec_info.cullMode          = vk::CullModeFlagBits::eBack;
 			geometry_pipeline_spec_info.shader            = m_renderCtx->getGlobals()->shaderLibrary().get("Geometry");
 			m_geometryPipeline                            = m_renderCtx->createGPU<gpu::VKPipeline>(geometry_pipeline_spec_info);
 
@@ -203,7 +208,7 @@ namespace toaster
 			m_geometryPass->setInput("DirectionalLightData", m_directionalLightUBOs);
 			m_geometryPass->setInput("PointLightData", m_pointLightUBOs);
 			m_geometryPass->setInput("SceneData", m_sceneDataUBOs);
-			m_geometryPass->setInput("u_EnvironmentMap", m_skyboxMap);
+			m_geometryPass->setInput("u_DiffuseIrradianceMap", m_diffuseIrradianceMap);
 			m_geometryPass->setInput("u_AOTexture", m_aoOutputTexture);
 
 			m_geometryPass->bake();
@@ -271,13 +276,13 @@ namespace toaster
 		if (m_reloadSkybox)
 		{
 			m_skyboxPass->setInput("u_CubemapImage", m_skyboxMap);
-			m_geometryPass->setInput("u_EnvironmentMap", m_skyboxMap);
+			m_geometryPass->setInput("u_DiffuseIrradianceMap", m_diffuseIrradianceMap);
 			m_reloadSkybox = false;
 		}
 
 		_renderDepthPrePass(p_cmd);
 		_renderAOPass(p_cmd);
-		_renderLightCullingPass(p_cmd);
+		// _renderLightCullingPass(p_cmd);
 		_renderSkyboxPass(p_cmd);
 		_renderGeometryPass(p_cmd);
 
@@ -346,6 +351,16 @@ namespace toaster
 		return m_aoOutputTexture;
 	}
 
+	auto SceneRenderer::getSkyboxMap() const -> const gpu::Texture3DHandle &
+	{
+		return m_skyboxMap;
+	}
+
+	auto SceneRenderer::getDiffuseIrradianceMap() const -> const gpu::Texture3DHandle &
+	{
+		return m_diffuseIrradianceMap;
+	}
+
 	auto SceneRenderer::getOutputComputeImage() const -> const gpu::StorageImageHandle &
 	{
 		return m_computeImage;
@@ -387,8 +402,9 @@ namespace toaster
 
 	auto SceneRenderer::setEnvironmentBackground(const gpu::Texture3DHandle &p_texture) -> void
 	{
-		m_skyboxMap    = p_texture;
-		m_reloadSkybox = true;
+		m_skyboxMap            = p_texture;
+		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMap(m_skyboxMap);
+		m_reloadSkybox         = true;
 	}
 
 	auto SceneRenderer::_renderDepthPrePass(gpu::VKCommandBuffer *p_cmd) -> void
@@ -437,8 +453,8 @@ namespace toaster
 	auto SceneRenderer::_renderAOPass(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		glm::vec2 noise_scale{
-			static_cast<float32>(m_ssaoNoiseTexture->getSpecInfo().width) / static_cast<float32>(m_specInfo.viewportWidth),
-			static_cast<float32>(m_ssaoNoiseTexture->getSpecInfo().height) / static_cast<float32>(m_specInfo.viewportHeight)
+			static_cast<float32>(m_specInfo.viewportWidth) / static_cast<float32>(m_ssaoNoiseTexture->getSpecInfo().width),
+			static_cast<float32>(m_specInfo.viewportHeight) / static_cast<float32>(m_ssaoNoiseTexture->getSpecInfo().height)
 		};
 		m_aoFrameDataMaterial->set(".u_NoiseScale", noise_scale);
 
@@ -520,7 +536,8 @@ namespace toaster
 	SceneRenderer::SSAOKernel::SSAOKernel()
 	{
 		static std::uniform_real_distribution<float32> s_random_floats{0.0f, 1.0f};
-		static std::default_random_engine              s_generator{};
+		static std::random_device                      s_device{};
+		static std::default_random_engine              s_generator{s_device()};
 
 		for (uint32 i{0u}; i < c_SSAOSampleCount; ++i)
 		{

@@ -64,7 +64,7 @@ namespace toaster::gpu
 			vertex_input_binding_description.inputRate = vk::VertexInputRate::eVertex;
 		}
 
-		if (m_specInfo.instanceLayout.getElements().size())
+		if (!m_specInfo.instanceLayout.getElements().empty())
 		{
 			vk::VertexInputBindingDescription &vertex_input_binding_description{vertex_input_binding_descriptions.emplace_back()};
 			vertex_input_binding_description.binding   = 1;

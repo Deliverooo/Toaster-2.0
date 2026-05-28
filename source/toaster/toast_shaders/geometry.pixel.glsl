@@ -15,7 +15,7 @@ layout(location = 0) out vec4 o_Colour;
 layout(set = 0, binding = 0) uniform sampler2D u_AlbedoTexture;
 layout(set = 0, binding = 1) uniform sampler2D u_NormalTexture;
 
-layout (set = 2, binding = 0) uniform samplerCube u_EnvironmentMap;
+layout (set = 2, binding = 0) uniform samplerCube u_DiffuseIrradianceMap;
 layout (set = 2, binding = 1) uniform sampler2D u_AOTexture;
 
 layout(push_constant) uniform Material
@@ -200,9 +200,20 @@ void main()
     lo += calcDirectionalLights(v_WorldPos);
     lo += calcPointLights(v_WorldPos);
 
-    vec3 final_colour = lo;
-    vec2 screen_uv = gl_FragCoord.xy / vec2(1920, 1080);
-    final_colour *= texture(u_AOTexture, screen_uv).rgb;
+    vec3 ks = fresnelSchlick(params.nDotV);
+    vec3 kd = vec3(1.0f) - ks;
+    kd *= 1.0f - params.metalness;
+
+    vec3 irradiance = texture(u_DiffuseIrradianceMap, params.normal).rgb;
+    vec3 diffuse_ambient = kd * irradiance * params.albedo;
+
+    vec3 ambient = diffuse_ambient;
+
+    vec2 screen_uv = gl_FragCoord.xy / vec2(textureSize(u_AOTexture, 0));
+    float ao = texture(u_AOTexture, screen_uv).r;
+    ambient *= ao;
+
+    vec3 final_colour = ambient + lo;
 
     o_Colour = vec4(final_colour, 1.0f);
 }

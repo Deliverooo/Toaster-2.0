@@ -88,6 +88,14 @@ namespace toaster::render
 			const auto                                     compute_test_shader{make_reference<gpu::VKShader>(m_device, stage, bytecode, "Equirectangular_To_CubeMap")};
 			m_shaderLibrary.add("Equirectangular_To_CubeMap", compute_test_shader);
 		}
+		{
+			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/diffuse_irradiance_convolution.comp.glsl.spv")};
+			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
+			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {cs_bytecode};
+			auto stage = {vk::ShaderStageFlagBits::eCompute};
+			const auto compute_test_shader{make_reference<gpu::VKShader>(m_device, stage, bytecode, "Diffuse_Irradiance_Convolution")};
+			m_shaderLibrary.add("Diffuse_Irradiance_Convolution", compute_test_shader);
+		}
 
 		m_quadVertices.emplace_back(QuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
 		m_quadVertices.emplace_back(QuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});

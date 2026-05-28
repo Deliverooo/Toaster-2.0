@@ -110,6 +110,7 @@ namespace toaster::render
 
 		[[nodiscard]] auto createEnvironmentMap(const io::filesystem::Path &p_path) const -> gpu::Texture3DHandle;
 		[[nodiscard]] auto createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) const -> gpu::Texture3DHandle;
+		[[nodiscard]] auto createDiffuseIrradianceMap(const gpu::Texture3DHandle &p_environment_map) const -> gpu::Texture3DHandle;
 
 		#pragma region render logic
 		auto beginRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, gpu::VKRenderPass *p_render_pass,

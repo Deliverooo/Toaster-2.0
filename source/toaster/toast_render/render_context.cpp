@@ -207,6 +207,39 @@ namespace toaster::render
 		return env_map;
 	}
 
+	auto RenderContext::createDiffuseIrradianceMap(const gpu::Texture3DHandle &p_environment_map) const -> gpu::Texture3DHandle
+	{
+		static constexpr uint32 c_diffuse_irradiance_resolution{32u};
+
+		gpu::TextureSpecInfo irradiance_map_spec_info{};
+		irradiance_map_spec_info.width  = c_diffuse_irradiance_resolution;
+		irradiance_map_spec_info.height = c_diffuse_irradiance_resolution;
+		irradiance_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+		auto out_irradiance_map{createGPU<gpu::VKTexture3D>(irradiance_map_spec_info)};
+
+		auto irradiance_convolution_pipeline{createGPU<gpu::VKComputePipeline>(m_globals->shaderLibrary().get("Diffuse_Irradiance_Convolution"))};
+		auto irradiance_convolution_pass{createGPU<gpu::VKComputePass>(irradiance_convolution_pipeline)};
+		irradiance_convolution_pass->setInput("u_EnvironmentMap", p_environment_map);
+		irradiance_convolution_pass->setInput("o_Irradiance", out_irradiance_map);
+		irradiance_convolution_pass->bake();
+
+		gpu::VKCommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
+		command_buffer.begin();
+
+		beginCompute(&command_buffer, irradiance_convolution_pass, 0);
+
+		constexpr uint32 work_groups_x{(c_diffuse_irradiance_resolution + 15u) / 16u};
+		constexpr uint32 work_groups_y{(c_diffuse_irradiance_resolution + 15u) / 16u};
+		constexpr uint32 work_groups_z{6u};
+		dispatchCompute(&command_buffer, irradiance_convolution_pass, nullptr, work_groups_x, work_groups_y, work_groups_z, 0);
+
+		command_buffer.end();
+		command_buffer.submit();
+		command_buffer.waitForFence();
+
+		return out_irradiance_map;
+	}
+
 	auto RenderContext::beginRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, gpu::VKRenderPass *p_render_pass,
 									   uint32                p_frame_index) const -> void
 	{

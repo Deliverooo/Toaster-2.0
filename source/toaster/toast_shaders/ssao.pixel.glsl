@@ -34,9 +34,7 @@ void main()
     vec3 frag_pos = texture(u_PositionsTex, v_TexCoord).rgb;
     vec3 normal = normalize(texture(u_NormalsTex, v_TexCoord).rgb);
 
-    vec2 screen_size    = vec2(textureSize(u_PositionsTex, 0));
-    vec2 noise_tex_size = vec2(textureSize(u_NoiseTex, 0));
-    vec2 noise_scale    = screen_size / noise_tex_size;
+    vec2 noise_scale    = u_NoiseScale;
 
     vec3 random_vec = texture(u_NoiseTex, v_TexCoord * noise_scale).xyz;
 

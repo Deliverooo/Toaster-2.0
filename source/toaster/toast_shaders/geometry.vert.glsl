@@ -27,10 +27,14 @@ layout (push_constant) uniform Transform
 invariant gl_Position;
 void main()
 {
-    gl_Position = u_Proj * u_View * _Transform_.model * vec4(a_Position, 1.0f);
+    vec4 world_position = _Transform_.model * vec4(a_Position, 1.0f);
+    vec4 view_position = u_View * world_position;
 
-    v_WorldPos = vec3(_Transform_.model * vec4(a_Position, 1.0f));
+    gl_Position = u_Proj * view_position;
+
+    v_WorldPos = world_position.xyz;
     v_Position = a_Position;
+
     v_TexCoord = a_TexCoord;
     v_Normal = mat3(transpose(inverse(_Transform_.model))) * a_Normal;
     v_WorldNormals = mat3(_Transform_.model) * mat3(a_Tangent, a_Bitangent, a_Normal);

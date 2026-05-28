@@ -41,8 +41,10 @@ namespace toaster
 		auto getResolveOutputGeometryPositionsTexture() const -> const gpu::Texture2DHandle &;
 
 		auto getSSAONoiseTexture() const -> const gpu::Texture2DHandle &;
-
 		auto getOutputAOTexture() const -> const gpu::Texture2DHandle &;
+
+		auto getSkyboxMap() const -> const gpu::Texture3DHandle &;
+		auto getDiffuseIrradianceMap() const -> const gpu::Texture3DHandle &;
 
 		auto getOutputComputeImage() const -> const gpu::StorageImageHandle &;
 		auto getRenderer2D() -> RefPtr<render::Renderer2D>;
@@ -114,8 +116,11 @@ namespace toaster
 		gpu::PipelineHandle    m_skyboxPipeline{nullptr};
 		gpu::RenderPassHandle  m_skyboxPass{nullptr};
 		render::MaterialHandle m_skyboxMaterial{nullptr};
-		gpu::Texture3DHandle   m_skyboxMap{nullptr};
-		bool                   m_reloadSkybox{false};
+
+		gpu::Texture3DHandle m_skyboxMap{nullptr};
+		gpu::Texture3DHandle m_diffuseIrradianceMap{nullptr};
+
+		bool m_reloadSkybox{false};
 		#pragma endregion
 
 		#pragma region geometry
