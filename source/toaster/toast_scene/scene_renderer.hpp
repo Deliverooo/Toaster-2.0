@@ -42,6 +42,7 @@ namespace toaster
 
 		auto getSSAONoiseTexture() const -> const gpu::Texture2DHandle &;
 		auto getOutputAOTexture() const -> const gpu::Texture2DHandle &;
+		auto getOutputAOBlurredImage() const -> const gpu::StorageImageHandle & { return m_aoBlurredOutputImage; }
 
 		auto getSkyboxMap() const -> const gpu::Texture3DHandle &;
 		auto getDiffuseIrradianceMap() const -> const gpu::Texture3DHandle &;

@@ -180,11 +180,12 @@ void main()
     if (u_Material.hasNormalMap != 0u)
     {
         params.normal = normalize(texture(u_NormalTexture, v_TexCoord).rgb * 2.0f - 1.0f);
+        params.normal.y *= -1.0f;
         params.normal = normalize(v_WorldNormals * params.normal);
     }
 
     params.view = normalize(u_SceneData.cameraPos.xyz - v_WorldPos);// Get the direction of the view from the camera to the frag pos
-    params.nDotV = max(dot(params.normal, params.view), 0.0f);// Tells us how much the view direction is aligned with the surface normal
+    params.nDotV = max(dot(params.normal, params.view), 0.0001f);// Tells us how much the view direction is aligned with the surface normal
 
     vec4 albedo_texture_colour = texture(u_AlbedoTexture, v_TexCoord);
     params.albedo = albedo_texture_colour.rgb * u_Material.albedoColour;

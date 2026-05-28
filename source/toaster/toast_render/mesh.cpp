@@ -141,88 +141,12 @@ namespace toaster::render
 		{
 			for (uint32 i{0u}; i < scene->mNumMaterials; ++i)
 			{
-				auto ai_material      = scene->mMaterials[i];
-				auto ai_material_name = ai_material->GetName();
-
-				auto &mat_data{m_materials.addMaterial(i, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"), ai_material_name.data)};
-				auto &material{mat_data.material};
-
-				glm::vec3 albedo_colour{0.8f};
-				aiColor3D ai_colour;
-				if (ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS)
-					albedo_colour = {ai_colour.r, ai_colour.g, ai_colour.b};
-				material->set("u_Material.albedoColour", albedo_colour);
-
-				float32 roughness;
-				if (ai_material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) != aiReturn_SUCCESS)
-					roughness = 0.4f;
-				material->set("u_Material.roughness", roughness);
-
-				float32 metalness;
-				if (ai_material->Get(AI_MATKEY_REFLECTIVITY, metalness) != aiReturn_SUCCESS)
-					metalness = 0.0f;
-
-				if (metalness < 0.9f)
-					metalness = 0.0f;
-				else
-					metalness = 1.0f;
-
-				material->set("u_Material.metalness", metalness);
-
-				LOG_TRACE("\tCOLOUR = {}, {}, {}", ai_colour.r, ai_colour.g, ai_colour.b);
-				LOG_TRACE("\tROUGHNESS = {}", roughness);
-				LOG_TRACE("\tMETALNESS = {}", metalness);
-
-				aiString ai_tex_path;
-				bool     has_albedo_map = ai_material->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &ai_tex_path) == AI_SUCCESS;
-				if (!has_albedo_map)
-					has_albedo_map = ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &ai_tex_path) == AI_SUCCESS;
-
-				if (has_albedo_map)
-				{
-					auto parent_path  = p_path.parent_path();
-					auto texture_path = parent_path / ai_tex_path.C_Str();
-					if (!io::filesystem::exists(texture_path))
-					{
-						LOG_TRACE("\tAlbedo map path = {} --> NOT FOUND", texture_path.string());
-						texture_path = parent_path / texture_path.filename();
-					}
-					LOG_TRACE("\tAlbedo map path = {}{}", texture_path.string(), std::filesystem::exists(texture_path) ? "" : " --> NOT FOUND");
-
-					gpu::TextureSpecInfo texture_spec_info{};
-					texture_spec_info.generateMips = true;
-
-					mat_data.setAlbedoMap(m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path));
-					material->set("u_Material.albedoColour", glm::vec3{1.0f});
-				}
-				else
-				{
-					LOG_WARN("Mesh material does not have an albedo map");
-				}
-
-				if (ai_material->GetTexture(aiTextureType_NORMALS, 0, &ai_tex_path) == AI_SUCCESS)
-				{
-					auto parent_path  = p_path.parent_path();
-					auto texture_path = parent_path / ai_tex_path.C_Str();
-					if (!io::filesystem::exists(texture_path))
-					{
-						LOG_TRACE("\tNormal map path = {} --> NOT FOUND", texture_path.string());
-						texture_path = parent_path / texture_path.filename();
-					}
-
-					gpu::TextureSpecInfo texture_spec_info{};
-					texture_spec_info.generateMips = true;
-					mat_data.setNormalMap(m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path));
-					material->set<uint32>("u_Material.hasNormalMap", 1u);
-				}
-				else
-				{
-					material->set<uint32>("u_Material.hasNormalMap", 0u);
-				}
+				auto ai_material = scene->mMaterials[i];
+				_createMaterial(ai_material, i, p_path);
 			}
 		}
 		else
-			m_materials.addMaterial(0, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"), "Default");
+			m_materials.addMaterial(0, p_render_ctx->getGlobals()->shaderLibrary().get("Geometry"), "Default");
 
 		m_vertexBuffer = m_renderCtx->createVertexBuffer(m_vertices);
 		m_indexBuffer  = m_renderCtx->createIndexBuffer(m_indices);
@@ -305,245 +229,12 @@ namespace toaster::render
 		{
 			for (uint32 i{0u}; i < scene->mNumMaterials; ++i)
 			{
-				auto ai_material      = scene->mMaterials[i];
-				auto ai_material_name = ai_material->GetName();
-
-				auto &mat_data{m_materials.addMaterial(i, p_shader, ai_material_name.data)};
-				auto &material{mat_data.material};
-
-				glm::vec3 albedo_colour{0.8f};
-				aiColor3D ai_colour;
-				if (ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS)
-					albedo_colour = {ai_colour.r, ai_colour.g, ai_colour.b};
-				material->set("u_Material.albedoColour", albedo_colour);
-
-				float32 roughness;
-				if (ai_material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) != aiReturn_SUCCESS)
-					roughness = 0.4f;
-				material->set("u_Material.roughness", roughness);
-
-				float32 metalness;
-				if (ai_material->Get(AI_MATKEY_REFLECTIVITY, metalness) != aiReturn_SUCCESS)
-					metalness = 0.0f;
-
-				if (metalness < 0.9f)
-					metalness = 0.0f;
-				else
-					metalness = 1.0f;
-
-				material->set("u_Material.metalness", metalness);
-
-				LOG_TRACE("\tCOLOUR = {}, {}, {}", ai_colour.r, ai_colour.g, ai_colour.b);
-				LOG_TRACE("\tROUGHNESS = {}", roughness);
-				LOG_TRACE("\tMETALNESS = {}", metalness);
-
-				aiString ai_tex_path;
-				bool     has_albedo_map = ai_material->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &ai_tex_path) == AI_SUCCESS;
-				if (!has_albedo_map)
-					has_albedo_map = ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &ai_tex_path) == AI_SUCCESS;
-
-				if (has_albedo_map)
-				{
-					auto parent_path  = p_path.parent_path();
-					auto texture_path = parent_path / ai_tex_path.C_Str();
-					if (!io::filesystem::exists(texture_path))
-					{
-						LOG_TRACE("\tAlbedo map path = {} --> NOT FOUND", texture_path.string());
-						texture_path = parent_path / texture_path.filename();
-					}
-					LOG_TRACE("\tAlbedo map path = {}{}", texture_path.string(), std::filesystem::exists(texture_path) ? "" : " --> NOT FOUND");
-
-					gpu::TextureSpecInfo texture_spec_info{};
-					texture_spec_info.generateMips = true;
-
-					mat_data.setAlbedoMap(m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path));
-					material->set("u_Material.albedoColour", glm::vec3{1.0f});
-				}
-				else
-				{
-					LOG_WARN("Mesh material does not have an albedo map");
-				}
-
-				if (ai_material->GetTexture(aiTextureType_NORMALS, 0, &ai_tex_path) == AI_SUCCESS)
-				{
-					auto parent_path  = p_path.parent_path();
-					auto texture_path = parent_path / ai_tex_path.C_Str();
-					if (!io::filesystem::exists(texture_path))
-					{
-						LOG_TRACE("\tNormal map path = {} --> NOT FOUND", texture_path.string());
-						texture_path = parent_path / texture_path.filename();
-					}
-
-					gpu::TextureSpecInfo texture_spec_info{};
-					texture_spec_info.generateMips = true;
-					mat_data.setNormalMap(m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path));
-					material->set<uint32>("u_Material.hasNormalMap", 1u);
-				}
-				else
-				{
-					material->set<uint32>("u_Material.hasNormalMap", 0u);
-				}
+				auto ai_material = scene->mMaterials[i];
+				_createMaterial(ai_material, i, p_path);
 			}
 		}
 		else
 			m_materials.addMaterial(0, p_shader, "Default");
-
-		m_vertexBuffer = m_renderCtx->createVertexBuffer(m_vertices);
-		m_indexBuffer  = m_renderCtx->createIndexBuffer(m_indices);
-	}
-
-	MeshData::MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const void *p_scene) : m_renderCtx(p_render_ctx), m_path(p_path),
-																											   m_materials(p_render_ctx)
-	{
-		const auto scene{static_cast<const aiScene *>(p_scene)};
-
-		if (scene->HasMeshes())
-		{
-			uint32 vertex_count{0u};
-			uint32 index_count{0u};
-
-			for (uint32 mesh_i{0u}; mesh_i < scene->mNumMeshes; ++mesh_i)
-			{
-				aiMesh *ai_mesh = scene->mMeshes[mesh_i];
-
-				if (!ai_mesh->HasPositions())
-					LOG_WARN("Mesh index {0} with name '{1}' has no vertex positions - skipping import!", mesh_i, ai_mesh->mName.C_Str());
-				if (!ai_mesh->HasNormals())
-					LOG_WARN("Mesh index {0} with name '{1}' has no vertex normals, and they could not be computed - skipping import!", mesh_i, ai_mesh->mName.C_Str());
-
-				bool skip = !ai_mesh->HasPositions() || !ai_mesh->HasNormals();
-
-				Submesh &submesh      = m_submeshes.emplace_back();
-				submesh.baseVertex    = vertex_count;
-				submesh.baseIndex     = index_count;
-				submesh.materialIndex = ai_mesh->mMaterialIndex;
-				submesh.vertexCount   = skip ? 0 : ai_mesh->mNumVertices;
-				submesh.indexCount    = skip ? 0 : ai_mesh->mNumFaces * 3;
-				submesh.name          = ai_mesh->mName.C_Str();
-
-				if (skip)
-					continue;
-
-				vertex_count += ai_mesh->mNumVertices;
-				index_count  += submesh.indexCount;
-
-				for (uint32 i{0u}; i < ai_mesh->mNumVertices; ++i)
-				{
-					MeshVertex vertex{};
-					vertex.position = {ai_mesh->mVertices[i].x, ai_mesh->mVertices[i].y, ai_mesh->mVertices[i].z};
-					vertex.normal   = {ai_mesh->mNormals[i].x, ai_mesh->mNormals[i].y, ai_mesh->mNormals[i].z};
-
-					if (ai_mesh->HasTangentsAndBitangents())
-					{
-						vertex.tangent   = {ai_mesh->mTangents[i].x, ai_mesh->mTangents[i].y, ai_mesh->mTangents[i].z};
-						vertex.bitangent = {ai_mesh->mBitangents[i].x, ai_mesh->mBitangents[i].y, ai_mesh->mBitangents[i].z};
-					}
-					if (ai_mesh->HasTextureCoords(0))
-						vertex.texCoord = {ai_mesh->mTextureCoords[0][i].x, ai_mesh->mTextureCoords[0][i].y};
-
-					m_vertices.emplace_back(vertex);
-				}
-
-				for (uint32 i{0u}; i < ai_mesh->mNumFaces; ++i)
-				{
-					TST_ASSERT_MSG(ai_mesh->mFaces[i].mNumIndices == 3, "Must have 3 indices!");
-					m_indices.emplace_back(ai_mesh->mFaces[i].mIndices[0]);
-					m_indices.emplace_back(ai_mesh->mFaces[i].mIndices[1]);
-					m_indices.emplace_back(ai_mesh->mFaces[i].mIndices[2]);
-				}
-			}
-
-			MeshNode &rootNode = m_nodes.emplace_back();
-			(void) rootNode;
-			_traverseNodes(scene->mRootNode, 0, glm::mat4{1.0f}, 0);
-		}
-
-		if (scene->HasMaterials())
-		{
-			for (uint32 i{0u}; i < scene->mNumMaterials; ++i)
-			{
-				auto ai_material      = scene->mMaterials[i];
-				auto ai_material_name = ai_material->GetName();
-
-				auto &mat_data{m_materials.addMaterial(i, p_render_ctx->getGlobals()->shaderLibrary().get("Geometry"), ai_material_name.data)};
-				auto &material{mat_data.material};
-
-				glm::vec3 albedo_colour{0.8f};
-				aiColor3D ai_colour;
-				if (ai_material->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS)
-					albedo_colour = {ai_colour.r, ai_colour.g, ai_colour.b};
-				material->set("u_Material.albedoColour", albedo_colour);
-
-				float32 roughness;
-				if (ai_material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) != aiReturn_SUCCESS)
-					roughness = 0.4f;
-				material->set("u_Material.roughness", roughness);
-
-				float32 metalness;
-				if (ai_material->Get(AI_MATKEY_REFLECTIVITY, metalness) != aiReturn_SUCCESS)
-					metalness = 0.0f;
-
-				if (metalness < 0.9f)
-					metalness = 0.0f;
-				else
-					metalness = 1.0f;
-
-				material->set("u_Material.metalness", metalness);
-
-				LOG_TRACE("\tCOLOUR = {}, {}, {}", ai_colour.r, ai_colour.g, ai_colour.b);
-				LOG_TRACE("\tROUGHNESS = {}", roughness);
-				LOG_TRACE("\tMETALNESS = {}", metalness);
-
-				aiString ai_tex_path;
-				bool     has_albedo_map = ai_material->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &ai_tex_path) == AI_SUCCESS;
-				if (!has_albedo_map)
-					has_albedo_map = ai_material->GetTexture(aiTextureType_DIFFUSE, 0, &ai_tex_path) == AI_SUCCESS;
-
-				if (has_albedo_map)
-				{
-					auto parent_path  = p_path.parent_path();
-					auto texture_path = parent_path / ai_tex_path.C_Str();
-					if (!io::filesystem::exists(texture_path))
-					{
-						LOG_TRACE("\tAlbedo map path = {} --> NOT FOUND", texture_path.string());
-						texture_path = parent_path / texture_path.filename();
-					}
-					LOG_TRACE("\tAlbedo map path = {}{}", texture_path.string(), std::filesystem::exists(texture_path) ? "" : " --> NOT FOUND");
-
-					gpu::TextureSpecInfo texture_spec_info{};
-					texture_spec_info.generateMips = true;
-
-					mat_data.setAlbedoMap(m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path));
-					material->set("u_Material.albedoColour", glm::vec3{1.0f});
-				}
-				else
-				{
-					LOG_WARN("Mesh material does not have an albedo map");
-				}
-
-				if (ai_material->GetTexture(aiTextureType_NORMALS, 0, &ai_tex_path) == AI_SUCCESS)
-				{
-					auto parent_path  = p_path.parent_path();
-					auto texture_path = parent_path / ai_tex_path.C_Str();
-					if (!io::filesystem::exists(texture_path))
-					{
-						LOG_TRACE("\tNormal map path = {} --> NOT FOUND", texture_path.string());
-						texture_path = parent_path / texture_path.filename();
-					}
-
-					gpu::TextureSpecInfo texture_spec_info{};
-					texture_spec_info.generateMips = true;
-					mat_data.setNormalMap(m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, texture_path));
-					material->set<uint32>("u_Material.hasNormalMap", 1u);
-				}
-				else
-				{
-					material->set<uint32>("u_Material.hasNormalMap", 0u);
-				}
-			}
-		}
-		else
-			m_materials.addMaterial(0, p_render_ctx->getGlobals()->shaderLibrary().get("Geometry"), "Default");
 
 		m_vertexBuffer = m_renderCtx->createVertexBuffer(m_vertices);
 		m_indexBuffer  = m_renderCtx->createIndexBuffer(m_indices);
@@ -618,6 +309,107 @@ namespace toaster::render
 			child.parent                      = parent_node_index;
 			m_nodes[p_node_index].children[i] = child_index;
 			_traverseNodes(ai_node->mChildren[i], child_index, transform, p_level + 1);
+		}
+	}
+
+	auto MeshData::_createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void
+	{
+		auto ai_mat{static_cast<aiMaterial *>(p_mat)};
+
+		String material_name{ai_mat->GetName().C_Str()};
+		LOG_INFO("Creating new material: {}", material_name);
+
+		auto &mat_data{m_materials.addMaterial(p_mat_index, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"), material_name)};
+		auto &material{mat_data.material};
+
+		// Albedo/base colour
+		{
+			glm::vec3 albedo_colour{0.8f};
+			if (aiColor3D ai_colour; ai_mat->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS)
+				albedo_colour = {ai_colour.r, ai_colour.g, ai_colour.b};
+			material->set("u_Material.albedoColour", albedo_colour);
+			LOG_TRACE("\tAlbedo colour: {}", albedo_colour);
+		}
+		// Roughness
+		{
+			float32 roughness{0.4f};
+			ai_mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
+			material->set("u_Material.roughness", roughness);
+			LOG_TRACE("\tRoughness: {}", roughness);
+		}
+		// Metalness
+		{
+			float32 metalness{0.0f};
+			ai_mat->Get(AI_MATKEY_REFLECTIVITY, metalness);
+			material->set("u_Material.metalness", metalness);
+			LOG_TRACE("\tMetalness: {}", metalness);
+		}
+
+		auto get_path_and_create_texture_if_exists{
+			[p_parent_path](const aiString &p_ai_path, const String &p_tex_name) -> std::optional<io::filesystem::Path>
+			{
+				const io::filesystem::Path texture_path{p_ai_path.C_Str()};
+				io::filesystem::Path       tex_map_path{p_parent_path.parent_path() / texture_path};
+
+				if (!io::filesystem::exists(tex_map_path))
+				{
+					tex_map_path = p_parent_path.parent_path() / texture_path.filename();
+					if (!io::filesystem::exists(tex_map_path))
+					{
+						LOG_ERROR("\tFailed to find {} map at: {}", p_tex_name, tex_map_path);
+						return std::nullopt;
+					}
+				}
+
+				LOG_INFO("\tSuccessfully found {} map: {}", p_tex_name, tex_map_path);
+				return tex_map_path;
+			}
+		};
+
+		// Load albedo map
+		{
+			aiString ai_albedo_map_path;
+			bool     has_albedo_map{ai_mat->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &ai_albedo_map_path) == AI_SUCCESS};
+			if (!has_albedo_map)
+				has_albedo_map = ai_mat->GetTexture(aiTextureType_DIFFUSE, 0, &ai_albedo_map_path) == AI_SUCCESS;
+
+			// TODO: Embedded textures
+			if (has_albedo_map)
+			{
+				auto albedo_map_path{get_path_and_create_texture_if_exists(ai_albedo_map_path, "albedo")};
+				if (albedo_map_path.has_value())
+				{
+					gpu::TextureSpecInfo texture_spec_info{};
+					texture_spec_info.generateMips = true;
+					mat_data.setAlbedoMap(m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, *albedo_map_path));
+				}
+			}
+			else
+			{
+				LOG_WARN("\tMaterial '{}' does not have an albedo map", material_name);
+			}
+		}
+
+		// Load normal map
+		{
+			// TODO: Embedded textures
+			aiString ai_normal_map_path;
+			if (ai_mat->GetTexture(aiTextureType_NORMALS, 0, &ai_normal_map_path) == AI_SUCCESS)
+			{
+				auto normal_map_path{get_path_and_create_texture_if_exists(ai_normal_map_path, "normal")};
+				if (normal_map_path.has_value())
+				{
+					gpu::TextureSpecInfo texture_spec_info{};
+					texture_spec_info.generateMips = true;
+					mat_data.setNormalMap(m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, *normal_map_path));
+				}
+				material->set<uint32>("u_Material.hasNormalMap", 1u);
+			}
+			else
+			{
+				material->set<uint32>("u_Material.hasNormalMap", 0u);
+				LOG_WARN("\tMaterial '{}' does not have a normal map", material_name);
+			}
 		}
 	}
 

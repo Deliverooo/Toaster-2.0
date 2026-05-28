@@ -106,7 +106,7 @@ namespace toaster
 			ssao_kernel_ubo->setData(m_ssaoKernel->samples, sizeof(SSAOKernel), 0);
 			m_ssaoPass->setInput("SSAOKernel", ssao_kernel_ubo);
 
-			constexpr uint32 s_noise_texture_side_size{8u};
+			constexpr uint32 s_noise_texture_side_size{4u};
 
 			gpu::TextureSpecInfo noise_texture_spec_info{};
 			noise_texture_spec_info.width              = s_noise_texture_side_size;

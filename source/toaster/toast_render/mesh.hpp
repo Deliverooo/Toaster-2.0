@@ -103,7 +103,6 @@ namespace toaster::render
 	public:
 		MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path);
 		MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader);
-		MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const void *p_scene);
 
 		auto getVertexBuffer() const -> const gpu::VertexBufferHandle &;
 		auto getIndexBuffer() const -> const gpu::IndexBufferHandle &;
@@ -119,6 +118,7 @@ namespace toaster::render
 
 	private:
 		auto _traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void;
+		auto _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
 
 		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
 
