@@ -50,8 +50,8 @@ will be able to take care of this for you... :)
 ## Examples
 
 <p float="left" width=25%> 
-	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/master/examples/images/Demo_scene.png" width=25%>
+	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/master/examples/images/Test_scene.png" width=25%>
 	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/master/examples/images/Heavenly_Orbo.png" width=25%>
-	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/master/examples/images/Scene_demo.png" width=25%>
+	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/master/examples/images/SSAO_Irradiance.png" width=25%>
 	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/master/examples/images/New_Lighting.png" width=25%>
 </p>
