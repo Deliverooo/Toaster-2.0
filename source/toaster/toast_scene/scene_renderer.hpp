@@ -85,8 +85,6 @@ namespace toaster
 		gpu::RenderPassHandle m_ssaoPass{nullptr};
 
 		render::MaterialHandle m_aoFrameDataMaterial{nullptr};
-		// gpu::ComputePipelineHandle m_aoPipeline{nullptr};
-		// gpu::ComputePassHandle     m_aoPass{nullptr};
 
 		struct SSAOKernel
 		{
@@ -99,8 +97,12 @@ namespace toaster
 		UniquePtr<SSAOKernel> m_ssaoKernel{nullptr};
 
 		gpu::Texture2DHandle m_ssaoNoiseTexture{nullptr};
+		gpu::Texture2DHandle m_ssaoOutputTexture{nullptr};
 
-		gpu::Texture2DHandle m_aoOutputTexture{nullptr};
+		gpu::ComputePipelineHandle m_aoBlurPipeline{nullptr};
+		gpu::ComputePassHandle     m_aoBlurPass{nullptr};
+		gpu::StorageImageHandle    m_aoBlurredOutputImage{nullptr};
+
 		#pragma endregion
 
 		#pragma region light culling

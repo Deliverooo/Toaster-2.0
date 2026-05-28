@@ -211,7 +211,7 @@ void main()
 
     vec2 screen_uv = gl_FragCoord.xy / vec2(textureSize(u_AOTexture, 0));
     float ao = texture(u_AOTexture, screen_uv).r;
-//    ambient *= ao;
+    ambient *= ao;
 
     vec3 final_colour = ambient + lo;
 

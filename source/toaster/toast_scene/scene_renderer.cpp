@@ -97,8 +97,8 @@ namespace toaster
 
 			m_ssaoPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_ssaoPipeline);
 
-			m_aoOutputTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportWidth, m_specInfo.viewportHeight, vk::ImageAspectFlagBits::eColor,
-																	 vk::Format::eR16G16B16A16Sfloat);
+			m_ssaoOutputTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportWidth, m_specInfo.viewportHeight, vk::ImageAspectFlagBits::eColor,
+																	   vk::Format::eR16G16B16A16Sfloat);
 			m_ssaoPass->setInput("Camera", m_cameraUBOs);
 
 			m_ssaoKernel = make_unique<SSAOKernel>(); // Generates the random rotation vectors
@@ -138,6 +138,22 @@ namespace toaster
 			m_aoFrameDataMaterial->set(".u_Bias", 0.025f);
 
 			m_ssaoPass->bake();
+
+			{
+				gpu::ImageSpecInfo blurred_ao_image_spec_info{};
+				blurred_ao_image_spec_info.width  = m_specInfo.viewportWidth;
+				blurred_ao_image_spec_info.height = m_specInfo.viewportHeight;
+				blurred_ao_image_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+				blurred_ao_image_spec_info.usage  = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
+				m_aoBlurredOutputImage            = m_renderCtx->createGPU<gpu::VKStorageImage>(blurred_ao_image_spec_info);
+
+				m_aoBlurPipeline = m_renderCtx->createGPU<gpu::VKComputePipeline>(m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Blur"));
+				m_aoBlurPass     = m_renderCtx->createGPU<gpu::VKComputePass>(m_aoBlurPipeline);
+
+				m_aoBlurPass->setInput("u_Occlusion", m_ssaoOutputTexture);
+				m_aoBlurPass->setInput("o_BlurredOcclusion", m_aoBlurredOutputImage);
+				m_aoBlurPass->bake();
+			}
 		}
 		#pragma endregion
 
@@ -209,7 +225,7 @@ namespace toaster
 			m_geometryPass->setInput("PointLightData", m_pointLightUBOs);
 			m_geometryPass->setInput("SceneData", m_sceneDataUBOs);
 			m_geometryPass->setInput("u_DiffuseIrradianceMap", m_diffuseIrradianceMap);
-			m_geometryPass->setInput("u_AOTexture", m_aoOutputTexture);
+			m_geometryPass->setInput("u_AOTexture", m_aoBlurredOutputImage);
 
 			m_geometryPass->bake();
 		}
@@ -348,7 +364,7 @@ namespace toaster
 
 	auto SceneRenderer::getOutputAOTexture() const -> const gpu::Texture2DHandle &
 	{
-		return m_aoOutputTexture;
+		return m_ssaoOutputTexture;
 	}
 
 	auto SceneRenderer::getSkyboxMap() const -> const gpu::Texture3DHandle &
@@ -389,7 +405,8 @@ namespace toaster
 			m_geometryPositionsAttachmentImage->resize(p_width, p_height);
 			m_geometryPositionsResolveAttachmentTexture->resize(p_width, p_height);
 
-			m_aoOutputTexture->resize(p_width, p_height);
+			m_ssaoOutputTexture->resize(p_width, p_height);
+			m_aoBlurredOutputImage->resize(p_width, p_height);
 
 			m_computeImage->resize(p_width, p_height);
 
@@ -467,11 +484,17 @@ namespace toaster
 
 		gpu::RenderingAttachmentInfo &out_ssao_attachment_info{rendering_info.colourAttachments.emplace_back()};
 		out_ssao_attachment_info.clearValue = vk::ClearColorValue{1.0f, 1.0, 1.0f, 1.0f};
-		out_ssao_attachment_info.image      = m_aoOutputTexture->getImage();
+		out_ssao_attachment_info.image      = m_ssaoOutputTexture->getImage();
 
 		m_renderCtx->beginRendering(p_cmd, rendering_info, m_ssaoPass);
 		m_renderCtx->renderFullscreenQuad(p_cmd, m_ssaoPipeline, m_aoFrameDataMaterial);
 		m_renderCtx->endRendering(p_cmd, rendering_info);
+
+		const uint32     work_groups_x{(m_specInfo.viewportWidth + 15u) / 16u};
+		const uint32     work_groups_y{(m_specInfo.viewportHeight + 15u) / 16u};
+		constexpr uint32 work_groups_z{1u};
+		m_renderCtx->beginCompute(p_cmd, m_aoBlurPass);
+		m_renderCtx->dispatchCompute(p_cmd, m_aoBlurPass, nullptr, work_groups_x, work_groups_y, work_groups_z);
 	}
 
 	auto SceneRenderer::_renderLightCullingPass(gpu::VKCommandBuffer *p_cmd) -> void
