@@ -1,0 +1,23 @@
+set(RENDER_SRC
+		${CMAKE_CURRENT_SOURCE_DIR}/src/globals.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/material.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/render_context.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/renderer_2d.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/shader_library.cpp
+)
+
+add_library(ToastRender SHARED)
+
+target_include_directories(ToastRender PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+target_sources(ToastRender PRIVATE ${RENDER_SRC})
+
+target_link_libraries(ToastRender PUBLIC Toaster::ToastGPU)
+target_link_libraries(ToastRender PRIVATE assimp::assimp)
+add_dependencies(ToastRender Toaster::ToastShaders)
+
+add_library(Toaster::ToastRender ALIAS ToastRender)
+
+add_compile_definitions(ToastRender PUBLIC TST_RENDER_BUILD_DLL)
+add_compile_definitions(ToastRender PRIVATE TST_RENDER_DLL_EXPORT)

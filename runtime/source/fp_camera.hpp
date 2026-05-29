@@ -11,7 +11,7 @@ namespace toaster
 {
 	class InputContext;
 
-	class FPCamera final : public Camera
+	class FPCamera : public Camera
 	{
 	public:
 		FPCamera() = default;

@@ -1,16 +1,11 @@
 #pragma once
 
-#include "fp_camera.hpp"
-#include "toaster/toast_kernel/layer.hpp"
+#include "toast_kernel/layer.hpp"
 
-#include "toaster/toast_lib/events/key_event.hpp"
-#include "toast_asset/asset_manager.hpp"
+#include "toast_lib/events/key_event.hpp"
 
-#include "toast_gpu/vk/vk_render_pass.hpp"
-#include "toast_gpu/vk/vk_pipeline.hpp"
-#include "toast_project/project.hpp"
 #include "toast_scene/scene_renderer.hpp"
-#include "toast_scripting/script_engine.hpp"
+#include "toast_script/script_engine.hpp"
 
 namespace toaster
 {
@@ -29,8 +24,6 @@ namespace toaster
 
 		uint32 m_viewportWidth{0u};
 		uint32 m_viewportHeight{0u};
-
-		UniquePtr<Project> m_project{nullptr};
 
 		UniquePtr<script::ScriptEngine> m_scriptEngine{nullptr};
 

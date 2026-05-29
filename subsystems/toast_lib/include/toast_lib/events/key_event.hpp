@@ -1,0 +1,72 @@
+#pragma once
+
+#include "event.hpp"
+#include "toast_lib/input_codes.hpp"
+
+namespace toaster
+{
+	class TST_LIB_API KeyEvent : public Event
+	{
+	public:
+		EVENT_CLASS_CATEGORY(EventCategory_Input | EventCategory_Keyboard)
+
+		[[nodiscard]] auto getKeyCode() const -> input::EKeyCode { return m_keyCode; }
+
+	protected:
+		explicit KeyEvent(const input::EKeyCode p_keycode) : m_keyCode(p_keycode)
+		{
+		}
+
+		input::EKeyCode m_keyCode;
+	};
+
+	class TST_LIB_API KeyPressEvent final : public KeyEvent
+	{
+	public:
+		KeyPressEvent(const input::EKeyCode p_keycode, const int32 p_repeat_count) : KeyEvent(p_keycode), m_repeatCount(p_repeat_count)
+		{
+		}
+
+		EVENT_CLASS_TYPE(eKeyPressed)
+
+		[[nodiscard]] auto getRepeatCount() const -> int32 { return m_repeatCount; }
+
+		[[nodiscard]] virtual auto toStr() const -> String override
+		{
+			return "KeyPressedEvent: " + to_string(static_cast<int32>(m_keyCode)) + "/" + to_string(m_repeatCount);
+		}
+
+	private:
+		int m_repeatCount;
+	};
+
+	class TST_LIB_API KeyTypeEvent final : public KeyEvent
+	{
+	public:
+		explicit KeyTypeEvent(const input::EKeyCode p_keycode) : KeyEvent(p_keycode)
+		{
+		}
+
+		EVENT_CLASS_TYPE(eKeyTyped)
+
+		[[nodiscard]] virtual auto toStr() const -> String override
+		{
+			return "KeyTypedEvent: " + to_string(static_cast<int32>(m_keyCode));
+		}
+	};
+
+	class TST_LIB_API KeyReleaseEvent final : public KeyEvent
+	{
+	public:
+		explicit KeyReleaseEvent(const input::EKeyCode p_keycode) : KeyEvent(p_keycode)
+		{
+		}
+
+		EVENT_CLASS_TYPE(eKeyReleased)
+
+		[[nodiscard]] virtual auto toStr() const -> String override
+		{
+			return "KeyReleasedEvent: " + to_string(static_cast<int32>(m_keyCode));
+		}
+	};
+}

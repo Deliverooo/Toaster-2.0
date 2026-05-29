@@ -24,7 +24,7 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 endif ()
 
 # Project definition
-project(Toaster)
+project(Toaster VERSION 1.0.0)
 
 message(STATUS "Generator platform ${CMAKE_GENERATOR_PLATFORM}")
 
@@ -104,9 +104,12 @@ set(CMAKE_CXX_FLAGS "${CXX_WARNINGS} ${CMAKE_CXX_FLAGS}")
 
 add_subdirectory(extern)
 
-add_subdirectory(source)
+add_subdirectory(subsystems)
+
+#add_subdirectory(source)
 
 add_subdirectory(runtime)
 add_subdirectory(editor)
-add_subdirectory(build)
+add_subdirectory(tstb)
 add_subdirectory(test)
+

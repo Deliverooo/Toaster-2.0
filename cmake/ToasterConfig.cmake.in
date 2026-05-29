@@ -1,0 +1,14 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(glm-header-only REQUIRED)
+find_dependency(fmt REQUIRED)
+find_dependency(yaml-cpp REQUIRED)
+
+find_dependency(nfd REQUIRED) 
+find_dependency(Vulkan REQUIRED)
+
+include("${CMAKE_CURRENT_LIST_DIR}/ToasterTargets.cmake")
+
+check_required_components(Toaster)

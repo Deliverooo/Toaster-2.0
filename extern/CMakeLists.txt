@@ -1,8 +1,10 @@
 add_subdirectory(argparse)
 
+set(FMT_INSTALL ON CACHE BOOL "" FORCE)
 add_subdirectory(fmt)
 
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
 add_subdirectory(assimp)
 
 add_subdirectory(miniaudio)
@@ -11,6 +13,7 @@ add_subdirectory(stb)
 
 add_subdirectory(entt)
 
+set(NFD_INSTALL ON CACHE BOOL "" FORCE)
 add_subdirectory(nativefiledialog-extended)
 
 add_subdirectory(yaml-cpp)
@@ -20,6 +23,7 @@ if (MSVC)
 	target_compile_options(yaml-cpp PUBLIC /wd4275)
 endif ()
 
+set(GLM_BUILD_INSTALL ON CACHE BOOL "" FORCE)
 add_subdirectory(glm)
 target_compile_definitions(glm PUBLIC GLM_ENABLE_EXPERIMENTAL)
 target_compile_definitions(glm-header-only INTERFACE GLM_ENABLE_EXPERIMENTAL)

@@ -1,18 +1,14 @@
 #include "runtime_layer.hpp"
 
-#include "toaster/toast_kernel/application.hpp"
-#include "toaster/toast_kernel/input.hpp"
-#include "toaster/toast_lib/io/file_stream.hpp"
-#include "toaster/toast_render/globals.hpp"
-#include "toast_asset/asset.hpp"
-#include "toast_asset/mesh_asset.hpp"
-#include "toast_asset/texture_asset.hpp"
+#include "toast_kernel/input.hpp"
+#include "toast_lib/io/file_stream.hpp"
+#include "toast_render/globals.hpp"
 
 #include "toast_gpu/vk/vk_swapchain.hpp"
 
 #include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_kernel/application.hpp"
 #include "toast_lib/os/terminal.hpp"
-#include "toast_project/project.hpp"
 #include "toast_render/render_context.hpp"
 #include "toast_scene/components.hpp"
 #include "toast_scene/entity.hpp"
@@ -41,39 +37,10 @@ namespace toaster
 			m_sceneRenderer->onResize(width, height);
 		});
 
-		auto                 command_line_args{m_app->getCommandLineArgs()};
 		io::filesystem::Path binary_dir{os::getBinaryDirectory()};
 
-		m_project = make_unique<Project>(m_renderCtx);
-		ProjectSerializer project_serializer{m_project.get()};
-		project_serializer.deserialize(command_line_args->get("--project"));
-		m_project->printInfo();
-
-		auto &asset_manager{m_project->getAssetManager()};
-
-		asset_manager.deserializeFromFile(m_project->getFullAssetRegistryPath());
-		asset_manager.printAssetRegistry();
-
-		io::filesystem::Path script_asm_path{
-			fmt::format("{0}/bin/{1}/net48/{2}.dll", m_project->getFullScriptDirectory(), script::c_scriptConfigProfile, m_project->getSpecInfo().name)
-		};
-		DEBUG_LOG_INFO("Attempting to load script assembly: {}", script_asm_path);
-		TST_PERMA_ASSERT_MSG(io::filesystem::exists(script_asm_path), "Script dll does not exist");
-
-		script::ScriptEngineSpecInfo script_engine_spec_info{};
-		script_engine_spec_info.rootDomainName   = "ToasterRootDomain";
-		script_engine_spec_info.appDomainName    = "ToasterAppDomain";
-		script_engine_spec_info.coreAssemblyPath = binary_dir / fmt::format("script/{0}/net48/Toaster.dll", script::c_scriptConfigProfile);
-		script_engine_spec_info.appAssemblyPath  = script_asm_path;
-		m_scriptEngine                           = make_unique<script::ScriptEngine>(script_engine_spec_info);
-
-		m_scene = make_reference<Scene>(m_project.get(), m_renderCtx, m_scriptEngine.get(), m_project->getSpecInfo().startupSceneName);
-		m_inputCtx->registerScriptMethods(m_scriptEngine.get());
-
-		auto scene_path{m_project->getFullStartupScenePath()};
-		DEBUG_LOG_INFO("Attempting to load scene: {}", scene_path);
-		SceneSerializer scene_serializer{m_scene};
-		scene_serializer.deserialize(scene_path);
+		m_scene = make_reference<Scene>(m_renderCtx, nullptr, "Orbo's Exodus");
+		m_inputCtx->registerScriptMethods(nullptr);
 
 		#pragma region render stuff setup
 		auto                  fullscreen_shader{m_globals->shaderLibrary().get("Composite")};
@@ -90,12 +57,21 @@ namespace toaster
 		m_fullscreenRenderPass->bake();
 
 		SceneRendererSpecInfo scene_renderer_spec_info{};
-		scene_renderer_spec_info.viewportWidth     = m_viewportWidth;
-		scene_renderer_spec_info.viewportHeight    = m_viewportHeight;
-		scene_renderer_spec_info.scene             = m_scene;
-		scene_renderer_spec_info.resourceDirectory = m_project->getFullResourcesDirectory();
-		m_sceneRenderer                            = make_reference<SceneRenderer>(m_renderCtx, scene_renderer_spec_info);
+		scene_renderer_spec_info.viewportWidth  = m_viewportWidth;
+		scene_renderer_spec_info.viewportHeight = m_viewportHeight;
+		scene_renderer_spec_info.scene          = m_scene;
+		m_sceneRenderer                         = make_reference<SceneRenderer>(m_renderCtx, scene_renderer_spec_info);
 		#pragma endregion
+
+		m_scene->setSceneEnvironment(m_renderCtx->createEnvironmentMap("C:/dev/Toaster-2.0/resources/environments/grasslands_sunset_1k.hdr"));
+
+		{
+			Entity e{m_scene->createEntity("Orbo")};
+			auto & cam{e.addComponent<CameraComponent>()};
+			cam.primary = true;
+			cam.camera.setPerspectiveFov(glm::radians(90.0f));
+			cam.camera.setProjectionType(SceneCamera::EProjectionType::ePerspective);
+		}
 	}
 
 	auto RuntimeLayer::onDestroy() -> void

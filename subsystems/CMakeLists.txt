@@ -1,0 +1,7 @@
+add_subdirectory(toast_lib)
+add_subdirectory(toast_gpu)
+add_subdirectory(toast_script)
+add_subdirectory(toast_shaders)
+add_subdirectory(toast_render)
+add_subdirectory(toast_scene)
+add_subdirectory(toast_kernel)

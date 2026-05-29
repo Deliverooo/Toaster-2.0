@@ -11,6 +11,5 @@ set(SRC
 
 add_executable(toaster_runtime ${SRC})
 
-target_link_libraries(toaster_runtime PRIVATE Toaster)
+target_link_libraries(toaster_runtime PRIVATE Toaster::ToastKernel)
 target_link_libraries(toaster_runtime PRIVATE imgui)
-target_link_libraries(toaster_runtime PRIVATE argparse)

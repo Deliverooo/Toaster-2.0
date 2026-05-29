@@ -16,10 +16,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 
 	auto binary_directory{toaster::os::getBinaryDirectory()};
 
-	toaster::log::setOutputFile((binary_directory / "runtime_log.tlog").string());
-
-	fmt::println(toaster::log::getOutputFile(), "gusihgjkewhgoiw");
-	LOG_ERROR("gjishfoiwqjg");
+	// toaster::log::setOutputFile((binary_directory / "runtime_log.tlog").string());
 
 	argparse::ArgumentParser parser{"Toaster", "3.141592653589793284"};
 
@@ -45,7 +42,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 		app.run();
 	}
 
-	toaster::log::shutdown();
+	// toaster::log::shutdown();
 
 	return 0;
 }
