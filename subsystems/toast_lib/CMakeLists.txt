@@ -17,7 +17,6 @@ target_include_directories(ToastLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOU
 
 target_sources(ToastLib PRIVATE ${SRC})
 
-target_link_libraries(ToastLib PUBLIC glm::glm-header-only)
 target_link_libraries(ToastLib PUBLIC fmt::fmt)
 target_link_libraries(ToastLib PRIVATE nfd)
 

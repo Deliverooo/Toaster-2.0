@@ -13,9 +13,9 @@ namespace toaster::render
 		aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights | aiProcess_ValidateDataStructure | aiProcess_GlobalScale | aiProcess_FlipUVs
 	};
 
-	auto mat4FromAIMatrix4x4(const aiMatrix4x4 &matrix) -> glm::mat4
+	auto mat4FromAIMatrix4x4(const aiMatrix4x4 &matrix) -> tsm::float4x4
 	{
-		glm::mat4 result;
+		tsm::float4x4 result;
 		result[0][0] = matrix.a1;
 		result[1][0] = matrix.a2;
 		result[2][0] = matrix.a3;
@@ -133,7 +133,7 @@ namespace toaster::render
 
 			MeshNode &rootNode = m_nodes.emplace_back();
 			(void) rootNode;
-			_traverseNodes(scene->mRootNode, 0, glm::mat4{1.0f}, 0);
+			_traverseNodes(scene->mRootNode, 0, tsm::float4x4{1.0f}, 0);
 		}
 
 		if (scene->HasMaterials())
@@ -221,7 +221,7 @@ namespace toaster::render
 
 			MeshNode &rootNode = m_nodes.emplace_back();
 			(void) rootNode;
-			_traverseNodes(scene->mRootNode, 0, glm::mat4{1.0f}, 0);
+			_traverseNodes(scene->mRootNode, 0, tsm::float4x4{1.0f}, 0);
 		}
 
 		if (scene->HasMaterials())
@@ -279,7 +279,7 @@ namespace toaster::render
 		return m_path;
 	}
 
-	auto MeshData::_traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void
+	auto MeshData::_traverseNodes(void *p_assimp_node, uint32 p_node_index, const tsm::float4x4 &p_parent_transform, uint32 p_level) -> void
 	{
 		auto ai_node = static_cast<aiNode *>(p_assimp_node);
 
@@ -287,7 +287,7 @@ namespace toaster::render
 		node.name           = ai_node->mName.C_Str();
 		node.localTransform = mat4FromAIMatrix4x4(ai_node->mTransformation);
 
-		glm::mat4 transform{p_parent_transform * node.localTransform};
+		tsm::float4x4 transform{p_parent_transform * node.localTransform};
 		for (uint32 i{0u}; i < ai_node->mNumMeshes; ++i)
 		{
 			uint32_t submesh_index = ai_node->mMeshes[i];
@@ -323,7 +323,7 @@ namespace toaster::render
 
 		// Albedo/base colour
 		{
-			glm::vec3 albedo_colour{0.8f};
+			tsm::float3 albedo_colour{0.8f};
 			if (aiColor3D ai_colour; ai_mat->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS)
 				albedo_colour = {ai_colour.r, ai_colour.g, ai_colour.b};
 			material->set("u_Material.albedoColour", albedo_colour);

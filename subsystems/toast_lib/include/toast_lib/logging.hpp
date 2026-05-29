@@ -4,49 +4,49 @@
 
 #include <fmt/color.h>
 #include <fmt/format.h>
-#include <glm/glm.hpp>
+#include "math/math_vector.hpp"
 
 #include "fmt/os.h"
 
 #include <memory>
 
 template<>
-struct fmt::formatter<glm::vec2>
+struct fmt::formatter<tsm::float2>
 {
 	constexpr auto parse(format_parse_context &p_ctx)
 	{
 		return p_ctx.begin();
 	}
 
-	auto format(const glm::vec2 &v, format_context &p_ctx) const
+	auto format(const tsm::float2 &v, format_context &p_ctx) const
 	{
 		return format_to(p_ctx.out(), "({}, {})", v.x, v.y);
 	}
 };
 
 template<>
-struct fmt::formatter<glm::vec3>
+struct fmt::formatter<tsm::float3>
 {
 	constexpr auto parse(format_parse_context &p_ctx)
 	{
 		return p_ctx.begin();
 	}
 
-	auto format(const glm::vec3 &v, format_context &p_ctx) const
+	auto format(const tsm::float3 &v, format_context &p_ctx) const
 	{
 		return format_to(p_ctx.out(), "({}, {}, {})", v.x, v.y, v.z);
 	}
 };
 
 template<>
-struct fmt::formatter<glm::vec4>
+struct fmt::formatter<tsm::float4>
 {
 	constexpr auto parse(format_parse_context &p_ctx)
 	{
 		return p_ctx.begin();
 	}
 
-	auto format(const glm::vec4 &v, format_context &p_ctx) const
+	auto format(const tsm::float4&v, format_context &p_ctx) const
 	{
 		return format_to(p_ctx.out(), "({}, {}, {}, {})", v.x, v.y, v.z, v.w);
 	}

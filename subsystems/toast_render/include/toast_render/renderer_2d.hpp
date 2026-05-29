@@ -101,8 +101,8 @@ namespace toaster::render
 
 		struct CameraUB
 		{
-			glm::mat4 view;
-			glm::mat4 proj;
+			tsm::float4x4 view;
+			tsm::float4x4 proj;
 		};
 
 		RefPtr<gpu::VKUniformBufferPFF> m_cameraUBs{nullptr};

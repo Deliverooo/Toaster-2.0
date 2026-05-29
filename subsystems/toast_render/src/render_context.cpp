@@ -501,13 +501,13 @@ namespace toaster::render
 	}
 
 	auto RenderContext::renderGeometry(gpu::VKCommandBuffer *p_command_buffer, gpu::VKPipeline *p_pipeline, gpu::VKVertexBuffer *p_vertex_buffer,
-									   gpu::VKIndexBuffer *  p_index_buffer, uint32             p_index_count, Material *        p_material, const glm::mat4 &p_transform,
+									   gpu::VKIndexBuffer *  p_index_buffer, uint32             p_index_count, Material *p_material, const tsm::float4x4 &p_transform,
 									   uint32                p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
 		// Push the constants
-		p_command_buffer->getVulkanCommandBuffer().pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
+		p_command_buffer->getVulkanCommandBuffer().pushConstants<tsm::float4x4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
 		if (p_material)
 		{
@@ -526,7 +526,7 @@ namespace toaster::render
 				push_constants_info.layout     = p_pipeline->getPipelineLayout();
 				push_constants_info.stageFlags = vk::ShaderStageFlagBits::eFragment;
 				push_constants_info.size       = push_constants.size();
-				push_constants_info.offset     = sizeof(glm::mat4);
+				push_constants_info.offset     = sizeof(tsm::float4x4);
 				push_constants_info.pValues    = push_constants.data();
 
 				p_command_buffer->getVulkanCommandBuffer().pushConstants2(push_constants_info);
@@ -576,12 +576,12 @@ namespace toaster::render
 	}
 
 	auto RenderContext::renderMesh(gpu::VKCommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline,
-								   const glm::mat4 &     p_transform, uint32               p_frame_index) const -> void
+								   const tsm::float4x4 & p_transform, uint32               p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
 		// Push the constants
-		p_command_buffer->getVulkanCommandBuffer().pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
+		p_command_buffer->getVulkanCommandBuffer().pushConstants<tsm::float4x4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
 		const auto &submesh{p_mesh->getSubmeshes()[p_submesh_index]};
 		auto        material{p_mesh->getMaterials().getMaterial(submesh.materialIndex).material};
@@ -603,7 +603,7 @@ namespace toaster::render
 				push_constants_info.layout     = p_pipeline->getPipelineLayout();
 				push_constants_info.stageFlags = vk::ShaderStageFlagBits::eFragment;
 				push_constants_info.size       = push_constants.size();
-				push_constants_info.offset     = sizeof(glm::mat4);
+				push_constants_info.offset     = sizeof(tsm::float4x4);
 				push_constants_info.pValues    = push_constants.data();
 
 				p_command_buffer->getVulkanCommandBuffer().pushConstants2(push_constants_info);
@@ -618,11 +618,11 @@ namespace toaster::render
 	}
 
 	auto RenderContext::renderMesh(gpu::VKCommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32              p_submesh_index, gpu::VKPipeline *p_pipeline,
-								   const glm::mat4 &     p_transform, Material *           p_override_material, uint32 p_frame_index) const -> void
+								   const tsm::float4x4 & p_transform, Material *           p_override_material, uint32 p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 		// Push the constants
-		p_command_buffer->getVulkanCommandBuffer().pushConstants<glm::mat4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
+		p_command_buffer->getVulkanCommandBuffer().pushConstants<tsm::float4x4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
 
 		const auto &submesh{p_mesh->getSubmeshes()[p_submesh_index]};
 
@@ -643,7 +643,7 @@ namespace toaster::render
 				push_constants_info.layout     = p_pipeline->getPipelineLayout();
 				push_constants_info.stageFlags = vk::ShaderStageFlagBits::eFragment;
 				push_constants_info.size       = push_constants.size();
-				push_constants_info.offset     = sizeof(glm::mat4);
+				push_constants_info.offset     = sizeof(tsm::float4x4);
 				push_constants_info.pValues    = push_constants.data();
 
 				p_command_buffer->getVulkanCommandBuffer().pushConstants2(push_constants_info);

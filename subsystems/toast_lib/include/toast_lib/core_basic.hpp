@@ -7,3 +7,6 @@
 #include "system_types.h"
 #include "toast_assert.h"
 #include "util_defines.hpp"
+
+#include "math/math_matrix.hpp"
+#include "math/math_vector.hpp"

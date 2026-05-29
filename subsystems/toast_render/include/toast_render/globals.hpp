@@ -15,8 +15,8 @@ namespace toaster::render
 	public:
 		struct QuadVertex
 		{
-			glm::vec3 position;
-			glm::vec2 texCoord;
+			tsm::float3 position;
+			tsm::float2 texCoord;
 		};
 
 		Globals(gpu::VKLogicalDevice *p_device, const io::filesystem::Path &p_binary_dir);

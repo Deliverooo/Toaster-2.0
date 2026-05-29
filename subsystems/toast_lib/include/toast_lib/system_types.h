@@ -6,6 +6,10 @@
 #include <cstddef> // (C++) std::nullptr_t
 #include <cstdint> // _t typedefs
 
+using bool32 = bool; // I am sorry
+
+using nulltype = nullptr_t;
+
 using int8  = int8_t;
 using int16 = int16_t;
 using int32 = int32_t;

@@ -3,14 +3,6 @@ cmake_minimum_required(VERSION 3.30)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-cmake_policy(SET CMP0077 NEW)
-
-if (MSVC)
-	add_compile_options(/MP)
-endif ()
-
-set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/lib")
@@ -23,23 +15,14 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 	message(FATAL_ERROR "In-source builds are not allowed. Please create a separate build directory.")
 endif ()
 
+set(GLM_BUILD_INSTALL ON CACHE BOOL "" FORCE)
+add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
+
+add_subdirectory(extern/glm)
+
+
 # Project definition
 project(Toaster VERSION 1.0.0)
-
-message(STATUS "Generator platform ${CMAKE_GENERATOR_PLATFORM}")
-
-if (DEFINED WITH_VULKAN_BACKEND)
-	message(NOTICE "WARNING: WITH_VULKAN_BACKEND was already defined as: ${WITH_VULKAN_BACKEND}")
-endif ()
-
-set(WITH_VULKAN_BACKEND 1)
-set(WITH_OPENGL_BACKEND 0)
-
-add_compile_definitions(USE_VULKAN_BACKEND=${WITH_VULKAN_BACKEND})
-add_compile_definitions(USE_OPENGL_BACKEND=${WITH_OPENGL_BACKEND})
-
-message(STATUS "DEBUG: WITH_VULKAN_BACKEND is set to: '${WITH_VULKAN_BACKEND}'")
-message(STATUS "DEBUG: WITH_OPENGL_BACKEND is set to: '${WITH_OPENGL_BACKEND}'")
 
 find_package(Vulkan REQUIRED COMPONENTS glslangValidator shaderc_combined SPIRV-Tools)
 
@@ -101,6 +84,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_C_FLAGS "${C_WARNINGS} ${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CXX_WARNINGS} ${CMAKE_CXX_FLAGS}")
+
 
 add_subdirectory(extern)
 

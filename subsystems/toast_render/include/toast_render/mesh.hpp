@@ -1,6 +1,5 @@
 #pragma once
 
-#include <glm/glm.hpp>
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
@@ -11,31 +10,31 @@ namespace toaster::render
 {
 	struct TST_RENDER_API MeshVertex
 	{
-		glm::vec3 position{0.0f};
-		glm::vec3 normal{0.0f};
-		glm::vec3 tangent{0.0f};
-		glm::vec3 bitangent{0.0f};
-		glm::vec2 texCoord{0.0f};
+		tsm::float3 position{0.0f};
+		tsm::float3 normal{0.0f};
+		tsm::float3 tangent{0.0f};
+		tsm::float3 bitangent{0.0f};
+		tsm::float2 texCoord{0.0f};
 	};
 
 	struct TST_RENDER_API BoneInfluence
 	{
-		glm::uvec4 boneIds{0u};
-		glm::vec4  boneWeights{0.0f};
+		tsm::uint4  boneIds{0u};
+		tsm::float4 boneWeights{0.0f};
 	};
 
 	struct TST_RENDER_API BoneInfo
 	{
-		glm::mat4 inverseBindPose{1.0f};
-		uint32    boneIndex{0u};
+		tsm::float4x4 inverseBindPose{1.0f};
+		uint32        boneIndex{0u};
 	};
 
 	struct TST_RENDER_API Submesh
 	{
 		String name{};
 
-		glm::mat4 transform{1.0f};
-		glm::mat4 localTransform{1.0f};
+		tsm::float4x4 transform{1.0f};
+		tsm::float4x4 localTransform{1.0f};
 
 		uint32 baseVertex{0u};
 		uint32 baseIndex{0u};
@@ -46,8 +45,8 @@ namespace toaster::render
 
 	struct TST_RENDER_API MeshNode
 	{
-		String    name{};
-		glm::mat4 localTransform{1.0f};
+		String        name{};
+		tsm::float4x4 localTransform{1.0f};
 
 		std::vector<uint32> children;
 		std::vector<uint32> submeshes;
@@ -116,7 +115,7 @@ namespace toaster::render
 		auto getFilepath() const -> const io::filesystem::Path &;
 
 	private:
-		auto _traverseNodes(void *p_assimp_node, uint32 p_node_index, const glm::mat4 &p_parent_transform, uint32 p_level) -> void;
+		auto _traverseNodes(void *p_assimp_node, uint32 p_node_index, const tsm::float4x4 &p_parent_transform, uint32 p_level) -> void;
 		auto _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
 
 		NonOwningPtr<RenderContext> m_renderCtx{nullptr};

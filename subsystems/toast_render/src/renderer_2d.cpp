@@ -156,7 +156,7 @@ namespace toaster::render
 					m_quadMaterial->setTexture("u_Textures", m_renderCtx->getGlobals()->whiteTexture(), i);
 			}
 
-			m_renderCtx->renderGeometry(p_cmd, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, glm::mat4{1.0f});
+			m_renderCtx->renderGeometry(p_cmd, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, tsm::float4x4{1.0f});
 		}
 
 		m_renderCtx->endRendering(p_cmd, rendering_info);
@@ -164,14 +164,14 @@ namespace toaster::render
 
 	auto Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void
 	{
-		const tsm::float4x4 transform{glm::translate(glm::mat4{1.0f}, p_position) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f})};
+		const tsm::float4x4 transform{tsm::translate(tsm::float4x4{1.0f}, p_position) * tsm::scale(tsm::float4x4{1.0f}, {p_scale.x, p_scale.y, 1.0f})};
 		submitQuad(transform, p_colour);
 	}
 
 	auto Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void
 	{
 		const tsm::float4x4 transform{
-			glm::translate(glm::mat4{1.0f}, tsm::float3{p_position.x, p_position.y, 0.0f}) * glm::scale(glm::mat4{1.0f}, {p_scale.x, p_scale.y, 1.0f})
+			tsm::translate(tsm::float4x4{1.0f}, tsm::float3{p_position.x, p_position.y, 0.0f}) * tsm::scale(tsm::float4x4{1.0f}, {p_scale.x, p_scale.y, 1.0f})
 		};
 		submitQuad(transform, p_colour);
 	}
