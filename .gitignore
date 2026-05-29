@@ -10,6 +10,8 @@ docs/html/
 bin/
 lib/
 
+build/
+
 test/script/.vs/
 test/script/.idea/
 test/script/bin/

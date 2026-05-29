@@ -106,10 +106,33 @@ add_subdirectory(extern)
 
 add_subdirectory(subsystems)
 
-#add_subdirectory(source)
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+		${CMAKE_CURRENT_SOURCE_DIR}/cmake/ToasterConfig.cmake.in
+		${CMAKE_CURRENT_BINARY_DIR}/ToasterConfig.cmake
+		INSTALL_DESTINATION lib/cmake/Toaster
+)
+
+write_basic_package_version_file(
+		${CMAKE_CURRENT_BINARY_DIR}/ToasterConfigVersion.cmake
+		VERSION 1.0.0
+		COMPATIBILITY AnyNewerVersion
+)
+
+install(FILES
+		${CMAKE_CURRENT_BINARY_DIR}/ToasterConfig.cmake
+		${CMAKE_CURRENT_BINARY_DIR}/ToasterConfigVersion.cmake
+		DESTINATION lib/cmake/Toaster
+)
+
+install(EXPORT ToasterTargets
+		FILE ToasterTargets.cmake
+		NAMESPACE Toaster::
+		DESTINATION lib/cmake/Toaster
+)
 
 add_subdirectory(runtime)
 add_subdirectory(editor)
 add_subdirectory(tstb)
 add_subdirectory(test)
-

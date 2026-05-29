@@ -12,7 +12,8 @@ set(SRC
 
 add_library(ToastLib SHARED)
 
-target_include_directories(ToastLib PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(ToastLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:include/toast_lib>)
 
 target_sources(ToastLib PRIVATE ${SRC})
 
@@ -24,3 +25,11 @@ add_library(Toaster::ToastLib ALIAS ToastLib)
 
 add_compile_definitions(ToastLib PUBLIC TST_LIB_BUILD_DLL)
 add_compile_definitions(ToastLib PRIVATE TST_LIB_DLL_EXPORT)
+
+install(TARGETS ToastLib
+		EXPORT ToasterTargets
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib
+)
+install(DIRECTORY include/ DESTINATION include/toast_lib)
