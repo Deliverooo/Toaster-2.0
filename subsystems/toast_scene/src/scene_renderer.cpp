@@ -4,6 +4,7 @@
 #include "toast_render/render_context.hpp"
 
 #include "toast_lib/math/colours.hpp"
+#include "toast_lib/math/common.hpp"
 
 #include <random>
 
@@ -103,7 +104,7 @@ namespace toaster
 			static std::uniform_real_distribution<float32> randomFloats(0.0f, 1.0f);
 			static std::random_device                      randomDevice{};
 			static std::mt19937                            generator{randomDevice()};
-			std::vector<glm::vec4>                         ssaoNoise;
+			std::vector<tsm::float4>                       ssaoNoise;
 
 			for (uint32_t i = 0; i < s_noise_texture_side_size * s_noise_texture_side_size; i++)
 			{
@@ -114,7 +115,7 @@ namespace toaster
 				auto &noise{ssaoNoise.emplace_back()};
 				noise = {x, y, z, 1.0f};
 			}
-			m_ssaoNoiseTexture = m_renderCtx->createGPU<gpu::VKTexture2D>(noise_texture_spec_info, ssaoNoise.data(), ssaoNoise.size() * sizeof(glm::vec4));
+			m_ssaoNoiseTexture = m_renderCtx->createGPU<gpu::VKTexture2D>(noise_texture_spec_info, ssaoNoise.data(), ssaoNoise.size() * sizeof(tsm::float4));
 			m_ssaoPass->setInput("u_NoiseTex", m_ssaoNoiseTexture);
 
 			m_aoFrameDataMaterial = m_renderCtx->create<render::Material>(m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Graphics"), "SSAO");
@@ -143,7 +144,6 @@ namespace toaster
 
 		#pragma region light culling
 		{
-
 		}
 		#pragma endregion
 
@@ -219,7 +219,7 @@ namespace toaster
 		m_cameraUBOs->unmapAllMemory();
 	}
 
-	auto SceneRenderer::begin(const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix) -> void
+	auto SceneRenderer::begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_projection_matrix) -> void
 	{
 		uint32 frame_index{m_renderCtx->getCurrentFrameIndex()};
 
@@ -253,7 +253,7 @@ namespace toaster
 		}
 
 		SceneDataUB scene_data_ub{};
-		scene_data_ub.cameraPos = glm::inverse(p_view_matrix)[3];
+		scene_data_ub.cameraPos = tsm::inverse(p_view_matrix)[3];
 		std::memcpy(m_mappedSceneDataUBOs[frame_index], &scene_data_ub, sizeof(SceneDataUB));
 	}
 
@@ -268,7 +268,7 @@ namespace toaster
 		m_meshDrawCommands.clear();
 	}
 
-	auto SceneRenderer::renderMesh(const render::MeshHandle &p_mesh, const glm::mat4 &p_transform) -> void
+	auto SceneRenderer::renderMesh(const render::MeshHandle &p_mesh, const tsm::float4x4 &p_transform) -> void
 	{
 		DrawCommand &draw_command{m_meshDrawCommands.emplace_back()};
 		draw_command.mesh      = p_mesh;
@@ -419,7 +419,7 @@ namespace toaster
 
 	auto SceneRenderer::_renderAOPass(gpu::VKCommandBuffer *p_cmd) -> void
 	{
-		glm::vec2 noise_scale{
+		tsm::float2 noise_scale{
 			static_cast<float32>(m_specInfo.viewportWidth) / static_cast<float32>(m_ssaoNoiseTexture->getSpecInfo().width),
 			static_cast<float32>(m_specInfo.viewportHeight) / static_cast<float32>(m_ssaoNoiseTexture->getSpecInfo().height)
 		};
@@ -514,12 +514,12 @@ namespace toaster
 
 		for (uint32 i{0u}; i < c_SSAOSampleCount; ++i)
 		{
-			glm::vec3 sample{s_random_floats(s_generator) * 2.0f - 1.0f, s_random_floats(s_generator) * 2.0f - 1.0f, s_random_floats(s_generator)};
-			sample = glm::normalize(sample);
+			tsm::float3 sample{s_random_floats(s_generator) * 2.0f - 1.0f, s_random_floats(s_generator) * 2.0f - 1.0f, s_random_floats(s_generator)};
+			sample = tsm::normalize(sample);
 			sample *= s_random_floats(s_generator);
 
 			float32 scale{static_cast<float32>(i) / static_cast<float32>(c_SSAOSampleCount)};
-			scale  = glm::mix(0.1f, 1.0f, scale * scale);
+			scale  = tsm::mix(0.1f, 1.0f, scale * scale);
 			sample *= scale;
 
 			samples[i] = {sample, 0.0f};

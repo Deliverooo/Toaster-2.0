@@ -10,6 +10,9 @@
 
 #include <memory>
 
+#include "math/math_matrix.hpp"
+#include "math/quaternion.hpp"
+
 template<>
 struct fmt::formatter<tsm::float2>
 {
@@ -46,9 +49,65 @@ struct fmt::formatter<tsm::float4>
 		return p_ctx.begin();
 	}
 
-	auto format(const tsm::float4&v, format_context &p_ctx) const
+	auto format(const tsm::float4 &v, format_context &p_ctx) const
 	{
 		return format_to(p_ctx.out(), "({}, {}, {}, {})", v.x, v.y, v.z, v.w);
+	}
+};
+
+template<>
+struct fmt::formatter<tsm::quatf>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const tsm::quatf &v, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "({}, {}, {}, {})", v.x, v.y, v.z, v.w);
+	}
+};
+
+template<>
+struct fmt::formatter<tsm::float2x2>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const tsm::float2x2 &p_m, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "{}\n{}", p_m[0], p_m[1]);
+	}
+};
+
+template<>
+struct fmt::formatter<tsm::float3x3>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const tsm::float3x3 &p_m, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "{}\n{}\n{}", p_m[0], p_m[1], p_m[2]);
+	}
+};
+
+template<>
+struct fmt::formatter<tsm::float4x4>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const tsm::float4x4 &p_m, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "{}\n{}\n{}\n{}", p_m[0], p_m[1], p_m[2], p_m[3]);
 	}
 };
 

@@ -6,8 +6,6 @@
 #include "toast_lib/events/window_event.hpp"
 #include "toast_render/globals.hpp"
 
-#include <glm/gtx/euler_angles.hpp>
-
 #define TST_ENABLE_2D_SCENE_RENDERING 1
 
 namespace toaster
@@ -17,7 +15,7 @@ namespace toaster
 	public:
 		struct WindowResizeEventCS
 		{
-			glm::vec2 size{0.0f};
+			tsm::float2 size{0.0f};
 		};
 
 		ScriptableEntityCS(const script::Class &p_class, Scene *p_scene, Entity p_entity) : m_obj(p_class)
@@ -52,7 +50,7 @@ namespace toaster
 				{
 					auto                window_resize_event{static_cast<WindowResizeEvent &>(p_event)};
 					WindowResizeEventCS window_resize_event_data{};
-					window_resize_event_data.size = glm::vec2{
+					window_resize_event_data.size = tsm::float2{
 						static_cast<float32>(window_resize_event.getWidth()),
 						static_cast<float32>(window_resize_event.getHeight())
 					};
@@ -195,8 +193,8 @@ namespace toaster
 
 	auto Scene::onRender(gpu::VKCommandBuffer *p_cmd, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void
 	{
-		Camera *  main_camera{nullptr};
-		glm::mat4 camera_transform{1.0f};
+		Camera *      main_camera{nullptr};
+		tsm::float4x4 camera_transform{1.0f};
 
 		Entity main_camera_entity{getMainCameraEntity()};
 		if (main_camera_entity)
@@ -226,12 +224,12 @@ namespace toaster
 				Entity e{entity, this};
 				auto   tc{getEntityWorldTransformComponent(e)};
 
-				glm::mat4 rotation{glm::toMat4(tc.orientation)};
-				glm::vec4 forward{rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)};
-				glm::vec3 direction{glm::normalize(glm::vec3(forward))};
+				tsm::float4x4 rotation{tsm::toMat4(tc.orientation)};
+				tsm::float4   forward{rotation * tsm::float4(0.0f, 0.0f, -1.0f, 0.0f)};
+				tsm::float3   direction{tsm::normalize(tsm::float3(forward))};
 				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
-																	  glm::vec4(direction, 1.0f),
-																	  glm::vec4(directional_light.radiance, directional_light.multiplier)
+																	  tsm::float4(direction, 1.0f),
+																	  tsm::float4(directional_light.radiance, directional_light.multiplier)
 																  });
 			}
 		}
@@ -242,10 +240,10 @@ namespace toaster
 				Entity e{entity, this};
 				auto   tc{getEntityWorldTransformComponent(e)};
 
-				m_lightEnvironment.pointLights.emplace_back(PointLight{glm::vec4(tc.translation, 1.0f), glm::vec4(point_light.radiance, point_light.multiplier)});
+				m_lightEnvironment.pointLights.emplace_back(PointLight{tsm::float4(tc.translation, 1.0f), tsm::float4(point_light.radiance, point_light.multiplier)});
 			}
 		}
-		glm::mat4 camera_view{glm::inverse(camera_transform)};
+		tsm::float4x4 camera_view{tsm::inverse(camera_transform)};
 		{
 			if (m_reloadEnvironment)
 			{
@@ -276,8 +274,8 @@ namespace toaster
 			{
 				auto src{view.get<SpriteRendererComponent>(entity)};
 
-				Entity    e{entity, this};
-				glm::mat4 transform{getEntityWorldTransformMatrix(e)};
+				Entity        e{entity, this};
+				tsm::float4x4 transform{getEntityWorldTransformMatrix(e)};
 
 				auto texture{src.textureAssetID};
 				if (texture)
@@ -307,8 +305,8 @@ namespace toaster
 		#endif
 	}
 
-	auto Scene::onRender(gpu::VKCommandBuffer *p_cmd, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
-						 const glm::mat4 &     p_projection) -> void
+	auto Scene::onRender(gpu::VKCommandBuffer *p_cmd, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const tsm::float4x4 &p_view,
+						 const tsm::float4x4 & p_projection) -> void
 	{
 		m_lightEnvironment.pointLights.clear();
 		m_lightEnvironment.directionalLights.clear();
@@ -321,12 +319,12 @@ namespace toaster
 				Entity e{entity, this};
 				auto   tc{getEntityWorldTransformComponent(e)};
 
-				glm::mat4 rotation{glm::toMat4(tc.orientation)};
-				glm::vec4 forward{rotation * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)};
-				glm::vec3 direction{glm::normalize(glm::vec3(forward))};
+				tsm::float4x4 rotation{tsm::toMat4(tc.orientation)};
+				tsm::float4   forward{rotation * tsm::float4(0.0f, 0.0f, -1.0f, 0.0f)};
+				tsm::float3   direction{tsm::normalize(tsm::float3(forward))};
 				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
-																	  glm::vec4(direction, 1.0f),
-																	  glm::vec4(directional_light.radiance, directional_light.multiplier)
+																	  tsm::float4(direction, 1.0f),
+																	  tsm::float4(directional_light.radiance, directional_light.multiplier)
 																  });
 			}
 		}
@@ -337,7 +335,7 @@ namespace toaster
 				Entity e{entity, this};
 				auto   tc{getEntityWorldTransformComponent(e)};
 
-				m_lightEnvironment.pointLights.emplace_back(PointLight{glm::vec4(tc.translation, 1.0f), glm::vec4(point_light.radiance, point_light.multiplier)});
+				m_lightEnvironment.pointLights.emplace_back(PointLight{tsm::float4(tc.translation, 1.0f), tsm::float4(point_light.radiance, point_light.multiplier)});
 			}
 		}
 		{
@@ -364,8 +362,8 @@ namespace toaster
 			{
 				auto src{view.get<SpriteRendererComponent>(entity)};
 
-				Entity    e{entity, this};
-				glm::mat4 transform{getEntityWorldTransformMatrix(e)};
+				Entity        e{entity, this};
+				tsm::float4x4 transform{getEntityWorldTransformMatrix(e)};
 
 				auto texture{src.textureAssetID};
 				if (texture)
@@ -453,9 +451,9 @@ namespace toaster
 		return {};
 	}
 
-	auto Scene::getEntityWorldTransformMatrix(Entity p_entity) const -> glm::mat4
+	auto Scene::getEntityWorldTransformMatrix(Entity p_entity) const -> tsm::float4x4
 	{
-		glm::mat4 transform{1.0f};
+		tsm::float4x4 transform{1.0f};
 		if (const Entity parent{p_entity.getParent()})
 			transform = getEntityWorldTransformMatrix(parent);
 
@@ -464,8 +462,8 @@ namespace toaster
 
 	auto Scene::getEntityWorldTransformComponent(Entity p_entity) const -> TransformComponent
 	{
-		const glm::mat4    transform{getEntityWorldTransformMatrix(p_entity)};
-		TransformComponent transform_component{};
+		const tsm::float4x4 transform{getEntityWorldTransformMatrix(p_entity)};
+		TransformComponent  transform_component{};
 		transform_component.setTransform(transform);
 		return transform_component;
 	}
@@ -609,38 +607,38 @@ namespace toaster
 		#pragma endregion
 
 		#pragma region Transform Component
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetTranslation", +[](uint64 p_entity_id, glm::vec3 *p_out_translation) -> void
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetTranslation", +[](uint64 p_entity_id, tsm::float3 *p_out_translation) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_out_translation = entity.getComponent<TransformComponent>().translation;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetTranslation", +[](uint64 p_entity_id, const glm::vec3 *p_translation) -> void
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetTranslation", +[](uint64 p_entity_id, const tsm::float3 *p_translation) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<TransformComponent>().translation = *p_translation;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetRotation", +[](uint64 p_entity_id, glm::vec4 *p_out_rotation) -> void
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetRotation", +[](uint64 p_entity_id, tsm::float4 *p_out_rotation) -> void
 		{
-			Entity           entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
-			const glm::quat &rotation{entity.getComponent<TransformComponent>().orientation};
-			*p_out_rotation = glm::vec4{rotation.x, rotation.y, rotation.z, rotation.w};
+			Entity          entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			const tsm::quatf &rotation{entity.getComponent<TransformComponent>().orientation};
+			*p_out_rotation = tsm::float4{rotation.x, rotation.y, rotation.z, rotation.w};
 		});
 
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetRotation", +[](uint64 p_entity_id, const glm::vec4 *p_rotation) -> void
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetRotation", +[](uint64 p_entity_id, const tsm::float4 *p_rotation) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
-			entity.getComponent<TransformComponent>().orientation = glm::quat{p_rotation->w, p_rotation->x, p_rotation->y, p_rotation->z};
+			entity.getComponent<TransformComponent>().orientation = tsm::quat{p_rotation->w, p_rotation->x, p_rotation->y, p_rotation->z};
 		});
 
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetScale", +[](uint64 p_entity_id, glm::vec3 *p_out_scale) -> void
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetScale", +[](uint64 p_entity_id, tsm::float3 *p_out_scale) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_out_scale = entity.getComponent<TransformComponent>().scale;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetScale", +[](uint64 p_entity_id, const glm::vec3 *p_scale) -> void
+		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetScale", +[](uint64 p_entity_id, const tsm::float3 *p_scale) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<TransformComponent>().scale = *p_scale;
@@ -648,13 +646,13 @@ namespace toaster
 		#pragma endregion
 
 		#pragma region Sprite Renderer Component
-		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::GetColour", +[](uint64 p_entity_id, glm::vec4 *p_out_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::GetColour", +[](uint64 p_entity_id, tsm::float4 *p_out_colour) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_out_colour = entity.getComponent<SpriteRendererComponent>().colour;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::SetColour", +[](uint64 p_entity_id, const glm::vec4 *p_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.SpriteRendererComponent::SetColour", +[](uint64 p_entity_id, const tsm::float4 *p_colour) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<SpriteRendererComponent>().colour = *p_colour;
@@ -784,22 +782,22 @@ namespace toaster
 			cam.camera.setOrthoFarClip(*p_ortho_far);
 		});
 
-		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetProjectionMatrix", +[](uint64 p_entity_id, glm::mat4 *p_out_projection_matrix) -> void
+		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetProjectionMatrix", +[](uint64 p_entity_id, tsm::float4x4 *p_out_projection_matrix) -> void
 		{
 			Entity      entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			const auto &cam{entity.getComponent<CameraComponent>()};
-			*p_out_projection_matrix = glm::transpose(cam.camera.getProjectionMatrix());
+			*p_out_projection_matrix = tsm::transpose(cam.camera.getProjectionMatrix());
 		});
 		#pragma endregion
 
 		#pragma region Directional Light Component
-		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::GetRadiance", +[](uint64 p_entity_id, glm::vec3 *p_out_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::GetRadiance", +[](uint64 p_entity_id, tsm::float3 *p_out_colour) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_out_colour = entity.getComponent<DirectionalLightComponent>().radiance;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::SetRadiance", +[](uint64 p_entity_id, const glm::vec3 *p_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.DirectionalLightComponent::SetRadiance", +[](uint64 p_entity_id, const tsm::float3 *p_colour) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<DirectionalLightComponent>().radiance = *p_colour;
@@ -819,13 +817,13 @@ namespace toaster
 		#pragma endregion
 
 		#pragma region Point Light Component
-		m_scriptEngine->registerMethod("Toaster.PointLightComponent::GetRadiance", +[](uint64 p_entity_id, glm::vec3 *p_out_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.PointLightComponent::GetRadiance", +[](uint64 p_entity_id, tsm::float3 *p_out_colour) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			*p_out_colour = entity.getComponent<PointLightComponent>().radiance;
 		});
 
-		m_scriptEngine->registerMethod("Toaster.PointLightComponent::SetRadiance", +[](uint64 p_entity_id, const glm::vec3 *p_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.PointLightComponent::SetRadiance", +[](uint64 p_entity_id, const tsm::float3 *p_colour) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			entity.getComponent<PointLightComponent>().radiance = *p_colour;
@@ -845,15 +843,15 @@ namespace toaster
 		#pragma endregion
 
 		#pragma region Material
-		m_scriptEngine->registerMethod("Toaster.Material::GetAlbedoColour", +[](uint64 p_entity_id, uint32 p_index, glm::vec3 *p_out_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.Material::GetAlbedoColour", +[](uint64 p_entity_id, uint32 p_index, tsm::float3 *p_out_colour) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & mc{entity.getComponent<MeshComponent>()};
 			auto & material{mc.meshAssetID->getMaterials().getMaterial(p_index).material};
-			*p_out_colour = material->get<glm::vec3>("u_Material.albedoColour");
+			*p_out_colour = material->get<tsm::float3>("u_Material.albedoColour");
 		});
 
-		m_scriptEngine->registerMethod("Toaster.Material::SetAlbedoColour", +[](uint64 p_entity_id, uint32 p_index, glm::vec3 *p_colour) -> void
+		m_scriptEngine->registerMethod("Toaster.Material::SetAlbedoColour", +[](uint64 p_entity_id, uint32 p_index, tsm::float3 *p_colour) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
 			auto & mc{entity.getComponent<MeshComponent>()};

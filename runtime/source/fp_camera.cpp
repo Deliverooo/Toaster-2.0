@@ -2,10 +2,12 @@
 
 #include "toast_kernel/input.hpp"
 #include "toast_lib/logging.hpp"
+#include "toast_lib/math/quaternion.hpp"
+#include "toast_lib/math/trig.hpp"
 
 namespace toaster
 {
-	FPCamera::FPCamera(InputContext *p_ctx, float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far) : Camera(glm::perspective(glm::radians(p_fov),
+	FPCamera::FPCamera(InputContext *p_ctx, float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far) : Camera(tsm::perspective(tsm::radians(p_fov),
 																																		   p_aspectRatio, p_near, p_far)),
 																												   m_ctx(p_ctx), m_fov(p_fov),
 																												   m_aspectRatio(p_aspectRatio), m_zNear(p_near),
@@ -24,7 +26,7 @@ namespace toaster
 
 			float32 speed{m_ctx->isKeyDown(input::EKeyCode::eLeftControl) ? 30.0f : 10.0f};
 
-			glm::vec3 delta_position{0.0f};
+			tsm::float3 delta_position{0.0f};
 			if (m_ctx->isKeyDown(input::EKeyCode::eW))
 				delta_position += c_forwardDir;
 			if (m_ctx->isKeyDown(input::EKeyCode::eA))
@@ -34,8 +36,8 @@ namespace toaster
 			if (m_ctx->isKeyDown(input::EKeyCode::eD))
 				delta_position += c_rightDir;
 
-			delta_position = ((glm::length(delta_position) == 0.0f) ? glm::vec3{0.0f} : glm::normalize(delta_position)) * p_dt;
-			m_position     += glm::vec3{getRotationMatrix() * glm::vec4{delta_position, 0.0f}} * speed;
+			delta_position = ((tsm::length(delta_position) == 0.0f) ? tsm::float3{0.0f} : tsm::normalize(delta_position)) * p_dt;
+			m_position     += tsm::float3{getRotationMatrix() * tsm::float4{delta_position, 0.0f}} * speed;
 			if (m_ctx->isKeyDown(input::EKeyCode::eSpace))
 				m_position += c_upDir * p_dt * speed;
 			if (m_ctx->isKeyDown(input::EKeyCode::eLeftShift))
@@ -43,14 +45,14 @@ namespace toaster
 
 			// LOG_INFO("Pos: {}", m_position);
 
-			const glm::vec2 mouse{m_ctx->getMouseX(), m_ctx->getMouseY()};
-			const glm::vec2 delta{(mouse - m_initialMousePosition) * 0.002f};
+			const tsm::float2 mouse{m_ctx->getMouseX(), m_ctx->getMouseY()};
+			const tsm::float2 delta{(mouse - m_initialMousePosition) * 0.002f};
 			m_yaw   += delta.x;
 			m_pitch -= delta.y;
-			if (m_pitch > glm::radians(89.0f))
-				m_pitch = glm::radians(89.0f);
-			if (m_pitch < glm::radians(-89.0f))
-				m_pitch = glm::radians(-89.0f);
+			if (m_pitch > tsm::radians(89.0f))
+				m_pitch = tsm::radians(89.0f);
+			if (m_pitch < tsm::radians(-89.0f))
+				m_pitch = tsm::radians(-89.0f);
 
 			m_initialMousePosition = mouse;
 		}
@@ -59,7 +61,7 @@ namespace toaster
 			if (m_ctx->getCursorMode() != input::ECursorMode::eNormal)
 				m_ctx->setCursorMode(input::ECursorMode::eNormal);
 
-			const glm::vec2 mouse{m_ctx->getMouseX(), m_ctx->getMouseY()};
+			const tsm::float2 mouse{m_ctx->getMouseX(), m_ctx->getMouseY()};
 			m_initialMousePosition = mouse;
 		}
 	}
@@ -76,42 +78,42 @@ namespace toaster
 		_updateProjection();
 	}
 
-	auto FPCamera::getViewMatrix() const -> glm::mat4
+	auto FPCamera::getViewMatrix() const -> tsm::float4x4
 	{
-		const glm::mat4 cameraTranslation{glm::translate(glm::mat4{1.0f}, m_position)};
-		const glm::mat4 cameraRotation{getRotationMatrix()};
-		return glm::inverse(cameraTranslation * cameraRotation);
+		const tsm::float4x4 cameraTranslation{tsm::translate(tsm::float4x4{1.0f}, m_position)};
+		const tsm::float4x4 cameraRotation{getRotationMatrix()};
+		return tsm::inverse(cameraTranslation * cameraRotation);
 	}
 
-	auto FPCamera::getRotationMatrix() const -> glm::mat4
+	auto FPCamera::getRotationMatrix() const -> tsm::float4x4
 	{
-		glm::quat pitchRotation{glm::angleAxis(m_pitch, glm::vec3{1.0f, 0.0f, 0.0f})};
-		glm::quat yawRotation{glm::angleAxis(m_yaw, glm::vec3{0.0f, -1.0f, 0.0f})};
+		tsm::quatf pitchRotation{tsm::axisAngle(m_pitch, tsm::float3{1.0f, 0.0f, 0.0f})};
+		tsm::quatf yawRotation{tsm::axisAngle(m_yaw, tsm::float3{0.0f, -1.0f, 0.0f})};
 
-		return glm::toMat4(yawRotation) * glm::toMat4(pitchRotation);
+		return tsm::toMat4(yawRotation) * tsm::toMat4(pitchRotation);
 	}
 
-	auto FPCamera::getViewProjection() const -> glm::mat4
+	auto FPCamera::getViewProjection() const -> tsm::float4x4
 	{
 		return m_projection * getViewMatrix();
 	}
 
-	auto FPCamera::getForwardDirection() const -> glm::vec3
+	auto FPCamera::getForwardDirection() const -> tsm::float3
 	{
-		return getRotationMatrix() * glm::vec4{c_forwardDir, 0.0f};
+		return getRotationMatrix() * tsm::float4{c_forwardDir, 0.0f};
 	}
 
-	auto FPCamera::getRightDirection() const -> glm::vec3
+	auto FPCamera::getRightDirection() const -> tsm::float3
 	{
-		return getRotationMatrix() * glm::vec4{c_rightDir, 0.0f};
+		return getRotationMatrix() * tsm::float4{c_rightDir, 0.0f};
 	}
 
-	auto FPCamera::getUpDirection() const -> glm::vec3
+	auto FPCamera::getUpDirection() const -> tsm::float3
 	{
-		return getRotationMatrix() * glm::vec4{c_upDir, 0.0f};
+		return getRotationMatrix() * tsm::float4{c_upDir, 0.0f};
 	}
 
-	auto FPCamera::getPosition() const -> const glm::vec3 &
+	auto FPCamera::getPosition() const -> const tsm::float3 &
 	{
 		return m_position;
 	}
@@ -128,16 +130,16 @@ namespace toaster
 
 	auto FPCamera::_updateProjection() -> void
 	{
-		m_projection = glm::perspective(glm::radians(m_fov) * m_zoom, m_aspectRatio, m_zNear, m_zFar);
+		m_projection = tsm::perspective(tsm::radians(m_fov) * m_zoom, m_aspectRatio, m_zNear, m_zFar);
 	}
 
 	auto FPCamera::_onMouseScrollEvent(MouseScrollEvent &p_event) -> bool
 	{
 		m_zoom -= p_event.getScrollY() * 0.02f;
-		if (m_zoom < glm::radians(1.0f))
-			m_zoom = glm::radians(1.0f);
-		if (m_zoom > glm::radians(89.0f))
-			m_zoom = glm::radians(89.0f);
+		if (m_zoom < tsm::radians(1.0f))
+			m_zoom = tsm::radians(1.0f);
+		if (m_zoom > tsm::radians(89.0f))
+			m_zoom = tsm::radians(89.0f);
 		_updateProjection();
 
 		return false;

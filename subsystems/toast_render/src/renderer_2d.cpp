@@ -1,4 +1,5 @@
 #include "toast_render/renderer_2d.hpp"
+
 #include "toast_render/render_context.hpp"
 
 #include "toast_render/globals.hpp"
@@ -38,10 +39,8 @@ namespace toaster::render
 
 		if (!m_specInfo.overrideAttachments)
 		{
-			m_renderTargetTexture = m_renderCtx->createAttachmentTexture(m_specInfo.renderTargetWidth, m_specInfo.renderTargetHeight,
-																			 vk::ImageAspectFlagBits::eColor);
-			m_renderTargetDepthImage = m_renderCtx->createAttachmentImage(m_specInfo.renderTargetWidth, m_specInfo.renderTargetHeight,
-																			  vk::ImageAspectFlagBits::eDepth);
+			m_renderTargetTexture    = m_renderCtx->createAttachmentTexture(m_specInfo.renderTargetWidth, m_specInfo.renderTargetHeight, vk::ImageAspectFlagBits::eColor);
+			m_renderTargetDepthImage = m_renderCtx->createAttachmentImage(m_specInfo.renderTargetWidth, m_specInfo.renderTargetHeight, vk::ImageAspectFlagBits::eDepth);
 		}
 		else
 		{
@@ -205,7 +204,7 @@ namespace toaster::render
 			m_quadVertexPtr->position = p_transform * m_quadVertexPositions[i];
 			m_quadVertexPtr->colour   = p_colour;
 			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
-			m_quadVertexPtr->texIndex = tex_index;
+			m_quadVertexPtr->texIndex = static_cast<float32>(tex_index);
 			m_quadVertexPtr++;
 		}
 		m_quadIndexCount += 6u;

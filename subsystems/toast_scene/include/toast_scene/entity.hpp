@@ -104,10 +104,10 @@ namespace toaster
 		auto getUUID() const -> UUID { return getComponent<UUIDComponent>().uuid; }
 		auto getTag() const -> const String & { return getComponent<TagComponent>().tag; }
 
-		auto getTransform() const -> glm::mat4 { return getComponent<TransformComponent>().getTransform(); }
-		auto getTranslation() const -> const glm::vec3 & { return getComponent<TransformComponent>().translation; }
-		auto getOrientation() const -> const glm::quat & { return getComponent<TransformComponent>().orientation; }
-		auto getScale() const -> const glm::vec3 & { return getComponent<TransformComponent>().scale; }
+		auto getTransform() const -> tsm::float4x4 { return getComponent<TransformComponent>().getTransform(); }
+		auto getTranslation() const -> const tsm::float3 & { return getComponent<TransformComponent>().translation; }
+		auto getOrientation() const -> const tsm::quatf & { return getComponent<TransformComponent>().orientation; }
+		auto getScale() const -> const tsm::float3 & { return getComponent<TransformComponent>().scale; }
 
 		auto getParent() const -> Entity { return m_scene->getEntityByUUID(getParentUUID()); }
 		auto getParentUUID() const -> UUID { return getComponent<RelationshipComponent>().parentUUID; }

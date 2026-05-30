@@ -3,6 +3,7 @@
 #include "toast_lib.hpp"
 
 #include "system_types.h"
+#include "math/math_matrix.hpp"
 #include "math/math_vector.hpp"
 
 namespace toaster
@@ -23,7 +24,7 @@ namespace toaster
 
 		auto setPerspective(float32 p_fov, float32 p_aspect, float32 p_z_near, float32 p_z_far) -> void
 		{
-			m_projection = glm::perspective(p_fov, p_aspect, p_z_near, p_z_far);
+			m_projection = tsm::perspective(p_fov, p_aspect, p_z_near, p_z_far);
 		}
 
 	protected:

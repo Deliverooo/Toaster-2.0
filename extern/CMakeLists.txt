@@ -23,14 +23,6 @@ if (MSVC)
 	target_compile_options(yaml-cpp PUBLIC /wd4275)
 endif ()
 
-
-#target_compile_definitions(glm PUBLIC GLM_ENABLE_EXPERIMENTAL)
-#target_compile_definitions(glm-header-only INTERFACE GLM_ENABLE_EXPERIMENTAL)
-
-if (${WITH_OPENGL_BACKEND})
-	add_subdirectory(opengl-hpp)
-endif ()
-
 add_subdirectory(imgui)
 
 add_subdirectory(ImGuizmo)

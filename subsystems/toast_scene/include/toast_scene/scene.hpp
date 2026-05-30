@@ -30,26 +30,26 @@ namespace toaster
 
 	struct TST_SCENE_API DirectionalLight
 	{
-		glm::vec4 direction{0.0f};
-		glm::vec4 radiance{1.0f};
+		tsm::float4 direction{0.0f};
+		tsm::float4 radiance{1.0f};
 	};
 
 	struct TST_SCENE_API PointLight
 	{
-		glm::vec4 position{0.0f};
-		glm::vec4 radiance{1.0f};
+		tsm::float4 position{0.0f};
+		tsm::float4 radiance{1.0f};
 		// float32   radius{25.0f};
 		// float32   falloff{1.0f};
 	};
 
 	struct TST_SCENE_API SpotLight
 	{
-		glm::vec3 position{0.0f};
-		glm::vec3 radiance{1.0f};
-		float32   falloff{1.0f};
-		float32   multiplier{1.0f};
-		float32   angle{67.0f};
-		float32   range{12.0f};
+		tsm::float3 position{0.0f};
+		tsm::float3 radiance{1.0f};
+		float32     falloff{1.0f};
+		float32     multiplier{1.0f};
+		float32     angle{67.0f};
+		float32     range{12.0f};
 	};
 
 	struct TST_SCENE_API SceneLightEnvironment
@@ -73,8 +73,8 @@ namespace toaster
 		auto onEvent(Event &p_event) -> void;
 
 		auto onRender(gpu::VKCommandBuffer *p_cmd, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void;
-		auto onRender(gpu::VKCommandBuffer *p_cmd, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const glm::mat4 &p_view,
-					  const glm::mat4 &     p_projection) -> void;
+		auto onRender(gpu::VKCommandBuffer *p_cmd, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const tsm::float4x4 &p_view,
+					  const tsm::float4x4 & p_projection) -> void;
 
 		auto setViewportSize(uint32 p_width, uint32 p_height) -> void;
 
@@ -85,7 +85,7 @@ namespace toaster
 		auto getEntityByUUID(UUID p_uuid) -> Entity;
 		auto getEntityByName(const String &p_name) -> Entity;
 
-		auto getEntityWorldTransformMatrix(Entity p_entity) const -> glm::mat4;
+		auto getEntityWorldTransformMatrix(Entity p_entity) const -> tsm::float4x4;
 		auto getEntityWorldTransformComponent(Entity p_entity) const -> TransformComponent;
 
 		auto getMainCameraEntity() -> Entity;

@@ -3,6 +3,7 @@
 #include "toast_scene.hpp"
 
 #include "toast_lib/camera.hpp"
+#include "toast_lib/math/trig.hpp"
 
 namespace toaster
 {
@@ -83,7 +84,7 @@ namespace toaster
 
 		EProjectionType m_projectionType{EProjectionType::eOrthographic};
 
-		float32 m_perspectiveFov{glm::radians(45.0f)};
+		float32 m_perspectiveFov{tsm::radians(45.0f)};
 		float32 m_perspectiveNear{0.1f};
 		float32 m_perspectiveFar{1000.0f};
 

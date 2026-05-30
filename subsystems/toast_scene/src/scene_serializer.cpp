@@ -5,28 +5,28 @@
 
 #include <yaml-cpp/yaml.h>
 
-inline auto operator<<(YAML::Emitter &out, const glm::vec2 &v) -> YAML::Emitter &
+inline auto operator<<(YAML::Emitter &out, const tsm::float2 &v) -> YAML::Emitter &
 {
 	out << YAML::Flow;
 	out << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
 	return out;
 }
 
-inline auto operator<<(YAML::Emitter &out, const glm::vec3 &v) -> YAML::Emitter &
+inline auto operator<<(YAML::Emitter &out, const tsm::float3 &v) -> YAML::Emitter &
 {
 	out << YAML::Flow;
 	out << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
 	return out;
 }
 
-inline auto operator<<(YAML::Emitter &out, const glm::vec4 &v) -> YAML::Emitter &
+inline auto operator<<(YAML::Emitter &out, const tsm::float4 &v) -> YAML::Emitter &
 {
 	out << YAML::Flow;
 	out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
 	return out;
 }
 
-inline auto operator<<(YAML::Emitter &out, const glm::quat &v) -> YAML::Emitter &
+inline auto operator<<(YAML::Emitter &out, const tsm::quatf &v) -> YAML::Emitter &
 {
 	out << YAML::Flow;
 	out << YAML::BeginSeq << v.w << v.x << v.y << v.z << YAML::EndSeq;
@@ -36,9 +36,9 @@ inline auto operator<<(YAML::Emitter &out, const glm::quat &v) -> YAML::Emitter 
 namespace YAML
 {
 	template<>
-	struct convert<glm::vec2>
+	struct convert<tsm::float2>
 	{
-		static auto encode(const glm::vec2 &rhs) -> Node
+		static auto encode(const tsm::float2 &rhs) -> Node
 		{
 			Node node;
 			node.push_back(rhs.x);
@@ -46,7 +46,7 @@ namespace YAML
 			return node;
 		}
 
-		static auto decode(const Node &node, glm::vec2 &rhs) -> bool
+		static auto decode(const Node &node, tsm::float2 &rhs) -> bool
 		{
 			if (!node.IsSequence() || node.size() != 2)
 			{
@@ -60,9 +60,9 @@ namespace YAML
 	};
 
 	template<>
-	struct convert<glm::vec3>
+	struct convert<tsm::float3>
 	{
-		static auto encode(const glm::vec3 &rhs) -> Node
+		static auto encode(const tsm::float3 &rhs) -> Node
 		{
 			Node node;
 			node.push_back(rhs.x);
@@ -71,7 +71,7 @@ namespace YAML
 			return node;
 		}
 
-		static auto decode(const Node &node, glm::vec3 &rhs) -> bool
+		static auto decode(const Node &node, tsm::float3 &rhs) -> bool
 		{
 			if (!node.IsSequence() || node.size() != 3)
 			{
@@ -86,9 +86,9 @@ namespace YAML
 	};
 
 	template<>
-	struct convert<glm::vec4>
+	struct convert<tsm::float4>
 	{
-		static auto encode(const glm::vec4 &rhs) -> Node
+		static auto encode(const tsm::float4 &rhs) -> Node
 		{
 			Node node;
 			node.push_back(rhs.x);
@@ -98,7 +98,7 @@ namespace YAML
 			return node;
 		}
 
-		static auto decode(const Node &node, glm::vec4 &rhs) -> bool
+		static auto decode(const Node &node, tsm::float4 &rhs) -> bool
 		{
 			if (!node.IsSequence() || node.size() != 4)
 			{
@@ -114,9 +114,9 @@ namespace YAML
 	};
 
 	template<>
-	struct convert<glm::quat>
+	struct convert<tsm::quatf>
 	{
-		static auto encode(const glm::quat &rhs) -> Node
+		static auto encode(const tsm::quatf &rhs) -> Node
 		{
 			Node node;
 			node.push_back(rhs.w);
@@ -126,7 +126,7 @@ namespace YAML
 			return node;
 		}
 
-		static auto decode(const Node &node, glm::quat &rhs) -> bool
+		static auto decode(const Node &node, tsm::quatf &rhs) -> bool
 		{
 			if (!node.IsSequence() || node.size() != 4)
 			{
@@ -344,16 +344,16 @@ namespace toaster
 			if (transform_comp)
 			{
 				auto &tc       = out_entity.getComponent<TransformComponent>();
-				tc.translation = transform_comp["Translation"].as<glm::vec3>();
-				tc.orientation = transform_comp["Rotation"].as<glm::quat>();
-				tc.scale       = transform_comp["Scale"].as<glm::vec3>();
+				tc.translation = transform_comp["Translation"].as<tsm::float3>();
+				tc.orientation = transform_comp["Rotation"].as<tsm::quatf>();
+				tc.scale       = transform_comp["Scale"].as<tsm::float3>();
 			}
 
 			auto sprite_comp = entity["SpriteRendererComponent"];
 			if (sprite_comp)
 			{
 				auto &src          = out_entity.addComponent<SpriteRendererComponent>();
-				src.colour         = sprite_comp["Colour"].as<glm::vec4>();;
+				src.colour         = sprite_comp["Colour"].as<tsm::float4>();;
 				src.textureAssetID = m_scene->m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, sprite_comp["TextureAssetID"].as<String>());
 				src.tilingFactor   = sprite_comp["TilingFactor"].as<float32>();
 			}
@@ -392,7 +392,7 @@ namespace toaster
 			if (directional_light_comp)
 			{
 				auto &dlc{out_entity.addComponent<DirectionalLightComponent>()};
-				dlc.radiance   = directional_light_comp["Radiance"].as<glm::vec3>();
+				dlc.radiance   = directional_light_comp["Radiance"].as<tsm::float3>();
 				dlc.multiplier = directional_light_comp["Multiplier"].as<float32>();
 			}
 
@@ -400,7 +400,7 @@ namespace toaster
 			if (point_light_comp)
 			{
 				auto &plc{out_entity.addComponent<PointLightComponent>()};
-				plc.radiance   = point_light_comp["Radiance"].as<glm::vec3>();
+				plc.radiance   = point_light_comp["Radiance"].as<tsm::float3>();
 				plc.multiplier = point_light_comp["Multiplier"].as<float32>();
 			}
 

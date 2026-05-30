@@ -41,7 +41,7 @@ namespace toaster
 		{
 			case EProjectionType::ePerspective:
 			{
-				m_projection = glm::perspective(m_perspectiveFov, m_aspectRatio, m_perspectiveNear, m_perspectiveFar);
+				m_projection = tsm::perspective(m_perspectiveFov, m_aspectRatio, m_perspectiveNear, m_perspectiveFar);
 				break;
 			}
 			case EProjectionType::eOrthographic:
@@ -51,7 +51,7 @@ namespace toaster
 				const float32 ortho_bottom = -m_orthoSize * 0.5f;
 				const float32 ortho_top    = m_orthoSize * 0.5f;
 
-				m_projection = glm::ortho(ortho_left, ortho_right, ortho_bottom, ortho_top, m_orthoNear, m_orthoFar);
+				m_projection = tsm::ortho(ortho_left, ortho_right, ortho_bottom, ortho_top, m_orthoNear, m_orthoFar);
 				break;
 			}
 		}

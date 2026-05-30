@@ -15,12 +15,6 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
 	message(FATAL_ERROR "In-source builds are not allowed. Please create a separate build directory.")
 endif ()
 
-set(GLM_BUILD_INSTALL ON CACHE BOOL "" FORCE)
-add_compile_definitions(GLM_ENABLE_EXPERIMENTAL)
-
-add_subdirectory(extern/glm)
-
-
 # Project definition
 project(Toaster VERSION 1.0.0)
 

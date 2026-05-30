@@ -69,9 +69,10 @@ namespace toaster
 			Entity e{m_scene->createEntity("Orbo")};
 			auto & cam{e.addComponent<CameraComponent>()};
 			cam.primary = true;
-			cam.camera.setPerspectiveFov(glm::radians(90.0f));
+			cam.camera.setPerspectiveFov(tsm::radians(90.0f));
 			cam.camera.setProjectionType(SceneCamera::EProjectionType::ePerspective);
 		}
+
 	}
 
 	auto RuntimeLayer::onDestroy() -> void

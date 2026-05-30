@@ -21,9 +21,9 @@ namespace toaster
 		SceneRenderer(render::RenderContext *p_render_ctx, const SceneRendererSpecInfo &p_spec_info);
 		~SceneRenderer();
 
-		auto begin(const glm::mat4 &p_view_matrix, const glm::mat4 &p_projection_matrix) -> void;
+		auto begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_projection_matrix) -> void;
 		auto end(gpu::VKCommandBuffer *p_cmd) -> void;
-		auto renderMesh(const render::MeshHandle &p_mesh, const glm::mat4 &p_transform) -> void;
+		auto renderMesh(const render::MeshHandle &p_mesh, const tsm::float4x4 &p_transform) -> void;
 
 		auto getSpecInfo() const -> const SceneRendererSpecInfo &;
 
@@ -85,7 +85,7 @@ namespace toaster
 		struct SSAOKernel
 		{
 			static constexpr uint32 c_SSAOSampleCount{64};
-			glm::vec4               samples[c_SSAOSampleCount];
+			tsm::float4             samples[c_SSAOSampleCount];
 
 			SSAOKernel();
 		};
@@ -127,9 +127,9 @@ namespace toaster
 
 		struct CameraUB
 		{
-			glm::mat4 view;
-			glm::mat4 proj;
-			glm::mat4 invProj;
+			tsm::float4x4 view;
+			tsm::float4x4 proj;
+			tsm::float4x4 invProj;
 		};
 
 		gpu::UniformBufferPFFHandle m_cameraUBOs;
@@ -140,7 +140,7 @@ namespace toaster
 			static constexpr uint32 c_maxDirectionalLights{4u};
 
 			uint32           count{0u};
-			glm::vec3        _padding{0.0f};
+			tsm::float3      _padding{0.0f};
 			DirectionalLight directionalLights[c_maxDirectionalLights]{};
 		};
 
@@ -151,9 +151,9 @@ namespace toaster
 		{
 			static constexpr uint32 c_maxPointLights{128u};
 
-			uint32     count{0u};
-			glm::vec3  _padding{0.0f};
-			PointLight pointLights[c_maxPointLights]{};
+			uint32      count{0u};
+			tsm::float3 _padding{0.0f};
+			PointLight  pointLights[c_maxPointLights]{};
 		};
 
 		gpu::UniformBufferPFFHandle m_pointLightUBOs;
@@ -161,7 +161,7 @@ namespace toaster
 
 		struct SceneDataUB
 		{
-			glm::vec4 cameraPos{0.0f, 0.0f, 0.0f, 1.0f};
+			tsm::float4 cameraPos{0.0f, 0.0f, 0.0f, 1.0f};
 		};
 
 		gpu::UniformBufferPFFHandle m_sceneDataUBOs;
@@ -170,7 +170,7 @@ namespace toaster
 		struct DrawCommand
 		{
 			render::MeshHandle mesh{nullptr};
-			glm::mat4          transform{1.0f};
+			tsm::float4x4      transform{1.0f};
 		};
 
 		std::vector<DrawCommand> m_meshDrawCommands;

@@ -1,8 +1,21 @@
 #pragma once
+
+#include <cmath>
+
 #include "toast_lib/system_types.h"
+#include "toast_lib/toast_assert.h"
 
 namespace tsm
 {
+	#define TSM_ASSERT_LENGTH(__length, __max) TST_ASSERT ((__length) >= 0 && (__length) < (__max))
+
+	template<typename Type>
+	struct vec2;
+	template<typename Type>
+	struct vec3;
+	template<typename Type>
+	struct vec4;
+
 	#pragma region vec2
 	// Vec2
 	template<typename Type>
@@ -21,9 +34,7 @@ namespace tsm
 			};
 		};
 
-		constexpr vec2() : x(static_cast<Type>(0)), y(static_cast<Type>(0))
-		{
-		}
+		constexpr vec2() = default;
 
 		constexpr vec2(Type p_x, Type p_y) : x(p_x), y(p_y)
 		{
@@ -35,11 +46,13 @@ namespace tsm
 
 		constexpr Type &operator[](int32 p_index)
 		{
+			TSM_ASSERT_LENGTH(p_index, s_dim);
 			return data[p_index];
 		}
 
 		constexpr auto operator[](int32 p_index) const -> const Type &
 		{
+			TSM_ASSERT_LENGTH(p_index, s_dim);
 			return data[p_index];
 		}
 
@@ -52,6 +65,62 @@ namespace tsm
 		constexpr auto operator-(const vec2 &p_v) -> vec2
 		{
 			return vec2{-p_v.x, -p_v.y};
+		}
+
+		constexpr auto operator+=(Type p_s) -> vec2 &
+		{
+			x += p_s;
+			y += p_s;
+			return *this;
+		}
+
+		constexpr auto operator-=(Type p_s) -> vec2 &
+		{
+			x -= p_s;
+			y -= p_s;
+			return *this;
+		}
+
+		constexpr auto operator+=(vec2 p_v) -> vec2 &
+		{
+			x += p_v.x;
+			y += p_v.y;
+			return *this;
+		}
+
+		constexpr auto operator-=(vec2 p_v) -> vec2 &
+		{
+			x -= p_v.x;
+			y -= p_v.y;
+			return *this;
+		}
+
+		constexpr auto operator*=(Type p_s) -> vec2 &
+		{
+			x *= p_s;
+			y *= p_s;
+			return *this;
+		}
+
+		constexpr auto operator/=(Type p_s) -> vec2 &
+		{
+			x /= p_s;
+			y /= p_s;
+			return *this;
+		}
+
+		constexpr auto operator*=(vec2 p_v) -> vec2 &
+		{
+			x *= p_v.x;
+			y *= p_v.y;
+			return *this;
+		}
+
+		constexpr auto operator/=(vec2 p_v) -> vec2 &
+		{
+			x /= p_v.x;
+			y /= p_v.y;
+			return *this;
 		}
 	};
 
@@ -86,6 +155,18 @@ namespace tsm
 	template<typename Type>
 	constexpr auto operator/(Type p_s, const vec2<Type> &p_v) -> vec2<Type> { return vec2{p_s / p_v.x, p_s / p_v.y}; }
 
+	template<typename Type>
+	constexpr auto operator*(const vec2<Type> &p_v1, const vec2<Type> &p_v2) -> vec2<Type>
+	{
+		return vec2{p_v1.x * p_v2.x, p_v1.y * p_v2.y, p_v1.z * p_v2.z};
+	}
+
+	template<typename Type>
+	constexpr auto operator/(const vec2<Type> &p_v1, const vec2<Type> &p_v2) -> vec2<Type>
+	{
+		return vec2{p_v1.x / p_v2.x, p_v1.y / p_v2.y};
+	}
+
 	#pragma endregion
 
 	#pragma region vec3
@@ -107,9 +188,7 @@ namespace tsm
 			};
 		};
 
-		constexpr vec3() : x(static_cast<Type>(0)), y(static_cast<Type>(0)), z(static_cast<Type>(0))
-		{
-		}
+		constexpr vec3() = default;
 
 		constexpr vec3(Type p_x, Type p_y, Type p_z) : x(p_x), y(p_y), z(p_z)
 		{
@@ -119,13 +198,17 @@ namespace tsm
 		{
 		}
 
+		constexpr vec3(const vec4<Type> &p_v);
+
 		constexpr Type &operator[](int32 p_index)
 		{
+			TSM_ASSERT_LENGTH(p_index, s_dim);
 			return data[p_index];
 		}
 
 		constexpr auto operator[](int32 p_index) const -> const Type &
 		{
+			TSM_ASSERT_LENGTH(p_index, s_dim);
 			return data[p_index];
 		}
 
@@ -137,7 +220,76 @@ namespace tsm
 
 		constexpr auto operator-(const vec3 &p_v) -> vec3
 		{
-			return vec2{-p_v.x, -p_v.y, -p_v.z};
+			return vec3{-p_v.x, -p_v.y, -p_v.z};
+		}
+
+		constexpr operator vec2<Type>()
+		{
+			return vec2{x, y};
+		}
+
+		constexpr auto operator+=(Type p_s) -> vec3 &
+		{
+			x += p_s;
+			y += p_s;
+			z += p_s;
+			return *this;
+		}
+
+		constexpr auto operator-=(Type p_s) -> vec3 &
+		{
+			x -= p_s;
+			y -= p_s;
+			z -= p_s;
+			return *this;
+		}
+
+		constexpr auto operator+=(vec3 p_v) -> vec3 &
+		{
+			x += p_v.x;
+			y += p_v.y;
+			z += p_v.z;
+			return *this;
+		}
+
+		constexpr auto operator-=(vec3 p_v) -> vec3 &
+		{
+			x -= p_v.x;
+			y -= p_v.y;
+			z -= p_v.z;
+			return *this;
+		}
+
+		constexpr auto operator*=(Type p_s) -> vec3 &
+		{
+			x *= p_s;
+			y *= p_s;
+			z *= p_s;
+			return *this;
+		}
+
+		constexpr auto operator/=(Type p_s) -> vec3 &
+		{
+			x /= p_s;
+			y /= p_s;
+			z /= p_s;
+			return *this;
+		}
+
+		constexpr auto operator*=(vec3 p_v) -> vec3 &
+		{
+			x *= p_v.x;
+			y *= p_v.y;
+			z *= p_v.z;
+			return *this;
+		}
+
+		constexpr auto operator/=(vec3 p_v) -> vec3 &
+		{
+			x /= p_v.x;
+			y /= p_v.y;
+			z /= p_v.z;
+			return *this;
 		}
 	};
 
@@ -171,6 +323,19 @@ namespace tsm
 
 	template<typename Type>
 	constexpr auto operator/(Type p_s, const vec3<Type> &p_v) -> vec3<Type> { return vec3{p_s / p_v.x, p_s / p_v.y, p_s / p_v.z}; }
+
+	template<typename Type>
+	constexpr auto operator*(const vec3<Type> &p_v1, const vec3<Type> &p_v2) -> vec3<Type>
+	{
+		return vec3{p_v1.x * p_v2.x, p_v1.y * p_v2.y, p_v1.z * p_v2.z};
+	}
+
+	template<typename Type>
+	constexpr auto operator/(const vec3<Type> &p_v1, const vec3<Type> &p_v2) -> vec3<Type>
+	{
+		return vec3{p_v1.x / p_v2.x, p_v1.y / p_v2.y, p_v1.z / p_v2.z};
+	}
+
 	#pragma endregion
 
 	#pragma region vec4
@@ -193,9 +358,7 @@ namespace tsm
 			};
 		};
 
-		constexpr vec4() : x(static_cast<Type>(0)), y(static_cast<Type>(0)), z(static_cast<Type>(0)), w(static_cast<Type>(0))
-		{
-		}
+		constexpr vec4() = default;
 
 		constexpr vec4(Type p_x, Type p_y, Type p_z, Type p_w) : x(p_x), y(p_y), z(p_z), w(p_w)
 		{
@@ -205,13 +368,23 @@ namespace tsm
 		{
 		}
 
+		constexpr vec4(Type p_x, const vec3<Type> &p_v) : x(p_x), y(p_v.x), z(p_v.y), w(p_v.z)
+		{
+		};
+
+		constexpr vec4(const vec3<Type> &p_v, Type p_w) : x(p_v.x), y(p_v.y), z(p_v.z), w(p_w)
+		{
+		};
+
 		constexpr Type &operator[](int32 p_index)
 		{
+			TSM_ASSERT_LENGTH(p_index, s_dim);
 			return data[p_index];
 		}
 
 		constexpr auto operator[](int32 p_index) const -> const Type &
 		{
+			TSM_ASSERT_LENGTH(p_index, s_dim);
 			return data[p_index];
 		}
 
@@ -223,7 +396,89 @@ namespace tsm
 
 		constexpr auto operator-(const vec4 &p_v) -> vec4
 		{
-			return vec2{-p_v.x, -p_v.y, -p_v.z, -p_v.w};
+			return vec4{-p_v.x, -p_v.y, -p_v.z, -p_v.w};
+		}
+
+		constexpr operator vec2<Type>()
+		{
+			return vec2{x, y};
+		}
+
+		constexpr operator vec3<Type>()
+		{
+			return vec3{x, y, z};
+		}
+
+		constexpr auto operator+=(Type p_s) -> vec4 &
+		{
+			x += p_s;
+			y += p_s;
+			z += p_s;
+			w += p_s;
+			return *this;
+		}
+
+		constexpr auto operator-=(Type p_s) -> vec4 &
+		{
+			x -= p_s;
+			y -= p_s;
+			z -= p_s;
+			w -= p_s;
+			return *this;
+		}
+
+		constexpr auto operator+=(vec4 p_v) -> vec4 &
+		{
+			x += p_v.x;
+			y += p_v.y;
+			z += p_v.z;
+			w += p_v.w;
+			return *this;
+		}
+
+		constexpr auto operator-=(vec4 p_v) -> vec4 &
+		{
+			x -= p_v.x;
+			y -= p_v.y;
+			z -= p_v.z;
+			w -= p_v.w;
+			return *this;
+		}
+
+		constexpr auto operator*=(Type p_s) -> vec4 &
+		{
+			x *= p_s;
+			y *= p_s;
+			z *= p_s;
+			w *= p_s;
+			return *this;
+		}
+
+		constexpr auto operator/=(Type p_s) -> vec4 &
+		{
+			x /= p_s;
+			y /= p_s;
+			z /= p_s;
+			w /= p_s;
+			return *this;
+		}
+
+		constexpr auto operator*=(vec4 p_v) -> vec4 &
+		{
+			x *= p_v.x;
+			y *= p_v.y;
+			z *= p_v.z;
+			w *= p_v.w;
+			return *this;
+		}
+
+		constexpr auto operator/=(vec4 p_v) -> vec4 &
+		{
+			x /= p_v.x;
+			y /= p_v.y;
+			z /= p_v.z;
+			w /= p_v.w;
+			return *this;
 		}
 	};
 
@@ -263,6 +518,23 @@ namespace tsm
 
 	template<typename Type>
 	constexpr auto operator/(Type p_s, const vec4<Type> &p_v) -> vec4<Type> { return vec4{p_s / p_v.x, p_s / p_v.y, p_s / p_v.z, p_s / p_v.w}; }
+
+	template<typename Type>
+	constexpr auto operator*(const vec4<Type> &p_v1, const vec4<Type> &p_v2) -> vec4<Type>
+	{
+		return vec4{p_v1.x * p_v2.x, p_v1.y * p_v2.y, p_v1.z * p_v2.z, p_v1.w * p_v2.w};
+	}
+
+	template<typename Type>
+	constexpr auto operator/(const vec4<Type> &p_v1, const vec4<Type> &p_v2) -> vec4<Type>
+	{
+		return vec4{p_v1.x / p_v2.x, p_v1.y / p_v2.y, p_v1.z / p_v2.z, p_v1.w / p_v2.w};
+	}
+
+	template<typename Type>
+	constexpr vec3<Type>::vec3(const vec4<Type> &p_v) : x(p_v.x), y(p_v.y), z(p_v.z)
+	{
+	}
 	#pragma endregion
 
 	using bool1 = bool32;
@@ -289,4 +561,43 @@ namespace tsm
 	using double2 = vec2<float64>;
 	using double3 = vec3<float64>;
 	using double4 = vec4<float64>;
+
+	template<typename Type>
+	constexpr auto length(vec2<Type> p_v) -> Type
+	{
+		return static_cast<Type>(std::sqrt(p_v.x * p_v.x + p_v.y * p_v.y));
+	}
+
+	template<typename Type>
+	constexpr auto length(vec3<Type> p_v) -> Type
+	{
+		return static_cast<Type>(std::sqrt(p_v.x * p_v.x + p_v.y * p_v.y + p_v.z * p_v.z));
+	}
+
+	template<typename Type>
+	constexpr auto length(vec4<Type> p_v) -> Type
+	{
+		return static_cast<Type>(std::sqrt(p_v.x * p_v.x + p_v.y * p_v.y + p_v.z * p_v.z + p_v.w * p_v.w));
+	}
+
+	template<typename Type>
+	constexpr auto normalize(vec2<Type> p_v) -> vec2<Type>
+	{
+		Type l{length(p_v)};
+		return vec2{p_v.x / l, p_v.y / l};
+	}
+
+	template<typename Type>
+	constexpr auto normalize(const vec3<Type> &p_v) -> vec3<Type>
+	{
+		Type l{length(p_v)};
+		return vec3{p_v.x / l, p_v.y / l, p_v.z / l};
+	}
+
+	template<typename Type>
+	constexpr auto normalize(const vec4<Type> &p_v) -> vec4<Type>
+	{
+		Type l{length(p_v)};
+		return vec4{p_v.x / l, p_v.y / l, p_v.z / l, p_v.w / l};
+	}
 }
