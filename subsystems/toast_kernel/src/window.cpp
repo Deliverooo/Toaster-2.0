@@ -89,11 +89,10 @@ namespace toaster
 
 		glfwWindowHint(GLFW_SAMPLES, 4);
 
-		m_callbackData.width  = p_spec_info.width;
-		m_callbackData.height = p_spec_info.height;
-		m_callbackData.title  = p_spec_info.title;
+		m_callbackData.size  = p_spec_info.size;
+		m_callbackData.title = p_spec_info.title;
 
-		m_window = glfwCreateWindow(static_cast<int32>(p_spec_info.width), static_cast<int32>(p_spec_info.height), p_spec_info.title.c_str(), nullptr, nullptr);
+		m_window = glfwCreateWindow(static_cast<int32>(p_spec_info.size.x), static_cast<int32>(p_spec_info.size.y), p_spec_info.title.c_str(), nullptr, nullptr);
 
 		#pragma region setup swapchain
 		VkSurfaceKHR surface;
@@ -187,8 +186,7 @@ namespace toaster
 			WindowResizeEvent event{static_cast<uint32>(width), static_cast<uint32>(height)};
 			if (data.eventCallback)
 				data.eventCallback(event);
-			data.width  = width;
-			data.height = height;
+			data.size = {static_cast<uint32>(width), static_cast<uint32>(height)};
 		});
 
 		glfwSetWindowCloseCallback(m_window, +[](GLFWwindow *window)
@@ -382,7 +380,7 @@ namespace toaster
 	{
 		if (glfwGetWindowMonitor(m_window))
 		{
-			glfwSetWindowMonitor(m_window, nullptr, 0, 0, static_cast<int32>(m_callbackData.width), static_cast<int32>(m_callbackData.height), 0);
+			glfwSetWindowMonitor(m_window, nullptr, 0, 0, static_cast<int32>(m_callbackData.size.x), static_cast<int32>(m_callbackData.size.y), 0);
 		}
 	}
 
@@ -391,24 +389,19 @@ namespace toaster
 		m_callbackData.eventCallback = p_callback;
 	}
 
-	auto Window::getWidth() const -> uint32
+	auto Window::getSize() const -> tsm::uint2
 	{
-		return m_callbackData.width;
+		return m_callbackData.size;
 	}
 
 	auto Window::getAspect() const -> float32
 	{
-		return static_cast<float32>(m_callbackData.height) / static_cast<float32>(m_callbackData.width);
+		return static_cast<float32>(m_callbackData.size.y) / static_cast<float32>(m_callbackData.size.x);
 	}
 
 	auto Window::getCenter() const -> std::pair<float32, float32>
 	{
-		return {static_cast<float32>(m_callbackData.width) / 2.0f, static_cast<float32>(m_callbackData.height) / 2.0f};
-	}
-
-	auto Window::getHeight() const -> uint32
-	{
-		return m_callbackData.height;
+		return {static_cast<float32>(m_callbackData.size.x) / 2.0f, static_cast<float32>(m_callbackData.size.y) / 2.0f};
 	}
 
 	auto Window::getTitle() const -> const std::string &
@@ -435,5 +428,26 @@ namespace toaster
 	auto Window::getInputContext() const -> InputContext *
 	{
 		return m_inputCtx;
+	}
+
+	auto Window::getSwapchainRenderingInfo(const tsm::float4 &p_clear_colour, bool p_use_depth, tsm::float2 p_clear_depth) const -> gpu::RenderingInfo
+	{
+		gpu::RenderingInfo rendering_info{};
+		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_swapchain->getExtent().width, m_swapchain->getExtent().height}};
+
+		auto &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
+		colour_attachment_info.imageView   = m_swapchain->getCurrentImageView();
+		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		colour_attachment_info.clearValue  = vk::ClearColorValue{p_clear_colour.x, p_clear_colour.y, p_clear_colour.z, p_clear_colour.w};
+
+		if (p_use_depth)
+		{
+			gpu::RenderingAttachmentInfo depth_attachment_info{};
+			depth_attachment_info.imageView   = m_swapchain->getDepthImageView();
+			depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+			depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{p_clear_depth.x, static_cast<uint32>(p_clear_depth.y)};
+			rendering_info.depthAttachment    = depth_attachment_info;
+		}
+		return rendering_info;
 	}
 }

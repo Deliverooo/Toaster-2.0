@@ -35,7 +35,7 @@ namespace toaster::gpu
 		VKPipeline(VKLogicalDevice *p_device, const PipelineSpecInfo &p_spec_info);
 
 		[[nodiscard]] auto getPipeline() -> vk::raii::Pipeline &;
-		[[nodiscard]] auto getPipelineLayout() -> vk::raii::PipelineLayout &;
+		[[nodiscard]] auto getPipelineLayout() -> const vk::raii::PipelineLayout &;
 
 		[[nodiscard]] auto getSpecInfo() const -> const PipelineSpecInfo &;
 

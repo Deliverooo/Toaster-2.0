@@ -6,7 +6,7 @@
 #include "toast_lib/string.hpp"
 #include "toast_lib/system_types.h"
 
-namespace toaster::gpu
+namespace toaster::gpu::reflection
 {
 	struct UniformBuffer
 	{

@@ -30,9 +30,9 @@ namespace toaster::gpu
 
 		std::vector<RenderingAttachmentInfo> colourAttachments;
 
-		RenderingAttachmentInfo *pDepthAttachment{nullptr};
-		bool                     depthReadOnly{false};
-		RenderingAttachmentInfo *pStencilAttachment{nullptr};
-		bool                     stencilReadOnly{false};
+		std::optional<RenderingAttachmentInfo> depthAttachment{nullptr};
+		bool                                   depthReadOnly{false};
+		RenderingAttachmentInfo *              pStencilAttachment{nullptr};
+		bool                                   stencilReadOnly{false};
 	};
 }

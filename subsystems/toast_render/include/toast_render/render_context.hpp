@@ -33,6 +33,8 @@ namespace toaster::render
 	public:
 		static constexpr uint32 maxFramesInFlight{3u};
 
+		static inline const gpu::VertexBufferLayout fullscreenQuadVbl{{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
+
 		RenderContext(const RenderContextSpecInfo &p_spec_info);
 		~RenderContext();
 
@@ -49,6 +51,9 @@ namespace toaster::render
 		[[nodiscard]] auto getCurrentFrameIndex() const -> uint32;
 		auto               setCurrentFrameIndex(uint32 p_index) -> void;
 		auto               performGarbageCollection() const -> void;
+
+		auto getCurrentSwapchainCommandBuffer() const -> gpu::VKCommandBuffer *;
+		auto setCurrentSwapchainCommandBuffer(gpu::VKCommandBuffer *p_cmd) -> void; // ONLY THE APPLICATION SHOULD USE TS...
 
 		// Use for objects that take the render context into their constructor
 		template<typename TObj, typename... TArgs>
@@ -92,11 +97,11 @@ namespace toaster::render
 			return createGPU<gpu::VKUniformBufferPFF>(ubo_size, p_count);
 		}
 
-		[[nodiscard]] auto createAttachmentImage(uint32     p_width, uint32 p_height, vk::ImageAspectFlags p_image_aspect_flags,
+		[[nodiscard]] auto createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
 												 vk::Format p_format = vk::Format::eUndefined) const -> gpu::RawImageHandle;
-		[[nodiscard]] auto createMultisampleAttachmentImage(uint32     p_width, uint32 p_height, vk::ImageAspectFlags p_image_aspect_flags,
+		[[nodiscard]] auto createMultisampleAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
 															vk::Format p_format = vk::Format::eUndefined) const -> gpu::RawImageHandle;
-		[[nodiscard]] auto createAttachmentTexture(uint32     p_width, uint32 p_height, vk::ImageAspectFlags p_image_aspect_flags,
+		[[nodiscard]] auto createAttachmentTexture(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
 												   vk::Format p_format = vk::Format::eUndefined) const -> gpu::Texture2DHandle;
 
 		[[nodiscard]] auto createEnvironmentMap(const io::filesystem::Path &p_path) const -> gpu::Texture3DHandle;
@@ -104,25 +109,25 @@ namespace toaster::render
 		[[nodiscard]] auto createDiffuseIrradianceMap(const gpu::Texture3DHandle &p_environment_map) const -> gpu::Texture3DHandle;
 
 		#pragma region render logic
-		auto beginRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, gpu::VKRenderPass *p_render_pass,
-							uint32                p_frame_index = UINT32_MAX) const -> void;
-		auto endRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info) const -> void;
+		auto beginRendering(gpu::CommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, gpu::RenderPass *p_render_pass,
+							uint32              p_frame_index = UINT32_MAX) const -> void;
+		auto endRendering(gpu::CommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info) const -> void;
 
-		auto beginCompute(gpu::VKCommandBuffer *p_command_buffer, gpu::VKComputePass *p_compute_pass, uint32 p_frame_index = UINT32_MAX) const -> void;
-		auto dispatchCompute(gpu::VKCommandBuffer *p_command_buffer, const gpu::VKComputePass *p_compute_pass, Material *p_material, uint32 p_work_group_x,
-							 uint32                p_work_group_y, uint32                      p_work_group_z, uint32    p_frame_index = UINT32_MAX) const -> void;
+		auto beginCompute(gpu::CommandBuffer *p_command_buffer, gpu::ComputePass *p_compute_pass, uint32 p_frame_index = UINT32_MAX) const -> void;
+		auto dispatchCompute(gpu::CommandBuffer *p_command_buffer, const gpu::ComputePass *p_compute_pass, Material *p_material, uint32 p_work_group_x,
+							 uint32              p_work_group_y, uint32                    p_work_group_z, uint32    p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderGeometry(gpu::VKCommandBuffer *p_command_buffer, gpu::VKPipeline *p_pipeline, gpu::VKVertexBuffer *p_vertex_buffer, gpu::VKIndexBuffer *p_index_buffer,
-							uint32                p_index_count, Material *p_material, const tsm::float4x4 &p_transform, uint32 p_frame_index = UINT32_MAX) const -> void;
+		auto renderGeometry(gpu::CommandBuffer *p_command_buffer, gpu::Pipeline *p_pipeline, gpu::VertexBuffer *p_vertex_buffer, gpu::IndexBuffer *p_index_buffer,
+							uint32              p_index_count, Material *p_material, const tsm::float4x4 &p_transform, uint32 p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderFullscreenQuad(gpu::VKCommandBuffer *p_command_buffer, gpu::VKPipeline *p_pipeline, Material *p_material,
-								  uint32                p_frame_index = UINT32_MAX) const -> void;
+		auto renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer, const gpu::RenderPass *p_render_pass, Material *p_material,
+								  uint32              p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderMesh(gpu::VKCommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline, const tsm::float4x4 &p_transform,
-						uint32                p_frame_index = UINT32_MAX) const -> void;
+		auto renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline, const tsm::float4x4 &p_transform,
+						uint32              p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderMesh(gpu::VKCommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline, const tsm::float4x4 &p_transform,
-						Material *            p_override_material, uint32       p_frame_index = UINT32_MAX) const -> void;
+		auto renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline, const tsm::float4x4 &p_transform,
+						Material *          p_override_material, uint32       p_frame_index = UINT32_MAX) const -> void;
 		#pragma endregion
 
 	private:
@@ -133,5 +138,8 @@ namespace toaster::render
 		OwningPtr<gpu::VKLogicalDevice>  m_logicalDevice{nullptr};
 
 		OwningPtr<Globals> m_globals{nullptr};
+
+		// Doing this means that we don't have to pass the current command buffer into every function, making it easier to use for the client API
+		NonOwningPtr<gpu::VKCommandBuffer> m_currentSwapchainCommandBuffer{nullptr};
 	};
 }

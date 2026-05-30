@@ -16,8 +16,7 @@ namespace toaster::gpu
 		usage_flags |= vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
 
 		ImageSpecInfo image_create_info{};
-		image_create_info.width       = m_specInfo.width;
-		image_create_info.height      = m_specInfo.height;
+		image_create_info.size        = m_specInfo.size;
 		image_create_info.usage       = usage_flags;
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
@@ -32,15 +31,14 @@ namespace toaster::gpu
 	{
 		TST_ASSERT_MSG(m_device, "Device cannot be null");
 
-		m_textureData = util::loadTextureImage(p_path, m_specInfo.format, m_specInfo.width, m_specInfo.height);
+		m_textureData = util::loadTextureImage(p_path, m_specInfo.format, m_specInfo.size.x, m_specInfo.size.y);
 		if (!m_textureData)
 		{
 			TST_ASSERT(false);
 		}
 
 		ImageSpecInfo image_create_info{};
-		image_create_info.width       = m_specInfo.width;
-		image_create_info.height      = m_specInfo.height;
+		image_create_info.size        = m_specInfo.size;
 		image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
@@ -50,7 +48,7 @@ namespace toaster::gpu
 		util::toTransferDst(m_image.get());
 		m_image->setData(m_textureData);
 
-		m_device->generateMipmaps(m_image->getImage(), {m_specInfo.width, m_specInfo.height, 1u}, m_mipLevels);
+		m_device->generateMipmaps(m_image->getImage(), {m_specInfo.size.x, m_specInfo.size.y, 1u}, m_mipLevels);
 		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal); // Generate mips leaves the image in the eShaderReadOnlyOptimal layout
 
 		createSampler();
@@ -62,8 +60,7 @@ namespace toaster::gpu
 		TST_ASSERT_MSG(m_device, "Device cannot be null");
 
 		ImageSpecInfo image_create_info{};
-		image_create_info.width       = m_specInfo.width;
-		image_create_info.height      = m_specInfo.height;
+		image_create_info.size        = m_specInfo.size;
 		image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
@@ -81,8 +78,7 @@ namespace toaster::gpu
 		TST_ASSERT_MSG(m_device, "Device cannot be null");
 
 		ImageSpecInfo image_create_info{};
-		image_create_info.width       = m_specInfo.width;
-		image_create_info.height      = m_specInfo.height;
+		image_create_info.size        = m_specInfo.size;
 		image_create_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
 		image_create_info.mipCount    = m_mipLevels;
 		image_create_info.sampleCount = m_specInfo.sampleCount;
@@ -117,9 +113,9 @@ namespace toaster::gpu
 		return m_descriptorImageInfo.imageView;
 	}
 
-	auto VKTexture2D::resize(uint32 p_width, uint32 p_height) -> void
+	auto VKTexture2D::resize(tsm::uint2 p_size) -> void
 	{
-		m_image->resize(p_width, p_height);
+		m_image->resize(p_size);
 		createSampler(vk::ImageLayout::eShaderReadOnlyOptimal);
 	}
 
@@ -201,8 +197,7 @@ namespace toaster::gpu
 
 		ImageSpecInfo image_spec_info{};
 		image_spec_info.format     = m_specInfo.format;
-		image_spec_info.width      = m_specInfo.width;
-		image_spec_info.height     = m_specInfo.height;
+		image_spec_info.size       = m_specInfo.size;
 		image_spec_info.mipCount   = 1u;
 		image_spec_info.layerCount = 6u;
 		image_spec_info.usage      = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
@@ -217,7 +212,7 @@ namespace toaster::gpu
 	{
 		TST_ASSERT_MSG(m_device, "Device cannot be null");
 
-		m_textureData = util::loadTextureImage(p_path, m_specInfo.format, m_specInfo.width, m_specInfo.height);
+		m_textureData = util::loadTextureImage(p_path, m_specInfo.format, m_specInfo.size.x, m_specInfo.size.y);
 		if (!m_textureData)
 		{
 			TST_ASSERT(false);
@@ -225,8 +220,7 @@ namespace toaster::gpu
 
 		ImageSpecInfo image_spec_info{};
 		image_spec_info.format     = m_specInfo.format;
-		image_spec_info.width      = m_specInfo.width;
-		image_spec_info.height     = m_specInfo.height;
+		image_spec_info.size       = m_specInfo.size;
 		image_spec_info.mipCount   = 1u;
 		image_spec_info.layerCount = 6u;
 		image_spec_info.usage      = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
@@ -247,8 +241,7 @@ namespace toaster::gpu
 
 		ImageSpecInfo image_spec_info{};
 		image_spec_info.format     = m_specInfo.format;
-		image_spec_info.width      = m_specInfo.width;
-		image_spec_info.height     = m_specInfo.height;
+		image_spec_info.size       = m_specInfo.size;
 		image_spec_info.mipCount   = 1u;
 		image_spec_info.layerCount = 6u;
 		image_spec_info.usage      = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled |
@@ -284,9 +277,10 @@ namespace toaster::gpu
 		return m_descriptorImageInfo.imageView;
 	}
 
-	auto VKTexture3D::resize(uint32 p_width, uint32 p_height) -> void
+	auto VKTexture3D::resize(tsm::uint2 p_size) -> void
 	{
-		m_image->resize(p_width, p_height);
+		m_specInfo.size = p_size;
+		m_image->resize(p_size);
 		createSampler(vk::ImageLayout::eGeneral);
 	}
 
@@ -296,6 +290,7 @@ namespace toaster::gpu
 		m_textureData.release();
 		m_textureData = Buffer::copy(p_data, p_size);
 		m_image->setData(m_textureData);
+		util::toGeneral(m_image.get());
 	}
 
 	auto VKTexture3D::setData(const Buffer &p_buffer) -> void

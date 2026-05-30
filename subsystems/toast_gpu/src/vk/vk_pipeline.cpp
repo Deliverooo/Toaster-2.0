@@ -16,7 +16,7 @@ namespace toaster::gpu
 		return m_graphicsPipeline;
 	}
 
-	auto VKPipeline::getPipelineLayout() -> vk::raii::PipelineLayout &
+	auto VKPipeline::getPipelineLayout() -> const vk::raii::PipelineLayout &
 	{
 		return m_pipelineLayout;
 	}

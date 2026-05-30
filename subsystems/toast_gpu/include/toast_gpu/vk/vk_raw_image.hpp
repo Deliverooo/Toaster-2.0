@@ -14,8 +14,7 @@ namespace toaster::gpu
 
 	struct ImageSpecInfo
 	{
-		uint32                  width{0u};
-		uint32                  height{0u};
+		tsm::uint2              size{0u};
 		vk::Format              format{vk::Format::eUndefined};
 		vk::ImageUsageFlags     usage{vk::ImageUsageFlagBits::eSampled};
 		vk::SampleCountFlagBits sampleCount{vk::SampleCountFlagBits::e1};
@@ -47,7 +46,8 @@ namespace toaster::gpu
 
 		auto setData(void *p_data, uint64 p_size) -> void;
 		auto setData(const Buffer &p_buffer) -> void;
-		auto resize(uint32 p_width, uint32 p_height) -> void;
+		auto resize(tsm::uint2 p_size) -> void;
+
 		auto recreate() -> void;
 
 	private:

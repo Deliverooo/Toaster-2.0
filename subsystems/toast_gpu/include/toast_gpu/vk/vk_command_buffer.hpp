@@ -38,6 +38,8 @@ namespace toaster::gpu
 		vk::QueueFlagBits m_queueType{vk::QueueFlagBits::eGraphics};
 	};
 
+	TST_GPU_DEFINE_HANDLE(VKCommandBuffer, CommandBuffer);
+
 	class VKCommandBufferPFFPacked
 	{
 		TST_GPU_OBJECT
@@ -65,4 +67,6 @@ namespace toaster::gpu
 		vk::QueueFlagBits m_queueType{vk::QueueFlagBits::eGraphics};
 		uint32            m_framesInFlightCount{0u};
 	};
+
+	TST_GPU_DEFINE_HANDLE(VKCommandBufferPFFPacked, CommandBufferPFFPacked);
 }

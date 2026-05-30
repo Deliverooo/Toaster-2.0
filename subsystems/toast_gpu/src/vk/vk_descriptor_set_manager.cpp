@@ -9,16 +9,14 @@ namespace toaster::gpu
 																																 m_specInfo(p_spec_info)
 	{
 		TextureSpecInfo texture_spec_info{};
-		texture_spec_info.width        = 1u;
-		texture_spec_info.height       = 1u;
+		texture_spec_info.size         = {1u};
 		texture_spec_info.format       = vk::Format::eR8G8B8A8Unorm;
 		texture_spec_info.generateMips = false;
 		uint32 texture_data{0xFFFFFFFF};
 		m_whiteTexture = make_reference<VKTexture2D>(m_device, texture_spec_info, &texture_data, sizeof(uint32));
 
 		uint32 texture_3d_data[6]{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
-		m_whiteTexture3D = make_reference<VKTexture3D>(m_device, texture_spec_info);
-		m_whiteTexture3D->setData(Buffer{texture_3d_data, sizeof(uint32) * 6});
+		m_whiteTexture3D = make_reference<VKTexture3D>(m_device, texture_spec_info, Buffer{texture_3d_data, sizeof(uint32) * 6});
 
 		const auto &descriptor_sets{m_specInfo.shader->getReflectedShaderDescriptorSets()};
 		m_writeDescriptorMap.resize(m_device->getSpecInfo().maxFramesInFlight);
@@ -51,7 +49,7 @@ namespace toaster::gpu
 					auto &sampler{descriptor_set.imageSamplers.at(binding)};
 					descriptor_declaration.type = getDescriptorImageSamplerType(write_descriptor.descriptorType, sampler.dimension);
 
-					if (sampler.dimension == EImageDimension::e3D || sampler.dimension == EImageDimension::eCube)
+					if (sampler.dimension == reflection::EImageDimension::e3D || sampler.dimension == reflection::EImageDimension::eCube)
 						descriptor_resource.type = EGPUResourceType::eTexture3D;
 				}
 				else if (descriptor_set.storageImages.contains(binding))
@@ -59,7 +57,7 @@ namespace toaster::gpu
 					auto &storage_image{descriptor_set.storageImages.at(binding)};
 					descriptor_declaration.type = getDescriptorImageSamplerType(write_descriptor.descriptorType, storage_image.dimension);
 
-					if (storage_image.dimension == EImageDimension::e3D || storage_image.dimension == EImageDimension::eCube)
+					if (storage_image.dimension == reflection::EImageDimension::e3D || storage_image.dimension == reflection::EImageDimension::eCube)
 						descriptor_resource.type = EGPUResourceType::eTexture3D;
 				}
 

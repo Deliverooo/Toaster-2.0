@@ -30,9 +30,9 @@ namespace toaster::gpu
 		return m_descriptorImageInfo.imageView;
 	}
 
-	auto VKStorageImage::resize(uint32 p_width, uint32 p_height) -> void
+	auto VKStorageImage::resize(tsm::uint2 p_size) -> void
 	{
-		m_image->resize(p_width, p_height);
+		m_image->resize(p_size);
 		util::undefinedToGeneral(m_image.get());
 		createSampler(vk::ImageLayout::eGeneral);
 	}

@@ -129,19 +129,19 @@ namespace toaster::gpu
 		return EGPUResourceType::eUnknown;
 	}
 
-	constexpr auto getDescriptorImageSamplerType(vk::DescriptorType p_type, EImageDimension p_dimension) -> EDescriptorType
+	constexpr auto getDescriptorImageSamplerType(vk::DescriptorType p_type, reflection::EImageDimension p_dimension) -> EDescriptorType
 	{
 		if (p_type == vk::DescriptorType::eSampledImage || p_type == vk::DescriptorType::eCombinedImageSampler)
 		{
 			switch (p_dimension)
 			{
-				case EImageDimension::e1D:
+				case reflection::EImageDimension::e1D:
 					break;
-				case EImageDimension::e2D: return EDescriptorType::eSampler2D;
+				case reflection::EImageDimension::e2D: return EDescriptorType::eSampler2D;
 					break;
-				case EImageDimension::e3D: return EDescriptorType::eSampler3D;
+				case reflection::EImageDimension::e3D: return EDescriptorType::eSampler3D;
 					break;
-				case EImageDimension::eCube: return EDescriptorType::eSampler3D;
+				case reflection::EImageDimension::eCube: return EDescriptorType::eSampler3D;
 					break;
 				default: break;
 			}
@@ -150,13 +150,13 @@ namespace toaster::gpu
 		{
 			switch (p_dimension)
 			{
-				case EImageDimension::e1D:
+				case reflection::EImageDimension::e1D:
 					break;
-				case EImageDimension::e2D: return EDescriptorType::eImage2D;
+				case reflection::EImageDimension::e2D: return EDescriptorType::eImage2D;
 					break;
-				case EImageDimension::e3D: return EDescriptorType::eImage3D;
+				case reflection::EImageDimension::e3D: return EDescriptorType::eImage3D;
 					break;
-				case EImageDimension::eCube: return EDescriptorType::eImage3D;
+				case reflection::EImageDimension::eCube: return EDescriptorType::eImage3D;
 					break;
 				default: break;
 			}

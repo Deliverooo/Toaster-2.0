@@ -16,16 +16,16 @@ namespace toaster::gpu
 	public:
 		struct ReflectionData
 		{
-			std::vector<DescriptorSet> descriptorSets;
+			std::vector<reflection::DescriptorSet> descriptorSets;
 
 			// Ts just makes it easier to access the shader resources
-			std::unordered_map<String, ShaderResource> resources; // Textures / images
+			std::unordered_map<String, reflection::ShaderResource> resources; // Textures / images
 
-			PushConstantRange              sharedPushConstantRange;
-			std::vector<PushConstantRange> pushConstantRanges;
+			reflection::PushConstantRange              sharedPushConstantRange;
+			std::vector<reflection::PushConstantRange> pushConstantRanges;
 
 			// // Ts just makes it easier to access the shader push constant buffers
-			std::unordered_map<String, PushConstantBuffer> pushConstantBuffers;
+			std::unordered_map<String, reflection::PushConstantBuffer> pushConstantBuffers;
 		};
 
 		using Bytecode              = std::vector<uint32>;
@@ -50,10 +50,10 @@ namespace toaster::gpu
 		[[nodiscard]] auto getDescriptorSetLayouts() const -> std::vector<vk::DescriptorSetLayout>;
 		[[nodiscard]] auto getDescriptorSetLayout(uint32 p_set_index) const -> const vk::raii::DescriptorSetLayout &;
 
-		[[nodiscard]] auto getReflectedShaderDescriptorSets() const -> const std::vector<DescriptorSet> &;
-		[[nodiscard]] auto getReflectedShaderResources() const -> const std::unordered_map<String, ShaderResource> &;
-		[[nodiscard]] auto getReflectedPushConstantRanges() const -> const std::vector<PushConstantRange> &;
-		[[nodiscard]] auto getReflectedPushConstantBuffers() const -> const std::unordered_map<String, PushConstantBuffer> &;
+		[[nodiscard]] auto getReflectedShaderDescriptorSets() const -> const std::vector<reflection::DescriptorSet> &;
+		[[nodiscard]] auto getReflectedShaderResources() const -> const std::unordered_map<String, reflection::ShaderResource> &;
+		[[nodiscard]] auto getReflectedPushConstantRanges() const -> const std::vector<reflection::PushConstantRange> &;
+		[[nodiscard]] auto getReflectedPushConstantBuffers() const -> const std::unordered_map<String, reflection::PushConstantBuffer> &;
 
 		[[nodiscard]] auto getDescriptorPoolSizes(uint32 p_set_index) const -> const std::vector<vk::DescriptorPoolSize> &;
 

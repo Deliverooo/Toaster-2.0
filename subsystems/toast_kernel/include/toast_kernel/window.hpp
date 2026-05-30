@@ -9,6 +9,7 @@
 #include <utility> // std::pair
 #include <vulkan/vulkan_raii.hpp>
 
+#include "toast_gpu/vk/vk_render_attachment.hpp"
 #include "toast_lib/ptr.hpp"
 #include "toast_lib/string.hpp"
 #include "toast_lib/system_types.h"
@@ -33,9 +34,8 @@ namespace toaster
 
 	struct TST_KERNEL_API WindowSpecInfo
 	{
-		uint32 width{1920u};
-		uint32 height{1080u};
-		String title{};
+		tsm::uint2 size{1920u, 1080u};
+		String     title{};
 
 		io::filesystem::Path iconPath{};
 
@@ -85,8 +85,7 @@ namespace toaster
 
 		auto setEventCallback(const EventCallbackFn &p_callback) -> void;
 
-		[[nodiscard]] auto getWidth() const -> uint32;
-		[[nodiscard]] auto getHeight() const -> uint32;
+		[[nodiscard]] auto getSize() const -> tsm::uint2;
 		[[nodiscard]] auto getAspect() const -> float32;
 		[[nodiscard]] auto getCenter() const -> std::pair<float32, float32>;
 		[[nodiscard]] auto getTitle() const -> const String &;
@@ -96,6 +95,9 @@ namespace toaster
 		[[nodiscard]] auto getNativeWindow() const -> GLFWwindow *;
 		[[nodiscard]] auto getSwapchain() const -> gpu::VKSwapchain *;
 		[[nodiscard]] auto getInputContext() const -> InputContext *;
+
+		[[nodiscard]] auto getSwapchainRenderingInfo(const tsm::float4 &p_clear_colour, bool p_use_depth = true,
+													 tsm::float2        p_clear_depth                    = {1.0f, 0.0f}) const -> gpu::RenderingInfo;
 
 	private:
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
@@ -110,9 +112,8 @@ namespace toaster
 
 		struct GLFWCallbackData
 		{
-			uint32 width{0u};
-			uint32 height{0u};
-			String title{};
+			tsm::uint2 size{0u};
+			String     title{};
 
 			EventCallbackFn eventCallback{nullptr};
 			InputContext *  cbInputCtx{nullptr};

@@ -87,7 +87,7 @@ namespace toaster::render
 		return m_name;
 	}
 
-	auto Material::_getPushConstantDeclaration(const String &p_name) -> const gpu::PushConstant *
+	auto Material::_getPushConstantDeclaration(const String &p_name) -> const gpu::reflection::PushConstant *
 	{
 		const auto &push_constant_buffers{m_shader->getReflectedPushConstantBuffers()};
 		if (!push_constant_buffers.empty())

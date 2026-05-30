@@ -17,6 +17,9 @@ target_include_directories(ToastLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOU
 
 target_sources(ToastLib PRIVATE ${SRC})
 
+set(TST_MATH_FORMAT_SPECIALIZATIONS ON CACHE BOOL "" FORCE)
+
+target_link_libraries(ToastLib PUBLIC ToastMath)
 target_link_libraries(ToastLib PUBLIC fmt::fmt)
 target_link_libraries(ToastLib PRIVATE nfd)
 

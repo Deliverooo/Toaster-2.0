@@ -3,8 +3,8 @@
 #include "toast_lib.hpp"
 
 #include "system_types.h"
-#include "math/math_matrix.hpp"
-#include "math/math_vector.hpp"
+
+#include "toast_math/math_matrix.hpp"
 
 namespace toaster
 {

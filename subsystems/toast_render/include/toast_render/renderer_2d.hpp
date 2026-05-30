@@ -1,7 +1,6 @@
 #pragma once
 
 #include "material.hpp"
-#include "toast_lib/math/math_vector.hpp"
 
 #include <array>
 
@@ -26,8 +25,7 @@ namespace toaster::render
 
 	struct TST_RENDER_API Renderer2DSpecInfo
 	{
-		uint32 renderTargetWidth{1920u};
-		uint32 renderTargetHeight{1080u};
+		tsm::uint2 renderTargetSize{1920u, 1080u};
 
 		uint32 maxQuads{10000u};
 
@@ -55,7 +53,7 @@ namespace toaster::render
 		auto submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour) -> void;
 		auto submitQuad(const tsm::float4x4 &p_transform, const gpu::Texture2DHandle &p_texture, const tsm::float4 &p_colour) -> void;
 
-		auto onResize(uint32 p_width, uint32 p_height) -> void;
+		auto onResize(tsm::uint2 p_size) -> void;
 
 		auto               getOutputColourTexture() const -> const gpu::Texture2DHandle &;
 		[[nodiscard]] auto getStats() const -> const Stats &;
@@ -101,8 +99,8 @@ namespace toaster::render
 
 		struct CameraUB
 		{
-			tsm::float4x4 view;
-			tsm::float4x4 proj;
+			tsm::float4x4 view{1.0f};
+			tsm::float4x4 proj{1.0f};
 		};
 
 		RefPtr<gpu::VKUniformBufferPFF> m_cameraUBs{nullptr};

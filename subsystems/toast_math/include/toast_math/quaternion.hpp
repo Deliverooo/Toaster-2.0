@@ -5,7 +5,7 @@
 namespace tsm
 {
 	template<typename Type>
-	struct quat
+	struct Quat
 	{
 		union
 		{
@@ -20,23 +20,33 @@ namespace tsm
 			};
 		};
 
-		constexpr quat() : x(static_cast<Type>(0)), y(static_cast<Type>(0)), z(static_cast<Type>(0)), w(static_cast<Type>(1))
+		constexpr Quat() : x(static_cast<Type>(0)), y(static_cast<Type>(0)), z(static_cast<Type>(0)), w(static_cast<Type>(1))
 		{
 		}
 
-		constexpr quat(Type p_w, Type p_x, Type p_y, Type p_z) : x(p_x), y(p_y), z(p_z), w(p_w)
+		constexpr Quat(Type p_w, Type p_x, Type p_y, Type p_z) : x(p_x), y(p_y), z(p_z), w(p_w)
 		{
 		}
 
-		constexpr quat(Type p_w, const vec3<Type> &p_v) : x(p_v.x), y(p_v.y), z(p_v.z), w(p_w)
+		constexpr Quat(Type p_w, const Vec3<Type> &p_v) : x(p_v.x), y(p_v.y), z(p_v.z), w(p_w)
 		{
+		}
+
+		constexpr auto operator*(const Quat &p_other) const -> Quat<Type>
+		{
+			return Quat{
+				w * p_other.w - x * p_other.x - y * p_other.y - z * p_other.z,
+				w * p_other.x + x * p_other.w + y * p_other.z - z * p_other.y,
+				w * p_other.y - x * p_other.z + y * p_other.w + z * p_other.x,
+				w * p_other.z + x * p_other.y - y * p_other.x + z * p_other.w
+			};
 		}
 	};
 
 	template<typename Type>
-	constexpr auto toMat3(const quat<Type> &p_quat) -> mat3<Type>
+	constexpr auto toMat3(const Quat<Type> &p_quat) -> Mat3<Type>
 	{
-		mat3<Type> result(Type(1));
+		Mat3<Type> result(Type(1));
 		Type       qxx{p_quat.x * p_quat.x};
 		Type       qyy{p_quat.y * p_quat.y};
 		Type       qzz{p_quat.z * p_quat.z};
@@ -62,13 +72,13 @@ namespace tsm
 	}
 
 	template<typename Type>
-	constexpr auto toMat4(const quat<Type> &p_quat) -> mat4<Type>
+	constexpr auto toMat4(const Quat<Type> &p_quat) -> Mat4<Type>
 	{
-		return mat4<Type>{toMat3(p_quat)};
+		return Mat4<Type>{toMat3(p_quat)};
 	}
 
 	template<typename Type>
-	constexpr auto quatCast(const mat3<Type> &p_m) -> quat<Type>
+	constexpr auto quatCast(const Mat3<Type> &p_m) -> Quat<Type>
 	{
 		Type fourXSquaredMinus1 = p_m[0][0] - p_m[1][1] - p_m[2][2];
 		Type fourYSquaredMinus1 = p_m[1][1] - p_m[0][0] - p_m[2][2];
@@ -106,28 +116,42 @@ namespace tsm
 				return {(p_m[2][0] - p_m[0][2]) * mult, (p_m[0][1] + p_m[1][0]) * mult, biggestVal, (p_m[1][2] + p_m[2][1]) * mult};
 			case 3:
 				return {(p_m[0][1] - p_m[1][0]) * mult, (p_m[2][0] + p_m[0][2]) * mult, (p_m[1][2] + p_m[2][1]) * mult, biggestVal};
-			default: TST_ASSERT(false);
+			default: assert(false);
 				return {1, 0, 0, 0};
 		}
 	}
 
 	template<typename Type>
-	constexpr auto quatCast(const mat4<Type> &p_m) -> quat<Type>
+	constexpr auto quatCast(const Mat4<Type> &p_m) -> Quat<Type>
 	{
-		return quatCast(mat3{p_m});
+		return quatCast(Mat3{p_m});
 	}
 
 	template<typename Type>
-	constexpr auto axisAngle(Type p_angle, const vec3<Type> &p_axis) -> quat<Type>
+	constexpr auto axisAngle(Type p_angle, Vec3<Type> p_axis) -> Quat<Type>
 	{
-		const Type a(p_angle);
-		const Type s = std::sin(a * static_cast<Type>(0.5));
+		Type length = std::sqrtf(p_axis.x * p_axis.x + p_axis.y * p_axis.y + p_axis.z * p_axis.z);
+		if (length > 0.0f)
+		{
+			p_axis.x /= length;
+			p_axis.y /= length;
+			p_axis.z /= length;
+		}
 
-		return quat<Type>(std::cos(a * static_cast<Type>(0.5)), p_axis * s);
+		Type half_angle = p_angle * 0.5f;
+		Type sin_half   = std::sinf(half_angle);
+
+		return Quat<Type>{std::cosf(half_angle), p_axis.x * sin_half, p_axis.y * sin_half, p_axis.z * sin_half};
 	}
 
-	using quatf = quat<float32>;
-	using quatd = quat<float64>;
+	template<typename Type>
+	constexpr auto fromYawPitchRoll(Type p_yaw, Type p_pitch, Type p_roll) -> Quat<Type>
+	{
+		return axisAngle(p_yaw, Vec3<Type>::unitX) * axisAngle(p_pitch, Vec3<Type>::unitY) * axisAngle(p_roll, Vec3<Type>::unitZ);
+	}
+
+	using quatf = Quat<f32>;
+	using quatd = Quat<f64>;
 
 	constexpr auto decomposeTransform(const float4x4 &p_transform, float3 &p_out_translation, quatf &p_out_orientation, float3 &p_out_scale) -> void
 	{

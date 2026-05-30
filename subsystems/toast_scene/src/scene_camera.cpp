@@ -25,11 +25,11 @@ namespace toaster
 		_recalculateProjection();
 	}
 
-	auto SceneCamera::setViewportSize(uint32 p_width, uint32 p_height) -> void
+	auto SceneCamera::setViewportSize(tsm::uint2 p_size) -> void
 	{
 		// For the scene, we have to make sure that the width is not 0 when adding a camera component
-		const float32 safe_width  = static_cast<float32>(std::max(p_width, 1u));
-		const float32 safe_height = static_cast<float32>(std::max(p_height, 1u));
+		const float32 safe_width  = static_cast<float32>(std::max(p_size.x, 1u));
+		const float32 safe_height = static_cast<float32>(std::max(p_size.y, 1u));
 
 		m_aspectRatio = safe_width / safe_height;
 		_recalculateProjection();

@@ -102,67 +102,70 @@ namespace toaster::render
 		m_logicalDevice->performGarbageCollection();
 	}
 
-	auto RenderContext::createAttachmentImage(uint32     p_width, uint32 p_height, vk::ImageAspectFlags p_image_aspect_flags,
-											  vk::Format p_format) const -> gpu::RawImageHandle
+	auto RenderContext::getCurrentSwapchainCommandBuffer() const -> gpu::CommandBuffer *
 	{
-		if (p_format == vk::Format::eUndefined)
-			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
-
-		gpu::ImageSpecInfo attachment_image_spec_info{};
-		attachment_image_spec_info.width  = p_width;
-		attachment_image_spec_info.height = p_height;
-		attachment_image_spec_info.format = p_format;
-		attachment_image_spec_info.usage  = gpu::util::getImageUsageFlags(p_image_aspect_flags);
-		return createGPU<gpu::VKRawImage>(attachment_image_spec_info);
+		return m_currentSwapchainCommandBuffer;
 	}
 
-	auto RenderContext::createMultisampleAttachmentImage(uint32     p_width, uint32 p_height, vk::ImageAspectFlags p_image_aspect_flags,
-														 vk::Format p_format) const -> gpu::RawImageHandle
+	auto RenderContext::setCurrentSwapchainCommandBuffer(gpu::CommandBuffer *p_cmd) -> void
+	{
+		m_currentSwapchainCommandBuffer = p_cmd;
+	}
+
+	auto RenderContext::createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) const -> gpu::RawImageHandle
 	{
 		if (p_format == vk::Format::eUndefined)
 			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
 
 		gpu::ImageSpecInfo attachment_image_spec_info{};
-		attachment_image_spec_info.width       = p_width;
-		attachment_image_spec_info.height      = p_height;
+		attachment_image_spec_info.size   = p_size;
+		attachment_image_spec_info.format = p_format;
+		attachment_image_spec_info.usage  = gpu::util::getImageUsageFlags(p_image_aspect_flags);
+		return createGPU<gpu::RawImage>(attachment_image_spec_info);
+	}
+
+	auto RenderContext::createMultisampleAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) const -> gpu::RawImageHandle
+	{
+		if (p_format == vk::Format::eUndefined)
+			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
+
+		gpu::ImageSpecInfo attachment_image_spec_info{};
+		attachment_image_spec_info.size        = p_size;
 		attachment_image_spec_info.format      = p_format;
 		attachment_image_spec_info.sampleCount = m_physicalDevice->getMaxUsableSampleCount();
 		attachment_image_spec_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | gpu::util::getImageUsageFlags(p_image_aspect_flags);
-		return createGPU<gpu::VKRawImage>(attachment_image_spec_info);
+		return createGPU<gpu::RawImage>(attachment_image_spec_info);
 	}
 
-	auto RenderContext::createAttachmentTexture(uint32     p_width, uint32 p_height, vk::ImageAspectFlags p_image_aspect_flags,
-												vk::Format p_format) const -> gpu::Texture2DHandle
+	auto RenderContext::createAttachmentTexture(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) const -> gpu::Texture2DHandle
 	{
 		if (p_format == vk::Format::eUndefined)
 			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
 
 		gpu::TextureSpecInfo attachment_texture_spec_info{};
-		attachment_texture_spec_info.width        = p_width;
-		attachment_texture_spec_info.height       = p_height;
+		attachment_texture_spec_info.size         = p_size;
 		attachment_texture_spec_info.format       = p_format;
 		attachment_texture_spec_info.generateMips = false;
-		return createGPU<gpu::VKTexture2D>(attachment_texture_spec_info);
+		return createGPU<gpu::Texture2D>(attachment_texture_spec_info);
 	}
 
 	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) const -> gpu::Texture3DHandle
 	{
-		auto env_tex{createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, p_path)};
+		auto env_tex{createGPU<gpu::Texture2D>(gpu::TextureSpecInfo{}, p_path)};
 
 		constexpr uint32     skybox_resolution{2048};
 		gpu::TextureSpecInfo skybox_texture_map_spec_info{};
-		skybox_texture_map_spec_info.width  = skybox_resolution;
-		skybox_texture_map_spec_info.height = skybox_resolution;
+		skybox_texture_map_spec_info.size   = {skybox_resolution};
 		skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
-		RefPtr<gpu::VKTexture3D> env_map    = createGPU<gpu::VKTexture3D>(skybox_texture_map_spec_info);
+		RefPtr<gpu::Texture3D> env_map      = createGPU<gpu::Texture3D>(skybox_texture_map_spec_info);
 
-		auto equirectangular_to_cubemap_pipeline{createGPU<gpu::VKComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
-		auto equirectangular_to_cubemap_pass{createGPU<gpu::VKComputePass>(equirectangular_to_cubemap_pipeline)};
+		auto equirectangular_to_cubemap_pipeline{createGPU<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
+		auto equirectangular_to_cubemap_pass{createGPU<gpu::ComputePass>(equirectangular_to_cubemap_pipeline)};
 		equirectangular_to_cubemap_pass->setInput("u_EquirectangularMap", env_tex);
 		equirectangular_to_cubemap_pass->setInput("o_Cubemap", env_map);
 		equirectangular_to_cubemap_pass->bake();
 
-		gpu::VKCommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
+		gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
 
 		beginCompute(&command_buffer, equirectangular_to_cubemap_pass, 0);
@@ -177,22 +180,21 @@ namespace toaster::render
 
 	auto RenderContext::createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) const -> gpu::Texture3DHandle
 	{
-		auto env_tex{createGPU<gpu::VKTexture2D>(p_spec_info, p_data)};
+		auto env_tex{createGPU<gpu::Texture2D>(p_spec_info, p_data)};
 
 		constexpr uint32     skybox_resolution{2048};
 		gpu::TextureSpecInfo skybox_texture_map_spec_info{};
-		skybox_texture_map_spec_info.width  = skybox_resolution;
-		skybox_texture_map_spec_info.height = skybox_resolution;
+		skybox_texture_map_spec_info.size   = {skybox_resolution};
 		skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
-		RefPtr<gpu::VKTexture3D> env_map    = createGPU<gpu::VKTexture3D>(skybox_texture_map_spec_info);
+		RefPtr<gpu::Texture3D> env_map      = createGPU<gpu::Texture3D>(skybox_texture_map_spec_info);
 
-		auto equirectangular_to_cubemap_pipeline{createGPU<gpu::VKComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
-		auto equirectangular_to_cubemap_pass{createGPU<gpu::VKComputePass>(equirectangular_to_cubemap_pipeline)};
+		auto equirectangular_to_cubemap_pipeline{createGPU<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
+		auto equirectangular_to_cubemap_pass{createGPU<gpu::ComputePass>(equirectangular_to_cubemap_pipeline)};
 		equirectangular_to_cubemap_pass->setInput("u_EquirectangularMap", env_tex);
 		equirectangular_to_cubemap_pass->setInput("o_Cubemap", env_map);
 		equirectangular_to_cubemap_pass->bake();
 
-		gpu::VKCommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
+		gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
 
 		beginCompute(&command_buffer, equirectangular_to_cubemap_pass, 0);
@@ -210,18 +212,17 @@ namespace toaster::render
 		static constexpr uint32 c_diffuse_irradiance_resolution{32u};
 
 		gpu::TextureSpecInfo irradiance_map_spec_info{};
-		irradiance_map_spec_info.width  = c_diffuse_irradiance_resolution;
-		irradiance_map_spec_info.height = c_diffuse_irradiance_resolution;
+		irradiance_map_spec_info.size   = {c_diffuse_irradiance_resolution};
 		irradiance_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
-		auto out_irradiance_map{createGPU<gpu::VKTexture3D>(irradiance_map_spec_info)};
+		auto out_irradiance_map{createGPU<gpu::Texture3D>(irradiance_map_spec_info)};
 
-		auto irradiance_convolution_pipeline{createGPU<gpu::VKComputePipeline>(m_globals->shaderLibrary().get("Diffuse_Irradiance_Convolution"))};
-		auto irradiance_convolution_pass{createGPU<gpu::VKComputePass>(irradiance_convolution_pipeline)};
+		auto irradiance_convolution_pipeline{createGPU<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Diffuse_Irradiance_Convolution"))};
+		auto irradiance_convolution_pass{createGPU<gpu::ComputePass>(irradiance_convolution_pipeline)};
 		irradiance_convolution_pass->setInput("u_EnvironmentMap", p_environment_map);
 		irradiance_convolution_pass->setInput("o_Irradiance", out_irradiance_map);
 		irradiance_convolution_pass->bake();
 
-		gpu::VKCommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
+		gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
 
 		beginCompute(&command_buffer, irradiance_convolution_pass, 0);
@@ -238,8 +239,8 @@ namespace toaster::render
 		return out_irradiance_map;
 	}
 
-	auto RenderContext::beginRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, gpu::VKRenderPass *p_render_pass,
-									   uint32                p_frame_index) const -> void
+	auto RenderContext::beginRendering(gpu::CommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, gpu::RenderPass *p_render_pass,
+									   uint32              p_frame_index) const -> void
 	{
 		TST_ASSERT_MSG(p_render_pass, "Render pass is null");
 
@@ -299,9 +300,9 @@ namespace toaster::render
 		}
 
 		vk::RenderingAttachmentInfo depth_attachment_info{};
-		if (p_rendering_info.pDepthAttachment != nullptr)
+		if (p_rendering_info.depthAttachment.has_value())
 		{
-			auto depth_image{p_rendering_info.pDepthAttachment->image};
+			auto depth_image{p_rendering_info.depthAttachment->image};
 			if (depth_image != nullptr)
 			{
 				depth_attachment_info.imageView = depth_image->getImageView();
@@ -319,11 +320,11 @@ namespace toaster::render
 			}
 			else
 			{
-				depth_attachment_info.imageView   = p_rendering_info.pDepthAttachment->imageView;
-				depth_attachment_info.imageLayout = p_rendering_info.pDepthAttachment->imageLayout;
+				depth_attachment_info.imageView   = p_rendering_info.depthAttachment->imageView;
+				depth_attachment_info.imageLayout = p_rendering_info.depthAttachment->imageLayout;
 			}
 
-			auto depth_resolve_image{p_rendering_info.pDepthAttachment->resolveImage};
+			auto depth_resolve_image{p_rendering_info.depthAttachment->resolveImage};
 			if (depth_resolve_image != nullptr)
 			{
 				depth_attachment_info.resolveImageView = depth_resolve_image->getImageView();
@@ -339,15 +340,15 @@ namespace toaster::render
 			}
 			else
 			{
-				depth_attachment_info.resolveImageView   = p_rendering_info.pDepthAttachment->resolveImageView;
-				depth_attachment_info.resolveImageLayout = p_rendering_info.pDepthAttachment->resolveImageLayout;
+				depth_attachment_info.resolveImageView   = p_rendering_info.depthAttachment->resolveImageView;
+				depth_attachment_info.resolveImageLayout = p_rendering_info.depthAttachment->resolveImageLayout;
 			}
 
-			depth_attachment_info.resolveMode = p_rendering_info.pDepthAttachment->resolveMode;
+			depth_attachment_info.resolveMode = p_rendering_info.depthAttachment->resolveMode;
 
-			depth_attachment_info.loadOp     = p_rendering_info.pDepthAttachment->loadOp;
-			depth_attachment_info.storeOp    = p_rendering_info.pDepthAttachment->storeOp;
-			depth_attachment_info.clearValue = p_rendering_info.pDepthAttachment->clearValue;
+			depth_attachment_info.loadOp     = p_rendering_info.depthAttachment->loadOp;
+			depth_attachment_info.storeOp    = p_rendering_info.depthAttachment->storeOp;
+			depth_attachment_info.clearValue = p_rendering_info.depthAttachment->clearValue;
 		}
 
 		vk::RenderingAttachmentInfo stencil_attachment_info{};
@@ -388,7 +389,7 @@ namespace toaster::render
 		rendering_info.layerCount           = p_rendering_info.layerCount;
 		rendering_info.colorAttachmentCount = colour_rendering_attachment_infos.empty() ? 0u : p_rendering_info.colourAttachments.size();
 		rendering_info.pColorAttachments    = colour_rendering_attachment_infos.empty() ? nullptr : colour_rendering_attachment_infos.data();
-		rendering_info.pDepthAttachment     = p_rendering_info.pDepthAttachment ? &depth_attachment_info : nullptr;
+		rendering_info.pDepthAttachment     = p_rendering_info.depthAttachment.has_value() ? &depth_attachment_info : nullptr;
 		rendering_info.pStencilAttachment   = p_rendering_info.pStencilAttachment ? &stencil_attachment_info : nullptr;
 
 		const vk::Extent2D rendering_extent{p_rendering_info.renderArea.extent};
@@ -417,7 +418,7 @@ namespace toaster::render
 																		  p_render_pass->getStartSetIndex(), descriptor_sets, nullptr);
 	}
 
-	auto RenderContext::endRendering(gpu::VKCommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info) const -> void
+	auto RenderContext::endRendering(gpu::CommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info) const -> void
 	{
 		p_command_buffer->getVulkanCommandBuffer().endRendering();
 
@@ -438,9 +439,9 @@ namespace toaster::render
 			}
 		}
 
-		if (p_rendering_info.pDepthAttachment != nullptr)
+		if (p_rendering_info.depthAttachment.has_value())
 		{
-			auto depth_image{p_rendering_info.pDepthAttachment->image};
+			auto depth_image{p_rendering_info.depthAttachment->image};
 
 			if ((depth_image != nullptr) && (depth_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
@@ -448,7 +449,7 @@ namespace toaster::render
 												 p_rendering_info.depthReadOnly ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal,
 												 vk::ImageLayout::eShaderReadOnlyOptimal, p_command_buffer->getVulkanCommandBuffer());
 			}
-			auto depth_resolve_image{p_rendering_info.pDepthAttachment->resolveImage};
+			auto depth_resolve_image{p_rendering_info.depthAttachment->resolveImage};
 			if ((depth_resolve_image != nullptr) && (depth_resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
 			{
 				gpu::util::transitionImageLayout(depth_resolve_image, vk::ImageLayout::eDepthAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
@@ -457,7 +458,7 @@ namespace toaster::render
 		}
 	}
 
-	auto RenderContext::beginCompute(gpu::VKCommandBuffer *p_command_buffer, gpu::VKComputePass *p_compute_pass, uint32 p_frame_index) const -> void
+	auto RenderContext::beginCompute(gpu::CommandBuffer *p_command_buffer, gpu::ComputePass *p_compute_pass, uint32 p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
@@ -471,8 +472,8 @@ namespace toaster::render
 																		  p_compute_pass->getStartSetIndex(), descriptor_sets, nullptr);
 	}
 
-	auto RenderContext::dispatchCompute(gpu::VKCommandBuffer *p_command_buffer, const gpu::VKComputePass *p_compute_pass, Material *p_material, uint32 p_work_group_x,
-										uint32                p_work_group_y, uint32                      p_work_group_z, uint32    p_frame_index) const -> void
+	auto RenderContext::dispatchCompute(gpu::CommandBuffer *p_command_buffer, const gpu::ComputePass *p_compute_pass, Material *p_material, uint32 p_work_group_x,
+										uint32              p_work_group_y, uint32                    p_work_group_z, uint32    p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
@@ -500,9 +501,9 @@ namespace toaster::render
 		p_command_buffer->getVulkanCommandBuffer().dispatch(p_work_group_x, p_work_group_y, p_work_group_z);
 	}
 
-	auto RenderContext::renderGeometry(gpu::VKCommandBuffer *p_command_buffer, gpu::VKPipeline *p_pipeline, gpu::VKVertexBuffer *p_vertex_buffer,
-									   gpu::VKIndexBuffer *  p_index_buffer, uint32             p_index_count, Material *p_material, const tsm::float4x4 &p_transform,
-									   uint32                p_frame_index) const -> void
+	auto RenderContext::renderGeometry(gpu::CommandBuffer *p_command_buffer, gpu::Pipeline *p_pipeline, gpu::VertexBuffer *p_vertex_buffer,
+									   gpu::IndexBuffer *  p_index_buffer, uint32           p_index_count, Material *      p_material, const tsm::float4x4 &p_transform,
+									   uint32              p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
@@ -540,8 +541,8 @@ namespace toaster::render
 		p_command_buffer->getVulkanCommandBuffer().drawIndexed(p_index_count, 1, 0, 0, 0);
 	}
 
-	auto RenderContext::renderFullscreenQuad(gpu::VKCommandBuffer *p_command_buffer, gpu::VKPipeline *p_pipeline, Material *p_material,
-											 uint32                p_frame_index) const -> void
+	auto RenderContext::renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer, const gpu::RenderPass *p_render_pass, Material *p_material,
+											 uint32              p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
@@ -551,7 +552,7 @@ namespace toaster::render
 			{
 				// Bind the material descriptor set (0)
 				vk::DescriptorSet material_descriptor_set{p_material->getDescriptorSet(frame_index)};
-				p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_pipeline->getPipelineLayout(), 0,
+				p_command_buffer->getVulkanCommandBuffer().bindDescriptorSets(vk::PipelineBindPoint::eGraphics, p_render_pass->getPipeline()->getPipelineLayout(), 0,
 																			  material_descriptor_set, {});
 			}
 
@@ -559,7 +560,7 @@ namespace toaster::render
 			if (push_constants.size() > 0)
 			{
 				vk::PushConstantsInfo push_constants_info{};
-				push_constants_info.layout     = p_pipeline->getPipelineLayout();
+				push_constants_info.layout     = p_render_pass->getPipeline()->getPipelineLayout();
 				push_constants_info.stageFlags = vk::ShaderStageFlagBits::eFragment;
 				push_constants_info.size       = push_constants.size();
 				push_constants_info.offset     = 0u;
@@ -575,8 +576,8 @@ namespace toaster::render
 		p_command_buffer->getVulkanCommandBuffer().drawIndexed(m_globals->fullscreenQuadIndices().size(), 1, 0, 0, 0);
 	}
 
-	auto RenderContext::renderMesh(gpu::VKCommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::VKPipeline *p_pipeline,
-								   const tsm::float4x4 & p_transform, uint32               p_frame_index) const -> void
+	auto RenderContext::renderMesh(gpu::CommandBuffer * p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline,
+								   const tsm::float4x4 &p_transform, uint32               p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
@@ -617,9 +618,10 @@ namespace toaster::render
 		p_command_buffer->getVulkanCommandBuffer().drawIndexed(submesh.indexCount, 1, submesh.baseIndex, submesh.baseVertex, 0);
 	}
 
-	auto RenderContext::renderMesh(gpu::VKCommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32              p_submesh_index, gpu::VKPipeline *p_pipeline,
-								   const tsm::float4x4 & p_transform, Material *           p_override_material, uint32 p_frame_index) const -> void
+	auto RenderContext::renderMesh(gpu::CommandBuffer * p_command_buffer, const MeshData *p_mesh, uint32              p_submesh_index, gpu::Pipeline *p_pipeline,
+								   const tsm::float4x4 &p_transform, Material *           p_override_material, uint32 p_frame_index) const -> void
 	{
+
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 		// Push the constants
 		p_command_buffer->getVulkanCommandBuffer().pushConstants<tsm::float4x4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);

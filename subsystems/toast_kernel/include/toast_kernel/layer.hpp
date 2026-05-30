@@ -43,25 +43,29 @@ namespace toaster
 	class TST_KERNEL_API IAppLayer
 	{
 	public:
-		template<typename TLayer> requires std::derived_from<TLayer, IAppLayer>
-		static auto alloc(Application *p_app) -> TLayer *
-		{
-			return new TLayer(p_app);
-		}
-
-		explicit IAppLayer(Application *p_app);
-
-		virtual ~IAppLayer();
+		virtual ~IAppLayer() = default;
 
 		virtual auto onInit() -> void = 0;
-		virtual auto onDestroy() -> void = 0;
 
-		virtual auto onUpdate(float32 p_dt) -> void = 0;
-		virtual auto onEvent(Event &p_event) -> void = 0;
-
-		virtual auto onUIInit(void *p_user_data) -> void
+		virtual auto onDestroy() -> void
 		{
-			(void) p_user_data;
+		}
+
+		virtual auto onUpdate([[maybe_unused]] float32 p_dt) -> void
+		{
+		}
+
+		virtual auto onEvent([[maybe_unused]] Event &p_event) -> void
+		{
+		}
+
+		// The width and height here are directly from the swapchain, not the OnWindowResizeEvent!.. Ts means that it is actually faster... Probably...
+		virtual auto onResize([[maybe_unused]] tsm::uint2 p_size) -> void
+		{
+		}
+
+		virtual auto onUIInit([[maybe_unused]] void *p_user_data) -> void
+		{
 		}
 
 		virtual auto onUIRender() -> void
@@ -70,9 +74,13 @@ namespace toaster
 
 	protected:
 		// Ts just makes things easier to acess
-		const NonOwningPtr<Application>           m_app{nullptr};
-		const NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
-		const NonOwningPtr<const render::Globals> m_globals{nullptr};
-		const NonOwningPtr<InputContext>          m_inputCtx{nullptr};
+		NonOwningPtr<Application>           m_app{nullptr};
+		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
+		NonOwningPtr<const render::Globals> m_globals{nullptr};
+		NonOwningPtr<InputContext>          m_inputCtx{nullptr};
+
+	private:
+		auto _register(Application *p_app) -> void;
+		friend class Application;
 	};
 }

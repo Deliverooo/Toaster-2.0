@@ -1,7 +1,5 @@
 set(SRC
 		main.cpp
-		runtime_application.cpp
-		runtime_application.hpp
 		runtime_layer.cpp
 		runtime_layer.hpp
 		fp_camera.cpp

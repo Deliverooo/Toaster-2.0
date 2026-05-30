@@ -8,5 +8,6 @@
 #include "toast_assert.h"
 #include "util_defines.hpp"
 
-#include "math/math_matrix.hpp"
-#include "math/math_vector.hpp"
+#include "toast_math/common.hpp"
+#include "toast_math/quaternion.hpp" // Ts includes all other math types
+#include "toast_math/trig.hpp"

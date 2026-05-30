@@ -138,22 +138,22 @@ namespace toaster::gpu
 		return m_descriptorSetLayouts.at(p_set_index);
 	}
 
-	auto VKShader::getReflectedShaderDescriptorSets() const -> const std::vector<DescriptorSet> &
+	auto VKShader::getReflectedShaderDescriptorSets() const -> const std::vector<reflection::DescriptorSet> &
 	{
 		return m_reflectionData.descriptorSets;
 	}
 
-	auto VKShader::getReflectedShaderResources() const -> const std::unordered_map<String, ShaderResource> &
+	auto VKShader::getReflectedShaderResources() const -> const std::unordered_map<String, reflection::ShaderResource> &
 	{
 		return m_reflectionData.resources;
 	}
 
-	auto VKShader::getReflectedPushConstantRanges() const -> const std::vector<PushConstantRange> &
+	auto VKShader::getReflectedPushConstantRanges() const -> const std::vector<reflection::PushConstantRange> &
 	{
 		return m_reflectionData.pushConstantRanges;
 	}
 
-	auto VKShader::getReflectedPushConstantBuffers() const -> const std::unordered_map<String, PushConstantBuffer> &
+	auto VKShader::getReflectedPushConstantBuffers() const -> const std::unordered_map<String, reflection::PushConstantBuffer> &
 	{
 		return m_reflectionData.pushConstantBuffers;
 	}
@@ -188,13 +188,13 @@ namespace toaster::gpu
 			if (set >= m_reflectionData.descriptorSets.size())
 				m_reflectionData.descriptorSets.resize(set + 1);
 
-			DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
+			reflection::DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
 
-			UniformBuffer &uniform_buffer = descriptorSet.uniformBuffers[binding];
-			uniform_buffer.size           = size;
-			uniform_buffer.stage          = p_stage;
-			uniform_buffer.name           = name;
-			uniform_buffer.binding        = binding;
+			reflection::UniformBuffer &uniform_buffer = descriptorSet.uniformBuffers[binding];
+			uniform_buffer.size                       = size;
+			uniform_buffer.stage                      = p_stage;
+			uniform_buffer.name                       = name;
+			uniform_buffer.binding                    = binding;
 
 			TST_SHADER_LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
 			TST_SHADER_LOG_TRACE("\t\tMember count: {}", member_count);
@@ -217,12 +217,12 @@ namespace toaster::gpu
 			if (set >= m_reflectionData.descriptorSets.size())
 				m_reflectionData.descriptorSets.resize(set + 1);
 
-			DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
+			reflection::DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
 
-			StorageBuffer &uniform_buffer = descriptorSet.storageBuffers[binding];
-			uniform_buffer.size           = size;
-			uniform_buffer.name           = name;
-			uniform_buffer.binding        = binding;
+			reflection::StorageBuffer &uniform_buffer = descriptorSet.storageBuffers[binding];
+			uniform_buffer.size                       = size;
+			uniform_buffer.name                       = name;
+			uniform_buffer.binding                    = binding;
 
 			TST_SHADER_LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
 			TST_SHADER_LOG_TRACE("\t\tMember count: {}", member_count);
@@ -244,22 +244,20 @@ namespace toaster::gpu
 			if (set >= m_reflectionData.descriptorSets.size())
 				m_reflectionData.descriptorSets.resize(set + 1);
 
-			DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
+			reflection::DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
 
-			ImageSampler &image_sampler = descriptorSet.storageImages[binding];
-			image_sampler.stage         = p_stage;
-			image_sampler.name          = name;
-			image_sampler.binding       = binding;
-			image_sampler.arraySize     = array_size;
-			image_sampler.dimension     = static_cast<EImageDimension>(type.image.dim);
+			reflection::ImageSampler &image_sampler = descriptorSet.storageImages[binding];
+			image_sampler.stage                     = p_stage;
+			image_sampler.name                      = name;
+			image_sampler.binding                   = binding;
+			image_sampler.arraySize                 = array_size;
+			image_sampler.dimension                 = static_cast<reflection::EImageDimension>(type.image.dim);
 
-			LOG_INFO("{}", imageDimensionToString(image_sampler.dimension));
-
-			ShaderResource &image_sampler_resource = m_reflectionData.resources[name];
-			image_sampler_resource.name            = name;
-			image_sampler_resource.set             = set;
-			image_sampler_resource.binding         = binding;
-			image_sampler_resource.arraySize       = array_size;
+			reflection::ShaderResource &image_sampler_resource = m_reflectionData.resources[name];
+			image_sampler_resource.name                        = name;
+			image_sampler_resource.set                         = set;
+			image_sampler_resource.binding                     = binding;
+			image_sampler_resource.arraySize                   = array_size;
 
 			TST_SHADER_LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
 			TST_SHADER_LOG_TRACE("\t\tArray size: {}", array_size);
@@ -280,20 +278,20 @@ namespace toaster::gpu
 			if (set >= m_reflectionData.descriptorSets.size())
 				m_reflectionData.descriptorSets.resize(set + 1);
 
-			DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
+			reflection::DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
 
-			ImageSampler &image_sampler = descriptorSet.separateImages[binding];
-			image_sampler.stage         = p_stage;
-			image_sampler.name          = name;
-			image_sampler.binding       = binding;
-			image_sampler.arraySize     = array_size;
-			image_sampler.dimension     = static_cast<EImageDimension>(type.image.dim);
+			reflection::ImageSampler &image_sampler = descriptorSet.separateImages[binding];
+			image_sampler.stage                     = p_stage;
+			image_sampler.name                      = name;
+			image_sampler.binding                   = binding;
+			image_sampler.arraySize                 = array_size;
+			image_sampler.dimension                 = static_cast<reflection::EImageDimension>(type.image.dim);
 
-			ShaderResource &image_sampler_resource = m_reflectionData.resources[name];
-			image_sampler_resource.name            = name;
-			image_sampler_resource.set             = set;
-			image_sampler_resource.binding         = binding;
-			image_sampler_resource.arraySize       = array_size;
+			reflection::ShaderResource &image_sampler_resource = m_reflectionData.resources[name];
+			image_sampler_resource.name                        = name;
+			image_sampler_resource.set                         = set;
+			image_sampler_resource.binding                     = binding;
+			image_sampler_resource.arraySize                   = array_size;
 
 			TST_SHADER_LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
 			TST_SHADER_LOG_TRACE("\t\tArray size: {}", array_size);
@@ -314,20 +312,20 @@ namespace toaster::gpu
 			if (set >= m_reflectionData.descriptorSets.size())
 				m_reflectionData.descriptorSets.resize(set + 1);
 
-			DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
+			reflection::DescriptorSet &descriptorSet = m_reflectionData.descriptorSets[set];
 
-			ImageSampler &image_sampler = descriptorSet.imageSamplers[binding];
-			image_sampler.stage         = p_stage;
-			image_sampler.name          = name;
-			image_sampler.binding       = binding;
-			image_sampler.arraySize     = array_size;
-			image_sampler.dimension     = static_cast<EImageDimension>(type.image.dim);
+			reflection::ImageSampler &image_sampler = descriptorSet.imageSamplers[binding];
+			image_sampler.stage                     = p_stage;
+			image_sampler.name                      = name;
+			image_sampler.binding                   = binding;
+			image_sampler.arraySize                 = array_size;
+			image_sampler.dimension                 = static_cast<reflection::EImageDimension>(type.image.dim);
 
-			ShaderResource &image_sampler_resource = m_reflectionData.resources[name];
-			image_sampler_resource.name            = name;
-			image_sampler_resource.set             = set;
-			image_sampler_resource.binding         = binding;
-			image_sampler_resource.arraySize       = array_size;
+			reflection::ShaderResource &image_sampler_resource = m_reflectionData.resources[name];
+			image_sampler_resource.name                        = name;
+			image_sampler_resource.set                         = set;
+			image_sampler_resource.binding                     = binding;
+			image_sampler_resource.arraySize                   = array_size;
 
 			TST_SHADER_LOG_TRACE("\t{} | Set: {} | Binding: {}", name, set, binding);
 			TST_SHADER_LOG_TRACE("\t\tArray size: {}", array_size);
@@ -348,7 +346,7 @@ namespace toaster::gpu
 			if (!m_reflectionData.pushConstantRanges.empty())
 				offset = m_reflectionData.pushConstantRanges.back().offset + m_reflectionData.pushConstantRanges.back().size;
 
-			PushConstantRange &push_constant_range{m_reflectionData.pushConstantRanges.emplace_back()};
+			reflection::PushConstantRange &push_constant_range{m_reflectionData.pushConstantRanges.emplace_back()};
 			push_constant_range.stage  = p_stage;
 			push_constant_range.size   = size;
 			push_constant_range.offset = offset;
@@ -358,7 +356,7 @@ namespace toaster::gpu
 			if (name.starts_with("_"))
 				continue;
 
-			PushConstantBuffer &push_constant_buffer{m_reflectionData.pushConstantBuffers[name]};
+			reflection::PushConstantBuffer &push_constant_buffer{m_reflectionData.pushConstantBuffers[name]};
 			push_constant_buffer.name = name;
 			push_constant_buffer.size = size;
 
@@ -374,7 +372,11 @@ namespace toaster::gpu
 				TST_SHADER_LOG_TRACE("Member size: {}", member_size);
 				TST_SHADER_LOG_TRACE("Member offset: {}", member_offset);
 
-				push_constant_buffer.pushConstants[fmt::format("{}.{}", name, member_name)] = PushConstant{member_name, static_cast<uint32>(member_size), member_offset};
+				push_constant_buffer.pushConstants[fmt::format("{}.{}", name, member_name)] = reflection::PushConstant{
+					member_name,
+					static_cast<uint32>(member_size),
+					member_offset
+				};
 			}
 		}
 	}
@@ -383,7 +385,7 @@ namespace toaster::gpu
 	{
 		for (uint32 set{0u}; set < m_reflectionData.descriptorSets.size(); ++set)
 		{
-			DescriptorSet &descriptor_set = m_reflectionData.descriptorSets.at(set);
+			reflection::DescriptorSet &descriptor_set = m_reflectionData.descriptorSets.at(set);
 
 			if (!descriptor_set.uniformBuffers.empty())
 			{

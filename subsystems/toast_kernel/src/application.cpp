@@ -5,12 +5,13 @@
 #include "toast_kernel/input.hpp"
 #include "toast_render/render_context.hpp"
 
-#include <algorithm>
 #include <GLFW/glfw3.h>
 
-#include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_swapchain.hpp"
 #include "toast_lib/os/terminal.hpp"
+
+#include "toast_scene/scene.hpp"
+#include "toast_scene/scene_renderer.hpp"
 
 namespace toaster
 {
@@ -33,20 +34,35 @@ namespace toaster
 			dispatcher.dispatch<WindowCloseEvent>(TST_BIND_EVENT_FN(Application::onWindowCloseEvent));
 			dispatcher.dispatch<WindowResizeEvent>(TST_BIND_EVENT_FN(Application::onWindowResizeEvent));
 
-			std::ranges::for_each(m_layers.rbegin(), m_layers.rend(), [&](IAppLayer *layer)
+			for (const auto &layer: m_layers)
 			{
 				if (e.isHandled())
-					return;
+					continue;
 				layer->onEvent(e);
-			});
+			}
 		});
+
+		m_window->getSwapchain()->setResizeUserDataPointer(this);
+		m_window->getSwapchain()->setResizeCallback([](void *p_user_data, tsm::uint2 p_size) -> void
+		{
+			for (const auto app{static_cast<Application *>(p_user_data)}; const auto &layer: app->m_layers)
+			{
+				layer->onResize(p_size);
+			}
+		});
+
 		#pragma endregion
 	}
 
 	Application::~Application() noexcept
 	{
-		for (IAppLayer *layer: m_layers)
-			removeLayer(layer);
+		for (auto &layer: m_layers)
+		{
+			layer->onDestroy();
+			m_renderContext->gpuWaitIdle(); // Wait until the GPU is finished using all the layers' resources
+			delete layer;
+		}
+
 		m_layers.clear();
 
 		delete m_window;
@@ -54,9 +70,9 @@ namespace toaster
 		Window::shutdownWindowingAPI();
 	}
 
-	auto Application::run() -> void
+	auto Application::run() -> int32
 	{
-		for (IAppLayer *layer: m_layers)
+		for (auto &layer: m_layers)
 			layer->onUIInit(m_onUIInitUserData);
 
 		while (m_isRunning)
@@ -68,15 +84,17 @@ namespace toaster
 			m_window->processEvents();
 			m_window->beginFrame();
 
+			m_renderContext->setCurrentSwapchainCommandBuffer(&m_window->getSwapchain()->getCurrentCommandBuffer());
+
 			if (!m_minimized)
 			{
-				for (IAppLayer *layer: m_layers)
+				for (auto &layer: m_layers)
 					layer->onUpdate(m_deltaTime);
 
 				if (m_cbBeginUIRender)
 					m_cbBeginUIRender();
 
-				for (IAppLayer *layer: m_layers)
+				for (auto &layer: m_layers)
 					layer->onUIRender();
 
 				if (m_cbEndUIRender)
@@ -84,6 +102,8 @@ namespace toaster
 			}
 			m_window->endFrame();
 		}
+
+		return 0;
 	}
 
 	auto Application::close() noexcept -> void
@@ -91,19 +111,16 @@ namespace toaster
 		m_isRunning = false;
 	}
 
-	auto Application::getWindow() const noexcept -> Window &
+	auto Application::createScene(const String &p_name) -> UniquePtr<Scene>
 	{
-		return *m_window;
+		return toaster::make_unique<Scene>(m_renderContext, nullptr, p_name);
 	}
 
-	auto Application::getRenderContext() const noexcept -> render::RenderContext *
+	auto Application::createSceneRenderer(Scene *p_scene) -> UniquePtr<SceneRenderer>
 	{
-		return m_renderContext;
-	}
-
-	auto Application::getCommandLineArgs() const noexcept -> const CommandLineArgs *
-	{
-		return m_commandLineArgs;
+		SceneRendererSpecInfo scene_renderer_spec_info{};
+		scene_renderer_spec_info.viewportSize = {m_window->getSwapchain()->getExtent().width, m_window->getSwapchain()->getExtent().height};
+		return make_unique<SceneRenderer>(p_scene, scene_renderer_spec_info);
 	}
 
 	auto Application::onWindowCloseEvent([[maybe_unused]] WindowCloseEvent &p_event) -> bool
@@ -125,19 +142,6 @@ namespace toaster
 
 		m_minimized = false;
 		return false;
-	}
-
-	auto Application::addLayer(IAppLayer *p_layer) -> void
-	{
-		m_layers.push_back(p_layer);
-		p_layer->onInit();
-	}
-
-	auto Application::removeLayer(IAppLayer *p_layer) -> void
-	{
-		p_layer->onDestroy();
-		m_layers.erase(std::ranges::find(m_layers, p_layer));
-		delete p_layer;
 	}
 
 	auto Application::setOnUIInitUserData(void *p_user_data) -> void

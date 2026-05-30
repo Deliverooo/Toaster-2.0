@@ -84,7 +84,7 @@ namespace toaster::gpu
 	class TST_GPU_API BufferLayout
 	{
 	public:
-		BufferLayout() = default;
+		constexpr BufferLayout() = default;
 
 		BufferLayout(std::initializer_list<BufferElement> p_elements) : m_elements(p_elements)
 		{

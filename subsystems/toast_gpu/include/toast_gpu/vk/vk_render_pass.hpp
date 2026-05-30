@@ -14,11 +14,12 @@ namespace toaster::gpu
 		VKRenderPass(VKLogicalDevice *p_device, const PipelineHandle &p_pipeline);
 		~VKRenderPass();
 
-		auto setInput(const String &p_name, const UniformBufferHandle &p_uniform_buffer) -> void;
-		auto setInput(const String &p_name, const UniformBufferPFFHandle &p_uniform_buffer_pff) -> void;
-		auto setInput(const String &p_name, const Texture2DHandle &p_texture_2d) -> void;
-		auto setInput(const String &p_name, const StorageImageHandle &p_image_2d) -> void;
-		auto setInput(const String &p_name, const Texture3DHandle &p_texture_3d) -> void;
+		template<GPUResource_c TResource>
+		auto setInput(const String &p_name, const RefPtr<TResource> &p_resource) -> VKRenderPass &
+		{
+			m_descriptorSetManager->setDescriptor(p_name, p_resource);
+			return *this;
+		}
 
 		// Only call when you have set all your required inputs :)
 		auto bake() -> void;
@@ -30,7 +31,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto getEndSetIndex() const -> uint32;
 
 	private:
-		PipelineHandle                    m_pipeline{nullptr};
+		mutable PipelineHandle            m_pipeline{nullptr};
 		OwningPtr<VKDescriptorSetManager> m_descriptorSetManager{nullptr};
 	};
 

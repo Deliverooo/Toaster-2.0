@@ -17,6 +17,9 @@ namespace toaster
 	class WindowCloseEvent;
 	class WindowResizeEvent;
 
+	class Scene;
+	class SceneRenderer;
+
 	namespace render
 	{
 		class Globals;
@@ -38,12 +41,23 @@ namespace toaster
 		Application(const ApplicationSpecInfo &p_spec_info, const CommandLineArgs *p_command_line_args);
 		~Application() noexcept;
 
-		auto run() -> void;
+		auto run() -> int32;
 		auto close() noexcept -> void;
 
-		[[nodiscard]] auto getWindow() const noexcept -> Window &;
-		[[nodiscard]] auto getRenderContext() const noexcept -> render::RenderContext *;
-		[[nodiscard]] auto getCommandLineArgs() const noexcept -> const CommandLineArgs *;
+		[[nodiscard]] auto getWindow() const noexcept -> Window & { return *m_window; }
+		[[nodiscard]] auto getRenderContext() const noexcept -> render::RenderContext * { return m_renderContext; }
+		[[nodiscard]] auto getCommandLineArgs() const noexcept -> const CommandLineArgs * { return m_commandLineArgs; }
+
+		template<typename TLayer, typename... TArgs> requires std::derived_from<TLayer, IAppLayer>
+		auto addLayer(TArgs &&... p_args) -> void
+		{
+			auto &layer{m_layers.emplace_back(new TLayer(std::forward<TArgs>(p_args)...))};
+			layer->_register(this);
+			layer->onInit();
+		}
+
+		auto createScene(const String &p_name = "New_Scene") -> UniquePtr<Scene>;
+		auto createSceneRenderer(Scene *p_scene) -> UniquePtr<SceneRenderer>;
 
 	private:
 		auto onWindowCloseEvent(WindowCloseEvent &p_event) -> bool;
@@ -56,7 +70,7 @@ namespace toaster
 		OwningPtr<render::RenderContext> m_renderContext{nullptr};
 		OwningPtr<Window>                m_window{nullptr};
 
-		std::vector<OwningPtr<IAppLayer> > m_layers;
+		std::vector<IAppLayer *> m_layers;
 
 		void *                m_onUIInitUserData{nullptr};
 		std::function<void()> m_cbBeginUIRender{nullptr};
@@ -71,9 +85,6 @@ namespace toaster
 		friend class IAppLayer;
 
 	protected:
-		auto addLayer(IAppLayer *p_layer) -> void;
-		auto removeLayer(IAppLayer *p_layer) -> void;
-
 		auto setOnUIInitUserData(void *p_user_data) -> void;
 		auto setBeginUIRenderCallback(const std::function<void()> &p_cb_begin_ui_render) -> void;
 		auto setEndUIRenderCallback(const std::function<void()> &p_cb_end_ui_render) -> void;

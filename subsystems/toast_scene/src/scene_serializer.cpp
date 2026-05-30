@@ -384,7 +384,6 @@ namespace toaster
 				camera.setOrthoNearClip(camera_node["OrthoNear"].as<float32>());
 				camera.setOrthoFarClip(camera_node["OrthoFar"].as<float32>());
 
-				cc.projectionType = static_cast<SceneCamera::EProjectionType>(camera_node["ProjectionType"].as<int32>());
 				cc.primary        = camera_comp["Primary"].as<bool>();
 			}
 

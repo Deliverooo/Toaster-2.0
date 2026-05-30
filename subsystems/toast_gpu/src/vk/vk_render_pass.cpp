@@ -22,31 +22,6 @@ namespace toaster::gpu
 		});
 	}
 
-	auto VKRenderPass::setInput(const String &p_name, const UniformBufferHandle &p_uniform_buffer) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_uniform_buffer);
-	}
-
-	auto VKRenderPass::setInput(const String &p_name, const UniformBufferPFFHandle &p_uniform_buffer_pff) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_uniform_buffer_pff);
-	}
-
-	auto VKRenderPass::setInput(const String &p_name, const Texture2DHandle &p_texture_2d) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_texture_2d);
-	}
-
-	auto VKRenderPass::setInput(const String &p_name, const StorageImageHandle &p_image_2d) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_image_2d);
-	}
-
-	auto VKRenderPass::setInput(const String &p_name, const Texture3DHandle &p_texture_3d) -> void
-	{
-		m_descriptorSetManager->setDescriptor(p_name, p_texture_3d);
-	}
-
 	auto VKRenderPass::bake() -> void
 	{
 		m_descriptorSetManager->bakeDescriptors();

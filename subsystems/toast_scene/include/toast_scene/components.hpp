@@ -4,10 +4,7 @@
 
 #include "scene_camera.hpp"
 
-#include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_lib/uuid.hpp"
-#include "toast_lib/math/math_matrix.hpp"
-#include "toast_lib/math/quaternion.hpp"
 #include "toast_render/mesh.hpp"
 #include "toast_script/script_object.hpp"
 
@@ -90,7 +87,7 @@ namespace toaster
 		}
 
 		tsm::float3 translation{0.0f};
-		tsm::quatf   orientation{1.0f, 0.0f, 0.0f, 0.0f};
+		tsm::quatf  orientation{1.0f, 0.0f, 0.0f, 0.0f};
 		tsm::float3 scale{1.0f};
 	};
 
@@ -145,14 +142,12 @@ namespace toaster
 
 		auto reset() -> void
 		{
-			camera         = SceneCamera{};
-			projectionType = SceneCamera::EProjectionType::eOrthographic;
-			primary        = false;
+			camera  = SceneCamera{};
+			primary = false;
 		}
 
-		SceneCamera                  camera;
-		SceneCamera::EProjectionType projectionType{SceneCamera::EProjectionType::eOrthographic};
-		bool                         primary{false};
+		SceneCamera camera;
+		bool        primary{false};
 	};
 
 	DEFINE_COMPONENT(DirectionalLightComponent)

@@ -8,18 +8,21 @@ namespace toaster
 	struct TST_SCENE_API SceneRendererSpecInfo
 	{
 		io::filesystem::Path resourceDirectory{};
-		NonOwningPtr<Scene>  scene{nullptr};
-		uint32               viewportWidth{0u};
-		uint32               viewportHeight{0u};
-		int32                viewportOffsetX{0u};
-		int32                viewportOffsetY{0u};
+
+		tsm::uint2 viewportSize{0u};
+		tsm::uint2 viewportOffset{0u};
 	};
 
 	class TST_SCENE_API SceneRenderer
 	{
 	public:
-		SceneRenderer(render::RenderContext *p_render_ctx, const SceneRendererSpecInfo &p_spec_info);
+		SceneRenderer(Scene *p_scene, const SceneRendererSpecInfo &p_spec_info);
 		~SceneRenderer();
+
+		auto onRender() -> void;
+		auto onRender(const tsm::float4x4 &p_view, const tsm::float4x4 &p_projection) -> void;
+		auto onRender(gpu::VKCommandBuffer *p_cmd) -> void;
+		auto onRender(gpu::VKCommandBuffer *p_cmd, const tsm::float4x4 &p_view, const tsm::float4x4 &p_projection) -> void;
 
 		auto begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_projection_matrix) -> void;
 		auto end(gpu::VKCommandBuffer *p_cmd) -> void;
@@ -44,7 +47,7 @@ namespace toaster
 		auto getOutputComputeImage() const -> const gpu::StorageImageHandle &;
 		auto getRenderer2D() -> RefPtr<render::Renderer2D>;
 
-		auto onResize(uint32 p_width, uint32 p_height) -> void;
+		auto onResize(tsm::uint2 p_size) -> void;
 
 		auto reloadEnvironmentMaps(const gpu::Texture3DHandle &p_skybox, const gpu::Texture3DHandle &p_diffuse_irradiance) -> void;
 
@@ -54,6 +57,8 @@ namespace toaster
 		auto _renderLightCullingPass(gpu::VKCommandBuffer *p_cmd) -> void;
 		auto _renderSkyboxPass(gpu::VKCommandBuffer *p_cmd) -> void;
 		auto _renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void;
+
+		NonOwningPtr<Scene> m_scene{nullptr};
 
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
 

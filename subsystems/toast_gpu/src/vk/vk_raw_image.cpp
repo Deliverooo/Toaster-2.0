@@ -62,17 +62,17 @@ namespace toaster::gpu
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
 
-		const uint64 buffer_size{util::getBytesPerPixel(m_specInfo.format) * m_specInfo.width * m_specInfo.height};
+		const uint64 buffer_size{util::getBytesPerPixel(m_specInfo.format) * m_specInfo.size.x * m_specInfo.size.y};
 		m_device->createBuffer(buffer_size, vk::BufferUsageFlagBits::eTransferDst, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
 							   staging_buffer, staging_buffer_memory);
 
 		vk::ImageLayout previous_layout{m_currentImageLayout};
 		util::transitionImageLayout(this, m_currentImageLayout, vk::ImageLayout::eTransferSrcOptimal);
-		m_device->copyImageToBuffer(m_image, staging_buffer, {m_specInfo.width, m_specInfo.height, 1u}, m_specInfo.layerCount);
+		m_device->copyImageToBuffer(m_image, staging_buffer, {m_specInfo.size.x, m_specInfo.size.y, 1u}, m_specInfo.layerCount);
 		util::transitionImageLayout(this, vk::ImageLayout::eTransferSrcOptimal, previous_layout);
 
 		void *image_data{staging_buffer_memory.mapMemory(0u, buffer_size)};
-		int32 success{stbi_write_bmp(p_path.string().c_str(), m_specInfo.width, m_specInfo.height, 4, image_data)};
+		int32 success{stbi_write_bmp(p_path.string().c_str(), m_specInfo.size.x, m_specInfo.size.y, 4, image_data)};
 		staging_buffer_memory.unmapMemory();
 
 		TST_PERMA_ASSERT_MSG(success, "No");
@@ -91,7 +91,7 @@ namespace toaster::gpu
 		staging_buffer_memory.unmapMemory();
 
 		util::transitionImageLayout(this, m_currentImageLayout, vk::ImageLayout::eTransferDstOptimal);
-		m_device->copyBufferToImage(staging_buffer, m_image, {m_specInfo.width, m_specInfo.height, 1u}, m_specInfo.layerCount);
+		m_device->copyBufferToImage(staging_buffer, m_image, {m_specInfo.size.x, m_specInfo.size.y, 1u}, m_specInfo.layerCount);
 	}
 
 	auto VKRawImage::setData(const Buffer &p_buffer) -> void
@@ -99,11 +99,9 @@ namespace toaster::gpu
 		setData(p_buffer.data(), p_buffer.size());
 	}
 
-	auto VKRawImage::resize(uint32 p_width, uint32 p_height) -> void
+	auto VKRawImage::resize(tsm::uint2 p_size) -> void
 	{
-		m_specInfo.width  = p_width;
-		m_specInfo.height = p_height;
-
+		m_specInfo.size = p_size;
 		recreate();
 	}
 
@@ -127,7 +125,7 @@ namespace toaster::gpu
 		if (m_specInfo.layerCount > 1)
 			image_tiling = vk::ImageTiling::eOptimal;
 
-		m_device->createImage({m_specInfo.width, m_specInfo.height, 1u}, m_specInfo.layerCount, m_specInfo.mipCount, m_specInfo.sampleCount, m_specInfo.format,
+		m_device->createImage({m_specInfo.size.x, m_specInfo.size.y, 1u}, m_specInfo.layerCount, m_specInfo.mipCount, m_specInfo.sampleCount, m_specInfo.format,
 							  image_tiling, m_specInfo.usage, vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
 
 		const vk::ImageAspectFlags aspect_flags{util::getImageAspectMask(m_specInfo.format)};

@@ -48,7 +48,7 @@ namespace toaster::render
 		auto getName() const -> String;
 
 	private:
-		auto _getPushConstantDeclaration(const String &p_name) -> const gpu::PushConstant *;
+		auto _getPushConstantDeclaration(const String &p_name) -> const gpu::reflection::PushConstant *;
 
 		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
 

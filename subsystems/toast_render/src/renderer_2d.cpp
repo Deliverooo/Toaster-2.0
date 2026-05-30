@@ -39,8 +39,8 @@ namespace toaster::render
 
 		if (!m_specInfo.overrideAttachments)
 		{
-			m_renderTargetTexture    = m_renderCtx->createAttachmentTexture(m_specInfo.renderTargetWidth, m_specInfo.renderTargetHeight, vk::ImageAspectFlagBits::eColor);
-			m_renderTargetDepthImage = m_renderCtx->createAttachmentImage(m_specInfo.renderTargetWidth, m_specInfo.renderTargetHeight, vk::ImageAspectFlagBits::eDepth);
+			m_renderTargetTexture    = m_renderCtx->createAttachmentTexture(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eColor);
+			m_renderTargetDepthImage = m_renderCtx->createAttachmentImage(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eDepth);
 		}
 		else
 		{
@@ -119,7 +119,7 @@ namespace toaster::render
 		}
 
 		gpu::RenderingInfo rendering_info{};
-		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_specInfo.renderTargetWidth, m_specInfo.renderTargetHeight}};
+		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_specInfo.renderTargetSize.x, m_specInfo.renderTargetSize.y}};
 		rendering_info.layerCount = 1;
 
 		if (p_override_colour_attachment)
@@ -138,7 +138,7 @@ namespace toaster::render
 			depth_attachment_info.image      = m_renderTargetDepthImage;
 			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
 		}
-		rendering_info.pDepthAttachment = &depth_attachment_info;
+		rendering_info.depthAttachment = depth_attachment_info;
 
 		m_renderCtx->beginRendering(p_cmd, rendering_info, m_quadRenderPass);
 
@@ -221,15 +221,14 @@ namespace toaster::render
 		return m_renderTargetTexture;
 	}
 
-	auto Renderer2D::onResize(uint32 p_width, uint32 p_height) -> void
+	auto Renderer2D::onResize(tsm::uint2 p_size) -> void
 	{
-		m_specInfo.renderTargetWidth  = p_width;
-		m_specInfo.renderTargetHeight = p_height;
+		m_specInfo.renderTargetSize = p_size;
 
 		if (!m_specInfo.overrideAttachments)
 		{
-			m_renderTargetTexture->resize(p_width, p_height);
-			m_renderTargetDepthImage->resize(p_width, p_height);
+			m_renderTargetTexture->resize(p_size);
+			m_renderTargetDepthImage->resize(p_size);
 		}
 	}
 

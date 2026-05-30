@@ -1,7 +1,6 @@
 #pragma once
 
-#include "../resource.hpp"
-#include "../toast_gpu.hpp"
+#include "toast_gpu/resource.hpp"
 
 #include <vulkan/vulkan_raii.hpp>
 #include "toast_lib/core_basic.hpp"

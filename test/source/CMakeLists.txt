@@ -4,4 +4,4 @@ set(SRC
 
 add_executable(toaster_test ${SRC})
 
-target_link_libraries(toaster_test PRIVATE Toaster::ToastLib)
+target_link_libraries(toaster_test PRIVATE Toaster::ToastKernel)

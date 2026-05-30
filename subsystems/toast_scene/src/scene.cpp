@@ -1,12 +1,9 @@
 #include "toast_scene/scene.hpp"
 #include "toast_scene/entity.hpp"
-#include "toast_scene/scene_renderer.hpp"
 #include "toast_scene/scriptable_entity.hpp"
 
 #include "toast_lib/events/window_event.hpp"
 #include "toast_render/globals.hpp"
-
-#define TST_ENABLE_2D_SCENE_RENDERING 1
 
 namespace toaster
 {
@@ -170,7 +167,8 @@ namespace toaster
 			{
 				p_script.instance           = p_script.instantiateFn();
 				p_script.instance->m_entity = {p_entity, this};
-				p_script.instance->onCreate();
+				p_script.instance->_superInit();
+				p_script.instance->onCreate(p_script.userData);
 			}
 
 			p_script.instance->onUpdate(p_dt);
@@ -191,214 +189,15 @@ namespace toaster
 		}
 	}
 
-	auto Scene::onRender(gpu::VKCommandBuffer *p_cmd, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void
+	auto Scene::onResize(tsm::uint2 p_size) -> void
 	{
-		Camera *      main_camera{nullptr};
-		tsm::float4x4 camera_transform{1.0f};
-
-		Entity main_camera_entity{getMainCameraEntity()};
-		if (main_camera_entity)
-		{
-			main_camera      = &main_camera_entity.getComponent<CameraComponent>().camera;
-			camera_transform = main_camera_entity.getComponent<TransformComponent>().getTransform();
-		}
-
-		if (!main_camera)
-		{
-			// Fixes vulkan validation error messages...
-			auto       output_colour_image{p_scene_renderer->getResolveOutputColourTexture()->getImage()};
-			const auto current_image_layout{output_colour_image->getCurrentImageLayout()};
-			if (current_image_layout != vk::ImageLayout::eShaderReadOnlyOptimal)
-				gpu::util::transitionImageLayout(output_colour_image, output_colour_image->getCurrentImageLayout(), vk::ImageLayout::eShaderReadOnlyOptimal);
-			TST_PERMA_ASSERT(output_colour_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal);
-			return;
-		}
-
-		m_lightEnvironment.pointLights.clear();
-		m_lightEnvironment.directionalLights.clear();
-		{
-			for (const auto group{m_registry.group(entt::get<DirectionalLightComponent>)}; const auto entity: group)
-			{
-				auto directional_light{group.get<DirectionalLightComponent>(entity)};
-
-				Entity e{entity, this};
-				auto   tc{getEntityWorldTransformComponent(e)};
-
-				tsm::float4x4 rotation{tsm::toMat4(tc.orientation)};
-				tsm::float4   forward{rotation * tsm::float4(0.0f, 0.0f, -1.0f, 0.0f)};
-				tsm::float3   direction{tsm::normalize(tsm::float3(forward))};
-				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
-																	  tsm::float4(direction, 1.0f),
-																	  tsm::float4(directional_light.radiance, directional_light.multiplier)
-																  });
-			}
-		}
-		{
-			for (const auto view{m_registry.view<PointLightComponent>()}; const auto entity: view)
-			{
-				auto   point_light{view.get<PointLightComponent>(entity)};
-				Entity e{entity, this};
-				auto   tc{getEntityWorldTransformComponent(e)};
-
-				m_lightEnvironment.pointLights.emplace_back(PointLight{tsm::float4(tc.translation, 1.0f), tsm::float4(point_light.radiance, point_light.multiplier)});
-			}
-		}
-		tsm::float4x4 camera_view{tsm::inverse(camera_transform)};
-		{
-			if (m_reloadEnvironment)
-			{
-				p_scene_renderer->reloadEnvironmentMaps(m_sceneEnvironment.skyboxMap, m_sceneEnvironment.diffuseIrradianceMap);
-				m_reloadEnvironment = false;
-			}
-
-			p_scene_renderer->begin(camera_view, main_camera->getProjectionMatrix());
-			for (const auto view{m_registry.view<MeshComponent>()}; const auto entity: view)
-			{
-				auto mesh_comp{view.get<MeshComponent>(entity)};
-
-				auto mesh{mesh_comp.meshAssetID};
-				if (mesh)
-				{
-					Entity e{entity, this};
-					p_scene_renderer->renderMesh(mesh, getEntityWorldTransformMatrix(e));
-				}
-			}
-			p_scene_renderer->end(p_cmd);
-		}
-		#if TST_ENABLE_2D_SCENE_RENDERING
-		{
-			auto renderer_2d{p_scene_renderer->getRenderer2D()};
-			renderer_2d->begin(camera_view, main_camera->getProjectionMatrix());
-
-			for (const auto view{m_registry.view<SpriteRendererComponent>()}; const auto entity: view)
-			{
-				auto src{view.get<SpriteRendererComponent>(entity)};
-
-				Entity        e{entity, this};
-				tsm::float4x4 transform{getEntityWorldTransformMatrix(e)};
-
-				auto texture{src.textureAssetID};
-				if (texture)
-					renderer_2d->submitQuad(transform, texture, src.colour);
-				else
-					renderer_2d->submitQuad(transform, src.colour);
-			}
-
-			gpu::RenderingAttachmentInfo colour_attachment_info{};
-			colour_attachment_info.clearValue   = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
-			colour_attachment_info.image        = p_scene_renderer->getMSAAOutputColourImage();
-			colour_attachment_info.loadOp       = vk::AttachmentLoadOp::eNone;
-			colour_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
-			colour_attachment_info.resolveImage = p_scene_renderer->getResolveOutputColourTexture()->getImage();
-			colour_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eAverage;
-
-			gpu::RenderingAttachmentInfo depth_attachment_info{};
-			depth_attachment_info.clearValue   = vk::ClearDepthStencilValue{1.0f, 0u};
-			depth_attachment_info.image        = p_scene_renderer->getMSAAOutputDepthImage();
-			depth_attachment_info.loadOp       = vk::AttachmentLoadOp::eLoad;
-			depth_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;
-			depth_attachment_info.resolveImage = p_scene_renderer->getResolveOutputDepthTexture()->getImage();
-			depth_attachment_info.resolveMode  = vk::ResolveModeFlagBits::eMin;
-
-			renderer_2d->end(p_cmd, &colour_attachment_info, &depth_attachment_info);
-		}
-		#endif
-	}
-
-	auto Scene::onRender(gpu::VKCommandBuffer *p_cmd, [[maybe_unused]] float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const tsm::float4x4 &p_view,
-						 const tsm::float4x4 & p_projection) -> void
-	{
-		m_lightEnvironment.pointLights.clear();
-		m_lightEnvironment.directionalLights.clear();
-
-		{
-			for (const auto group{m_registry.group(entt::get<DirectionalLightComponent>)}; const auto entity: group)
-			{
-				auto directional_light{group.get<DirectionalLightComponent>(entity)};
-
-				Entity e{entity, this};
-				auto   tc{getEntityWorldTransformComponent(e)};
-
-				tsm::float4x4 rotation{tsm::toMat4(tc.orientation)};
-				tsm::float4   forward{rotation * tsm::float4(0.0f, 0.0f, -1.0f, 0.0f)};
-				tsm::float3   direction{tsm::normalize(tsm::float3(forward))};
-				m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
-																	  tsm::float4(direction, 1.0f),
-																	  tsm::float4(directional_light.radiance, directional_light.multiplier)
-																  });
-			}
-		}
-		{
-			for (const auto view{m_registry.view<PointLightComponent>()}; const auto entity: view)
-			{
-				auto   point_light{view.get<PointLightComponent>(entity)};
-				Entity e{entity, this};
-				auto   tc{getEntityWorldTransformComponent(e)};
-
-				m_lightEnvironment.pointLights.emplace_back(PointLight{tsm::float4(tc.translation, 1.0f), tsm::float4(point_light.radiance, point_light.multiplier)});
-			}
-		}
-		{
-			p_scene_renderer->begin(p_view, p_projection);
-			for (const auto view{m_registry.view<MeshComponent>()}; const auto entity: view)
-			{
-				auto mesh_comp{view.get<MeshComponent>(entity)};
-
-				auto mesh{mesh_comp.meshAssetID};
-				if (mesh)
-				{
-					Entity e{entity, this};
-					p_scene_renderer->renderMesh(mesh, getEntityWorldTransformMatrix(e));
-				}
-			}
-			p_scene_renderer->end(p_cmd);
-		}
-		#if TST_ENABLE_2D_SCENE_RENDERING
-		{
-			auto renderer_2d{p_scene_renderer->getRenderer2D()};
-			renderer_2d->begin(p_view, p_projection);
-
-			for (const auto view{m_registry.view<SpriteRendererComponent>()}; const auto entity: view)
-			{
-				auto src{view.get<SpriteRendererComponent>(entity)};
-
-				Entity        e{entity, this};
-				tsm::float4x4 transform{getEntityWorldTransformMatrix(e)};
-
-				auto texture{src.textureAssetID};
-				if (texture)
-					renderer_2d->submitQuad(transform, texture, src.colour);
-				else
-					renderer_2d->submitQuad(transform, src.colour);
-			}
-
-			gpu::RenderingAttachmentInfo colour_attachment_info{};
-			colour_attachment_info.clearValue = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
-			colour_attachment_info.image      = p_scene_renderer->getResolveOutputColourTexture()->getImage();
-			colour_attachment_info.loadOp     = vk::AttachmentLoadOp::eNone;
-			colour_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
-
-			gpu::RenderingAttachmentInfo depth_attachment_info{};
-			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
-			depth_attachment_info.image      = p_scene_renderer->getResolveOutputDepthTexture()->getImage();
-			depth_attachment_info.loadOp     = vk::AttachmentLoadOp::eLoad;
-			depth_attachment_info.storeOp    = vk::AttachmentStoreOp::eStore;
-
-			renderer_2d->end(p_cmd, &colour_attachment_info, &depth_attachment_info);
-		}
-		#endif
-	}
-
-	auto Scene::setViewportSize(uint32 p_width, uint32 p_height) -> void
-	{
-		m_viewportWidth  = p_width;
-		m_viewportHeight = p_height;
+		m_viewportSize = p_size;
 
 		auto view{m_registry.view<CameraComponent>()};
 		for (auto entity: view)
 		{
 			auto &cameraComponent{view.get<CameraComponent>(entity)};
-			cameraComponent.camera.setViewportSize(p_width, p_height);
+			cameraComponent.camera.setViewportSize(m_viewportSize);
 		}
 	}
 
@@ -621,7 +420,7 @@ namespace toaster
 
 		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetRotation", +[](uint64 p_entity_id, tsm::float4 *p_out_rotation) -> void
 		{
-			Entity          entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
+			Entity            entity{static_cast<entt::entity>(p_entity_id), s_activeScene};
 			const tsm::quatf &rotation{entity.getComponent<TransformComponent>().orientation};
 			*p_out_rotation = tsm::float4{rotation.x, rotation.y, rotation.z, rotation.w};
 		});
@@ -629,7 +428,7 @@ namespace toaster
 		m_scriptEngine->registerMethod("Toaster.TransformComponent::SetRotation", +[](uint64 p_entity_id, const tsm::float4 *p_rotation) -> void
 		{
 			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
-			entity.getComponent<TransformComponent>().orientation = tsm::quat{p_rotation->w, p_rotation->x, p_rotation->y, p_rotation->z};
+			entity.getComponent<TransformComponent>().orientation = tsm::Quat{p_rotation->w, p_rotation->x, p_rotation->y, p_rotation->z};
 		});
 
 		m_scriptEngine->registerMethod("Toaster.TransformComponent::GetScale", +[](uint64 p_entity_id, tsm::float3 *p_out_scale) -> void
@@ -915,7 +714,7 @@ namespace toaster
 	ON_COMPONENT_ADDED(CameraComponent)
 	{
 		(void) p_entity;
-		p_component.camera.setViewportSize(m_viewportWidth, m_viewportHeight);
+		p_component.camera.setViewportSize(m_viewportSize);
 	}
 
 	ON_COMPONENT_ADDED(NativeScriptComponent)

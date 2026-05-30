@@ -5,15 +5,26 @@
 
 namespace toaster
 {
+	class InputContext;
+
 	class TST_SCENE_API ScriptableEntity
 	{
 	public:
 		ScriptableEntity()          = default;
 		virtual ~ScriptableEntity() = default;
 
-		virtual auto onCreate() -> void = 0;
+		virtual auto onCreate(void *p_user_data) -> void = 0;
 		virtual auto onUpdate(float32 p_dt) -> void = 0;
-		virtual auto onDestroy() -> void = 0;
+
+		virtual auto onDestroy() -> void
+		{
+		}
+
+		template<typename Type>
+		auto addComponent() -> Type &
+		{
+			return m_entity.addComponent<Type>();
+		}
 
 		template<typename Type>
 		auto getComponent() -> Type &
@@ -27,7 +38,25 @@ namespace toaster
 			return m_entity.getComponent<Type>();
 		}
 
+		template<typename Type>
+		auto removeComponent() -> void
+		{
+			static_assert(!std::same_as<Type, TransformComponent> && !std::same_as<Type, TagComponent> && !std::same_as<Type, UUIDComponent> && !std::same_as<Type,
+							  RelationshipComponent>);
+			m_entity.removeComponent<Type>();
+		}
+
+		// Better than the derived classes having to get it manually
+		TagComponent *      tag{nullptr};
+		TransformComponent *transform{nullptr};
+
 	private:
+		auto _superInit() -> void
+		{
+			tag       = &m_entity.getComponent<TagComponent>();
+			transform = &m_entity.getComponent<TransformComponent>();
+		}
+
 		Entity m_entity;
 		friend class Scene;
 	};
@@ -45,14 +74,21 @@ namespace toaster
 		DestroyFn destroyFn{nullptr};
 
 		template<c_ScriptableEntity Type>
-		auto bind() -> void
+		auto bind(void *p_user_data = nullptr) -> void
 		{
-			instantiateFn = []() -> ScriptableEntity * { return static_cast<ScriptableEntity *>(new Type()); };
-			destroyFn     = [](NativeScriptComponent *p_ncs) -> void
+			instantiateFn = +[]() -> ScriptableEntity * { return static_cast<ScriptableEntity *>(new Type()); };
+			destroyFn     = +[](NativeScriptComponent *p_ncs) -> void
 			{
 				delete p_ncs->instance;
 				p_ncs->instance = nullptr;
 			};
+
+			userData = p_user_data;
 		}
+
+	private:
+		void *userData{nullptr};
+
+		friend class Scene;
 	};
 }

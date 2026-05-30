@@ -1,9 +1,6 @@
 #include "fp_camera.hpp"
 
 #include "toast_kernel/input.hpp"
-#include "toast_lib/logging.hpp"
-#include "toast_lib/math/quaternion.hpp"
-#include "toast_lib/math/trig.hpp"
 
 namespace toaster
 {
@@ -36,7 +33,7 @@ namespace toaster
 			if (m_ctx->isKeyDown(input::EKeyCode::eD))
 				delta_position += c_rightDir;
 
-			delta_position = ((tsm::length(delta_position) == 0.0f) ? tsm::float3{0.0f} : tsm::normalize(delta_position)) * p_dt;
+			delta_position = ((delta_position.length() == 0.0f) ? tsm::float3{0.0f} : tsm::normalize(delta_position)) * p_dt;
 			m_position     += tsm::float3{getRotationMatrix() * tsm::float4{delta_position, 0.0f}} * speed;
 			if (m_ctx->isKeyDown(input::EKeyCode::eSpace))
 				m_position += c_upDir * p_dt * speed;

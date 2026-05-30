@@ -5,12 +5,11 @@
 
 namespace toaster
 {
-	IAppLayer::IAppLayer(Application *p_app) : m_app(p_app), m_renderCtx(p_app->m_renderContext), m_globals(p_app->m_renderContext->getGlobals()),
-											   m_inputCtx(p_app->getWindow().getInputContext())
+	auto IAppLayer::_register(Application *p_app) -> void
 	{
-	}
-
-	IAppLayer::~IAppLayer()
-	{
+		m_app       = p_app;
+		m_renderCtx = p_app->m_renderContext;
+		m_globals   = p_app->m_renderContext->getGlobals();
+		m_inputCtx  = p_app->getWindow().getInputContext();
 	}
 }

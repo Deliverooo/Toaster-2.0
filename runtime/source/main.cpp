@@ -1,7 +1,8 @@
-#include "runtime_application.hpp"
+#include "toast_kernel/application.hpp"
 
 #include <argparse/argparse.hpp>
 
+#include "runtime_layer.hpp"
 #include "toast_lib/logging.hpp"
 #include "toast_lib/os/file_dialog.hpp"
 #include "toast_lib/os/terminal.hpp"
@@ -26,8 +27,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	parser.parse_args(p_argc, p_argv);
 
 	toaster::ApplicationSpecInfo app_create_info{};
-	app_create_info.windowSpecInfo.width          = 1920;
-	app_create_info.windowSpecInfo.height         = 1080;
+	app_create_info.windowSpecInfo.size           = {1920u, 1080u};
 	app_create_info.windowSpecInfo.title          = "Toaster Vπ - Runtime";
 	app_create_info.windowSpecInfo.iconPath       = binary_directory / "../resources/textures/OrboCloseup.png";
 	app_create_info.windowSpecInfo.startMaximized = true;
@@ -38,7 +38,8 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	#endif
 
 	{
-		toaster::RuntimeApplication app{app_create_info, &parser};
+		toaster::Application app{app_create_info, &parser};
+		app.addLayer<toaster::RuntimeLayer>();
 		app.run();
 	}
 

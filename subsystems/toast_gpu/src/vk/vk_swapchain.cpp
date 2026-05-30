@@ -186,6 +186,11 @@ namespace toaster::gpu
 		m_userData = p_user_data;
 	}
 
+	auto VKSwapchain::setResizeUserDataPointer(void *p_user_data) -> void
+	{
+		m_resizeData = p_user_data;
+	}
+
 	auto VKSwapchain::setResizeCallback(const ResizeCB &p_resize_cb) -> void
 	{
 		m_resizeCallback = p_resize_cb;
@@ -288,7 +293,7 @@ namespace toaster::gpu
 		_createDepthResources();
 
 		if (m_resizeCallback)
-			m_resizeCallback(m_swapchainExtent.width, m_swapchainExtent.height);
+			m_resizeCallback(m_resizeData, {m_swapchainExtent.width, m_swapchainExtent.height});
 
 		m_device->getVulkanLogicalDevice().waitIdle();
 	}

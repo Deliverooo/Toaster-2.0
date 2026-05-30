@@ -20,7 +20,6 @@ namespace toaster
 
 	class Project;
 	class Entity;
-	class SceneRenderer;
 	class ScriptableEntityCS; // Inside the scene.cpp file
 
 	namespace render
@@ -72,11 +71,7 @@ namespace toaster
 		auto onUpdate(float32 p_dt) -> void;
 		auto onEvent(Event &p_event) -> void;
 
-		auto onRender(gpu::VKCommandBuffer *p_cmd, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer) -> void;
-		auto onRender(gpu::VKCommandBuffer *p_cmd, float32 p_dt, const RefPtr<SceneRenderer> &p_scene_renderer, const tsm::float4x4 &p_view,
-					  const tsm::float4x4 & p_projection) -> void;
-
-		auto setViewportSize(uint32 p_width, uint32 p_height) -> void;
+		auto onResize(tsm::uint2 p_size) -> void;
 
 		auto createEntity(const String &p_name = "") -> Entity;
 		auto createEntityWithUUID(UUID p_uuid, const String &p_name = "") -> Entity;
@@ -120,8 +115,7 @@ namespace toaster
 
 		String m_name;
 
-		uint32 m_viewportWidth{0u};
-		uint32 m_viewportHeight{0u};
+		tsm::uint2 m_viewportSize{0u};
 
 		uint32 m_newEntityTagCount{0u};
 

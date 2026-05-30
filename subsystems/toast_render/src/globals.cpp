@@ -119,8 +119,7 @@ namespace toaster::render
 		m_quadIndexBuffer = make_reference<gpu::VKIndexBuffer>(m_device, m_quadIndices.data(), ibo_size);
 
 		gpu::TextureSpecInfo white_texture_spec_info{};
-		white_texture_spec_info.width  = 1;
-		white_texture_spec_info.height = 1;
+		white_texture_spec_info.size   = {1u};
 		white_texture_spec_info.format = vk::Format::eR8G8B8A8Unorm;
 		uint32 white_texture_data{0xFFFFFFFF};
 		m_whiteTexture = make_reference<gpu::VKTexture2D>(m_device, white_texture_spec_info, &white_texture_data, sizeof(uint32));

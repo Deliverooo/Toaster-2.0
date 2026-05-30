@@ -3,7 +3,6 @@
 #include "toast_scene.hpp"
 
 #include "toast_lib/camera.hpp"
-#include "toast_lib/math/trig.hpp"
 
 namespace toaster
 {
@@ -19,7 +18,7 @@ namespace toaster
 
 		auto setPerspective(float32 p_fov, float32 p_z_near = 0.1f, float32 p_z_far = 100.0f) -> void;
 		auto setOrthographic(float32 p_size, float32 p_z_near = -1.0f, float32 p_z_far = 1.0f) -> void;
-		auto setViewportSize(uint32 p_width, uint32 p_height) -> void;
+		auto setViewportSize(tsm::uint2 p_size) -> void;
 
 		auto setPerspectiveFov(const float32 p_fov) -> void
 		{
