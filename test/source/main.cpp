@@ -24,15 +24,21 @@ public:
 		pipeline_spec_info.vertexBufferLayout = render::RenderContext::fullscreenQuadVbl;
 
 		auto pipeline{m_renderCtx->createGPURef<gpu::Pipeline>(pipeline_spec_info, "Composite")};
-		m_swapchainPass = m_renderCtx->createGPURef<gpu::RenderPass>(pipeline);
 
+		m_swapchainPass = m_renderCtx->createGPURef<gpu::RenderPass>(pipeline);
 		m_swapchainPass->setInput("u_Texture", m_sceneRenderer->getResolveOutputColourTexture()).bake();
 
 		m_scene->setSceneEnvironment(m_renderCtx->createEnvironmentMap("C:/dev/Toaster-2.0/resources/environments/overcast_soil_puresky_2k.hdr"));
+
 		{
 			m_quadEntity = m_scene->createEntity("Orbo");
 			auto &src{m_quadEntity.addComponent<SpriteRendererComponent>()};
 			src.colour = {1.0f, 0.0f, 1.0f, 1.0f};
+
+			auto &mc{m_quadEntity.addComponent<MeshComponent>()};
+			mc.meshAssetID = m_renderCtx->createRef<render::MeshData>("C:/dev/Toaster-2.0/resources/meshes/Test_scene.fbx");
+
+			// m_quadEntity.getScale() = {10.0f, 10.0f, 10.0f};
 			// auto & cam{e.addComponent<CameraComponent>()};
 			// cam.camera.setProjectionType(SceneCamera::EProjectionType::ePerspective);
 			// cam.camera.setPerspectiveFov(tsm::radians(90.0f));

@@ -113,7 +113,6 @@ namespace toaster::render
 		m_currentSwapchainCommandBuffer = p_cmd;
 	}
 
-
 	auto RenderContext::createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) const -> gpu::RawImageHandle
 	{
 		if (p_format == vk::Format::eUndefined)

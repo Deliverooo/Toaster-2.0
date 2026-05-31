@@ -299,8 +299,10 @@ namespace toaster
 				auto mesh{mesh_comp.meshAssetID};
 				if (mesh)
 				{
-					Entity e{entity, m_scene};
-					renderMesh(mesh, m_scene->getEntityWorldTransformMatrix(e));
+					Entity       e{entity, m_scene};
+					Dx::XMMATRIX transform{m_scene->getEntityWorldTransformMatrix(e)};
+
+					renderMesh(mesh, transform);
 				}
 			}
 			end(p_cmd);
@@ -316,8 +318,8 @@ namespace toaster
 
 				Entity e{entity, m_scene};
 
-				// Dx::XMMATRIX transform{m_scene->getEntityWorldTransformMatrix(e)};
-				Dx::XMMATRIX transform{e.getTransform()};
+				Dx::XMMATRIX transform{m_scene->getEntityWorldTransformMatrix(e)};
+				// Dx::XMMATRIX transform{e.getTransform()};
 
 				auto texture{src.textureAssetID};
 				if (texture)
@@ -556,7 +558,7 @@ namespace toaster
 			{
 				Dx::XMMATRIX draw_cmd_transform{Dx::XMLoadFloat4x4(&draw_cmd.transform)};
 				Dx::XMMATRIX submesh_transform{Dx::XMLoadFloat4x4(&draw_cmd.mesh->getSubmeshes()[i].localTransform)};
-				m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_depthPrePipeline, Dx::XMMatrixMultiply(draw_cmd_transform, submesh_transform), nullptr);
+				m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_depthPrePipeline, Dx::XMMatrixMultiply(submesh_transform, draw_cmd_transform), nullptr);
 			}
 		}
 		m_renderCtx->endRendering(p_cmd, rendering_info);
@@ -656,7 +658,7 @@ namespace toaster
 			{
 				Dx::XMMATRIX draw_cmd_transform{Dx::XMLoadFloat4x4(&draw_cmd.transform)};
 				Dx::XMMATRIX submesh_transform{Dx::XMLoadFloat4x4(&draw_cmd.mesh->getSubmeshes()[i].localTransform)};
-				m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_geometryPipeline, Dx::XMMatrixMultiply(draw_cmd_transform, submesh_transform));
+				m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_geometryPipeline, Dx::XMMatrixMultiply(submesh_transform, draw_cmd_transform));
 			}
 		}
 		m_renderCtx->endRendering(p_cmd, rendering_info);
