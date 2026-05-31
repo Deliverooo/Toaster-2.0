@@ -14,14 +14,15 @@ namespace toaster::render
 		auto setTexture(const String &p_name, const gpu::Texture2DHandle &p_texture_2d, uint32 p_array_index) -> void;
 
 		template<typename Type>
-		auto set(const String &p_name, const Type &p_type) -> void
+		auto set(const String &p_name, const Type &p_type) -> Material &
 		{
 			auto decl = _getPushConstantDeclaration(p_name);
 			TST_ASSERT_MSG(decl, "Could not find uniform!");
 			if (!decl)
-				return;
+				return *this;
 
 			m_pushConstantStorageBuffer.write(&p_type, decl->size, decl->offset);
+			return *this;
 		}
 
 		auto update(uint32 p_frame_index) -> void;

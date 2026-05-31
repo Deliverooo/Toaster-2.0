@@ -7,10 +7,10 @@ namespace toaster
 {
 	struct TST_SCENE_API SceneRendererSpecInfo
 	{
-		io::filesystem::Path resourceDirectory{};
-
 		tsm::uint2 viewportSize{0u};
 		tsm::uint2 viewportOffset{0u};
+
+		bool backfaceCulling{true};
 	};
 
 	class TST_SCENE_API SceneRenderer
@@ -28,24 +28,23 @@ namespace toaster
 		auto             end(gpu::VKCommandBuffer *p_cmd) -> void;
 		auto XM_CALLCONV renderMesh(const render::MeshHandle &p_mesh, Dx::FXMMATRIX p_transform) -> void;
 
-		auto getSpecInfo() const -> const SceneRendererSpecInfo &;
+		auto getSpecInfo() const -> const SceneRendererSpecInfo & { return m_specInfo; }
 
-		auto getMSAAOutputColourImage() -> gpu::RawImageHandle &;
-		auto getMSAAOutputDepthImage() -> gpu::RawImageHandle &;
-		auto getMSAAOutputGeometryNormalsImage() -> gpu::RawImageHandle &;
-		auto getMSAAOutputGeometryPositionsImage() -> gpu::RawImageHandle &;
+		auto getMSAAColourImage() -> gpu::RawImageHandle & { return m_MSAAcolourImage; }
+		auto getMSAADepthImage() -> gpu::RawImageHandle & { return m_MSAADepthImage; }
+		auto getMSAAGeometryNormalsImage() -> gpu::RawImageHandle & { return m_MSAAGeometryNormalsImage; }
+		auto getMSAAGeometryPositionsImage() -> gpu::RawImageHandle & { return m_MSAAGeometryPositionsImage; }
 
-		auto getResolveOutputColourTexture() const -> const gpu::Texture2DHandle &;
-		auto getResolveOutputDepthTexture() const -> const gpu::Texture2DHandle &;
-		auto getResolveOutputGeometryNormalsTexture() const -> const gpu::Texture2DHandle &;
-		auto getResolveOutputGeometryPositionsTexture() const -> const gpu::Texture2DHandle &;
+		auto getColourTexture() const -> const gpu::Texture2DHandle & { return m_colourTexture; }
+		auto getDepthTexture() const -> const gpu::Texture2DHandle & { return m_depthTexture; }
+		auto getGeometryNormalsTexture() const -> const gpu::Texture2DHandle & { return m_geometryNormalsTexture; }
+		auto getGeometryPositionsTexture() const -> const gpu::Texture2DHandle & { return m_geometryPositionsTexture; }
 
-		auto getSSAONoiseTexture() const -> const gpu::Texture2DHandle &;
-		auto getOutputAOTexture() const -> const gpu::Texture2DHandle &;
-		auto getOutputAOBlurredImage() const -> const gpu::StorageImageHandle & { return m_aoBlurredOutputImage; }
+		auto getSSAONoiseTexture() const -> const gpu::Texture2DHandle & { return m_SSAONoiseTexture; }
+		auto getSSAOTexture() const -> const gpu::Texture2DHandle & { return m_SSAOTexture; }
+		auto getSSAOBlurredImage() const -> const gpu::StorageImageHandle & { return m_SSAOBlurredImage; }
 
-		auto getOutputComputeImage() const -> const gpu::StorageImageHandle &;
-		auto getRenderer2D() -> RefPtr<render::Renderer2D>;
+		auto getRenderer2D() -> const RefPtr<render::Renderer2D> & { return m_renderer2D; }
 
 		auto onResize(tsm::uint2 p_size) -> void;
 
@@ -54,9 +53,10 @@ namespace toaster
 	private:
 		auto _renderDepthPrePass(gpu::VKCommandBuffer *p_cmd) -> void;
 		auto _renderAOPass(gpu::VKCommandBuffer *p_cmd) -> void;
-		auto _renderLightCullingPass(gpu::VKCommandBuffer *p_cmd) -> void;
 		auto _renderSkyboxPass(gpu::VKCommandBuffer *p_cmd) -> void;
 		auto _renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void;
+
+		static auto _generateSSAONoise(uint32 p_texture_size) -> std::vector<tsm::float4>;
 
 		NonOwningPtr<Scene> m_scene{nullptr};
 
@@ -70,22 +70,22 @@ namespace toaster
 		gpu::PipelineHandle   m_depthPrePipeline{nullptr};
 		gpu::RenderPassHandle m_depthPrePass{nullptr};
 
-		gpu::RawImageHandle  m_depthPreAttachmentImage{nullptr};
-		gpu::Texture2DHandle m_depthPreResolveAttachmentTexture{nullptr};
+		gpu::RawImageHandle  m_MSAADepthImage{nullptr};
+		gpu::Texture2DHandle m_depthTexture{nullptr};
 
-		gpu::RawImageHandle  m_geometryNormalsAttachmentImage{nullptr};
-		gpu::Texture2DHandle m_geometryNormalsResolveAttachmentTexture{nullptr};
+		gpu::RawImageHandle  m_MSAAGeometryNormalsImage{nullptr};
+		gpu::Texture2DHandle m_geometryNormalsTexture{nullptr};
 
-		gpu::RawImageHandle  m_geometryPositionsAttachmentImage{nullptr};
-		gpu::Texture2DHandle m_geometryPositionsResolveAttachmentTexture{nullptr};
+		gpu::RawImageHandle  m_MSAAGeometryPositionsImage{nullptr};
+		gpu::Texture2DHandle m_geometryPositionsTexture{nullptr};
 		#pragma endregion
 
 		#pragma region ambient occlusion
 
-		gpu::PipelineHandle   m_ssaoPipeline{nullptr};
-		gpu::RenderPassHandle m_ssaoPass{nullptr};
+		gpu::PipelineHandle   m_SSAOPipeline{nullptr};
+		gpu::RenderPassHandle m_SSAOPass{nullptr};
 
-		render::MaterialHandle m_aoFrameDataMaterial{nullptr};
+		render::MaterialHandle m_SSAOFrameDataMaterial{nullptr};
 
 		struct SSAOKernel
 		{
@@ -96,23 +96,14 @@ namespace toaster
 			SSAOKernel();
 		};
 
-		UniquePtr<SSAOKernel> m_ssaoKernel{nullptr};
+		UniquePtr<SSAOKernel> m_SSAOKernel{nullptr};
 
-		gpu::Texture2DHandle m_ssaoNoiseTexture{nullptr};
-		gpu::Texture2DHandle m_ssaoOutputTexture{nullptr};
+		gpu::Texture2DHandle m_SSAONoiseTexture{nullptr};
+		gpu::Texture2DHandle m_SSAOTexture{nullptr};
 
-		gpu::ComputePipelineHandle m_aoBlurPipeline{nullptr};
-		gpu::ComputePassHandle     m_aoBlurPass{nullptr};
-		gpu::StorageImageHandle    m_aoBlurredOutputImage{nullptr};
-
-		#pragma endregion
-
-		#pragma region light culling
-		gpu::ComputePipelineHandle m_lightCullingPipeline{nullptr};
-		gpu::ComputePassHandle     m_lightCullingPass{nullptr};
-		render::MaterialHandle     m_lightCullingMaterial{nullptr};
-
-		gpu::StorageImageHandle m_computeImage{nullptr};
+		gpu::ComputePipelineHandle m_SSAOBlurPipeline{nullptr};
+		gpu::ComputePassHandle     m_SSAOBlurPass{nullptr};
+		gpu::StorageImageHandle    m_SSAOBlurredImage{nullptr};
 
 		#pragma endregion
 
@@ -128,8 +119,8 @@ namespace toaster
 		gpu::RenderPassHandle m_geometryPass{nullptr};
 		#pragma endregion
 
-		gpu::RawImageHandle  m_colourImage{nullptr};
-		gpu::Texture2DHandle m_resolveColourTexture{nullptr};
+		gpu::RawImageHandle  m_MSAAcolourImage{nullptr};
+		gpu::Texture2DHandle m_colourTexture{nullptr};
 
 		struct CameraUB
 		{

@@ -148,13 +148,8 @@ namespace toaster
 		m_fullscreenPipeline   = m_renderCtx->createGPURef<gpu::Pipeline>(fullscreen_pipeline_spec_info);
 		m_fullscreenRenderPass = m_renderCtx->createGPURef<gpu::RenderPass>(m_fullscreenPipeline);
 
-		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getResolveOutputColourTexture()).bake();
-
-		{
-			Entity e{m_scene->createEntity("Orbo")};
-			e.addComponent<ScriptComponent>().className = "Toaster.CameraController";
-			// e.addComponent<NativeScriptComponent>().bind<CameraController>(m_inputCtx);
-		}
+		// m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getResolveOutputColourTexture()).bake();
+		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getSSAOBlurredImage()).bake();
 
 		{
 			Entity e{m_scene->createEntity("Peeb")};
@@ -163,7 +158,7 @@ namespace toaster
 
 		{
 			Entity e{m_scene->createEntity("Skib")};
-			e.addComponent<MeshComponent>().meshAssetID = m_renderCtx->createRef<render::MeshData>("C:/dev/Toaster-2.0/resources/meshes/Test_scene.fbx");
+			e.addComponent<MeshComponent>().mesh = m_renderCtx->createRef<render::MeshData>("C:/dev/Toaster-2.0/resources/meshes/DJT_sculpt.fbx");
 			auto &tc{e.getComponent<TransformComponent>()};
 		}
 	}
@@ -172,7 +167,14 @@ namespace toaster
 	{
 		m_camera.onUpdate(p_dt);
 		m_scene->onUpdate(p_dt);
-		m_sceneRenderer->onRender(m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
+
+		Dx::XMMATRIX projection{Dx::XMMatrixPerspectiveFovLH(Dx::XMConvertToRadians(90.0f), m_viewportSize.aspect(), 0.1f, 1000.0f)};
+		Dx::XMMATRIX view{
+			Dx::XMMatrixLookAtLH(m_camera.getPosition(), Dx::XMVectorAdd(m_camera.getPosition(), m_camera.getForwardDirection()),
+								 Dx::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f))
+		};
+
+		m_sceneRenderer->onRender(view, projection);
 
 		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({1.0f, 1.0f, 1.0f, 1.0f}, false)};
 		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};

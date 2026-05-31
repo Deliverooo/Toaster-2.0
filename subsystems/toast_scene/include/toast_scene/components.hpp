@@ -1,7 +1,5 @@
 #pragma once
 
-#include <utility>
-
 #include "scene_camera.hpp"
 
 #include "toast_lib/uuid.hpp"
@@ -9,12 +7,6 @@
 #include "toast_script/script_object.hpp"
 
 #define DEFINE_COMPONENT(__name) struct TST_SCENE_API __name
-#define REGISTER_COMPONENT_HASH(__name) template<>\
-		struct entt::type_hash<toaster::__name> final {\
-			[[nodiscard]] static consteval entt::id_type value() noexcept {\
-				return entt::hashed_string::value(#__name);\
-			}\
-		};
 
 namespace toaster
 {
@@ -48,14 +40,11 @@ namespace toaster
 		TagComponent()  = default;
 		~TagComponent() = default;
 
-		TagComponent(String p_tag) : tag(std::move(p_tag))
+		TagComponent(const String &p_tag) : tag(p_tag)
 		{
 		}
 
-		auto reset() -> void
-		{
-			tag.clear();
-		}
+		auto reset() -> void { tag.clear(); }
 
 		String tag;
 	};
@@ -107,12 +96,12 @@ namespace toaster
 		auto reset() -> void
 		{
 			colour = tsm::float4{1.0f};
-			textureAssetID.reset();
+			texture.reset();
 			tilingFactor = 1.0f;
 		}
 
 		tsm::float4          colour{1.0f};
-		gpu::Texture2DHandle textureAssetID{nullptr};
+		gpu::Texture2DHandle texture{nullptr};
 		float32              tilingFactor{1.0f};
 	};
 
@@ -121,12 +110,9 @@ namespace toaster
 		MeshComponent()  = default;
 		~MeshComponent() = default;
 
-		auto reset() -> void
-		{
-			meshAssetID.reset();
-		}
+		auto reset() -> void { mesh.reset(); }
 
-		render::MeshHandle meshAssetID{nullptr};
+		render::MeshHandle mesh{nullptr};
 	};
 
 	DEFINE_COMPONENT(SubmeshComponent)
@@ -134,10 +120,7 @@ namespace toaster
 		SubmeshComponent()  = default;
 		~SubmeshComponent() = default;
 
-		auto reset() -> void
-		{
-			mesh.reset(nullptr);
-		}
+		auto reset() -> void { mesh.reset(nullptr); }
 
 		render::MeshHandle mesh{nullptr};
 		uint32             submeshIndex{0u};
@@ -173,7 +156,7 @@ namespace toaster
 	DEFINE_COMPONENT(PointLightComponent)
 	{
 		tsm::float3 radiance{1.0f, 1.0f, 1.0f};
-		float32      multiplier{1.0f};
+		float32     multiplier{1.0f};
 
 		auto reset() -> void
 		{
@@ -205,11 +188,3 @@ namespace toaster
 		String className{};
 	};
 }
-
-REGISTER_COMPONENT_HASH(UUIDComponent)
-
-REGISTER_COMPONENT_HASH(TransformComponent)
-
-REGISTER_COMPONENT_HASH(SpriteRendererComponent)
-
-REGISTER_COMPONENT_HASH(CameraComponent)

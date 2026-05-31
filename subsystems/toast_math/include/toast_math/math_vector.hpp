@@ -26,6 +26,7 @@ namespace tsm
 	using double4 = Vec4<f64>;
 }
 
+// Incredibly useful for cameras where you want to normalize the change in position without it being infinity... :)
 namespace DirectX
 {
 	inline XMVECTOR XM_CALLCONV XMVector2NormalizeSafe(FXMVECTOR p_vector)

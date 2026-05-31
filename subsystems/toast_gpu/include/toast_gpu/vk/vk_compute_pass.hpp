@@ -16,13 +16,12 @@ namespace toaster::gpu
 		VKComputePass(VKLogicalDevice *p_device, const ComputePipelineHandle &p_pipeline);
 		~VKComputePass();
 
-		auto setInput(const String &p_name, const UniformBufferHandle &p_uniform_buffer) -> void;
-		auto setInput(const String &p_name, const UniformBufferPFFHandle &p_uniform_buffer_pff) -> void;
-		auto setInput(const String &p_name, const StorageBufferHandle &p_storage_buffer) -> void;
-		auto setInput(const String &p_name, const StorageBufferPFFHandle &p_storage_buffer_pff) -> void;
-		auto setInput(const String &p_name, const Texture2DHandle &p_texture_2d) -> void;
-		auto setInput(const String &p_name, const StorageImageHandle &p_image_2d) -> void;
-		auto setInput(const String &p_name, const Texture3DHandle &p_texture_3d) -> void;
+		template<GPUResource_c TResource>
+		auto setInput(const String &p_name, const RefPtr<TResource> &p_resource) -> VKComputePass &
+		{
+			m_descriptorSetManager->setDescriptor(p_name, p_resource);
+			return *this;
+		}
 
 		// Only call when you have set all your required inputs :)
 		auto bake() -> void;

@@ -24,39 +24,24 @@ namespace toaster
 
 			Dx::XMVECTOR delta_position{Dx::XMVectorZero()};
 			if (m_ctx->isKeyDown(input::EKeyCode::eW))
-				delta_position = Dx::XMVectorSubtract(delta_position, Dx::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f));
-			if (m_ctx->isKeyDown(input::EKeyCode::eA))
-				delta_position = Dx::XMVectorSubtract(delta_position, Dx::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f));
-			if (m_ctx->isKeyDown(input::EKeyCode::eS))
 				delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f));
+			if (m_ctx->isKeyDown(input::EKeyCode::eA))
+				delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(-1.0f, 0.0f, 0.0f, 0.0f));
+			if (m_ctx->isKeyDown(input::EKeyCode::eS))
+				delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
 			if (m_ctx->isKeyDown(input::EKeyCode::eD))
 				delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f));
 
-			Dx::XMVECTOR length_vector{Dx::XMVector3Length(delta_position)};
-			float32      length;
-			Dx::XMStoreFloat(&length, length_vector);
 
 			Dx::XMVECTOR position{Dx::XMLoadFloat3(&m_position)};
 
-			if (length != 0.0f)
-			{
-				Dx::XMVECTOR moveDir           = Dx::XMVector3Normalize(delta_position);
-				Dx::XMVECTOR worldSpaceMoveDir = Dx::XMVector3Transform(moveDir, getRotationMatrix());
-				Dx::XMVECTOR translation       = Dx::XMVectorScale(worldSpaceMoveDir, speed * p_dt);
-
-				position = Dx::XMVectorAdd(position, translation);
-			}
+			position = Dx::XMVectorAdd(position, Dx::XMVectorScale(Dx::XMVector3Transform(Dx::XMVector3NormalizeSafe(delta_position), getRotationMatrix()),
+																   speed * p_dt));
 
 			if (m_ctx->isKeyDown(input::EKeyCode::eSpace))
-			{
-				Dx::XMVECTOR translation = Dx::XMVectorScale(c_upDir, speed * p_dt);
-				position                 = Dx::XMVectorAdd(position, translation);
-			}
+				position = Dx::XMVectorSubtract(position, Dx::XMVectorScale(c_upDir, speed * p_dt));
 			if (m_ctx->isKeyDown(input::EKeyCode::eLeftShift))
-			{
-				Dx::XMVECTOR translation = Dx::XMVectorScale(c_upDir, speed * p_dt);
-				position                 = Dx::XMVectorSubtract(position, translation);
-			}
+				position = Dx::XMVectorAdd(position, Dx::XMVectorScale(c_upDir, speed * p_dt));
 
 			Dx::XMStoreFloat3(&m_position, position);
 
@@ -101,7 +86,7 @@ namespace toaster
 
 	auto FPCamera::getRotationMatrix() const -> Dx::XMMATRIX
 	{
-		return Dx::XMMatrixRotationRollPitchYaw(-m_pitch, m_yaw, 0.0f);
+		return Dx::XMMatrixRotationRollPitchYaw(m_pitch, -m_yaw, 0.0f);
 	}
 
 	auto FPCamera::getViewProjection() const -> Dx::XMMATRIX
