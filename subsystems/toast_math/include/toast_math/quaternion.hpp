@@ -4,6 +4,13 @@
 
 namespace tsm
 {
+
+	template<typename Type>
+	struct Quat;
+
+	template<typename Type>
+	constexpr auto length(const Quat<Type> &p_quat) -> Type;
+
 	template<typename Type>
 	struct Quat
 	{
@@ -32,6 +39,8 @@ namespace tsm
 		{
 		}
 
+		[[nodiscard]] constexpr auto length() const -> Type { return tsm::length(*this); }
+
 		constexpr auto operator*(const Quat &p_other) const -> Quat<Type>
 		{
 			return Quat{
@@ -42,6 +51,19 @@ namespace tsm
 			};
 		}
 	};
+
+	template<typename Type>
+	constexpr auto length(const Quat<Type> &p_quat) -> Type
+	{
+		return static_cast<Type>(std::sqrt(p_quat.x * p_quat.x + p_quat.y * p_quat.y + p_quat.z * p_quat.z + p_quat.w * p_quat.w));
+	}
+
+	template<typename Type>
+	constexpr auto normalize(const Quat<Type> &p_quat) -> Quat<Type>
+	{
+		Type l{length(p_quat)};
+		return Quat<Type>{p_quat.w / l, p_quat.y / l, p_quat.z / l, p_quat.x / l};
+	}
 
 	template<typename Type>
 	constexpr auto toMat3(const Quat<Type> &p_quat) -> Mat3<Type>
@@ -130,18 +152,12 @@ namespace tsm
 	template<typename Type>
 	constexpr auto axisAngle(Type p_angle, Vec3<Type> p_axis) -> Quat<Type>
 	{
-		Type length = std::sqrtf(p_axis.x * p_axis.x + p_axis.y * p_axis.y + p_axis.z * p_axis.z);
-		if (length > 0.0f)
-		{
-			p_axis.x /= length;
-			p_axis.y /= length;
-			p_axis.z /= length;
-		}
+		Type length{p_axis.length()};
+		if (length < FLT_EPSILON)
+			return Quat<Type>{};
 
-		Type half_angle = p_angle * 0.5f;
-		Type sin_half   = std::sinf(half_angle);
-
-		return Quat<Type>{std::cosf(half_angle), p_axis.x * sin_half, p_axis.y * sin_half, p_axis.z * sin_half};
+		auto norm{tsm::normalize(p_axis)};
+		return Quat<Type>{std::cosf(p_angle * 0.5f), norm * std::sinf(p_angle * 0.5f)};
 	}
 
 	template<typename Type>
@@ -155,13 +171,13 @@ namespace tsm
 
 	constexpr auto decomposeTransform(const float4x4 &p_transform, float3 &p_out_translation, quatf &p_out_orientation, float3 &p_out_scale) -> void
 	{
-		p_out_translation = p_transform[3];
+		p_out_translation = float3(p_transform[3]);
 
 		p_out_scale.x = length(float3(p_transform[0]));
 		p_out_scale.y = length(float3(p_transform[1]));
 		p_out_scale.z = length(float3(p_transform[2]));
 
-		const float3x3 rot_mat = {float3(p_transform[0]) / p_out_scale.x, p_transform[1] / p_out_scale.y, p_transform[2] / p_out_scale.z};
+		const float3x3 rot_mat = {float3(p_transform[0]) / p_out_scale.x, float3(p_transform[1]) / p_out_scale.y, float3(p_transform[2]) / p_out_scale.z};
 
 		p_out_orientation = quatCast(rot_mat);
 	}

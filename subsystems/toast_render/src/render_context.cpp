@@ -502,13 +502,15 @@ namespace toaster::render
 	}
 
 	auto RenderContext::renderGeometry(gpu::CommandBuffer *p_command_buffer, gpu::Pipeline *p_pipeline, gpu::VertexBuffer *p_vertex_buffer,
-									   gpu::IndexBuffer *  p_index_buffer, uint32           p_index_count, Material *      p_material, const tsm::float4x4 &p_transform,
+									   gpu::IndexBuffer *  p_index_buffer, uint32           p_index_count, Material *      p_material, Dx::FXMMATRIX p_transform,
 									   uint32              p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
 		// Push the constants
-		p_command_buffer->getVulkanCommandBuffer().pushConstants<tsm::float4x4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
+		Dx::XMFLOAT4X4 transform;
+		Dx::XMStoreFloat4x4(&transform, p_transform);
+		p_command_buffer->getVulkanCommandBuffer().pushConstants<Dx::XMFLOAT4X4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, transform);
 
 		if (p_material)
 		{
@@ -576,13 +578,15 @@ namespace toaster::render
 		p_command_buffer->getVulkanCommandBuffer().drawIndexed(m_globals->fullscreenQuadIndices().size(), 1, 0, 0, 0);
 	}
 
-	auto RenderContext::renderMesh(gpu::CommandBuffer * p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline,
-								   const tsm::float4x4 &p_transform, uint32               p_frame_index) const -> void
+	auto RenderContext::renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline,
+								   Dx::FXMMATRIX       p_transform, uint32               p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
 		// Push the constants
-		p_command_buffer->getVulkanCommandBuffer().pushConstants<tsm::float4x4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
+		Dx::XMFLOAT4X4 transform;
+		Dx::XMStoreFloat4x4(&transform, p_transform);
+		p_command_buffer->getVulkanCommandBuffer().pushConstants<Dx::XMFLOAT4X4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, transform);
 
 		const auto &submesh{p_mesh->getSubmeshes()[p_submesh_index]};
 		auto        material{p_mesh->getMaterials().getMaterial(submesh.materialIndex).material};
@@ -618,13 +622,15 @@ namespace toaster::render
 		p_command_buffer->getVulkanCommandBuffer().drawIndexed(submesh.indexCount, 1, submesh.baseIndex, submesh.baseVertex, 0);
 	}
 
-	auto RenderContext::renderMesh(gpu::CommandBuffer * p_command_buffer, const MeshData *p_mesh, uint32              p_submesh_index, gpu::Pipeline *p_pipeline,
-								   const tsm::float4x4 &p_transform, Material *           p_override_material, uint32 p_frame_index) const -> void
+	auto RenderContext::renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32              p_submesh_index, gpu::Pipeline *p_pipeline,
+								   Dx::FXMMATRIX       p_transform, Material *           p_override_material, uint32 p_frame_index) const -> void
 	{
-
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
+
 		// Push the constants
-		p_command_buffer->getVulkanCommandBuffer().pushConstants<tsm::float4x4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, p_transform);
+		Dx::XMFLOAT4X4 transform;
+		Dx::XMStoreFloat4x4(&transform, p_transform);
+		p_command_buffer->getVulkanCommandBuffer().pushConstants<Dx::XMFLOAT4X4>(p_pipeline->getPipelineLayout(), vk::ShaderStageFlagBits::eVertex, 0, transform);
 
 		const auto &submesh{p_mesh->getSubmeshes()[p_submesh_index]};
 

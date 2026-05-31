@@ -16,6 +16,6 @@ void main()
 {
     gl_Position = vec4(a_Position.xy, 0.0f, 1.0f);
 
-    vec4 viewPos = inverse(u_Proj) * vec4(a_Position.xy, 0.0f, 1.0f);
+    vec4 viewPos = u_InvProj * vec4(a_Position.xy, 0.0f, 1.0f);
     v_Position = mat3(inverse(u_View)) * viewPos.xyz;
 }

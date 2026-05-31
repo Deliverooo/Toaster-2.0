@@ -18,6 +18,7 @@
 
 namespace toaster
 {
+	#if 0
 	class CameraController : public ScriptableEntity
 	{
 	public:
@@ -117,9 +118,12 @@ namespace toaster
 
 		tsm::float2 m_initialMousePos{0.0f};
 	};
-
+	#endif
 	auto RuntimeLayer::onInit() -> void
 	{
+		m_camera = FPCamera{m_inputCtx, 90.0f, 1920.0f / 1080.0f, 0.1f, 1000.0f};
+		m_camera.setViewportSize(m_viewportSize.x, m_viewportSize.y);
+
 		auto swapchain{m_app->getWindow().getSwapchain()};
 
 		io::filesystem::Path binary_dir{os::getBinaryDirectory()};
@@ -160,13 +164,15 @@ namespace toaster
 		{
 			Entity e{m_scene->createEntity("Skib")};
 			e.addComponent<MeshComponent>().meshAssetID = m_renderCtx->create<render::MeshData>("C:/dev/Toaster-2.0/resources/meshes/Test_scene.fbx");
+			auto &tc{e.getComponent<TransformComponent>()};
 		}
 	}
 
 	auto RuntimeLayer::onUpdate(const float32 p_dt) -> void
 	{
+		m_camera.onUpdate(p_dt);
 		m_scene->onUpdate(p_dt);
-		m_sceneRenderer->onRender();
+		m_sceneRenderer->onRender(m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
 
 		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({1.0f, 1.0f, 1.0f, 1.0f}, false)};
 		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
@@ -180,6 +186,7 @@ namespace toaster
 	{
 		m_viewportSize = p_size;
 
+		m_camera.setViewportSize(p_size.x, p_size.y);
 		m_scene->onResize(p_size);
 		m_sceneRenderer->onResize(p_size);
 	}
@@ -190,6 +197,7 @@ namespace toaster
 		eventDispatcher.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(RuntimeLayer::_onKeyPressEvent));
 
 		m_scene->onEvent(p_event);
+		m_camera.onEvent(p_event);
 	}
 
 	auto RuntimeLayer::_onKeyPressEvent(KeyPressEvent &e) -> bool

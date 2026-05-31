@@ -33,8 +33,8 @@ namespace toaster::render
 	{
 		String name{};
 
-		tsm::float4x4 transform{1.0f};
-		tsm::float4x4 localTransform{1.0f};
+		Dx::XMFLOAT4X4 transform;
+		Dx::XMFLOAT4X4 localTransform;
 
 		uint32 baseVertex{0u};
 		uint32 baseIndex{0u};
@@ -46,7 +46,7 @@ namespace toaster::render
 	struct TST_RENDER_API MeshNode
 	{
 		String        name{};
-		tsm::float4x4 localTransform{1.0f};
+		Dx::XMFLOAT4X4 localTransform;
 
 		std::vector<uint32> children;
 		std::vector<uint32> submeshes;
@@ -115,7 +115,7 @@ namespace toaster::render
 		auto getFilepath() const -> const io::filesystem::Path &;
 
 	private:
-		auto _traverseNodes(void *p_assimp_node, uint32 p_node_index, const tsm::float4x4 &p_parent_transform, uint32 p_level) -> void;
+		auto XM_CALLCONV _traverseNodes(void *p_assimp_node, uint32 p_node_index, Dx::FXMMATRIX p_parent_transform, uint32 p_level) -> void;
 		auto _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
 
 		NonOwningPtr<RenderContext> m_renderCtx{nullptr};

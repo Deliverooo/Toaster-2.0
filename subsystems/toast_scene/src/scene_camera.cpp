@@ -41,17 +41,22 @@ namespace toaster
 		{
 			case EProjectionType::ePerspective:
 			{
-				m_projection = tsm::perspective(m_perspectiveFov, m_aspectRatio, m_perspectiveNear, m_perspectiveFar);
+				Dx::XMMATRIX proj{Dx::XMMatrixPerspectiveFovLH(m_perspectiveFov, m_aspectRatio, m_perspectiveNear, m_perspectiveFar)};
+				proj = Dx::XMMatrixMultiply(proj, Dx::XMMatrixScaling(1.0f, -1.0f, 1.0f));
+				Dx::XMStoreFloat4x4(&m_projection, proj);
+
 				break;
 			}
 			case EProjectionType::eOrthographic:
 			{
-				const float32 ortho_left   = -m_orthoSize * m_aspectRatio * 0.5f;
-				const float32 ortho_right  = m_orthoSize * m_aspectRatio * 0.5f;
-				const float32 ortho_bottom = -m_orthoSize * 0.5f;
-				const float32 ortho_top    = m_orthoSize * 0.5f;
+				const float32 ortho_left{-m_orthoSize * m_aspectRatio * 0.5f};
+				const float32 ortho_right{m_orthoSize * m_aspectRatio * 0.5f};
+				const float32 ortho_bottom{-m_orthoSize * 0.5f};
+				const float32 ortho_top{m_orthoSize * 0.5f};
 
-				m_projection = tsm::ortho(ortho_left, ortho_right, ortho_bottom, ortho_top, m_orthoNear, m_orthoFar);
+				Dx::XMMATRIX proj{Dx::XMMatrixOrthographicOffCenterLH(ortho_left, ortho_right, ortho_bottom, ortho_top, m_orthoNear, m_orthoFar)};
+				Dx::XMStoreFloat4x4(&m_projection, proj);
+
 				break;
 			}
 		}

@@ -65,30 +65,38 @@ namespace toaster
 		TransformComponent()  = default;
 		~TransformComponent() = default;
 
-		TransformComponent(const tsm::float3 &p_translation) : translation(p_translation)
+		[[nodiscard]] auto XM_CALLCONV getTransform() const -> Dx::XMMATRIX
 		{
+			DirectX::XMVECTOR simd_orientation{DirectX::XMLoadFloat4(&orientation)};
+			DirectX::XMVECTOR simd_translation{DirectX::XMLoadFloat3(&translation)};
+			DirectX::XMVECTOR simd_scale{DirectX::XMLoadFloat3(&scale)};
+
+			return Dx::XMMatrixTransformation(Dx::XMVectorZero(), Dx::XMVectorZero(), simd_scale, Dx::XMVectorZero(), simd_orientation, simd_translation);
 		}
 
-		[[nodiscard]] auto getTransform() const -> tsm::float4x4
+		auto XM_CALLCONV setTransform(Dx::FXMMATRIX p_transform) -> void
 		{
-			return tsm::translate(tsm::float4x4{1.0f}, translation) * tsm::toMat4(orientation) * tsm::scale(tsm::float4x4{1.0f}, scale);
-		}
+			Dx::XMVECTOR out_scale;
+			Dx::XMVECTOR out_orientation;
+			Dx::XMVECTOR out_translation;
+			Dx::XMMatrixDecompose(&out_scale, &out_orientation, &out_translation, p_transform);
 
-		auto setTransform(const tsm::float4x4 &p_transform) -> void
-		{
-			tsm::decomposeTransform(p_transform, translation, orientation, scale);
+			Dx::XMStoreFloat4(&orientation, out_orientation);
+			Dx::XMStoreFloat3(&translation, out_translation);
+			Dx::XMStoreFloat3(&scale, out_scale);
 		}
 
 		auto reset() -> void
 		{
-			translation = tsm::float3{0.0f, 0.0f, 0.0f};
-			orientation = tsm::quatf{1.0f, 0.0f, 0.0f, 0.0f};
-			scale       = tsm::float3{1.0f, 1.0f, 1.0f};
+			orientation = {0.0f, 0.0f, 0.0f, 1.0f};
+			translation = {0.0f, 0.0f, 0.0f};
+			scale       = {1.0f, 1.0f, 1.0f};
 		}
 
-		tsm::float3 translation{0.0f};
-		tsm::quatf  orientation{1.0f, 0.0f, 0.0f, 0.0f};
-		tsm::float3 scale{1.0f};
+		// For alignment... :)
+		Dx::XMFLOAT4 orientation{0.0f, 0.0f, 0.0f, 1.0f};
+		Dx::XMFLOAT3 translation{0.0f, 0.0f, 0.0f};
+		Dx::XMFLOAT3 scale{1.0f, 1.0f, 1.0f};
 	};
 
 	DEFINE_COMPONENT(SpriteRendererComponent)
@@ -152,24 +160,24 @@ namespace toaster
 
 	DEFINE_COMPONENT(DirectionalLightComponent)
 	{
-		tsm::float3 radiance{1.0f};
+		tsm::float3 radiance{1.0f, 1.0f, 1.0f};
 		float32     multiplier{1.0f};
 
 		auto reset() -> void
 		{
-			radiance   = tsm::float3{1.0f};
+			radiance   = {1.0f, 1.0f, 1.0f};
 			multiplier = 1.0f;
 		}
 	};
 
 	DEFINE_COMPONENT(PointLightComponent)
 	{
-		tsm::float3 radiance{1.0f};
-		float32     multiplier{1.0f};
+		tsm::float3 radiance{1.0f, 1.0f, 1.0f};
+		float32      multiplier{1.0f};
 
 		auto reset() -> void
 		{
-			radiance   = tsm::float3{1.0f};
+			radiance   = {1.0f, 1.0f, 1.0f};
 			multiplier = 1.0f;
 		}
 	};

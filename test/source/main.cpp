@@ -5,6 +5,8 @@
 #include "toast_scene/scene.hpp"
 #include "toast_scene/scene_renderer.hpp"
 
+#include <DirectXMath.h>
+
 using namespace toaster;
 
 class ClientLayer : public IAppLayer
@@ -32,6 +34,9 @@ public:
 			cam.camera.setProjectionType(SceneCamera::EProjectionType::ePerspective);
 			cam.camera.setPerspectiveFov(tsm::radians(90.0f));
 			cam.primary = true;
+		}
+		{
+
 		}
 	}
 
@@ -66,10 +71,24 @@ private:
 
 auto main(int32 p_argc, char **p_argv) -> int32
 {
-	tsm::float4x4 m{1.0f};
-	m = tsm::translate(m, {1.0f, 1.0f, 1.0f});
+	Dx::XMFLOAT3  axis{0.0f, 1.0f, 0.0f};
+	Dx::FXMVECTOR simd_axis{Dx::XMLoadFloat3(&axis)};
 
-	LOG_INFO("{}", m);
+	Dx::XMVECTOR quat{Dx::XMQuaternionRotationAxis(simd_axis, Dx::XM_PIDIV4)};
+	Dx::XMMATRIX mat{Dx::XMMatrixRotationQuaternion(quat)};
+
+	Dx::XMFLOAT4X4 local_mat;
+	Dx::XMStoreFloat4x4(&local_mat, mat);
+
+	for (uint32 i{0u}; i < 4u; ++i)
+	{
+		for (uint32 j{0u}; j < 4u; ++j)
+		{
+			fmt::print("{:.2f}, ", local_mat.m[i][j]);
+		}
+		fmt::print("\n");
+	}
+	fmt::print("\n");
 
 	ApplicationSpecInfo app_spec{};
 	app_spec.printGPUDebugInfo             = false;

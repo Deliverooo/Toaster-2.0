@@ -4,6 +4,7 @@
 #include "toast_lib/events/mouse_event.hpp"
 
 #include "toast_lib/ptr.hpp"
+#include "toast_math/trig.hpp"
 
 namespace toaster
 {
@@ -20,15 +21,15 @@ namespace toaster
 
 		auto setViewportSize(float32 p_width, float32 p_height) -> void;
 
-		[[nodiscard]] auto getViewMatrix() const -> tsm::float4x4;
-		[[nodiscard]] auto getRotationMatrix() const -> tsm::float4x4; // Thank you very much -> https://vkguide.dev/docs/new_chapter_5/interactive_camera/
-		[[nodiscard]] auto getViewProjection() const -> tsm::float4x4;
+		[[nodiscard]] auto XM_CALLCONV getViewMatrix() const -> Dx::XMMATRIX;
+		[[nodiscard]] auto XM_CALLCONV getRotationMatrix() const -> Dx::XMMATRIX; // Thank you very much -> https://vkguide.dev/docs/new_chapter_5/interactive_camera/
+		[[nodiscard]] auto XM_CALLCONV getViewProjection() const -> Dx::XMMATRIX;
 
-		[[nodiscard]] auto getForwardDirection() const -> tsm::float3;
-		[[nodiscard]] auto getRightDirection() const -> tsm::float3;
-		[[nodiscard]] auto getUpDirection() const -> tsm::float3;
+		[[nodiscard]] auto XM_CALLCONV getForwardDirection() const -> Dx::XMVECTOR;
+		[[nodiscard]] auto XM_CALLCONV getRightDirection() const -> Dx::XMVECTOR;
+		[[nodiscard]] auto XM_CALLCONV getUpDirection() const -> Dx::XMVECTOR;
 
-		[[nodiscard]] auto getPosition() const -> const tsm::float3 &;
+		[[nodiscard]] auto XM_CALLCONV getPosition() const -> Dx::XMVECTOR;
 
 		[[nodiscard]] auto getPitch() const -> float32;
 		[[nodiscard]] auto getYaw() const -> float32;
@@ -39,22 +40,22 @@ namespace toaster
 
 		NonOwningPtr<InputContext> m_ctx{nullptr};
 
-		tsm::float3 m_position{0.0f, 1.0f, 3.0f};
+		Dx::XMFLOAT3 m_position{0.0f, 1.0f, 3.0f};
 
-		static constexpr tsm::float3 c_forwardDir{0.0f, 0.0f, -1.0f};
-		static constexpr tsm::float3 c_rightDir{1.0f, 0.0f, 0.0f};
-		static constexpr tsm::float3 c_upDir{0.0f, 1.0f, 0.0f};
+		static constexpr Dx::XMVECTORF32 c_forwardDir{.f{0.0f, 0.0f, -1.0f, 0.0f}};
+		static constexpr Dx::XMVECTORF32 c_rightDir{.f{1.0f, 0.0f, 0.0f, 0.0f}};
+		static constexpr Dx::XMVECTORF32 c_upDir{.f{0.0f, 1.0f, 0.0f, 0.0f}};
 
 		tsm::float2 m_initialMousePosition{0.0f};
 
-		float32 m_yaw{0.0f};
-		float32 m_pitch{0.0f};
+		float32 m_yaw{tsm::radians(45.0f)};
+		float32 m_pitch{tsm::radians(45.0f)};
 
 		float32 m_fov{45.0f};
 		float32 m_aspectRatio{1.0f};
 		float32 m_zNear{0.1f};
 		float32 m_zFar{1000.0f};
 
-		float32 m_zoom{1.0f};
+		float32 m_zoom{5.0f};
 	};
 }

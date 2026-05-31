@@ -4,7 +4,7 @@ layout(set = 2, binding = 0) uniform sampler2D u_PositionsTex;
 layout(set = 2, binding = 1) uniform sampler2D u_NormalsTex;
 layout(set = 2, binding = 2) uniform sampler2D u_NoiseTex;
 
-layout(std140, set = 1, binding = 1) uniform Camera
+layout(std140, set = 1, binding = 1, row_major) uniform Camera
 {
     mat4 u_View;
     mat4 u_Proj;

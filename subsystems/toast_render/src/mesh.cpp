@@ -13,25 +13,10 @@ namespace toaster::render
 		aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights | aiProcess_ValidateDataStructure | aiProcess_GlobalScale | aiProcess_FlipUVs
 	};
 
-	auto mat4FromAIMatrix4x4(const aiMatrix4x4 &matrix) -> tsm::float4x4
+	auto mat4FromAIMatrix4x4(const aiMatrix4x4 &matrix) -> Dx::XMFLOAT4X4
 	{
-		tsm::float4x4 result;
-		result[0][0] = matrix.a1;
-		result[1][0] = matrix.a2;
-		result[2][0] = matrix.a3;
-		result[3][0] = matrix.a4;
-		result[0][1] = matrix.b1;
-		result[1][1] = matrix.b2;
-		result[2][1] = matrix.b3;
-		result[3][1] = matrix.b4;
-		result[0][2] = matrix.c1;
-		result[1][2] = matrix.c2;
-		result[2][2] = matrix.c3;
-		result[3][2] = matrix.c4;
-		result[0][3] = matrix.d1;
-		result[1][3] = matrix.d2;
-		result[2][3] = matrix.d3;
-		result[3][3] = matrix.d4;
+		Dx::XMFLOAT4X4 result;
+		Dx::XMStoreFloat4x4(&result, Dx::XMMatrixTranspose(Dx::XMLoadFloat4x4(reinterpret_cast<const Dx::XMFLOAT4X4 *>(&matrix))));
 		return result;
 	}
 
@@ -133,7 +118,7 @@ namespace toaster::render
 
 			MeshNode &rootNode = m_nodes.emplace_back();
 			(void) rootNode;
-			_traverseNodes(scene->mRootNode, 0, tsm::float4x4{1.0f}, 0);
+			_traverseNodes(scene->mRootNode, 0, Dx::XMMatrixIdentity(), 0);
 		}
 
 		if (scene->HasMaterials())
@@ -221,7 +206,7 @@ namespace toaster::render
 
 			MeshNode &rootNode = m_nodes.emplace_back();
 			(void) rootNode;
-			_traverseNodes(scene->mRootNode, 0, tsm::float4x4{1.0f}, 0);
+			_traverseNodes(scene->mRootNode, 0, Dx::XMMatrixIdentity(), 0);
 		}
 
 		if (scene->HasMaterials())
@@ -279,7 +264,7 @@ namespace toaster::render
 		return m_path;
 	}
 
-	auto MeshData::_traverseNodes(void *p_assimp_node, uint32 p_node_index, const tsm::float4x4 &p_parent_transform, uint32 p_level) -> void
+	auto MeshData::_traverseNodes(void *p_assimp_node, uint32 p_node_index, Dx::FXMMATRIX p_parent_transform, uint32 p_level) -> void
 	{
 		auto ai_node = static_cast<aiNode *>(p_assimp_node);
 
@@ -287,14 +272,14 @@ namespace toaster::render
 		node.name           = ai_node->mName.C_Str();
 		node.localTransform = mat4FromAIMatrix4x4(ai_node->mTransformation);
 
-		tsm::float4x4 transform{p_parent_transform * node.localTransform};
+		Dx::XMMATRIX transform{Dx::XMMatrixMultiply(p_parent_transform, Dx::XMLoadFloat4x4(&node.localTransform))};
 		for (uint32 i{0u}; i < ai_node->mNumMeshes; ++i)
 		{
 			uint32_t submesh_index = ai_node->mMeshes[i];
 			auto &   submesh       = m_submeshes[submesh_index];
 			submesh.name           = ai_node->mName.C_Str();
-			submesh.transform      = transform;
 			submesh.localTransform = node.localTransform;
+			Dx::XMStoreFloat4x4(&submesh.transform, transform);
 
 			node.submeshes.emplace_back(submesh_index);
 		}

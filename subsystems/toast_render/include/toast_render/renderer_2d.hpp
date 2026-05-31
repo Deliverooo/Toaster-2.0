@@ -44,14 +44,13 @@ namespace toaster::render
 		explicit Renderer2D(RenderContext *p_render_ctx, const Renderer2DSpecInfo &p_create_info);
 		~Renderer2D();
 
-		auto begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void;
-		auto end(gpu::VKCommandBuffer *              p_cmd, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
-				 const gpu::RenderingAttachmentInfo *p_override_depth_attachment                                       = nullptr) -> void;
+		auto XM_CALLCONV begin(Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void;
+		auto             end(gpu::VKCommandBuffer *              p_cmd, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
+							 const gpu::RenderingAttachmentInfo *p_override_depth_attachment                                       = nullptr) -> void;
 
-		auto submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
-		auto submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void;
-		auto submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour) -> void;
-		auto submitQuad(const tsm::float4x4 &p_transform, const gpu::Texture2DHandle &p_texture, const tsm::float4 &p_colour) -> void;
+		auto XM_CALLCONV submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void;
+		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX p_transform, const tsm::float4 &p_colour) -> void;
+		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX p_transform, const gpu::Texture2DHandle &p_texture, const tsm::float4 &p_colour) -> void;
 
 		auto onResize(tsm::uint2 p_size) -> void;
 
@@ -70,11 +69,11 @@ namespace toaster::render
 
 		struct QuadVertex
 		{
-			tsm::float4 position{0.0f};
-			tsm::float4 colour{1.0f};
-			tsm::float2 texCoord{0.0f};
-			float32     texIndex{0u};
-			float32     tilingFactor{1.0f};
+			Dx::XMFLOAT4 position{0.0f, 0.0f, 0.0f, 0.0f};
+			tsm::float4  colour{1.0f};
+			tsm::float2  texCoord{0.0f};
+			float32      texIndex{0u};
+			float32      tilingFactor{1.0f};
 		};
 
 		gpu::BufferLayout m_quadVertexBufferLayout;
@@ -94,13 +93,13 @@ namespace toaster::render
 
 		uint32 m_quadIndexCount{0u};
 
-		std::array<tsm::float4, 4u> m_quadVertexPositions{};
-		std::array<tsm::float2, 4u> m_quadVertexTexCoords{};
+		std::array<Dx::XMFLOAT4, 4u> m_quadVertexPositions{};
+		std::array<tsm::float2, 4u>  m_quadVertexTexCoords{};
 
 		struct CameraUB
 		{
-			tsm::float4x4 view{1.0f};
-			tsm::float4x4 proj{1.0f};
+			Dx::XMFLOAT4X4 view;
+			Dx::XMFLOAT4X4 proj;
 		};
 
 		RefPtr<gpu::VKUniformBufferPFF> m_cameraUBs{nullptr};

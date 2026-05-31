@@ -29,14 +29,18 @@ namespace toaster
 
 	struct TST_SCENE_API DirectionalLight
 	{
-		tsm::float4 direction{0.0f};
-		tsm::float4 radiance{1.0f};
+		Dx::XMFLOAT3 direction{0.0f, 0.0f, 0.0f};
+		char         _padd[4];
+		tsm::float3  radiance{1.0f, 1.0f, 1.0f};
+		float32      multiplier{1.0f};
 	};
 
 	struct TST_SCENE_API PointLight
 	{
-		tsm::float4 position{0.0f};
-		tsm::float4 radiance{1.0f};
+		Dx::XMFLOAT3 position{0.0f, 0.0f, 0.0f};
+		char         _padd[4];
+		tsm::float3  radiance{1.0f, 1.0f, 1.0f};
+		float32      multiplier{1.0f};
 		// float32   radius{25.0f};
 		// float32   falloff{1.0f};
 	};
@@ -80,8 +84,8 @@ namespace toaster
 		auto getEntityByUUID(UUID p_uuid) -> Entity;
 		auto getEntityByName(const String &p_name) -> Entity;
 
-		auto getEntityWorldTransformMatrix(Entity p_entity) const -> tsm::float4x4;
-		auto getEntityWorldTransformComponent(Entity p_entity) const -> TransformComponent;
+		auto XM_CALLCONV getEntityWorldTransformMatrix(Entity p_entity) const -> Dx::XMMATRIX;
+		auto             getEntityWorldTransformComponent(Entity p_entity) const -> TransformComponent;
 
 		auto getMainCameraEntity() -> Entity;
 

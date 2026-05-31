@@ -91,6 +91,6 @@ namespace toaster
 		float32 m_orthoNear{-1.0f};
 		float32 m_orthoFar{1.0f};
 
-		float32 m_aspectRatio{0.0f};
+		float32 m_aspectRatio{1920.0f / 1080.0f};
 	};
 }

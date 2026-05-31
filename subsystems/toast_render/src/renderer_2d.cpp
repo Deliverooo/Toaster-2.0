@@ -91,12 +91,11 @@ namespace toaster::render
 		delete[] m_quadVertexBase;
 	}
 
-	auto Renderer2D::begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_proj_matrix) -> void
+	auto Renderer2D::begin(Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void
 	{
 		CameraUB ubo{};
-		ubo.view       = p_view_matrix;
-		ubo.proj       = p_proj_matrix;
-		ubo.proj[1][1] *= -1.0f;
+		Dx::XMStoreFloat4x4(&ubo.view, p_view);
+		Dx::XMStoreFloat4x4(&ubo.proj, p_projection);
 
 		std::memcpy(m_mappedCameraUBs[m_renderCtx->getCurrentFrameIndex()], &ubo, sizeof(CameraUB));
 
@@ -155,34 +154,26 @@ namespace toaster::render
 					m_quadMaterial->setTexture("u_Textures", m_renderCtx->getGlobals()->whiteTexture(), i);
 			}
 
-			m_renderCtx->renderGeometry(p_cmd, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, tsm::float4x4{1.0f});
+			m_renderCtx->renderGeometry(p_cmd, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, Dx::XMMatrixIdentity());
 		}
 
 		m_renderCtx->endRendering(p_cmd, rendering_info);
 	}
 
-	auto Renderer2D::submitQuad(const tsm::float3 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void
+	auto Renderer2D::submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void
 	{
-		const tsm::float4x4 transform{tsm::translate(tsm::float4x4{1.0f}, p_position) * tsm::scale(tsm::float4x4{1.0f}, {p_scale.x, p_scale.y, 1.0f})};
+		Dx::XMMATRIX transform{Dx::XMMatrixTransformation2D(Dx::XMVectorZero(), 0.0f, p_scale, Dx::XMVectorZero(), 0.0f, p_position)};
 		submitQuad(transform, p_colour);
 	}
 
-	auto Renderer2D::submitQuad(const tsm::float2 &p_position, const tsm::float2 &p_scale, const tsm::float4 &p_colour) -> void
-	{
-		const tsm::float4x4 transform{
-			tsm::translate(tsm::float4x4{1.0f}, tsm::float3{p_position.x, p_position.y, 0.0f}) * tsm::scale(tsm::float4x4{1.0f}, {p_scale.x, p_scale.y, 1.0f})
-		};
-		submitQuad(transform, p_colour);
-	}
-
-	auto Renderer2D::submitQuad(const tsm::float4x4 &p_transform, const tsm::float4 &p_colour) -> void
+	auto Renderer2D::submitQuad(Dx::FXMMATRIX p_transform, const tsm::float4 &p_colour) -> void
 	{
 		if (m_quadIndexCount >= m_maxIndices)
 			_beginNewBatch();
 
 		for (uint32 i{0u}; i < 4u; ++i)
 		{
-			m_quadVertexPtr->position = p_transform * m_quadVertexPositions[i];
+			Dx::XMStoreFloat4(&m_quadVertexPtr->position, Dx::XMVector4Transform(Dx::XMLoadFloat4(&m_quadVertexPositions[i]), p_transform));
 			m_quadVertexPtr->colour   = p_colour;
 			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
 			m_quadVertexPtr->texIndex = 0;
@@ -192,7 +183,7 @@ namespace toaster::render
 		m_stats.quadCount++;
 	}
 
-	auto Renderer2D::submitQuad(const tsm::float4x4 &p_transform, const gpu::Texture2DHandle &p_texture, const tsm::float4 &p_colour) -> void
+	auto Renderer2D::submitQuad(Dx::FXMMATRIX p_transform, const gpu::Texture2DHandle &p_texture, const tsm::float4 &p_colour) -> void
 	{
 		if (m_quadIndexCount >= m_maxIndices)
 			_beginNewBatch();
@@ -201,7 +192,7 @@ namespace toaster::render
 
 		for (uint32 i{0u}; i < 4u; ++i)
 		{
-			m_quadVertexPtr->position = p_transform * m_quadVertexPositions[i];
+			Dx::XMStoreFloat4(&m_quadVertexPtr->position, Dx::XMVector4Transform(Dx::XMLoadFloat4(&m_quadVertexPositions[i]), p_transform));
 			m_quadVertexPtr->colour   = p_colour;
 			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
 			m_quadVertexPtr->texIndex = static_cast<float32>(tex_index);

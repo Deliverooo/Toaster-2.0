@@ -6,6 +6,48 @@
 
 #include <fmt/format.h>
 
+template<>
+struct fmt::formatter<Dx::XMFLOAT2>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const Dx::XMFLOAT2 &v, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "({}, {})", v.x, v.y);
+	}
+};
+
+template<>
+struct fmt::formatter<Dx::XMFLOAT3>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const Dx::XMFLOAT3 &v, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "({}, {}, {})", v.x, v.y, v.z);
+	}
+};
+
+template<>
+struct fmt::formatter<Dx::XMFLOAT4>
+{
+	constexpr auto parse(format_parse_context &p_ctx)
+	{
+		return p_ctx.begin();
+	}
+
+	auto format(const Dx::XMFLOAT4 &v, format_context &p_ctx) const
+	{
+		return format_to(p_ctx.out(), "({}, {}, {}, {})", v.x, v.y, v.z, v.w);
+	}
+};
+
 template<typename Type>
 struct fmt::formatter<tsm::Vec2<Type> >
 {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fp_camera.hpp"
 #include "toast_kernel/layer.hpp"
 
 #include "toast_lib/events/key_event.hpp"
@@ -29,5 +30,7 @@ namespace toaster
 
 		gpu::PipelineHandle   m_fullscreenPipeline{nullptr};
 		gpu::RenderPassHandle m_fullscreenRenderPass{nullptr};
+
+		FPCamera m_camera;
 	};
 }

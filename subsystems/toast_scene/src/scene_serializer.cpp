@@ -26,6 +26,27 @@ inline auto operator<<(YAML::Emitter &out, const tsm::float4 &v) -> YAML::Emitte
 	return out;
 }
 
+inline auto operator<<(YAML::Emitter &out, const Dx::XMFLOAT2 &v) -> YAML::Emitter &
+{
+	out << YAML::Flow;
+	out << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
+	return out;
+}
+
+inline auto operator<<(YAML::Emitter &out, const Dx::XMFLOAT3 &v) -> YAML::Emitter &
+{
+	out << YAML::Flow;
+	out << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
+	return out;
+}
+
+inline auto operator<<(YAML::Emitter &out, const Dx::XMFLOAT4 &v) -> YAML::Emitter &
+{
+	out << YAML::Flow;
+	out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
+	return out;
+}
+
 inline auto operator<<(YAML::Emitter &out, const tsm::quatf &v) -> YAML::Emitter &
 {
 	out << YAML::Flow;
@@ -99,6 +120,84 @@ namespace YAML
 		}
 
 		static auto decode(const Node &node, tsm::float4 &rhs) -> bool
+		{
+			if (!node.IsSequence() || node.size() != 4)
+			{
+				return false;
+			}
+
+			rhs.x = node[0].as<float>();
+			rhs.y = node[1].as<float>();
+			rhs.z = node[2].as<float>();
+			rhs.w = node[3].as<float>();
+			return true;
+		}
+	};
+
+	template<>
+	struct convert<Dx::XMFLOAT2>
+	{
+		static auto encode(const Dx::XMFLOAT2 &rhs) -> Node
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			return node;
+		}
+
+		static auto decode(const Node &node, Dx::XMFLOAT2 &rhs) -> bool
+		{
+			if (!node.IsSequence() || node.size() != 2)
+			{
+				return false;
+			}
+
+			rhs.x = node[0].as<float>();
+			rhs.y = node[1].as<float>();
+			return true;
+		}
+	};
+
+	template<>
+	struct convert<Dx::XMFLOAT3>
+	{
+		static auto encode(const Dx::XMFLOAT3 &rhs) -> Node
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			node.push_back(rhs.z);
+			return node;
+		}
+
+		static auto decode(const Node &node, Dx::XMFLOAT3 &rhs) -> bool
+		{
+			if (!node.IsSequence() || node.size() != 3)
+			{
+				return false;
+			}
+
+			rhs.x = node[0].as<float>();
+			rhs.y = node[1].as<float>();
+			rhs.z = node[2].as<float>();
+			return true;
+		}
+	};
+
+	template<>
+	struct convert<Dx::XMFLOAT4>
+	{
+		static auto encode(const Dx::XMFLOAT4 &rhs) -> Node
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			node.push_back(rhs.z);
+			node.push_back(rhs.w);
+			return node;
+		}
+
+		static auto decode(const Node &node, Dx::XMFLOAT4 &rhs) -> bool
 		{
 			if (!node.IsSequence() || node.size() != 4)
 			{
@@ -344,9 +443,9 @@ namespace toaster
 			if (transform_comp)
 			{
 				auto &tc       = out_entity.getComponent<TransformComponent>();
-				tc.translation = transform_comp["Translation"].as<tsm::float3>();
-				tc.orientation = transform_comp["Rotation"].as<tsm::quatf>();
-				tc.scale       = transform_comp["Scale"].as<tsm::float3>();
+				tc.translation = transform_comp["Translation"].as<Dx::XMFLOAT3>();
+				tc.orientation = transform_comp["Rotation"].as<Dx::XMFLOAT4>();
+				tc.scale       = transform_comp["Scale"].as<Dx::XMFLOAT3>();
 			}
 
 			auto sprite_comp = entity["SpriteRendererComponent"];
@@ -384,7 +483,7 @@ namespace toaster
 				camera.setOrthoNearClip(camera_node["OrthoNear"].as<float32>());
 				camera.setOrthoFarClip(camera_node["OrthoFar"].as<float32>());
 
-				cc.primary        = camera_comp["Primary"].as<bool>();
+				cc.primary = camera_comp["Primary"].as<bool>();
 			}
 
 			auto directional_light_comp{entity["DirectionalLightComponent"]};

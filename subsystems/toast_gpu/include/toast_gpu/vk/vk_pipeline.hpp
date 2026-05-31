@@ -32,7 +32,7 @@ namespace toaster::gpu
 	{
 		TST_GPU_OBJECT
 	public:
-		VKPipeline(VKLogicalDevice *p_device, const PipelineSpecInfo &p_spec_info);
+		VKPipeline(VKLogicalDevice *p_device, const PipelineSpecInfo &p_spec_info, const String& p_debug_name = "Pipeline");
 
 		[[nodiscard]] auto getPipeline() -> vk::raii::Pipeline &;
 		[[nodiscard]] auto getPipelineLayout() -> const vk::raii::PipelineLayout &;
@@ -45,6 +45,8 @@ namespace toaster::gpu
 		auto _createGraphicsPipeline() -> void;
 
 		PipelineSpecInfo m_specInfo{};
+
+		String m_debugName{};
 
 		vk::raii::Pipeline       m_graphicsPipeline{nullptr};
 		vk::raii::PipelineLayout m_pipelineLayout{nullptr};

@@ -4,12 +4,11 @@
 
 namespace toaster
 {
-	FPCamera::FPCamera(InputContext *p_ctx, float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far) : Camera(tsm::perspective(tsm::radians(p_fov),
-																																		   p_aspectRatio, p_near, p_far)),
-																												   m_ctx(p_ctx), m_fov(p_fov),
+	FPCamera::FPCamera(InputContext *p_ctx, float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far) : m_ctx(p_ctx), m_fov(p_fov),
 																												   m_aspectRatio(p_aspectRatio), m_zNear(p_near),
 																												   m_zFar(p_far)
 	{
+		_updateProjection();
 	}
 
 	auto FPCamera::onUpdate(float32 p_dt) -> void
@@ -23,24 +22,43 @@ namespace toaster
 
 			float32 speed{m_ctx->isKeyDown(input::EKeyCode::eLeftControl) ? 30.0f : 10.0f};
 
-			tsm::float3 delta_position{0.0f};
+			Dx::XMVECTOR delta_position{Dx::XMVectorZero()};
 			if (m_ctx->isKeyDown(input::EKeyCode::eW))
-				delta_position += c_forwardDir;
+				delta_position = Dx::XMVectorSubtract(delta_position, Dx::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f));
 			if (m_ctx->isKeyDown(input::EKeyCode::eA))
-				delta_position -= c_rightDir;
+				delta_position = Dx::XMVectorSubtract(delta_position, Dx::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f));
 			if (m_ctx->isKeyDown(input::EKeyCode::eS))
-				delta_position -= c_forwardDir;
+				delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f));
 			if (m_ctx->isKeyDown(input::EKeyCode::eD))
-				delta_position += c_rightDir;
+				delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f));
 
-			delta_position = ((delta_position.length() == 0.0f) ? tsm::float3{0.0f} : tsm::normalize(delta_position)) * p_dt;
-			m_position     += tsm::float3{getRotationMatrix() * tsm::float4{delta_position, 0.0f}} * speed;
+			Dx::XMVECTOR length_vector{Dx::XMVector3Length(delta_position)};
+			float32      length;
+			Dx::XMStoreFloat(&length, length_vector);
+
+			Dx::XMVECTOR position{Dx::XMLoadFloat3(&m_position)};
+
+			if (length != 0.0f)
+			{
+				Dx::XMVECTOR moveDir           = Dx::XMVector3Normalize(delta_position);
+				Dx::XMVECTOR worldSpaceMoveDir = Dx::XMVector3Transform(moveDir, getRotationMatrix());
+				Dx::XMVECTOR translation       = Dx::XMVectorScale(worldSpaceMoveDir, speed * p_dt);
+
+				position = Dx::XMVectorAdd(position, translation);
+			}
+
 			if (m_ctx->isKeyDown(input::EKeyCode::eSpace))
-				m_position += c_upDir * p_dt * speed;
+			{
+				Dx::XMVECTOR translation = Dx::XMVectorScale(c_upDir, speed * p_dt);
+				position                 = Dx::XMVectorAdd(position, translation);
+			}
 			if (m_ctx->isKeyDown(input::EKeyCode::eLeftShift))
-				m_position -= c_upDir * p_dt * speed;
+			{
+				Dx::XMVECTOR translation = Dx::XMVectorScale(c_upDir, speed * p_dt);
+				position                 = Dx::XMVectorSubtract(position, translation);
+			}
 
-			// LOG_INFO("Pos: {}", m_position);
+			Dx::XMStoreFloat3(&m_position, position);
 
 			const tsm::float2 mouse{m_ctx->getMouseX(), m_ctx->getMouseY()};
 			const tsm::float2 delta{(mouse - m_initialMousePosition) * 0.002f};
@@ -75,44 +93,40 @@ namespace toaster
 		_updateProjection();
 	}
 
-	auto FPCamera::getViewMatrix() const -> tsm::float4x4
+	auto FPCamera::getViewMatrix() const -> Dx::XMMATRIX
 	{
-		const tsm::float4x4 cameraTranslation{tsm::translate(tsm::float4x4{1.0f}, m_position)};
-		const tsm::float4x4 cameraRotation{getRotationMatrix()};
-		return tsm::inverse(cameraTranslation * cameraRotation);
+		Dx::XMMATRIX rotation_matrix{getRotationMatrix()};
+		return Dx::XMMatrixInverse(nullptr, Dx::XMMatrixMultiply(Dx::XMMatrixTranslationFromVector(Dx::XMLoadFloat3(&m_position)), rotation_matrix));
 	}
 
-	auto FPCamera::getRotationMatrix() const -> tsm::float4x4
+	auto FPCamera::getRotationMatrix() const -> Dx::XMMATRIX
 	{
-		tsm::quatf pitchRotation{tsm::axisAngle(m_pitch, tsm::float3{1.0f, 0.0f, 0.0f})};
-		tsm::quatf yawRotation{tsm::axisAngle(m_yaw, tsm::float3{0.0f, -1.0f, 0.0f})};
-
-		return tsm::toMat4(yawRotation) * tsm::toMat4(pitchRotation);
+		return Dx::XMMatrixRotationRollPitchYaw(-m_pitch, m_yaw, 0.0f);
 	}
 
-	auto FPCamera::getViewProjection() const -> tsm::float4x4
+	auto FPCamera::getViewProjection() const -> Dx::XMMATRIX
 	{
-		return m_projection * getViewMatrix();
+		return Dx::XMMatrixMultiply(Dx::XMLoadFloat4x4(&m_projection), getViewMatrix());
 	}
 
-	auto FPCamera::getForwardDirection() const -> tsm::float3
+	auto FPCamera::getForwardDirection() const -> Dx::XMVECTOR
 	{
-		return getRotationMatrix() * tsm::float4{c_forwardDir, 0.0f};
+		return Dx::XMVector3Transform(c_forwardDir, getRotationMatrix());
 	}
 
-	auto FPCamera::getRightDirection() const -> tsm::float3
+	auto FPCamera::getRightDirection() const -> Dx::XMVECTOR
 	{
-		return getRotationMatrix() * tsm::float4{c_rightDir, 0.0f};
+		return Dx::XMVector3Transform(c_rightDir, getRotationMatrix());
 	}
 
-	auto FPCamera::getUpDirection() const -> tsm::float3
+	auto FPCamera::getUpDirection() const -> Dx::XMVECTOR
 	{
-		return getRotationMatrix() * tsm::float4{c_upDir, 0.0f};
+		return Dx::XMVector3Transform(c_upDir, getRotationMatrix());
 	}
 
-	auto FPCamera::getPosition() const -> const tsm::float3 &
+	auto FPCamera::getPosition() const -> Dx::XMVECTOR
 	{
-		return m_position;
+		return Dx::XMLoadFloat3(&m_position);
 	}
 
 	auto FPCamera::getPitch() const -> float32
@@ -127,7 +141,7 @@ namespace toaster
 
 	auto FPCamera::_updateProjection() -> void
 	{
-		m_projection = tsm::perspective(tsm::radians(m_fov) * m_zoom, m_aspectRatio, m_zNear, m_zFar);
+		setPerspective(tsm::radians(m_fov) * m_zoom, m_aspectRatio, m_zNear, m_zFar);
 	}
 
 	auto FPCamera::_onMouseScrollEvent(MouseScrollEvent &p_event) -> bool

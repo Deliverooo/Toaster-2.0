@@ -39,9 +39,9 @@ namespace toaster
 			depth_pre_pipeline_spec_info.depthFormat       = vk::Format::eD32Sfloat;
 			depth_pre_pipeline_spec_info.colourAttachments = {vk::Format::eR16G16B16A16Sfloat, vk::Format::eR16G16B16A16Sfloat};
 			depth_pre_pipeline_spec_info.multisample       = true;
-			depth_pre_pipeline_spec_info.cullMode          = vk::CullModeFlagBits::eBack;
+			depth_pre_pipeline_spec_info.cullMode          = vk::CullModeFlagBits::eNone;
 			depth_pre_pipeline_spec_info.shader            = m_renderCtx->getGlobals()->shaderLibrary().get("Depth-Pre");
-			m_depthPrePipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(depth_pre_pipeline_spec_info);
+			m_depthPrePipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(depth_pre_pipeline_spec_info, "Depth-Pre");
 
 			m_depthPrePass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_depthPrePipeline);
 			m_depthPrePass->setInput("Camera", m_cameraUBOs);
@@ -75,7 +75,7 @@ namespace toaster
 			ssao_pipeline_spec_info.multisample        = false;
 			ssao_pipeline_spec_info.depthTest          = false;
 			ssao_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
-			m_ssaoPipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(ssao_pipeline_spec_info);
+			m_ssaoPipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(ssao_pipeline_spec_info, "SSAO");
 
 			m_ssaoPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_ssaoPipeline);
 
@@ -150,7 +150,7 @@ namespace toaster
 			skybox_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
 			skybox_pipeline_spec_info.multisample        = true;
 			skybox_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
-			m_skyboxPipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(skybox_pipeline_spec_info);
+			m_skyboxPipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(skybox_pipeline_spec_info, "Skybox");
 
 			m_skyboxPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_skyboxPipeline);
 			m_skyboxPass->setInput("Camera", m_cameraUBOs);
@@ -181,7 +181,7 @@ namespace toaster
 			geometry_pipeline_spec_info.polygonMode       = vk::PolygonMode::eFill;
 			geometry_pipeline_spec_info.cullMode          = vk::CullModeFlagBits::eBack;
 			geometry_pipeline_spec_info.shader            = m_renderCtx->getGlobals()->shaderLibrary().get("Geometry");
-			m_geometryPipeline                            = m_renderCtx->createGPU<gpu::VKPipeline>(geometry_pipeline_spec_info);
+			m_geometryPipeline                            = m_renderCtx->createGPU<gpu::VKPipeline>(geometry_pipeline_spec_info, "Geometry");
 
 			m_geometryPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs);
@@ -217,18 +217,17 @@ namespace toaster
 		onRender(m_renderCtx->getCurrentSwapchainCommandBuffer());
 	}
 
-	auto SceneRenderer::onRender(const tsm::float4x4 &p_view, const tsm::float4x4 &p_projection) -> void
+	auto SceneRenderer::onRender(Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
 	{
-		onRender(m_renderCtx->getCurrentSwapchainCommandBuffer(), p_view, p_projection);
+		onRender(m_renderCtx->getCurrentSwapchainCommandBuffer(), p_view_matrix, p_projection_matrix);
 	}
 
 	auto SceneRenderer::onRender(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		const Camera *main_camera{nullptr};
-		tsm::float4x4 camera_transform{1.0f};
 
-		Entity main_camera_entity{m_scene->getMainCameraEntity()};
-		if (main_camera_entity)
+		Dx::XMMATRIX camera_transform;
+		if (Entity main_camera_entity{m_scene->getMainCameraEntity()})
 		{
 			main_camera      = &main_camera_entity.getComponent<CameraComponent>().camera;
 			camera_transform = main_camera_entity.getComponent<TransformComponent>().getTransform();
@@ -245,10 +244,10 @@ namespace toaster
 			return;
 		}
 
-		onRender(p_cmd, tsm::inverse(camera_transform), main_camera->getProjectionMatrix());
+		onRender(p_cmd, Dx::XMMatrixInverse(nullptr, camera_transform), main_camera->getProjectionMatrix());
 	}
 
-	auto SceneRenderer::onRender(gpu::VKCommandBuffer *p_cmd, const tsm::float4x4 &p_view, const tsm::float4x4 &p_projection) -> void
+	auto SceneRenderer::onRender(gpu::VKCommandBuffer *p_cmd, Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void
 	{
 		m_scene->m_lightEnvironment.pointLights.clear();
 		m_scene->m_lightEnvironment.directionalLights.clear();
@@ -260,13 +259,13 @@ namespace toaster
 				Entity e{entity, m_scene};
 				auto   tc{m_scene->getEntityWorldTransformComponent(e)};
 
-				tsm::float4x4 rotation{tsm::toMat4(tc.orientation)};
-				tsm::float4   forward{rotation * tsm::float4(0.0f, 0.0f, -1.0f, 0.0f)};
-				tsm::float3   direction{tsm::normalize(tsm::float3(forward))};
-				m_scene->m_lightEnvironment.directionalLights.emplace_back(DirectionalLight{
-																			   tsm::float4(direction, 1.0f),
-																			   tsm::float4(directional_light.radiance, directional_light.multiplier)
-																		   });
+				Dx::XMVECTOR orientation{Dx::XMLoadFloat4(&tc.orientation)};
+				Dx::XMVECTOR direction{Dx::XMVector3Rotate(Dx::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f), orientation)};
+
+				auto &dir_light{m_scene->m_lightEnvironment.directionalLights.emplace_back()};
+				Dx::XMStoreFloat3(&dir_light.direction, direction);
+				dir_light.radiance   = directional_light.radiance;
+				dir_light.multiplier = directional_light.multiplier;
 			}
 		}
 		{
@@ -276,10 +275,10 @@ namespace toaster
 				Entity e{entity, m_scene};
 				auto   tc{m_scene->getEntityWorldTransformComponent(e)};
 
-				m_scene->m_lightEnvironment.pointLights.emplace_back(PointLight{
-																		 tsm::float4(tc.translation, 1.0f),
-																		 tsm::float4(point_light.radiance, point_light.multiplier)
-																	 });
+				auto &light{m_scene->m_lightEnvironment.pointLights.emplace_back()};
+				light.position   = tc.translation;
+				light.radiance   = point_light.radiance;
+				light.multiplier = point_light.multiplier;
 			}
 		}
 
@@ -293,7 +292,7 @@ namespace toaster
 			begin(p_view, p_projection);
 			for (const auto view{m_scene->m_registry.view<MeshComponent>()}; const auto entity: view)
 			{
-				auto mesh_comp{view.get<MeshComponent>(entity)};
+				const auto &mesh_comp{view.get<MeshComponent>(entity)};
 
 				auto mesh{mesh_comp.meshAssetID};
 				if (mesh)
@@ -310,16 +309,17 @@ namespace toaster
 
 			for (const auto view{m_scene->m_registry.view<SpriteRendererComponent>()}; const auto entity: view)
 			{
-				auto src{view.get<SpriteRendererComponent>(entity)};
+				const auto &src{view.get<SpriteRendererComponent>(entity)};
 
-				Entity        e{entity, m_scene};
-				tsm::float4x4 transform{m_scene->getEntityWorldTransformMatrix(e)};
+				Entity e{entity, m_scene};
+
+				Dx::XMMATRIX transform{m_scene->getEntityWorldTransformMatrix(e)};
 
 				auto texture{src.textureAssetID};
 				if (texture)
 					m_renderer2D->submitQuad(transform, texture, src.colour);
 				else
-					m_renderer2D->submitQuad({1.0f}, src.colour);
+					m_renderer2D->submitQuad(Dx::XMMatrixIdentity(), src.colour);
 			}
 
 			gpu::RenderingAttachmentInfo colour_attachment_info{};
@@ -343,15 +343,15 @@ namespace toaster
 		#endif
 	}
 
-	auto SceneRenderer::begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_projection_matrix) -> void
+	auto SceneRenderer::begin(Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
 	{
 		uint32 frame_index{m_renderCtx->getCurrentFrameIndex()};
 
 		CameraUB camera_ub{};
-		camera_ub.view       = p_view_matrix;
-		camera_ub.proj       = p_projection_matrix;
-		camera_ub.proj[1][1] *= -1.0f; // Silly opengl
-		camera_ub.invProj    = p_projection_matrix;
+		Dx::XMStoreFloat4x4(&camera_ub.view, p_view_matrix);
+		Dx::XMStoreFloat4x4(&camera_ub.proj, p_projection_matrix);
+		Dx::XMStoreFloat4x4(&camera_ub.invProj, Dx::XMMatrixInverse(nullptr, p_projection_matrix));
+
 		std::memcpy(m_mappedCameraUBOs[frame_index], &camera_ub, sizeof(CameraUB));
 
 		const auto &[directional_lights, point_lights]{m_scene->getLightEnvironment()};
@@ -377,7 +377,20 @@ namespace toaster
 		}
 
 		SceneDataUB scene_data_ub{};
-		scene_data_ub.cameraPos = tsm::inverse(p_view_matrix)[3];
+
+		Dx::XMVECTOR R{p_view_matrix.r[0]};
+		Dx::XMVECTOR U{p_view_matrix.r[1]};
+		Dx::XMVECTOR F{p_view_matrix.r[2]};
+		Dx::XMVECTOR T{p_view_matrix.r[3]};
+
+		Dx::XMVECTOR pos_x{Dx::XMVector3Dot(T, R)};
+		Dx::XMVECTOR pos_y{Dx::XMVector3Dot(T, U)};
+		Dx::XMVECTOR pos_z{Dx::XMVector3Dot(T, F)};
+
+		Dx::XMVECTOR camera_pos{Dx::XMVectorSet(Dx::XMVectorGetX(pos_x), Dx::XMVectorGetY(pos_y), Dx::XMVectorGetZ(pos_z), 1.0f)};
+		camera_pos = Dx::XMVectorScale(camera_pos, -1.0f);
+
+		Dx::XMStoreFloat3(&scene_data_ub.cameraPos, camera_pos);
 		std::memcpy(m_mappedSceneDataUBOs[frame_index], &scene_data_ub, sizeof(SceneDataUB));
 	}
 
@@ -392,11 +405,11 @@ namespace toaster
 		m_meshDrawCommands.clear();
 	}
 
-	auto SceneRenderer::renderMesh(const render::MeshHandle &p_mesh, const tsm::float4x4 &p_transform) -> void
+	auto SceneRenderer::renderMesh(const render::MeshHandle &p_mesh, Dx::FXMMATRIX p_transform) -> void
 	{
 		DrawCommand &draw_command{m_meshDrawCommands.emplace_back()};
-		draw_command.mesh      = p_mesh;
-		draw_command.transform = p_transform;
+		draw_command.mesh = p_mesh;
+		Dx::XMStoreFloat4x4(&draw_command.transform, p_transform);
 	}
 
 	auto SceneRenderer::getSpecInfo() const -> const SceneRendererSpecInfo &
@@ -537,8 +550,9 @@ namespace toaster
 		{
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
 			{
-				m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_depthPrePipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform, nullptr);
-				// m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_depthPrePipeline, tsm::float4x4{1.0f}, nullptr);
+				Dx::XMMATRIX draw_cmd_transform{Dx::XMLoadFloat4x4(&draw_cmd.transform)};
+				Dx::XMMATRIX submesh_transform{Dx::XMLoadFloat4x4(&draw_cmd.mesh->getSubmeshes()[i].localTransform)};
+				m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_depthPrePipeline, Dx::XMMatrixMultiply(draw_cmd_transform, submesh_transform), nullptr);
 			}
 		}
 		m_renderCtx->endRendering(p_cmd, rendering_info);
@@ -604,6 +618,9 @@ namespace toaster
 
 	auto SceneRenderer::_renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void
 	{
+		if (m_meshDrawCommands.empty())
+			return;
+
 		gpu::RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{
 			{(int32) m_specInfo.viewportOffset.x, (int32) m_specInfo.viewportOffset.y},
@@ -633,7 +650,9 @@ namespace toaster
 		{
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
 			{
-				m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_geometryPipeline, draw_cmd.transform * draw_cmd.mesh->getSubmeshes()[i].localTransform);
+				Dx::XMMATRIX draw_cmd_transform{Dx::XMLoadFloat4x4(&draw_cmd.transform)};
+				Dx::XMMATRIX submesh_transform{Dx::XMLoadFloat4x4(&draw_cmd.mesh->getSubmeshes()[i].localTransform)};
+				m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_geometryPipeline, Dx::XMMatrixMultiply(draw_cmd_transform, submesh_transform));
 			}
 		}
 		m_renderCtx->endRendering(p_cmd, rendering_info);
@@ -647,15 +666,18 @@ namespace toaster
 
 		for (uint32 i{0u}; i < c_SSAOSampleCount; ++i)
 		{
-			tsm::float3 sample{s_random_floats(s_generator) * 2.0f - 1.0f, s_random_floats(s_generator) * 2.0f - 1.0f, s_random_floats(s_generator)};
-			sample = tsm::normalize(sample);
-			sample *= s_random_floats(s_generator);
+			Dx::XMVECTOR sample{
+				Dx::XMVectorSet(s_random_floats(s_generator) * 2.0f - 1.0f, s_random_floats(s_generator) * 2.0f - 1.0f, s_random_floats(s_generator), 0.0f)
+			};
+
+			sample = Dx::XMVector2Normalize(sample);
+			sample = Dx::XMVectorScale(sample, s_random_floats(s_generator));
 
 			float32 scale{static_cast<float32>(i) / static_cast<float32>(c_SSAOSampleCount)};
 			scale  = tsm::mix(0.1f, 1.0f, scale * scale);
-			sample *= scale;
+			sample = Dx::XMVectorScale(sample, scale);
 
-			samples[i] = {sample, 0.0f};
+			Dx::XMStoreFloat4(&samples[i], sample);
 		}
 	}
 }

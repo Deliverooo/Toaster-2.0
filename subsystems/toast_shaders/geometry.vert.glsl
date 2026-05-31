@@ -28,9 +28,9 @@ invariant gl_Position;
 void main()
 {
     vec4 world_position = _Transform_.model * vec4(a_Position, 1.0f);
-    vec4 view_position = u_View * world_position;
+    vec4 view_position = u_View  * world_position;
 
-    gl_Position = u_Proj * view_position;
+    gl_Position =  u_Proj * view_position;
 
     v_WorldPos = world_position.xyz;
     v_Position = a_Position;

@@ -117,17 +117,18 @@ namespace toaster::render
 		auto dispatchCompute(gpu::CommandBuffer *p_command_buffer, const gpu::ComputePass *p_compute_pass, Material *p_material, uint32 p_work_group_x,
 							 uint32              p_work_group_y, uint32                    p_work_group_z, uint32    p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderGeometry(gpu::CommandBuffer *p_command_buffer, gpu::Pipeline *p_pipeline, gpu::VertexBuffer *p_vertex_buffer, gpu::IndexBuffer *p_index_buffer,
-							uint32              p_index_count, Material *p_material, const tsm::float4x4 &p_transform, uint32 p_frame_index = UINT32_MAX) const -> void;
+		auto XM_CALLCONV renderGeometry(gpu::CommandBuffer *p_command_buffer, gpu::Pipeline *p_pipeline, gpu::VertexBuffer *p_vertex_buffer,
+										gpu::IndexBuffer *  p_index_buffer, uint32           p_index_count, Material *      p_material, Dx::FXMMATRIX p_transform,
+										uint32              p_frame_index = UINT32_MAX) const -> void;
 
 		auto renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer, const gpu::RenderPass *p_render_pass, Material *p_material,
 								  uint32              p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline, const tsm::float4x4 &p_transform,
-						uint32              p_frame_index = UINT32_MAX) const -> void;
+		auto XM_CALLCONV renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline,
+									Dx::FXMMATRIX       p_transform, uint32               p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline, const tsm::float4x4 &p_transform,
-						Material *          p_override_material, uint32       p_frame_index = UINT32_MAX) const -> void;
+		auto XM_CALLCONV renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline,
+									Dx::FXMMATRIX       p_transform, Material *           p_override_material, uint32 p_frame_index = UINT32_MAX) const -> void;
 		#pragma endregion
 
 	private:

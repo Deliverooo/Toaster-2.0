@@ -4,7 +4,8 @@
 
 namespace toaster::gpu
 {
-	VKPipeline::VKPipeline(VKLogicalDevice *p_device, const PipelineSpecInfo &p_spec_info) : m_device(p_device), m_specInfo(p_spec_info)
+	VKPipeline::VKPipeline(VKLogicalDevice *p_device, const PipelineSpecInfo &p_spec_info, const String &p_debug_name) : m_device(p_device), m_specInfo(p_spec_info),
+																														 m_debugName(p_debug_name)
 	{
 		TST_ASSERT_MSG(m_device, "Context cannot be null");
 
@@ -181,6 +182,7 @@ namespace toaster::gpu
 		pipeline_layout_create_info.setLayoutCount         = descriptor_set_layouts.size();
 		pipeline_layout_create_info.pSetLayouts            = descriptor_set_layouts.data();
 		m_pipelineLayout                                   = {*m_device, pipeline_layout_create_info};
+		m_device->setDebugObjectName(*m_pipelineLayout, m_debugName);
 
 		std::vector<vk::PipelineShaderStageCreateInfo> stage_infos = m_specInfo.shader->getPipelineShaderStageCreateInfos();
 
@@ -200,5 +202,6 @@ namespace toaster::gpu
 		graphics_pipeline_create_info.pNext               = &rendering_create_info;
 
 		m_graphicsPipeline = {*m_device, nullptr, graphics_pipeline_create_info};
+		m_device->setDebugObjectName(*m_graphicsPipeline, m_debugName);
 	}
 }

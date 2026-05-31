@@ -19,14 +19,14 @@ namespace toaster
 		SceneRenderer(Scene *p_scene, const SceneRendererSpecInfo &p_spec_info);
 		~SceneRenderer();
 
-		auto onRender() -> void;
-		auto onRender(const tsm::float4x4 &p_view, const tsm::float4x4 &p_projection) -> void;
-		auto onRender(gpu::VKCommandBuffer *p_cmd) -> void;
-		auto onRender(gpu::VKCommandBuffer *p_cmd, const tsm::float4x4 &p_view, const tsm::float4x4 &p_projection) -> void;
+		auto             onRender() -> void;
+		auto XM_CALLCONV onRender(Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void;
+		auto             onRender(gpu::VKCommandBuffer *p_cmd) -> void;
+		auto XM_CALLCONV onRender(gpu::VKCommandBuffer *p_cmd, Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void;
 
-		auto begin(const tsm::float4x4 &p_view_matrix, const tsm::float4x4 &p_projection_matrix) -> void;
-		auto end(gpu::VKCommandBuffer *p_cmd) -> void;
-		auto renderMesh(const render::MeshHandle &p_mesh, const tsm::float4x4 &p_transform) -> void;
+		auto XM_CALLCONV begin(Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void;
+		auto             end(gpu::VKCommandBuffer *p_cmd) -> void;
+		auto XM_CALLCONV renderMesh(const render::MeshHandle &p_mesh, Dx::FXMMATRIX p_transform) -> void;
 
 		auto getSpecInfo() const -> const SceneRendererSpecInfo &;
 
@@ -90,7 +90,8 @@ namespace toaster
 		struct SSAOKernel
 		{
 			static constexpr uint32 c_SSAOSampleCount{64};
-			tsm::float4             samples[c_SSAOSampleCount];
+
+			Dx::XMFLOAT4 samples[c_SSAOSampleCount];
 
 			SSAOKernel();
 		};
@@ -132,9 +133,9 @@ namespace toaster
 
 		struct CameraUB
 		{
-			tsm::float4x4 view;
-			tsm::float4x4 proj;
-			tsm::float4x4 invProj;
+			Dx::XMFLOAT4X4 view;
+			Dx::XMFLOAT4X4 proj;
+			Dx::XMFLOAT4X4 invProj;
 		};
 
 		gpu::UniformBufferPFFHandle m_cameraUBOs;
@@ -166,7 +167,8 @@ namespace toaster
 
 		struct SceneDataUB
 		{
-			tsm::float4 cameraPos{0.0f, 0.0f, 0.0f, 1.0f};
+			Dx::XMFLOAT3 cameraPos{0.0f, 0.0f, 0.0f};
+			char         _padd[4];
 		};
 
 		gpu::UniformBufferPFFHandle m_sceneDataUBOs;
@@ -175,7 +177,7 @@ namespace toaster
 		struct DrawCommand
 		{
 			render::MeshHandle mesh{nullptr};
-			tsm::float4x4      transform{1.0f};
+			Dx::XMFLOAT4X4     transform;
 		};
 
 		std::vector<DrawCommand> m_meshDrawCommands;
