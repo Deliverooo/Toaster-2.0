@@ -41,7 +41,11 @@ namespace toaster::render
 			uint32 quadCount{0u};
 		};
 
-		explicit Renderer2D(RenderContext *p_render_ctx, const Renderer2DSpecInfo &p_create_info);
+		// Ts makes creating renderer 2Ds look better, as, for simple use cases, you only need to specify the viewport size.
+		// The rest of the spec info is kept at their default values
+		Renderer2D(RenderContext *p_render_ctx, tsm::uint2 p_viewport_size);
+
+		Renderer2D(RenderContext *p_render_ctx, const Renderer2DSpecInfo &p_create_info);
 		~Renderer2D();
 
 		auto XM_CALLCONV begin(Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void;
@@ -58,6 +62,8 @@ namespace toaster::render
 		[[nodiscard]] auto getStats() const -> const Stats &;
 
 	private:
+		auto _construct() -> void; // Called once for each constructor so I don't have to repeat myself
+
 		auto _beginNewBatch() -> void;
 		auto _getTextureSlotIndex(const gpu::Texture2DHandle &p_texture) -> uint32;
 

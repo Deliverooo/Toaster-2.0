@@ -453,7 +453,7 @@ namespace toaster
 			{
 				auto &src          = out_entity.addComponent<SpriteRendererComponent>();
 				src.colour         = sprite_comp["Colour"].as<tsm::float4>();;
-				src.textureAssetID = m_scene->m_renderCtx->createGPU<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, sprite_comp["TextureAssetID"].as<String>());
+				src.textureAssetID = m_scene->m_renderCtx->createGPURef<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, sprite_comp["TextureAssetID"].as<String>());
 				src.tilingFactor   = sprite_comp["TilingFactor"].as<float32>();
 			}
 
@@ -463,7 +463,7 @@ namespace toaster
 				auto &mc{out_entity.addComponent<MeshComponent>()};
 
 				String mesh_asset_path{mesh_comp["MeshAssetID"].as<String>()};
-				mc.meshAssetID = m_scene->m_renderCtx->create<render::MeshData>(mesh_asset_path);
+				mc.meshAssetID = m_scene->m_renderCtx->createRef<render::MeshData>(mesh_asset_path);
 			}
 
 			auto camera_comp = entity["CameraComponent"];

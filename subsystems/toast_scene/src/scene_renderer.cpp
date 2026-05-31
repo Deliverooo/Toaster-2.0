@@ -8,6 +8,7 @@
 #include "toast_scene/entity.hpp"
 
 #define TST_ENABLE_2D_SCENE_RENDERING 1
+#define TST_ENABLE_3D_SCENE_RENDERING 1
 
 namespace toaster
 {
@@ -41,9 +42,9 @@ namespace toaster
 			depth_pre_pipeline_spec_info.multisample       = true;
 			depth_pre_pipeline_spec_info.cullMode          = vk::CullModeFlagBits::eNone;
 			depth_pre_pipeline_spec_info.shader            = m_renderCtx->getGlobals()->shaderLibrary().get("Depth-Pre");
-			m_depthPrePipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(depth_pre_pipeline_spec_info, "Depth-Pre");
+			m_depthPrePipeline                             = m_renderCtx->createGPURef<gpu::VKPipeline>(depth_pre_pipeline_spec_info, "Depth-Pre");
 
-			m_depthPrePass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_depthPrePipeline);
+			m_depthPrePass = m_renderCtx->createGPURef<gpu::VKRenderPass>(m_depthPrePipeline);
 			m_depthPrePass->setInput("Camera", m_cameraUBOs);
 			m_depthPrePass->bake();
 
@@ -75,15 +76,15 @@ namespace toaster
 			ssao_pipeline_spec_info.multisample        = false;
 			ssao_pipeline_spec_info.depthTest          = false;
 			ssao_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
-			m_ssaoPipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(ssao_pipeline_spec_info, "SSAO");
+			m_ssaoPipeline                             = m_renderCtx->createGPURef<gpu::VKPipeline>(ssao_pipeline_spec_info, "SSAO");
 
-			m_ssaoPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_ssaoPipeline);
+			m_ssaoPass = m_renderCtx->createGPURef<gpu::VKRenderPass>(m_ssaoPipeline);
 
 			m_ssaoOutputTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eColor, vk::Format::eR16G16B16A16Sfloat);
 			m_ssaoPass->setInput("Camera", m_cameraUBOs);
 
 			m_ssaoKernel = make_unique<SSAOKernel>(); // Generates the random rotation vectors
-			auto ssao_kernel_ubo{m_renderCtx->createGPU<gpu::VKUniformBuffer>(sizeof(SSAOKernel))};
+			auto ssao_kernel_ubo{m_renderCtx->createGPURef<gpu::VKUniformBuffer>(sizeof(SSAOKernel))};
 			ssao_kernel_ubo->setData(m_ssaoKernel->samples, sizeof(SSAOKernel), 0);
 			m_ssaoPass->setInput("SSAOKernel", ssao_kernel_ubo);
 
@@ -110,10 +111,10 @@ namespace toaster
 				auto &noise{ssaoNoise.emplace_back()};
 				noise = {x, y, z, 1.0f};
 			}
-			m_ssaoNoiseTexture = m_renderCtx->createGPU<gpu::VKTexture2D>(noise_texture_spec_info, ssaoNoise.data(), ssaoNoise.size() * sizeof(tsm::float4));
+			m_ssaoNoiseTexture = m_renderCtx->createGPURef<gpu::VKTexture2D>(noise_texture_spec_info, ssaoNoise.data(), ssaoNoise.size() * sizeof(tsm::float4));
 			m_ssaoPass->setInput("u_NoiseTex", m_ssaoNoiseTexture);
 
-			m_aoFrameDataMaterial = m_renderCtx->create<render::Material>(m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Graphics"), "SSAO");
+			m_aoFrameDataMaterial = m_renderCtx->createRef<render::Material>(m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Graphics"), "SSAO");
 			m_aoFrameDataMaterial->set(".u_Radius", 0.5f);
 			m_aoFrameDataMaterial->set(".u_Bias", 0.025f);
 
@@ -124,10 +125,10 @@ namespace toaster
 				blurred_ao_image_spec_info.size   = m_specInfo.viewportSize;
 				blurred_ao_image_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
 				blurred_ao_image_spec_info.usage  = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
-				m_aoBlurredOutputImage            = m_renderCtx->createGPU<gpu::VKStorageImage>(blurred_ao_image_spec_info);
+				m_aoBlurredOutputImage            = m_renderCtx->createGPURef<gpu::VKStorageImage>(blurred_ao_image_spec_info);
 
-				m_aoBlurPipeline = m_renderCtx->createGPU<gpu::VKComputePipeline>(m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Blur"));
-				m_aoBlurPass     = m_renderCtx->createGPU<gpu::VKComputePass>(m_aoBlurPipeline);
+				m_aoBlurPipeline = m_renderCtx->createGPURef<gpu::VKComputePipeline>(m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Blur"));
+				m_aoBlurPass     = m_renderCtx->createGPURef<gpu::VKComputePass>(m_aoBlurPipeline);
 
 				m_aoBlurPass->setInput("u_Occlusion", m_ssaoOutputTexture);
 				m_aoBlurPass->setInput("o_BlurredOcclusion", m_aoBlurredOutputImage);
@@ -150,9 +151,9 @@ namespace toaster
 			skybox_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
 			skybox_pipeline_spec_info.multisample        = true;
 			skybox_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
-			m_skyboxPipeline                             = m_renderCtx->createGPU<gpu::VKPipeline>(skybox_pipeline_spec_info, "Skybox");
+			m_skyboxPipeline                             = m_renderCtx->createGPURef<gpu::VKPipeline>(skybox_pipeline_spec_info, "Skybox");
 
-			m_skyboxPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_skyboxPipeline);
+			m_skyboxPass = m_renderCtx->createGPURef<gpu::VKRenderPass>(m_skyboxPipeline);
 			m_skyboxPass->setInput("Camera", m_cameraUBOs);
 			// m_skyboxPass->setInput("u_CubemapImage", m_specInfo.scene->m_sceneEnvironment.skyboxMap);
 
@@ -181,9 +182,9 @@ namespace toaster
 			geometry_pipeline_spec_info.polygonMode       = vk::PolygonMode::eFill;
 			geometry_pipeline_spec_info.cullMode          = vk::CullModeFlagBits::eBack;
 			geometry_pipeline_spec_info.shader            = m_renderCtx->getGlobals()->shaderLibrary().get("Geometry");
-			m_geometryPipeline                            = m_renderCtx->createGPU<gpu::VKPipeline>(geometry_pipeline_spec_info, "Geometry");
+			m_geometryPipeline                            = m_renderCtx->createGPURef<gpu::VKPipeline>(geometry_pipeline_spec_info, "Geometry");
 
-			m_geometryPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_geometryPipeline);
+			m_geometryPass = m_renderCtx->createGPURef<gpu::VKRenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs);
 			m_geometryPass->setInput("DirectionalLightData", m_directionalLightUBOs);
 			m_geometryPass->setInput("PointLightData", m_pointLightUBOs);
@@ -251,6 +252,7 @@ namespace toaster
 	{
 		m_scene->m_lightEnvironment.pointLights.clear();
 		m_scene->m_lightEnvironment.directionalLights.clear();
+		#if TST_ENABLE_3D_SCENE_RENDERING
 		{
 			for (const auto group{m_scene->m_registry.group(entt::get<DirectionalLightComponent>)}; const auto entity: group)
 			{
@@ -303,6 +305,7 @@ namespace toaster
 			}
 			end(p_cmd);
 		}
+		#endif
 		#if TST_ENABLE_2D_SCENE_RENDERING
 		{
 			m_renderer2D->begin(p_view, p_projection);
@@ -313,17 +316,18 @@ namespace toaster
 
 				Entity e{entity, m_scene};
 
-				Dx::XMMATRIX transform{m_scene->getEntityWorldTransformMatrix(e)};
+				// Dx::XMMATRIX transform{m_scene->getEntityWorldTransformMatrix(e)};
+				Dx::XMMATRIX transform{e.getTransform()};
 
 				auto texture{src.textureAssetID};
 				if (texture)
 					m_renderer2D->submitQuad(transform, texture, src.colour);
 				else
-					m_renderer2D->submitQuad(Dx::XMMatrixIdentity(), src.colour);
+					m_renderer2D->submitQuad(transform, src.colour);
 			}
 
 			gpu::RenderingAttachmentInfo colour_attachment_info{};
-			colour_attachment_info.clearValue   = vk::ClearColorValue{0.0f, 0.0f, 0.0f, 0.0f};
+			colour_attachment_info.clearValue   = vk::ClearColorValue{1.0f, 0.0f, 0.0f, 1.0f};
 			colour_attachment_info.image        = m_colourImage;
 			colour_attachment_info.loadOp       = vk::AttachmentLoadOp::eNone;
 			colour_attachment_info.storeOp      = vk::AttachmentStoreOp::eStore;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "math_constants.hpp"
 #include "vec4.hpp"
 
 namespace tsm
@@ -23,4 +24,31 @@ namespace tsm
 	using double2 = Vec2<f64>;
 	using double3 = Vec3<f64>;
 	using double4 = Vec4<f64>;
+}
+
+namespace DirectX
+{
+	inline XMVECTOR XM_CALLCONV XMVector2NormalizeSafe(FXMVECTOR p_vector)
+	{
+		XMVECTOR length{XMVector2LengthSq(p_vector)};
+		XMVECTOR control{XMVectorGreater(length, XMVectorSplatEpsilon())};
+		XMVECTOR normalized{XMVector2Normalize(p_vector)};
+		return XMVectorSelect(XMVectorZero(), normalized, control);
+	}
+
+	inline XMVECTOR XM_CALLCONV XMVector3NormalizeSafe(FXMVECTOR p_vector)
+	{
+		XMVECTOR length{XMVector3LengthSq(p_vector)};
+		XMVECTOR control{XMVectorGreater(length, XMVectorSplatEpsilon())};
+		XMVECTOR normalized{XMVector3Normalize(p_vector)};
+		return XMVectorSelect(XMVectorZero(), normalized, control);
+	}
+
+	inline XMVECTOR XM_CALLCONV XMVector4NormalizeSafe(FXMVECTOR p_vector)
+	{
+		XMVECTOR length{XMVector4LengthSq(p_vector)};
+		XMVECTOR control{XMVectorGreater(length, XMVectorSplatEpsilon())};
+		XMVECTOR normalized{XMVector4Normalize(p_vector)};
+		return XMVectorSelect(XMVectorZero(), normalized, control);
+	}
 }

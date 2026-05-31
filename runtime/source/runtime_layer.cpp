@@ -145,8 +145,8 @@ namespace toaster
 		fullscreen_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
 		fullscreen_pipeline_spec_info.vertexBufferLayout = render::RenderContext::fullscreenQuadVbl;
 
-		m_fullscreenPipeline   = m_renderCtx->createGPU<gpu::Pipeline>(fullscreen_pipeline_spec_info);
-		m_fullscreenRenderPass = m_renderCtx->createGPU<gpu::RenderPass>(m_fullscreenPipeline);
+		m_fullscreenPipeline   = m_renderCtx->createGPURef<gpu::Pipeline>(fullscreen_pipeline_spec_info);
+		m_fullscreenRenderPass = m_renderCtx->createGPURef<gpu::RenderPass>(m_fullscreenPipeline);
 
 		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getResolveOutputColourTexture()).bake();
 
@@ -163,7 +163,7 @@ namespace toaster
 
 		{
 			Entity e{m_scene->createEntity("Skib")};
-			e.addComponent<MeshComponent>().meshAssetID = m_renderCtx->create<render::MeshData>("C:/dev/Toaster-2.0/resources/meshes/Test_scene.fbx");
+			e.addComponent<MeshComponent>().meshAssetID = m_renderCtx->createRef<render::MeshData>("C:/dev/Toaster-2.0/resources/meshes/Test_scene.fbx");
 			auto &tc{e.getComponent<TransformComponent>()};
 		}
 	}

@@ -56,8 +56,8 @@ namespace toaster
 			layer->onInit();
 		}
 
-		auto createScene(const String &p_name = "New_Scene") -> UniquePtr<Scene>;
-		auto createSceneRenderer(Scene *p_scene) -> UniquePtr<SceneRenderer>;
+		auto createScene(const String &p_name = "New_Scene") const -> UniquePtr<Scene>;
+		auto createSceneRenderer(Scene *p_scene) const -> UniquePtr<SceneRenderer>;
 
 	private:
 		auto onWindowCloseEvent(WindowCloseEvent &p_event) -> bool;

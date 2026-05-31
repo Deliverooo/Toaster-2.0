@@ -36,6 +36,8 @@ namespace tsm
 	template<typename Type>
 	struct Vec2
 	{
+		using DefaultFunctionType = f32;
+
 		static constexpr u32 dim{2u};
 
 		static const Vec2 zero;
@@ -80,6 +82,9 @@ namespace tsm
 		constexpr auto length() const -> Type { return tsm::length(*this); }
 
 		constexpr auto dot(Vec2 p_other) const -> Type { return tsm::dot(*this, p_other); }
+
+		// Returns the aspect of the vector (useful if the vector represents a window size)
+		constexpr auto aspect() const -> DefaultFunctionType { return static_cast<DefaultFunctionType>(x) / static_cast<DefaultFunctionType>(y); }
 
 		constexpr auto operator ==(Vec2 p_other) const -> bool
 		{

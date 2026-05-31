@@ -6,6 +6,7 @@
 
 #include "toast_gpu/vk/vk_command_buffer.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_render/renderer_2d.hpp"
 
 namespace toaster::render
 {
@@ -112,6 +113,7 @@ namespace toaster::render
 		m_currentSwapchainCommandBuffer = p_cmd;
 	}
 
+
 	auto RenderContext::createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) const -> gpu::RawImageHandle
 	{
 		if (p_format == vk::Format::eUndefined)
@@ -121,7 +123,7 @@ namespace toaster::render
 		attachment_image_spec_info.size   = p_size;
 		attachment_image_spec_info.format = p_format;
 		attachment_image_spec_info.usage  = gpu::util::getImageUsageFlags(p_image_aspect_flags);
-		return createGPU<gpu::RawImage>(attachment_image_spec_info);
+		return createGPURef<gpu::RawImage>(attachment_image_spec_info);
 	}
 
 	auto RenderContext::createMultisampleAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) const -> gpu::RawImageHandle
@@ -134,7 +136,7 @@ namespace toaster::render
 		attachment_image_spec_info.format      = p_format;
 		attachment_image_spec_info.sampleCount = m_physicalDevice->getMaxUsableSampleCount();
 		attachment_image_spec_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | gpu::util::getImageUsageFlags(p_image_aspect_flags);
-		return createGPU<gpu::RawImage>(attachment_image_spec_info);
+		return createGPURef<gpu::RawImage>(attachment_image_spec_info);
 	}
 
 	auto RenderContext::createAttachmentTexture(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) const -> gpu::Texture2DHandle
@@ -146,21 +148,21 @@ namespace toaster::render
 		attachment_texture_spec_info.size         = p_size;
 		attachment_texture_spec_info.format       = p_format;
 		attachment_texture_spec_info.generateMips = false;
-		return createGPU<gpu::Texture2D>(attachment_texture_spec_info);
+		return createGPURef<gpu::Texture2D>(attachment_texture_spec_info);
 	}
 
 	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) const -> gpu::Texture3DHandle
 	{
-		auto env_tex{createGPU<gpu::Texture2D>(gpu::TextureSpecInfo{}, p_path)};
+		auto env_tex{createGPURef<gpu::Texture2D>(gpu::TextureSpecInfo{}, p_path)};
 
 		constexpr uint32     skybox_resolution{2048};
 		gpu::TextureSpecInfo skybox_texture_map_spec_info{};
 		skybox_texture_map_spec_info.size   = {skybox_resolution};
 		skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
-		RefPtr<gpu::Texture3D> env_map      = createGPU<gpu::Texture3D>(skybox_texture_map_spec_info);
+		RefPtr<gpu::Texture3D> env_map      = createGPURef<gpu::Texture3D>(skybox_texture_map_spec_info);
 
-		auto equirectangular_to_cubemap_pipeline{createGPU<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
-		auto equirectangular_to_cubemap_pass{createGPU<gpu::ComputePass>(equirectangular_to_cubemap_pipeline)};
+		auto equirectangular_to_cubemap_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
+		auto equirectangular_to_cubemap_pass{createGPURef<gpu::ComputePass>(equirectangular_to_cubemap_pipeline)};
 		equirectangular_to_cubemap_pass->setInput("u_EquirectangularMap", env_tex);
 		equirectangular_to_cubemap_pass->setInput("o_Cubemap", env_map);
 		equirectangular_to_cubemap_pass->bake();
@@ -180,16 +182,16 @@ namespace toaster::render
 
 	auto RenderContext::createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) const -> gpu::Texture3DHandle
 	{
-		auto env_tex{createGPU<gpu::Texture2D>(p_spec_info, p_data)};
+		auto env_tex{createGPURef<gpu::Texture2D>(p_spec_info, p_data)};
 
 		constexpr uint32     skybox_resolution{2048};
 		gpu::TextureSpecInfo skybox_texture_map_spec_info{};
 		skybox_texture_map_spec_info.size   = {skybox_resolution};
 		skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
-		RefPtr<gpu::Texture3D> env_map      = createGPU<gpu::Texture3D>(skybox_texture_map_spec_info);
+		RefPtr<gpu::Texture3D> env_map      = createGPURef<gpu::Texture3D>(skybox_texture_map_spec_info);
 
-		auto equirectangular_to_cubemap_pipeline{createGPU<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
-		auto equirectangular_to_cubemap_pass{createGPU<gpu::ComputePass>(equirectangular_to_cubemap_pipeline)};
+		auto equirectangular_to_cubemap_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
+		auto equirectangular_to_cubemap_pass{createGPURef<gpu::ComputePass>(equirectangular_to_cubemap_pipeline)};
 		equirectangular_to_cubemap_pass->setInput("u_EquirectangularMap", env_tex);
 		equirectangular_to_cubemap_pass->setInput("o_Cubemap", env_map);
 		equirectangular_to_cubemap_pass->bake();
@@ -214,10 +216,10 @@ namespace toaster::render
 		gpu::TextureSpecInfo irradiance_map_spec_info{};
 		irradiance_map_spec_info.size   = {c_diffuse_irradiance_resolution};
 		irradiance_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
-		auto out_irradiance_map{createGPU<gpu::Texture3D>(irradiance_map_spec_info)};
+		auto out_irradiance_map{createGPURef<gpu::Texture3D>(irradiance_map_spec_info)};
 
-		auto irradiance_convolution_pipeline{createGPU<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Diffuse_Irradiance_Convolution"))};
-		auto irradiance_convolution_pass{createGPU<gpu::ComputePass>(irradiance_convolution_pipeline)};
+		auto irradiance_convolution_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Diffuse_Irradiance_Convolution"))};
+		auto irradiance_convolution_pass{createGPURef<gpu::ComputePass>(irradiance_convolution_pipeline)};
 		irradiance_convolution_pass->setInput("u_EnvironmentMap", p_environment_map);
 		irradiance_convolution_pass->setInput("o_Irradiance", out_irradiance_map);
 		irradiance_convolution_pass->bake();

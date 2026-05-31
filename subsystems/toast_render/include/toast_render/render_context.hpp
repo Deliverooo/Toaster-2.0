@@ -18,6 +18,7 @@ namespace toaster::render
 	class Globals;
 	class Material;
 	class MeshData;
+	class Renderer2D;
 
 	struct TST_RENDER_API RenderContextSpecInfo
 	{
@@ -57,14 +58,21 @@ namespace toaster::render
 
 		// Use for objects that take the render context into their constructor
 		template<typename TObj, typename... TArgs>
-		[[nodiscard]] auto create(TArgs &&... p_args) -> RefPtr<TObj>
+		[[nodiscard]] auto createRef(TArgs &&... p_args) -> RefPtr<TObj>
 		{
 			return make_reference<TObj>(this, std::forward<TArgs>(p_args)...);
 		}
 
+		// Use for objects that take the render context into their constructor
+		template<typename TObj, typename... TArgs>
+		[[nodiscard]] auto createUnique(TArgs &&... p_args) -> UniquePtr<TObj>
+		{
+			return make_unique<TObj>(this, std::forward<TArgs>(p_args)...);
+		}
+
 		// Use for objects that take the logical device into their constructor
 		template<typename TObj, typename... TArgs>
-		[[nodiscard]] auto createGPU(TArgs &&... p_args) const -> RefPtr<TObj>
+		[[nodiscard]] auto createGPURef(TArgs &&... p_args) const -> RefPtr<TObj>
 		{
 			return make_reference<TObj>(m_logicalDevice, std::forward<TArgs>(p_args)...);
 		}
@@ -73,28 +81,28 @@ namespace toaster::render
 		[[nodiscard]] auto createVertexBuffer(const std::vector<TVertex> &p_vertices) const -> gpu::VertexBufferHandle
 		{
 			const uint64 vbo_size{sizeof(TVertex) * p_vertices.size()};
-			return createGPU<gpu::VKVertexBuffer>(static_cast<const void *>(p_vertices.data()), vbo_size);
+			return createGPURef<gpu::VKVertexBuffer>(static_cast<const void *>(p_vertices.data()), vbo_size);
 		}
 
 		template<typename TIndex>
 		[[nodiscard]] auto createIndexBuffer(const std::vector<TIndex> &p_indices) const -> gpu::IndexBufferHandle
 		{
 			const uint64 ibo_size{sizeof(TIndex) * p_indices.size()};
-			return createGPU<gpu::VKIndexBuffer>(static_cast<const void *>(p_indices.data()), ibo_size);
+			return createGPURef<gpu::VKIndexBuffer>(static_cast<const void *>(p_indices.data()), ibo_size);
 		}
 
 		template<typename TUBOStruct>
 		[[nodiscard]] auto createUniformBuffer() const -> gpu::UniformBufferHandle
 		{
 			constexpr uint64 ubo_size{sizeof(TUBOStruct)};
-			return createGPU<gpu::VKUniformBuffer>(ubo_size);
+			return createGPURef<gpu::VKUniformBuffer>(ubo_size);
 		}
 
 		template<typename TUBOStruct>
 		[[nodiscard]] auto createUniformBuffers(uint32 p_count) const -> gpu::UniformBufferPFFHandle
 		{
 			constexpr uint64 ubo_size{sizeof(TUBOStruct)};
-			return createGPU<gpu::VKUniformBufferPFF>(ubo_size, p_count);
+			return createGPURef<gpu::VKUniformBufferPFF>(ubo_size, p_count);
 		}
 
 		[[nodiscard]] auto createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
@@ -127,7 +135,7 @@ namespace toaster::render
 		auto XM_CALLCONV renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline,
 									Dx::FXMMATRIX       p_transform, uint32               p_frame_index = UINT32_MAX) const -> void;
 
-		auto XM_CALLCONV renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline,
+		auto XM_CALLCONV renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32              p_submesh_index, gpu::Pipeline *p_pipeline,
 									Dx::FXMMATRIX       p_transform, Material *           p_override_material, uint32 p_frame_index = UINT32_MAX) const -> void;
 		#pragma endregion
 

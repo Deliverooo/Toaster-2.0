@@ -27,7 +27,7 @@ namespace toaster::render
 	auto MaterialList::addMaterial(uint32 p_index, const gpu::ShaderHandle &p_shader, const String &p_name) -> MeshMaterialData &
 	{
 		auto &mat{m_materialDatas[p_index]};
-		mat.material = m_renderCtx->create<Material>(p_shader, p_name);
+		mat.material = m_renderCtx->createRef<Material>(p_shader, p_name);
 		mat.name     = p_name;
 		return mat;
 	}
@@ -365,7 +365,7 @@ namespace toaster::render
 				{
 					gpu::TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					mat_data.setAlbedoMap(m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, *albedo_map_path));
+					mat_data.setAlbedoMap(m_renderCtx->createGPURef<gpu::VKTexture2D>(texture_spec_info, *albedo_map_path));
 				}
 			}
 			else
@@ -385,7 +385,7 @@ namespace toaster::render
 				{
 					gpu::TextureSpecInfo texture_spec_info{};
 					texture_spec_info.generateMips = true;
-					mat_data.setNormalMap(m_renderCtx->createGPU<gpu::VKTexture2D>(texture_spec_info, *normal_map_path));
+					mat_data.setNormalMap(m_renderCtx->createGPURef<gpu::VKTexture2D>(texture_spec_info, *normal_map_path));
 				}
 				material->set<uint32>("u_Material.hasNormalMap", 1u);
 			}

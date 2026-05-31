@@ -6,83 +6,19 @@
 
 namespace toaster::render
 {
+	Renderer2D::Renderer2D(RenderContext *p_render_ctx, tsm::uint2 p_viewport_size) : m_renderCtx(p_render_ctx), m_specInfo({})
+	{
+		m_specInfo.renderTargetSize = p_viewport_size;
+		m_maxVertices               = m_specInfo.maxQuads * 4u;
+		m_maxIndices                = m_specInfo.maxQuads * 6u;
+		_construct();
+	}
+
 	Renderer2D::Renderer2D(RenderContext *p_render_ctx, const Renderer2DSpecInfo &p_create_info) : m_renderCtx(p_render_ctx), m_specInfo(p_create_info),
 																								   m_maxVertices(p_create_info.maxQuads * 4u),
 																								   m_maxIndices(p_create_info.maxQuads * 6u)
 	{
-		m_quadVertexBufferLayout = gpu::BufferLayout{
-			{gpu::EBufferDataType::eFloat4, "a_Position"},
-			{gpu::EBufferDataType::eFloat4, "a_Colour"},
-			{gpu::EBufferDataType::eFloat2, "a_TexCoord"},
-			{gpu::EBufferDataType::eFloat, "a_TexIndex"},
-			{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
-		};
-
-		auto                  quad_shader{m_renderCtx->getGlobals()->shaderLibrary().get("Quad")};
-		gpu::PipelineSpecInfo pipeline_create_info{};
-		pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
-		pipeline_create_info.depthFormat        = m_renderCtx->getPhysicalDevice()->getDepthFormat();
-		pipeline_create_info.vertexBufferLayout = m_quadVertexBufferLayout;
-		pipeline_create_info.shader             = quad_shader;
-		pipeline_create_info.multisample        = m_specInfo.msaa;
-		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
-		m_quadPipeline                          = m_renderCtx->createGPU<gpu::VKPipeline>(pipeline_create_info);
-
-		m_cameraUBs       = m_renderCtx->createUniformBuffers<CameraUB>(RenderContext::maxFramesInFlight);
-		m_mappedCameraUBs = m_cameraUBs->mapAllMemory(sizeof(CameraUB));
-
-		m_quadRenderPass = m_renderCtx->createGPU<gpu::VKRenderPass>(m_quadPipeline);
-		m_quadRenderPass->setInput("Camera", m_cameraUBs);
-		m_quadRenderPass->bake();
-
-		m_quadMaterial = make_reference<Material>(m_renderCtx, quad_shader);
-
-		if (!m_specInfo.overrideAttachments)
-		{
-			m_renderTargetTexture    = m_renderCtx->createAttachmentTexture(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eColor);
-			m_renderTargetDepthImage = m_renderCtx->createAttachmentImage(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eDepth);
-		}
-		else
-		{
-			m_renderTargetTexture    = nullptr;
-			m_renderTargetDepthImage = nullptr;
-		}
-
-		vk::DeviceSize quad_vertex_buffer_size{sizeof(QuadVertex) * m_maxVertices};
-		m_quadVertexBuffer = m_renderCtx->createGPU<gpu::VKVertexBuffer>(quad_vertex_buffer_size);
-		m_quadVertexBase   = new QuadVertex[m_maxVertices];
-
-		auto   quad_indices{new uint32[m_maxIndices]};
-		uint32 offset{0u};
-		for (uint32 i{0u}; i < m_maxIndices; i += 6u)
-		{
-			quad_indices[i + 0] = offset + 0;
-			quad_indices[i + 1] = offset + 1;
-			quad_indices[i + 2] = offset + 3;
-
-			quad_indices[i + 3] = offset + 1;
-			quad_indices[i + 4] = offset + 2;
-			quad_indices[i + 5] = offset + 3;
-
-			offset += 4u;
-		}
-
-		vk::DeviceSize index_buffer_size{m_maxIndices * sizeof(uint32)};
-		m_quadIndexBuffer = m_renderCtx->createGPU<gpu::VKIndexBuffer>(quad_indices, index_buffer_size);
-
-		delete[] quad_indices;
-
-		m_quadVertexPositions[0] = {0.5f, 0.5f, 0.0f, 1.0f};
-		m_quadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};
-		m_quadVertexPositions[2] = {-0.5f, -0.5f, 0.0f, 1.0f};
-		m_quadVertexPositions[3] = {-0.5f, 0.5f, 0.0f, 1.0f};
-
-		m_quadVertexTexCoords[0] = {1.0f, 0.0f};
-		m_quadVertexTexCoords[1] = {1.0f, 1.0f};
-		m_quadVertexTexCoords[2] = {0.0f, 1.0f};
-		m_quadVertexTexCoords[3] = {0.0f, 0.0f};
-
-		m_textureSlots[0] = m_renderCtx->getGlobals()->whiteTexture();
+		_construct();
 	}
 
 	Renderer2D::~Renderer2D()
@@ -221,6 +157,82 @@ namespace toaster::render
 			m_renderTargetTexture->resize(p_size);
 			m_renderTargetDepthImage->resize(p_size);
 		}
+	}
+
+	auto Renderer2D::_construct() -> void
+	{
+		m_quadVertexBufferLayout = gpu::BufferLayout{
+			{gpu::EBufferDataType::eFloat4, "a_Position"},
+			{gpu::EBufferDataType::eFloat4, "a_Colour"},
+			{gpu::EBufferDataType::eFloat2, "a_TexCoord"},
+			{gpu::EBufferDataType::eFloat, "a_TexIndex"},
+			{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
+		};
+
+		auto                  quad_shader{m_renderCtx->getGlobals()->shaderLibrary().get("Quad")};
+		gpu::PipelineSpecInfo pipeline_create_info{};
+		pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
+		pipeline_create_info.depthFormat        = m_renderCtx->getPhysicalDevice()->getDepthFormat();
+		pipeline_create_info.vertexBufferLayout = m_quadVertexBufferLayout;
+		pipeline_create_info.shader             = quad_shader;
+		pipeline_create_info.multisample        = m_specInfo.msaa;
+		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
+		m_quadPipeline                          = m_renderCtx->createGPURef<gpu::VKPipeline>(pipeline_create_info, "Quad");
+
+		m_cameraUBs       = m_renderCtx->createUniformBuffers<CameraUB>(RenderContext::maxFramesInFlight);
+		m_mappedCameraUBs = m_cameraUBs->mapAllMemory(sizeof(CameraUB));
+
+		m_quadRenderPass = m_renderCtx->createGPURef<gpu::VKRenderPass>(m_quadPipeline);
+		m_quadRenderPass->setInput("Camera", m_cameraUBs).bake();
+
+		m_quadMaterial = make_reference<Material>(m_renderCtx, quad_shader);
+
+		if (!m_specInfo.overrideAttachments)
+		{
+			m_renderTargetTexture    = m_renderCtx->createAttachmentTexture(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eColor);
+			m_renderTargetDepthImage = m_renderCtx->createAttachmentImage(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eDepth);
+		}
+		else
+		{
+			m_renderTargetTexture    = nullptr;
+			m_renderTargetDepthImage = nullptr;
+		}
+
+		vk::DeviceSize quad_vertex_buffer_size{sizeof(QuadVertex) * m_maxVertices};
+		m_quadVertexBuffer = m_renderCtx->createGPURef<gpu::VKVertexBuffer>(quad_vertex_buffer_size);
+		m_quadVertexBase   = new QuadVertex[m_maxVertices];
+
+		auto   quad_indices{new uint32[m_maxIndices]};
+		uint32 offset{0u};
+		for (uint32 i{0u}; i < m_maxIndices; i += 6u)
+		{
+			quad_indices[i + 0] = offset + 0;
+			quad_indices[i + 1] = offset + 1;
+			quad_indices[i + 2] = offset + 3;
+
+			quad_indices[i + 3] = offset + 1;
+			quad_indices[i + 4] = offset + 2;
+			quad_indices[i + 5] = offset + 3;
+
+			offset += 4u;
+		}
+
+		vk::DeviceSize index_buffer_size{m_maxIndices * sizeof(uint32)};
+		m_quadIndexBuffer = m_renderCtx->createGPURef<gpu::VKIndexBuffer>(quad_indices, index_buffer_size);
+
+		delete[] quad_indices;
+
+		m_quadVertexPositions[0] = {0.5f, 0.5f, 0.0f, 1.0f};
+		m_quadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};
+		m_quadVertexPositions[2] = {-0.5f, -0.5f, 0.0f, 1.0f};
+		m_quadVertexPositions[3] = {-0.5f, 0.5f, 0.0f, 1.0f};
+
+		m_quadVertexTexCoords[0] = {1.0f, 0.0f};
+		m_quadVertexTexCoords[1] = {1.0f, 1.0f};
+		m_quadVertexTexCoords[2] = {0.0f, 1.0f};
+		m_quadVertexTexCoords[3] = {0.0f, 0.0f};
+
+		m_textureSlots[0] = m_renderCtx->getGlobals()->whiteTexture();
 	}
 
 	auto Renderer2D::_beginNewBatch() -> void

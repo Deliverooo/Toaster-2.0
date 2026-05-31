@@ -389,6 +389,11 @@ namespace toaster
 		m_callbackData.eventCallback = p_callback;
 	}
 
+	auto Window::getRenderAreaSize() const -> tsm::uint2
+	{
+		return {m_swapchain->getExtent().width, m_swapchain->getExtent().height};
+	}
+
 	auto Window::getSize() const -> tsm::uint2
 	{
 		return m_callbackData.size;

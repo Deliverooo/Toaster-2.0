@@ -111,15 +111,15 @@ namespace toaster
 		m_isRunning = false;
 	}
 
-	auto Application::createScene(const String &p_name) -> UniquePtr<Scene>
+	auto Application::createScene(const String &p_name) const -> UniquePtr<Scene>
 	{
 		return toaster::make_unique<Scene>(m_renderContext, nullptr, p_name);
 	}
 
-	auto Application::createSceneRenderer(Scene *p_scene) -> UniquePtr<SceneRenderer>
+	auto Application::createSceneRenderer(Scene *p_scene) const -> UniquePtr<SceneRenderer>
 	{
 		SceneRendererSpecInfo scene_renderer_spec_info{};
-		scene_renderer_spec_info.viewportSize = {m_window->getSwapchain()->getExtent().width, m_window->getSwapchain()->getExtent().height};
+		scene_renderer_spec_info.viewportSize = m_window->getRenderAreaSize();
 		return make_unique<SceneRenderer>(p_scene, scene_renderer_spec_info);
 	}
 

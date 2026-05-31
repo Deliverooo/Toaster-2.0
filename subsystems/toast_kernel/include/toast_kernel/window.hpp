@@ -85,6 +85,9 @@ namespace toaster
 
 		auto setEventCallback(const EventCallbackFn &p_callback) -> void;
 
+		// Ts comes directly from the swapchain, so it is updated first. Prefer this over getSize()
+		[[nodiscard]] auto getRenderAreaSize() const -> tsm::uint2;
+
 		[[nodiscard]] auto getSize() const -> tsm::uint2;
 		[[nodiscard]] auto getAspect() const -> float32;
 		[[nodiscard]] auto getCenter() const -> std::pair<float32, float32>;
