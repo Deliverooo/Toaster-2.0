@@ -40,6 +40,11 @@ public:
 		}
 		{
 		}
+
+		render::Renderer2DSpecInfo renderer_2d_spec_info{};
+		renderer_2d_spec_info.renderTargetSize    = m_viewportSize;
+		renderer_2d_spec_info.overrideAttachments = true;
+		m_renderer2D                              = m_renderCtx->createUnique<render::Renderer2D>(renderer_2d_spec_info);
 	}
 
 	auto onUpdate(float32 p_dt) -> void override
@@ -73,6 +78,14 @@ public:
 		m_scene->onUpdate(p_dt);
 		m_sceneRenderer->onRender(view, projection);
 
+		m_renderer2D->begin(view, projection);
+
+		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), {1.0f});
+
+		auto colour_attachment_info{m_renderCtx->getRenderingAttachmentInfo(*m_sceneRenderer->getColourTexture()->getImage(), gpu::EAttachmentUsageOP::eLoadStore)};
+		auto depth_attachment_info{m_renderCtx->getRenderingAttachmentInfo(*m_sceneRenderer->getDepthTexture()->getImage(), gpu::EAttachmentUsageOP::eLoadStore)};
+		m_renderer2D->end(cmd, &colour_attachment_info, &depth_attachment_info);
+
 		m_renderCtx->beginRendering(cmd, rendering_info, m_swapchainPass);
 		m_renderCtx->renderFullscreenQuad(cmd, m_swapchainPass, nullptr);
 		m_renderCtx->endRendering(cmd, rendering_info);
@@ -84,6 +97,7 @@ public:
 
 		m_scene->onResize(p_size);
 		m_sceneRenderer->onResize(p_size);
+		m_renderer2D->onResize(p_size);
 	}
 
 private:
@@ -91,11 +105,11 @@ private:
 
 	gpu::RenderPassHandle m_swapchainPass{nullptr};
 
-	UniquePtr<Scene>         m_scene{nullptr};
-	UniquePtr<SceneRenderer> m_sceneRenderer{nullptr};
+	UniquePtr<Scene>              m_scene{nullptr};
+	UniquePtr<SceneRenderer>      m_sceneRenderer{nullptr};
+	UniquePtr<render::Renderer2D> m_renderer2D{nullptr};
 
 	Entity m_quadEntity;
-	// UniquePtr<render::Renderer2D> m_renderer2D{nullptr};
 
 	// Dx::XMFLOAT3 m_quadPosition{0.0f, 0.0f, 0.0f};
 };

@@ -150,6 +150,39 @@ namespace toaster::render
 		return createGPURef<gpu::Texture2D>(attachment_texture_spec_info);
 	}
 
+	auto RenderContext::getRenderingAttachmentInfo(gpu::RawImage &p_image, gpu::EAttachmentUsageOP p_usage_op) -> gpu::RenderingAttachmentInfo
+	{
+		gpu::RenderingAttachmentInfo attachment_info{};
+		attachment_info.image   = &p_image;
+		attachment_info.loadOp  = gpu::getLoadOp(p_usage_op);
+		attachment_info.storeOp = gpu::getStoreOp(p_usage_op);
+
+		const vk::ImageAspectFlags aspect_mask{gpu::util::getImageAspectMask(p_image.getSpecInfo().format)};
+		attachment_info.clearValue = gpu::util::getDefaultImageClearValue(aspect_mask);
+		return attachment_info;
+	}
+
+	auto RenderContext::getRenderingAttachmentInfo(gpu::RawImage &         p_image, gpu::RawImage &p_resolve_image,
+												   gpu::EAttachmentUsageOP p_usage_op) -> gpu::RenderingAttachmentInfo
+	{
+		gpu::RenderingAttachmentInfo attachment_info{};
+		attachment_info.image        = &p_image;
+		attachment_info.loadOp       = gpu::getLoadOp(p_usage_op);
+		attachment_info.storeOp      = gpu::getStoreOp(p_usage_op);
+		attachment_info.resolveImage = &p_resolve_image;
+
+		const vk::ImageAspectFlags aspect_mask{gpu::util::getImageAspectMask(p_resolve_image.getSpecInfo().format)};
+		attachment_info.resolveMode = gpu::util::getDefaultImageResolveMode(aspect_mask);
+		attachment_info.clearValue  = gpu::util::getDefaultImageClearValue(aspect_mask);
+
+		return attachment_info;
+	}
+
+	auto RenderContext::getRenderingArea(tsm::uint2 p_viewport_size, tsm::uint2 p_viewport_offset) -> vk::Rect2D
+	{
+		return vk::Rect2D{{static_cast<int32>(p_viewport_offset.x), static_cast<int32>(p_viewport_offset.y)}, {p_viewport_size.x, p_viewport_size.y}};
+	}
+
 	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) const -> gpu::Texture3DHandle
 	{
 		auto env_tex{createGPURef<gpu::Texture2D>(gpu::TextureSpecInfo{}, p_path)};
@@ -170,7 +203,7 @@ namespace toaster::render
 		command_buffer.begin();
 
 		beginCompute(&command_buffer, equirectangular_to_cubemap_pass, 0);
-		dispatchCompute(&command_buffer, equirectangular_to_cubemap_pass, nullptr, skybox_resolution / 32, skybox_resolution / 32, 6, 0);
+		dispatchCompute(&command_buffer, equirectangular_to_cubemap_pass, nullptr, {skybox_resolution / 32, skybox_resolution / 32, 6}, 0);
 
 		command_buffer.end();
 		command_buffer.submit();
@@ -199,7 +232,7 @@ namespace toaster::render
 		command_buffer.begin();
 
 		beginCompute(&command_buffer, equirectangular_to_cubemap_pass, 0);
-		dispatchCompute(&command_buffer, equirectangular_to_cubemap_pass, nullptr, skybox_resolution / 32, skybox_resolution / 32, 6, 0);
+		dispatchCompute(&command_buffer, equirectangular_to_cubemap_pass, nullptr, {skybox_resolution / 32, skybox_resolution / 32, 6}, 0);
 
 		command_buffer.end();
 		command_buffer.submit();
@@ -228,10 +261,7 @@ namespace toaster::render
 
 		beginCompute(&command_buffer, irradiance_convolution_pass, 0);
 
-		constexpr uint32 work_groups_x{(c_diffuse_irradiance_resolution + 15u) / 16u};
-		constexpr uint32 work_groups_y{(c_diffuse_irradiance_resolution + 15u) / 16u};
-		constexpr uint32 work_groups_z{6u};
-		dispatchCompute(&command_buffer, irradiance_convolution_pass, nullptr, work_groups_x, work_groups_y, work_groups_z, 0);
+		dispatchCompute(&command_buffer, irradiance_convolution_pass, nullptr, {tsm::uint2{(c_diffuse_irradiance_resolution + 15u) / 16u}, 6u}, 0);
 
 		command_buffer.end();
 		command_buffer.submit();
@@ -473,8 +503,8 @@ namespace toaster::render
 																		  p_compute_pass->getStartSetIndex(), descriptor_sets, nullptr);
 	}
 
-	auto RenderContext::dispatchCompute(gpu::CommandBuffer *p_command_buffer, const gpu::ComputePass *p_compute_pass, Material *p_material, uint32 p_work_group_x,
-										uint32              p_work_group_y, uint32                    p_work_group_z, uint32    p_frame_index) const -> void
+	auto RenderContext::dispatchCompute(gpu::CommandBuffer *p_command_buffer, const gpu::ComputePass *p_compute_pass, Material *p_material,
+										const tsm::uint3 &  p_work_groups, uint32                     p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
@@ -499,7 +529,7 @@ namespace toaster::render
 			}
 		}
 
-		p_command_buffer->getVulkanCommandBuffer().dispatch(p_work_group_x, p_work_group_y, p_work_group_z);
+		p_command_buffer->getVulkanCommandBuffer().dispatch(p_work_groups.x, p_work_groups.y, p_work_groups.z);
 	}
 
 	auto RenderContext::renderGeometry(gpu::CommandBuffer *p_command_buffer, gpu::Pipeline *p_pipeline, gpu::VertexBuffer *p_vertex_buffer,

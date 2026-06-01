@@ -148,8 +148,7 @@ namespace toaster
 		m_fullscreenPipeline   = m_renderCtx->createGPURef<gpu::Pipeline>(fullscreen_pipeline_spec_info);
 		m_fullscreenRenderPass = m_renderCtx->createGPURef<gpu::RenderPass>(m_fullscreenPipeline);
 
-		// m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getResolveOutputColourTexture()).bake();
-		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getSSAOBlurredImage()).bake();
+		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getColourTexture()).bake();
 
 		{
 			Entity e{m_scene->createEntity("Peeb")};

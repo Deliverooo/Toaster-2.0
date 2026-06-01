@@ -49,8 +49,8 @@ namespace toaster::render
 		~Renderer2D();
 
 		auto XM_CALLCONV begin(Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void;
-		auto             end(gpu::VKCommandBuffer *              p_cmd, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
-							 const gpu::RenderingAttachmentInfo *p_override_depth_attachment                                       = nullptr) -> void;
+		auto             end(gpu::VKCommandBuffer *  p_cmd                       = nullptr, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
+							 const gpu::RenderingAttachmentInfo *p_override_depth_attachment = nullptr) -> void;
 
 		auto XM_CALLCONV submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void;
 		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX p_transform, const tsm::float4 &p_colour) -> void;

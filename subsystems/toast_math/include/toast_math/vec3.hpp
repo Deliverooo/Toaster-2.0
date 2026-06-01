@@ -38,6 +38,14 @@ namespace tsm
 		{
 		}
 
+		constexpr Vec3(Vec2<Type> p_v, Type p_z) : x(p_v.x), y(p_v.y), z(p_z)
+		{
+		}
+
+		constexpr Vec3(Type p_x, Vec2<Type> p_v) : x(p_x), y(p_v.y), z(p_v.z)
+		{
+		}
+
 		constexpr Vec3(const Vec4<Type> &p_v);
 
 		constexpr Type &operator[](i32 p_index)

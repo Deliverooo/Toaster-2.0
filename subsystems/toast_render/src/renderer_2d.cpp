@@ -48,6 +48,9 @@ namespace toaster::render
 	auto Renderer2D::end(gpu::VKCommandBuffer *              p_cmd, gpu::RenderingAttachmentInfo *p_override_colour_attachment,
 						 const gpu::RenderingAttachmentInfo *p_override_depth_attachment) -> void
 	{
+		if (!p_cmd)
+			p_cmd = m_renderCtx->getCurrentSwapchainCommandBuffer();
+
 		if (m_specInfo.overrideAttachments && !p_override_colour_attachment && !p_override_depth_attachment)
 		{
 			TST_ASSERT_MSG(false, "Please provide the attachment infos...");

@@ -61,7 +61,25 @@ namespace toaster::gpu
 			return vk::Format::eUndefined;
 		}
 
-		constexpr auto getBytesPerPixel([[maybe_unused]] vk::Format p_format) -> uint32
+		constexpr auto getDefaultImageResolveMode(vk::ImageAspectFlags p_aspect_flags) -> vk::ResolveModeFlagBits
+		{
+			if (p_aspect_flags & vk::ImageAspectFlagBits::eColor)
+				return vk::ResolveModeFlagBits::eAverage;
+			if (p_aspect_flags & vk::ImageAspectFlagBits::eDepth || p_aspect_flags & vk::ImageAspectFlagBits::eStencil)
+				return vk::ResolveModeFlagBits::eMin;
+			return vk::ResolveModeFlagBits::eNone;
+		}
+
+		constexpr auto getDefaultImageClearValue(vk::ImageAspectFlags p_aspect_flags) -> vk::ClearValue
+		{
+			if (p_aspect_flags & vk::ImageAspectFlagBits::eColor)
+				return vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f};
+			if (p_aspect_flags & vk::ImageAspectFlagBits::eDepth || p_aspect_flags & vk::ImageAspectFlagBits::eStencil)
+				return vk::ClearDepthStencilValue{1.0f, 0u};
+			return {};
+		}
+
+		constexpr auto getBytesPerPixel(vk::Format p_format) -> uint32
 		{
 			switch (p_format)
 			{
