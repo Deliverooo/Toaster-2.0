@@ -56,11 +56,14 @@ namespace toaster
 
 		[[nodiscard]] auto XM_CALLCONV getTransform() const -> Dx::XMMATRIX
 		{
-			DirectX::XMVECTOR simd_orientation{DirectX::XMLoadFloat4(&orientation)};
-			DirectX::XMVECTOR simd_translation{DirectX::XMLoadFloat3(&translation)};
-			DirectX::XMVECTOR simd_scale{DirectX::XMLoadFloat3(&scale)};
+			Dx::XMVECTOR simd_orientation{Dx::XMLoadFloat4(&orientation)};
+			Dx::XMVECTOR simd_translation{Dx::XMLoadFloat3(&translation)};
+			Dx::XMVECTOR simd_scale{Dx::XMLoadFloat3(&scale)};
 
-			return Dx::XMMatrixTransformation(Dx::XMVectorZero(), Dx::XMVectorZero(), simd_scale, Dx::XMVectorZero(), simd_orientation, simd_translation);
+			Dx::XMMATRIX transformation{
+				Dx::XMMatrixTransformation(Dx::XMVectorZero(), Dx::XMVectorZero(), simd_scale, Dx::XMVectorZero(), simd_orientation, simd_translation)
+			};
+			return transformation;
 		}
 
 		auto XM_CALLCONV setTransform(Dx::FXMMATRIX p_transform) -> void

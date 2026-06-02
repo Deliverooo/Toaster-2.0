@@ -20,6 +20,14 @@ namespace toaster
 		{
 		}
 
+		virtual auto onEvent([[maybe_unused]] Event &p_event) -> void
+		{
+		}
+
+		virtual auto onResize([[maybe_unused]] tsm::uint2 p_size) -> void
+		{
+		}
+
 		template<typename Type>
 		auto addComponent() -> Type &
 		{
@@ -36,6 +44,15 @@ namespace toaster
 		auto getComponent() const -> const Type &
 		{
 			return m_entity.getComponent<Type>();
+		}
+
+		template<typename Type>
+		auto getOrAddComponent() -> Type &
+		{
+			auto comp{m_entity.tryGetComponent<Type>()};
+			if (comp)
+				return *comp;
+			return m_entity.addComponent<Type>();
 		}
 
 		template<typename Type>

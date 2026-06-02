@@ -23,14 +23,12 @@ namespace toaster
 
 		tsm::uint2 m_viewportSize{0u};
 
-		UniquePtr<script::ScriptEngine> m_scriptEngine{nullptr};
-
 		UniquePtr<Scene>         m_scene{nullptr};
 		UniquePtr<SceneRenderer> m_sceneRenderer{nullptr};
 
-		gpu::PipelineHandle   m_fullscreenPipeline{nullptr};
+		gpu::PipelineHandle      m_fullscreenPipeline{nullptr};
 		render::RenderPassHandle m_fullscreenRenderPass{nullptr};
 
-		FPCamera m_camera;
+		Entity m_cameraEntity;
 	};
 }

@@ -100,6 +100,8 @@ namespace toaster
 		auto getSceneEnvironment() const -> const gpu::Texture3DHandle &;
 		auto setSceneEnvironment(const gpu::Texture3DHandle &p_environment) -> void;
 
+		auto initNativeScripts() -> void; // You can actually call this any time you need to immediately construct a script
+
 		auto getScriptEngine() -> NonOwningPtr<script::ScriptEngine>;
 		auto getHasComponentFn(ComponentType p_component_type) -> HasComponentFn &;
 		auto getAddComponentFn(ComponentType p_component_type) -> AddComponentFn &;

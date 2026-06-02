@@ -20,6 +20,7 @@ namespace toaster
 		auto setOrthographic(float32 p_size, float32 p_z_near = -1.0f, float32 p_z_far = 1.0f) -> void;
 		auto setViewportSize(tsm::uint2 p_size) -> void;
 
+
 		auto setPerspectiveFov(const float32 p_fov) -> void
 		{
 			m_perspectiveFov = p_fov;

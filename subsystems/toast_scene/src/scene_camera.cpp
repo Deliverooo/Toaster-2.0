@@ -31,7 +31,7 @@ namespace toaster
 		const float32 safe_width  = static_cast<float32>(std::max(p_size.x, 1u));
 		const float32 safe_height = static_cast<float32>(std::max(p_size.y, 1u));
 
-		m_aspectRatio = safe_width / safe_height;
+		m_aspectRatio =  p_size.aspect();
 		_recalculateProjection();
 	}
 
@@ -41,9 +41,9 @@ namespace toaster
 		{
 			case EProjectionType::ePerspective:
 			{
-				Dx::XMMATRIX proj{Dx::XMMatrixPerspectiveFovLH(m_perspectiveFov, m_aspectRatio, m_perspectiveNear, m_perspectiveFar)};
-				proj = Dx::XMMatrixMultiply(proj, Dx::XMMatrixScaling(1.0f, -1.0f, 1.0f));
-				Dx::XMStoreFloat4x4(&m_projection, proj);
+				__super::setPerspective(m_perspectiveFov, m_aspectRatio, m_perspectiveNear, m_perspectiveFar);
+				// Dx::XMMATRIX proj{Dx::XMMatrixPerspectiveFovLH(m_perspectiveFov, m_aspectRatio, m_perspectiveNear, m_perspectiveFar)};
+				// Dx::XMStoreFloat4x4(&m_projection, proj);
 
 				break;
 			}

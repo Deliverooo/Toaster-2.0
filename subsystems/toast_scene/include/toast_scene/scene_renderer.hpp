@@ -23,11 +23,12 @@ namespace toaster
 		~SceneRenderer();
 
 		auto             onRender() -> void;
-		auto XM_CALLCONV onRender(Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void;
+		auto XM_CALLCONV onRender(Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void;
 		auto             onRender(gpu::VKCommandBuffer *p_cmd) -> void;
-		auto XM_CALLCONV onRender(gpu::VKCommandBuffer *p_cmd, Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void;
+		auto XM_CALLCONV onRender(gpu::VKCommandBuffer *p_cmd, Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void;
 
-		auto XM_CALLCONV begin(Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void;
+		// Passing the position avoids unnecessary calculations
+		auto XM_CALLCONV begin(Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void;
 		auto             end(gpu::VKCommandBuffer *p_cmd) -> void;
 		auto XM_CALLCONV renderMesh(const render::MeshHandle &p_mesh, Dx::FXMMATRIX p_transform) -> void;
 
@@ -70,7 +71,7 @@ namespace toaster
 		RefPtr<render::Renderer2D> m_renderer2D{nullptr};
 
 		#pragma region depth-pre
-		gpu::PipelineHandle   m_depthPrePipeline{nullptr};
+		gpu::PipelineHandle      m_depthPrePipeline{nullptr};
 		render::RenderPassHandle m_depthPrePass{nullptr};
 
 		gpu::RawImageHandle  m_MSAADepthImage{nullptr};
@@ -85,7 +86,7 @@ namespace toaster
 
 		#pragma region ambient occlusion
 
-		gpu::PipelineHandle   m_SSAOPipeline{nullptr};
+		gpu::PipelineHandle      m_SSAOPipeline{nullptr};
 		render::RenderPassHandle m_SSAOPass{nullptr};
 
 		render::MaterialHandle m_SSAOFrameDataMaterial{nullptr};
@@ -105,20 +106,20 @@ namespace toaster
 		gpu::Texture2DHandle m_SSAOTexture{nullptr};
 
 		gpu::ComputePipelineHandle m_SSAOBlurPipeline{nullptr};
-		render::ComputePassHandle     m_SSAOBlurPass{nullptr};
+		render::ComputePassHandle  m_SSAOBlurPass{nullptr};
 		gpu::StorageImageHandle    m_SSAOBlurredImage{nullptr};
 
 		#pragma endregion
 
 		#pragma region skybox
-		gpu::PipelineHandle    m_skyboxPipeline{nullptr};
-		render::RenderPassHandle  m_skyboxPass{nullptr};
-		render::MaterialHandle m_skyboxMaterial{nullptr};
+		gpu::PipelineHandle      m_skyboxPipeline{nullptr};
+		render::RenderPassHandle m_skyboxPass{nullptr};
+		render::MaterialHandle   m_skyboxMaterial{nullptr};
 
 		#pragma endregion
 
 		#pragma region geometry
-		gpu::PipelineHandle   m_geometryPipeline{nullptr};
+		gpu::PipelineHandle      m_geometryPipeline{nullptr};
 		render::RenderPassHandle m_geometryPass{nullptr};
 		#pragma endregion
 

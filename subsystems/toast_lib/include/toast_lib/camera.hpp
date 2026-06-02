@@ -30,7 +30,6 @@ namespace toaster
 		auto setPerspective(float32 p_fov, float32 p_aspect, float32 p_z_near, float32 p_z_far) -> void
 		{
 			Dx::XMMATRIX proj{Dx::XMMatrixPerspectiveFovLH(p_fov, p_aspect, p_z_near, p_z_far)};
-			proj = Dx::XMMatrixMultiply(proj, Dx::XMMatrixScaling(1.0f, -1.0f, 1.0f));
 			Dx::XMStoreFloat4x4(&m_projection, proj);
 		}
 

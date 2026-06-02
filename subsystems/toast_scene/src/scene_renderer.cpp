@@ -163,9 +163,9 @@ namespace toaster
 		onRender(m_renderCtx->getCurrentSwapchainCommandBuffer());
 	}
 
-	auto SceneRenderer::onRender(Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
+	auto SceneRenderer::onRender(Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
 	{
-		onRender(m_renderCtx->getCurrentSwapchainCommandBuffer(), p_view_matrix, p_projection_matrix);
+		onRender(m_renderCtx->getCurrentSwapchainCommandBuffer(), p_camera_position, p_view_matrix, p_projection_matrix);
 	}
 
 	auto SceneRenderer::onRender(gpu::VKCommandBuffer *p_cmd) -> void
@@ -173,10 +173,12 @@ namespace toaster
 		const Camera *main_camera{nullptr};
 
 		Dx::XMMATRIX camera_transform;
+		Dx::XMVECTOR camera_positon;
 		if (Entity main_camera_entity{m_scene->getMainCameraEntity()})
 		{
 			main_camera      = &main_camera_entity.getComponent<CameraComponent>().camera;
 			camera_transform = main_camera_entity.getComponent<TransformComponent>().getTransform();
+			camera_positon   = Dx::XMLoadFloat3(&main_camera_entity.getComponent<TransformComponent>().translation);
 		}
 
 		if (!main_camera)
@@ -189,11 +191,14 @@ namespace toaster
 			TST_PERMA_ASSERT(output_colour_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal);
 			return;
 		}
+		Dx::XMMATRIX view_matrix{Dx::XMMatrixInverse(nullptr, camera_transform)};
+		Dx::XMMATRIX correction{Dx::XMMatrixSet(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f)};
 
-		onRender(p_cmd, Dx::XMMatrixInverse(nullptr, camera_transform), main_camera->getProjectionMatrix());
+		view_matrix = Dx::XMMatrixMultiply(view_matrix, correction);
+		onRender(p_cmd, camera_positon, view_matrix, main_camera->getProjectionMatrix());
 	}
 
-	auto SceneRenderer::onRender(gpu::VKCommandBuffer *p_cmd, Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void
+	auto SceneRenderer::onRender(gpu::VKCommandBuffer *p_cmd, Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void
 	{
 		m_scene->m_lightEnvironment.pointLights.clear();
 		m_scene->m_lightEnvironment.directionalLights.clear();
@@ -236,7 +241,7 @@ namespace toaster
 				m_scene->m_reloadEnvironment = false;
 			}
 
-			begin(p_view, p_projection);
+			begin(p_camera_position, p_view, p_projection);
 			for (const auto view{m_scene->m_registry.view<MeshComponent>()}; const auto entity: view)
 			{
 				const auto &mesh_comp{view.get<MeshComponent>(entity)};
@@ -277,7 +282,7 @@ namespace toaster
 		#endif
 	}
 
-	auto SceneRenderer::begin(Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
+	auto SceneRenderer::begin(Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
 	{
 		uint32 frame_index{m_renderCtx->getCurrentFrameIndex()};
 
@@ -311,20 +316,7 @@ namespace toaster
 		}
 
 		SceneDataUB scene_data_ub{};
-
-		Dx::XMVECTOR R{p_view_matrix.r[0]};
-		Dx::XMVECTOR U{p_view_matrix.r[1]};
-		Dx::XMVECTOR F{p_view_matrix.r[2]};
-		Dx::XMVECTOR T{p_view_matrix.r[3]};
-
-		Dx::XMVECTOR pos_x{Dx::XMVector3Dot(T, R)};
-		Dx::XMVECTOR pos_y{Dx::XMVector3Dot(T, U)};
-		Dx::XMVECTOR pos_z{Dx::XMVector3Dot(T, F)};
-
-		Dx::XMVECTOR camera_pos{Dx::XMVectorSet(Dx::XMVectorGetX(pos_x), Dx::XMVectorGetY(pos_y), Dx::XMVectorGetZ(pos_z), 1.0f)};
-		camera_pos = Dx::XMVectorScale(camera_pos, -1.0f);
-
-		Dx::XMStoreFloat3(&scene_data_ub.cameraPos, camera_pos);
+		Dx::XMStoreFloat3(&scene_data_ub.cameraPos, p_camera_position);
 		std::memcpy(m_mappedSceneDataUBOs[frame_index], &scene_data_ub, sizeof(SceneDataUB));
 	}
 

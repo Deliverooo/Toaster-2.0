@@ -178,6 +178,12 @@ namespace toaster
 
 	auto Scene::onEvent(Event &p_event) -> void
 	{
+		m_registry.view<NativeScriptComponent>().each([&p_event](auto p_entity, auto &p_script) -> void
+		{
+			if (p_script.instance)
+				p_script.instance->onEvent(p_event);
+		});
+
 		for (const auto view{m_registry.view<ScriptComponent>()}; const auto entity: view)
 		{
 			auto [class_name]{view.get<ScriptComponent>(entity)};
@@ -193,6 +199,12 @@ namespace toaster
 	auto Scene::onResize(tsm::uint2 p_size) -> void
 	{
 		m_viewportSize = p_size;
+
+		m_registry.view<NativeScriptComponent>().each([this](auto p_entity, NativeScriptComponent& p_script) -> void
+		{
+			if (p_script.instance)
+				p_script.instance->onResize(m_viewportSize);
+		});
 
 		auto view{m_registry.view<CameraComponent>()};
 		for (auto entity: view)
@@ -316,6 +328,20 @@ namespace toaster
 		m_sceneEnvironment.skyboxMap            = p_environment;
 		m_sceneEnvironment.diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMap(p_environment);
 		m_reloadEnvironment                     = true;
+	}
+
+	auto Scene::initNativeScripts() -> void
+	{
+		m_registry.view<NativeScriptComponent>().each([this](auto p_entity, auto &p_script) -> void
+		{
+			if (!p_script.instance)
+			{
+				p_script.instance           = p_script.instantiateFn();
+				p_script.instance->m_entity = {p_entity, this};
+				p_script.instance->_superInit();
+				p_script.instance->onCreate(p_script.userData);
+			}
+		});
 	}
 
 	auto Scene::getScriptEngine() -> NonOwningPtr<script::ScriptEngine>

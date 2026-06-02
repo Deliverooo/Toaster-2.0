@@ -70,9 +70,9 @@ namespace toaster::gpu
 		// Waits for the image to be acquired before executing
 		// When we submit the work to the GPU we signal a fence then wait on it before beginning the next frame
 		current_command_buffer.submit(vk::PipelineStageFlagBits2::eColorAttachmentOutput, {*m_imageAvailableSemaphores[m_frameIndex]},
-									  {*m_renderFinishedSemaphores[m_frameIndex]});
+									  {*m_renderFinishedSemaphores[m_imageIndex]});
 
-		const vk::Result res{m_device->presentKHR(&*m_swapchain, &m_imageIndex, {*m_renderFinishedSemaphores[m_frameIndex]})};
+		const vk::Result res{m_device->presentKHR(&*m_swapchain, &m_imageIndex, {*m_renderFinishedSemaphores[m_imageIndex]})};
 		if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR || m_framebufferResized)
 		{
 			m_framebufferResized = false;
@@ -224,9 +224,11 @@ namespace toaster::gpu
 		for (uint32 i{0u}; i < m_device->getSpecInfo().maxFramesInFlight; ++i)
 		{
 			// I don't know why vk::SemaphoreCreateInfo exists, there are no parameters that you can set for it
-			vk::SemaphoreCreateInfo semaphore_create_info{};
-			m_imageAvailableSemaphores.emplace_back(m_device->getVulkanLogicalDevice(), semaphore_create_info);
-			m_renderFinishedSemaphores.emplace_back(m_device->getVulkanLogicalDevice(), semaphore_create_info);
+			m_imageAvailableSemaphores.emplace_back(m_device->getVulkanLogicalDevice(), vk::SemaphoreCreateInfo{});
+		}
+		for (uint32 i{0u}; i < m_swapchainImages.size(); ++i)
+		{
+			m_renderFinishedSemaphores.emplace_back(m_device->getVulkanLogicalDevice(), vk::SemaphoreCreateInfo{});
 		}
 	}
 
