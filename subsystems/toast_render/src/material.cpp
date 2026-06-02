@@ -3,9 +3,11 @@
 
 #include <ranges>
 
+#include "toast_render/globals.hpp"
+
 namespace toaster::render
 {
-	Material::Material(RenderContext *p_render_ctx, const gpu::ShaderHandle &p_shader, const String &p_name) : m_renderCtx(p_render_ctx), m_shader(p_shader),
+	Material::Material(RenderContext &p_render_ctx, const gpu::ShaderHandle &p_shader, const String &p_name) : m_renderCtx(&p_render_ctx), m_shader(p_shader),
 																											   m_name(p_name)
 	{
 		const auto &push_constant_buffers{m_shader->getReflectedPushConstantBuffers()};
@@ -19,11 +21,11 @@ namespace toaster::render
 			m_pushConstantStorageBuffer.zeroInitialize();
 		}
 
-		gpu::DescriptorSetManagerSpecInfo dsm_spec_info{};
+		DescriptorSetManagerSpecInfo dsm_spec_info{};
 		dsm_spec_info.shader   = m_shader;
 		dsm_spec_info.startSet = 0;
 		dsm_spec_info.endSet   = 0;
-		m_descriptorSetManager = new gpu::VKDescriptorSetManager{m_renderCtx->getLogicalDevice(), dsm_spec_info};
+		m_descriptorSetManager = new DescriptorSetManager{*m_renderCtx, dsm_spec_info};
 
 		for (const auto &[name, decl]: m_descriptorSetManager->getDescriptorDeclarations())
 		{
@@ -32,7 +34,7 @@ namespace toaster::render
 				case gpu::EDescriptorType::eSampler2D:
 				{
 					for (uint32 i{0u}; i < decl.arraySize; ++i)
-						m_descriptorSetManager->setDescriptor(name, m_descriptorSetManager->getWhiteTexture(), i);
+						m_descriptorSetManager->setDescriptor(name, m_renderCtx->getGlobals()->whiteTexture(), i);
 					break;
 				}
 				default: break;

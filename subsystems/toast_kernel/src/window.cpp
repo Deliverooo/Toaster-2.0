@@ -435,10 +435,10 @@ namespace toaster
 		return m_inputCtx;
 	}
 
-	auto Window::getSwapchainRenderingInfo(const tsm::float4 &p_clear_colour, bool p_use_depth, tsm::float2 p_clear_depth) const -> gpu::RenderingInfo
+	auto Window::getSwapchainRenderingInfo(const tsm::float4 &p_clear_colour, bool p_use_depth, tsm::float2 p_clear_depth) const -> render::RenderingInfo
 	{
-		gpu::RenderingInfo rendering_info{};
-		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_swapchain->getExtent().width, m_swapchain->getExtent().height}};
+		render::RenderingInfo rendering_info{};
+		rendering_info.renderArea = render::getRenderingArea({m_swapchain->getExtent().width, m_swapchain->getExtent().height});
 
 		auto &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
 		colour_attachment_info.imageView   = m_swapchain->getCurrentImageView();
@@ -447,7 +447,7 @@ namespace toaster
 
 		if (p_use_depth)
 		{
-			gpu::RenderingAttachmentInfo depth_attachment_info{};
+			render::RenderingAttachmentInfo depth_attachment_info{};
 			depth_attachment_info.imageView   = m_swapchain->getDepthImageView();
 			depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 			depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{p_clear_depth.x, static_cast<uint32>(p_clear_depth.y)};

@@ -14,9 +14,6 @@ set(GPU_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_raw_image.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_storage_image.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_texture.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_render_pass.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_descriptor_set_manager.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_compute_pass.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_compute_pipeline.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_storage_buffer.cpp
 )

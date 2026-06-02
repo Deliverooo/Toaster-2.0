@@ -5,6 +5,7 @@
 #include <assimp/scene.h>
 
 #include "toast_render/globals.hpp"
+#include "toast_render/render_context.hpp"
 
 namespace toaster::render
 {
@@ -20,7 +21,7 @@ namespace toaster::render
 		return result;
 	}
 
-	MaterialList::MaterialList(RenderContext *p_render_ctx) : m_renderCtx(p_render_ctx)
+	MaterialList::MaterialList(RenderContext &p_render_ctx) : m_renderCtx(&p_render_ctx)
 	{
 	}
 
@@ -49,7 +50,7 @@ namespace toaster::render
 		return m_materialDatas.at(p_index);
 	}
 
-	MeshData::MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path) : m_renderCtx(p_render_ctx), m_path(p_path), m_materials(p_render_ctx)
+	MeshData::MeshData(RenderContext &p_render_ctx, const io::filesystem::Path &p_path) : m_renderCtx(&p_render_ctx), m_path(p_path), m_materials(p_render_ctx)
 	{
 		Assimp::Importer importer;
 
@@ -130,13 +131,13 @@ namespace toaster::render
 			}
 		}
 		else
-			m_materials.addMaterial(0, p_render_ctx->getGlobals()->shaderLibrary().get("Geometry"), "Default");
+			m_materials.addMaterial(0, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"), "Default");
 
 		m_vertexBuffer = m_renderCtx->createVertexBuffer(m_vertices);
 		m_indexBuffer  = m_renderCtx->createIndexBuffer(m_indices);
 	}
 
-	MeshData::MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader) : m_renderCtx(p_render_ctx), m_path(p_path),
+	MeshData::MeshData(RenderContext &p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader) : m_renderCtx(&p_render_ctx), m_path(p_path),
 																															 m_materials(p_render_ctx)
 	{
 		Assimp::Importer importer;

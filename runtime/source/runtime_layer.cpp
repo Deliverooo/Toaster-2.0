@@ -146,7 +146,7 @@ namespace toaster
 		fullscreen_pipeline_spec_info.vertexBufferLayout = render::RenderContext::fullscreenQuadVbl;
 
 		m_fullscreenPipeline   = m_renderCtx->createGPURef<gpu::Pipeline>(fullscreen_pipeline_spec_info);
-		m_fullscreenRenderPass = m_renderCtx->createGPURef<gpu::RenderPass>(m_fullscreenPipeline);
+		m_fullscreenRenderPass = m_renderCtx->createRef<render::RenderPass>(m_fullscreenPipeline);
 
 		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getColourTexture()).bake();
 

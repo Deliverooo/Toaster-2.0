@@ -4,6 +4,7 @@
 
 #include "toast_lib/events/window_event.hpp"
 #include "toast_render/globals.hpp"
+#include "toast_render/render_context.hpp"
 
 namespace toaster
 {

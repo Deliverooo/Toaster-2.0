@@ -78,13 +78,12 @@ public:
 		m_scene->onUpdate(p_dt);
 		m_sceneRenderer->onRender(view, projection);
 
-		m_renderer2D->begin(view, projection);
+		auto colour_attachment_info{render::getRenderingAttachmentInfo(*m_sceneRenderer->getColourTexture()->getImage(), render::EAttachmentUsageOP::eLoadStore)};
+		auto depth_attachment_info{render::getRenderingAttachmentInfo(*m_sceneRenderer->getDepthTexture()->getImage(), render::EAttachmentUsageOP::eLoadStore)};
 
+		m_renderer2D->begin(view, projection, &colour_attachment_info, &depth_attachment_info);
 		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), {1.0f});
-
-		auto colour_attachment_info{m_renderCtx->getRenderingAttachmentInfo(*m_sceneRenderer->getColourTexture()->getImage(), gpu::EAttachmentUsageOP::eLoadStore)};
-		auto depth_attachment_info{m_renderCtx->getRenderingAttachmentInfo(*m_sceneRenderer->getDepthTexture()->getImage(), gpu::EAttachmentUsageOP::eLoadStore)};
-		m_renderer2D->end(cmd, &colour_attachment_info, &depth_attachment_info);
+		m_renderer2D->end(cmd);
 
 		m_renderCtx->beginRendering(cmd, rendering_info, m_swapchainPass);
 		m_renderCtx->renderFullscreenQuad(cmd, m_swapchainPass, nullptr);

@@ -29,7 +29,7 @@ namespace toaster
 		UniquePtr<SceneRenderer> m_sceneRenderer{nullptr};
 
 		gpu::PipelineHandle   m_fullscreenPipeline{nullptr};
-		gpu::RenderPassHandle m_fullscreenRenderPass{nullptr};
+		render::RenderPassHandle m_fullscreenRenderPass{nullptr};
 
 		FPCamera m_camera;
 	};

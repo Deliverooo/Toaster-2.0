@@ -1,25 +1,17 @@
-#include "toast_gpu/vk/vk_descriptor_set_manager.hpp"
-#include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_render/descriptor_set_manager.hpp"
 
-#include "toast_lib/map.hpp"
+#include <ranges>
 
-namespace toaster::gpu
+#include "toast_render/globals.hpp"
+#include "toast_render/render_context.hpp"
+
+namespace toaster::render
 {
-	VKDescriptorSetManager::VKDescriptorSetManager(VKLogicalDevice *p_device, const DescriptorSetManagerSpecInfo &p_spec_info) : m_device(p_device),
-																																 m_specInfo(p_spec_info)
+	DescriptorSetManager::DescriptorSetManager(RenderContext &p_render_ctx, const DescriptorSetManagerSpecInfo &p_spec_info) : m_renderCtx(&p_render_ctx),
+																															   m_specInfo(p_spec_info)
 	{
-		TextureSpecInfo texture_spec_info{};
-		texture_spec_info.size         = {1u};
-		texture_spec_info.format       = vk::Format::eR8G8B8A8Unorm;
-		texture_spec_info.generateMips = false;
-		uint32 texture_data{0xFFFFFFFF};
-		m_whiteTexture = make_reference<VKTexture2D>(m_device, texture_spec_info, &texture_data, sizeof(uint32));
-
-		uint32 texture_3d_data[6]{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
-		m_whiteTexture3D = make_reference<VKTexture3D>(m_device, texture_spec_info, Buffer{texture_3d_data, sizeof(uint32) * 6});
-
 		const auto &descriptor_sets{m_specInfo.shader->getReflectedShaderDescriptorSets()};
-		m_writeDescriptorMap.resize(m_device->getSpecInfo().maxFramesInFlight);
+		m_writeDescriptorMap.resize(RenderContext::maxFramesInFlight);
 
 		for (uint32 set{m_specInfo.startSet}; set <= m_specInfo.endSet; ++set)
 		{
@@ -37,53 +29,53 @@ namespace toaster::gpu
 				descriptor_declaration.binding   = binding;
 				descriptor_declaration.arraySize = write_descriptor.descriptorCount;
 				// This will be the final type of the descriptor unless it is an image sampler, see _getDescriptorImageSamplerType()
-				descriptor_declaration.type = getDescriptorType(write_descriptor.descriptorType);
+				descriptor_declaration.type = gpu::getDescriptorType(write_descriptor.descriptorType);
 
-				DescriptorResource &descriptor_resource{m_descriptorResources[set][binding]};
+				gpu::DescriptorResource &descriptor_resource{m_descriptorResources[set][binding]};
 				descriptor_resource.resources.resize(write_descriptor.descriptorCount);
-				descriptor_resource.type = getResourceType(write_descriptor.descriptorType);
+				descriptor_resource.type = gpu::getResourceType(write_descriptor.descriptorType);
 
 				// For samplers, they are different types depending on their dimension
 				if (descriptor_set.imageSamplers.contains(binding))
 				{
 					auto &sampler{descriptor_set.imageSamplers.at(binding)};
-					descriptor_declaration.type = getDescriptorImageSamplerType(write_descriptor.descriptorType, sampler.dimension);
+					descriptor_declaration.type = gpu::getDescriptorImageSamplerType(write_descriptor.descriptorType, sampler.dimension);
 
-					if (sampler.dimension == reflection::EImageDimension::e3D || sampler.dimension == reflection::EImageDimension::eCube)
-						descriptor_resource.type = EGPUResourceType::eTexture3D;
+					if (sampler.dimension == gpu::reflection::EImageDimension::e3D || sampler.dimension == gpu::reflection::EImageDimension::eCube)
+						descriptor_resource.type = gpu::EGPUResourceType::eTexture3D;
 				}
 				else if (descriptor_set.storageImages.contains(binding))
 				{
 					auto &storage_image{descriptor_set.storageImages.at(binding)};
-					descriptor_declaration.type = getDescriptorImageSamplerType(write_descriptor.descriptorType, storage_image.dimension);
+					descriptor_declaration.type = gpu::getDescriptorImageSamplerType(write_descriptor.descriptorType, storage_image.dimension);
 
-					if (storage_image.dimension == reflection::EImageDimension::e3D || storage_image.dimension == reflection::EImageDimension::eCube)
-						descriptor_resource.type = EGPUResourceType::eTexture3D;
+					if (storage_image.dimension == gpu::reflection::EImageDimension::e3D || storage_image.dimension == gpu::reflection::EImageDimension::eCube)
+						descriptor_resource.type = gpu::EGPUResourceType::eTexture3D;
 				}
 
 				// LOG_ERROR("Type: {}", descriptorTypeToString(descriptor_declaration.type));
-				TST_ASSERT(descriptor_declaration.type != EDescriptorType::eUnknown);
+				TST_ASSERT(descriptor_declaration.type != gpu::EDescriptorType::eUnknown);
 
 				// Create default resources so you can actually set the resource descriptor during rendering
-				if (descriptor_declaration.type == EDescriptorType::eSampler2D)
+				if (descriptor_declaration.type == gpu::EDescriptorType::eSampler2D)
 				{
 					for (uint32 i{0u}; i < descriptor_resource.resources.size(); ++i)
-						descriptor_resource.resources[i] = m_whiteTexture.as<IGPUResource>();
+						descriptor_resource.resources[i] = m_renderCtx->getGlobals()->whiteTexture().as<gpu::IGPUResource>();
 				}
-				else if (descriptor_declaration.type == EDescriptorType::eSampler3D || descriptor_declaration.type == EDescriptorType::eImage3D)
+				else if (descriptor_declaration.type == gpu::EDescriptorType::eSampler3D || descriptor_declaration.type == gpu::EDescriptorType::eImage3D)
 				{
 					// I actually don't think I even support 3D samplers yet...
 					for (uint32 i{0u}; i < descriptor_resource.resources.size(); ++i)
-						descriptor_resource.resources[i] = m_whiteTexture3D.as<IGPUResource>();
+						descriptor_resource.resources[i] = m_renderCtx->getGlobals()->whiteTexture3D().as<gpu::IGPUResource>();
 				}
 
-				for (uint32 frame_index{0u}; frame_index < m_device->getSpecInfo().maxFramesInFlight; ++frame_index)
+				for (uint32 frame_index{0u}; frame_index < RenderContext::maxFramesInFlight; ++frame_index)
 					m_writeDescriptorMap[frame_index][set][binding] = {write_descriptor, std::vector<void *>{write_descriptor.descriptorCount}};
 			}
 		}
 	}
 
-	auto VKDescriptorSetManager::bakeDescriptors() -> void
+	auto DescriptorSetManager::bakeDescriptors() -> void
 	{
 		constexpr std::array descriptor_pool_sizes{
 			vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 100u},
@@ -96,13 +88,13 @@ namespace toaster::gpu
 		vk::DescriptorPoolCreateInfo descriptor_pool_create_info{};
 		descriptor_pool_create_info.poolSizeCount = descriptor_pool_sizes.size();
 		descriptor_pool_create_info.pPoolSizes    = descriptor_pool_sizes.data();
-		descriptor_pool_create_info.maxSets       = 10u * m_device->getSpecInfo().maxFramesInFlight;
+		descriptor_pool_create_info.maxSets       = 10u * RenderContext::maxFramesInFlight;
 		descriptor_pool_create_info.flags         = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;
 
-		m_descriptorPool = {m_device->getVulkanLogicalDevice(), descriptor_pool_create_info};
+		m_descriptorPool = {*m_renderCtx->getLogicalDevice(), descriptor_pool_create_info};
 
 		if (m_descriptorSets.empty())
-			for (uint32 i{0u}; i < m_device->getSpecInfo().maxFramesInFlight; ++i)
+			for (uint32 i{0u}; i < RenderContext::maxFramesInFlight; ++i)
 				m_descriptorSets.emplace_back();
 
 		for (auto &descriptor_set: m_descriptorSets)
@@ -110,7 +102,7 @@ namespace toaster::gpu
 
 		for (const auto &[set, resources]: m_descriptorResources)
 		{
-			for (uint32 frame_index{0u}; frame_index < m_device->getSpecInfo().maxFramesInFlight; ++frame_index)
+			for (uint32 frame_index{0u}; frame_index < RenderContext::maxFramesInFlight; ++frame_index)
 			{
 				const vk::raii::DescriptorSetLayout &descriptor_set_layout{m_specInfo.shader->getDescriptorSetLayout(set)};
 				vk::DescriptorSetAllocateInfo        descriptor_set_allocate_info{};
@@ -119,11 +111,12 @@ namespace toaster::gpu
 				descriptor_set_allocate_info.pSetLayouts        = &*descriptor_set_layout;
 
 				auto &descriptor_set{
-					m_descriptorSets[frame_index].emplace_back(std::move(m_device->getVulkanLogicalDevice().allocateDescriptorSets(descriptor_set_allocate_info).front()))
+					m_descriptorSets[frame_index].emplace_back(std::move(m_renderCtx->getLogicalDevice()->getVulkanLogicalDevice().
+																		 allocateDescriptorSets(descriptor_set_allocate_info).front()))
 				};
 
 				#ifndef NDEBUG
-				m_device->setDebugObjectName(*descriptor_set, "name");
+				m_renderCtx->getLogicalDevice()->setDebugObjectName(*descriptor_set, "name");
 				#endif
 
 				auto &write_descriptor_sets{m_writeDescriptorMap[frame_index].at(set)};
@@ -139,9 +132,9 @@ namespace toaster::gpu
 					vk::WriteDescriptorSet &write_descriptor{stored_write_descriptor.wds};
 					write_descriptor.dstSet = descriptor_set;
 
-					GPUResourceHandle resource_handle{resource.resources[0]};
+					gpu::GPUResourceHandle resource_handle{resource.resources[0]};
 					TST_ASSERT_MSG(resource_handle, "Why is ts nullptr");
-					if (resource.type == EGPUResourceType::eTexture2D)
+					if (resource.type == gpu::EGPUResourceType::eTexture2D)
 						_populateWriteDescriptorTexture2DArray(stored_write_descriptor, resource, descriptor_image_infos, descriptor_image_info_index, frame_index);
 					else
 					{
@@ -151,23 +144,23 @@ namespace toaster::gpu
 				}
 
 				auto write_descriptors{
-					write_descriptor_sets | std::views::values | std::ranges::to<std::vector>() | std::views::transform(&WriteDescriptor::wds) | std::ranges::to<
+					write_descriptor_sets | std::views::values | std::ranges::to<std::vector>() | std::views::transform(&gpu::WriteDescriptor::wds) | std::ranges::to<
 						std::vector>()
 				};
 
 				if (!write_descriptors.empty())
-					m_device->getVulkanLogicalDevice().updateDescriptorSets(write_descriptors, {});
+					m_renderCtx->getLogicalDevice()->getVulkanLogicalDevice().updateDescriptorSets(write_descriptors, {});
 			}
 		}
 	}
 
-	auto VKDescriptorSetManager::updateDescriptors(uint32 p_frame_index) -> void
+	auto DescriptorSetManager::updateDescriptors(uint32 p_frame_index) -> void
 	{
 		for (const auto &[set, resources]: m_descriptorResources)
 		{
 			for (const auto &[binding, resource]: resources)
 			{
-				if (resource.resources[0].as<VKTexture2D>())
+				if (resource.resources[0].as<gpu::VKTexture2D>())
 				{
 					for (uint32 i{0u}; i < resource.resources.size(); ++i)
 					{
@@ -202,8 +195,8 @@ namespace toaster::gpu
 			{
 				auto &write_descriptor{m_writeDescriptorMap[p_frame_index].at(set).at(binding)};
 
-				GPUResourceHandle resource_handle{resource.resources[0]};
-				if (resource_handle.as<VKTexture2D>())
+				gpu::GPUResourceHandle resource_handle{resource.resources[0]};
+				if (resource_handle.as<gpu::VKTexture2D>())
 					_populateWriteDescriptorTexture2DArray(write_descriptor, resource, descriptor_image_infos, descriptor_image_info_index, p_frame_index);
 				else
 				{
@@ -214,62 +207,52 @@ namespace toaster::gpu
 				write_descriptor_sets.emplace_back(write_descriptor.wds);
 			}
 
-			m_device->getVulkanLogicalDevice().updateDescriptorSets(write_descriptor_sets, {});
+			m_renderCtx->getLogicalDevice()->getVulkanLogicalDevice().updateDescriptorSets(write_descriptor_sets, {});
 		}
 		m_invalidDescriptorResources.clear();
 	}
 
-	auto VKDescriptorSetManager::getDescriptorSets(uint32 p_frame_index) const -> std::vector<vk::DescriptorSet>
+	auto DescriptorSetManager::getDescriptorSets(uint32 p_frame_index) const -> std::vector<vk::DescriptorSet>
 	{
-		TST_ASSERT_MSG(p_frame_index < m_device->getSpecInfo().maxFramesInFlight, "Frame index out of bounds");
+		TST_ASSERT_MSG(p_frame_index <RenderContext::maxFramesInFlight, "Frame index out of bounds");
 		std::vector<vk::DescriptorSet> result;
 		for (auto &descriptor_set: m_descriptorSets[p_frame_index])
 			result.emplace_back(*descriptor_set);
 		return result;
 	}
 
-	auto VKDescriptorSetManager::getDescriptorDeclaration(const String &p_name) const -> const DescriptorDeclaration *
+	auto DescriptorSetManager::getDescriptorDeclaration(const String &p_name) const -> const DescriptorDeclaration *
 	{
 		if (!m_descriptorDeclarations.contains(p_name))
 			return nullptr;
 		return &m_descriptorDeclarations.at(p_name);
 	}
 
-	auto VKDescriptorSetManager::getDescriptorDeclarations() const -> const std::unordered_map<String, DescriptorDeclaration> &
+	auto DescriptorSetManager::getDescriptorDeclarations() const -> const std::unordered_map<String, DescriptorDeclaration> &
 	{
 		return m_descriptorDeclarations;
 	}
 
-	auto VKDescriptorSetManager::getWhiteTexture() const -> const Texture2DHandle &
-	{
-		return m_whiteTexture;
-	}
-
-	auto VKDescriptorSetManager::getWhiteTexture3D() const -> const Texture3DHandle &
-	{
-		return m_whiteTexture3D;
-	}
-
-	auto VKDescriptorSetManager::hasDescriptorSets() const -> bool
+	auto DescriptorSetManager::hasDescriptorSets() const -> bool
 	{
 		return !m_descriptorSets.empty() && !m_descriptorSets[0].empty();
 	}
 
-	auto VKDescriptorSetManager::getSpecInfo() const -> const DescriptorSetManagerSpecInfo &
+	auto DescriptorSetManager::getSpecInfo() const -> const DescriptorSetManagerSpecInfo &
 	{
 		return m_specInfo;
 	}
 
-	auto VKDescriptorSetManager::_populateWriteDescriptorTexture2DArray(WriteDescriptor &p_write_descriptor, const DescriptorResource &p_resource,
-																		std::vector<std::vector<vk::DescriptorImageInfo> > &p_descriptor_image_infos,
-																		uint32 &p_descriptor_image_info_index, uint32 p_frame_index) -> void
+	auto DescriptorSetManager::_populateWriteDescriptorTexture2DArray(gpu::WriteDescriptor &p_write_descriptor, const gpu::DescriptorResource &p_resource,
+																	  std::vector<std::vector<vk::DescriptorImageInfo> > &p_descriptor_image_infos,
+																	  uint32 &p_descriptor_image_info_index, uint32 p_frame_index) -> void
 	{
 		auto &current_image_infos{p_descriptor_image_infos.emplace_back()};
 		current_image_infos.resize(p_resource.resources.size());
 
 		for (uint32 i{0u}; i < p_resource.resources.size(); ++i)
 		{
-			current_image_infos[i]                = p_resource.resources[i].as<VKTexture2D>()->getDescriptorInfo();
+			current_image_infos[i]                = p_resource.resources[i].as<gpu::VKTexture2D>()->getDescriptorInfo();
 			p_write_descriptor.resourceHandles[i] = p_resource.resources[i]->getDescriptorResourceHandle(p_frame_index);
 		}
 

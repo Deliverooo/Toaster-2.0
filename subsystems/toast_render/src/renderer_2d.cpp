@@ -6,7 +6,7 @@
 
 namespace toaster::render
 {
-	Renderer2D::Renderer2D(RenderContext *p_render_ctx, tsm::uint2 p_viewport_size) : m_renderCtx(p_render_ctx), m_specInfo({})
+	Renderer2D::Renderer2D(RenderContext &p_render_ctx, tsm::uint2 p_viewport_size) : m_renderCtx(&p_render_ctx), m_specInfo({})
 	{
 		m_specInfo.renderTargetSize = p_viewport_size;
 		m_maxVertices               = m_specInfo.maxQuads * 4u;
@@ -14,7 +14,7 @@ namespace toaster::render
 		_construct();
 	}
 
-	Renderer2D::Renderer2D(RenderContext *p_render_ctx, const Renderer2DSpecInfo &p_create_info) : m_renderCtx(p_render_ctx), m_specInfo(p_create_info),
+	Renderer2D::Renderer2D(RenderContext &p_render_ctx, const Renderer2DSpecInfo &p_create_info) : m_renderCtx(&p_render_ctx), m_specInfo(p_create_info),
 																								   m_maxVertices(p_create_info.maxQuads * 4u),
 																								   m_maxIndices(p_create_info.maxQuads * 6u)
 	{
@@ -27,8 +27,16 @@ namespace toaster::render
 		delete[] m_quadVertexBase;
 	}
 
-	auto Renderer2D::begin(Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void
+	auto Renderer2D::begin(Dx::FXMMATRIX            p_view, Dx::CXMMATRIX p_projection, RenderingAttachmentInfo *p_override_colour_attachment,
+						   RenderingAttachmentInfo *p_override_depth_attachment) -> void
 	{
+		if (m_specInfo.overrideAttachments && !p_override_colour_attachment && !p_override_depth_attachment)
+		{
+			TST_ASSERT_MSG(false, "Please provide the attachment infos...");
+		}
+		m_colourAttachmentInfo = p_override_colour_attachment;
+		m_depthAttachmentInfo  = p_override_depth_attachment;
+
 		CameraUB ubo{};
 		Dx::XMStoreFloat4x4(&ubo.view, p_view);
 		Dx::XMStoreFloat4x4(&ubo.proj, p_projection);
@@ -45,37 +53,32 @@ namespace toaster::render
 		m_stats.quadCount = 0u;
 	}
 
-	auto Renderer2D::end(gpu::VKCommandBuffer *              p_cmd, gpu::RenderingAttachmentInfo *p_override_colour_attachment,
-						 const gpu::RenderingAttachmentInfo *p_override_depth_attachment) -> void
+	auto Renderer2D::end(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		if (!p_cmd)
 			p_cmd = m_renderCtx->getCurrentSwapchainCommandBuffer();
 
-		if (m_specInfo.overrideAttachments && !p_override_colour_attachment && !p_override_depth_attachment)
-		{
-			TST_ASSERT_MSG(false, "Please provide the attachment infos...");
-		}
-
-		gpu::RenderingInfo rendering_info{};
+		RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_specInfo.renderTargetSize.x, m_specInfo.renderTargetSize.y}};
 		rendering_info.layerCount = 1;
 
-		if (p_override_colour_attachment)
-			rendering_info.colourAttachments.emplace_back(*p_override_colour_attachment);
+		if (m_colourAttachmentInfo)
+			rendering_info.colourAttachments.emplace_back(*m_colourAttachmentInfo);
 		else
 		{
-			gpu::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
+			RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
 			colour_attachment_info.image = m_renderTargetTexture->getImage();
 		}
 
-		gpu::RenderingAttachmentInfo depth_attachment_info{};
-		if (p_override_depth_attachment)
-			depth_attachment_info = *p_override_depth_attachment;
+		RenderingAttachmentInfo depth_attachment_info{};
+		if (m_depthAttachmentInfo)
+			depth_attachment_info = *m_depthAttachmentInfo;
 		else
 		{
 			depth_attachment_info.image      = m_renderTargetDepthImage;
 			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{1.0f, 0u};
 		}
+
 		rendering_info.depthAttachment = depth_attachment_info;
 
 		m_renderCtx->beginRendering(p_cmd, rendering_info, m_quadRenderPass);
@@ -185,10 +188,10 @@ namespace toaster::render
 		m_cameraUBs       = m_renderCtx->createUniformBuffers<CameraUB>(RenderContext::maxFramesInFlight);
 		m_mappedCameraUBs = m_cameraUBs->mapAllMemory(sizeof(CameraUB));
 
-		m_quadRenderPass = m_renderCtx->createGPURef<gpu::VKRenderPass>(m_quadPipeline);
+		m_quadRenderPass = m_renderCtx->createRef<RenderPass>(m_quadPipeline);
 		m_quadRenderPass->setInput("Camera", m_cameraUBs).bake();
 
-		m_quadMaterial = make_reference<Material>(m_renderCtx, quad_shader);
+		m_quadMaterial = m_renderCtx->createRef<Material>(quad_shader);
 
 		if (!m_specInfo.overrideAttachments)
 		{
@@ -240,7 +243,7 @@ namespace toaster::render
 
 	auto Renderer2D::_beginNewBatch() -> void
 	{
-		// end();
+		end();
 
 		m_quadIndexCount = 0u;
 		m_quadVertexPtr  = m_quadVertexBase;

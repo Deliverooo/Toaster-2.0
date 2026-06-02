@@ -9,12 +9,12 @@
 #include <utility> // std::pair
 #include <vulkan/vulkan_raii.hpp>
 
-#include "toast_gpu/vk/vk_render_attachment.hpp"
 #include "toast_lib/ptr.hpp"
 #include "toast_lib/string.hpp"
 #include "toast_lib/system_types.h"
 #include "toast_lib/events/event.hpp"
 #include "toast_lib/io/filesystem.hpp"
+#include "toast_render/render_attachment.hpp"
 
 struct GLFWwindow;
 
@@ -100,7 +100,7 @@ namespace toaster
 		[[nodiscard]] auto getInputContext() const -> InputContext *;
 
 		[[nodiscard]] auto getSwapchainRenderingInfo(const tsm::float4 &p_clear_colour, bool p_use_depth = true,
-													 tsm::float2        p_clear_depth                    = {1.0f, 0.0f}) const -> gpu::RenderingInfo;
+													 tsm::float2        p_clear_depth                    = {1.0f, 0.0f}) const -> render::RenderingInfo;
 
 	private:
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};

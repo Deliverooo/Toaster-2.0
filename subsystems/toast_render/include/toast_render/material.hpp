@@ -1,13 +1,13 @@
 #pragma once
 
-#include "render_context.hpp"
+#include "descriptor_set_manager.hpp"
 
 namespace toaster::render
 {
 	class TST_RENDER_API Material
 	{
 	public:
-		Material(RenderContext *p_render_ctx, const gpu::ShaderHandle &p_shader, const String &p_name = "Unknown?");
+		Material(RenderContext &p_render_ctx, const gpu::ShaderHandle &p_shader, const String &p_name = "Unknown?");
 		~Material();
 
 		auto setTexture(const String &p_name, const gpu::Texture2DHandle &p_texture_2d) -> void;
@@ -56,10 +56,10 @@ namespace toaster::render
 		gpu::ShaderHandle m_shader{nullptr};
 		String            m_name{};
 
-		OwningPtr<gpu::VKDescriptorSetManager> m_descriptorSetManager{nullptr};
+		OwningPtr<DescriptorSetManager> m_descriptorSetManager{nullptr};
 
 		Buffer m_pushConstantStorageBuffer{};
 	};
 
-	using MaterialHandle = RefPtr<Material>;
+	TST_RENDER_DEFINE_HANDLE(Material, Material)
 }

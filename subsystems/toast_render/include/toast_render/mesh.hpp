@@ -76,7 +76,7 @@ namespace toaster::render
 	class TST_RENDER_API MaterialList
 	{
 	public:
-		MaterialList(RenderContext *p_render_ctx);
+		MaterialList(RenderContext &p_render_ctx);
 
 		auto               addMaterial(uint32 p_index, const gpu::ShaderHandle &p_shader, const String &p_name) -> MeshMaterialData &;
 		[[nodiscard]] auto hasMaterial(uint32 p_index) const -> bool;
@@ -99,8 +99,8 @@ namespace toaster::render
 	class TST_RENDER_API MeshData
 	{
 	public:
-		MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path);
-		MeshData(RenderContext *p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader);
+		MeshData(RenderContext &p_render_ctx, const io::filesystem::Path &p_path);
+		MeshData(RenderContext &p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader);
 
 		auto getVertexBuffer() const -> const gpu::VertexBufferHandle &;
 		auto getIndexBuffer() const -> const gpu::IndexBufferHandle &;

@@ -1,6 +1,9 @@
 #pragma once
 
 #include "scene.hpp"
+#include "toast_gpu/vk/vk_storage_image.hpp"
+#include "toast_gpu/vk/vk_uniform_buffer.hpp"
+#include "toast_render/compute_pass.hpp"
 #include "toast_render/mesh.hpp"
 
 namespace toaster
@@ -68,7 +71,7 @@ namespace toaster
 
 		#pragma region depth-pre
 		gpu::PipelineHandle   m_depthPrePipeline{nullptr};
-		gpu::RenderPassHandle m_depthPrePass{nullptr};
+		render::RenderPassHandle m_depthPrePass{nullptr};
 
 		gpu::RawImageHandle  m_MSAADepthImage{nullptr};
 		gpu::Texture2DHandle m_depthTexture{nullptr};
@@ -83,7 +86,7 @@ namespace toaster
 		#pragma region ambient occlusion
 
 		gpu::PipelineHandle   m_SSAOPipeline{nullptr};
-		gpu::RenderPassHandle m_SSAOPass{nullptr};
+		render::RenderPassHandle m_SSAOPass{nullptr};
 
 		render::MaterialHandle m_SSAOFrameDataMaterial{nullptr};
 
@@ -102,21 +105,21 @@ namespace toaster
 		gpu::Texture2DHandle m_SSAOTexture{nullptr};
 
 		gpu::ComputePipelineHandle m_SSAOBlurPipeline{nullptr};
-		gpu::ComputePassHandle     m_SSAOBlurPass{nullptr};
+		render::ComputePassHandle     m_SSAOBlurPass{nullptr};
 		gpu::StorageImageHandle    m_SSAOBlurredImage{nullptr};
 
 		#pragma endregion
 
 		#pragma region skybox
 		gpu::PipelineHandle    m_skyboxPipeline{nullptr};
-		gpu::RenderPassHandle  m_skyboxPass{nullptr};
+		render::RenderPassHandle  m_skyboxPass{nullptr};
 		render::MaterialHandle m_skyboxMaterial{nullptr};
 
 		#pragma endregion
 
 		#pragma region geometry
 		gpu::PipelineHandle   m_geometryPipeline{nullptr};
-		gpu::RenderPassHandle m_geometryPass{nullptr};
+		render::RenderPassHandle m_geometryPass{nullptr};
 		#pragma endregion
 
 		gpu::RawImageHandle  m_MSAAcolourImage{nullptr};

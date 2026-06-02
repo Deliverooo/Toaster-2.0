@@ -1,15 +1,20 @@
 #pragma once
 
-#include "material.hpp"
-
 #include <array>
+
+#include "material.hpp"
+#include "render_attachment.hpp"
+#include "render_pass.hpp"
+
+#include "toast_gpu/vk/vk_command_buffer.hpp"
+#include "toast_gpu/vk/vk_index_buffer.hpp"
+#include "toast_gpu/vk/vk_pipeline.hpp"
+#include "toast_gpu/vk/vk_vertex_buffer.hpp"
 
 namespace toaster::gpu
 {
 	class VKLogicalDevice;
 	class VKPipeline;
-	class VKRenderPass;
-	class VKMaterial;
 	class VKTexture2D;
 	class VKRawImage;
 	class VKUniformBuffer;
@@ -43,14 +48,13 @@ namespace toaster::render
 
 		// Ts makes creating renderer 2Ds look better, as, for simple use cases, you only need to specify the viewport size.
 		// The rest of the spec info is kept at their default values
-		Renderer2D(RenderContext *p_render_ctx, tsm::uint2 p_viewport_size);
-
-		Renderer2D(RenderContext *p_render_ctx, const Renderer2DSpecInfo &p_create_info);
+		Renderer2D(RenderContext &p_render_ctx, tsm::uint2 p_viewport_size);
+		Renderer2D(RenderContext &p_render_ctx, const Renderer2DSpecInfo &p_create_info);
 		~Renderer2D();
 
-		auto XM_CALLCONV begin(Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void;
-		auto             end(gpu::VKCommandBuffer *  p_cmd                       = nullptr, gpu::RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
-							 const gpu::RenderingAttachmentInfo *p_override_depth_attachment = nullptr) -> void;
+		auto XM_CALLCONV begin(Dx::FXMMATRIX            p_view, Dx::CXMMATRIX p_projection, RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
+							   RenderingAttachmentInfo *p_override_depth_attachment                                                               = nullptr) -> void;
+		auto end(gpu::VKCommandBuffer *p_cmd = nullptr) -> void;
 
 		auto XM_CALLCONV submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void;
 		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX p_transform, const tsm::float4 &p_colour) -> void;
@@ -87,9 +91,9 @@ namespace toaster::render
 		gpu::Texture2DHandle m_renderTargetTexture{nullptr};
 		gpu::RawImageHandle  m_renderTargetDepthImage{nullptr};
 
-		gpu::PipelineHandle   m_quadPipeline{nullptr};
-		gpu::RenderPassHandle m_quadRenderPass{nullptr};
-		MaterialHandle        m_quadMaterial{nullptr};
+		gpu::PipelineHandle m_quadPipeline{nullptr};
+		RenderPassHandle    m_quadRenderPass{nullptr};
+		MaterialHandle      m_quadMaterial{nullptr};
 
 		gpu::VertexBufferHandle m_quadVertexBuffer{nullptr};
 		gpu::IndexBufferHandle  m_quadIndexBuffer{nullptr};
@@ -113,6 +117,9 @@ namespace toaster::render
 
 		std::array<gpu::Texture2DHandle, 32u> m_textureSlots;
 		uint32                                m_textureSlotIndex{1u};
+
+		RenderingAttachmentInfo *m_colourAttachmentInfo{nullptr};
+		RenderingAttachmentInfo *m_depthAttachmentInfo{nullptr};
 
 		Stats m_stats;
 	};

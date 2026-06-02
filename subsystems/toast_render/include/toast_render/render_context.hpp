@@ -1,14 +1,14 @@
 #pragma once
 
+#include "render_attachment.hpp"
 #include "toast_render.hpp"
+#include "toast_gpu/buffer_layout.hpp"
 #include "toast_lib/ptr.hpp"
 
 #include "toast_gpu/vk/vk_command_buffer.hpp"
-#include "toast_gpu/vk/vk_compute_pass.hpp"
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
-#include "toast_gpu/vk/vk_render_attachment.hpp"
-#include "toast_gpu/vk/vk_render_pass.hpp"
+#include "toast_gpu/vk/vk_pipeline.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_gpu/vk/vk_uniform_buffer.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
@@ -19,6 +19,8 @@ namespace toaster::render
 	class Material;
 	class MeshData;
 	class Renderer2D;
+	class RenderPass;
+	class ComputePass;
 
 	struct TST_RENDER_API RenderContextSpecInfo
 	{
@@ -35,6 +37,13 @@ namespace toaster::render
 		static constexpr uint32 maxFramesInFlight{3u};
 
 		static inline const gpu::VertexBufferLayout fullscreenQuadVbl{{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
+		static inline const gpu::VertexBufferLayout meshVbl{
+			{gpu::EBufferDataType::eFloat3, "a_Position"},
+			{gpu::EBufferDataType::eFloat3, "a_Normal"},
+			{gpu::EBufferDataType::eFloat3, "a_Tangent"},
+			{gpu::EBufferDataType::eFloat3, "a_Bitangent"},
+			{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
+		};
 
 		RenderContext(const RenderContextSpecInfo &p_spec_info);
 		~RenderContext();
@@ -60,14 +69,14 @@ namespace toaster::render
 		template<typename TObj, typename... TArgs>
 		[[nodiscard]] auto createRef(TArgs &&... p_args) -> RefPtr<TObj>
 		{
-			return make_reference<TObj>(this, std::forward<TArgs>(p_args)...);
+			return make_reference<TObj>(*this, std::forward<TArgs>(p_args)...);
 		}
 
 		// Use for objects that take the render context into their constructor
 		template<typename TObj, typename... TArgs>
 		[[nodiscard]] auto createUnique(TArgs &&... p_args) -> UniquePtr<TObj>
 		{
-			return make_unique<TObj>(this, std::forward<TArgs>(p_args)...);
+			return make_unique<TObj>(*this, std::forward<TArgs>(p_args)...);
 		}
 
 		// Use for objects that take the logical device into their constructor
@@ -112,32 +121,25 @@ namespace toaster::render
 		[[nodiscard]] auto createAttachmentTexture(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
 												   vk::Format p_format = vk::Format::eUndefined) const -> gpu::Texture2DHandle;
 
-		[[nodiscard]] static auto getRenderingAttachmentInfo(gpu::RawImage &         p_image,
-															 gpu::EAttachmentUsageOP p_usage_op = gpu::EAttachmentUsageOP::eClearStore) -> gpu::RenderingAttachmentInfo;
-
-		[[nodiscard]] static auto getRenderingAttachmentInfo(gpu::RawImage &         p_image, gpu::RawImage &p_resolve_image,
-															 gpu::EAttachmentUsageOP p_usage_op = gpu::EAttachmentUsageOP::eClearStore) -> gpu::RenderingAttachmentInfo;
-
-		[[nodiscard]] static auto getRenderingArea(tsm::uint2 p_viewport_size, tsm::uint2 p_viewport_offset = tsm::uint2{0u}) -> vk::Rect2D;
-
-		[[nodiscard]] auto createEnvironmentMap(const io::filesystem::Path &p_path) const -> gpu::Texture3DHandle;
-		[[nodiscard]] auto createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) const -> gpu::Texture3DHandle;
-		[[nodiscard]] auto createDiffuseIrradianceMap(const gpu::Texture3DHandle &p_environment_map) const -> gpu::Texture3DHandle;
+		[[nodiscard]] auto createEnvironmentMap(const io::filesystem::Path &p_path) -> gpu::Texture3DHandle;
+		[[nodiscard]] auto createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) -> gpu::Texture3DHandle;
+		[[nodiscard]] auto createDiffuseIrradianceMap(const gpu::Texture3DHandle &p_environment_map) -> gpu::Texture3DHandle;
 
 		#pragma region render logic
-		auto beginRendering(gpu::CommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, gpu::RenderPass *p_render_pass,
-							uint32              p_frame_index = UINT32_MAX) const -> void;
-		auto endRendering(gpu::CommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info) const -> void;
 
-		auto beginCompute(gpu::CommandBuffer *p_command_buffer, gpu::ComputePass *p_compute_pass, uint32 p_frame_index = UINT32_MAX) const -> void;
-		auto dispatchCompute(gpu::CommandBuffer *p_command_buffer, const gpu::ComputePass *p_compute_pass, Material *p_material, const tsm::uint3 &p_work_groups,
+		auto beginRendering(gpu::CommandBuffer *p_command_buffer, const RenderingInfo &p_rendering_info, RenderPass *p_render_pass,
+							uint32              p_frame_index = UINT32_MAX) const -> void;
+		auto endRendering(gpu::CommandBuffer *p_command_buffer, const RenderingInfo &p_rendering_info) const -> void;
+
+		auto beginCompute(gpu::CommandBuffer *p_command_buffer, ComputePass *p_compute_pass, uint32 p_frame_index = UINT32_MAX) const -> void;
+		auto dispatchCompute(gpu::CommandBuffer *p_command_buffer, const ComputePass *p_compute_pass, Material *p_material, const tsm::uint3 &p_work_groups,
 							 uint32              p_frame_index = UINT32_MAX) const -> void;
 
 		auto XM_CALLCONV renderGeometry(gpu::CommandBuffer *p_command_buffer, gpu::Pipeline *p_pipeline, gpu::VertexBuffer *p_vertex_buffer,
 										gpu::IndexBuffer *  p_index_buffer, uint32           p_index_count, Material *      p_material, Dx::FXMMATRIX p_transform,
 										uint32              p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer, const gpu::RenderPass *p_render_pass, Material *p_material,
+		auto renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer, const RenderPass *p_render_pass, Material *p_material,
 								  uint32              p_frame_index = UINT32_MAX) const -> void;
 
 		auto XM_CALLCONV renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline,

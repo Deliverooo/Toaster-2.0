@@ -6,7 +6,9 @@
 
 #include "toast_gpu/vk/vk_command_buffer.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_render/compute_pass.hpp"
 #include "toast_render/renderer_2d.hpp"
+#include "toast_render/render_pass.hpp"
 
 namespace toaster::render
 {
@@ -150,40 +152,7 @@ namespace toaster::render
 		return createGPURef<gpu::Texture2D>(attachment_texture_spec_info);
 	}
 
-	auto RenderContext::getRenderingAttachmentInfo(gpu::RawImage &p_image, gpu::EAttachmentUsageOP p_usage_op) -> gpu::RenderingAttachmentInfo
-	{
-		gpu::RenderingAttachmentInfo attachment_info{};
-		attachment_info.image   = &p_image;
-		attachment_info.loadOp  = gpu::getLoadOp(p_usage_op);
-		attachment_info.storeOp = gpu::getStoreOp(p_usage_op);
-
-		const vk::ImageAspectFlags aspect_mask{gpu::util::getImageAspectMask(p_image.getSpecInfo().format)};
-		attachment_info.clearValue = gpu::util::getDefaultImageClearValue(aspect_mask);
-		return attachment_info;
-	}
-
-	auto RenderContext::getRenderingAttachmentInfo(gpu::RawImage &         p_image, gpu::RawImage &p_resolve_image,
-												   gpu::EAttachmentUsageOP p_usage_op) -> gpu::RenderingAttachmentInfo
-	{
-		gpu::RenderingAttachmentInfo attachment_info{};
-		attachment_info.image        = &p_image;
-		attachment_info.loadOp       = gpu::getLoadOp(p_usage_op);
-		attachment_info.storeOp      = gpu::getStoreOp(p_usage_op);
-		attachment_info.resolveImage = &p_resolve_image;
-
-		const vk::ImageAspectFlags aspect_mask{gpu::util::getImageAspectMask(p_resolve_image.getSpecInfo().format)};
-		attachment_info.resolveMode = gpu::util::getDefaultImageResolveMode(aspect_mask);
-		attachment_info.clearValue  = gpu::util::getDefaultImageClearValue(aspect_mask);
-
-		return attachment_info;
-	}
-
-	auto RenderContext::getRenderingArea(tsm::uint2 p_viewport_size, tsm::uint2 p_viewport_offset) -> vk::Rect2D
-	{
-		return vk::Rect2D{{static_cast<int32>(p_viewport_offset.x), static_cast<int32>(p_viewport_offset.y)}, {p_viewport_size.x, p_viewport_size.y}};
-	}
-
-	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) const -> gpu::Texture3DHandle
+	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) -> gpu::Texture3DHandle
 	{
 		auto env_tex{createGPURef<gpu::Texture2D>(gpu::TextureSpecInfo{}, p_path)};
 
@@ -193,26 +162,21 @@ namespace toaster::render
 		skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
 		RefPtr<gpu::Texture3D> env_map      = createGPURef<gpu::Texture3D>(skybox_texture_map_spec_info);
 
-		auto equirectangular_to_cubemap_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
-		auto equirectangular_to_cubemap_pass{createGPURef<gpu::ComputePass>(equirectangular_to_cubemap_pipeline)};
-		equirectangular_to_cubemap_pass->setInput("u_EquirectangularMap", env_tex);
-		equirectangular_to_cubemap_pass->setInput("o_Cubemap", env_map);
-		equirectangular_to_cubemap_pass->bake();
+		auto equirectangular_to_cube_map_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
+		auto equirectangular_to_cube_map_pass{createRef<ComputePass>(equirectangular_to_cube_map_pipeline)};
+		equirectangular_to_cube_map_pass->setInput("u_EquirectangularMap", env_tex).setInput("o_CubeMap", env_map).bake();
 
 		gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
 
-		beginCompute(&command_buffer, equirectangular_to_cubemap_pass, 0);
-		dispatchCompute(&command_buffer, equirectangular_to_cubemap_pass, nullptr, {skybox_resolution / 32, skybox_resolution / 32, 6}, 0);
+		beginCompute(&command_buffer, equirectangular_to_cube_map_pass, 0);
+		dispatchCompute(&command_buffer, equirectangular_to_cube_map_pass, nullptr, {skybox_resolution / 32, skybox_resolution / 32, 6}, 0);
 
-		command_buffer.end();
-		command_buffer.submit();
-		command_buffer.waitForFence();
-
+		command_buffer.endAndSubmit();
 		return env_map;
 	}
 
-	auto RenderContext::createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) const -> gpu::Texture3DHandle
+	auto RenderContext::createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) -> gpu::Texture3DHandle
 	{
 		auto env_tex{createGPURef<gpu::Texture2D>(p_spec_info, p_data)};
 
@@ -222,26 +186,21 @@ namespace toaster::render
 		skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
 		RefPtr<gpu::Texture3D> env_map      = createGPURef<gpu::Texture3D>(skybox_texture_map_spec_info);
 
-		auto equirectangular_to_cubemap_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
-		auto equirectangular_to_cubemap_pass{createGPURef<gpu::ComputePass>(equirectangular_to_cubemap_pipeline)};
-		equirectangular_to_cubemap_pass->setInput("u_EquirectangularMap", env_tex);
-		equirectangular_to_cubemap_pass->setInput("o_Cubemap", env_map);
-		equirectangular_to_cubemap_pass->bake();
+		auto equirectangular_to_cube_map_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
+		auto equirectangular_to_cube_map_pass{createRef<ComputePass>(equirectangular_to_cube_map_pipeline)};
+		equirectangular_to_cube_map_pass->setInput("u_EquirectangularMap", env_tex).setInput("o_CubeMap", env_map).bake();
 
 		gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
 
-		beginCompute(&command_buffer, equirectangular_to_cubemap_pass, 0);
-		dispatchCompute(&command_buffer, equirectangular_to_cubemap_pass, nullptr, {skybox_resolution / 32, skybox_resolution / 32, 6}, 0);
+		beginCompute(&command_buffer, equirectangular_to_cube_map_pass, 0);
+		dispatchCompute(&command_buffer, equirectangular_to_cube_map_pass, nullptr, {skybox_resolution / 32, skybox_resolution / 32, 6}, 0);
 
-		command_buffer.end();
-		command_buffer.submit();
-		command_buffer.waitForFence();
-
+		command_buffer.endAndSubmit();
 		return env_map;
 	}
 
-	auto RenderContext::createDiffuseIrradianceMap(const gpu::Texture3DHandle &p_environment_map) const -> gpu::Texture3DHandle
+	auto RenderContext::createDiffuseIrradianceMap(const gpu::Texture3DHandle &p_environment_map) -> gpu::Texture3DHandle
 	{
 		static constexpr uint32 c_diffuse_irradiance_resolution{32u};
 
@@ -251,26 +210,20 @@ namespace toaster::render
 		auto out_irradiance_map{createGPURef<gpu::Texture3D>(irradiance_map_spec_info)};
 
 		auto irradiance_convolution_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Diffuse_Irradiance_Convolution"))};
-		auto irradiance_convolution_pass{createGPURef<gpu::ComputePass>(irradiance_convolution_pipeline)};
-		irradiance_convolution_pass->setInput("u_EnvironmentMap", p_environment_map);
-		irradiance_convolution_pass->setInput("o_Irradiance", out_irradiance_map);
-		irradiance_convolution_pass->bake();
+		auto irradiance_convolution_pass{createRef<ComputePass>(irradiance_convolution_pipeline)};
+		irradiance_convolution_pass->setInput("u_EnvironmentMap", p_environment_map).setInput("o_Irradiance", out_irradiance_map).bake();
 
 		gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
 
 		beginCompute(&command_buffer, irradiance_convolution_pass, 0);
-
 		dispatchCompute(&command_buffer, irradiance_convolution_pass, nullptr, {tsm::uint2{(c_diffuse_irradiance_resolution + 15u) / 16u}, 6u}, 0);
 
-		command_buffer.end();
-		command_buffer.submit();
-		command_buffer.waitForFence();
-
+		command_buffer.endAndSubmit();
 		return out_irradiance_map;
 	}
 
-	auto RenderContext::beginRendering(gpu::CommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info, gpu::RenderPass *p_render_pass,
+	auto RenderContext::beginRendering(gpu::CommandBuffer *p_command_buffer, const RenderingInfo &p_rendering_info, RenderPass *p_render_pass,
 									   uint32              p_frame_index) const -> void
 	{
 		TST_ASSERT_MSG(p_render_pass, "Render pass is null");
@@ -325,8 +278,8 @@ namespace toaster::render
 
 			info.resolveMode = rendering_attachment.resolveMode;
 
-			info.loadOp     = rendering_attachment.loadOp;
-			info.storeOp    = rendering_attachment.storeOp;
+			info.loadOp     = getLoadOp(rendering_attachment.attachmentOp);
+			info.storeOp    = getStoreOp(rendering_attachment.attachmentOp);
 			info.clearValue = rendering_attachment.clearValue;
 		}
 
@@ -377,8 +330,8 @@ namespace toaster::render
 
 			depth_attachment_info.resolveMode = p_rendering_info.depthAttachment->resolveMode;
 
-			depth_attachment_info.loadOp     = p_rendering_info.depthAttachment->loadOp;
-			depth_attachment_info.storeOp    = p_rendering_info.depthAttachment->storeOp;
+			depth_attachment_info.loadOp     = getLoadOp(p_rendering_info.depthAttachment->attachmentOp);
+			depth_attachment_info.storeOp    = getStoreOp(p_rendering_info.depthAttachment->attachmentOp);
 			depth_attachment_info.clearValue = p_rendering_info.depthAttachment->clearValue;
 		}
 
@@ -409,13 +362,12 @@ namespace toaster::render
 
 			stencil_attachment_info.resolveMode = p_rendering_info.pStencilAttachment->resolveMode;
 
-			stencil_attachment_info.loadOp     = p_rendering_info.pStencilAttachment->loadOp;
-			stencil_attachment_info.storeOp    = p_rendering_info.pStencilAttachment->storeOp;
+			stencil_attachment_info.loadOp     = getLoadOp(p_rendering_info.pStencilAttachment->attachmentOp);
+			stencil_attachment_info.storeOp    = getStoreOp(p_rendering_info.pStencilAttachment->attachmentOp);
 			stencil_attachment_info.clearValue = p_rendering_info.pStencilAttachment->clearValue;
 		}
 
 		vk::RenderingInfo rendering_info{};
-		rendering_info.flags                = p_rendering_info.flags;
 		rendering_info.renderArea           = p_rendering_info.renderArea;
 		rendering_info.layerCount           = p_rendering_info.layerCount;
 		rendering_info.colorAttachmentCount = colour_rendering_attachment_infos.empty() ? 0u : p_rendering_info.colourAttachments.size();
@@ -449,7 +401,7 @@ namespace toaster::render
 																		  p_render_pass->getStartSetIndex(), descriptor_sets, nullptr);
 	}
 
-	auto RenderContext::endRendering(gpu::CommandBuffer *p_command_buffer, const gpu::RenderingInfo &p_rendering_info) const -> void
+	auto RenderContext::endRendering(gpu::CommandBuffer *p_command_buffer, const RenderingInfo &p_rendering_info) const -> void
 	{
 		p_command_buffer->getVulkanCommandBuffer().endRendering();
 
@@ -489,12 +441,10 @@ namespace toaster::render
 		}
 	}
 
-	auto RenderContext::beginCompute(gpu::CommandBuffer *p_command_buffer, gpu::ComputePass *p_compute_pass, uint32 p_frame_index) const -> void
+	auto RenderContext::beginCompute(gpu::CommandBuffer *p_command_buffer, ComputePass *p_compute_pass, uint32 p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
-
 		p_command_buffer->getVulkanCommandBuffer().bindPipeline(vk::PipelineBindPoint::eCompute, *p_compute_pass->getPipeline());
-
 		p_compute_pass->update(frame_index);
 
 		const auto descriptor_sets = p_compute_pass->getDescriptorSets(frame_index);
@@ -503,8 +453,8 @@ namespace toaster::render
 																		  p_compute_pass->getStartSetIndex(), descriptor_sets, nullptr);
 	}
 
-	auto RenderContext::dispatchCompute(gpu::CommandBuffer *p_command_buffer, const gpu::ComputePass *p_compute_pass, Material *p_material,
-										const tsm::uint3 &  p_work_groups, uint32                     p_frame_index) const -> void
+	auto RenderContext::dispatchCompute(gpu::CommandBuffer *p_command_buffer, const ComputePass *p_compute_pass, Material *p_material, const tsm::uint3 &p_work_groups,
+										uint32              p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};
 
@@ -574,7 +524,7 @@ namespace toaster::render
 		p_command_buffer->getVulkanCommandBuffer().drawIndexed(p_index_count, 1, 0, 0, 0);
 	}
 
-	auto RenderContext::renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer, const gpu::RenderPass *p_render_pass, Material *p_material,
+	auto RenderContext::renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer, const RenderPass *p_render_pass, Material *p_material,
 											 uint32              p_frame_index) const -> void
 	{
 		uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index};

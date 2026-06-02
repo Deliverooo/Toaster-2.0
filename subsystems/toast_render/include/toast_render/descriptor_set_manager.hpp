@@ -1,38 +1,37 @@
 #pragma once
 
-#include "vk_common.hpp"
-#include "vk_shader.hpp"
-#include "vk_storage_buffer.hpp"
-#include "vk_storage_image.hpp"
-#include "vk_texture.hpp"
+#include "toast_render/toast_render.hpp"
 
-namespace toaster::gpu
+#include "toast_gpu/vk/vk_common.hpp"
+#include "toast_gpu/vk/vk_shader.hpp"
+#include "toast_gpu/vk/vk_texture.hpp"
+
+namespace toaster::render
 {
-	class VKLogicalDevice;
+	class RenderContext;
 
-	struct DescriptorDeclaration
+	struct TST_RENDER_API DescriptorDeclaration
 	{
-		String          name{};
-		uint32          set{0u};
-		uint32          binding{0u};
-		uint32          arraySize{0u};
-		EDescriptorType type{EDescriptorType::eUnknown};
+		String               name{};
+		uint32               set{0u};
+		uint32               binding{0u};
+		uint32               arraySize{0u};
+		gpu::EDescriptorType type{gpu::EDescriptorType::eUnknown};
 	};
 
-	struct DescriptorSetManagerSpecInfo
+	struct TST_RENDER_API DescriptorSetManagerSpecInfo
 	{
-		ShaderHandle shader{nullptr};
-		uint32       startSet{0u};
-		uint32       endSet{3u};
+		gpu::ShaderHandle shader{nullptr};
+		uint32            startSet{0u};
+		uint32            endSet{3u};
 	};
 
-	class TST_GPU_API VKDescriptorSetManager
+	class TST_RENDER_API DescriptorSetManager
 	{
-		TST_GPU_OBJECT
 	public:
-		VKDescriptorSetManager(VKLogicalDevice *p_device, const DescriptorSetManagerSpecInfo &p_spec_info);
+		DescriptorSetManager(RenderContext &p_render_ctx, const DescriptorSetManagerSpecInfo &p_spec_info);
 
-		template<GPUResource_c TResource>
+		template<gpu::GPUResource_c TResource>
 		auto setDescriptor(const String &p_name, const RefPtr<TResource> &p_resource, uint32 p_array_index = UINT32_MAX) -> void
 		{
 			TST_ASSERT_MSG(p_resource, "If you are going to pass a null resource, then don't pass any resource at all. It will be resolved automatically");
@@ -50,7 +49,7 @@ namespace toaster::gpu
 				LOG_WARN("Descriptor was not found: {}", p_name);
 		}
 
-		template<GPUResource_c TResource>
+		template<gpu::GPUResource_c TResource>
 		auto getDescriptor(const String &p_name) -> RefPtr<TResource>
 		{
 			if (const auto decl{getDescriptorDeclaration(p_name)})
@@ -69,32 +68,27 @@ namespace toaster::gpu
 		auto getDescriptorDeclaration(const String &p_name) const -> const DescriptorDeclaration *;
 		auto getDescriptorDeclarations() const -> const std::unordered_map<String, DescriptorDeclaration> &;
 
-		auto getWhiteTexture() const -> const Texture2DHandle &;
-		auto getWhiteTexture3D() const -> const Texture3DHandle &;
-
 		auto hasDescriptorSets() const -> bool;
 
 		auto getSpecInfo() const -> const DescriptorSetManagerSpecInfo &;
 
 	private:
-		static auto _populateWriteDescriptorTexture2DArray(WriteDescriptor &p_write_descriptor, const DescriptorResource &p_resource,
+		static auto _populateWriteDescriptorTexture2DArray(gpu::WriteDescriptor &p_write_descriptor, const gpu::DescriptorResource &p_resource,
 														   std::vector<std::vector<vk::DescriptorImageInfo> > &p_descriptor_image_infos,
 														   uint32 &p_descriptor_image_info_index, uint32 p_frame_index) -> void;
 
+		NonOwningPtr<RenderContext>  m_renderCtx{nullptr};
 		DescriptorSetManagerSpecInfo m_specInfo{};
 
 		vk::raii::DescriptorPool m_descriptorPool{nullptr};
 
-		std::unordered_map<String, DescriptorDeclaration>  m_descriptorDeclarations;
-		PerFrameVec<SetMap<BindingMap<WriteDescriptor> > > m_writeDescriptorMap;
+		std::unordered_map<String, DescriptorDeclaration>                      m_descriptorDeclarations;
+		gpu::PerFrameVec<gpu::SetMap<gpu::BindingMap<gpu::WriteDescriptor> > > m_writeDescriptorMap;
 
-		SetMap<BindingMap<DescriptorResource> > m_descriptorResources;
-		SetMap<BindingMap<DescriptorResource> > m_invalidDescriptorResources;
+		gpu::SetMap<gpu::BindingMap<gpu::DescriptorResource> > m_descriptorResources;
+		gpu::SetMap<gpu::BindingMap<gpu::DescriptorResource> > m_invalidDescriptorResources;
 
 		// Each frame has multiple descriptor sets equal to the amount used in the shader
-		PerFrameVec<std::vector<vk::raii::DescriptorSet> > m_descriptorSets;
-
-		Texture2DHandle m_whiteTexture{nullptr};
-		Texture3DHandle m_whiteTexture3D{nullptr};
+		gpu::PerFrameVec<std::vector<vk::raii::DescriptorSet> > m_descriptorSets;
 	};
 }
