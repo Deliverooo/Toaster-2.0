@@ -32,7 +32,7 @@ namespace toaster::gpu
 		eImage3D
 	};
 
-	struct WriteDescriptor
+	struct TST_GPU_API WriteDescriptor
 	{
 		vk::WriteDescriptorSet wds{};
 		// These are just pointers to the actual descriptors of the resource (e.g. The image view of a texture 2d)

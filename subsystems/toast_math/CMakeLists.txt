@@ -1,11 +1,11 @@
 add_library(ToastMath INTERFACE)
 
-option(TST_MATH_FORMAT_SPECIALIZATIONS "Provides fmt::format specializations for the math structures" OFF)
+option(TST_MATH_FORMAT_SPECIALIZATIONS_OPT "Provides fmt::format specializations for the math structures" ON)
 
 target_include_directories(ToastMath INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 		$<INSTALL_INTERFACE:include/toast_math>)
 
-if (TST_MATH_FORMAT_SPECIALIZATIONS)
+if (TST_MATH_FORMAT_SPECIALIZATIONS_OPT)
 	# You better have fmt...
 	target_link_libraries(ToastMath INTERFACE fmt::fmt)
 	target_compile_definitions(ToastMath INTERFACE -DTST_MATH_FORMAT_SPECIALIZATIONS)
@@ -19,4 +19,4 @@ install(TARGETS ToastMath
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
 )
-install(DIRECTORY include/ DESTINATION include/toast_math)
+install(DIRECTORY include/ DESTINATION include)

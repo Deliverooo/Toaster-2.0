@@ -4,9 +4,7 @@
 #include "toast_kernel/layer.hpp"
 
 #include "toast_lib/events/key_event.hpp"
-
 #include "toast_scene/scene_renderer.hpp"
-#include "toast_script/script_engine.hpp"
 
 namespace toaster
 {

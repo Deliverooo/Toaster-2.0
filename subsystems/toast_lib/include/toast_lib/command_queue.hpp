@@ -41,7 +41,7 @@ namespace toaster
 		uint8 *m_buffer{nullptr};
 		uint8 *m_ptr{nullptr};
 
-		friend class CommandQueue;
+		friend class TST_LIB_API CommandQueue;
 	};
 
 	class TST_LIB_API CommandQueue

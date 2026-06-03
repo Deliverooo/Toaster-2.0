@@ -1,4 +1,6 @@
-set(SHADER_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders")
+set(SHADER_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+
+set(SHADER_SPV_OUTPUTS "")
 
 set(SHADER_SOURCES_VULKAN
 		${CMAKE_CURRENT_SOURCE_DIR}/depth-pre.vert.glsl
@@ -87,15 +89,17 @@ foreach (SHADER_FILE IN LISTS SHADER_SOURCES_VULKAN)
 			VERBATIM
 	)
 
-	message(STATUS "Compiling GLSL to ${SHADER_FILE_OUT}")
+#	message(STATUS "Compiling GLSL to ${SHADER_FILE_OUT}")
+#
+#	set_source_files_properties(${SHADER_FILE_OUT} PROPERTIES GENERATED TRUE)
+#
+#	list(APPEND SHADER_HEADERS_TARGET_SRC ${SHADER_FILE_OUT})
 
-	set_source_files_properties(${SHADER_FILE_OUT} PROPERTIES GENERATED TRUE)
-
-	list(APPEND SHADER_HEADERS_TARGET_SRC ${SHADER_FILE_OUT})
+	list(APPEND SHADER_SPV_OUTPUTS "${SHADER_FILE_OUT}")
 endforeach ()
 
 
-add_custom_target(shader_headers_target DEPENDS "${SHADER_HEADERS_TARGET_SRC}")
+add_custom_target(shader_headers_target DEPENDS "${SHADER_SPV_OUTPUTS}")
 
 add_library(ToastShaders INTERFACE)
 
@@ -104,3 +108,16 @@ target_include_directories(ToastShaders INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 add_dependencies(ToastShaders shader_headers_target)
 
 add_library(Toaster::ToastShaders ALIAS ToastShaders)
+
+
+include(GNUInstallDirs)
+
+install(
+		FILES ${SHADER_SPV_OUTPUTS}
+		DESTINATION "${CMAKE_INSTALL_BINDIR}/shaders"
+)
+
+install(
+		TARGETS ToastShaders
+		EXPORT ToastShadersTargets
+)

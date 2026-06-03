@@ -12,7 +12,7 @@ namespace toaster::gpu
 {
 	class VKLogicalDevice;
 
-	struct ImageSpecInfo
+	struct TST_GPU_API ImageSpecInfo
 	{
 		tsm::uint2              size{0u};
 		vk::Format              format{vk::Format::eUndefined};

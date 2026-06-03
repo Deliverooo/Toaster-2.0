@@ -2,13 +2,12 @@
 
 #include "vk_common.hpp"
 #include "vk_physical_device.hpp"
-#include <deque>
 
 #include "toast_lib/command_queue.hpp"
 
 namespace toaster::gpu
 {
-	struct VKLogicalDeviceSpecInfo
+	struct TST_GPU_API VKLogicalDeviceSpecInfo
 	{
 		static auto getDefaultFeatures() -> vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
 			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT>

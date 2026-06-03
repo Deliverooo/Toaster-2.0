@@ -49,7 +49,7 @@ namespace toaster::render
 		#pragma endregion
 
 		if (m_specInfo.createGlobals)
-			m_globals = new Globals{m_logicalDevice, m_specInfo.binaryDir};
+			m_globals = new Globals{m_logicalDevice, m_specInfo.sdkDir};
 	}
 
 	RenderContext::~RenderContext()

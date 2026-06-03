@@ -25,10 +25,10 @@ public:
 
 		auto pipeline{m_renderCtx->createGPURef<gpu::Pipeline>(pipeline_spec_info, "Composite")};
 
-		m_swapchainPass = m_renderCtx->createGPURef<gpu::RenderPass>(pipeline);
+		m_swapchainPass = m_renderCtx->createRef<render::RenderPass>(pipeline);
 		m_swapchainPass->setInput("u_Texture", m_sceneRenderer->getColourTexture()).bake();
 
-		m_scene->setSceneEnvironment(m_renderCtx->createEnvironmentMap("C:/dev/Toaster-2.0/resources/environments/overcast_soil_puresky_2k.hdr"));
+		m_scene->setSceneEnvironment(m_renderCtx->createEnvironmentMap("../resources/environments/overcast_soil_puresky_2k.hdr"));
 
 		{
 			m_quadEntity = m_scene->createEntity("Orbo");
@@ -36,7 +36,7 @@ public:
 			src.colour = {1.0f, 0.0f, 1.0f, 1.0f};
 
 			auto &mc{m_quadEntity.addComponent<MeshComponent>()};
-			mc.mesh = m_renderCtx->createRef<render::MeshData>("C:/dev/Toaster-2.0/resources/meshes/DJT_sculpt.fbx");
+			mc.mesh = m_renderCtx->createRef<render::MeshData>("../resources/meshes/Test_scene.fbx");
 		}
 		{
 		}
@@ -76,7 +76,7 @@ public:
 		};
 
 		m_scene->onUpdate(p_dt);
-		m_sceneRenderer->onRender(view, projection);
+		m_sceneRenderer->onRender(position, view, projection);
 
 		auto colour_attachment_info{render::getRenderingAttachmentInfo(*m_sceneRenderer->getColourTexture()->getImage(), render::EAttachmentUsageOP::eLoadStore)};
 		auto depth_attachment_info{render::getRenderingAttachmentInfo(*m_sceneRenderer->getDepthTexture()->getImage(), render::EAttachmentUsageOP::eLoadStore)};
@@ -102,7 +102,7 @@ public:
 private:
 	tsm::uint2 m_viewportSize{0u};
 
-	gpu::RenderPassHandle m_swapchainPass{nullptr};
+	render::RenderPassHandle m_swapchainPass{nullptr};
 
 	UniquePtr<Scene>              m_scene{nullptr};
 	UniquePtr<SceneRenderer>      m_sceneRenderer{nullptr};

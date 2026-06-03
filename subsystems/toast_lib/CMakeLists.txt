@@ -34,4 +34,4 @@ install(TARGETS ToastLib
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
 )
-install(DIRECTORY include/ DESTINATION include/toast_lib)
+install(DIRECTORY include/ DESTINATION include)

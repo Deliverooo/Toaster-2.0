@@ -180,6 +180,7 @@ namespace toaster
 	{
 		m_registry.view<NativeScriptComponent>().each([&p_event](auto p_entity, auto &p_script) -> void
 		{
+			(void)p_entity;
 			if (p_script.instance)
 				p_script.instance->onEvent(p_event);
 		});

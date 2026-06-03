@@ -10,7 +10,7 @@ namespace toaster::gpu
 		eRenderAttachmentSampled, eShaderSampled
 	};
 
-	struct TextureSpecInfo
+	struct TST_GPU_API TextureSpecInfo
 	{
 		tsm::uint2 size{0u};
 

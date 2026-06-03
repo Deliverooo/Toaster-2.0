@@ -8,7 +8,7 @@
 
 namespace toaster::gpu::reflection
 {
-	struct UniformBuffer
+	struct TST_GPU_API UniformBuffer
 	{
 		vk::DescriptorBufferInfo descriptorInfo{};
 		String                   name{};
@@ -17,7 +17,7 @@ namespace toaster::gpu::reflection
 		vk::ShaderStageFlagBits  stage{vk::ShaderStageFlagBits::eAll};
 	};
 
-	struct StorageBuffer
+	struct TST_GPU_API StorageBuffer
 	{
 		vk::DescriptorBufferInfo descriptorInfo{};
 		String                   name{};
@@ -45,7 +45,7 @@ namespace toaster::gpu::reflection
 		return "";
 	}
 
-	struct ImageSampler
+	struct TST_GPU_API ImageSampler
 	{
 		String                  name{};
 		uint32                  binding{0u};
@@ -54,7 +54,7 @@ namespace toaster::gpu::reflection
 		vk::ShaderStageFlagBits stage{vk::ShaderStageFlagBits::eAll};
 	};
 
-	struct DescriptorSet
+	struct TST_GPU_API DescriptorSet
 	{
 		// Set -> binding
 		std::unordered_map<uint32, UniformBuffer> uniformBuffers;
@@ -67,21 +67,21 @@ namespace toaster::gpu::reflection
 		std::unordered_map<String, vk::WriteDescriptorSet> writeDescriptorSets;
 	};
 
-	struct PushConstantRange
+	struct TST_GPU_API PushConstantRange
 	{
 		vk::ShaderStageFlags stage{vk::ShaderStageFlagBits::eAll};
 		uint32               offset{0u};
 		uint32               size{0u};
 	};
 
-	struct PushConstant
+	struct TST_GPU_API PushConstant
 	{
 		String name{};
 		uint32 size{0u};
 		uint32 offset{0u};
 	};
 
-	struct PushConstantBuffer
+	struct TST_GPU_API PushConstantBuffer
 	{
 		std::unordered_map<String, PushConstant> pushConstants;
 		String                                   name{};
@@ -89,7 +89,7 @@ namespace toaster::gpu::reflection
 	};
 
 	// A "Resource" is basically just another way of saying anything like a texture, sampler or combined image sampler
-	struct ShaderResource
+	struct TST_GPU_API ShaderResource
 	{
 		String name{};
 		uint32 set{0u};

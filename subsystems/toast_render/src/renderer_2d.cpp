@@ -167,19 +167,11 @@ namespace toaster::render
 
 	auto Renderer2D::_construct() -> void
 	{
-		m_quadVertexBufferLayout = gpu::BufferLayout{
-			{gpu::EBufferDataType::eFloat4, "a_Position"},
-			{gpu::EBufferDataType::eFloat4, "a_Colour"},
-			{gpu::EBufferDataType::eFloat2, "a_TexCoord"},
-			{gpu::EBufferDataType::eFloat, "a_TexIndex"},
-			{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
-		};
-
 		auto                  quad_shader{m_renderCtx->getGlobals()->shaderLibrary().get("Quad")};
 		gpu::PipelineSpecInfo pipeline_create_info{};
 		pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
 		pipeline_create_info.depthFormat        = m_renderCtx->getPhysicalDevice()->getDepthFormat();
-		pipeline_create_info.vertexBufferLayout = m_quadVertexBufferLayout;
+		pipeline_create_info.vertexBufferLayout = quadVbl;
 		pipeline_create_info.shader             = quad_shader;
 		pipeline_create_info.multisample        = m_specInfo.msaa;
 		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;

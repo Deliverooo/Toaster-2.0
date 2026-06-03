@@ -20,7 +20,8 @@ set(GPU_SRC
 
 add_library(ToastGPU SHARED)
 
-target_include_directories(ToastGPU PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(ToastGPU PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+		$<INSTALL_INTERFACE:include/toast_gpu>)
 
 target_sources(ToastGPU PRIVATE ${GPU_SRC})
 
@@ -47,3 +48,11 @@ add_library(Toaster::ToastGPU ALIAS ToastGPU)
 
 add_compile_definitions(ToastGPU PUBLIC TST_GPU_BUILD_DLL)
 add_compile_definitions(ToastGPU PRIVATE TST_GPU_DLL_EXPORT)
+
+install(TARGETS ToastGPU
+		EXPORT ToasterTargets
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib
+)
+install(DIRECTORY include/ DESTINATION include)

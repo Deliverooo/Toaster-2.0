@@ -13,7 +13,9 @@ set(RENDER_SRC
 
 add_library(ToastRender SHARED)
 
-target_include_directories(ToastRender PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+target_include_directories(ToastRender PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:include/toast_render>)
 
 target_sources(ToastRender PRIVATE ${RENDER_SRC})
 
@@ -25,3 +27,11 @@ add_library(Toaster::ToastRender ALIAS ToastRender)
 
 add_compile_definitions(ToastRender PUBLIC TST_RENDER_BUILD_DLL)
 add_compile_definitions(ToastRender PRIVATE TST_RENDER_DLL_EXPORT)
+
+install(TARGETS ToastRender
+		EXPORT ToasterTargets
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib
+)
+install(DIRECTORY include/ DESTINATION include)

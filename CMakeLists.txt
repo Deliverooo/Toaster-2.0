@@ -111,6 +111,5 @@ install(EXPORT ToasterTargets
 )
 
 add_subdirectory(runtime)
-add_subdirectory(editor)
 add_subdirectory(tstb)
 add_subdirectory(test)

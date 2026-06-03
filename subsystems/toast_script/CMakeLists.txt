@@ -5,7 +5,8 @@ set(SCRIPT_SRC
 
 add_library(ToastScript SHARED)
 
-target_include_directories(ToastScript PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(ToastScript PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:include/toast_script>)
 
 target_sources(ToastScript PRIVATE ${SCRIPT_SRC})
 
@@ -28,3 +29,11 @@ add_library(Toaster::ToastScript ALIAS ToastScript)
 
 add_compile_definitions(ToastScript PUBLIC TST_SCRIPT_BUILD_DLL)
 add_compile_definitions(ToastScript PRIVATE TST_SCRIPT_DLL_EXPORT)
+
+install(TARGETS ToastScript
+		EXPORT ToasterTargets
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib
+)
+install(DIRECTORY include/ DESTINATION include)

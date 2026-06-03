@@ -5,7 +5,7 @@
 
 namespace toaster::gpu
 {
-	struct PipelineSpecInfo
+	struct TST_GPU_API PipelineSpecInfo
 	{
 		VertexBufferLayout vertexBufferLayout;
 		InstanceLayout     instanceLayout;

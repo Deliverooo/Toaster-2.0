@@ -7,7 +7,8 @@ set(SCENE_SRC
 
 add_library(ToastScene SHARED)
 
-target_include_directories(ToastScene PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(ToastScene PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:include/toast_scene>)
 
 target_sources(ToastScene PRIVATE ${SCENE_SRC})
 
@@ -20,3 +21,11 @@ add_library(Toaster::ToastScene ALIAS ToastScene)
 
 add_compile_definitions(ToastScene PUBLIC TST_SCENE_BUILD_DLL)
 add_compile_definitions(ToastScene PRIVATE TST_SCENE_DLL_EXPORT)
+
+install(TARGETS ToastScene
+		EXPORT ToasterTargets
+		RUNTIME DESTINATION bin
+		LIBRARY DESTINATION lib
+		ARCHIVE DESTINATION lib
+)
+install(DIRECTORY include/ DESTINATION include)

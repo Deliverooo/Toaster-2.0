@@ -41,6 +41,14 @@ namespace toaster::render
 	class TST_RENDER_API Renderer2D final
 	{
 	public:
+		static inline const gpu::VertexBufferLayout quadVbl{
+			{gpu::EBufferDataType::eFloat4, "a_Position"},
+			{gpu::EBufferDataType::eFloat4, "a_Colour"},
+			{gpu::EBufferDataType::eFloat2, "a_TexCoord"},
+			{gpu::EBufferDataType::eFloat, "a_TexIndex"},
+			{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
+		};
+
 		struct Stats
 		{
 			uint32 quadCount{0u};
@@ -85,8 +93,6 @@ namespace toaster::render
 			float32      texIndex{0u};
 			float32      tilingFactor{1.0f};
 		};
-
-		gpu::BufferLayout m_quadVertexBufferLayout;
 
 		gpu::Texture2DHandle m_renderTargetTexture{nullptr};
 		gpu::RawImageHandle  m_renderTargetDepthImage{nullptr};

@@ -1,15 +1,14 @@
 #include "runtime_layer.hpp"
 
-#include "toast_kernel/input.hpp"
-#include "toast_lib/io/file_stream.hpp"
-#include "toast_render/globals.hpp"
-
-#include "toast_gpu/vk/vk_swapchain.hpp"
-
-#include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_kernel/application.hpp"
-#include "toast_lib/os/terminal.hpp"
+#include "toast_kernel/input.hpp"
+
+#include "toast_render/globals.hpp"
 #include "toast_render/render_context.hpp"
+
+#include "toast_lib/io/file_stream.hpp"
+#include "toast_lib/os/terminal.hpp"
+
 #include "toast_scene/components.hpp"
 #include "toast_scene/entity.hpp"
 #include "toast_scene/scene_serializer.hpp"

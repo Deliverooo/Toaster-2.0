@@ -26,7 +26,7 @@ namespace toaster::render
 	{
 		std::unordered_set<String> instanceExtensions; // Get with Window::getRequiredInstanceExtensions()
 
-		io::filesystem::Path binaryDir;
+		io::filesystem::Path sdkDir;
 		bool                 printDebugInfo{true};
 		bool                 createGlobals{true}; // You will have to compile the shaders for this to work
 	};
