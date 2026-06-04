@@ -20,8 +20,8 @@ set(GPU_SRC
 
 add_library(ToastGPU SHARED)
 
-target_include_directories(ToastGPU PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
-		$<INSTALL_INTERFACE:include/toast_gpu>)
+target_include_directories(ToastGPU PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 target_sources(ToastGPU PRIVATE ${GPU_SRC})
 
@@ -55,4 +55,4 @@ install(TARGETS ToastGPU
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
 )
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/toast_gpu/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/toast_gpu)

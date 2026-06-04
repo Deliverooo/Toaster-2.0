@@ -13,7 +13,7 @@ set(SRC
 add_library(ToastLib SHARED)
 
 target_include_directories(ToastLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-		$<INSTALL_INTERFACE:include/toast_lib>)
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 target_sources(ToastLib PRIVATE ${SRC})
 
@@ -34,4 +34,4 @@ install(TARGETS ToastLib
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
 )
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/toast_lib/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/toast_lib)

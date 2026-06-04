@@ -15,7 +15,7 @@ add_library(ToastRender SHARED)
 
 
 target_include_directories(ToastRender PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-		$<INSTALL_INTERFACE:include/toast_render>)
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 target_sources(ToastRender PRIVATE ${RENDER_SRC})
 
@@ -34,4 +34,4 @@ install(TARGETS ToastRender
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
 )
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/toast_render/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/toast_render)

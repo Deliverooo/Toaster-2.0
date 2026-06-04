@@ -3,12 +3,13 @@ set(KERNEL_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/input.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/layer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/window.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/fp_camera.cpp
 )
 
 add_library(ToastKernel SHARED)
 
 target_include_directories(ToastKernel PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-		$<INSTALL_INTERFACE:include/toast_kernel>)
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 target_sources(ToastKernel PRIVATE ${KERNEL_SRC})
 
@@ -28,4 +29,4 @@ install(TARGETS ToastKernel
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
 )
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/toast_kernel/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/toast_kernel)

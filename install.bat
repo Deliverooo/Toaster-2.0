@@ -12,6 +12,8 @@ if %errorLevel% == 0 (
 :adminTask
 cd /d "%~dp0"
 
-cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug --install-prefix "C:/Program Files/Toaster-SDK/"
+cmake -B build -S . --install-prefix "C:/Program Files/Toaster-SDK/"
 cmake --build build --config Debug
+cmake --build build --config Release
 cmake --install build --config Debug
+cmake --install build --config Release

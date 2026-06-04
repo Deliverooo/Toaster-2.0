@@ -6,7 +6,7 @@ set(SCRIPT_SRC
 add_library(ToastScript SHARED)
 
 target_include_directories(ToastScript PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-		$<INSTALL_INTERFACE:include/toast_script>)
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 target_sources(ToastScript PRIVATE ${SCRIPT_SRC})
 
@@ -36,4 +36,4 @@ install(TARGETS ToastScript
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
 )
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/toast_script/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/toast_script)

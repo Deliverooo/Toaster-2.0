@@ -8,7 +8,7 @@ set(SCENE_SRC
 add_library(ToastScene SHARED)
 
 target_include_directories(ToastScene PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-		$<INSTALL_INTERFACE:include/toast_scene>)
+		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 target_sources(ToastScene PRIVATE ${SCENE_SRC})
 
@@ -28,4 +28,4 @@ install(TARGETS ToastScene
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
 )
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/toast_scene/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/toast_scene)
