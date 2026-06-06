@@ -22,20 +22,21 @@ public:
 		auto binary_dir{os::getBinaryDirectory()};
 		auto logical_device{m_renderCtx->getLogicalDevice()};
 
+
 		gpu::ShaderCompiler shader_compiler{logical_device};
 		auto vs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eVertex, binary_dir / "../resources/shaders/dynamic.vert.glsl")};
 		auto fs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eFragment, binary_dir / "../resources/shaders/dynamic.pixel.glsl")};
 
-		m_vertexShader   = m_renderCtx->createGPURef<gpu::DynamicShader>(vs_bytecode, vk::ShaderStageFlagBits::eVertex);
+		m_vertexShader   = m_renderCtx->createGPURef<gpu::DynamicShader>(vs_bytecode, vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment);
 		m_fragmentShader = m_renderCtx->createGPURef<gpu::DynamicShader>(fs_bytecode, vk::ShaderStageFlagBits::eFragment);
 
-		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>(std::vector{m_vertexShader, m_fragmentShader});
-		m_graphicsState->setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl);
+		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
+		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u);
 	}
 
 	auto onUpdate(float32 p_dt) -> void override
 	{
-		auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({1.0f, 1.0f, 1.0f, 1.0f}, false)};
+		auto  rendering_info{m_app->getWindow().getSwapchainRenderingInfo({1.0f, 1.0f, 1.0f, 1.0f}, false)};
 		auto &cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()->getVulkanCommandBuffer()};
 
 		m_renderCtx->beginRendering(rendering_info);

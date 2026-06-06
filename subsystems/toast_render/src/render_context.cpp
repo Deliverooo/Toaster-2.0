@@ -32,7 +32,7 @@ namespace toaster::render
 			vk::KHRLoadStoreOpNoneExtensionName,
 			vk::KHRShaderNonSemanticInfoExtensionName,
 			vk::EXTShaderObjectExtensionName,
-			vk::EXTDescriptorBufferExtensionName
+			vk::EXTDescriptorHeapExtensionName
 		};
 		if (use_present)
 			required_device_extensions.insert(vk::KHRSwapchainExtensionName);

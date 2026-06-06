@@ -2,9 +2,11 @@
 
 #include "toast_render/render_context.hpp"
 
+#include <ranges>
+
 namespace toaster::render
 {
-	GraphicsState::GraphicsState(RenderContext &p_render_ctx, std::vector<gpu::DynamicShaderHandle> p_shaders) : m_renderCtx(&p_render_ctx), m_shaders(p_shaders)
+	GraphicsState::GraphicsState(RenderContext &p_render_ctx) : m_renderCtx(&p_render_ctx)
 	{
 	}
 
@@ -21,29 +23,39 @@ namespace toaster::render
 		}
 		cmd.bindShadersEXT(stages, shaders);
 
+		// set the vertex input state
+		cmd.setVertexInputEXT(m_vertexBufferLayout.getBindingDescription(), m_vertexBufferLayout.getAttributeDescriptions(0));
+
+		// set the input assembly state
 		cmd.setPrimitiveTopologyEXT(vk::PrimitiveTopology::eTriangleList);
 		cmd.setPrimitiveRestartEnableEXT(false);
+
+		// set the rasterization state
+		cmd.setDepthClampEnableEXT(false);
+		cmd.setDepthBiasEnableEXT(false);
 		cmd.setRasterizerDiscardEnableEXT(false);
 		cmd.setPolygonModeEXT(vk::PolygonMode::eFill);
 		cmd.setCullModeEXT(vk::CullModeFlagBits::eBack);
 		cmd.setFrontFaceEXT(vk::FrontFace::eCounterClockwise);
-		cmd.setDepthBiasEnableEXT(false);
+		cmd.setLineWidth(1.0f);
 
-		cmd.setVertexInputEXT(m_vertexBufferLayout.getBindingDescription(), m_vertexBufferLayout.getAttributeDescriptions(0));
+		// set the colour blend attachment state
+		const auto colour_blend_enables{m_colourBlendAttachmentInfos | std::views::transform(&ColourBlendAttachmentInfo::blendEnable) | std::ranges::to<std::vector>()};
+		const auto blend_equations{m_colourBlendAttachmentInfos | std::views::transform(&ColourBlendAttachmentInfo::blendEquation) | std::ranges::to<std::vector>()};
+		const auto colour_write_masks{m_colourBlendAttachmentInfos | std::views::transform(&ColourBlendAttachmentInfo::colourWriteMask) | std::ranges::to<std::vector>()};
 
-		cmd.setColorBlendEnableEXT(0, {false});
-		vk::ColorBlendEquationEXT colour_blend_equation{};
-		cmd.setColorBlendEquationEXT(0, {colour_blend_equation});
-		cmd.setColorWriteMaskEXT(0, {vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA});
+		cmd.setColorBlendEnableEXT(0, colour_blend_enables);
+		cmd.setColorBlendEquationEXT(0, blend_equations);
+		cmd.setColorWriteMaskEXT(0, colour_write_masks);
 
-
-		cmd.setAlphaToCoverageEnableEXT(false);
-
+		// set depth stencil state
 		cmd.setDepthTestEnableEXT(false);
 		cmd.setDepthWriteEnableEXT(false);
 		cmd.setStencilTestEnableEXT(false);
 
-		cmd.setSampleMaskEXT(vk::SampleCountFlagBits::e1, 0xFFFFFFFFu);
+		// set multisample state
+		cmd.setSampleMaskEXT(vk::SampleCountFlagBits::e1, 0xFFFFFFFF);
 		cmd.setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1);
+		cmd.setAlphaToCoverageEnableEXT(false);
 	}
 }

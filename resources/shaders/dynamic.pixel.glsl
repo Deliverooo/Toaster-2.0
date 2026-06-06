@@ -8,5 +8,5 @@ void main()
 {
 
     vec3 colour = vec3(v_TexCoord, 0.0f); 
-    o_Colour = vec4(0.0f, 1.0f, 0.0f, 1.0f);
+    o_Colour = vec4(colour, 1.0f);
 }

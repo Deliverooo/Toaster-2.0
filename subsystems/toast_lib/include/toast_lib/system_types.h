@@ -6,7 +6,7 @@
 #include <cstddef> // (C++) std::nullptr_t
 #include <cstdint> // _t typedefs
 
-using bool32 = bool; // I am sorry
+using bool32 = uint32_t; // I am sorry
 
 using nulltype = nullptr_t;
 

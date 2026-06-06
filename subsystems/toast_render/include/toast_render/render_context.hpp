@@ -129,7 +129,7 @@ namespace toaster::render
 		// For all of these, if the frame index or command buffer parameter is null / 0, they will be obtained from the swapchain instead
 
 		auto beginRendering(const RenderingInfo &p_rendering_info, RenderPass *p_render_pass = nullptr, gpu::CommandBuffer *p_command_buffer = nullptr,
-							uint32               p_frame_index                                                                     = UINT32_MAX) const -> void;
+							uint32               p_frame_index                               = UINT32_MAX) const -> void;
 		auto endRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr) const -> void;
 
 		auto beginCompute(ComputePass *p_compute_pass, gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
