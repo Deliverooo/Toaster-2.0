@@ -32,14 +32,12 @@ namespace toaster::gpu
 	{
 		TST_GPU_OBJECT
 	public:
-		VKPipeline(VKLogicalDevice *p_device, const PipelineSpecInfo &p_spec_info, const String& p_debug_name = "Pipeline");
+		VKPipeline(VKLogicalDevice *p_device, const PipelineSpecInfo &p_spec_info, const String &p_debug_name = "Pipeline");
 
 		[[nodiscard]] auto getPipeline() -> vk::raii::Pipeline &;
 		[[nodiscard]] auto getPipelineLayout() -> const vk::raii::PipelineLayout &;
 
 		[[nodiscard]] auto getSpecInfo() const -> const PipelineSpecInfo &;
-
-		static auto getVulkanAttribType(EBufferDataType p_type) -> vk::Format;
 
 	private:
 		auto _createGraphicsPipeline() -> void;

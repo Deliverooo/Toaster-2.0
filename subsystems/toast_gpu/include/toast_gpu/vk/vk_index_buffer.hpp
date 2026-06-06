@@ -3,6 +3,8 @@
 #include "../toast_gpu.hpp"
 
 #include <vulkan/vulkan_raii.hpp>
+
+#include "vk_command_buffer.hpp"
 #include "toast_lib/core_basic.hpp"
 
 namespace toaster::gpu
@@ -24,7 +26,7 @@ namespace toaster::gpu
 
 		auto setData(void *p_data, uint64 p_size, uint64 p_offset) -> void;
 
-		auto bind(const vk::raii::CommandBuffer &p_command_buffer, vk::IndexType p_index_type) -> void;
+		auto bind(VKCommandBuffer *p_command_buffer = nullptr, vk::IndexType p_index_type = vk::IndexType::eUint32) -> void;
 
 	private:
 		vk::Buffer       m_indexBuffer{nullptr};

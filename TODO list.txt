@@ -1,12 +1,1 @@
-1. Possibly material serialization + material assets so you can edit the materials and their properties from a yaml file.
-The material assets will have asset handle references to the albedo, normal and other maps. Maybe you should be able to use tstb to 'compile' a mesh into a .tmesh
-file and multiple material files. These material files will obviously be per mesh and not per scene/project, because that is how it also works in blender. The mesh files
-will be referenced inside the asset registry instead of the direct filepath to the mesh source. Maybe the textures loaded with the mesh will also be serialized at build-time
-to a custom .ttexture file.
-
-2. Eventually I would probably like to somehow bake the meshes into maybe another format (.tmesh.bin) at build-time by using binary serialization. I have no idea how
-to do this, but maybe in the future I will.
-
-3. Physics using Jolt.
-
-4. Animation. I have no idea how to do this either.
+1. Implement VK_EXT_descriptor_buffer and VK_EXT_shader_object

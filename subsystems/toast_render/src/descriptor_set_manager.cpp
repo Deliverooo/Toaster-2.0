@@ -214,6 +214,8 @@ namespace toaster::render
 
 	auto DescriptorSetManager::getDescriptorSets(uint32 p_frame_index) const -> std::vector<vk::DescriptorSet>
 	{
+		if (!hasDescriptorSets())
+			return {};
 		TST_ASSERT_MSG(p_frame_index <RenderContext::maxFramesInFlight, "Frame index out of bounds");
 		std::vector<vk::DescriptorSet> result;
 		for (auto &descriptor_set: m_descriptorSets[p_frame_index])

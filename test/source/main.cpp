@@ -1,6 +1,10 @@
+#include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_kernel/application.hpp"
 #include "toast_kernel/input.hpp"
+#include "toast_lib/os/file_dialog.hpp"
+#include "toast_lib/os/terminal.hpp"
 #include "toast_render/globals.hpp"
+#include "toast_render/graphics_state.hpp"
 #include "toast_render/render_context.hpp"
 #include "toast_scene/entity.hpp"
 #include "toast_scene/scene.hpp"
@@ -13,110 +17,59 @@ class ClientLayer : public IAppLayer
 public:
 	auto onInit() -> void override
 	{
-		m_viewportSize  = m_app->getWindow().getRenderAreaSize();
-		m_scene         = m_app->createScene("Orbo's Exodus");
-		m_sceneRenderer = m_app->createSceneRenderer(m_scene.get());
+		m_viewportSize = m_app->getWindow().getRenderAreaSize();
 
-		gpu::PipelineSpecInfo pipeline_spec_info{};
-		pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
-		pipeline_spec_info.shader             = m_globals->shaderLibrary().get("Composite");
-		pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
-		pipeline_spec_info.vertexBufferLayout = render::RenderContext::fullscreenQuadVbl;
+		auto binary_dir{os::getBinaryDirectory()};
+		auto logical_device{m_renderCtx->getLogicalDevice()};
 
-		auto pipeline{m_renderCtx->createGPURef<gpu::Pipeline>(pipeline_spec_info, "Composite")};
+		gpu::ShaderCompiler shader_compiler{logical_device};
+		auto vs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eVertex, binary_dir / "../resources/shaders/dynamic.vert.glsl")};
+		auto fs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eFragment, binary_dir / "../resources/shaders/dynamic.pixel.glsl")};
 
-		m_swapchainPass = m_renderCtx->createRef<render::RenderPass>(pipeline);
-		m_swapchainPass->setInput("u_Texture", m_sceneRenderer->getColourTexture()).bake();
+		m_vertexShader   = m_renderCtx->createGPURef<gpu::DynamicShader>(vs_bytecode, vk::ShaderStageFlagBits::eVertex);
+		m_fragmentShader = m_renderCtx->createGPURef<gpu::DynamicShader>(fs_bytecode, vk::ShaderStageFlagBits::eFragment);
 
-		m_scene->setSceneEnvironment(m_renderCtx->createEnvironmentMap("../resources/environments/overcast_soil_puresky_2k.hdr"));
-
-		{
-			m_quadEntity = m_scene->createEntity("Orbo");
-			auto &src{m_quadEntity.addComponent<SpriteRendererComponent>()};
-			src.colour = {1.0f, 0.0f, 1.0f, 1.0f};
-
-			auto &mc{m_quadEntity.addComponent<MeshComponent>()};
-			mc.mesh = m_renderCtx->createRef<render::MeshData>("../resources/meshes/Test_scene.fbx");
-		}
-		{
-		}
-
-		render::Renderer2DSpecInfo renderer_2d_spec_info{};
-		renderer_2d_spec_info.renderTargetSize    = m_viewportSize;
-		renderer_2d_spec_info.overrideAttachments = true;
-		m_renderer2D                              = m_renderCtx->createUnique<render::Renderer2D>(renderer_2d_spec_info);
+		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>(std::vector{m_vertexShader, m_fragmentShader});
+		m_graphicsState->setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl);
 	}
 
 	auto onUpdate(float32 p_dt) -> void override
 	{
-		Dx::XMVECTOR delta_position{Dx::XMVectorZero()};
+		auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({1.0f, 1.0f, 1.0f, 1.0f}, false)};
+		auto &cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()->getVulkanCommandBuffer()};
 
-		if (m_inputCtx->isKeyDown(input::EKeyCode::eW))
-			delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-		if (m_inputCtx->isKeyDown(input::EKeyCode::eS))
-			delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
-		if (m_inputCtx->isKeyDown(input::EKeyCode::eA))
-			delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(-1.0f, 0.0f, 0.0f, 0.0f));
-		if (m_inputCtx->isKeyDown(input::EKeyCode::eD))
-			delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f));
+		m_renderCtx->beginRendering(rendering_info);
 
-		Dx::XMVECTOR position{Dx::XMLoadFloat3(&m_quadEntity.getTranslation())};
-		delta_position = Dx::XMVector3NormalizeSafe(delta_position);
+		cmd.setViewportWithCountEXT({rendering_info.getViewport()});
+		cmd.setScissorWithCountEXT({rendering_info.getScissor()});
+		m_graphicsState->bind();
 
-		constexpr float32 speed{5.0f};
+		m_globals->fullscreenQuadVertexBuffer()->bind();
+		m_globals->fullscreenQuadIndexBuffer()->bind();
 
-		Dx::XMStoreFloat3(&m_quadEntity.getTranslation(), Dx::XMVectorAdd(Dx::XMVectorScale(delta_position, p_dt * speed), position));
+		cmd.drawIndexed(m_globals->fullscreenQuadIndices().size(), 1, 0, 0, 0);
 
-		auto       rendering_info{m_app->getWindow().getSwapchainRenderingInfo({1.0f, 1.0f, 1.0f, 1.0f}, false)};
-		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
-
-		Dx::XMMATRIX projection{Dx::XMMatrixPerspectiveFovLH(Dx::XMConvertToRadians(90.0f), m_viewportSize.aspect(), 0.1f, 1000.0f)};
-		Dx::XMMATRIX view{
-			Dx::XMMatrixLookAtLH(Dx::XMVectorSet(0.0f, 0.0f, 3.0f, 0.0f), Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), Dx::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f))
-		};
-
-		m_scene->onUpdate(p_dt);
-		m_sceneRenderer->onRender(position, view, projection);
-
-		auto colour_attachment_info{render::getRenderingAttachmentInfo(*m_sceneRenderer->getColourTexture()->getImage(), render::EAttachmentUsageOP::eLoadStore)};
-		auto depth_attachment_info{render::getRenderingAttachmentInfo(*m_sceneRenderer->getDepthTexture()->getImage(), render::EAttachmentUsageOP::eLoadStore)};
-
-		m_renderer2D->begin(view, projection, &colour_attachment_info, &depth_attachment_info);
-		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), {1.0f});
-		m_renderer2D->end(cmd);
-
-		m_renderCtx->beginRendering(cmd, rendering_info, m_swapchainPass);
-		m_renderCtx->renderFullscreenQuad(cmd, m_swapchainPass, nullptr);
-		m_renderCtx->endRendering(cmd, rendering_info);
+		cmd.endRendering();
 	}
 
 	auto onResize(tsm::uint2 p_size) -> void override
 	{
 		m_viewportSize = p_size;
-
-		m_scene->onResize(p_size);
-		m_sceneRenderer->onResize(p_size);
-		m_renderer2D->onResize(p_size);
 	}
 
 private:
 	tsm::uint2 m_viewportSize{0u};
 
-	render::RenderPassHandle m_swapchainPass{nullptr};
+	gpu::DynamicShaderHandle m_vertexShader;
+	gpu::DynamicShaderHandle m_fragmentShader;
 
-	UniquePtr<Scene>              m_scene{nullptr};
-	UniquePtr<SceneRenderer>      m_sceneRenderer{nullptr};
-	UniquePtr<render::Renderer2D> m_renderer2D{nullptr};
-
-	Entity m_quadEntity;
-
-	// Dx::XMFLOAT3 m_quadPosition{0.0f, 0.0f, 0.0f};
+	UniquePtr<render::GraphicsState> m_graphicsState{nullptr};
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32
 {
 	ApplicationSpecInfo app_spec{};
-	app_spec.printGPUDebugInfo             = false;
+	app_spec.printGPUDebugInfo             = true;
 	app_spec.windowSpecInfo.startMaximized = true;
 	Application app{app_spec, nullptr};
 

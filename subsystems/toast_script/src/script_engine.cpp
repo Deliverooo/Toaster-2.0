@@ -1,6 +1,7 @@
 #include "toast_script/script_engine.hpp"
 
 #include <Windows.h>
+
 #include <mono/metadata/assembly.h>
 
 #include "toast_lib/logging.hpp"

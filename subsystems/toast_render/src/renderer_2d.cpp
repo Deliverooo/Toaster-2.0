@@ -81,7 +81,7 @@ namespace toaster::render
 
 		rendering_info.depthAttachment = depth_attachment_info;
 
-		m_renderCtx->beginRendering(p_cmd, rendering_info, m_quadRenderPass);
+		m_renderCtx->beginRendering(rendering_info, m_quadRenderPass, p_cmd);
 
 		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
 		if (size) // Apparently you have to check ts, or things won't work correctly and there will be artifacts...
@@ -96,10 +96,10 @@ namespace toaster::render
 					m_quadMaterial->setTexture("u_Textures", m_renderCtx->getGlobals()->whiteTexture(), i);
 			}
 
-			m_renderCtx->renderGeometry(p_cmd, m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, Dx::XMMatrixIdentity());
+			m_renderCtx->renderGeometry(m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, Dx::XMMatrixIdentity(), p_cmd);
 		}
 
-		m_renderCtx->endRendering(p_cmd, rendering_info);
+		m_renderCtx->endRendering(rendering_info, p_cmd);
 	}
 
 	auto Renderer2D::submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void

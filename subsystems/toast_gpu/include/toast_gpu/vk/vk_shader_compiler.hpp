@@ -16,7 +16,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto compileToBytecodeFromString(vk::ShaderStageFlagBits p_stage, const String &p_source) const -> VKShader::Bytecode;
 		[[nodiscard]] auto compileToBytecodeFromFilepath(vk::ShaderStageFlagBits p_stage, const io::filesystem::Path &p_path) const -> VKShader::Bytecode;
 
-		[[nodiscard]] auto compileToShaderFromStrings(InitialiserList<const vk::ShaderStageFlagBits> &p_stages, const InitialiserList<const String> &p_sources,
+		[[nodiscard]] auto compileToShaderFromStrings(const InitialiserList<const vk::ShaderStageFlagBits> &p_stages, const InitialiserList<const String> &p_sources,
 													  const String &                                  p_name = "Compiled shader") const -> ShaderHandle;
 		[[nodiscard]] auto compileToShaderFromPaths(const InitialiserList<const vk::ShaderStageFlagBits> &p_stages,
 													const InitialiserList<const io::filesystem::Path> &   p_paths,

@@ -1,11 +1,14 @@
 #pragma once
 
+#ifndef VULKAN_HPP_DISPATCH_LOADER_DYNAMIC
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+#endif
+
 #include "../toast_gpu.hpp"
 
 #include "toast_lib/core_basic.hpp"
 
 #include <unordered_set>
-#include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
 namespace toaster::gpu
@@ -22,6 +25,8 @@ namespace toaster::gpu
 		bool printDebugInfo{true};
 	};
 
+	auto getDispatchLoader() -> vk::detail::DispatchLoaderDynamic;
+
 	class TST_GPU_API VKInstance
 	{
 	public:
@@ -29,6 +34,8 @@ namespace toaster::gpu
 
 		[[nodiscard]] auto getSpecInfo() const -> const VKInstanceSpecInfo &;
 		[[nodiscard]] auto getVulkanInstance() -> vk::raii::Instance &;
+
+		auto initDispatcher(vk::Device p_device) const -> void;
 
 		operator vk::raii::Instance &() { return m_vulkanInstance; }
 

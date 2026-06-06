@@ -37,6 +37,8 @@ namespace toaster::render
 
 		EAttachmentUsageOP attachmentOp{EAttachmentUsageOP::eClearStore};
 		vk::ClearValue     clearValue{};
+
+		auto getVulkanAttachmentInfo() const -> vk::RenderingAttachmentInfo;
 	};
 
 	struct TST_RENDER_API RenderingInfo
@@ -50,6 +52,10 @@ namespace toaster::render
 		bool                                   depthReadOnly{false};
 		RenderingAttachmentInfo *              pStencilAttachment{nullptr};
 		bool                                   stencilReadOnly{false};
+
+		auto getViewport() const -> vk::Viewport;
+		auto getScissor() const -> vk::Rect2D;
+		auto getVulkanRenderingInfo() const -> vk::RenderingInfo;
 	};
 
 	TST_RENDER_API auto getLoadOp(EAttachmentUsageOP p_usage_op) -> vk::AttachmentLoadOp;

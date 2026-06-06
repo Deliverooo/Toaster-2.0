@@ -53,7 +53,7 @@ namespace toaster
 		{
 		}
 
-		template<typename TFunc> requires std::is_trivially_destructible_v<TFunc> && std::invocable<TFunc>
+		template<typename TFunc> requires  std::invocable<TFunc>
 		auto enqueue(TFunc &&p_func) -> void
 		{
 			auto cmd{

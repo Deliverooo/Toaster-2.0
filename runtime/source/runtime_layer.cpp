@@ -1,5 +1,6 @@
 #include "runtime_layer.hpp"
 
+#include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_kernel/application.hpp"
 #include "toast_kernel/input.hpp"
 
@@ -18,29 +19,46 @@ namespace toaster
 {
 	auto RuntimeLayer::onInit() -> void
 	{
+		m_viewportSize = m_app->getWindow().getRenderAreaSize();
+
 		io::filesystem::Path binary_dir{os::getBinaryDirectory()};
 
 		m_scene = m_app->createScene("Runtime Scene Test");
-		m_scene->setSceneEnvironment(m_renderCtx->createEnvironmentMap(binary_dir / "../resources/environments/grasslands_sunset_1k.hdr"));
-		m_sceneRenderer = m_app->createSceneRenderer(m_scene.get());
+		m_scene->setSceneEnvironment(m_renderCtx->createEnvironmentMap(binary_dir / "../resources/environments/ferndale_studio_11_2k.hdr"));
+
+		gpu::ShaderCompiler shader_compiler{m_renderCtx->getLogicalDevice()};
+		auto vs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eVertex, binary_dir / "../resources/shaders/dynamic.vert.glsl")};
+		auto fs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eFragment, binary_dir / "../resources/shaders/dynamic.pixel.glsl")};
+
+		auto geo_shader{
+			shader_compiler.compileToShaderFromPaths({vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment}, {
+														 io::filesystem::Path{binary_dir / "../resources/shaders/geometry.vert.glsl"}.string(),
+														 io::filesystem::Path{binary_dir / "../resources/shaders/geometry.pixel.glsl"}.string()
+													 })
+		};
+
+		auto fullscreen_shader{
+			m_renderCtx->createGPURef<gpu::VKShader>(std::initializer_list{vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment},
+													 std::initializer_list{vs_bytecode, fs_bytecode})
+		};
+
+		SceneRendererSpecInfo scene_renderer_spec_info{};
+		scene_renderer_spec_info.viewportSize           = m_viewportSize;
+		scene_renderer_spec_info.overrideGeometryShader = geo_shader;
+		m_sceneRenderer                                 = make_unique<SceneRenderer>(m_scene.get(), scene_renderer_spec_info);
 
 		gpu::PipelineSpecInfo fullscreen_pipeline_spec_info{};
 		fullscreen_pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
-		fullscreen_pipeline_spec_info.shader             = m_globals->shaderLibrary().get("Composite");
+		fullscreen_pipeline_spec_info.shader             = fullscreen_shader;
 		fullscreen_pipeline_spec_info.vertexBufferLayout = render::RenderContext::fullscreenQuadVbl;
 
 		m_fullscreenPipeline   = m_renderCtx->createGPURef<gpu::Pipeline>(fullscreen_pipeline_spec_info);
 		m_fullscreenRenderPass = m_renderCtx->createRef<render::RenderPass>(m_fullscreenPipeline);
-		m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getColourTexture()).bake();
-
-		{
-			Entity e{m_scene->createEntity("Peeb")};
-			e.addComponent<SpriteRendererComponent>();
-		}
+		// m_fullscreenRenderPass->setInput("u_Texture", m_sceneRenderer->getColourTexture()).bake();
 
 		{
 			Entity e{m_scene->createEntity("Skib")};
-			e.addComponent<MeshComponent>().mesh = m_renderCtx->createRef<render::MeshData>(binary_dir / "../resources/meshes/DJT_sculpt.fbx");
+			e.addComponent<MeshComponent>().mesh = m_renderCtx->createRef<render::MeshData>(binary_dir / "../resources/meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
 			auto &tc{e.getComponent<TransformComponent>()};
 		}
 
@@ -58,11 +76,10 @@ namespace toaster
 		m_sceneRenderer->onRender();
 
 		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({1.0f, 1.0f, 1.0f, 1.0f}, false)};
-		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 
-		m_renderCtx->beginRendering(cmd, rendering_info, m_fullscreenRenderPass);
-		m_renderCtx->renderFullscreenQuad(cmd, m_fullscreenRenderPass, nullptr);
-		m_renderCtx->endRendering(cmd, rendering_info);
+		m_renderCtx->beginRendering(rendering_info, m_fullscreenRenderPass);
+		m_renderCtx->renderFullscreenQuad(m_fullscreenRenderPass, nullptr);
+		m_renderCtx->endRendering(rendering_info);
 	}
 
 	auto RuntimeLayer::onResize(tsm::uint2 p_size) -> void

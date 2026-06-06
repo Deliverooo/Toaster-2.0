@@ -27,26 +27,7 @@ namespace toaster::gpu
 		return m_specInfo;
 	}
 
-	auto VKPipeline::getVulkanAttribType(EBufferDataType p_type) -> vk::Format
-	{
-		switch (p_type)
-		{
-			case EBufferDataType::eFloat: return vk::Format::eR32Sfloat;
-			case EBufferDataType::eFloat2: return vk::Format::eR32G32Sfloat;
-			case EBufferDataType::eFloat3: return vk::Format::eR32G32B32Sfloat;
-			case EBufferDataType::eFloat4: return vk::Format::eR32G32B32A32Sfloat;
-			case EBufferDataType::eMat3: return vk::Format::eR32G32B32A32Sfloat; // TODO: If I ever want to do instanced rendering, I will need to look into ts
-			case EBufferDataType::eMat4: return vk::Format::eR32G32B32A32Sfloat;
-			case EBufferDataType::eInt: return vk::Format::eR32Sint;
-			case EBufferDataType::eInt2: return vk::Format::eR32G32Sint;
-			case EBufferDataType::eInt3: return vk::Format::eR32G32B32Sint;
-			case EBufferDataType::eInt4: return vk::Format::eR32G32B32A32Sint;
-			case EBufferDataType::eBool: return vk::Format::eR32Sint;
-			default: return vk::Format::eUndefined;
-		}
-		TST_ASSERT_MSG(false, "Unsupported shader data type");
-		return vk::Format::eUndefined;
-	}
+
 
 	auto VKPipeline::_createGraphicsPipeline() -> void
 	{
@@ -163,7 +144,7 @@ namespace toaster::gpu
 			depth_stencil_state_create_info.stencilTestEnable     = false;
 		}
 		auto descriptor_set_layouts = m_specInfo.shader->getDescriptorSetLayouts();
-		TST_ASSERT(!descriptor_set_layouts.empty());
+		// TST_ASSERT(!descriptor_set_layouts.empty());
 
 		auto &push_constant_ranges = m_specInfo.shader->getReflectedPushConstantRanges();
 

@@ -103,6 +103,8 @@ namespace toaster::gpu
 
 		m_logicalDevice = {m_physicalDevice->getVulkanPhysicalDevice(), device_create_info};
 
+		m_physicalDevice->getInstance()->initDispatcher(*m_logicalDevice);
+
 		// Create the queues
 		m_graphicsQueue = {m_logicalDevice, m_queueFamilyIndices.graphics, 0};
 		m_transferQueue = {m_logicalDevice, m_queueFamilyIndices.transfer, 0};
@@ -155,6 +157,16 @@ namespace toaster::gpu
 	auto VKLogicalDevice::performGarbageCollection() -> void
 	{
 		m_pendingDeletionCommandQueues[m_currentFrameIndex].execute();
+	}
+
+	auto VKLogicalDevice::getCurrentCommandBuffer() const -> VKCommandBuffer *
+	{
+		return m_currentCommandBuffer;
+	}
+
+	auto VKLogicalDevice::setCurrentCommandBuffer(VKCommandBuffer *p_cmd) -> void
+	{
+		m_currentCommandBuffer = p_cmd;
 	}
 
 	auto VKLogicalDevice::getPhysicalDevice() const -> NonOwningPtr<VKPhysicalDevice>
@@ -299,6 +311,7 @@ namespace toaster::gpu
 
 		return {m_logicalDevice, shader_module_create_info};
 	}
+
 
 	auto VKLogicalDevice::mapMemory(vk::DeviceMemory p_memory, vk::DeviceSize p_offset, vk::DeviceSize p_size, vk::MemoryMapFlags p_flags) const -> void *
 	{

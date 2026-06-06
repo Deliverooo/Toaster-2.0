@@ -62,8 +62,8 @@ namespace toaster::render
 		auto               setCurrentFrameIndex(uint32 p_index) -> void;
 		auto               performGarbageCollection() const -> void;
 
-		auto getCurrentSwapchainCommandBuffer() const -> gpu::VKCommandBuffer *;
-		auto setCurrentSwapchainCommandBuffer(gpu::VKCommandBuffer *p_cmd) -> void; // ONLY THE APPLICATION SHOULD USE TS...
+		[[nodiscard]] auto getCurrentSwapchainCommandBuffer() const -> gpu::VKCommandBuffer *;
+		auto               setCurrentSwapchainCommandBuffer(gpu::VKCommandBuffer *p_cmd) -> void; // ONLY THE APPLICATION SHOULD USE TS...
 
 		// Use for objects that take the render context into their constructor
 		template<typename TObj, typename... TArgs>
@@ -76,7 +76,7 @@ namespace toaster::render
 		template<typename TObj, typename... TArgs>
 		[[nodiscard]] auto createUnique(TArgs &&... p_args) -> UniquePtr<TObj>
 		{
-			return make_unique<TObj>(*this, std::forward<TArgs>(p_args)...);
+			return toaster::make_unique<TObj>(*this, std::forward<TArgs>(p_args)...);
 		}
 
 		// Use for objects that take the logical device into their constructor
@@ -126,27 +126,28 @@ namespace toaster::render
 		[[nodiscard]] auto createDiffuseIrradianceMap(const gpu::Texture3DHandle &p_environment_map) -> gpu::Texture3DHandle;
 
 		#pragma region render logic
+		// For all of these, if the frame index or command buffer parameter is null / 0, they will be obtained from the swapchain instead
 
-		auto beginRendering(gpu::CommandBuffer *p_command_buffer, const RenderingInfo &p_rendering_info, RenderPass *p_render_pass,
-							uint32              p_frame_index = UINT32_MAX) const -> void;
-		auto endRendering(gpu::CommandBuffer *p_command_buffer, const RenderingInfo &p_rendering_info) const -> void;
+		auto beginRendering(const RenderingInfo &p_rendering_info, RenderPass *p_render_pass = nullptr, gpu::CommandBuffer *p_command_buffer = nullptr,
+							uint32               p_frame_index                                                                     = UINT32_MAX) const -> void;
+		auto endRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr) const -> void;
 
-		auto beginCompute(gpu::CommandBuffer *p_command_buffer, ComputePass *p_compute_pass, uint32 p_frame_index = UINT32_MAX) const -> void;
-		auto dispatchCompute(gpu::CommandBuffer *p_command_buffer, const ComputePass *p_compute_pass, Material *p_material, const tsm::uint3 &p_work_groups,
-							 uint32              p_frame_index = UINT32_MAX) const -> void;
+		auto beginCompute(ComputePass *p_compute_pass, gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
+		auto dispatchCompute(const ComputePass *p_compute_pass, Material *p_material, const tsm::uint3 &p_work_groups, gpu::CommandBuffer *p_command_buffer = nullptr,
+							 uint32             p_frame_index = UINT32_MAX) const -> void;
 
-		auto XM_CALLCONV renderGeometry(gpu::CommandBuffer *p_command_buffer, gpu::Pipeline *p_pipeline, gpu::VertexBuffer *p_vertex_buffer,
-										gpu::IndexBuffer *  p_index_buffer, uint32           p_index_count, Material *      p_material, Dx::FXMMATRIX p_transform,
-										uint32              p_frame_index = UINT32_MAX) const -> void;
+		auto XM_CALLCONV renderGeometry(gpu::Pipeline *p_pipeline, gpu::VertexBuffer *p_vertex_buffer, gpu::IndexBuffer *p_index_buffer, uint32 p_index_count,
+										Material *     p_material, Dx::FXMMATRIX      p_transform, gpu::CommandBuffer *  p_command_buffer = nullptr,
+										uint32         p_frame_index                                                                      = UINT32_MAX) const -> void;
 
-		auto renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer, const RenderPass *p_render_pass, Material *p_material,
-								  uint32              p_frame_index = UINT32_MAX) const -> void;
+		auto renderFullscreenQuad(const RenderPass *p_render_pass, Material *p_material, gpu::CommandBuffer *p_command_buffer = nullptr,
+								  uint32            p_frame_index                                                             = UINT32_MAX) const -> void;
 
-		auto XM_CALLCONV renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline,
-									Dx::FXMMATRIX       p_transform, uint32               p_frame_index = UINT32_MAX) const -> void;
+		auto XM_CALLCONV renderMesh(const MeshData *    p_mesh, uint32                     p_submesh_index, gpu::Pipeline *p_pipeline, Dx::FXMMATRIX p_transform,
+									gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
 
-		auto XM_CALLCONV renderMesh(gpu::CommandBuffer *p_command_buffer, const MeshData *p_mesh, uint32              p_submesh_index, gpu::Pipeline *p_pipeline,
-									Dx::FXMMATRIX       p_transform, Material *           p_override_material, uint32 p_frame_index = UINT32_MAX) const -> void;
+		auto XM_CALLCONV renderMesh(const MeshData *p_mesh, uint32 p_submesh_index, gpu::Pipeline *p_pipeline, Dx::FXMMATRIX p_transform, Material *p_override_material,
+									gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
 		#pragma endregion
 
 	private:

@@ -10,6 +10,8 @@
 
 namespace toaster::gpu
 {
+	using ShaderBytecode = std::vector<uint32>;
+
 	class TST_GPU_API VKShader
 	{
 		TST_GPU_OBJECT
@@ -80,4 +82,26 @@ namespace toaster::gpu
 	};
 
 	TST_GPU_DEFINE_HANDLE(VKShader, Shader)
+
+	struct TST_GPU_API VKDynamicShader
+	{
+		TST_GPU_OBJECT
+	public:
+		VKDynamicShader() = default;
+		auto operator=(VKDynamicShader &&p_other) noexcept -> VKDynamicShader &;
+		VKDynamicShader(VKLogicalDevice *       p_device, const ShaderBytecode &p_bytecode, vk::ShaderStageFlagBits p_stage,
+						vk::ShaderStageFlagBits p_next_stage = vk::ShaderStageFlagBits{0u});
+		~VKDynamicShader();
+
+		auto getShader() const -> vk::ShaderEXT;
+		auto getStage() const -> vk::ShaderStageFlagBits;
+		auto getNextStage() const -> vk::ShaderStageFlagBits;
+
+	private:
+		vk::raii::ShaderEXT     m_shader{nullptr};
+		vk::ShaderStageFlagBits m_stage{};
+		vk::ShaderStageFlagBits m_nextStage{};
+	};
+
+	TST_GPU_DEFINE_HANDLE(VKDynamicShader, DynamicShader)
 }

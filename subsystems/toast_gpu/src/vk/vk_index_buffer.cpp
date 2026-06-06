@@ -54,8 +54,9 @@ namespace toaster::gpu
 		m_device->unmapMemory(m_indexBufferMemory);
 	}
 
-	auto VKIndexBuffer::bind(const vk::raii::CommandBuffer &p_command_buffer, vk::IndexType p_index_type) -> void
+	auto VKIndexBuffer::bind(VKCommandBuffer *p_command_buffer, vk::IndexType p_index_type) -> void
 	{
-		p_command_buffer.bindIndexBuffer(m_indexBuffer, 0, p_index_type);
+		TST_GPU_GET_VALID_CMD_BUFFER();
+		cmd->getVulkanCommandBuffer().bindIndexBuffer(m_indexBuffer, 0, p_index_type);
 	}
 }

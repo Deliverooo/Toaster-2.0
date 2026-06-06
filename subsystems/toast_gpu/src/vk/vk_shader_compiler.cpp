@@ -94,7 +94,7 @@ namespace toaster::gpu
 		return {compilation_result.begin(), compilation_result.end()};
 	}
 
-	auto ShaderCompiler::compileToShaderFromStrings(InitialiserList<const vk::ShaderStageFlagBits> &p_stages, const InitialiserList<const String> &p_sources,
+	auto ShaderCompiler::compileToShaderFromStrings(const InitialiserList<const vk::ShaderStageFlagBits> &p_stages, const InitialiserList<const String> &p_sources,
 													const String &                                  p_name) const -> ShaderHandle
 	{
 		VKShader::BytecodeMap bytecode_map;

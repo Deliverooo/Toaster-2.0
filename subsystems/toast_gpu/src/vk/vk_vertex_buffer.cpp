@@ -54,8 +54,9 @@ namespace toaster::gpu
 		m_device->unmapMemory(m_vertexBufferMemory);
 	}
 
-	auto VKVertexBuffer::bind(const vk::raii::CommandBuffer &p_command_buffer) -> void
+	auto VKVertexBuffer::bind(VKCommandBuffer *p_command_buffer) -> void
 	{
-		p_command_buffer.bindVertexBuffers(0, m_vertexBuffer, {0});
+		TST_GPU_GET_VALID_CMD_BUFFER();
+		cmd->getVulkanCommandBuffer().bindVertexBuffers(0, m_vertexBuffer, {0});
 	}
 }

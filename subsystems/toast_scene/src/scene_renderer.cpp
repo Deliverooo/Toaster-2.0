@@ -122,6 +122,7 @@ namespace toaster
 
 		#pragma region geometry
 		{
+			auto shader_choice{m_specInfo.overrideGeometryShader ? m_specInfo.overrideGeometryShader : m_renderCtx->getGlobals()->shaderLibrary().get("Geometry")};
 			gpu::PipelineSpecInfo geometry_pipeline_spec_info{};
 			geometry_pipeline_spec_info.vertexBufferLayout = render::RenderContext::meshVbl;
 			geometry_pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
@@ -132,7 +133,7 @@ namespace toaster
 			geometry_pipeline_spec_info.multisample        = true;
 			geometry_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
 			geometry_pipeline_spec_info.cullMode           = m_specInfo.backfaceCulling ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone;
-			geometry_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Geometry");
+			geometry_pipeline_spec_info.shader             = shader_choice;
 			m_geometryPipeline                             = m_renderCtx->createGPURef<gpu::VKPipeline>(geometry_pipeline_spec_info, "Geometry");
 
 			m_geometryPass = m_renderCtx->createRef<render::RenderPass>(m_geometryPipeline);
@@ -384,17 +385,17 @@ namespace toaster
 		auto &geo_positions_attachment_info{rendering_info.colourAttachments.emplace_back()};
 		geo_positions_attachment_info = render::getRenderingAttachmentInfo(*m_MSAAGeometryPositionsImage, *m_geometryPositionsTexture->getImage());
 
-		m_renderCtx->beginRendering(p_cmd, rendering_info, m_depthPrePass);
+		m_renderCtx->beginRendering(rendering_info, m_depthPrePass, p_cmd);
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
 			{
 				Dx::XMMATRIX draw_cmd_transform{Dx::XMLoadFloat4x4(&draw_cmd.transform)};
-				Dx::XMMATRIX submesh_transform{Dx::XMLoadFloat4x4(&draw_cmd.mesh->getSubmeshes()[i].localTransform)};
-				m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_depthPrePipeline, Dx::XMMatrixMultiply(submesh_transform, draw_cmd_transform), nullptr);
+				Dx::XMMATRIX submesh_transform{Dx::XMLoadFloat4x4(&draw_cmd.mesh->getSubmeshes()[i].transform)};
+				m_renderCtx->renderMesh(draw_cmd.mesh, i, m_depthPrePipeline, Dx::XMMatrixMultiply(submesh_transform, draw_cmd_transform), nullptr, p_cmd);
 			}
 		}
-		m_renderCtx->endRendering(p_cmd, rendering_info);
+		m_renderCtx->endRendering(rendering_info, p_cmd);
 	}
 
 	auto SceneRenderer::_renderAOPass(gpu::VKCommandBuffer *p_cmd) -> void
@@ -410,12 +411,12 @@ namespace toaster
 		out_ssao_attachment_info.clearValue = vk::ClearColorValue{1.0f, 1.0, 1.0f, 1.0f};
 		out_ssao_attachment_info.image      = m_SSAOTexture->getImage();
 
-		m_renderCtx->beginRendering(p_cmd, rendering_info, m_SSAOPass);
-		m_renderCtx->renderFullscreenQuad(p_cmd, m_SSAOPass, m_SSAOFrameDataMaterial);
-		m_renderCtx->endRendering(p_cmd, rendering_info);
+		m_renderCtx->beginRendering(rendering_info, m_SSAOPass, p_cmd);
+		m_renderCtx->renderFullscreenQuad(m_SSAOPass, m_SSAOFrameDataMaterial, p_cmd);
+		m_renderCtx->endRendering(rendering_info, p_cmd);
 
-		m_renderCtx->beginCompute(p_cmd, m_SSAOBlurPass);
-		m_renderCtx->dispatchCompute(p_cmd, m_SSAOBlurPass, nullptr, {(m_specInfo.viewportSize + 15u) / 16u, 1u});
+		m_renderCtx->beginCompute(m_SSAOBlurPass, p_cmd);
+		m_renderCtx->dispatchCompute(m_SSAOBlurPass, nullptr, {(m_specInfo.viewportSize + 15u) / 16u, 1u}, p_cmd);
 	}
 
 	auto SceneRenderer::_renderSkyboxPass(gpu::VKCommandBuffer *p_cmd) -> void
@@ -426,9 +427,9 @@ namespace toaster
 		render::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
 		colour_attachment_info = render::getRenderingAttachmentInfo(*m_MSAAcolourImage, *m_colourTexture->getImage());
 
-		m_renderCtx->beginRendering(p_cmd, rendering_info, m_skyboxPass);
-		m_renderCtx->renderFullscreenQuad(p_cmd, m_skyboxPass, m_skyboxMaterial);
-		m_renderCtx->endRendering(p_cmd, rendering_info);
+		m_renderCtx->beginRendering(rendering_info, m_skyboxPass, p_cmd);
+		m_renderCtx->renderFullscreenQuad(m_skyboxPass, m_skyboxMaterial, p_cmd);
+		m_renderCtx->endRendering(rendering_info, p_cmd);
 	}
 
 	auto SceneRenderer::_renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void
@@ -446,17 +447,17 @@ namespace toaster
 		auto depth_attachment_info{render::getRenderingAttachmentInfo(*m_MSAADepthImage, *m_depthTexture->getImage(), render::EAttachmentUsageOP::eLoadDontCare)};
 		rendering_info.depthAttachment = depth_attachment_info;
 
-		m_renderCtx->beginRendering(p_cmd, rendering_info, m_geometryPass);
+		m_renderCtx->beginRendering(rendering_info, m_geometryPass, p_cmd);
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
 			{
 				Dx::XMMATRIX draw_cmd_transform{Dx::XMLoadFloat4x4(&draw_cmd.transform)};
-				Dx::XMMATRIX submesh_transform{Dx::XMLoadFloat4x4(&draw_cmd.mesh->getSubmeshes()[i].localTransform)};
-				m_renderCtx->renderMesh(p_cmd, draw_cmd.mesh, i, m_geometryPipeline, Dx::XMMatrixMultiply(submesh_transform, draw_cmd_transform));
+				Dx::XMMATRIX submesh_transform{Dx::XMLoadFloat4x4(&draw_cmd.mesh->getSubmeshes()[i].transform)};
+				m_renderCtx->renderMesh(draw_cmd.mesh, i, m_geometryPipeline, Dx::XMMatrixMultiply(submesh_transform, draw_cmd_transform), p_cmd);
 			}
 		}
-		m_renderCtx->endRendering(p_cmd, rendering_info);
+		m_renderCtx->endRendering(rendering_info, p_cmd);
 	}
 
 	static std::uniform_real_distribution<float32> s_random_floats{0.0f, 1.0f};

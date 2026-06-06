@@ -13,6 +13,8 @@ namespace toaster
 		tsm::uint2 viewportSize{0u};
 		tsm::uint2 viewportOffset{0u};
 
+		gpu::ShaderHandle overrideGeometryShader{nullptr}; // Pretty damn useful
+
 		bool backfaceCulling{true};
 	};
 

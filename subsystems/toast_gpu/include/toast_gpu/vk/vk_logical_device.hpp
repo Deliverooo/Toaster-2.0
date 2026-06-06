@@ -7,13 +7,17 @@
 
 namespace toaster::gpu
 {
+	class VKCommandBuffer;
+
 	struct TST_GPU_API VKLogicalDeviceSpecInfo
 	{
 		static auto getDefaultFeatures() -> vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
-			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT>
+			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceShaderObjectFeaturesEXT,
+			vk::PhysicalDeviceDescriptorBufferFeaturesEXT>
 		{
 			vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
-				vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT> feature_chain{{}, {}, {}, {}, {}};
+				vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceShaderObjectFeaturesEXT,
+				vk::PhysicalDeviceDescriptorBufferFeaturesEXT> feature_chain{{}, {}, {}, {}, {}, {}, {}};
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                 = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                 = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                  = true;
@@ -24,6 +28,8 @@ namespace toaster::gpu
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                    = true;
 			feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState = true;
 			feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors      = true;
+			feature_chain.get<vk::PhysicalDeviceShaderObjectFeaturesEXT>().shaderObject                 = true;
+			feature_chain.get<vk::PhysicalDeviceDescriptorBufferFeaturesEXT>().descriptorBuffer         = true;
 			return feature_chain;
 		}
 
@@ -66,6 +72,9 @@ namespace toaster::gpu
 		auto               setCurrentFrameIndex(uint32 p_index) -> void;
 		auto               performGarbageCollection() -> void;
 
+		[[nodiscard]] auto getCurrentCommandBuffer() const -> VKCommandBuffer *;
+		auto               setCurrentCommandBuffer(VKCommandBuffer *p_cmd) -> void; // ONLY THE APPLICATION SHOULD USE TS...
+
 		[[nodiscard]] auto getPhysicalDevice() const -> NonOwningPtr<VKPhysicalDevice>;
 		[[nodiscard]] auto getSpecInfo() const -> const VKLogicalDeviceSpecInfo &;
 
@@ -91,6 +100,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto createShaderModule(const std::vector<uint32> &p_code) -> vk::raii::ShaderModule;
 
 		#pragma region vulkan non-raii wrappers
+
 		[[nodiscard]] auto mapMemory(vk::DeviceMemory p_memory, vk::DeviceSize p_offset, vk::DeviceSize p_size, vk::MemoryMapFlags p_flags) const -> void *;
 		auto               unmapMemory(vk::DeviceMemory p_memory) const -> void;
 
@@ -184,7 +194,11 @@ namespace toaster::gpu
 
 		std::vector<CommandQueue> m_pendingDeletionCommandQueues;
 		uint32                    m_currentFrameIndex{0u};
+
+		VKCommandBuffer *m_currentCommandBuffer{nullptr};
 	};
+
+	#define TST_GPU_GET_VALID_CMD_BUFFER() auto cmd{p_command_buffer ? p_command_buffer : m_device->getCurrentCommandBuffer()}
 
 	#pragma region destroy
 
@@ -216,6 +230,12 @@ namespace toaster::gpu
 	inline auto VKLogicalDevice::destroyObject<vk::Sampler>(vk::Sampler &p_sampler) const -> void
 	{
 		static_cast<vk::Device>(m_logicalDevice).destroySampler(p_sampler);
+	}
+
+	template<>
+	inline auto VKLogicalDevice::destroyObject<vk::ShaderEXT>(vk::ShaderEXT &p_shader) const -> void
+	{
+		static_cast<vk::Device>(m_logicalDevice).destroyShaderEXT(p_shader);
 	}
 	#pragma endregion
 }

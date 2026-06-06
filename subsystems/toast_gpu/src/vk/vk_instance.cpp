@@ -1,7 +1,14 @@
 #include "toast_gpu/vk/vk_instance.hpp"
 
-namespace toaster::gpu
+#include <vulkan/vulkan.hpp>
+
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE namespace toaster::gpu
 {
+	auto getDispatchLoader() -> vk::detail::DispatchLoaderDynamic
+	{
+		return vk::detail::defaultDispatchLoaderDynamic;
+	}
+
 	static VKAPI_ATTR auto VKAPI_CALL _debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,
 													 const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, void *p_user_data) -> vk::Bool32;
 
@@ -101,7 +108,9 @@ namespace toaster::gpu
 			instance_create_info.pNext               = &debug_messenger_create_info;
 		}
 
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 		m_vulkanInstance = vk::raii::Instance{m_context, instance_create_info};
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(*m_vulkanInstance);
 	}
 
 	auto VKInstance::getSpecInfo() const -> const VKInstanceSpecInfo &
@@ -112,6 +121,11 @@ namespace toaster::gpu
 	auto VKInstance::getVulkanInstance() -> vk::raii::Instance &
 	{
 		return m_vulkanInstance;
+	}
+
+	auto VKInstance::initDispatcher(vk::Device p_device) const -> void
+	{
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(p_device);
 	}
 
 	auto _debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,
