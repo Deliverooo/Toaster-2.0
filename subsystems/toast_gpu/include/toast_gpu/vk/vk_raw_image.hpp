@@ -31,6 +31,8 @@ namespace toaster::gpu
 		VKRawImage(VKLogicalDevice *p_ctx, const ImageSpecInfo &p_spec_info);
 		~VKRawImage();
 
+		[[nodiscard]] auto getImageViewCreateInfo() const -> const vk::ImageViewCreateInfo &;
+
 		auto getImage() -> vk::Image &;
 		auto getImageMemory() -> vk::DeviceMemory &;
 		auto getImageView() -> vk::ImageView &;
@@ -53,6 +55,8 @@ namespace toaster::gpu
 	private:
 		ImageSpecInfo m_specInfo{};
 
+		vk::ImageViewCreateInfo m_imageViewCreateInfo{};
+
 		vk::Image        m_image{nullptr};
 		vk::DeviceMemory m_imageMemory{nullptr};
 		vk::ImageView    m_imageView{nullptr};
@@ -64,7 +68,7 @@ namespace toaster::gpu
 
 	namespace util
 	{
-		TST_GPU_API auto loadTextureImage(const io::filesystem::Path &p_path, vk::Format &p_out_format, uint32 &p_out_width, uint32 &p_out_height) -> Buffer;
+		TST_GPU_API auto loadTextureIntoBuffer(const io::filesystem::Path &p_path, vk::Format &p_out_format, uint32 &p_out_width, uint32 &p_out_height) -> Buffer;
 
 		// For dynamic rendering I have to handle the image layout transitions manually, so this simplifies things...
 		// Prefer this over the other functions

@@ -14,11 +14,6 @@
 
 using namespace toaster;
 
-size_t alignedSize(size_t value, size_t alignment)
-{
-	return (value + alignment - 1) & ~(alignment - 1);
-}
-
 class ClientLayer : public IAppLayer
 {
 public:
@@ -36,17 +31,37 @@ public:
 			tsm::float4 data{1.0f, 0.0f, 1.0f, 1.0f};
 			m_ubo->setData(data);
 		}
-		{
-			gpu::BufferSpecInfo ubo_spec_info{};
-			ubo_spec_info.usageFlags = vk::BufferUsageFlagBits2::eUniformBuffer | vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
-			m_ubo2                    = toaster::make_unique<gpu::Buffer>(logical_device, sizeof(tsm::float4), ubo_spec_info);
-			tsm::float4 data{0.0f, 0.0f, 1.0f, 1.0f};
-			m_ubo2->setData(data);
-		}
 
+		m_peeberTex = m_renderCtx->loadTextureIntoImage(binary_dir / "../resources/textures/Peeber.png");
+		m_tetoTex   = m_renderCtx->loadTextureIntoImage(binary_dir / "../resources/textures/teto.png");
+
+		vk::SamplerCreateInfo sampler_create_info{};
+		{
+			const auto physical_device_props = logical_device->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties();
+
+			sampler_create_info.magFilter               = vk::Filter::eLinear;
+			sampler_create_info.minFilter               = vk::Filter::eLinear;
+			sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
+			sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
+			sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
+			sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+			sampler_create_info.mipLodBias              = 0.0f;
+			sampler_create_info.anisotropyEnable        = true;
+			sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
+			sampler_create_info.compareEnable           = false;
+			sampler_create_info.compareOp               = vk::CompareOp::eAlways;
+			sampler_create_info.minLod                  = 0.0f;
+			sampler_create_info.maxLod                  = vk::LodClampNone;
+			sampler_create_info.borderColor             = vk::BorderColor::eFloatOpaqueWhite;
+			sampler_create_info.unnormalizedCoordinates = false;
+		}
 		m_descriptorHeap = m_renderCtx->createGPUUnique<gpu::DescriptorHeap>();
 		m_descriptorHeap->allocBuffer(*m_ubo);
-		m_descriptorHeap->allocBuffer(*m_ubo2);
+
+		m_peeberTexIndex = m_descriptorHeap->allocImage(*m_peeberTex);
+		m_tetoTexIndex   = m_descriptorHeap->allocImage(*m_tetoTex);
+
+		m_samplerIndex = m_descriptorHeap->allocSampler(sampler_create_info);
 
 		gpu::ShaderCompiler shader_compiler{logical_device};
 		auto vs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eVertex, binary_dir / "../resources/shaders/dynamic.vert.glsl")};
@@ -73,12 +88,14 @@ public:
 
 		struct PushConstants
 		{
-			vk::DeviceAddress uboAddress;
-			vk::DeviceAddress ubo2Address;
+			vk::DeviceAddress ubo;
+			uint32 textureIndex;
+			uint32 samplerIndex;
 		};
 		PushConstants pcs{};
-		pcs.uboAddress = m_ubo->getDeviceAddress();
-		pcs.ubo2Address = m_ubo2->getDeviceAddress();
+		pcs.ubo = m_ubo->getDeviceAddress();
+		pcs.textureIndex = m_tetoTexIndex;
+		pcs.samplerIndex = m_samplerIndex;
 		cmd->pushData(pcs);
 
 		m_graphicsState->bind();
@@ -106,11 +123,15 @@ private:
 
 	gpu::DescriptorHeapUnique m_descriptorHeap{nullptr};
 
-	// gpu::BufferUnique                             m_resourceHeap{nullptr};
-	// vk::PhysicalDeviceDescriptorHeapPropertiesEXT m_heapProps{};
+	gpu::RawImageHandle m_peeberTex{nullptr};
+	gpu::DescriptorSlot m_peeberTexIndex{0u};
+
+	gpu::RawImageHandle m_tetoTex{nullptr};
+	gpu::DescriptorSlot m_tetoTexIndex{0u};
+
+	gpu::DescriptorSlot m_samplerIndex{0u};
 
 	gpu::BufferUnique m_ubo{nullptr};
-	gpu::BufferUnique m_ubo2{nullptr};
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32

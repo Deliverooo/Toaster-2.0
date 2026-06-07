@@ -31,7 +31,7 @@ namespace toaster::gpu
 	{
 		TST_ASSERT_MSG(m_device, "Device cannot be null");
 
-		m_textureData = util::loadTextureImage(p_path, m_specInfo.format, m_specInfo.size.x, m_specInfo.size.y);
+		m_textureData = util::loadTextureIntoBuffer(p_path, m_specInfo.format, m_specInfo.size.x, m_specInfo.size.y);
 		if (!m_textureData)
 		{
 			TST_ASSERT(false);
@@ -145,7 +145,26 @@ namespace toaster::gpu
 		// Do not destroy an existing sampler: descriptor sets may still reference it. Only create on first use.
 		if (!m_sampler)
 		{
-			m_sampler = m_device->createSampler(m_specInfo.samplerFilter, m_specInfo.samplerAddressMode);
+			const auto physical_device_props = m_device->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties();
+
+			m_samplerCreateInfo                         = vk::SamplerCreateInfo{};
+			m_samplerCreateInfo.magFilter               = m_specInfo.samplerFilter;
+			m_samplerCreateInfo.minFilter               = m_specInfo.samplerFilter;
+			m_samplerCreateInfo.mipmapMode              = vk::SamplerMipmapMode::eLinear;
+			m_samplerCreateInfo.addressModeU            = m_specInfo.samplerAddressMode;
+			m_samplerCreateInfo.addressModeV            = m_specInfo.samplerAddressMode;
+			m_samplerCreateInfo.addressModeW            = m_specInfo.samplerAddressMode;
+			m_samplerCreateInfo.mipLodBias              = 0.0f;
+			m_samplerCreateInfo.anisotropyEnable        = true;
+			m_samplerCreateInfo.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
+			m_samplerCreateInfo.compareEnable           = false;
+			m_samplerCreateInfo.compareOp               = vk::CompareOp::eAlways;
+			m_samplerCreateInfo.minLod                  = 0.0f;
+			m_samplerCreateInfo.maxLod                  = vk::LodClampNone;
+			m_samplerCreateInfo.borderColor             = vk::BorderColor::eFloatOpaqueWhite;
+			m_samplerCreateInfo.unnormalizedCoordinates = false;
+
+			m_sampler = (static_cast<vk::Device>(m_device->getVulkanLogicalDevice())).createSampler(m_samplerCreateInfo);
 		}
 
 		// Update descriptor info (image view/layout may change on resize)
@@ -174,9 +193,19 @@ namespace toaster::gpu
 		return m_image;
 	}
 
+	auto VKTexture2D::getImage() const -> const RefPtr<VKRawImage> &
+	{
+		return m_image;
+	}
+
 	auto VKTexture2D::getSampler() -> vk::Sampler &
 	{
 		return m_sampler;
+	}
+
+	auto VKTexture2D::getSamplerCreateInfo() const -> const vk::SamplerCreateInfo &
+	{
+		return m_samplerCreateInfo;
 	}
 
 	auto VKTexture2D::getDescriptorInfo() -> vk::DescriptorImageInfo &
@@ -212,7 +241,7 @@ namespace toaster::gpu
 	{
 		TST_ASSERT_MSG(m_device, "Device cannot be null");
 
-		m_textureData = util::loadTextureImage(p_path, m_specInfo.format, m_specInfo.size.x, m_specInfo.size.y);
+		m_textureData = util::loadTextureIntoBuffer(p_path, m_specInfo.format, m_specInfo.size.x, m_specInfo.size.y);
 		if (!m_textureData)
 		{
 			TST_ASSERT(false);
@@ -347,7 +376,7 @@ namespace toaster::gpu
 
 	namespace util
 	{
-		auto loadTextureImage(const io::filesystem::Path &p_path, vk::Format &p_out_format, uint32 &p_out_width, uint32 &p_out_height) -> Buffer
+		auto loadTextureIntoBuffer(const io::filesystem::Path &p_path, vk::Format &p_out_format, uint32 &p_out_width, uint32 &p_out_height) -> Buffer
 		{
 			Buffer image_data{};
 

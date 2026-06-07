@@ -22,6 +22,11 @@ namespace toaster::gpu
 		});
 	}
 
+	auto VKRawImage::getImageViewCreateInfo() const -> const vk::ImageViewCreateInfo &
+	{
+		return m_imageViewCreateInfo;
+	}
+
 	auto VKRawImage::getImage() -> vk::Image &
 	{
 		return m_image;
@@ -136,7 +141,21 @@ namespace toaster::gpu
 		else if (m_specInfo.usage & vk::ImageUsageFlagBits::eStorage)
 			util::transitionImageLayout(this, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
 
-		m_imageView = m_device->createImageView(m_image, m_specInfo.format, aspect_flags, m_specInfo.layerCount, m_specInfo.mipCount);
+		{
+			m_imageViewCreateInfo            = vk::ImageViewCreateInfo{};
+			m_imageViewCreateInfo.viewType   = (m_specInfo.layerCount > 1) ? vk::ImageViewType::eCube : vk::ImageViewType::e2D;;
+			m_imageViewCreateInfo.image      = m_image;
+			m_imageViewCreateInfo.components = {
+				vk::ComponentSwizzle::eIdentity,
+				vk::ComponentSwizzle::eIdentity,
+				vk::ComponentSwizzle::eIdentity,
+				vk::ComponentSwizzle::eIdentity
+			};
+			m_imageViewCreateInfo.subresourceRange = vk::ImageSubresourceRange{aspect_flags, 0, m_specInfo.mipCount, 0, m_specInfo.layerCount};
+			m_imageViewCreateInfo.format           = m_specInfo.format;
+
+			m_imageView = (static_cast<vk::Device>(m_device->getVulkanLogicalDevice())).createImageView(m_imageViewCreateInfo);
+		}
 	}
 
 	namespace util

@@ -121,6 +121,8 @@ namespace toaster::render
 			return createGPURef<gpu::VKUniformBufferPFF>(ubo_size, p_count);
 		}
 
+		[[nodiscard]] auto loadTextureIntoImage(const io::filesystem::Path &p_path) const -> gpu::RawImageHandle;
+
 		[[nodiscard]] auto createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
 												 vk::Format p_format = vk::Format::eUndefined) const -> gpu::RawImageHandle;
 		[[nodiscard]] auto createMultisampleAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,

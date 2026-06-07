@@ -33,6 +33,7 @@ namespace toaster::render
 			vk::EXTShaderObjectExtensionName,
 			vk::KHRBufferDeviceAddressExtensionName,
 			vk::EXTDescriptorHeapExtensionName,
+			vk::KHRShaderUntypedPointersExtensionName
 		};
 		if (use_present)
 			required_device_extensions.insert(vk::KHRSwapchainExtensionName);
@@ -119,6 +120,29 @@ namespace toaster::render
 	auto RenderContext::setCurrentSwapchainCommandBuffer(gpu::CommandBuffer *p_cmd) -> void
 	{
 		m_logicalDevice->setCurrentCommandBuffer(p_cmd);
+	}
+
+	auto RenderContext::loadTextureIntoImage(const io::filesystem::Path &p_path) const -> gpu::RawImageHandle
+	{
+		gpu::ImageSpecInfo image_spec_info{};
+		Buffer             texture_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
+		if (!texture_data)
+		{
+			TST_ASSERT(false);
+		}
+
+		image_spec_info.usage       = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+		image_spec_info.mipCount    = 1;
+		image_spec_info.sampleCount = vk::SampleCountFlagBits::e1;
+		auto out_image{createGPURef<gpu::RawImage>(image_spec_info)};
+
+		gpu::util::toTransferDst(out_image.get());
+		out_image->setData(texture_data);
+
+		m_logicalDevice->generateMipmaps(out_image->getImage(), {image_spec_info.size.x, image_spec_info.size.y, 1u}, 1);
+		out_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal); // Generate mips leaves the image in the eShaderReadOnlyOptimal layout
+
+		return out_image;
 	}
 
 	auto RenderContext::createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) const -> gpu::RawImageHandle
