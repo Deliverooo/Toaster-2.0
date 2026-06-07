@@ -4,6 +4,7 @@ set(GPU_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_logical_device.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_command_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_swapchain.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_descriptor_heap.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_pipeline.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_vertex_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_index_buffer.cpp

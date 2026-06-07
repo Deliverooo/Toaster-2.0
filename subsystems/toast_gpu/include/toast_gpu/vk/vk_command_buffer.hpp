@@ -29,6 +29,25 @@ namespace toaster::gpu
 
 		auto resetCommandBuffer() -> void;
 
+		#pragma region vulkan wrappers
+
+		template<typename TConstants>
+		auto pushData(const TConstants &p_data) const -> void
+		{
+			vk::PushDataInfoEXT push_data_info{};
+			push_data_info.offset    = 0;
+			push_data_info.data      = &p_data;
+			push_data_info.data.size = sizeof(TConstants);
+
+			m_commandBuffer.pushDataEXT(push_data_info);
+		}
+
+		auto setRenderArea(const vk::Rect2D &p_area) const -> void;
+
+		auto drawIndexed(uint32 p_index_count, uint32 p_instance_count = 1u, uint32 p_first_index = 0u, int32 p_vertex_offset = 0u,
+						 uint32 p_first_instance                       = 0u) const -> void;
+		#pragma endregion
+
 		operator vk::CommandBuffer() const { return *m_commandBuffer; }
 
 	private:

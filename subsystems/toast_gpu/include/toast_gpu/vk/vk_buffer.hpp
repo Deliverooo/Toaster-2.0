@@ -18,6 +18,8 @@ namespace toaster::gpu
 	{
 		TST_GPU_OBJECT
 	public:
+		VKBuffer() = default;
+		auto operator=(VKBuffer &&p_other) noexcept -> VKBuffer &;
 		VKBuffer(VKLogicalDevice *p_device, vk::DeviceSize p_size, const BufferSpecInfo &p_spec_info);
 		~VKBuffer();
 

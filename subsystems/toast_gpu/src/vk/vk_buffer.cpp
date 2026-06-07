@@ -6,6 +6,19 @@
 
 namespace toaster::gpu
 {
+	auto VKBuffer::operator=(VKBuffer &&p_other) noexcept -> VKBuffer &
+	{
+		if (this != &p_other)
+		{
+			m_device       = p_other.m_device;
+			m_specInfo     = p_other.m_specInfo;
+			m_size         = p_other.m_size;;
+			m_buffer       = std::move(p_other.m_buffer);
+			m_bufferMemory = std::move(p_other.m_bufferMemory);
+		}
+		return *this;
+	}
+
 	VKBuffer::VKBuffer(VKLogicalDevice *p_device, uint64 p_size, const BufferSpecInfo &p_spec_info) : m_device(p_device), m_specInfo(p_spec_info), m_size(p_size)
 	{
 		vk::BufferCreateInfo buffer_create_info{};

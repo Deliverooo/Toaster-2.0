@@ -11,15 +11,22 @@ layout(buffer_reference, std140) readonly buffer UBO
     vec4 data;
 };
 
+layout(buffer_reference, std140) readonly buffer UBO2
+{ 
+    vec4 data;
+};
+
 layout(push_constant) uniform Push
 {
     UBO u_UBO;
+    UBO2 u_UBO2;
 } pcs;
 
 
 void main()
 {
 
-    vec3 colour = vec3(v_TexCoord, 0.0f); 
+    vec3 colour = vec3(v_TexCoord, 0.0f);
+
     o_Colour = vec4(pcs.u_UBO.data);
 }

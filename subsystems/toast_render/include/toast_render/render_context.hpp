@@ -86,6 +86,13 @@ namespace toaster::render
 			return make_reference<TObj>(m_logicalDevice, std::forward<TArgs>(p_args)...);
 		}
 
+		// Use for objects that take the render context into their constructor
+		template<typename TObj, typename... TArgs>
+		[[nodiscard]] auto createGPUUnique(TArgs &&... p_args) -> UniquePtr<TObj>
+		{
+			return toaster::make_unique<TObj>(m_logicalDevice, std::forward<TArgs>(p_args)...);
+		}
+
 		template<typename TVertex>
 		[[nodiscard]] auto createVertexBuffer(const std::vector<TVertex> &p_vertices) const -> gpu::VertexBufferHandle
 		{

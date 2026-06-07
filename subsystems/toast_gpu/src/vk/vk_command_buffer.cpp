@@ -91,6 +91,30 @@ namespace toaster::gpu
 		m_commandBuffer.reset();
 	}
 
+	auto VKCommandBuffer::setRenderArea(const vk::Rect2D &p_area) const -> void
+	{
+		const vk::Extent2D rendering_extent{p_area.extent};
+		const vk::Offset2D rendering_offset{p_area.offset};
+
+		const vk::Viewport viewport{
+			static_cast<float32>(rendering_offset.x),
+			static_cast<float32>(rendering_offset.y),
+			static_cast<float32>(rendering_extent.width),
+			static_cast<float32>(rendering_extent.height),
+			0.0f,
+			1.0f
+		};
+		const vk::Rect2D scissor{rendering_offset, rendering_extent};
+
+		m_commandBuffer.setViewportWithCountEXT(viewport);
+		m_commandBuffer.setScissorWithCountEXT(scissor);
+	}
+
+	auto VKCommandBuffer::drawIndexed(uint32 p_index_count, uint32 p_instance_count, uint32 p_first_index, int32 p_vertex_offset, uint32 p_first_instance) const -> void
+	{
+		m_commandBuffer.drawIndexed(p_index_count, p_instance_count, p_first_index, p_vertex_offset, p_first_instance);
+	}
+
 	VKCommandBufferPFFPacked::VKCommandBufferPFFPacked(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, uint32 p_frames_in_flight,
 													   bool p_fence_signaled) : m_device(p_device), m_queueType(p_queue_type), m_framesInFlightCount(p_frames_in_flight)
 	{
