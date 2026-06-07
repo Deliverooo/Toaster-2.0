@@ -162,7 +162,7 @@ namespace toaster::gpu
 		host_range.size    = m_imageDescriptorSize;
 
 		vk::ImageDescriptorInfoEXT image_info{};
-		image_info.layout = p_image.getCurrentImageLayout();
+		image_info.layout =vk::ImageLayout::eShaderReadOnlyOptimal;
 		image_info.pView  = &p_image.getImageViewCreateInfo();
 
 		vk::ResourceDescriptorInfoEXT resource_info{};

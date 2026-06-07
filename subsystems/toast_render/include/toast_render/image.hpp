@@ -30,6 +30,7 @@ namespace toaster::render
 
 		auto getSpecInfo() const -> const ImageSpecInfo &;
 		auto getImage() const -> const gpu::RawImageHandle &;
+		auto getImage() -> gpu::RawImageHandle &;
 
 		auto getHeapID() const -> gpu::DescriptorSlot;
 		auto getAlignedHeapID() const -> gpu::DescriptorSlot;
@@ -38,7 +39,6 @@ namespace toaster::render
 		ImageSpecInfo m_specInfo{};
 
 		gpu::RawImageHandle m_image{nullptr};
-		toaster::Buffer     m_imageData;
 
 		gpu::DescriptorSlot m_heapID{UINT32_MAX};
 	};

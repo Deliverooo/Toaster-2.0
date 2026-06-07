@@ -133,7 +133,7 @@ namespace toaster::render
 		Stats m_stats;
 	};
 
-	#if 0
+	#if 1
 	class TST_RENDER_API Renderer2DV2
 	{
 		TST_RENDER_OBJECT

@@ -61,6 +61,9 @@ namespace toaster::render
 				m_ubos[i]->setData(p_data);
 		}
 
+		auto mapAllMemory(uint64 p_size, uint64 p_offset = 0u) -> std::vector<void *>;
+		auto unmapAllMemory() -> void;
+
 	private:
 		std::vector<gpu::BufferHandle>   m_ubos;
 		std::vector<gpu::DescriptorSlot> m_heapIDs;

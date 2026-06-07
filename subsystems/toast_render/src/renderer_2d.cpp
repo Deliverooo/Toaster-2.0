@@ -188,7 +188,7 @@ namespace toaster::render
 		if (!m_specInfo.overrideAttachments)
 		{
 			m_renderTargetTexture    = m_renderCtx->createAttachmentTexture(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eColor);
-			m_renderTargetDepthImage = m_renderCtx->createAttachmentImage(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eDepth);
+			m_renderTargetDepthImage = m_renderCtx->createAttachmentImageRaw(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eDepth);
 		}
 		else
 		{
@@ -263,7 +263,7 @@ namespace toaster::render
 
 		return texture_index;
 	}
-	#if 0
+	#if 1
 
 	Renderer2DV2::Renderer2DV2(RenderContext &p_render_ctx, tsm::uint2 p_viewport_size) : m_renderCtx(&p_render_ctx), m_specInfo({})
 	{
@@ -271,17 +271,23 @@ namespace toaster::render
 		m_maxVertices               = m_specInfo.maxQuads * 4u;
 		m_maxIndices                = m_specInfo.maxQuads * 6u;
 		_construct();
-	} Renderer2DV2::Renderer2DV2(RenderContext &p_render_ctx, const Renderer2DSpecInfo &p_create_info) : m_renderCtx(&p_render_ctx), m_specInfo(p_create_info),
-																										 m_maxVertices(p_create_info.maxQuads * 4u),
-																										 m_maxIndices(p_create_info.maxQuads * 6u)
+	}
+
+	Renderer2DV2::Renderer2DV2(RenderContext &p_render_ctx, const Renderer2DSpecInfo &p_create_info) : m_renderCtx(&p_render_ctx), m_specInfo(p_create_info),
+																									   m_maxVertices(p_create_info.maxQuads * 4u),
+																									   m_maxIndices(p_create_info.maxQuads * 6u)
 	{
 		_construct();
-	} Renderer2DV2::~Renderer2DV2()
+	}
+
+	Renderer2DV2::~Renderer2DV2()
 	{
-		m_cameraUBs->unmapAllMemory();
+		// m_cameraUBs->unmapAllMemory();
 		delete[] m_quadVertexBase;
-	} auto Renderer2DV2::begin(Dx::FXMMATRIX            p_view, Dx::CXMMATRIX p_projection, RenderingAttachmentInfo *p_override_colour_attachment,
-							   RenderingAttachmentInfo *p_override_depth_attachment) -> void
+	}
+
+	auto Renderer2DV2::begin(Dx::FXMMATRIX            p_view, Dx::CXMMATRIX p_projection, RenderingAttachmentInfo *p_override_colour_attachment,
+							 RenderingAttachmentInfo *p_override_depth_attachment) -> void
 	{
 		if (m_specInfo.overrideAttachments && !p_override_colour_attachment && !p_override_depth_attachment)
 		{
@@ -302,7 +308,9 @@ namespace toaster::render
 		m_textureSlotIndex = 1u;
 		for (uint32 i{1u}; i < m_textureSlots.size(); ++i)
 			m_textureSlots[i] = nullptr;
-	} auto Renderer2DV2::end(gpu::VKCommandBuffer *p_cmd) -> void
+	}
+
+	auto Renderer2DV2::end(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		if (!p_cmd)
 			p_cmd = m_renderCtx->getCurrentSwapchainCommandBuffer();
@@ -330,30 +338,54 @@ namespace toaster::render
 
 		rendering_info.depthAttachment = depth_attachment_info;
 
-		m_renderCtx->beginRendering(rendering_info, m_quadRenderPass, p_cmd);
+		m_renderCtx->beginRendering(rendering_info, nullptr, p_cmd);
+		p_cmd->setRenderArea(rendering_info.renderArea);
+
+		m_graphicsState->bind();
+
+		m_renderCtx->getDescriptorHeap()->bind();
 
 		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
 		if (size) // Apparently you have to check ts, or things won't work correctly and there will be artifacts...
 		{
 			m_quadVertexBuffer->setData(m_quadVertexBase, size, 0);
 
+			struct PushConstants
+			{
+				uint32 textureIndex;
+				uint32 samplerIndex;
+
+				uintptr currentCameraUBOPtr;
+			};
+			PushConstants pcs{};
+			pcs.currentCameraUBOPtr = m_cameraUBs->getDeviceAddress();
+
 			for (uint32 i{0u}; i < m_textureSlots.size(); ++i)
 			{
 				if (m_textureSlots[i])
-					m_quadMaterial->setTexture("u_Textures", m_textureSlots[i], i);
+					pcs.textureIndex = m_textureSlots[i]->getAlignedHeapID();
 				else
-					m_quadMaterial->setTexture("u_Textures", m_renderCtx->getGlobals()->whiteTexture(), i);
+					pcs.textureIndex = m_renderCtx->getGlobals()->whiteImage()->getAlignedHeapID();
 			}
 
-			m_renderCtx->renderGeometry(m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, Dx::XMMatrixIdentity(), p_cmd);
+			p_cmd->pushData(pcs);
+
+			m_quadVertexBuffer->bind();
+			m_quadIndexBuffer->bind();
+
+			p_cmd->drawIndexed(m_quadIndexCount);
 		}
 
-		m_renderCtx->endRendering(rendering_info, p_cmd);
-	} auto Renderer2DV2::submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void
+		p_cmd->getVulkanCommandBuffer().endRendering();
+	}
+
+	auto Renderer2DV2::submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void
 	{
 		Dx::XMMATRIX transform{Dx::XMMatrixTransformation2D(Dx::XMVectorZero(), 0.0f, p_scale, Dx::XMVectorZero(), 0.0f, p_position)};
 		submitQuad(transform, p_colour);
-	} auto Renderer2DV2::submitQuad(Dx::FXMMATRIX p_transform, const tsm::float4 &p_colour) -> void
+	}
+
+	auto Renderer2DV2::submitQuad(Dx::FXMMATRIX p_transform, const tsm::float4 &p_colour) -> void
 	{
 		if (m_quadIndexCount >= m_maxIndices)
 			_beginNewBatch();
@@ -363,11 +395,13 @@ namespace toaster::render
 			Dx::XMStoreFloat4(&m_quadVertexPtr->position, Dx::XMVector4Transform(Dx::XMLoadFloat4(&m_quadVertexPositions[i]), p_transform));
 			m_quadVertexPtr->colour   = p_colour;
 			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
-			m_quadVertexPtr->texIndex = 0;
+			m_quadVertexPtr->texIndex = m_renderCtx->getGlobals()->whiteImage()->getAlignedHeapID();
 			m_quadVertexPtr++;
 		}
 		m_quadIndexCount += 6u;
-	} auto Renderer2DV2::submitQuad(Dx::FXMMATRIX p_transform, const ImageHandle &p_texture, const tsm::float4 &p_colour) -> void
+	}
+
+	auto Renderer2DV2::submitQuad(Dx::FXMMATRIX p_transform, const ImageHandle &p_texture, const tsm::float4 &p_colour) -> void
 	{
 		if (m_quadIndexCount >= m_maxIndices)
 			_beginNewBatch();
@@ -379,14 +413,18 @@ namespace toaster::render
 			Dx::XMStoreFloat4(&m_quadVertexPtr->position, Dx::XMVector4Transform(Dx::XMLoadFloat4(&m_quadVertexPositions[i]), p_transform));
 			m_quadVertexPtr->colour   = p_colour;
 			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
-			m_quadVertexPtr->texIndex = static_cast<float32>(tex_index);
+			m_quadVertexPtr->texIndex = static_cast<float32>(p_texture->getAlignedHeapID());
 			m_quadVertexPtr++;
 		}
 		m_quadIndexCount += 6u;
-	} auto Renderer2DV2::getOutputColourImage() const -> const ImageHandle &
+	}
+
+	auto Renderer2DV2::getOutputColourImage() const -> const ImageHandle &
 	{
 		return m_renderTargetImage;
-	} auto Renderer2DV2::onResize(tsm::uint2 p_size) -> void
+	}
+
+	auto Renderer2DV2::onResize(tsm::uint2 p_size) -> void
 	{
 		m_specInfo.renderTargetSize = p_size;
 
@@ -395,34 +433,29 @@ namespace toaster::render
 			m_renderTargetImage->getImage()->resize(p_size);
 			m_renderTargetDepthImage->resize(p_size);
 		}
-	} auto Renderer2DV2::_construct() -> void
+	}
+
+	auto Renderer2DV2::_construct() -> void
 	{
-		auto                  quad_shader{m_renderCtx->getGlobals()->shaderLibrary().get("Quad")};
-		gpu::PipelineSpecInfo pipeline_create_info{};
-		pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
-		pipeline_create_info.depthFormat        = m_renderCtx->getPhysicalDevice()->getDepthFormat();
-		pipeline_create_info.vertexBufferLayout = quadVbl;
-		pipeline_create_info.shader             = quad_shader;
-		pipeline_create_info.multisample        = m_specInfo.msaa;
-		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
-		m_quadPipeline                          = m_renderCtx->createGPURef<gpu::VKPipeline>(pipeline_create_info, "Quad");
+		m_graphicsState = m_renderCtx->createRef<GraphicsState>();
 
-		m_cameraUBs       = m_renderCtx->createUniformBuffers<CameraUB>(RenderContext::maxFramesInFlight);
+		auto quad_vs{m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Quad_VS")};
+		auto quad_ps{m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Quad_PS")};
+
+		m_graphicsState->setShaders({quad_vs, quad_ps}).setVertexBufferLayout(quadVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).
+				setEnableMultisample(m_specInfo.msaa);
+
+		m_cameraUBs       = m_renderCtx->createRef<UniformBufferPFF>(sizeof(CameraUB));
 		m_mappedCameraUBs = m_cameraUBs->mapAllMemory(sizeof(CameraUB));
-
-		m_quadRenderPass = m_renderCtx->createRef<RenderPass>(m_quadPipeline);
-		m_quadRenderPass->setInput("Camera", m_cameraUBs).bake();
-
-		m_quadMaterial = m_renderCtx->createRef<Material>(quad_shader);
 
 		if (!m_specInfo.overrideAttachments)
 		{
-			m_renderTargetTexture    = m_renderCtx->createAttachmentTexture(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eColor);
-			m_renderTargetDepthImage = m_renderCtx->createAttachmentImage(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eDepth);
+			m_renderTargetImage      = m_renderCtx->createAttachmentImage(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eColor);
+			m_renderTargetDepthImage = m_renderCtx->createAttachmentImageRaw(m_specInfo.renderTargetSize, vk::ImageAspectFlagBits::eDepth);
 		}
 		else
 		{
-			m_renderTargetTexture    = nullptr;
+			m_renderTargetImage      = nullptr;
 			m_renderTargetDepthImage = nullptr;
 		}
 
@@ -460,14 +493,18 @@ namespace toaster::render
 		m_quadVertexTexCoords[2] = {0.0f, 1.0f};
 		m_quadVertexTexCoords[3] = {0.0f, 0.0f};
 
-		m_textureSlots[0] = m_renderCtx->getGlobals()->whiteTexture();
-	} auto Renderer2DV2::_beginNewBatch() -> void
+		m_textureSlots[0] = m_renderCtx->getGlobals()->whiteImage();
+	}
+
+	auto Renderer2DV2::_beginNewBatch() -> void
 	{
 		end();
 
 		m_quadIndexCount = 0u;
 		m_quadVertexPtr  = m_quadVertexBase;
-	} auto Renderer2DV2::_getTextureSlotIndex(const ImageHandle &p_texture) -> uint32
+	}
+
+	auto Renderer2DV2::_getTextureSlotIndex(const ImageHandle &p_texture) -> uint32
 	{
 		uint32 texture_index{0u};
 		for (uint32 i{1u}; i < m_textureSlotIndex; ++i)

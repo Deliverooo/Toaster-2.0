@@ -39,6 +39,10 @@ public:
 
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u);
+
+		render::Renderer2DSpecInfo r2dsi{};
+		r2dsi.renderTargetSize = m_viewportSize;
+		m_renderer2D           = m_renderCtx->createRef<render::Renderer2DV2>(r2dsi);
 	}
 
 	auto onUpdate(float32 p_dt) -> void override
@@ -47,6 +51,10 @@ public:
 
 		auto  cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 		auto &vk_cmd{cmd->getVulkanCommandBuffer()};
+
+		m_renderer2D->begin(Dx::XMMatrixIdentity(), Dx::XMMatrixIdentity());
+		m_renderer2D->submitQuad(Dx::XMMatrixIdentity(), m_image, {0.0f, 1.0f, 0.0f, 1.0f});
+		m_renderer2D->end();
 
 		m_renderCtx->beginRendering(rendering_info);
 		cmd->setRenderArea(rendering_info.renderArea);
@@ -62,7 +70,8 @@ public:
 		};
 
 		PushConstants pcs{};
-		pcs.textureIndex  = m_image->getAlignedHeapID();
+		// pcs.textureIndex  = m_globals->whiteImage()->getAlignedHeapID();
+		pcs.textureIndex  = m_renderer2D->getOutputColourImage()->getAlignedHeapID();
 		pcs.samplerIndex  = m_renderCtx->getSampler(render::ESamplerType::eDefault);
 		pcs.currentUBOPtr = m_ubo->getDeviceAddress();
 		cmd->pushData(pcs);
@@ -92,6 +101,8 @@ private:
 
 	render::ImageHandle            m_image{nullptr};
 	render::UniformBufferPFFHandle m_ubo{nullptr};
+
+	RefPtr<render::Renderer2DV2> m_renderer2D{nullptr};
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32

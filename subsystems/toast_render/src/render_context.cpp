@@ -6,6 +6,7 @@
 
 #include "toast_gpu/vk/vk_command_buffer.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_lib/os/terminal.hpp"
 #include "toast_render/compute_pass.hpp"
 #include "toast_render/image.hpp"
 #include "toast_render/renderer_2d.hpp"
@@ -82,7 +83,7 @@ namespace toaster::render
 		}
 
 		if (m_specInfo.createGlobals)
-			m_globals = new Globals{m_logicalDevice, m_specInfo.sdkDir};
+			m_globals = new Globals{*this, os::getBinaryDirectory()};
 	}
 
 	RenderContext::~RenderContext()
@@ -176,7 +177,7 @@ namespace toaster::render
 		Buffer        image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
 		if (!image_data)
 			TST_PERMA_ASSERT(false);
-		auto out_image{createUnique<Image>(image_spec_info, image_data)};// The image takes ownership of the image data from here...
+		auto out_image{createUnique<Image>(image_spec_info, image_data)}; // The image takes ownership of the image data from here...
 		return std::move(out_image);
 	}
 
@@ -205,7 +206,7 @@ namespace toaster::render
 		return out_image;
 	}
 
-	auto RenderContext::createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) const -> gpu::RawImageHandle
+	auto RenderContext::createAttachmentImageRaw(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) const -> gpu::RawImageHandle
 	{
 		if (p_format == vk::Format::eUndefined)
 			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
@@ -228,6 +229,18 @@ namespace toaster::render
 		attachment_image_spec_info.sampleCount = m_physicalDevice->getMaxUsableSampleCount();
 		attachment_image_spec_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | gpu::util::getImageUsageFlags(p_image_aspect_flags);
 		return createGPURef<gpu::RawImage>(attachment_image_spec_info);
+	}
+
+	auto RenderContext::createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) -> RefPtr<Image>
+	{
+		if (p_format == vk::Format::eUndefined)
+			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
+
+		ImageSpecInfo image_spec_info{};
+		image_spec_info.size       = p_size;
+		image_spec_info.usageFlags = gpu::util::getImageUsageFlags(p_image_aspect_flags);;
+		image_spec_info.format     = p_format;
+		return createRef<Image>(image_spec_info);
 	}
 
 	auto RenderContext::createAttachmentTexture(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) const -> gpu::Texture2DHandle

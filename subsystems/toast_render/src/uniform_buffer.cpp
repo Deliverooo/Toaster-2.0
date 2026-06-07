@@ -78,4 +78,19 @@ namespace toaster::render
 		return m_heapIDs[m_renderCtx->getCurrentFrameIndex()] + (m_renderCtx->getDescriptorHeap()->getBufferOffset() / m_renderCtx->getDescriptorHeap()->
 																 getHeapProperties().bufferDescriptorSize);
 	}
+
+	auto UniformBufferPFF::mapAllMemory(uint64 p_size, uint64 p_offset) -> std::vector<void *>
+	{
+		std::vector<void *> memories(RenderContext::maxFramesInFlight);
+		for (uint32 i{0u}; i < RenderContext::maxFramesInFlight; ++i)
+			memories[i] = m_ubos[i]->mapMemory(p_size, p_offset);
+
+		return memories;
+	}
+
+	auto UniformBufferPFF::unmapAllMemory() -> void
+	{
+		for (uint32 i{0u}; i < RenderContext::maxFramesInFlight; ++i)
+			m_ubos[i]->unmapMemory();
+	}
 }

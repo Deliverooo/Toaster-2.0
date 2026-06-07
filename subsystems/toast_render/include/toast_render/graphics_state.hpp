@@ -45,6 +45,18 @@ namespace toaster::render
 			return *this;
 		}
 
+		auto setCullMode(vk::CullModeFlagBits p_cull_mode) -> GraphicsState &
+		{
+			m_cullMode = p_cull_mode;
+			return *this;
+		}
+
+		auto setEnableMultisample(bool32 p_enable) -> GraphicsState &
+		{
+			m_enableMultisample = p_enable;
+			return *this;
+		}
+
 		auto setColourBlendAttachmentInfo(uint32 p_attachment_index, const ColourBlendAttachmentInfo &p_info) -> GraphicsState &
 		{
 			m_colourBlendAttachmentInfos.at(p_attachment_index) = p_info;
@@ -60,6 +72,9 @@ namespace toaster::render
 
 		uint32                                 m_attachmentCount{0u};
 		std::vector<ColourBlendAttachmentInfo> m_colourBlendAttachmentInfos;
+
+		vk::CullModeFlagBits m_cullMode{vk::CullModeFlagBits::eBack};
+		bool32               m_enableMultisample{false};
 	};
 
 	TST_RENDER_DEFINE_HANDLE(GraphicsState, GraphicsState);

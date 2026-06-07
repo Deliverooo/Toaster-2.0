@@ -1,5 +1,6 @@
 #pragma once
 
+#include "image.hpp"
 #include "shader_library.hpp"
 
 #include "toast_gpu/vk/vk_index_buffer.hpp"
@@ -11,7 +12,7 @@ namespace toaster::render
 {
 	class TST_RENDER_API Globals final
 	{
-		TST_GPU_OBJECT
+		TST_RENDER_OBJECT
 	public:
 		struct QuadVertex
 		{
@@ -19,7 +20,7 @@ namespace toaster::render
 			tsm::float2 texCoord;
 		};
 
-		Globals(gpu::VKLogicalDevice *p_device, const io::filesystem::Path &p_binary_dir);
+		Globals(RenderContext &p_render_ctx, const io::filesystem::Path &p_binary_dir);
 		~Globals();
 
 		/*!
@@ -28,6 +29,7 @@ namespace toaster::render
 		 * @return Returns the shader library
 		 */
 		auto shaderLibrary() const -> const ShaderLibrary &;
+		auto dynamicShaderLibrary() const -> const DynamicShaderLibrary &;
 
 		auto fullscreenQuadVertexBuffer() const -> const gpu::VertexBufferHandle &;
 		auto fullscreenQuadIndexBuffer() const -> const gpu::IndexBufferHandle &;
@@ -37,11 +39,13 @@ namespace toaster::render
 
 		auto whiteTexture() const -> const gpu::Texture2DHandle &;
 		auto whiteTexture3D() const -> const gpu::Texture3DHandle &;
+		auto whiteImage() const -> const ImageHandle &;
 
 	private:
 		io::filesystem::Path m_binaryDir;
 
-		ShaderLibrary m_shaderLibrary;
+		ShaderLibrary        m_shaderLibrary;
+		DynamicShaderLibrary m_dynamicShaderLibrary;
 
 		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
 		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
@@ -51,5 +55,6 @@ namespace toaster::render
 
 		gpu::Texture2DHandle m_whiteTexture{nullptr};
 		gpu::Texture3DHandle m_whiteTexture3D{nullptr};
+		ImageHandle          m_whiteImage{nullptr};
 	};
 }

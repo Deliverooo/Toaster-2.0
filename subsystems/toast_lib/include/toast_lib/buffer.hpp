@@ -87,6 +87,12 @@ namespace toaster
 			return buffer;
 		}
 
+		template<typename Type>
+		auto write(const Type &p_data, uint64 p_offset = 0u) -> void
+		{
+			std::memcpy(static_cast<uint8 *>(m_data) + p_offset, &p_data, sizeof(Type));
+		}
+
 		auto write(Buffer p_buffer, uint64 p_offset = 0u) -> void
 		{
 			TST_ASSERT_MSG(p_offset + p_buffer.m_size <= m_size, "Buffer overflow!");
@@ -119,7 +125,7 @@ namespace toaster
 			return static_cast<Type *>(m_data);
 		}
 
-		[[nodiscard]] auto size() const -> uint32 { return m_size; }
+		[[nodiscard]] auto size() const -> uint64 { return m_size; }
 		[[nodiscard]] auto data() const -> void * { return m_data; }
 
 	private:

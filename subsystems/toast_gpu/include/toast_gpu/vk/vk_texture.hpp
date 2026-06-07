@@ -82,7 +82,7 @@ namespace toaster::gpu
 	public:
 		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info);
 		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, const io::filesystem::Path &p_path);
-		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, const Buffer &p_data);
+		VKTexture3D(VKLogicalDevice *p_device, const TextureSpecInfo &p_spec_info, const toaster::Buffer &p_data);
 		virtual ~VKTexture3D() override;
 
 		virtual auto populateWriteDescriptor(vk::WriteDescriptorSet &p_write_descriptor, uint32 p_frame_index) -> void override;

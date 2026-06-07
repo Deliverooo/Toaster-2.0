@@ -35,7 +35,7 @@ namespace toaster::render
 		cmd.setDepthBiasEnableEXT(false);
 		cmd.setRasterizerDiscardEnableEXT(false);
 		cmd.setPolygonModeEXT(vk::PolygonMode::eFill);
-		cmd.setCullModeEXT(vk::CullModeFlagBits::eBack);
+		cmd.setCullModeEXT(m_cullMode);
 		cmd.setFrontFaceEXT(vk::FrontFace::eCounterClockwise);
 		cmd.setLineWidth(1.0f);
 
@@ -54,8 +54,18 @@ namespace toaster::render
 		cmd.setStencilTestEnableEXT(false);
 
 		// set multisample state
-		cmd.setSampleMaskEXT(vk::SampleCountFlagBits::e1, 0xFFFFFFFF);
-		cmd.setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1);
+		if (m_enableMultisample)
+		{
+			auto sample_count{m_renderCtx->getPhysicalDevice()->getMaxUsableSampleCount()};
+			cmd.setSampleMaskEXT(sample_count, 0xFFFFFFFF);
+			cmd.setRasterizationSamplesEXT(sample_count);
+		}
+		else
+		{
+			cmd.setSampleMaskEXT(vk::SampleCountFlagBits::e1, 0xFFFFFFFF);
+			cmd.setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1);
+		}
+
 		cmd.setAlphaToCoverageEnableEXT(false);
 	}
 }
