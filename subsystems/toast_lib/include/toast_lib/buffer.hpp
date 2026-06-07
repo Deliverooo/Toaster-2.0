@@ -22,7 +22,7 @@ namespace toaster
 		{
 			Buffer buffer;
 			buffer.allocate(p_other.m_size);
-			memcpy(buffer.m_data, p_other.m_data, p_other.m_size);
+			std::memcpy(buffer.m_data, p_other.m_data, p_other.m_size);
 			return buffer;
 		}
 
@@ -31,7 +31,7 @@ namespace toaster
 			Buffer buffer;
 			buffer.allocate(p_size);
 			if (p_size)
-				memcpy(buffer.m_data, p_data, p_size);
+				std::memcpy(buffer.m_data, p_data, p_size);
 			return buffer;
 		}
 
@@ -55,7 +55,8 @@ namespace toaster
 
 		auto release() -> void
 		{
-			delete[] static_cast<uint8 *>(m_data);
+			if (m_data)
+				delete[] static_cast<uint8 *>(m_data);
 			m_data = nullptr;
 			m_size = 0;
 		}
@@ -63,7 +64,7 @@ namespace toaster
 		auto zeroInitialize() -> void
 		{
 			if (m_data)
-				memset(m_data, 0, m_size);
+				std::memset(m_data, 0, m_size);
 		}
 
 		template<typename Type>

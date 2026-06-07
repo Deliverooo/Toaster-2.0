@@ -376,7 +376,7 @@ namespace toaster::gpu
 
 	namespace util
 	{
-		auto loadTextureIntoBuffer(const io::filesystem::Path &p_path, vk::Format &p_out_format, uint32 &p_out_width, uint32 &p_out_height) -> Buffer
+		auto loadTextureIntoBuffer(const io::filesystem::Path &p_path, vk::Format &p_out_format, uint32 &p_out_width, uint32 &p_out_height) -> toaster::Buffer
 		{
 			Buffer image_data{};
 

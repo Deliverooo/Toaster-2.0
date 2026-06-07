@@ -1,0 +1,47 @@
+#pragma once
+
+#include "toast_render.hpp"
+#include "toast_gpu/vk/vk_descriptor_heap.hpp"
+#include "toast_gpu/vk/vk_raw_image.hpp"
+
+namespace toaster::render
+{
+	class RenderContext;
+
+	using ImageSize = tsm::uint2;
+
+	struct TST_RENDER_API ImageSpecInfo
+	{
+		ImageSize size{0u};
+
+		vk::Format          format{vk::Format::eR8G8B8A8Srgb};
+		vk::ImageUsageFlags usageFlags{vk::ImageUsageFlagBits::eSampled};
+	};
+
+	class TST_RENDER_API Image
+	{
+	public:
+		Image(RenderContext &p_render_ctx, const ImageSpecInfo &p_spec_info);
+		Image(RenderContext &p_render_ctx, const io::filesystem::Path &p_path);
+		Image(RenderContext &p_render_ctx, const ImageSpecInfo &p_spec_info, const Buffer &p_data);
+		~Image();
+
+		auto setData(const Buffer &p_data) -> void;
+
+		auto getSpecInfo() const -> const ImageSpecInfo &;
+		auto getImage() const -> const gpu::RawImageHandle &;
+
+		auto getHeapID() const -> gpu::DescriptorSlot;
+		auto getAlignedHeapID() const -> gpu::DescriptorSlot;
+
+	private:
+		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
+
+		ImageSpecInfo m_specInfo{};
+
+		gpu::RawImageHandle m_image{nullptr};
+		toaster::Buffer     m_imageData;
+
+		gpu::DescriptorSlot m_heapID{UINT32_MAX};
+	};
+}

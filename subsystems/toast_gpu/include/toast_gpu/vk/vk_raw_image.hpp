@@ -47,7 +47,7 @@ namespace toaster::gpu
 		auto saveToFile(const io::filesystem::Path &p_path) -> void;
 
 		auto setData(void *p_data, uint64 p_size) -> void;
-		auto setData(const Buffer &p_buffer) -> void;
+		auto setData(const toaster::Buffer &p_buffer) -> void;
 		auto resize(tsm::uint2 p_size) -> void;
 
 		auto recreate() -> void;
@@ -68,7 +68,7 @@ namespace toaster::gpu
 
 	namespace util
 	{
-		TST_GPU_API auto loadTextureIntoBuffer(const io::filesystem::Path &p_path, vk::Format &p_out_format, uint32 &p_out_width, uint32 &p_out_height) -> Buffer;
+		TST_GPU_API auto loadTextureIntoBuffer(const io::filesystem::Path &p_path, vk::Format &p_out_format, uint32 &p_out_width, uint32 &p_out_height) -> toaster::Buffer;
 
 		// For dynamic rendering I have to handle the image layout transitions manually, so this simplifies things...
 		// Prefer this over the other functions

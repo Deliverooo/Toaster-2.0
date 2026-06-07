@@ -7,6 +7,7 @@
 #include "toast_gpu/vk/vk_command_buffer.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_render/compute_pass.hpp"
+#include "toast_render/image.hpp"
 #include "toast_render/renderer_2d.hpp"
 #include "toast_render/render_pass.hpp"
 
@@ -55,6 +56,31 @@ namespace toaster::render
 		m_logicalDevice = new gpu::VKLogicalDevice{m_physicalDevice, vk_logical_device_spec_info};
 		#pragma endregion
 
+		m_descriptorHeap = new gpu::VKDescriptorHeap{m_logicalDevice};
+
+		const auto physical_device_props = m_physicalDevice->getVulkanPhysicalDevice().getProperties();
+		{
+			vk::SamplerCreateInfo default_sampler_create_info{};
+
+			default_sampler_create_info.magFilter               = vk::Filter::eLinear;
+			default_sampler_create_info.minFilter               = vk::Filter::eLinear;
+			default_sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
+			default_sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
+			default_sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
+			default_sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+			default_sampler_create_info.mipLodBias              = 0.0f;
+			default_sampler_create_info.anisotropyEnable        = true;
+			default_sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
+			default_sampler_create_info.compareEnable           = false;
+			default_sampler_create_info.compareOp               = vk::CompareOp::eAlways;
+			default_sampler_create_info.minLod                  = 0.0f;
+			default_sampler_create_info.maxLod                  = vk::LodClampNone;
+			default_sampler_create_info.borderColor             = vk::BorderColor::eFloatOpaqueWhite;
+			default_sampler_create_info.unnormalizedCoordinates = false;
+
+			m_samplers[ESamplerType::eDefault] = m_descriptorHeap->allocSampler(default_sampler_create_info);
+		}
+
 		if (m_specInfo.createGlobals)
 			m_globals = new Globals{m_logicalDevice, m_specInfo.sdkDir};
 	}
@@ -62,6 +88,8 @@ namespace toaster::render
 	RenderContext::~RenderContext()
 	{
 		delete m_globals;
+
+		delete m_descriptorHeap;
 
 		// Clean up any remaining objects
 		performGarbageCollection();
@@ -84,6 +112,11 @@ namespace toaster::render
 	auto RenderContext::getLogicalDevice() const -> gpu::VKLogicalDevice *
 	{
 		return m_logicalDevice;
+	}
+
+	auto RenderContext::getDescriptorHeap() const -> gpu::VKDescriptorHeap *
+	{
+		return m_descriptorHeap;
 	}
 
 	auto RenderContext::getGlobals() const -> const Globals *
@@ -122,6 +155,34 @@ namespace toaster::render
 		m_logicalDevice->setCurrentCommandBuffer(p_cmd);
 	}
 
+	auto RenderContext::getSampler(ESamplerType p_type) const -> gpu::DescriptorSlot
+	{
+		return m_samplers.at(p_type);
+	}
+
+	auto RenderContext::createImageRef(const io::filesystem::Path &p_path) -> RefPtr<Image>
+	{
+		return createRef<Image>(p_path);
+		// ImageSpecInfo image_spec_info{};
+		// Buffer        image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
+		// if (!image_data)
+			// TST_PERMA_ASSERT(false);
+		// auto out_image{createRef<Image>(image_spec_info, image_data)};
+		// image_data.release();
+		// return out_image;
+	}
+
+	auto RenderContext::createImageUnique(const io::filesystem::Path &p_path) -> UniquePtr<Image>
+	{
+		ImageSpecInfo image_spec_info{};
+		Buffer        image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
+		if (!image_data)
+			TST_PERMA_ASSERT(false);
+		auto out_image{createUnique<Image>(image_spec_info, image_data)};
+		// image_data.release();
+		return std::move(out_image);
+	}
+
 	auto RenderContext::loadTextureIntoImage(const io::filesystem::Path &p_path) const -> gpu::RawImageHandle
 	{
 		gpu::ImageSpecInfo image_spec_info{};
@@ -138,6 +199,8 @@ namespace toaster::render
 
 		gpu::util::toTransferDst(out_image.get());
 		out_image->setData(texture_data);
+
+		texture_data.release();
 
 		m_logicalDevice->generateMipmaps(out_image->getImage(), {image_spec_info.size.x, image_spec_info.size.y, 1u}, 1);
 		out_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal); // Generate mips leaves the image in the eShaderReadOnlyOptimal layout
@@ -208,7 +271,7 @@ namespace toaster::render
 
 	auto RenderContext::createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) -> gpu::Texture3DHandle
 	{
-		auto env_tex{createGPURef<gpu::Texture2D>(p_spec_info, p_data)};
+		auto env_tex{make_reference<gpu::VKTexture2D>(m_logicalDevice, p_spec_info, p_data.data(), p_data.size())};
 
 		constexpr uint32     skybox_resolution{2048};
 		gpu::TextureSpecInfo skybox_texture_map_spec_info{};

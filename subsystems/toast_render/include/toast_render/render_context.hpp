@@ -6,6 +6,7 @@
 #include "toast_lib/ptr.hpp"
 
 #include "toast_gpu/vk/vk_command_buffer.hpp"
+#include "toast_gpu/vk/vk_descriptor_heap.hpp"
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_pipeline.hpp"
@@ -21,6 +22,12 @@ namespace toaster::render
 	class Renderer2D;
 	class RenderPass;
 	class ComputePass;
+	class Image;
+
+	enum class ESamplerType
+	{
+		eDefault
+	};
 
 	struct TST_RENDER_API RenderContextSpecInfo
 	{
@@ -51,6 +58,8 @@ namespace toaster::render
 		[[nodiscard]] auto getBackendInstance() const -> gpu::VKInstance *;
 		[[nodiscard]] auto getPhysicalDevice() const -> gpu::VKPhysicalDevice *;
 		[[nodiscard]] auto getLogicalDevice() const -> gpu::VKLogicalDevice *;
+
+		[[nodiscard]] auto getDescriptorHeap() const -> gpu::VKDescriptorHeap *;
 
 		[[nodiscard]] auto getGlobals() const -> const Globals *;
 
@@ -121,6 +130,11 @@ namespace toaster::render
 			return createGPURef<gpu::VKUniformBufferPFF>(ubo_size, p_count);
 		}
 
+		auto getSampler(ESamplerType p_type) const -> gpu::DescriptorSlot;
+
+		[[nodiscard]] auto createImageRef(const io::filesystem::Path &p_path) -> RefPtr<Image>;
+		[[nodiscard]] auto createImageUnique(const io::filesystem::Path &p_path) -> UniquePtr<Image>;
+
 		[[nodiscard]] auto loadTextureIntoImage(const io::filesystem::Path &p_path) const -> gpu::RawImageHandle;
 
 		[[nodiscard]] auto createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
@@ -165,6 +179,9 @@ namespace toaster::render
 		OwningPtr<gpu::VKInstance>       m_backendInstance{nullptr};
 		OwningPtr<gpu::VKPhysicalDevice> m_physicalDevice{nullptr};
 		OwningPtr<gpu::VKLogicalDevice>  m_logicalDevice{nullptr};
+
+		OwningPtr<gpu::VKDescriptorHeap>                      m_descriptorHeap{nullptr};
+		std::unordered_map<ESamplerType, gpu::DescriptorSlot> m_samplers;
 
 		OwningPtr<Globals> m_globals{nullptr};
 
