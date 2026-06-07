@@ -189,6 +189,20 @@ namespace toaster::gpu
 		return m_queueFamilyIndices;
 	}
 
+	auto VKLogicalDevice::getQueueFamilyIndices(vk::QueueFlags p_queue_flags) const -> std::unordered_set<uint32>
+	{
+		std::unordered_set<uint32> queue_family_indices;
+
+		if (p_queue_flags & vk::QueueFlagBits::eGraphics)
+			queue_family_indices.emplace(m_queueFamilyIndices.graphics);
+		if (p_queue_flags & vk::QueueFlagBits::eCompute)
+			queue_family_indices.emplace(m_queueFamilyIndices.compute);
+		if (p_queue_flags & vk::QueueFlagBits::eTransfer)
+			queue_family_indices.emplace(m_queueFamilyIndices.transfer);
+
+		return queue_family_indices;
+	}
+
 	auto VKLogicalDevice::getGraphicsQueue() -> vk::raii::Queue &
 	{
 		return m_graphicsQueue;
@@ -311,7 +325,6 @@ namespace toaster::gpu
 
 		return {m_logicalDevice, shader_module_create_info};
 	}
-
 
 	auto VKLogicalDevice::mapMemory(vk::DeviceMemory p_memory, vk::DeviceSize p_offset, vk::DeviceSize p_size, vk::MemoryMapFlags p_flags) const -> void *
 	{

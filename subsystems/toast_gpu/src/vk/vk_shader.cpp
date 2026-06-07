@@ -542,6 +542,7 @@ namespace toaster::gpu
 		shader_create_info.pCode     = p_bytecode.data();
 		shader_create_info.codeType  = vk::ShaderCodeTypeEXT::eSpirv;
 		shader_create_info.pName     = "main";
+		shader_create_info.flags     = vk::ShaderCreateFlagBitsEXT::eDescriptorHeap;
 
 		m_shader = m_device->getVulkanLogicalDevice().createShaderEXT(shader_create_info);
 	}

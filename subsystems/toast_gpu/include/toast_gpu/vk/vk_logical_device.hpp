@@ -13,23 +13,25 @@ namespace toaster::gpu
 	{
 		static auto getDefaultFeatures() -> vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
 			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceShaderObjectFeaturesEXT,
-			vk::PhysicalDeviceDescriptorBufferFeaturesEXT>
+			vk::PhysicalDeviceDescriptorBufferFeaturesEXT, vk::PhysicalDeviceDescriptorHeapFeaturesEXT>
 		{
 			vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
 				vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceShaderObjectFeaturesEXT,
-				vk::PhysicalDeviceDescriptorBufferFeaturesEXT> feature_chain{{}, {}, {}, {}, {}, {}, {}};
+				vk::PhysicalDeviceDescriptorBufferFeaturesEXT, vk::PhysicalDeviceDescriptorHeapFeaturesEXT> feature_chain{{}, {}, {}, {}, {}, {}, {}, {}};
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                 = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                 = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                  = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fragmentStoresAndAtomics          = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.vertexPipelineStoresAndAtomics    = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                   = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().bufferDeviceAddress                 = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                    = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                    = true;
 			feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState = true;
 			feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors      = true;
 			feature_chain.get<vk::PhysicalDeviceShaderObjectFeaturesEXT>().shaderObject                 = true;
 			feature_chain.get<vk::PhysicalDeviceDescriptorBufferFeaturesEXT>().descriptorBuffer         = true;
+			feature_chain.get<vk::PhysicalDeviceDescriptorHeapFeaturesEXT>().descriptorHeap             = true;
 			return feature_chain;
 		}
 
@@ -81,6 +83,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto getVulkanLogicalDevice() -> vk::raii::Device &;
 
 		[[nodiscard]] auto getQueueFamilyIndices() const -> const QueueFamilyIndices &;
+		[[nodiscard]] auto getQueueFamilyIndices(vk::QueueFlags p_queue_flags) const -> std::unordered_set<uint32>;
 		[[nodiscard]] auto getGraphicsQueue() -> vk::raii::Queue &;
 		[[nodiscard]] auto getTransferQueue() -> vk::raii::Queue &;
 		[[nodiscard]] auto getComputeQueue() -> vk::raii::Queue &;

@@ -30,9 +30,9 @@ namespace toaster::render
 			vk::KHRDynamicRenderingExtensionName,
 			vk::KHRMaintenance6ExtensionName,
 			vk::KHRLoadStoreOpNoneExtensionName,
-			vk::KHRShaderNonSemanticInfoExtensionName,
 			vk::EXTShaderObjectExtensionName,
-			vk::EXTDescriptorHeapExtensionName
+			vk::KHRBufferDeviceAddressExtensionName,
+			vk::EXTDescriptorHeapExtensionName,
 		};
 		if (use_present)
 			required_device_extensions.insert(vk::KHRSwapchainExtensionName);

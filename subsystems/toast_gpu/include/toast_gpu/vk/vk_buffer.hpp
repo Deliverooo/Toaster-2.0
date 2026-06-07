@@ -1,0 +1,51 @@
+#pragma once
+
+#include "toast_gpu/toast_gpu.hpp"
+
+#include <vulkan/vulkan_raii.hpp>
+#include "toast_lib/core_basic.hpp"
+
+namespace toaster::gpu
+{
+	struct TST_GPU_API BufferSpecInfo
+	{
+		vk::BufferUsageFlags2   usageFlags{};
+		vk::MemoryPropertyFlags memoryPropertyFlags{vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent};
+		vk::QueueFlags          queueAccessFlags{vk::QueueFlagBits::eGraphics}; // Also determines if the sharing mode is exclusive or not
+	};
+
+	class TST_GPU_API VKBuffer
+	{
+		TST_GPU_OBJECT
+	public:
+		VKBuffer(VKLogicalDevice *p_device, vk::DeviceSize p_size, const BufferSpecInfo &p_spec_info);
+		~VKBuffer();
+
+		[[nodiscard]] auto getSpecInfo() const -> const BufferSpecInfo &;
+		[[nodiscard]] auto getSize() const -> vk::DeviceSize;
+		[[nodiscard]] auto getBuffer() const -> vk::Buffer;
+		[[nodiscard]] auto getBufferMemory() const -> vk::DeviceMemory;
+
+		[[nodiscard]] auto getDeviceAddress() const -> vk::DeviceAddress;
+		[[nodiscard]] auto getDeviceAddressRange() const -> vk::DeviceAddressRangeKHR;
+
+		auto mapMemory(uint64 p_size, uint64 p_offset = 0u) -> void *;
+		auto unmapMemory() -> void;
+
+		template<typename Type>
+		auto setData(const Type &p_data)
+		{
+			void *mapped{mapMemory(sizeof(Type))};
+			std::memcpy(mapped, &p_data, sizeof(Type));
+			unmapMemory();
+		}
+
+	private:
+		BufferSpecInfo         m_specInfo{};
+		vk::DeviceSize         m_size{0u};
+		vk::raii::Buffer       m_buffer{nullptr};
+		vk::raii::DeviceMemory m_bufferMemory{nullptr};
+	};
+
+	TST_GPU_DEFINE_HANDLE(VKBuffer, Buffer);
+}

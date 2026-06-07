@@ -8,6 +8,7 @@ set(GPU_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_vertex_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_index_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_uniform_buffer.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_shader.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_shader_compiler.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_common.cpp

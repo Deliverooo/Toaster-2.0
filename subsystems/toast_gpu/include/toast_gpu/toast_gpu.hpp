@@ -26,4 +26,4 @@ namespace toaster::gpu
 		[[nodiscard]] auto getDevice() const -> ::toaster::NonOwningPtr<::toaster::gpu::VKLogicalDevice> { return m_device; }\
 	private:
 
-#define TST_GPU_DEFINE_HANDLE(__type, __name) using __name##Handle = ::toaster::RefPtr<__type>; using __name = __type;
+#define TST_GPU_DEFINE_HANDLE(__type, __name) using __name##Handle = ::toaster::RefPtr<__type>; using __name = __type; using __name##Unique = ::toaster::UniquePtr<__type>;
