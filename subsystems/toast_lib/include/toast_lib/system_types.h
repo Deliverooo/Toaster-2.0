@@ -10,6 +10,9 @@ using bool32 = uint32_t; // I am sorry
 
 using nulltype = nullptr_t;
 
+using intptr  = intptr_t;
+using uintptr = uintptr_t;
+
 using int8  = int8_t;
 using int16 = int16_t;
 using int32 = int32_t;

@@ -117,14 +117,32 @@ namespace toaster::gpu
 		return m_imageArrayOffset;
 	}
 
-	auto VKDescriptorHeap::allocBuffer(const VKBuffer &p_buffer) -> DescriptorSlot
+	auto VKDescriptorHeap::allocBuffer(const Buffer &p_buffer) -> DescriptorSlot
+	{
+		DescriptorSlot allocated_slot{m_bufferSlotManager.allocSlot()};
+		setBuffer(allocated_slot, p_buffer);
+		return allocated_slot;
+	}
+
+	auto VKDescriptorHeap::allocImage(const VKRawImage &p_image) -> DescriptorSlot
+	{
+		DescriptorSlot allocated_slot{m_imageSlotManager.allocSlot()};
+		setImage(allocated_slot, p_image);
+		return allocated_slot;
+	}
+
+	auto VKDescriptorHeap::allocSampler(const vk::SamplerCreateInfo &p_sampler) -> DescriptorSlot
+	{
+		DescriptorSlot allocated_slot{m_samplerSlotManager.allocSlot()};
+		setSampler(allocated_slot, p_sampler);
+		return allocated_slot;
+	}
+
+	auto VKDescriptorHeap::setBuffer(DescriptorSlot p_slot, const Buffer &p_buffer) -> void
 	{
 		vk::DeviceAddressRangeEXT buffer_range{p_buffer.getDeviceAddressRange()};
 
-		// vk::DeviceSize uniform_descriptor_size{ALIGN(m_heapProperties.bufferDescriptorSize, m_heapProperties.bufferDescriptorAlignment)};
-
-		DescriptorSlot          allocated_slot{m_bufferSlotManager.allocSlot()};
-		uintptr_t               byte_offset{m_bufferArrayOffset + allocated_slot * m_bufferDescriptorSize};
+		uintptr_t               byte_offset{m_bufferArrayOffset + p_slot * m_bufferDescriptorSize};
 		vk::HostAddressRangeEXT host_range{};
 		host_range.address = (void *) (reinterpret_cast<uintptr_t>(m_resourceHeapMemory) + byte_offset);
 		host_range.size    = m_bufferDescriptorSize;
@@ -134,16 +152,11 @@ namespace toaster::gpu
 		resource_info.data.pAddressRange = &buffer_range;
 
 		m_device->getVulkanLogicalDevice().writeResourceDescriptorsEXT(resource_info, host_range);
-
-		return allocated_slot;
 	}
 
-	auto VKDescriptorHeap::allocImage(const VKRawImage &p_image) -> DescriptorSlot
+	auto VKDescriptorHeap::setImage(DescriptorSlot p_slot, const RawImage &p_image) -> void
 	{
-		// vk::DeviceSize image_descriptor_size{ALIGN(m_heapProperties.imageDescriptorSize, m_heapProperties.imageDescriptorAlignment)};
-
-		DescriptorSlot          allocated_slot{m_imageSlotManager.allocSlot()};
-		uintptr_t               byte_offset{m_imageArrayOffset + allocated_slot * m_imageDescriptorSize};
+		uintptr_t               byte_offset{m_imageArrayOffset + p_slot * m_imageDescriptorSize};
 		vk::HostAddressRangeEXT host_range{};
 		host_range.address = static_cast<uint8 *>(m_resourceHeapMemory) + byte_offset;
 		host_range.size    = m_imageDescriptorSize;
@@ -157,22 +170,17 @@ namespace toaster::gpu
 		resource_info.data.pImage = &image_info;
 
 		m_device->getVulkanLogicalDevice().writeResourceDescriptorsEXT(resource_info, host_range);
-
-		return allocated_slot;
 	}
 
-	auto VKDescriptorHeap::allocSampler(const vk::SamplerCreateInfo &p_sampler) -> DescriptorSlot
+	auto VKDescriptorHeap::setSampler(DescriptorSlot p_slot, const vk::SamplerCreateInfo &p_sampler) -> void
 	{
 		vk::DeviceSize          sampler_descriptor_size{ALIGN(m_heapProperties.samplerDescriptorSize, m_heapProperties.samplerDescriptorAlignment)};
 		vk::HostAddressRangeEXT host_range{};
 
-		DescriptorSlot allocated_slot{m_samplerSlotManager.allocSlot()};
-		host_range.address = static_cast<uint8 *>(m_samplerHeapMemory) + (allocated_slot * sampler_descriptor_size);
+		host_range.address = static_cast<uint8 *>(m_samplerHeapMemory) + (p_slot * sampler_descriptor_size);
 		host_range.size    = sampler_descriptor_size;
 
 		m_device->getVulkanLogicalDevice().writeSamplerDescriptorsEXT(p_sampler, host_range);
-
-		return allocated_slot;
 	}
 
 	auto VKDescriptorHeap::getOffset(DescriptorSlot p_slot) -> uint64

@@ -20,9 +20,9 @@ namespace toaster::render
 
 	class TST_RENDER_API Image
 	{
+		TST_RENDER_OBJECT
 	public:
 		Image(RenderContext &p_render_ctx, const ImageSpecInfo &p_spec_info);
-		Image(RenderContext &p_render_ctx, const io::filesystem::Path &p_path);
 		Image(RenderContext &p_render_ctx, const ImageSpecInfo &p_spec_info, const Buffer &p_data);
 		~Image();
 
@@ -35,8 +35,6 @@ namespace toaster::render
 		auto getAlignedHeapID() const -> gpu::DescriptorSlot;
 
 	private:
-		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
-
 		ImageSpecInfo m_specInfo{};
 
 		gpu::RawImageHandle m_image{nullptr};
@@ -44,4 +42,6 @@ namespace toaster::render
 
 		gpu::DescriptorSlot m_heapID{UINT32_MAX};
 	};
+
+	TST_RENDER_DEFINE_HANDLE(Image, Image)
 }

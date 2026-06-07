@@ -2,6 +2,9 @@
 
 #include <array>
 
+#include "graphics_state.hpp"
+#include "uniform_buffer.hpp"
+#include "image.hpp"
 #include "material.hpp"
 #include "render_attachment.hpp"
 #include "render_pass.hpp"
@@ -129,4 +132,87 @@ namespace toaster::render
 
 		Stats m_stats;
 	};
+
+	#if 0
+	class TST_RENDER_API Renderer2DV2
+	{
+		TST_RENDER_OBJECT
+	public:
+		static inline const gpu::VertexBufferLayout quadVbl{
+			{gpu::EBufferDataType::eFloat4, "a_Position"},
+			{gpu::EBufferDataType::eFloat4, "a_Colour"},
+			{gpu::EBufferDataType::eFloat2, "a_TexCoord"},
+			{gpu::EBufferDataType::eFloat, "a_TexIndex"},
+			{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
+		};
+
+		// Ts makes creating renderer 2Ds look better, as, for simple use cases, you only need to specify the viewport size.
+		// The rest of the spec info is kept at their default values
+		Renderer2DV2(RenderContext &p_render_ctx, tsm::uint2 p_viewport_size);
+		Renderer2DV2(RenderContext &p_render_ctx, const Renderer2DSpecInfo &p_create_info);
+		~Renderer2DV2();
+
+		auto XM_CALLCONV begin(Dx::FXMMATRIX            p_view, Dx::CXMMATRIX p_projection, RenderingAttachmentInfo *p_override_colour_attachment = nullptr,
+							   RenderingAttachmentInfo *p_override_depth_attachment                                                               = nullptr) -> void;
+		auto end(gpu::VKCommandBuffer *p_cmd = nullptr) -> void;
+
+		auto XM_CALLCONV submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void;
+		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX p_transform, const tsm::float4 &p_colour) -> void;
+		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX p_transform, const ImageHandle &p_texture, const tsm::float4 &p_colour) -> void;
+
+		auto onResize(tsm::uint2 p_size) -> void;
+
+		auto getOutputColourImage() const -> const ImageHandle &;
+
+	private:
+		auto _construct() -> void; // Called once for each constructor so I don't have to repeat myself
+
+		auto _beginNewBatch() -> void;
+		auto _getTextureSlotIndex(const ImageHandle &p_texture) -> uint32;
+
+		Renderer2DSpecInfo m_specInfo{};
+		uint32             m_maxVertices;
+		uint32             m_maxIndices;
+
+		struct QuadVertex
+		{
+			Dx::XMFLOAT4 position{0.0f, 0.0f, 0.0f, 0.0f};
+			tsm::float4  colour{1.0f};
+			tsm::float2  texCoord{0.0f};
+			float32      texIndex{0u};
+			float32      tilingFactor{1.0f};
+		};
+
+		ImageHandle         m_renderTargetImage{nullptr};
+		gpu::RawImageHandle m_renderTargetDepthImage{nullptr};
+
+		GraphicsStateHandle m_graphicsState{nullptr};
+
+		gpu::VertexBufferHandle m_quadVertexBuffer{nullptr};
+		gpu::IndexBufferHandle  m_quadIndexBuffer{nullptr};
+
+		QuadVertex *m_quadVertexBase{nullptr};
+		QuadVertex *m_quadVertexPtr{nullptr};
+
+		uint32 m_quadIndexCount{0u};
+
+		std::array<Dx::XMFLOAT4, 4u> m_quadVertexPositions{};
+		std::array<tsm::float2, 4u>  m_quadVertexTexCoords{};
+
+		struct CameraUB
+		{
+			Dx::XMFLOAT4X4 view;
+			Dx::XMFLOAT4X4 proj;
+		};
+
+		UniformBufferPFFHandle m_cameraUBs{nullptr};
+		std::vector<void *>    m_mappedCameraUBs;
+
+		std::array<ImageHandle, 32u> m_textureSlots;
+		uint32                       m_textureSlotIndex{1u};
+
+		RenderingAttachmentInfo *m_colourAttachmentInfo{nullptr};
+		RenderingAttachmentInfo *m_depthAttachmentInfo{nullptr};
+	};
+	#endif
 }

@@ -25,22 +25,10 @@ public:
 		auto binary_dir{os::getBinaryDirectory()};
 		auto logical_device{m_renderCtx->getLogicalDevice()};
 
-		{
-			gpu::BufferSpecInfo ubo_spec_info{};
-			ubo_spec_info.usageFlags = vk::BufferUsageFlagBits2::eUniformBuffer | vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
-			m_ubo                    = toaster::make_unique<gpu::Buffer>(logical_device, sizeof(tsm::float4), ubo_spec_info);
-			tsm::float4 data{1.0f, 0.0f, 1.0f, 1.0f};
-			m_ubo->setData(data);
-		}
-
-		// auto heap{m_renderCtx->getDescriptorHeap()};
-		// heap->allocBuffer(*m_ubo);
+		m_ubo = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(tsm::float4));
+		m_ubo->setAllData(tsm::float4{1.0f, 0.0f, 1.0f, 1.0f});
 
 		m_image = m_renderCtx->createImageRef(binary_dir / "../resources/textures/Peeber.png");
-		LOG_WARN("{}", m_image->getHeapID());
-
-		// m_tetoTex      = m_renderCtx->loadTextureIntoImage(binary_dir / "../resources/textures/teto.png");
-		// m_tetoTexIndex = heap->allocImage(*m_tetoTex);
 
 		gpu::ShaderCompiler shader_compiler{logical_device};
 		auto vs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eVertex, binary_dir / "../resources/shaders/dynamic.vert.glsl")};
@@ -69,11 +57,14 @@ public:
 		{
 			uint32 textureIndex;
 			uint32 samplerIndex;
+
+			uintptr currentUBOPtr;
 		};
 
 		PushConstants pcs{};
-		pcs.textureIndex = m_image->getAlignedHeapID();
-		pcs.samplerIndex = m_renderCtx->getSampler(render::ESamplerType::eDefault);
+		pcs.textureIndex  = m_image->getAlignedHeapID();
+		pcs.samplerIndex  = m_renderCtx->getSampler(render::ESamplerType::eDefault);
+		pcs.currentUBOPtr = m_ubo->getDeviceAddress();
 		cmd->pushData(pcs);
 
 		m_graphicsState->bind();
@@ -99,12 +90,8 @@ private:
 
 	UniquePtr<render::GraphicsState> m_graphicsState{nullptr};
 
-	RefPtr<render::Image> m_image{nullptr};
-
-	gpu::RawImageHandle m_tetoTex{nullptr};
-	gpu::DescriptorSlot m_tetoTexIndex{0u};
-
-	gpu::BufferUnique m_ubo{nullptr};
+	render::ImageHandle            m_image{nullptr};
+	render::UniformBufferPFFHandle m_ubo{nullptr};
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32

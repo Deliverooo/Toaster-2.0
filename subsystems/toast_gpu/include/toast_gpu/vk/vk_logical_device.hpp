@@ -26,6 +26,7 @@ namespace toaster::gpu
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.vertexPipelineStoresAndAtomics      = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                     = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().bufferDeviceAddress                   = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().runtimeDescriptorArray                = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                      = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                      = true;
 			feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState   = true;

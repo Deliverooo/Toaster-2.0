@@ -13,6 +13,7 @@ namespace toaster::render
 
 	class TST_RENDER_API GraphicsState
 	{
+		TST_RENDER_OBJECT
 	public:
 		struct ColourBlendAttachmentInfo
 		{
@@ -53,8 +54,6 @@ namespace toaster::render
 		auto bind(gpu::VKCommandBuffer *p_command_buffer = nullptr) const -> void;
 
 	private:
-		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
-
 		std::vector<gpu::DynamicShaderHandle> m_shaders;
 
 		gpu::VertexBufferLayout m_vertexBufferLayout;
@@ -62,4 +61,6 @@ namespace toaster::render
 		uint32                                 m_attachmentCount{0u};
 		std::vector<ColourBlendAttachmentInfo> m_colourBlendAttachmentInfos;
 	};
+
+	TST_RENDER_DEFINE_HANDLE(GraphicsState, GraphicsState);
 }

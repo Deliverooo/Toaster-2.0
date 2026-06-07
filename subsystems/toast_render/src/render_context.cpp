@@ -162,14 +162,12 @@ namespace toaster::render
 
 	auto RenderContext::createImageRef(const io::filesystem::Path &p_path) -> RefPtr<Image>
 	{
-		return createRef<Image>(p_path);
-		// ImageSpecInfo image_spec_info{};
-		// Buffer        image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
-		// if (!image_data)
-			// TST_PERMA_ASSERT(false);
-		// auto out_image{createRef<Image>(image_spec_info, image_data)};
-		// image_data.release();
-		// return out_image;
+		ImageSpecInfo image_spec_info{};
+		Buffer        image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
+		if (!image_data)
+			TST_PERMA_ASSERT(false);
+		auto out_image{createRef<Image>(image_spec_info, image_data)}; // The image takes ownership of the image data from here...
+		return out_image;
 	}
 
 	auto RenderContext::createImageUnique(const io::filesystem::Path &p_path) -> UniquePtr<Image>
@@ -178,8 +176,7 @@ namespace toaster::render
 		Buffer        image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
 		if (!image_data)
 			TST_PERMA_ASSERT(false);
-		auto out_image{createUnique<Image>(image_spec_info, image_data)};
-		// image_data.release();
+		auto out_image{createUnique<Image>(image_spec_info, image_data)};// The image takes ownership of the image data from here...
 		return std::move(out_image);
 	}
 
