@@ -23,7 +23,7 @@ namespace tsm::colours
 				return static_cast<u32>(std::clamp(p_f * 255.0f, 0.0f, 255.0f));
 			}
 		};
-		return (to_byte(p_colour.x) << 24) | (to_byte(p_colour.y) << 16) | (to_byte(p_colour.z) << 8) | (to_byte(p_colour.w) << 0);
+		return (to_byte(p_colour.w) << 24) | (to_byte(p_colour.y) << 16) | (to_byte(p_colour.z) << 8) | (to_byte(p_colour.x) << 0);
 	}
 
 	constexpr float4 red{hexToRgba(0xFF0000FF)};

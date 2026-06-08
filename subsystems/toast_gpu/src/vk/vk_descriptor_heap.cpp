@@ -8,7 +8,7 @@ namespace toaster::gpu
 	DescriptorSlotManager::DescriptorSlotManager(uint32 p_capacity)
 	{
 		m_freeSlots.reserve(p_capacity);
-		for (int32 i{static_cast<int32>(p_capacity)}; i >= 0; --i)
+		for (int32 i{static_cast<int32>(p_capacity) - 1}; i >= 0; --i)
 			m_freeSlots.push_back(static_cast<uint32>(i));
 	}
 
@@ -50,8 +50,8 @@ namespace toaster::gpu
 				ALIGN(m_bufferArraySize + m_imageArraySize + m_heapProperties.minResourceHeapReservedRange, m_heapProperties.resourceHeapAlignment)
 			};
 
-			m_bufferSlotManager = DescriptorSlotManager{static_cast<uint32>(m_bufferArraySize)};
-			m_imageSlotManager  = DescriptorSlotManager{static_cast<uint32>(m_imageArraySize)};
+			m_bufferSlotManager = DescriptorSlotManager{static_cast<uint32>(maxUBOs)};
+			m_imageSlotManager  = DescriptorSlotManager{static_cast<uint32>(maxImages)};
 
 			BufferSpecInfo resource_heap_spec_info{};
 			resource_heap_spec_info.usageFlags = vk::BufferUsageFlagBits2::eDescriptorHeapEXT | vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
@@ -95,6 +95,16 @@ namespace toaster::gpu
 	auto VKDescriptorHeap::getSamplerHeap() const -> const VKBuffer &
 	{
 		return *m_samplerHeap;
+	}
+
+	auto VKDescriptorHeap::getResourceHeapMemory() const -> void *
+	{
+		return m_resourceHeapMemory;
+	}
+
+	auto VKDescriptorHeap::getSamplerHeapMemory() const -> void *
+	{
+		return m_samplerHeapMemory;
 	}
 
 	auto VKDescriptorHeap::getBufferDescriptorSize() const -> vk::DeviceSize

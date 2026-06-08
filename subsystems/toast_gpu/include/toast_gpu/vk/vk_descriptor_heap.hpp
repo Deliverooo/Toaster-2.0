@@ -28,8 +28,8 @@ namespace toaster::gpu
 	{
 		TST_GPU_OBJECT
 	public:
-		static constexpr uint32 maxUBOs{24u};
-		static constexpr uint32 maxImages{24u};
+		static constexpr uint32 maxUBOs{128u};
+		static constexpr uint32 maxImages{128u};
 
 		static constexpr uint32 maxSamplers{24u};
 
@@ -39,6 +39,9 @@ namespace toaster::gpu
 		[[nodiscard]] auto getHeapProperties() const -> const HeapProperties &;
 		[[nodiscard]] auto getResourceHeap() const -> const VKBuffer &;
 		[[nodiscard]] auto getSamplerHeap() const -> const VKBuffer &;
+
+		auto getResourceHeapMemory() const -> void *;
+		auto getSamplerHeapMemory() const -> void *;
 
 		auto getBufferDescriptorSize() const -> vk::DeviceSize;
 		auto getImageDescriptorSize() const -> vk::DeviceSize;

@@ -13,6 +13,8 @@
 #include "toast_scene/scene.hpp"
 #include "toast_scene/scene_renderer.hpp"
 
+#include "toast_math/colours.hpp"
+
 using namespace toaster;
 
 class ClientLayer : public IAppLayer
@@ -26,12 +28,25 @@ public:
 		auto logical_device{m_renderCtx->getLogicalDevice()};
 
 		m_ubo = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(tsm::float4));
-		m_ubo->setAllData(tsm::float4{1.0f, 1.0f, 1.0f, 1.0f});
+		m_ubo->setAllData(tsm::float4{0.0f, 1.0f, 1.0f, 1.0f});
 
 		m_ubo2 = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(tsm::float4));
 		m_ubo2->setAllData(tsm::float4{0.0f, 0.0f, 1.0f, 1.0f});
 
-		m_image = m_renderCtx->createImageRef(binary_dir / "../resources/textures/Peeber.png");
+		render::ImageSpecInfo image_spec{};
+		image_spec.format = vk::Format::eR8G8B8A8Unorm;
+		image_spec.size   = {2u};
+
+		Buffer image_data;
+		image_data.allocate(sizeof(uint32) * 4);
+		image_data.write<uint32>(tsm::colours::rgbaToHex(tsm::colours::weezer), 0);
+		image_data.write<uint32>(tsm::colours::rgbaToHex(tsm::colours::magenta), sizeof(uint32));
+		image_data.write<uint32>(tsm::colours::rgbaToHex(tsm::colours::blue), sizeof(uint32) * 2);
+		image_data.write<uint32>(tsm::colours::rgbaToHex(tsm::colours::red), sizeof(uint32) * 3);
+		m_image = m_renderCtx->createRef<render::Image>(image_spec, image_data);
+
+		image_data.release();
+		// m_image           = m_renderCtx->createImageRef(binary_dir / "../resources/textures/Peeber.png");
 
 		gpu::ShaderCompiler shader_compiler{logical_device};
 		auto vs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eVertex, binary_dir / "../resources/shaders/dynamic.vert.glsl")};
@@ -42,6 +57,7 @@ public:
 
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u);
+
 	}
 
 	auto onUpdate(float32 p_dt) -> void override
@@ -65,14 +81,32 @@ public:
 		};
 
 		uint32 buffer_index;
+		uint32 texture_index;
+
 		if (m_inputCtx->isKeyDown(input::EKeyCode::eY))
-			buffer_index = m_ubo->getAlignedHeapID();
+		{
+			buffer_index  = m_ubo->getAlignedHeapID();
+			texture_index = m_image->getAlignedHeapID();
+		}
 		else
-			buffer_index = m_ubo2->getAlignedHeapID();
+		{
+			buffer_index  = m_ubo2->getAlignedHeapID();
+			texture_index = m_globals->whiteImage()->getAlignedHeapID();
+		}
+
+		if (m_inputCtx->isKeyPressed(input::EKeyCode::eT))
+		{
+			if (m_activeSampler == render::ESamplerType::eDefault)
+				m_activeSampler = render::ESamplerType::eNearest;
+			else
+				m_activeSampler = render::ESamplerType::eDefault;
+		}
+
+		uintptr sampler_address{m_renderCtx->getSampler(m_activeSampler)};
 
 		PushConstants pcs{};
-		pcs.textureIndex = m_globals->whiteImage()->getAlignedHeapID();
-		pcs.samplerIndex = m_renderCtx->getSampler(render::ESamplerType::eDefault);
+		pcs.textureIndex = texture_index;
+		pcs.samplerIndex = sampler_address;
 		pcs.bufferIndex  = buffer_index;
 		cmd->pushData(pcs);
 
@@ -102,6 +136,11 @@ private:
 	render::ImageHandle            m_image{nullptr};
 	render::UniformBufferPFFHandle m_ubo{nullptr};
 	render::UniformBufferPFFHandle m_ubo2{nullptr};
+
+	gpu::RawImageHandle m_rawImage{nullptr};
+	uintptr             m_rawImageHeapOffset{0u};
+
+	render::ESamplerType m_activeSampler{render::ESamplerType::eDefault};
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32

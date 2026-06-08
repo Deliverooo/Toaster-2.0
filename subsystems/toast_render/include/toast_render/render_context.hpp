@@ -26,7 +26,7 @@ namespace toaster::render
 
 	enum class ESamplerType
 	{
-		eDefault
+		eDefault, eNearest
 	};
 
 	struct TST_RENDER_API RenderContextSpecInfo

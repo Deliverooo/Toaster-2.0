@@ -10,7 +10,6 @@ layout(location = 0) out vec4 o_Colour;
 layout(descriptor_heap) uniform texture2D globalTextures[];
 layout(descriptor_heap) uniform sampler globalSamplers[];
 
-
 layout(descriptor_heap) uniform UBO
 {
     vec4 colourData;
@@ -28,5 +27,5 @@ void main()
 {
     vec4 texture_colour = texture(sampler2D(globalTextures[pcs.textureIndex], globalSamplers[pcs.samplerIndex]), v_TexCoord);
 
-    o_Colour = ubos[pcs.bufferIndex].colourData * texture_colour;
+    o_Colour = texture_colour;
 }

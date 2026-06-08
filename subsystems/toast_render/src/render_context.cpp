@@ -81,6 +81,27 @@ namespace toaster::render
 
 			m_samplers[ESamplerType::eDefault] = m_descriptorHeap->allocSampler(default_sampler_create_info);
 		}
+		{
+			vk::SamplerCreateInfo nearest_sampler_create_info{};
+
+			nearest_sampler_create_info.magFilter               = vk::Filter::eNearest;
+			nearest_sampler_create_info.minFilter               = vk::Filter::eNearest;
+			nearest_sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eNearest;
+			nearest_sampler_create_info.addressModeU            = vk::SamplerAddressMode::eRepeat;
+			nearest_sampler_create_info.addressModeV            = vk::SamplerAddressMode::eRepeat;
+			nearest_sampler_create_info.addressModeW            = vk::SamplerAddressMode::eRepeat;
+			nearest_sampler_create_info.mipLodBias              = 0.0f;
+			nearest_sampler_create_info.anisotropyEnable        = true;
+			nearest_sampler_create_info.maxAnisotropy           = physical_device_props.limits.maxSamplerAnisotropy;
+			nearest_sampler_create_info.compareEnable           = false;
+			nearest_sampler_create_info.compareOp               = vk::CompareOp::eAlways;
+			nearest_sampler_create_info.minLod                  = 0.0f;
+			nearest_sampler_create_info.maxLod                  = vk::LodClampNone;
+			nearest_sampler_create_info.borderColor             = vk::BorderColor::eFloatOpaqueWhite;
+			nearest_sampler_create_info.unnormalizedCoordinates = false;
+
+			m_samplers[ESamplerType::eNearest] = m_descriptorHeap->allocSampler(nearest_sampler_create_info);
+		}
 
 		if (m_specInfo.createGlobals)
 			m_globals = new Globals{*this, os::getBinaryDirectory()};
