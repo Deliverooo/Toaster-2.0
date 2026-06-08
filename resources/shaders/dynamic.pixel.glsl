@@ -15,12 +15,19 @@ layout(descriptor_heap) uniform UBO
     vec4 colourData;
 } ubos[];
 
+layout(buffer_reference, std140) readonly buffer Camera
+{
+    mat4 view;
+    mat4 proj;
+    mat4 invProj;
+};
+
 layout(push_constant) uniform PushConstants
 {
     uint textureIndex;
     uint samplerIndex;
 
-    uint bufferIndex;
+    Camera camera;
 } pcs;
 
 void main()
@@ -28,4 +35,5 @@ void main()
     vec4 texture_colour = texture(sampler2D(globalTextures[pcs.textureIndex], globalSamplers[pcs.samplerIndex]), v_TexCoord);
 
     o_Colour = texture_colour;
+//    o_Colour = vec4(v_TexCoord, 0.0f, 1.0f);
 }

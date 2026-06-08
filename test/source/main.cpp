@@ -15,14 +15,25 @@
 
 #include "toast_math/colours.hpp"
 
+#include "toast_kernel/fp_camera.hpp"
+
 using namespace toaster;
 
 class ClientLayer : public IAppLayer
 {
 public:
+	struct CameraUB
+	{
+		Dx::XMFLOAT4X4 view;
+		Dx::XMFLOAT4X4 proj;
+		Dx::XMFLOAT4X4 invProj;
+	};
+
 	auto onInit() -> void override
 	{
 		m_viewportSize = m_app->getWindow().getRenderAreaSize();
+
+		m_camera = FPCamera{m_inputCtx, 90.0f, m_viewportSize.aspect(), 0.1f, 1000.0f};
 
 		auto binary_dir{os::getBinaryDirectory()};
 		auto logical_device{m_renderCtx->getLogicalDevice()};
@@ -30,8 +41,8 @@ public:
 		m_ubo = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(tsm::float4));
 		m_ubo->setAllData(tsm::float4{0.0f, 1.0f, 1.0f, 1.0f});
 
-		m_ubo2 = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(tsm::float4));
-		m_ubo2->setAllData(tsm::float4{0.0f, 0.0f, 1.0f, 1.0f});
+		m_cameraUBO        = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(CameraUB));
+		m_mappedCameraUBOs = m_cameraUBO->mapAllMemory(sizeof(CameraUB));
 
 		render::ImageSpecInfo image_spec{};
 		image_spec.format = vk::Format::eR8G8B8A8Unorm;
@@ -45,8 +56,12 @@ public:
 		image_data.write<uint32>(tsm::colours::rgbaToHex(tsm::colours::red), sizeof(uint32) * 3);
 		m_image = m_renderCtx->createRef<render::Image>(image_spec, image_data);
 
+		auto tex{m_renderCtx->createGPURef<gpu::Texture2D>(gpu::TextureSpecInfo{}, binary_dir / "../resources/textures/Peeber.png")};
+		tex->getImage()->saveToFile(binary_dir / "Bradar_wat_is_dis.bmp");
+
 		image_data.release();
-		// m_image           = m_renderCtx->createImageRef(binary_dir / "../resources/textures/Peeber.png");
+		m_image = m_renderCtx->createImageRef(binary_dir / "../resources/textures/Peeber.png");
+
 
 		gpu::ShaderCompiler shader_compiler{logical_device};
 		auto vs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eVertex, binary_dir / "../resources/shaders/dynamic.vert.glsl")};
@@ -57,12 +72,16 @@ public:
 
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u);
+	}
 
+	auto onDestroy() -> void override
+	{
+		m_cameraUBO->unmapAllMemory();
 	}
 
 	auto onUpdate(float32 p_dt) -> void override
 	{
-		auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({1.0f, 1.0f, 1.0f, 1.0f}, false)};
+		auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({0.2f, 1.0f, 1.0f, 1.0f}, false)};
 
 		auto  cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 		auto &vk_cmd{cmd->getVulkanCommandBuffer()};
@@ -72,27 +91,32 @@ public:
 
 		m_renderCtx->getDescriptorHeap()->bind();
 
+		m_camera.onUpdate(p_dt);
+
+		CameraUB camera_ub{};
+		Dx::XMStoreFloat4x4(&camera_ub.view, Dx::XMMatrixIdentity());
+		// Dx::XMStoreFloat4x4(&camera_ub.view, m_camera.getViewMatrix());
+		// Dx::XMStoreFloat4x4(&camera_ub.proj, m_camera.getProjectionMatrix());
+		Dx::XMStoreFloat4x4(&camera_ub.proj, Dx::XMMatrixIdentity());
+		Dx::XMStoreFloat4x4(&camera_ub.invProj, Dx::XMMatrixInverse(nullptr, m_camera.getProjectionMatrix()));
+
+		std::memcpy(m_mappedCameraUBOs[m_renderCtx->getCurrentFrameIndex()], &camera_ub, sizeof(CameraUB));
+
 		struct PushConstants
 		{
 			uint32 textureIndex;
 			uint32 samplerIndex;
 
-			uint32 bufferIndex;
+			uintptr cameraAddress;
 		};
 
-		uint32 buffer_index;
 		uint32 texture_index;
 
 		if (m_inputCtx->isKeyDown(input::EKeyCode::eY))
-		{
-			buffer_index  = m_ubo->getAlignedHeapID();
 			texture_index = m_image->getAlignedHeapID();
-		}
 		else
-		{
-			buffer_index  = m_ubo2->getAlignedHeapID();
-			texture_index = m_globals->whiteImage()->getAlignedHeapID();
-		}
+			texture_index = m_image->getAlignedHeapID();
+		// texture_index = m_globals->whiteImage()->getAlignedHeapID();
 
 		if (m_inputCtx->isKeyPressed(input::EKeyCode::eT))
 		{
@@ -102,12 +126,10 @@ public:
 				m_activeSampler = render::ESamplerType::eDefault;
 		}
 
-		uintptr sampler_address{m_renderCtx->getSampler(m_activeSampler)};
-
 		PushConstants pcs{};
-		pcs.textureIndex = texture_index;
-		pcs.samplerIndex = sampler_address;
-		pcs.bufferIndex  = buffer_index;
+		pcs.textureIndex  = texture_index;
+		pcs.samplerIndex  = m_renderCtx->getSampler(m_activeSampler);
+		pcs.cameraAddress = m_cameraUBO->getDeviceAddress();
 		cmd->pushData(pcs);
 
 		m_graphicsState->bind();
@@ -123,6 +145,12 @@ public:
 	auto onResize(tsm::uint2 p_size) -> void override
 	{
 		m_viewportSize = p_size;
+		m_camera.onResize(p_size);
+	}
+
+	auto onEvent(Event &p_event) -> void override
+	{
+		m_camera.onEvent(p_event);
 	}
 
 private:
@@ -135,10 +163,11 @@ private:
 
 	render::ImageHandle            m_image{nullptr};
 	render::UniformBufferPFFHandle m_ubo{nullptr};
-	render::UniformBufferPFFHandle m_ubo2{nullptr};
 
-	gpu::RawImageHandle m_rawImage{nullptr};
-	uintptr             m_rawImageHeapOffset{0u};
+	render::UniformBufferPFFHandle m_cameraUBO{nullptr};
+	std::vector<void *>            m_mappedCameraUBOs;
+
+	FPCamera m_camera;
 
 	render::ESamplerType m_activeSampler{render::ESamplerType::eDefault};
 };
