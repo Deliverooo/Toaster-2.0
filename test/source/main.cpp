@@ -26,7 +26,10 @@ public:
 		auto logical_device{m_renderCtx->getLogicalDevice()};
 
 		m_ubo = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(tsm::float4));
-		m_ubo->setAllData(tsm::float4{1.0f, 0.0f, 1.0f, 1.0f});
+		m_ubo->setAllData(tsm::float4{1.0f, 1.0f, 1.0f, 1.0f});
+
+		m_ubo2 = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(tsm::float4));
+		m_ubo2->setAllData(tsm::float4{0.0f, 0.0f, 1.0f, 1.0f});
 
 		m_image = m_renderCtx->createImageRef(binary_dir / "../resources/textures/Peeber.png");
 
@@ -39,10 +42,6 @@ public:
 
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u);
-
-		render::Renderer2DSpecInfo r2dsi{};
-		r2dsi.renderTargetSize = m_viewportSize;
-		m_renderer2D           = m_renderCtx->createRef<render::Renderer2DV2>(r2dsi);
 	}
 
 	auto onUpdate(float32 p_dt) -> void override
@@ -51,10 +50,6 @@ public:
 
 		auto  cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 		auto &vk_cmd{cmd->getVulkanCommandBuffer()};
-
-		m_renderer2D->begin(Dx::XMMatrixIdentity(), Dx::XMMatrixIdentity());
-		m_renderer2D->submitQuad(Dx::XMMatrixIdentity(), m_image, {0.0f, 1.0f, 0.0f, 1.0f});
-		m_renderer2D->end();
 
 		m_renderCtx->beginRendering(rendering_info);
 		cmd->setRenderArea(rendering_info.renderArea);
@@ -66,14 +61,19 @@ public:
 			uint32 textureIndex;
 			uint32 samplerIndex;
 
-			uintptr currentUBOPtr;
+			uint32 bufferIndex;
 		};
 
+		uint32 buffer_index;
+		if (m_inputCtx->isKeyDown(input::EKeyCode::eY))
+			buffer_index = m_ubo->getAlignedHeapID();
+		else
+			buffer_index = m_ubo2->getAlignedHeapID();
+
 		PushConstants pcs{};
-		// pcs.textureIndex  = m_globals->whiteImage()->getAlignedHeapID();
-		pcs.textureIndex  = m_renderer2D->getOutputColourImage()->getAlignedHeapID();
-		pcs.samplerIndex  = m_renderCtx->getSampler(render::ESamplerType::eDefault);
-		pcs.currentUBOPtr = m_ubo->getDeviceAddress();
+		pcs.textureIndex = m_globals->whiteImage()->getAlignedHeapID();
+		pcs.samplerIndex = m_renderCtx->getSampler(render::ESamplerType::eDefault);
+		pcs.bufferIndex  = buffer_index;
 		cmd->pushData(pcs);
 
 		m_graphicsState->bind();
@@ -101,8 +101,7 @@ private:
 
 	render::ImageHandle            m_image{nullptr};
 	render::UniformBufferPFFHandle m_ubo{nullptr};
-
-	RefPtr<render::Renderer2DV2> m_renderer2D{nullptr};
+	render::UniformBufferPFFHandle m_ubo2{nullptr};
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32
