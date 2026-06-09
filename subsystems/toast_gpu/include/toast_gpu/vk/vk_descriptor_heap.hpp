@@ -57,7 +57,7 @@ namespace toaster::gpu
 		auto setImage(DescriptorSlot p_slot, const RawImage &p_image) -> void;
 		auto setSampler(DescriptorSlot p_slot, const vk::SamplerCreateInfo &p_sampler) -> void;
 
-		auto getOffset(DescriptorSlot p_slot) -> uint64;
+		auto getOffset(DescriptorSlot p_slot) const -> uint64;
 
 		auto freeBuffer(DescriptorSlot p_slot) -> void;
 		auto freeImage(DescriptorSlot p_slot) -> void;

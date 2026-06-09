@@ -67,6 +67,6 @@ namespace toaster::render
 
 	auto Image::getAlignedHeapID() const -> gpu::DescriptorSlot
 	{
-		return m_heapID + (m_renderCtx->getDescriptorHeap()->getImageOffset() / m_renderCtx->getDescriptorHeap()->getHeapProperties().imageDescriptorSize);
+		return m_heapID + (m_renderCtx->getDescriptorHeap()->getImageOffset() / m_renderCtx->getDescriptorHeap()->getImageDescriptorSize());
 	}
 }

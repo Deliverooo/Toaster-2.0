@@ -152,9 +152,8 @@ namespace toaster::gpu
 	{
 		vk::DeviceAddressRangeEXT buffer_range{p_buffer.getDeviceAddressRange()};
 
-		uintptr_t               byte_offset{m_bufferArrayOffset + p_slot * m_bufferDescriptorSize};
 		vk::HostAddressRangeEXT host_range{};
-		host_range.address = (void *) (reinterpret_cast<uintptr_t>(m_resourceHeapMemory) + byte_offset);
+		host_range.address = (void *) (reinterpret_cast<uintptr_t>(m_resourceHeapMemory) + m_bufferArrayOffset + p_slot * m_bufferDescriptorSize);
 		host_range.size    = m_bufferDescriptorSize;
 
 		vk::ResourceDescriptorInfoEXT resource_info{};
@@ -166,13 +165,12 @@ namespace toaster::gpu
 
 	auto VKDescriptorHeap::setImage(DescriptorSlot p_slot, const RawImage &p_image) -> void
 	{
-		uintptr_t               byte_offset{m_imageArrayOffset + p_slot * m_imageDescriptorSize};
 		vk::HostAddressRangeEXT host_range{};
-		host_range.address = static_cast<uint8 *>(m_resourceHeapMemory) + byte_offset;
+		host_range.address = static_cast<uint8 *>(m_resourceHeapMemory) + m_imageArrayOffset + p_slot * m_imageDescriptorSize;
 		host_range.size    = m_imageDescriptorSize;
 
 		vk::ImageDescriptorInfoEXT image_info{};
-		image_info.layout =vk::ImageLayout::eShaderReadOnlyOptimal;
+		image_info.layout = vk::ImageLayout::eShaderReadOnlyOptimal;
 		image_info.pView  = &p_image.getImageViewCreateInfo();
 
 		vk::ResourceDescriptorInfoEXT resource_info{};
@@ -193,7 +191,7 @@ namespace toaster::gpu
 		m_device->getVulkanLogicalDevice().writeSamplerDescriptorsEXT(p_sampler, host_range);
 	}
 
-	auto VKDescriptorHeap::getOffset(DescriptorSlot p_slot) -> uint64
+	auto VKDescriptorHeap::getOffset(DescriptorSlot p_slot) const -> uint64
 	{
 		vk::DeviceSize image_descriptor_size{ALIGN(m_heapProperties.imageDescriptorSize, m_heapProperties.imageDescriptorAlignment)};
 		uintptr_t      byte_offset{p_slot * image_descriptor_size + ALIGN(m_imageArrayOffset, m_heapProperties.imageDescriptorAlignment)};

@@ -56,12 +56,12 @@ public:
 		image_data.write<uint32>(tsm::colours::rgbaToHex(tsm::colours::red), sizeof(uint32) * 3);
 		m_image = m_renderCtx->createRef<render::Image>(image_spec, image_data);
 
-		auto tex{m_renderCtx->createGPURef<gpu::Texture2D>(gpu::TextureSpecInfo{}, binary_dir / "../resources/textures/Peeber.png")};
-		tex->getImage()->saveToFile(binary_dir / "Bradar_wat_is_dis.bmp");
+		LOG_INFO("{}", m_renderCtx->getDescriptorHeap()->getImageDescriptorSize());
+		// auto tex{m_renderCtx->createGPURef<gpu::Texture2D>(gpu::TextureSpecInfo{}, binary_dir / "../resources/textures/Peeber.png")};
+		// tex->getImage()->saveToFile(binary_dir / "Bradar_wat_is_dis.bmp");
 
 		image_data.release();
-		m_image = m_renderCtx->createImageRef(binary_dir / "../resources/textures/Peeber.png");
-
+		// m_image = m_renderCtx->createImageRef(binary_dir / "../resources/textures/Peeber.png");
 
 		gpu::ShaderCompiler shader_compiler{logical_device};
 		auto vs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eVertex, binary_dir / "../resources/shaders/dynamic.vert.glsl")};
@@ -113,10 +113,9 @@ public:
 		uint32 texture_index;
 
 		if (m_inputCtx->isKeyDown(input::EKeyCode::eY))
-			texture_index = m_image->getAlignedHeapID();
+			texture_index = m_globals->whiteImage()->getAlignedHeapID();
 		else
 			texture_index = m_image->getAlignedHeapID();
-		// texture_index = m_globals->whiteImage()->getAlignedHeapID();
 
 		if (m_inputCtx->isKeyPressed(input::EKeyCode::eT))
 		{
