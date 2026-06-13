@@ -23,6 +23,20 @@ target_include_directories(ToastRender PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_
 
 target_sources(ToastRender PRIVATE ${RENDER_SRC})
 
+#find_package(directx-dxc CONFIG REQUIRED)
+set(DXC_COMPILER_DLL "$ENV{VULKAN_SDK}/Bin/dxcompiler.dll")
+if (EXISTS ${DXC_COMPILER_DLL})
+	add_custom_command(TARGET ToastRender POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"${DXC_COMPILER_DLL}"
+			"$<TARGET_FILE_DIR:ToastRender>"
+			COMMENT "Copying directX compiler Dll..."
+	)
+endif ()
+
+target_link_libraries(ToastRender PRIVATE dxcompiler d3dcompiler dxgi d3d12)
+#target_link_libraries(ToastRender PRIVATE dxil)
+
 target_link_libraries(ToastRender PUBLIC Toaster::ToastGPU)
 target_link_libraries(ToastRender PRIVATE assimp::assimp)
 add_dependencies(ToastRender Toaster::ToastShaders)

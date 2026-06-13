@@ -4,6 +4,16 @@
 #include "toast_render.hpp"
 #include "toast_lib/io/filesystem.hpp"
 
+// #include <wrl/client.h>
+
+// #undef min
+// #undef max
+
+// struct IDxcUtils;
+// struct IDxcCompiler3;
+// struct IDxcIncludeHandler;
+// struct IDxcBlob;
+
 namespace toaster::render
 {
 	class RenderContext;
@@ -27,6 +37,7 @@ namespace toaster::render
 		TST_RENDER_OBJECT
 	public:
 		ShaderCompiler(RenderContext &p_render_ctx);
+		~ShaderCompiler();
 
 		[[nodiscard]] auto compileToBytecodeFromString(const String &  p_source, EShaderStage p_stage,
 													   EShaderLanguage p_shader_lang = EShaderLanguage::eHLSL) const -> gpu::ShaderBytecode;
@@ -37,5 +48,12 @@ namespace toaster::render
 													 EShaderLanguage p_shader_lang = EShaderLanguage::eHLSL) const -> gpu::DynamicShaderHandle;
 		[[nodiscard]] auto compileToShaderFromPath(const io::filesystem::Path &p_path, EShaderStage p_stage, EShaderStage p_next_stage = EShaderStage::eNone,
 												   EShaderLanguage             p_shader_lang = EShaderLanguage::eHLSL) const -> gpu::DynamicShaderHandle;
+
+	private:
+		auto _compileToDxBlob(const String &p_source, EShaderStage p_stage) const -> void *; // Microsoft::WRL::ComPtr<IDxcBlob>*
+
+		struct Impl; // I am not exposing Dx...
+		Impl *                m_impl{nullptr};
+		// std::unique_ptr<Impl> m_impl;
 	};
 }

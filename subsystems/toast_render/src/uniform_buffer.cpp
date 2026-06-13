@@ -35,7 +35,7 @@ namespace toaster::render
 
 	auto UniformBuffer::getAlignedHeapID() const -> gpu::DescriptorSlot
 	{
-		return m_heapID + (m_renderCtx->getDescriptorHeap()->getBufferOffset() / m_renderCtx->getDescriptorHeap()->getHeapProperties().bufferDescriptorSize);
+		return m_heapID + (m_renderCtx->getDescriptorHeap()->getBufferOffset() / m_renderCtx->getDescriptorHeap()->getBufferDescriptorSize());
 	}
 
 	UniformBufferPFF::UniformBufferPFF(RenderContext &p_render_ctx, uint64 p_size) : m_renderCtx(&p_render_ctx)
@@ -76,7 +76,7 @@ namespace toaster::render
 	auto UniformBufferPFF::getAlignedHeapID() const -> gpu::DescriptorSlot
 	{
 		return m_heapIDs[m_renderCtx->getCurrentFrameIndex()] + (m_renderCtx->getDescriptorHeap()->getBufferOffset() / m_renderCtx->getDescriptorHeap()->
-																 getHeapProperties().bufferDescriptorSize);
+																 getBufferDescriptorSize());
 	}
 
 	auto UniformBufferPFF::mapAllMemory(uint64 p_size, uint64 p_offset) -> std::vector<void *>

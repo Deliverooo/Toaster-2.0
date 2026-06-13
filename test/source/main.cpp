@@ -63,13 +63,14 @@ public:
 
 		m_image = m_renderCtx->createImageRef(resources_dir / "textures/Peeber.png");
 
-		m_vertexShader = m_renderCtx->createShader(resources_dir / "shaders/dynamic.vert.glsl", render::EShaderStage::eVertex, render::EShaderStage::ePixel,
-												   render::EShaderLanguage::eGLSL);
+		m_vertexShader = m_renderCtx->createShader(resources_dir / "shaders/dynamic.vert.hlsl", render::EShaderStage::eVertex, render::EShaderStage::ePixel,
+												   render::EShaderLanguage::eHLSL);
 		m_fragmentShader = m_renderCtx->createShader(resources_dir / "shaders/dynamic.pixel.glsl", render::EShaderStage::ePixel, render::EShaderStage::eNone,
 													 render::EShaderLanguage::eGLSL);
 
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
-		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u);
+		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).
+				setCullMode(vk::CullModeFlagBits::eNone);
 	}
 
 	auto onDestroy() -> void override
@@ -92,10 +93,8 @@ public:
 		m_camera.onUpdate(p_dt);
 
 		CameraUB camera_ub{};
-		Dx::XMStoreFloat4x4(&camera_ub.view, Dx::XMMatrixIdentity());
-		// Dx::XMStoreFloat4x4(&camera_ub.view, m_camera.getViewMatrix());
-		// Dx::XMStoreFloat4x4(&camera_ub.proj, m_camera.getProjectionMatrix());
-		Dx::XMStoreFloat4x4(&camera_ub.proj, Dx::XMMatrixIdentity());
+		Dx::XMStoreFloat4x4(&camera_ub.view, m_camera.getViewMatrix());
+		Dx::XMStoreFloat4x4(&camera_ub.proj, m_camera.getProjectionMatrix());
 		Dx::XMStoreFloat4x4(&camera_ub.invProj, Dx::XMMatrixInverse(nullptr, m_camera.getProjectionMatrix()));
 
 		std::memcpy(m_mappedCameraUBOs[m_renderCtx->getCurrentFrameIndex()], &camera_ub, sizeof(CameraUB));
@@ -106,6 +105,8 @@ public:
 			uint32 samplerIndex;
 
 			uintptr cameraAddress;
+
+			// Dx::XMFLOAT4X4 model;
 		};
 
 		uint32 texture_index;
@@ -127,6 +128,7 @@ public:
 		pcs.textureIndex  = texture_index;
 		pcs.samplerIndex  = m_renderCtx->getSampler(m_activeSampler);
 		pcs.cameraAddress = m_cameraUBO->getDeviceAddress();
+
 		cmd->pushData(pcs);
 
 		m_graphicsState->bind();

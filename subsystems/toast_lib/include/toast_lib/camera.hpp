@@ -26,6 +26,7 @@ namespace toaster
 		}
 
 		[[nodiscard]] auto getProjectionMatrix() const -> Dx::FXMMATRIX { return Dx::XMLoadFloat4x4(&m_projection); }
+		[[nodiscard]] auto getProjectionMatrix4X4() const -> const Dx::XMFLOAT4X4 & { return m_projection; }
 
 		auto setPerspective(float32 p_fov, float32 p_aspect, float32 p_z_near, float32 p_z_far) -> void
 		{

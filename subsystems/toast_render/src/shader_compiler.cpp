@@ -3,6 +3,11 @@
 #include <shaderc/shaderc.hpp>
 #include <spirv_cross/spirv_hlsl.hpp>
 
+#include <wrl/client.h>
+
+#include <dxc/dxcapi.h>
+#pragma comment(lib, "d3dcompiler.lib")
+
 #include "toast_render/render_context.hpp"
 
 namespace toaster::render
@@ -18,6 +23,19 @@ namespace toaster::render
 		}
 
 		return static_cast<vk::ShaderStageFlagBits>(0);
+	}
+
+	constexpr auto getDxShaderStage(EShaderStage p_stage) -> WString
+	{
+		switch (p_stage)
+		{
+			case EShaderStage::eNone: return L"";
+			case EShaderStage::eVertex: return L"vs_6_6";
+			case EShaderStage::ePixel: return L"ps_6_6";
+			case EShaderStage::eCompute: return L"cs_6_6";
+		}
+
+		return L"";
 	}
 
 	constexpr auto getShaderCShaderKind(vk::ShaderStageFlagBits p_stage) -> shaderc_shader_kind
@@ -45,38 +63,73 @@ namespace toaster::render
 		return shaderc_vertex_shader;
 	}
 
+	struct ShaderCompiler::Impl
+	{
+		Microsoft::WRL::ComPtr<IDxcUtils>          dxcUtils{nullptr};
+		Microsoft::WRL::ComPtr<IDxcCompiler3>      dxcCompiler{nullptr};
+		Microsoft::WRL::ComPtr<IDxcIncludeHandler> dxcIncludeHandler{nullptr};
+	};
+
 	ShaderCompiler::ShaderCompiler(RenderContext &p_render_ctx) : m_renderCtx(&p_render_ctx)
 	{
+		m_impl = new Impl{};
+
+		DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&m_impl->dxcUtils));
+		DxcCreateInstance(CLSID_DxcCompiler, IID_PPV_ARGS(&m_impl->dxcCompiler));
+
+		m_impl->dxcUtils->CreateDefaultIncludeHandler(&m_impl->dxcIncludeHandler);
+	}
+
+	ShaderCompiler::~ShaderCompiler()
+	{
+		delete m_impl;
 	}
 
 	auto ShaderCompiler::compileToBytecodeFromString(const String &p_source, EShaderStage p_stage, EShaderLanguage p_shader_lang) const -> gpu::ShaderBytecode
 	{
-		const shaderc::Compiler compiler{};
-		shaderc::CompileOptions compile_options{};
-		compile_options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
-
-		compile_options.SetSourceLanguage((p_shader_lang == EShaderLanguage::eGLSL) ? shaderc_source_language_glsl : shaderc_source_language_hlsl);
-
-		const shaderc::PreprocessedSourceCompilationResult preprocess_result{
-			compiler.PreprocessGlsl(p_source, getShaderCShaderKind(getVulkanShaderStage(p_stage)), "I don't know", compile_options)
-		};
-
-		if (preprocess_result.GetCompilationStatus() != shaderc_compilation_status_success)
+		if (p_shader_lang == EShaderLanguage::eHLSL)
 		{
-			LOG_ERROR("Failed to preprocess shader: {}", preprocess_result.GetErrorMessage());
+			auto blob{_compileToDxBlob(p_source, p_stage)};
+
+			uint64              size_in_words = (*(Microsoft::WRL::ComPtr<IDxcBlob> *) blob)->GetBufferSize() / sizeof(uint32);
+			gpu::ShaderBytecode out_bytecode(size_in_words);
+
+			const uint32_t *code = reinterpret_cast<const uint32 *>((*(Microsoft::WRL::ComPtr<IDxcBlob> *) blob)->GetBufferPointer());
+
+			std::memcpy(out_bytecode.data(), code, size_in_words * sizeof(uint32));
+			delete (Microsoft::WRL::ComPtr<IDxcBlob> *) blob;
+
+			return out_bytecode;
 		}
-
-		const shaderc::SpvCompilationResult compilation_result{
-			compiler.CompileGlslToSpv({preprocess_result.begin(), preprocess_result.end()}, getShaderCShaderKind(getVulkanShaderStage(p_stage)), "I still don't know",
-									  compile_options)
-		};
-
-		if (compilation_result.GetCompilationStatus() != shaderc_compilation_status_success)
+		else
 		{
-			LOG_ERROR("Failed to compile shader: {}", compilation_result.GetErrorMessage());
-		}
+			const shaderc::Compiler compiler{};
+			shaderc::CompileOptions compile_options{};
+			compile_options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
 
-		return {compilation_result.begin(), compilation_result.end()};
+			compile_options.SetSourceLanguage(shaderc_source_language_glsl);
+
+			const shaderc::PreprocessedSourceCompilationResult preprocess_result{
+				compiler.PreprocessGlsl(p_source, getShaderCShaderKind(getVulkanShaderStage(p_stage)), "I don't know", compile_options)
+			};
+
+			if (preprocess_result.GetCompilationStatus() != shaderc_compilation_status_success)
+			{
+				LOG_ERROR("Failed to preprocess shader: {}", preprocess_result.GetErrorMessage());
+			}
+
+			const shaderc::SpvCompilationResult compilation_result{
+				compiler.CompileGlslToSpv({preprocess_result.begin(), preprocess_result.end()}, getShaderCShaderKind(getVulkanShaderStage(p_stage)), "I still don't know",
+										  compile_options)
+			};
+
+			if (compilation_result.GetCompilationStatus() != shaderc_compilation_status_success)
+			{
+				LOG_ERROR("Failed to compile shader: {}", compilation_result.GetErrorMessage());
+			}
+
+			return {compilation_result.begin(), compilation_result.end()};
+		}
 	}
 
 	auto ShaderCompiler::compileToBytecodeFromPath(const io::filesystem::Path &p_path, EShaderStage p_stage, EShaderLanguage p_shader_lang) const -> gpu::ShaderBytecode
@@ -98,5 +151,59 @@ namespace toaster::render
 	{
 		const String source{io::filesystem::readFile(p_path)};
 		return compileToShaderFromString(source, p_stage, p_next_stage, p_shader_lang);
+	}
+
+	auto ShaderCompiler::_compileToDxBlob(const String &p_source, EShaderStage p_stage) const -> void *
+	{
+		WString              stage_str{getDxShaderStage(p_stage)};
+		std::vector<LPCWSTR> arguments{
+			L"shader_thing.hlsl",
+			L"-E",
+			L"main",
+			L"-T",
+			stage_str.c_str(),
+			L"-spirv",
+			L"-fvk-use-dx-layout",
+			L"-fspv-use-legacy-buffer-matrix-order",
+			L"-fspv-target-env=vulkan1.3",
+
+			L"-fspv-use-descriptor-heap",
+			L"-fspv-extension=SPV_EXT_descriptor_heap",
+			L"-fspv-extension=SPV_KHR_untyped_pointers",
+			L"-fspv-extension=SPV_KHR_physical_storage_buffer",
+		};
+
+		DxcBuffer source_buffer;
+		source_buffer.Ptr      = p_source.c_str();
+		source_buffer.Size     = p_source.size();
+		source_buffer.Encoding = DXC_CP_ACP;
+
+		Microsoft::WRL::ComPtr<IDxcResult> compile_result;
+		m_impl->dxcCompiler->Compile(&source_buffer, arguments.data(), arguments.size(), m_impl->dxcIncludeHandler.Get(), IID_PPV_ARGS(&compile_result));
+
+		Microsoft::WRL::ComPtr<IDxcBlobUtf8> error_blob;
+		compile_result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&error_blob), nullptr);
+		if (error_blob && error_blob->GetStringLength() > 0)
+		{
+			LOG_ERROR("Failed to compile HLSL shader: {}", error_blob->GetStringPointer());
+			TST_PERMA_ASSERT(false);
+			std::abort();
+			return nullptr;
+		}
+
+		HRESULT compile_status;
+		compile_result->GetStatus(&compile_status);
+		if (!SUCCEEDED(compile_status))
+		{
+			LOG_ERROR("Failed to compile HLSL shader");
+			TST_PERMA_ASSERT(false);
+			std::abort();
+			return nullptr;
+		}
+
+		Microsoft::WRL::ComPtr<IDxcBlob> *shader_binary{new Microsoft::WRL::ComPtr<IDxcBlob>{}};
+		compile_result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&*shader_binary), nullptr);
+
+		return shader_binary;
 	}
 }
