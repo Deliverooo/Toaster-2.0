@@ -380,14 +380,14 @@ namespace toaster::gpu
 		{
 			Buffer image_data{};
 
-			bool  is_srgb = (p_out_format == vk::Format::eR8G8B8Srgb) || (p_out_format == vk::Format::eR8G8B8A8Srgb);
-			int32 width{0u};
-			int32 height{0u};
-			int32 num_channels{0u};
+			const bool is_srgb = (p_out_format == vk::Format::eR8G8B8Srgb) || (p_out_format == vk::Format::eR8G8B8A8Srgb);
+			int32      width{0u};
+			int32      height{0u};
+			int32      num_channels{0u};
 
 			if (stbi_is_hdr(p_path.string().c_str()))
 			{
-				uint8 *data{reinterpret_cast<uint8 *>(stbi_loadf(p_path.string().c_str(), &width, &height, &num_channels, 4))};
+				const auto data{reinterpret_cast<uint8 *>(stbi_loadf(p_path.string().c_str(), &width, &height, &num_channels, 4))};
 				if (!data)
 				{
 					DEBUG_LOG_ERROR("Failed to load texture: {}", p_path);
@@ -406,6 +406,8 @@ namespace toaster::gpu
 				image_data.write(data, size);
 
 				p_out_format = vk::Format::eR32G32B32A32Sfloat;
+
+				stbi_image_free(data);
 			}
 			else
 			{
@@ -429,16 +431,19 @@ namespace toaster::gpu
 				image_data.write(data, size);
 
 				p_out_format = is_srgb ? vk::Format::eR8G8B8A8Srgb : vk::Format::eR8G8B8A8Unorm;
+
+				stbi_image_free(data);
 			}
 
 			if (!image_data.data())
+			{
+				LOG_WARN("Failed to load image: {}", p_path);
 				return {};
+			}
 
 			p_out_width  = width;
 			p_out_height = height;
 			return image_data;
 		}
-
-
 	}
 }

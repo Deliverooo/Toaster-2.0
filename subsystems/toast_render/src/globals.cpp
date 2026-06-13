@@ -148,7 +148,7 @@ namespace toaster::render
 
 		Buffer image_data{};
 		image_data.allocate(sizeof(uint32));
-		image_data.write(uint32{0xFFFFFFFF});
+		image_data.writeType<uint32>(0xFFFFFFFF);
 
 		ImageSpecInfo image_spec_info{};
 		image_spec_info.size   = {1u, 1u};

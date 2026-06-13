@@ -18,6 +18,12 @@ namespace toaster
 		{
 		}
 
+		template<typename Type>
+		Buffer()
+		{
+			allocate<Type>();
+		}
+
 		static auto copy(const Buffer &p_other) -> Buffer
 		{
 			Buffer buffer;
@@ -37,14 +43,25 @@ namespace toaster
 
 		auto allocate(const uint64 p_size) -> void
 		{
-			delete[] static_cast<uint8 *>(m_data);
-			m_data = nullptr;
+			release();
 			m_size = p_size;
 
-			if (p_size == 0)
+			if (m_size == 0)
 				return;
 
-			m_data = new uint8[p_size];
+			m_data = new uint8[m_size];
+		}
+
+		template<typename Type>
+		auto allocate() -> void
+		{
+			release();
+			m_size = sizeof(Type);
+
+			if (m_size == 0)
+				return;
+
+			m_data = new uint8[m_size];
 		}
 
 		auto reallocate(const uint64 p_size) -> void
@@ -68,13 +85,13 @@ namespace toaster
 		}
 
 		template<typename Type>
-		auto read(const uint64 p_offset = 0u) -> Type &
+		auto readType(const uint64 p_offset = 0u) -> Type &
 		{
 			return *reinterpret_cast<Type *>(static_cast<uint8 *>(m_data) + p_offset);
 		}
 
 		template<typename Type>
-		auto read(uint64 p_offset = 0u) const -> const Type &
+		auto readType(uint64 p_offset = 0u) const -> const Type &
 		{
 			return *static_cast<Type *>(static_cast<uint8 *>(m_data) + p_offset);
 		}
@@ -88,9 +105,9 @@ namespace toaster
 		}
 
 		template<typename Type>
-		auto write(const Type &p_data, uint64 p_offset = 0u) -> void
+		auto writeType(const Type &p_data, uint64 p_offset = 0u) -> void
 		{
-			std::memcpy(static_cast<uint8 *>(m_data) + p_offset, &p_data, sizeof(Type));
+			std::memcpy(static_cast<uint8 *>(m_data) + p_offset, reinterpret_cast<const void *>(&p_data), sizeof(Type));
 		}
 
 		auto write(Buffer p_buffer, uint64 p_offset = 0u) -> void

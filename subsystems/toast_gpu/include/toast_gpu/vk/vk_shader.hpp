@@ -93,9 +93,9 @@ namespace toaster::gpu
 						vk::ShaderStageFlagBits p_next_stage = vk::ShaderStageFlagBits{0u});
 		~VKDynamicShader();
 
-		auto getShader() const -> vk::ShaderEXT;
-		auto getStage() const -> vk::ShaderStageFlagBits;
-		auto getNextStage() const -> vk::ShaderStageFlagBits;
+		[[nodiscard]] auto getShader() const -> vk::ShaderEXT;
+		[[nodiscard]] auto getStage() const -> vk::ShaderStageFlagBits;
+		[[nodiscard]] auto getNextStage() const -> vk::ShaderStageFlagBits;
 
 	private:
 		vk::raii::ShaderEXT     m_shader{nullptr};

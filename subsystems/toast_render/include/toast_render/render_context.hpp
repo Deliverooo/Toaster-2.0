@@ -1,6 +1,7 @@
 #pragma once
 
 #include "render_attachment.hpp"
+#include "shader_compiler.hpp"
 #include "toast_render.hpp"
 #include "toast_gpu/buffer_layout.hpp"
 #include "toast_lib/ptr.hpp"
@@ -10,6 +11,7 @@
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_pipeline.hpp"
+#include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_gpu/vk/vk_uniform_buffer.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
@@ -23,6 +25,7 @@ namespace toaster::render
 	class RenderPass;
 	class ComputePass;
 	class Image;
+	class ShaderCompiler;
 
 	enum class ESamplerType
 	{
@@ -151,6 +154,9 @@ namespace toaster::render
 		[[nodiscard]] auto createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) -> gpu::Texture3DHandle;
 		[[nodiscard]] auto createDiffuseIrradianceMap(const gpu::Texture3DHandle &p_environment_map) -> gpu::Texture3DHandle;
 
+		[[nodiscard]] auto createShader(const io::filesystem::Path &p_path, EShaderStage p_stage, EShaderStage p_next_stage = EShaderStage::eNone,
+										EShaderLanguage             p_shader_lang = EShaderLanguage::eHLSL) const -> gpu::DynamicShaderHandle;
+
 		#pragma region render logic
 		// For all of these, if the frame index or command buffer parameter is null / 0, they will be obtained from the swapchain instead
 
@@ -185,6 +191,8 @@ namespace toaster::render
 
 		OwningPtr<gpu::VKDescriptorHeap>                      m_descriptorHeap{nullptr};
 		std::unordered_map<ESamplerType, gpu::DescriptorSlot> m_samplers;
+
+		UniquePtr<ShaderCompiler> m_shaderCompiler{nullptr};
 
 		OwningPtr<Globals> m_globals{nullptr};
 

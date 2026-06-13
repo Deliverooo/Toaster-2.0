@@ -5,6 +5,7 @@ set(RENDER_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/render_attachment.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/descriptor_set_manager.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/graphics_state.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/shader_compiler.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/render_context.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/renderer_2d.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/render_pass.cpp

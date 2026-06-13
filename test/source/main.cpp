@@ -13,9 +13,10 @@
 #include "toast_scene/scene.hpp"
 #include "toast_scene/scene_renderer.hpp"
 
+#include "toast_kernel/fp_camera.hpp"
 #include "toast_math/colours.hpp"
 
-#include "toast_kernel/fp_camera.hpp"
+#include <stb/stb_image.h>
 
 using namespace toaster;
 
@@ -36,7 +37,8 @@ public:
 		m_camera = FPCamera{m_inputCtx, 90.0f, m_viewportSize.aspect(), 0.1f, 1000.0f};
 
 		auto binary_dir{os::getBinaryDirectory()};
-		auto logical_device{m_renderCtx->getLogicalDevice()};
+		auto resources_dir{binary_dir / "../resources"};
+		// auto logical_device{m_renderCtx->getLogicalDevice()};
 
 		m_ubo = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(tsm::float4));
 		m_ubo->setAllData(tsm::float4{0.0f, 1.0f, 1.0f, 1.0f});
@@ -48,27 +50,23 @@ public:
 		image_spec.format = vk::Format::eR8G8B8A8Unorm;
 		image_spec.size   = {2u};
 
-		Buffer image_data;
-		image_data.allocate(sizeof(uint32) * 4);
-		image_data.write<uint32>(tsm::colours::rgbaToHex(tsm::colours::weezer), 0);
-		image_data.write<uint32>(tsm::colours::rgbaToHex(tsm::colours::magenta), sizeof(uint32));
-		image_data.write<uint32>(tsm::colours::rgbaToHex(tsm::colours::blue), sizeof(uint32) * 2);
-		image_data.write<uint32>(tsm::colours::rgbaToHex(tsm::colours::red), sizeof(uint32) * 3);
-		m_image = m_renderCtx->createRef<render::Image>(image_spec, image_data);
+		{
+			Buffer image_data;
+			image_data.allocate(sizeof(uint32) * 4);
+			image_data.writeType<uint32>(tsm::colours::rgbaToHex(tsm::colours::weezer), 0);
+			image_data.writeType<uint32>(tsm::colours::rgbaToHex(tsm::colours::magenta), sizeof(uint32));
+			image_data.writeType<uint32>(tsm::colours::rgbaToHex(tsm::colours::blue), sizeof(uint32) * 2);
+			image_data.writeType<uint32>(tsm::colours::rgbaToHex(tsm::colours::red), sizeof(uint32) * 3);
+			m_image = m_renderCtx->createRef<render::Image>(image_spec, image_data);
+			image_data.release();
+		}
 
-		LOG_INFO("{}", m_renderCtx->getDescriptorHeap()->getImageDescriptorSize());
-		// auto tex{m_renderCtx->createGPURef<gpu::Texture2D>(gpu::TextureSpecInfo{}, binary_dir / "../resources/textures/Peeber.png")};
-		// tex->getImage()->saveToFile(binary_dir / "Bradar_wat_is_dis.bmp");
+		m_image = m_renderCtx->createImageRef(resources_dir / "textures/Peeber.png");
 
-		image_data.release();
-		// m_image = m_renderCtx->createImageRef(binary_dir / "../resources/textures/Peeber.png");
-
-		gpu::ShaderCompiler shader_compiler{logical_device};
-		auto vs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eVertex, binary_dir / "../resources/shaders/dynamic.vert.glsl")};
-		auto fs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eFragment, binary_dir / "../resources/shaders/dynamic.pixel.glsl")};
-
-		m_vertexShader   = m_renderCtx->createGPURef<gpu::DynamicShader>(vs_bytecode, vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment);
-		m_fragmentShader = m_renderCtx->createGPURef<gpu::DynamicShader>(fs_bytecode, vk::ShaderStageFlagBits::eFragment);
+		m_vertexShader = m_renderCtx->createShader(resources_dir / "shaders/dynamic.vert.glsl", render::EShaderStage::eVertex, render::EShaderStage::ePixel,
+												   render::EShaderLanguage::eGLSL);
+		m_fragmentShader = m_renderCtx->createShader(resources_dir / "shaders/dynamic.pixel.glsl", render::EShaderStage::ePixel, render::EShaderStage::eNone,
+													 render::EShaderLanguage::eGLSL);
 
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u);

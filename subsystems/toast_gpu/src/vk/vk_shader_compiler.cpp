@@ -4,6 +4,7 @@
 #include "toast_lib/toast_assert.h"
 
 #include <shaderc/shaderc.hpp>
+#include <spirv_cross/spirv_hlsl.hpp>
 
 namespace toaster::gpu
 {

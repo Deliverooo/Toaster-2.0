@@ -12,6 +12,8 @@
 #include "toast_render/renderer_2d.hpp"
 #include "toast_render/render_pass.hpp"
 
+#include "toast_render/shader_compiler.hpp"
+
 namespace toaster::render
 {
 	#define TST_GET_VALID_CMD_BUFFER() gpu::VKCommandBuffer* command_buffer{(!p_command_buffer) ? getCurrentSwapchainCommandBuffer() : p_command_buffer}
@@ -102,6 +104,8 @@ namespace toaster::render
 
 			m_samplers[ESamplerType::eNearest] = m_descriptorHeap->allocSampler(nearest_sampler_create_info);
 		}
+
+		m_shaderCompiler = toaster::make_unique<ShaderCompiler>(*this);
 
 		if (m_specInfo.createGlobals)
 			m_globals = new Globals{*this, os::getBinaryDirectory()};
@@ -345,6 +349,12 @@ namespace toaster::render
 
 		command_buffer.endAndSubmit();
 		return out_irradiance_map;
+	}
+
+	auto RenderContext::createShader(const io::filesystem::Path &p_path, EShaderStage p_stage, EShaderStage p_next_stage,
+									 EShaderLanguage             p_shader_lang) const -> gpu::DynamicShaderHandle
+	{
+		return m_shaderCompiler->compileToShaderFromPath(p_path, p_stage, p_next_stage, p_shader_lang);
 	}
 
 	auto RenderContext::beginRendering(const RenderingInfo &p_rendering_info, RenderPass *p_render_pass, gpu::CommandBuffer *p_command_buffer,

@@ -35,7 +35,7 @@ namespace toaster::render
 		{
 			auto decl = _getPushConstantDeclaration(p_name);
 			TST_ASSERT_MSG(decl, "Could not find uniform!");
-			return (Type &) m_pushConstantStorageBuffer.read<Type>(decl->offset);
+			return static_cast<Type &>(m_pushConstantStorageBuffer.readType<Type>(decl->offset));
 		}
 
 		template<gpu::GPUResource_c TResource>
