@@ -62,4 +62,7 @@ namespace toaster::render
 	};
 
 	TST_RENDER_DEFINE_HANDLE(Material, Material)
+
+
+	// class TST_RENDER_API
 }

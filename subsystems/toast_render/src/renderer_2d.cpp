@@ -306,8 +306,8 @@ namespace toaster::render
 		m_quadVertexPtr  = m_quadVertexBase;
 
 		m_textureSlotIndex = 1u;
-		for (uint32 i{1u}; i < m_textureSlots.size(); ++i)
-			m_textureSlots[i] = nullptr;
+		// for (uint32 i{1u}; i < m_textureSlots.size(); ++i)
+		// m_textureSlots[i] = nullptr;
 	}
 
 	auto Renderer2DV2::end(gpu::VKCommandBuffer *p_cmd) -> void

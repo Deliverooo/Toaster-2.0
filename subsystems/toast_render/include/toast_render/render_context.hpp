@@ -182,6 +182,11 @@ namespace toaster::render
 									gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
 		#pragma endregion
 
+		#pragma region new render logic
+
+
+		#pragma endregion
+
 	private:
 		RenderContextSpecInfo m_specInfo{};
 

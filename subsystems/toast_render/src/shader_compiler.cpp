@@ -164,6 +164,7 @@ namespace toaster::render
 			stage_str.c_str(),
 			L"-spirv",
 			L"-fvk-use-dx-layout",
+			L"-fvk-invert-y",
 			L"-fspv-use-legacy-buffer-matrix-order",
 			L"-fspv-target-env=vulkan1.3",
 

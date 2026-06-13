@@ -61,17 +61,23 @@ namespace toaster::render
 			}
 
 			{
-				gpu::ShaderCompiler shader_compiler{m_renderCtx->getLogicalDevice()};
-				auto vs_bytecode{shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eVertex, m_binaryDir / "../resources/shaders/dynamic.vert.glsl")};
-				auto ps_bytecode{
-					shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eFragment, m_binaryDir / "../resources/shaders/dynamic.pixel.glsl")
-				};
-
-				auto quad_vs{m_renderCtx->createGPURef<gpu::DynamicShader>(vs_bytecode, vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment)};
-				auto quad_ps{m_renderCtx->createGPURef<gpu::DynamicShader>(ps_bytecode, vk::ShaderStageFlagBits::eFragment)};
-
-				m_dynamicShaderLibrary.add("Quad_VS", quad_vs);
-				m_dynamicShaderLibrary.add("Quad_PS", quad_ps);
+				m_dynamicShaderLibrary.add("Quad_VS", m_renderCtx->createShader(m_binaryDir / "../resources/shaders/quad_dynamic.vert.hlsl", EShaderStage::eVertex,
+																				EShaderStage::ePixel));
+				m_dynamicShaderLibrary.add("Quad_PS", m_renderCtx->createShader(m_binaryDir / "../resources/shaders/quad_dynamic.pixel.glsl", EShaderStage::ePixel,
+																				EShaderStage::eNone, EShaderLanguage::eGLSL));
+				// gpu::ShaderCompiler shader_compiler{m_renderCtx->getLogicalDevice()};
+				// auto                vs_bytecode{
+				// 	shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eVertex, m_binaryDir / "../resources/shaders/quad_dynamic.vert.hlsl")
+				// };
+				// auto ps_bytecode{
+				// 	shader_compiler.compileToBytecodeFromFilepath(vk::ShaderStageFlagBits::eFragment, m_binaryDir / "../resources/shaders/quad_dynamic.pixel.hlsl")
+				// };
+				//
+				// auto quad_vs{m_renderCtx->createGPURef<gpu::DynamicShader>(vs_bytecode, vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment)};
+				// auto quad_ps{m_renderCtx->createGPURef<gpu::DynamicShader>(ps_bytecode, vk::ShaderStageFlagBits::eFragment)};
+				//
+				// m_dynamicShaderLibrary.add("Quad_VS", quad_vs);
+				// m_dynamicShaderLibrary.add("Quad_PS", quad_ps);
 			}
 		}
 		{

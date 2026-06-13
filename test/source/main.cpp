@@ -63,14 +63,16 @@ public:
 
 		m_image = m_renderCtx->createImageRef(resources_dir / "textures/Peeber.png");
 
-		m_vertexShader = m_renderCtx->createShader(resources_dir / "shaders/dynamic.vert.hlsl", render::EShaderStage::eVertex, render::EShaderStage::ePixel,
+		m_vertexShader = m_renderCtx->createShader(resources_dir / "shaders/mesh_dynamic.vert.hlsl", render::EShaderStage::eVertex, render::EShaderStage::ePixel,
 												   render::EShaderLanguage::eHLSL);
-		m_fragmentShader = m_renderCtx->createShader(resources_dir / "shaders/dynamic.pixel.glsl", render::EShaderStage::ePixel, render::EShaderStage::eNone,
+		m_fragmentShader = m_renderCtx->createShader(resources_dir / "shaders/mesh_dynamic.pixel.glsl", render::EShaderStage::ePixel, render::EShaderStage::eNone,
 													 render::EShaderLanguage::eGLSL);
 
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
-		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).
+		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::meshVbl).setAttachmentCount(1u).
 				setCullMode(vk::CullModeFlagBits::eNone);
+
+		m_mesh = m_renderCtx->createRef<render::MeshData>(resources_dir / "meshes/DJT_sculpt.fbx");
 	}
 
 	auto onDestroy() -> void override
@@ -106,37 +108,25 @@ public:
 
 			uintptr cameraAddress;
 
-			// Dx::XMFLOAT4X4 model;
+			Dx::XMFLOAT4X4 model;
 		};
 
-		uint32 texture_index;
-
-		if (m_inputCtx->isKeyDown(input::EKeyCode::eY))
-			texture_index = m_globals->whiteImage()->getAlignedHeapID();
-		else
-			texture_index = m_image->getAlignedHeapID();
-
-		if (m_inputCtx->isKeyPressed(input::EKeyCode::eT))
-		{
-			if (m_activeSampler == render::ESamplerType::eDefault)
-				m_activeSampler = render::ESamplerType::eNearest;
-			else
-				m_activeSampler = render::ESamplerType::eDefault;
-		}
-
 		PushConstants pcs{};
-		pcs.textureIndex  = texture_index;
+		pcs.textureIndex  = m_image->getAlignedHeapID();
 		pcs.samplerIndex  = m_renderCtx->getSampler(m_activeSampler);
 		pcs.cameraAddress = m_cameraUBO->getDeviceAddress();
+		pcs.model         = m_mesh->getSubmeshes()[0].transform;
 
 		cmd->pushData(pcs);
 
 		m_graphicsState->bind();
 
-		m_globals->fullscreenQuadVertexBuffer()->bind();
-		m_globals->fullscreenQuadIndexBuffer()->bind();
+		m_mesh->getVertexBuffer()->bind();
+		m_mesh->getIndexBuffer()->bind();
 
-		cmd->drawIndexed(m_globals->fullscreenQuadIndices().size());
+		// m_renderCtx->renderMesh(m_mesh, 0)
+
+		cmd->drawIndexed(m_mesh->getIndices().size());
 
 		vk_cmd.endRendering();
 	}
@@ -166,9 +156,13 @@ private:
 	render::UniformBufferPFFHandle m_cameraUBO{nullptr};
 	std::vector<void *>            m_mappedCameraUBOs;
 
-	FPCamera m_camera;
+	FPCamera m_camera{};
 
 	render::ESamplerType m_activeSampler{render::ESamplerType::eDefault};
+
+	render::MeshHandle m_mesh{nullptr};
+
+	// UniquePtr<render::Renderer2DV2> m_renderer2D{nullptr};
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32
