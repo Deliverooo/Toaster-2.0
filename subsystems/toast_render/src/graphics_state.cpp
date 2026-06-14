@@ -49,8 +49,9 @@ namespace toaster::render
 		cmd.setColorWriteMaskEXT(0, colour_write_masks);
 
 		// set depth stencil state
-		cmd.setDepthTestEnableEXT(false);
-		cmd.setDepthWriteEnableEXT(false);
+		cmd.setDepthTestEnableEXT(m_depthTestEnable);
+		cmd.setDepthWriteEnableEXT(m_depthWriteEnable);
+		cmd.setDepthCompareOpEXT(m_depthCompareOp);
 		cmd.setStencilTestEnableEXT(false);
 
 		// set multisample state

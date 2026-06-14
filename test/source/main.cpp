@@ -70,9 +70,10 @@ public:
 
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::meshVbl).setAttachmentCount(1u).
-				setCullMode(vk::CullModeFlagBits::eNone);
+				setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(true).setEnableDepthWrite(true);
 
-		m_mesh = m_renderCtx->createRef<render::MeshData>(resources_dir / "meshes/DJT_sculpt.fbx");
+		// m_mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Tall_Orange_Mike.fbx");
+		m_mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Test_scene.fbx");
 	}
 
 	auto onDestroy() -> void override
@@ -82,7 +83,7 @@ public:
 
 	auto onUpdate(float32 p_dt) -> void override
 	{
-		auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({0.2f, 1.0f, 1.0f, 1.0f}, false)};
+		auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({0.2f, 1.0f, 1.0f, 1.0f}, true)};
 
 		auto  cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 		auto &vk_cmd{cmd->getVulkanCommandBuffer()};
@@ -101,22 +102,13 @@ public:
 
 		std::memcpy(m_mappedCameraUBOs[m_renderCtx->getCurrentFrameIndex()], &camera_ub, sizeof(CameraUB));
 
-		struct PushConstants
+		TST_PUSH_CONSTANT_BLOCK(PushConstants)
 		{
-			uint32 textureIndex;
-			uint32 samplerIndex;
-
 			uintptr cameraAddress;
-
-			Dx::XMFLOAT4X4 model;
 		};
 
 		PushConstants pcs{};
-		pcs.textureIndex  = m_image->getAlignedHeapID();
-		pcs.samplerIndex  = m_renderCtx->getSampler(m_activeSampler);
 		pcs.cameraAddress = m_cameraUBO->getDeviceAddress();
-		pcs.model         = m_mesh->getSubmeshes()[0].transform;
-
 		cmd->pushData(pcs);
 
 		m_graphicsState->bind();
@@ -124,9 +116,12 @@ public:
 		m_mesh->getVertexBuffer()->bind();
 		m_mesh->getIndexBuffer()->bind();
 
-		// m_renderCtx->renderMesh(m_mesh, 0)
+		for (uint32 i{0u}; i < m_mesh->getSubmeshes().size(); ++i)
+		{
+			m_renderCtx->renderSubmesh(m_mesh, i, sizeof(PushConstants));
+		}
 
-		cmd->drawIndexed(m_mesh->getIndices().size());
+		// cmd->drawIndexed(m_mesh->getIndices().size());
 
 		vk_cmd.endRendering();
 	}
@@ -160,7 +155,7 @@ private:
 
 	render::ESamplerType m_activeSampler{render::ESamplerType::eDefault};
 
-	render::MeshHandle m_mesh{nullptr};
+	render::DynamicMeshHandle m_mesh{nullptr};
 
 	// UniquePtr<render::Renderer2DV2> m_renderer2D{nullptr};
 };

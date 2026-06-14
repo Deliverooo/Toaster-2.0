@@ -32,10 +32,10 @@ namespace toaster::gpu
 		#pragma region vulkan wrappers
 
 		template<typename TConstants>
-		auto pushData(const TConstants &p_data) const -> void
+		auto pushData(const TConstants &p_data, uint64 p_offset = 0u) const -> void
 		{
 			vk::PushDataInfoEXT push_data_info{};
-			push_data_info.offset       = 0;
+			push_data_info.offset       = p_offset;
 			push_data_info.data.address = &p_data;
 			push_data_info.data.size    = sizeof(TConstants);
 

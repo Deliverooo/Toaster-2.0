@@ -21,6 +21,7 @@ namespace toaster::render
 	class Globals;
 	class Material;
 	class MeshData;
+	class DynamicMesh;
 	class Renderer2D;
 	class RenderPass;
 	class ComputePass;
@@ -53,6 +54,23 @@ namespace toaster::render
 			{gpu::EBufferDataType::eFloat3, "a_Tangent"},
 			{gpu::EBufferDataType::eFloat3, "a_Bitangent"},
 			{gpu::EBufferDataType::eFloat2, "a_TexCoord"}
+		};
+
+		TST_PUSH_CONSTANT_BLOCK(MeshPushConstants)
+		{
+			uint32 samplerIndex;
+
+			uint32 albedoMap;
+			uint32 normalMap;
+
+			bool32 hasNormalMap;
+
+			tsm::float4 albedoColour;
+
+			// float32     roughness;
+			// float32     metalness;
+
+			Dx::XMFLOAT4X4 model;
 		};
 
 		RenderContext(const RenderContextSpecInfo &p_spec_info);
@@ -184,6 +202,8 @@ namespace toaster::render
 
 		#pragma region new render logic
 
+		auto renderSubmesh(const DynamicMesh *p_mesh, uint32 p_submesh_index, uint64 p_push_constant_offset, gpu::CommandBuffer *p_command_buffer = nullptr,
+						   uint32             p_frame_index                                                                                       = UINT32_MAX) -> void;
 
 		#pragma endregion
 

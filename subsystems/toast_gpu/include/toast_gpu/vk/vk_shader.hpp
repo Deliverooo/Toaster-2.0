@@ -8,6 +8,8 @@
 
 #include "vk_shader_resources.hpp"
 
+#include "vk_command_buffer.hpp"
+
 namespace toaster::gpu
 {
 	using ShaderBytecode = std::vector<uint32>;
@@ -93,6 +95,8 @@ namespace toaster::gpu
 						vk::ShaderStageFlagBits p_next_stage = vk::ShaderStageFlagBits{0u});
 		~VKDynamicShader();
 
+		auto bind(VKCommandBuffer * p_command_buffer = nullptr) const -> void;
+
 		[[nodiscard]] auto getShader() const -> vk::ShaderEXT;
 		[[nodiscard]] auto getStage() const -> vk::ShaderStageFlagBits;
 		[[nodiscard]] auto getNextStage() const -> vk::ShaderStageFlagBits;
@@ -104,4 +108,6 @@ namespace toaster::gpu
 	};
 
 	TST_GPU_DEFINE_HANDLE(VKDynamicShader, DynamicShader)
+
+	#define TST_PUSH_CONSTANT_BLOCK(__name) struct alignas(16) __name
 }

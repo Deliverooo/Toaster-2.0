@@ -57,6 +57,24 @@ namespace toaster::render
 			return *this;
 		}
 
+		auto setEnableDepthTest(bool32 p_enable) -> GraphicsState &
+		{
+			m_depthTestEnable = p_enable;
+			return *this;
+		}
+
+		auto setEnableDepthWrite(bool32 p_enable) -> GraphicsState &
+		{
+			m_depthWriteEnable = p_enable;
+			return *this;
+		}
+
+		auto setEnableDepthCompareOp(vk::CompareOp p_compare_op) -> GraphicsState &
+		{
+			m_depthCompareOp = p_compare_op;
+			return *this;
+		}
+
 		auto setColourBlendAttachmentInfo(uint32 p_attachment_index, const ColourBlendAttachmentInfo &p_info) -> GraphicsState &
 		{
 			m_colourBlendAttachmentInfos.at(p_attachment_index) = p_info;
@@ -75,6 +93,11 @@ namespace toaster::render
 
 		vk::CullModeFlagBits m_cullMode{vk::CullModeFlagBits::eBack};
 		bool32               m_enableMultisample{false};
+
+		bool32 m_depthTestEnable{false};
+		bool32 m_depthWriteEnable{false};
+
+		vk::CompareOp m_depthCompareOp{vk::CompareOp::eLess};
 	};
 
 	TST_RENDER_DEFINE_HANDLE(GraphicsState, GraphicsState);

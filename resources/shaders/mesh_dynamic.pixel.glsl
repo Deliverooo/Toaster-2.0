@@ -3,7 +3,9 @@
 #extension GL_EXT_buffer_reference2 : require
 #extension GL_EXT_descriptor_heap : enable
 
-layout(location = 0) in vec2 v_TexCoord;
+layout(location = 0) in vec3 v_WorldPos;
+layout(location = 1) in vec2 v_TexCoord;
+layout(location = 2) in vec3 v_Normal;
 
 layout(location = 0) out vec4 o_Colour;
 
@@ -24,16 +26,40 @@ layout(buffer_reference, std140) readonly buffer Camera
 
 layout(push_constant) uniform PushConstants
 {
-    uint textureIndex;
+    Camera camera;
+    uint _cameraPadding[2];
+    
+
     uint samplerIndex;
 
-    Camera camera;
+    uint albedoMap;
+    uint normalMap;
+
+    uint hasNormalMap;
+
+    vec4 albedoColour;
+
+
+    // uint hasNormalMap;
+    // float roughness;
+    // float metalness;
 
     mat4 modelMatrix;
 } pcs;
 
+const vec3 temp_light_pos = vec3(1.0f, 0.0f, 2.0f);
+
 void main()
 {
-    vec4 texture_colour = texture(sampler2D(globalTextures[pcs.textureIndex], globalSamplers[pcs.samplerIndex]), v_TexCoord);
-    o_Colour = texture_colour;
+    vec4 texture_colour = texture(sampler2D(globalTextures[pcs.albedoMap], globalSamplers[pcs.samplerIndex]), v_TexCoord);
+
+    vec4 final_colour = pcs.albedoColour;
+
+    vec3 light_dir = normalize(temp_light_pos - v_WorldPos);
+
+    float diff = max(dot(light_dir, normalize(v_Normal)), 0.0f);
+
+    final_colour.rgb *= texture_colour.rgb * diff;
+    o_Colour = final_colour;
+    // o_Colour = vec4(1.0f)
 }

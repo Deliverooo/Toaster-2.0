@@ -542,7 +542,7 @@ namespace toaster::gpu
 		shader_create_info.pCode     = p_bytecode.data();
 		shader_create_info.codeType  = vk::ShaderCodeTypeEXT::eSpirv;
 		shader_create_info.pName     = "main";
-		shader_create_info.flags     = vk::ShaderCreateFlagBitsEXT::eDescriptorHeap ;
+		shader_create_info.flags     = vk::ShaderCreateFlagBitsEXT::eDescriptorHeap;
 
 		m_shader = m_device->getVulkanLogicalDevice().createShaderEXT(shader_create_info);
 	}
@@ -553,6 +553,12 @@ namespace toaster::gpu
 		{
 			shader = nullptr;
 		});
+	}
+
+	auto VKDynamicShader::bind(VKCommandBuffer *p_command_buffer) const -> void
+	{
+		TST_GPU_GET_VALID_CMD_BUFFER();
+		cmd->getVulkanCommandBuffer().bindShadersEXT(m_stage, *m_shader);
 	}
 
 	auto VKDynamicShader::getShader() const -> vk::ShaderEXT

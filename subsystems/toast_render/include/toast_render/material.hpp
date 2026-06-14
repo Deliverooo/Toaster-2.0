@@ -1,11 +1,13 @@
 #pragma once
 
 #include "descriptor_set_manager.hpp"
+#include "uniform_buffer.hpp"
 
 namespace toaster::render
 {
 	class TST_RENDER_API Material
 	{
+		TST_RENDER_OBJECT
 	public:
 		Material(RenderContext &p_render_ctx, const gpu::ShaderHandle &p_shader, const String &p_name = "Unknown?");
 		~Material();
@@ -51,8 +53,6 @@ namespace toaster::render
 	private:
 		auto _getPushConstantDeclaration(const String &p_name) -> const gpu::reflection::PushConstant *;
 
-		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
-
 		gpu::ShaderHandle m_shader{nullptr};
 		String            m_name{};
 
@@ -63,6 +63,13 @@ namespace toaster::render
 
 	TST_RENDER_DEFINE_HANDLE(Material, Material)
 
+	// class TST_RENDER_API DynamicMaterial
+	// {
+		// TST_RENDER_OBJECT
+	// public:
+		// DynamicMaterial(RenderContext &p_render_ctx);
 
-	// class TST_RENDER_API
+	// private:
+		// UniformBufferHandle
+	// };
 }

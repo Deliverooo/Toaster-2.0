@@ -770,5 +770,35 @@ namespace toaster::render
 		command_buffer->getVulkanCommandBuffer().drawIndexed(submesh.indexCount, 1, submesh.baseIndex, static_cast<int32>(submesh.baseVertex), 0);
 	}
 
+	auto RenderContext::renderSubmesh(const DynamicMesh *p_mesh, uint32 p_submesh_index, uint64 p_push_constant_offset, gpu::CommandBuffer *p_command_buffer,
+									  uint32             p_frame_index) -> void
+	{
+		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
+
+		auto &submesh{p_mesh->getSubmeshes()[p_submesh_index]};
+
+		auto &material{p_mesh->getMaterials().getMaterial(submesh.materialIndex)};
+
+		MeshPushConstants pcs{};
+		pcs.albedoMap    = material.albedoMap->getAlignedHeapID();
+		pcs.normalMap    = material.normalMap->getAlignedHeapID();
+		pcs.hasNormalMap = material.hasNormalMap;
+		pcs.albedoColour = {material.albedoColour, 1.0f};
+		// pcs.roughness    = material.roughness;
+		// pcs.metalness    = material.metalness;
+
+		pcs.samplerIndex = m_samplers.at(ESamplerType::eDefault);
+		pcs.model        = submesh.transform;
+
+		command_buffer->pushData(pcs, p_push_constant_offset);
+
+		p_mesh->getVertexBuffer()->bind(command_buffer);
+		p_mesh->getIndexBuffer()->bind(command_buffer);
+
+		// LOG_ERROR("{}", submesh.vertexCount);
+
+		command_buffer->drawIndexed(submesh.indexCount, 1, submesh.baseIndex, static_cast<int32>(submesh.baseVertex), 0);
+	}
+
 	#undef TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX
 }

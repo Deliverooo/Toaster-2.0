@@ -1,5 +1,6 @@
 #pragma once
 
+#include "image.hpp"
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_texture.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
@@ -45,7 +46,7 @@ namespace toaster::render
 
 	struct TST_RENDER_API MeshNode
 	{
-		String        name{};
+		String         name{};
 		Dx::XMFLOAT4X4 localTransform;
 
 		std::vector<uint32> children;
@@ -98,6 +99,7 @@ namespace toaster::render
 
 	class TST_RENDER_API MeshData
 	{
+		TST_RENDER_OBJECT
 	public:
 		MeshData(RenderContext &p_render_ctx, const io::filesystem::Path &p_path);
 		MeshData(RenderContext &p_render_ctx, const io::filesystem::Path &p_path, const gpu::ShaderHandle &p_shader);
@@ -116,9 +118,7 @@ namespace toaster::render
 
 	private:
 		auto XM_CALLCONV _traverseNodes(void *p_assimp_node, uint32 p_node_index, Dx::FXMMATRIX p_parent_transform, uint32 p_level) -> void;
-		auto _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
-
-		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
+		auto             _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
 
 		io::filesystem::Path m_path;
 
@@ -136,29 +136,75 @@ namespace toaster::render
 
 	using MeshHandle = RefPtr<MeshData>;
 
-	class TST_RENDER_API StaticMesh
+	struct TST_RENDER_API DynamicMeshMaterialData
 	{
-	public:
-		StaticMesh(RenderContext *p_render_ctx, const RefPtr<MeshData> &p_mesh_data);
+		String      name{};
+		ImageHandle albedoMap{nullptr};
+		ImageHandle normalMap{nullptr};
 
-		auto getMeshData() const -> const RefPtr<MeshData> &;
+		tsm::float3 albedoColour{};
+		float32     roughness{};
+		float32     metalness{};
+		bool32      hasNormalMap{};
+	};
+
+	class TST_RENDER_API DynamicMaterialList
+	{
+		TST_RENDER_OBJECT
+	public:
+		DynamicMaterialList(RenderContext &p_render_ctx);
+
+		auto               addMaterial(uint32 p_index, const String &p_name) -> DynamicMeshMaterialData &;
+		[[nodiscard]] auto hasMaterial(uint32 p_index) const -> bool;
+		auto               getMaterial(uint32 p_index) -> DynamicMeshMaterialData &;
+		[[nodiscard]] auto getMaterial(uint32 p_index) const -> const DynamicMeshMaterialData &;
+
+		auto               begin() { return m_materialDatas.begin(); }
+		auto               end() { return m_materialDatas.begin(); }
+		[[nodiscard]] auto begin() const { return m_materialDatas.begin(); }
+		[[nodiscard]] auto end() const { return m_materialDatas.begin(); }
+
+		auto data() -> std::unordered_map<uint32, DynamicMeshMaterialData> & { return m_materialDatas; }
 
 	private:
-		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
-
-		RefPtr<MeshData> m_meshData{nullptr};
+		std::unordered_map<uint32, DynamicMeshMaterialData> m_materialDatas;
 	};
 
 	class TST_RENDER_API DynamicMesh
 	{
+		TST_RENDER_OBJECT
 	public:
-		DynamicMesh(RenderContext *p_render_ctx, const RefPtr<MeshData> &p_mesh_data);
+		DynamicMesh(RenderContext &p_render_ctx, const io::filesystem::Path &p_path);
 
-		auto getMeshData() const -> const RefPtr<MeshData> &;
+		auto getVertexBuffer() const -> const gpu::VertexBufferHandle & { return m_vertexBuffer; }
+		auto getIndexBuffer() const -> const gpu::IndexBufferHandle & { return m_indexBuffer; }
+
+		auto getMaterials() -> DynamicMaterialList & { return m_materials; }
+		auto getMaterials() const -> const DynamicMaterialList & { return m_materials; }
+		auto getSubmeshes() const -> const std::vector<Submesh> & { return m_submeshes; }
+
+		auto getVertices() const -> const std::vector<MeshVertex> & { return m_vertices; }
+		auto getIndices() const -> const std::vector<uint32> & { return m_indices; }
+
+		auto getFilepath() const -> const io::filesystem::Path & { return m_path; }
 
 	private:
-		NonOwningPtr<RenderContext> m_renderCtx{nullptr};
+		auto XM_CALLCONV _traverseNodes(void *p_assimp_node, uint32 p_node_index, Dx::FXMMATRIX p_parent_transform, uint32 p_level) -> void;
+		auto             _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
 
-		RefPtr<MeshData> m_meshData{nullptr};
+		io::filesystem::Path m_path;
+
+		std::vector<Submesh>  m_submeshes;
+		std::vector<MeshNode> m_nodes;
+
+		std::vector<MeshVertex> m_vertices;
+		std::vector<uint32>     m_indices;
+
+		gpu::VertexBufferHandle m_vertexBuffer{nullptr};
+		gpu::IndexBufferHandle  m_indexBuffer{nullptr};
+
+		DynamicMaterialList m_materials;
 	};
+
+	TST_RENDER_DEFINE_HANDLE(DynamicMesh, DynamicMesh)
 }
