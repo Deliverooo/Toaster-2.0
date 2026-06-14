@@ -51,22 +51,21 @@ namespace toaster::render
 		template<typename Type>
 		auto setData(const Type &p_data) -> void
 		{
-			m_ubos[m_renderCtx->getCurrentFrameIndex()]->setData(p_data);
+			std::memcpy(m_mappedData[m_renderCtx->getCurrentFrameIndex()], &p_data, sizeof(Type));
 		}
 
 		template<typename Type>
 		auto setAllData(const Type &p_data) -> void
 		{
-			for (uint32 i{0u}; i < RenderContext::maxFramesInFlight; ++i)
-				m_ubos[i]->setData(p_data);
+			for (auto &data: m_mappedData)
+				std::memcpy(data, &p_data, sizeof(Type));
 		}
 
-		auto mapAllMemory(uint64 p_size, uint64 p_offset = 0u) -> std::vector<void *>;
-		auto unmapAllMemory() -> void;
-
 	private:
-		std::vector<gpu::BufferHandle>   m_ubos;
-		std::vector<gpu::DescriptorSlot> m_heapIDs;
+		gpu::PerFrameVec<gpu::BufferHandle>   m_ubos;
+		gpu::PerFrameVec<gpu::DescriptorSlot> m_heapIDs;
+
+		gpu::PerFrameVec<void *> m_mappedData;
 	};
 
 	TST_RENDER_DEFINE_HANDLE(UniformBufferPFF, UniformBufferPFF);

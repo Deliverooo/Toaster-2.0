@@ -118,6 +118,16 @@ namespace toaster
 		render::MeshHandle mesh{nullptr};
 	};
 
+	DEFINE_COMPONENT(DynamicMeshComponent)
+	{
+		DynamicMeshComponent()  = default;
+		~DynamicMeshComponent() = default;
+
+		auto reset() -> void { mesh.reset(); }
+
+		render::DynamicMeshHandle mesh{nullptr};
+	};
+
 	DEFINE_COMPONENT(SubmeshComponent)
 	{
 		SubmeshComponent()  = default;

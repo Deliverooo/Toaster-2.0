@@ -357,8 +357,8 @@ namespace toaster::render
 		return m_shaderCompiler->compileToShaderFromPath(p_path, p_stage, p_next_stage, p_shader_lang);
 	}
 
-	auto RenderContext::beginRendering(const RenderingInfo &p_rendering_info, RenderPass *p_render_pass, gpu::CommandBuffer *p_command_buffer,
-									   uint32               p_frame_index) const -> void
+	auto RenderContext::beginRenderPass(const RenderingInfo &p_rendering_info, RenderPass *p_render_pass, gpu::CommandBuffer *p_command_buffer,
+										uint32               p_frame_index) const -> void
 	{
 		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
 
@@ -524,7 +524,7 @@ namespace toaster::render
 		}
 	}
 
-	auto RenderContext::endRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer) const -> void
+	auto RenderContext::endRenderPass(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer) const -> void
 	{
 		TST_GET_VALID_CMD_BUFFER();
 
@@ -770,6 +770,202 @@ namespace toaster::render
 		command_buffer->getVulkanCommandBuffer().drawIndexed(submesh.indexCount, 1, submesh.baseIndex, static_cast<int32>(submesh.baseVertex), 0);
 	}
 
+	auto RenderContext::beginRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer, uint32 p_frame_index) const -> void
+	{
+		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
+
+		command_buffer->setRenderArea(p_rendering_info.renderArea);
+
+		std::vector<vk::RenderingAttachmentInfo> colour_rendering_attachment_infos{};
+		for (const auto &rendering_attachment: p_rendering_info.colourAttachments)
+		{
+			auto &info{colour_rendering_attachment_infos.emplace_back()};
+
+			auto image{rendering_attachment.image};
+			if (rendering_attachment.image != nullptr)
+			{
+				info.imageView = image->getImageView();
+
+				// Perform the layout transition on sampled attachment images
+				if ((image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
+				{
+					gpu::util::transitionImageLayout(image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+													 command_buffer->getVulkanCommandBuffer());
+				}
+
+				info.imageLayout = image->getCurrentImageLayout();
+			}
+			else
+			{
+				info.imageView   = rendering_attachment.imageView;
+				info.imageLayout = rendering_attachment.imageLayout;
+			}
+
+			auto resolve_image{rendering_attachment.resolveImage};
+			if (resolve_image != nullptr)
+			{
+				info.resolveImageView = resolve_image->getImageView();
+
+				// Perform the layout transition on sampled attachment images
+				if ((resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
+						resolve_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
+				{
+					gpu::util::transitionImageLayout(resolve_image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eColorAttachmentOptimal,
+													 command_buffer->getVulkanCommandBuffer());
+				}
+
+				info.resolveImageLayout = resolve_image->getCurrentImageLayout();
+			}
+			else
+			{
+				info.resolveImageView   = rendering_attachment.resolveImageView;
+				info.resolveImageLayout = rendering_attachment.resolveImageLayout;
+			}
+
+			info.resolveMode = rendering_attachment.resolveMode;
+
+			info.loadOp     = getLoadOp(rendering_attachment.attachmentOp);
+			info.storeOp    = getStoreOp(rendering_attachment.attachmentOp);
+			info.clearValue = rendering_attachment.clearValue;
+		}
+
+		vk::RenderingAttachmentInfo depth_attachment_info{};
+		if (p_rendering_info.depthAttachment.has_value())
+		{
+			auto depth_image{p_rendering_info.depthAttachment->image};
+			if (depth_image != nullptr)
+			{
+				depth_attachment_info.imageView = depth_image->getImageView();
+
+				// Perform the layout transition on sampled attachment images
+				if ((depth_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
+						depth_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
+				{
+					gpu::util::transitionImageLayout(depth_image, vk::ImageLayout::eShaderReadOnlyOptimal,
+													 p_rendering_info.depthReadOnly ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal,
+													 command_buffer->getVulkanCommandBuffer());
+				}
+
+				depth_attachment_info.imageLayout = depth_image->getCurrentImageLayout();
+			}
+			else
+			{
+				depth_attachment_info.imageView   = p_rendering_info.depthAttachment->imageView;
+				depth_attachment_info.imageLayout = p_rendering_info.depthAttachment->imageLayout;
+			}
+
+			auto depth_resolve_image{p_rendering_info.depthAttachment->resolveImage};
+			if (depth_resolve_image != nullptr)
+			{
+				depth_attachment_info.resolveImageView = depth_resolve_image->getImageView();
+				// Perform the layout transition on sampled attachment images
+				if ((depth_resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled) && (
+						depth_resolve_image->getCurrentImageLayout() == vk::ImageLayout::eShaderReadOnlyOptimal))
+				{
+					gpu::util::transitionImageLayout(depth_resolve_image, vk::ImageLayout::eShaderReadOnlyOptimal, vk::ImageLayout::eDepthAttachmentOptimal,
+													 command_buffer->getVulkanCommandBuffer());
+				}
+
+				depth_attachment_info.resolveImageLayout = depth_resolve_image->getCurrentImageLayout();
+			}
+			else
+			{
+				depth_attachment_info.resolveImageView   = p_rendering_info.depthAttachment->resolveImageView;
+				depth_attachment_info.resolveImageLayout = p_rendering_info.depthAttachment->resolveImageLayout;
+			}
+
+			depth_attachment_info.resolveMode = p_rendering_info.depthAttachment->resolveMode;
+
+			depth_attachment_info.loadOp     = getLoadOp(p_rendering_info.depthAttachment->attachmentOp);
+			depth_attachment_info.storeOp    = getStoreOp(p_rendering_info.depthAttachment->attachmentOp);
+			depth_attachment_info.clearValue = p_rendering_info.depthAttachment->clearValue;
+		}
+
+		vk::RenderingAttachmentInfo stencil_attachment_info{};
+		if (p_rendering_info.pStencilAttachment != nullptr)
+		{
+			if (p_rendering_info.pStencilAttachment->image != nullptr)
+			{
+				stencil_attachment_info.imageView   = p_rendering_info.pStencilAttachment->image->getImageView();
+				stencil_attachment_info.imageLayout = p_rendering_info.pStencilAttachment->image->getCurrentImageLayout();
+			}
+			else
+			{
+				stencil_attachment_info.imageView   = p_rendering_info.pStencilAttachment->imageView;
+				stencil_attachment_info.imageLayout = p_rendering_info.pStencilAttachment->imageLayout;
+			}
+
+			if (p_rendering_info.pStencilAttachment->resolveImage != nullptr)
+			{
+				stencil_attachment_info.resolveImageView   = p_rendering_info.pStencilAttachment->resolveImage->getImageView();
+				stencil_attachment_info.resolveImageLayout = p_rendering_info.pStencilAttachment->resolveImage->getCurrentImageLayout();
+			}
+			else
+			{
+				stencil_attachment_info.resolveImageView   = p_rendering_info.pStencilAttachment->resolveImageView;
+				stencil_attachment_info.resolveImageLayout = p_rendering_info.pStencilAttachment->resolveImageLayout;
+			}
+
+			stencil_attachment_info.resolveMode = p_rendering_info.pStencilAttachment->resolveMode;
+
+			stencil_attachment_info.loadOp     = getLoadOp(p_rendering_info.pStencilAttachment->attachmentOp);
+			stencil_attachment_info.storeOp    = getStoreOp(p_rendering_info.pStencilAttachment->attachmentOp);
+			stencil_attachment_info.clearValue = p_rendering_info.pStencilAttachment->clearValue;
+		}
+
+		vk::RenderingInfo rendering_info{};
+		rendering_info.renderArea           = p_rendering_info.renderArea;
+		rendering_info.layerCount           = p_rendering_info.layerCount;
+		rendering_info.colorAttachmentCount = colour_rendering_attachment_infos.empty() ? 0u : p_rendering_info.colourAttachments.size();
+		rendering_info.pColorAttachments    = colour_rendering_attachment_infos.empty() ? nullptr : colour_rendering_attachment_infos.data();
+		rendering_info.pDepthAttachment     = p_rendering_info.depthAttachment.has_value() ? &depth_attachment_info : nullptr;
+		rendering_info.pStencilAttachment   = p_rendering_info.pStencilAttachment ? &stencil_attachment_info : nullptr;
+
+		command_buffer->getVulkanCommandBuffer().beginRendering(rendering_info);
+	}
+
+	auto RenderContext::endRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer, uint32 p_frame_index) const -> void
+	{
+		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
+
+		command_buffer->getVulkanCommandBuffer().endRendering();
+
+		// Perform the layout transition on sampled attachment images
+		for (const auto &rendering_attachment: p_rendering_info.colourAttachments)
+		{
+			auto image{rendering_attachment.image};
+			if ((image != nullptr) && (image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
+			{
+				gpu::util::transitionImageLayout(image, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+												 command_buffer->getVulkanCommandBuffer());
+			}
+			auto resolve_image{rendering_attachment.resolveImage};
+			if ((resolve_image != nullptr) && (resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
+			{
+				gpu::util::transitionImageLayout(resolve_image, vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+												 command_buffer->getVulkanCommandBuffer());
+			}
+		}
+
+		if (p_rendering_info.depthAttachment.has_value())
+		{
+			auto depth_image{p_rendering_info.depthAttachment->image};
+
+			if ((depth_image != nullptr) && (depth_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
+			{
+				gpu::util::transitionImageLayout(depth_image,
+												 p_rendering_info.depthReadOnly ? vk::ImageLayout::eDepthReadOnlyOptimal : vk::ImageLayout::eDepthAttachmentOptimal,
+												 vk::ImageLayout::eShaderReadOnlyOptimal, command_buffer->getVulkanCommandBuffer());
+			}
+			auto depth_resolve_image{p_rendering_info.depthAttachment->resolveImage};
+			if ((depth_resolve_image != nullptr) && (depth_resolve_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eSampled))
+			{
+				gpu::util::transitionImageLayout(depth_resolve_image, vk::ImageLayout::eDepthAttachmentOptimal, vk::ImageLayout::eShaderReadOnlyOptimal,
+												 command_buffer->getVulkanCommandBuffer());
+			}
+		}
+	}
+
 	auto RenderContext::renderSubmesh(const DynamicMesh *p_mesh, uint32 p_submesh_index, uint64 p_push_constant_offset, gpu::CommandBuffer *p_command_buffer,
 									  uint32             p_frame_index) -> void
 	{
@@ -784,8 +980,8 @@ namespace toaster::render
 		pcs.normalMap    = material.normalMap->getAlignedHeapID();
 		pcs.hasNormalMap = material.hasNormalMap;
 		pcs.albedoColour = {material.albedoColour, 1.0f};
-		// pcs.roughness    = material.roughness;
-		// pcs.metalness    = material.metalness;
+		pcs.roughness    = material.roughness;
+		pcs.metalness    = material.metalness;
 
 		pcs.samplerIndex = m_samplers.at(ESamplerType::eDefault);
 		pcs.model        = submesh.transform;
@@ -798,6 +994,16 @@ namespace toaster::render
 		// LOG_ERROR("{}", submesh.vertexCount);
 
 		command_buffer->drawIndexed(submesh.indexCount, 1, submesh.baseIndex, static_cast<int32>(submesh.baseVertex), 0);
+	}
+
+	auto RenderContext::renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer, uint32 p_frame_index) const -> void
+	{
+		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
+
+		m_globals->fullscreenQuadVertexBuffer()->bind(command_buffer);
+		m_globals->fullscreenQuadIndexBuffer()->bind(command_buffer);
+
+		command_buffer->drawIndexed(m_globals->fullscreenQuadIndices().size());
 	}
 
 	#undef TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX

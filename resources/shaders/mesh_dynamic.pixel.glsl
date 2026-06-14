@@ -28,26 +28,25 @@ layout(push_constant) uniform PushConstants
 {
     Camera camera;
     uint _cameraPadding[2];
-    
+
+    mat4 modelMatrix;
+
+    vec4 albedoColour;
 
     uint samplerIndex;
 
     uint albedoMap;
     uint normalMap;
-
     uint hasNormalMap;
 
-    vec4 albedoColour;
+    float roughness;
+    float metalness;
 
+    float _padd[2];
 
-    // uint hasNormalMap;
-    // float roughness;
-    // float metalness;
-
-    mat4 modelMatrix;
 } pcs;
 
-const vec3 temp_light_pos = vec3(1.0f, 0.0f, 2.0f);
+const vec3 temp_light_pos = vec3(0.0f, 1.0f,0.0f);
 
 void main()
 {

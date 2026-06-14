@@ -11,7 +11,7 @@
 #include "toast_render/render_context.hpp"
 #include "toast_scene/entity.hpp"
 #include "toast_scene/scene.hpp"
-#include "toast_scene/scene_renderer.hpp"
+#include "toast_scene/dynamic_scene_renderer.hpp"
 
 #include "toast_kernel/fp_camera.hpp"
 #include "toast_math/colours.hpp"
@@ -38,98 +38,63 @@ public:
 
 		auto binary_dir{os::getBinaryDirectory()};
 		auto resources_dir{binary_dir / "../resources"};
-		// auto logical_device{m_renderCtx->getLogicalDevice()};
-
-		m_ubo = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(tsm::float4));
-		m_ubo->setAllData(tsm::float4{0.0f, 1.0f, 1.0f, 1.0f});
-
-		m_cameraUBO        = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(CameraUB));
-		m_mappedCameraUBOs = m_cameraUBO->mapAllMemory(sizeof(CameraUB));
-
-		render::ImageSpecInfo image_spec{};
-		image_spec.format = vk::Format::eR8G8B8A8Unorm;
-		image_spec.size   = {2u};
-
-		{
-			Buffer image_data;
-			image_data.allocate(sizeof(uint32) * 4);
-			image_data.writeType<uint32>(tsm::colours::rgbaToHex(tsm::colours::weezer), 0);
-			image_data.writeType<uint32>(tsm::colours::rgbaToHex(tsm::colours::magenta), sizeof(uint32));
-			image_data.writeType<uint32>(tsm::colours::rgbaToHex(tsm::colours::blue), sizeof(uint32) * 2);
-			image_data.writeType<uint32>(tsm::colours::rgbaToHex(tsm::colours::red), sizeof(uint32) * 3);
-			m_image = m_renderCtx->createRef<render::Image>(image_spec, image_data);
-			image_data.release();
-		}
 
 		m_image = m_renderCtx->createImageRef(resources_dir / "textures/Peeber.png");
 
-		m_vertexShader = m_renderCtx->createShader(resources_dir / "shaders/mesh_dynamic.vert.hlsl", render::EShaderStage::eVertex, render::EShaderStage::ePixel,
+		m_vertexShader = m_renderCtx->createShader(resources_dir / "shaders/fullscreen_quad.vert.hlsl", render::EShaderStage::eVertex, render::EShaderStage::ePixel,
 												   render::EShaderLanguage::eHLSL);
-		m_fragmentShader = m_renderCtx->createShader(resources_dir / "shaders/mesh_dynamic.pixel.glsl", render::EShaderStage::ePixel, render::EShaderStage::eNone,
+		m_fragmentShader = m_renderCtx->createShader(resources_dir / "shaders/fullscreen_quad.pixel.glsl", render::EShaderStage::ePixel, render::EShaderStage::eNone,
 													 render::EShaderLanguage::eGLSL);
 
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
-		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::meshVbl).setAttachmentCount(1u).
-				setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(true).setEnableDepthWrite(true);
+		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).
+				setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(false).setEnableDepthWrite(false);
 
 		// m_mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Tall_Orange_Mike.fbx");
 		m_mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Test_scene.fbx");
+
+		m_scene         = m_app->createScene();
+		m_sceneRenderer = toaster::make_unique<DynamicSceneRenderer>(m_scene.get(), m_viewportSize);
+
+		{
+			Entity e{m_scene->createEntity("Mesh thing")};
+			e.addComponent<DynamicMeshComponent>().mesh = m_mesh;
+		}
 	}
 
 	auto onDestroy() -> void override
 	{
-		m_cameraUBO->unmapAllMemory();
 	}
 
 	auto onUpdate(float32 p_dt) -> void override
 	{
-		auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({0.2f, 1.0f, 1.0f, 1.0f}, true)};
-
-		auto  cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
-		auto &vk_cmd{cmd->getVulkanCommandBuffer()};
-
-		m_renderCtx->beginRendering(rendering_info);
-		cmd->setRenderArea(rendering_info.renderArea);
+		auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({0.0f, 1.0f, 1.0f, 1.0f}, false)};
+		auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 
 		m_renderCtx->getDescriptorHeap()->bind();
 
 		m_camera.onUpdate(p_dt);
-
-		CameraUB camera_ub{};
-		Dx::XMStoreFloat4x4(&camera_ub.view, m_camera.getViewMatrix());
-		Dx::XMStoreFloat4x4(&camera_ub.proj, m_camera.getProjectionMatrix());
-		Dx::XMStoreFloat4x4(&camera_ub.invProj, Dx::XMMatrixInverse(nullptr, m_camera.getProjectionMatrix()));
-
-		std::memcpy(m_mappedCameraUBOs[m_renderCtx->getCurrentFrameIndex()], &camera_ub, sizeof(CameraUB));
-
-		TST_PUSH_CONSTANT_BLOCK(PushConstants)
-		{
-			uintptr cameraAddress;
-		};
-
-		PushConstants pcs{};
-		pcs.cameraAddress = m_cameraUBO->getDeviceAddress();
-		cmd->pushData(pcs);
+		m_scene->onUpdate(p_dt);
+		m_sceneRenderer->onRender(m_camera.getPosition(), m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
 
 		m_graphicsState->bind();
+		m_renderCtx->beginRendering(rendering_info);
 
-		m_mesh->getVertexBuffer()->bind();
-		m_mesh->getIndexBuffer()->bind();
+		FullscreenQuadConstants quad_constants{};
+		quad_constants.samplerIndex = m_renderCtx->getSampler(render::ESamplerType::eDefault);
+		quad_constants.textureIndex = m_sceneRenderer->getColourImage()->getAlignedHeapID();
+		cmd->pushData(quad_constants);
 
-		for (uint32 i{0u}; i < m_mesh->getSubmeshes().size(); ++i)
-		{
-			m_renderCtx->renderSubmesh(m_mesh, i, sizeof(PushConstants));
-		}
-
-		// cmd->drawIndexed(m_mesh->getIndices().size());
-
-		vk_cmd.endRendering();
+		m_renderCtx->renderFullscreenQuad();
+		m_renderCtx->endRendering(rendering_info);
 	}
 
 	auto onResize(tsm::uint2 p_size) -> void override
 	{
 		m_viewportSize = p_size;
 		m_camera.onResize(p_size);
+		m_scene->onResize(p_size);
+		m_sceneRenderer->onResize(p_size);
 	}
 
 	auto onEvent(Event &p_event) -> void override
@@ -145,19 +110,22 @@ private:
 
 	UniquePtr<render::GraphicsState> m_graphicsState{nullptr};
 
-	render::ImageHandle            m_image{nullptr};
-	render::UniformBufferPFFHandle m_ubo{nullptr};
-
-	render::UniformBufferPFFHandle m_cameraUBO{nullptr};
-	std::vector<void *>            m_mappedCameraUBOs;
+	render::ImageHandle m_image{nullptr};
 
 	FPCamera m_camera{};
 
-	render::ESamplerType m_activeSampler{render::ESamplerType::eDefault};
-
 	render::DynamicMeshHandle m_mesh{nullptr};
 
-	// UniquePtr<render::Renderer2DV2> m_renderer2D{nullptr};
+	UniquePtr<Scene>                m_scene{nullptr};
+	UniquePtr<DynamicSceneRenderer> m_sceneRenderer{nullptr};
+
+	TST_PUSH_CONSTANT_BLOCK(FullscreenQuadConstants)
+	{
+		uint32 samplerIndex;
+		uint32 textureIndex;
+
+		char _padd[8];
+	};
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32

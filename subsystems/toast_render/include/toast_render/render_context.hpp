@@ -58,19 +58,20 @@ namespace toaster::render
 
 		TST_PUSH_CONSTANT_BLOCK(MeshPushConstants)
 		{
+			Dx::XMFLOAT4X4 model;
+
+			tsm::float4 albedoColour;
+
 			uint32 samplerIndex;
 
 			uint32 albedoMap;
 			uint32 normalMap;
-
 			bool32 hasNormalMap;
 
-			tsm::float4 albedoColour;
+			float32 roughness;
+			float32 metalness;
 
-			// float32     roughness;
-			// float32     metalness;
-
-			Dx::XMFLOAT4X4 model;
+			char _padd[8];
 		};
 
 		RenderContext(const RenderContextSpecInfo &p_spec_info);
@@ -178,9 +179,9 @@ namespace toaster::render
 		#pragma region render logic
 		// For all of these, if the frame index or command buffer parameter is null / 0, they will be obtained from the swapchain instead
 
-		auto beginRendering(const RenderingInfo &p_rendering_info, RenderPass *p_render_pass = nullptr, gpu::CommandBuffer *p_command_buffer = nullptr,
-							uint32               p_frame_index                               = UINT32_MAX) const -> void;
-		auto endRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr) const -> void;
+		[[deprecated]] auto beginRenderPass(const RenderingInfo &p_rendering_info, RenderPass *p_render_pass = nullptr, gpu::CommandBuffer *p_command_buffer = nullptr,
+										   uint32               p_frame_index                               = UINT32_MAX) const -> void;
+		[[deprecated]] auto endRenderPass(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr) const -> void;
 
 		auto beginCompute(ComputePass *p_compute_pass, gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
 		auto dispatchCompute(const ComputePass *p_compute_pass, Material *p_material, const tsm::uint3 &p_work_groups, gpu::CommandBuffer *p_command_buffer = nullptr,
@@ -202,8 +203,13 @@ namespace toaster::render
 
 		#pragma region new render logic
 
+		auto beginRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
+		auto endRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
+
 		auto renderSubmesh(const DynamicMesh *p_mesh, uint32 p_submesh_index, uint64 p_push_constant_offset, gpu::CommandBuffer *p_command_buffer = nullptr,
 						   uint32             p_frame_index                                                                                       = UINT32_MAX) -> void;
+
+		auto renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
 
 		#pragma endregion
 

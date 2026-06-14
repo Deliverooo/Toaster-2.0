@@ -92,7 +92,7 @@ namespace toaster::render
 		std::vector<ColourBlendAttachmentInfo> m_colourBlendAttachmentInfos;
 
 		vk::CullModeFlagBits m_cullMode{vk::CullModeFlagBits::eBack};
-		bool32               m_enableMultisample{false};
+		volatile bool32      m_enableMultisample{false};
 
 		bool32 m_depthTestEnable{false};
 		bool32 m_depthWriteEnable{false};

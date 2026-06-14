@@ -16,6 +16,8 @@ namespace toaster::render
 
 		vk::Format          format{vk::Format::eR8G8B8A8Srgb};
 		vk::ImageUsageFlags usageFlags{vk::ImageUsageFlagBits::eSampled};
+
+		uint32 layerCount{1u};
 	};
 
 	class TST_RENDER_API Image
@@ -31,6 +33,8 @@ namespace toaster::render
 		auto getSpecInfo() const -> const ImageSpecInfo &;
 		auto getImage() const -> const gpu::RawImageHandle &;
 		auto getImage() -> gpu::RawImageHandle &;
+
+		auto resize(tsm::uint2 p_size) -> void;
 
 		auto getHeapID() const -> gpu::DescriptorSlot;
 		auto getAlignedHeapID() const -> gpu::DescriptorSlot;

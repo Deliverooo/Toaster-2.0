@@ -148,6 +148,7 @@ namespace toaster
 		friend class Entity;
 		friend class SceneSerializer;
 		friend class SceneRenderer;
+		friend class DynamicSceneRenderer;
 		friend class SceneImporter;
 	};
 }

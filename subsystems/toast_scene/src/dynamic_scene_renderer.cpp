@@ -1,57 +1,71 @@
-#include "toast_scene/scene_renderer.hpp"
+#include "toast_scene/dynamic_scene_renderer.hpp"
 
 #include "toast_render/globals.hpp"
 #include "toast_render/render_context.hpp"
 
 #include <random>
 
+#include "toast_lib/os/terminal.hpp"
 #include "toast_scene/entity.hpp"
 
-#define TST_ENABLE_2D_SCENE_RENDERING 1
+#define TST_ENABLE_2D_SCENE_RENDERING 0
 #define TST_ENABLE_3D_SCENE_RENDERING 1
 
 namespace toaster
 {
-	SceneRenderer::SceneRenderer(Scene *p_scene, const SceneRendererSpecInfo &p_spec_info) : m_scene(p_scene), m_renderCtx(p_scene->m_renderCtx), m_specInfo(p_spec_info)
+	DynamicSceneRenderer::DynamicSceneRenderer(Scene *p_scene, tsm::uint2 p_viewport_size) : m_scene(p_scene), m_renderCtx(p_scene->m_renderCtx),
+																							 m_viewportSize(p_viewport_size)
 	{
-		m_cameraUBOs       = m_renderCtx->createUniformBuffers<CameraUB>(render::RenderContext::maxFramesInFlight);
-		m_mappedCameraUBOs = m_cameraUBOs->mapAllMemory(sizeof(CameraUB));
+		m_cameraUBOs = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(CameraUB));
 
-		m_directionalLightUBOs       = m_renderCtx->createUniformBuffers<DirectionalLightUB>(render::RenderContext::maxFramesInFlight);
-		m_mappedDirectionalLightUBOs = m_directionalLightUBOs->mapAllMemory(sizeof(DirectionalLightUB));
+		// m_directionalLightUBOs       = m_renderCtx->createUniformBuffers<DirectionalLightUB>(render::RenderContext::maxFramesInFlight);
+		// m_mappedDirectionalLightUBOs = m_directionalLightUBOs->mapAllMemory(sizeof(DirectionalLightUB));
 
-		m_pointLightUBOs       = m_renderCtx->createUniformBuffers<PointLightUB>(render::RenderContext::maxFramesInFlight);
-		m_mappedPointLightUBOs = m_pointLightUBOs->mapAllMemory(sizeof(PointLightUB));
+		// m_pointLightUBOs       = m_renderCtx->createUniformBuffers<PointLightUB>(render::RenderContext::maxFramesInFlight);
+		// m_mappedPointLightUBOs = m_pointLightUBOs->mapAllMemory(sizeof(PointLightUB));
 
-		m_sceneDataUBOs       = m_renderCtx->createUniformBuffers<SceneDataUB>(render::RenderContext::maxFramesInFlight);
-		m_mappedSceneDataUBOs = m_sceneDataUBOs->mapAllMemory(sizeof(SceneDataUB));
+		// m_sceneDataUBOs       = m_renderCtx->createUniformBuffers<SceneDataUB>(render::RenderContext::maxFramesInFlight);
+		// m_mappedSceneDataUBOs = m_sceneDataUBOs->mapAllMemory(sizeof(SceneDataUB));
+
+		auto binary_dir{os::getBinaryDirectory()};
+		auto resources_dir{binary_dir / "../resources"};
 
 		#pragma region depth-pre
 		{
-			gpu::PipelineSpecInfo depth_pre_pipeline_spec_info{};
-			depth_pre_pipeline_spec_info.vertexBufferLayout = render::RenderContext::meshVbl;
-			depth_pre_pipeline_spec_info.depthFormat        = vk::Format::eD32Sfloat;
-			depth_pre_pipeline_spec_info.colourAttachments  = {vk::Format::eR16G16B16A16Sfloat, vk::Format::eR16G16B16A16Sfloat};
-			depth_pre_pipeline_spec_info.multisample        = true;
-			depth_pre_pipeline_spec_info.cullMode           = m_specInfo.backfaceCulling ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone;
-			depth_pre_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Depth-Pre");
-			m_depthPrePipeline                              = m_renderCtx->createGPURef<gpu::VKPipeline>(depth_pre_pipeline_spec_info, "Depth-Pre");
+			// gpu::PipelineSpecInfo depth_pre_pipeline_spec_info{};
+			// depth_pre_pipeline_spec_info.vertexBufferLayout = render::RenderContext::meshVbl;
+			// depth_pre_pipeline_spec_info.depthFormat        = vk::Format::eD32Sfloat;
+			// depth_pre_pipeline_spec_info.colourAttachments  = {vk::Format::eR16G16B16A16Sfloat, vk::Format::eR16G16B16A16Sfloat};
+			// depth_pre_pipeline_spec_info.multisample        = true;
+			// depth_pre_pipeline_spec_info.cullMode           = m_specInfo.backfaceCulling ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone;
+			// depth_pre_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Depth-Pre");
+			// m_depthPrePipeline                              = m_renderCtx->createGPURef<gpu::VKPipeline>(depth_pre_pipeline_spec_info, "Depth-Pre");
 
-			m_depthPrePass = m_renderCtx->createRef<render::RenderPass>(m_depthPrePipeline);
-			m_depthPrePass->setInput("Camera", m_cameraUBOs).bake();
+			// m_depthPrePass = m_renderCtx->createRef<render::RenderPass>(m_depthPrePipeline);
+			// m_depthPrePass->setInput("Camera", m_cameraUBOs).bake();
 
-			m_MSAADepthImage = m_renderCtx->createMultisampleAttachmentImage(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eDepth);
-			m_depthTexture   = m_renderCtx->createAttachmentTexture(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eDepth);
+			m_depthPreVertexShader = m_renderCtx->createShader(resources_dir / "shaders/depth_pre.vert.hlsl", render::EShaderStage::eVertex, render::EShaderStage::ePixel,
+															   render::EShaderLanguage::eHLSL);
+			m_depthPrePixelShader = m_renderCtx->createShader(resources_dir / "shaders/depth_pre.pixel.glsl", render::EShaderStage::ePixel, render::EShaderStage::eNone,
+															  render::EShaderLanguage::eGLSL);
 
-			m_MSAAGeometryNormalsImage = m_renderCtx->createMultisampleAttachmentImage(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eColor,
-																					   vk::Format::eR16G16B16A16Sfloat);
-			m_geometryNormalsTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eColor, vk::Format::eR16G16B16A16Sfloat);
-			m_MSAAGeometryPositionsImage = m_renderCtx->createMultisampleAttachmentImage(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eColor,
+			m_depthPreGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
+			m_depthPreGraphicsState->setShaders({m_depthPreVertexShader, m_depthPrePixelShader}).setVertexBufferLayout(render::RenderContext::meshVbl).
+					setAttachmentCount(3u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(true).setEnableDepthWrite(true).setEnableMultisample(true);
+
+			m_MSAADepthImage = m_renderCtx->createMultisampleAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eDepth);
+			m_depthImage     = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eDepth);
+
+			m_MSAAGeometryNormalsImage = m_renderCtx->createMultisampleAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor, vk::Format::eR16G16B16A16Sfloat);
+			m_geometryNormalsImage     = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor, vk::Format::eR16G16B16A16Sfloat);
+
+			m_MSAAGeometryPositionsImage = m_renderCtx->createMultisampleAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor,
 																						 vk::Format::eR16G16B16A16Sfloat);
-			m_geometryPositionsTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eColor, vk::Format::eR16G16B16A16Sfloat);
+			m_geometryPositionsImage = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor, vk::Format::eR16G16B16A16Sfloat);
 		}
 		#pragma endregion
 
+		#if 0
 		#pragma region ambient occlusion
 		{
 			m_SSAOTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eColor, vk::Format::eR16G16B16A16Sfloat);
@@ -101,25 +115,44 @@ namespace toaster
 			}
 		}
 		#pragma endregion
+		#endif
 
 		#pragma region skybox
 		{
-			gpu::PipelineSpecInfo skybox_pipeline_spec_info{};
-			skybox_pipeline_spec_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
-			skybox_pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
-			skybox_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Skybox");
-			skybox_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
-			skybox_pipeline_spec_info.multisample        = true;
-			skybox_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
-			m_skyboxPipeline                             = m_renderCtx->createGPURef<gpu::VKPipeline>(skybox_pipeline_spec_info, "Skybox");
+			m_skyboxVertexShader = m_renderCtx->createShader(resources_dir / "shaders/skybox.vert.hlsl", render::EShaderStage::eVertex, render::EShaderStage::ePixel,
+															 render::EShaderLanguage::eHLSL);
+			m_skyboxPixelShader = m_renderCtx->createShader(resources_dir / "shaders/skybox.pixel.glsl", render::EShaderStage::ePixel, render::EShaderStage::eNone,
+															render::EShaderLanguage::eGLSL);
 
-			m_skyboxPass = m_renderCtx->createRef<render::RenderPass>(m_skyboxPipeline);
-			m_skyboxPass->setInput("Camera", m_cameraUBOs).bake();
+			m_skyboxGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
+			m_skyboxGraphicsState->setShaders({m_skyboxVertexShader, m_skyboxPixelShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).
+					setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(false).setEnableDepthWrite(false).setEnableMultisample(true);
 
-			m_skyboxMaterial = m_renderCtx->createRef<render::Material>(m_renderCtx->getGlobals()->shaderLibrary().get("Skybox"));
+			m_MSAAColourImage = m_renderCtx->createMultisampleAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor);
+			m_colourImage     = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor);
+
+			render::ImageSpecInfo image_spec{};
+			image_spec.layerCount = 6u;
+			image_spec.size       = {1u};
+			image_spec.format     = vk::Format::eR8G8B8A8Unorm;
+
+			Buffer image_data{};
+			image_data.allocate(sizeof(uint32) * 6u);
+			image_data.writeType(0x000BB000, sizeof(uint32) * 0u);
+			image_data.writeType(0xFFFF0FF, sizeof(uint32) * 1u);
+			image_data.writeType(0xFFF00AFF, sizeof(uint32) * 2u);
+			image_data.writeType(0xFFFFFFFF, sizeof(uint32) * 3u);
+			image_data.writeType(0xFFFF0FF, sizeof(uint32) * 4u);
+			image_data.writeType(0xF00FFFFF, sizeof(uint32) * 5u);
+
+			m_skyboxImage = m_renderCtx->createRef<render::Image>(image_spec, image_data);
+
+			image_data.release();
+			// m_skyboxImage = m_renderCtx->getGlobals()->whiteImage();
 		}
 		#pragma endregion
 
+		#if 0
 		#pragma region geometry
 		{
 			auto shader_choice{m_specInfo.overrideGeometryShader ? m_specInfo.overrideGeometryShader : m_renderCtx->getGlobals()->shaderLibrary().get("Geometry")};
@@ -143,33 +176,21 @@ namespace toaster
 		#pragma endregion
 
 		m_MSAAcolourImage = m_renderCtx->createMultisampleAttachmentImage(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eColor);
-		m_colourTexture   = m_renderCtx->createAttachmentTexture(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eColor);
+		m_colourTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eColor); render::Renderer2DSpecInfo
+				renderer_2d_create_info{}; renderer_2d_create_info.renderTargetSize = m_specInfo.viewportSize; renderer_2d_create_info.overrideAttachments = true;
+		renderer_2d_create_info.msaa = true; m_renderer2D = m_renderCtx->createRef<render::Renderer2D>(renderer_2d_create_info);
 
-		render::Renderer2DSpecInfo renderer_2d_create_info{};
-		renderer_2d_create_info.renderTargetSize    = m_specInfo.viewportSize;
-		renderer_2d_create_info.overrideAttachments = true;
-		renderer_2d_create_info.msaa                = true;
-		m_renderer2D                                = m_renderCtx->createRef<render::Renderer2D>(renderer_2d_create_info);
+		#endif
 	}
 
-	SceneRenderer::~SceneRenderer()
+	DynamicSceneRenderer::~DynamicSceneRenderer()
 	{
-		m_sceneDataUBOs->unmapAllMemory();
-		m_directionalLightUBOs->unmapAllMemory();
-		m_cameraUBOs->unmapAllMemory();
+		// m_sceneDataUBOs->unmapAllMemory();
+		// m_directionalLightUBOs->unmapAllMemory();
+		// m_cameraUBOs->unmapAllMemory();
 	}
 
-	auto SceneRenderer::onRender() -> void
-	{
-		onRender(m_renderCtx->getCurrentSwapchainCommandBuffer());
-	}
-
-	auto SceneRenderer::onRender(Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
-	{
-		onRender(m_renderCtx->getCurrentSwapchainCommandBuffer(), p_camera_position, p_view_matrix, p_projection_matrix);
-	}
-
-	auto SceneRenderer::onRender(gpu::VKCommandBuffer *p_cmd) -> void
+	auto DynamicSceneRenderer::onRender() -> void
 	{
 		const Camera *main_camera{nullptr};
 
@@ -185,7 +206,7 @@ namespace toaster
 		if (!main_camera)
 		{
 			// Fixes vulkan validation error messages...
-			auto       output_colour_image{m_colourTexture->getImage()};
+			auto       output_colour_image{m_colourImage->getImage()};
 			const auto current_image_layout{output_colour_image->getCurrentImageLayout()};
 			if (current_image_layout != vk::ImageLayout::eShaderReadOnlyOptimal)
 				gpu::util::transitionImageLayout(output_colour_image, output_colour_image->getCurrentImageLayout(), vk::ImageLayout::eShaderReadOnlyOptimal);
@@ -196,10 +217,10 @@ namespace toaster
 		Dx::XMMATRIX correction{Dx::XMMatrixSet(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f)};
 
 		view_matrix = Dx::XMMatrixMultiply(view_matrix, correction);
-		onRender(p_cmd, camera_positon, view_matrix, main_camera->getProjectionMatrix());
+		onRender(camera_positon, view_matrix, main_camera->getProjectionMatrix());
 	}
 
-	auto SceneRenderer::onRender(gpu::VKCommandBuffer *p_cmd, Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection) -> void
+	auto DynamicSceneRenderer::onRender(Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
 	{
 		m_scene->m_lightEnvironment.pointLights.clear();
 		m_scene->m_lightEnvironment.directionalLights.clear();
@@ -242,10 +263,10 @@ namespace toaster
 				m_scene->m_reloadEnvironment = false;
 			}
 
-			begin(p_camera_position, p_view, p_projection);
-			for (const auto view{m_scene->m_registry.view<MeshComponent>()}; const auto entity: view)
+			begin(p_camera_position, p_view_matrix, p_projection_matrix);
+			for (const auto view{m_scene->m_registry.view<DynamicMeshComponent>()}; const auto entity: view)
 			{
-				const auto &mesh_comp{view.get<MeshComponent>(entity)};
+				const auto &mesh_comp{view.get<DynamicMeshComponent>(entity)};
 
 				auto mesh{mesh_comp.mesh};
 				if (mesh)
@@ -256,7 +277,7 @@ namespace toaster
 					renderMesh(mesh, transform);
 				}
 			}
-			end(p_cmd);
+			end();
 		}
 		#endif
 		#if TST_ENABLE_2D_SCENE_RENDERING
@@ -278,12 +299,12 @@ namespace toaster
 				else
 					m_renderer2D->submitQuad(transform, src.colour);
 			}
-			m_renderer2D->end(p_cmd);
+			m_renderer2D->end();
 		}
 		#endif
 	}
 
-	auto SceneRenderer::begin(Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
+	auto DynamicSceneRenderer::begin(Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
 	{
 		uint32 frame_index{m_renderCtx->getCurrentFrameIndex()};
 
@@ -292,8 +313,9 @@ namespace toaster
 		Dx::XMStoreFloat4x4(&camera_ub.proj, p_projection_matrix);
 		Dx::XMStoreFloat4x4(&camera_ub.invProj, Dx::XMMatrixInverse(nullptr, p_projection_matrix));
 
-		std::memcpy(m_mappedCameraUBOs[frame_index], &camera_ub, sizeof(CameraUB));
+		m_cameraUBOs->setData(camera_ub);
 
+		#if 0
 		const auto &[directional_lights, point_lights]{m_scene->getLightEnvironment()};
 		{
 			DirectionalLightUB directional_light_ub{};
@@ -314,91 +336,137 @@ namespace toaster
 				point_light_ub.pointLights[i].radiance = point_lights[i].radiance;
 			}
 			std::memcpy(m_mappedPointLightUBOs[frame_index], &point_light_ub, sizeof(PointLightUB));
-		}
-
-		SceneDataUB scene_data_ub{};
-		Dx::XMStoreFloat3(&scene_data_ub.cameraPos, p_camera_position);
-		std::memcpy(m_mappedSceneDataUBOs[frame_index], &scene_data_ub, sizeof(SceneDataUB));
+		} SceneDataUB scene_data_ub{}; Dx::XMStoreFloat3(&scene_data_ub.cameraPos, p_camera_position); std::memcpy(m_mappedSceneDataUBOs[frame_index], &scene_data_ub,
+																												   sizeof(SceneDataUB));
+		#endif
 	}
 
-	auto SceneRenderer::end(gpu::VKCommandBuffer *p_cmd) -> void
+	auto DynamicSceneRenderer::end() -> void
 	{
-		_renderDepthPrePass(p_cmd);
-		_renderAOPass(p_cmd);
-		_renderSkyboxPass(p_cmd);
-		_renderGeometryPass(p_cmd);
+		_renderDepthPrePass(m_renderCtx->getCurrentSwapchainCommandBuffer());
+		// _renderAOPass(p_cmd);
+		_renderSkyboxPass(m_renderCtx->getCurrentSwapchainCommandBuffer());
+		// _renderGeometryPass(p_cmd);
 
 		m_meshDrawCommands.clear();
 	}
 
-	auto SceneRenderer::renderMesh(const render::MeshHandle &p_mesh, Dx::FXMMATRIX p_transform) -> void
+	auto DynamicSceneRenderer::renderMesh(const render::DynamicMeshHandle &p_mesh, Dx::FXMMATRIX p_transform) -> void
 	{
 		DrawCommand &draw_command{m_meshDrawCommands.emplace_back()};
 		draw_command.mesh = p_mesh;
 		Dx::XMStoreFloat4x4(&draw_command.transform, p_transform);
 	}
 
-	auto SceneRenderer::onResize(tsm::uint2 p_size) -> void
+	auto DynamicSceneRenderer::onResize(tsm::uint2 p_size) -> void
 	{
 		TST_ASSERT_MSG(p_size.x != 0 && p_size.y != 0, "Cannot resize to 0");
 
-		if (m_specInfo.viewportSize != p_size)
+		if (m_viewportSize != p_size)
 		{
-			m_specInfo.viewportSize = p_size;
+			m_viewportSize = p_size;
 
 			m_MSAADepthImage->resize(p_size);
-			m_depthTexture->resize(p_size);
+			m_depthImage->resize(p_size);
 
 			m_MSAAGeometryNormalsImage->resize(p_size);
-			m_geometryNormalsTexture->resize(p_size);
+			m_geometryNormalsImage->resize(p_size);
 
 			m_MSAAGeometryPositionsImage->resize(p_size);
-			m_geometryPositionsTexture->resize(p_size);
+			m_geometryPositionsImage->resize(p_size);
 
-			m_SSAOTexture->resize(p_size);
-			m_SSAOBlurredImage->resize(p_size);
+			m_MSAAColourImage->resize(p_size);
+			m_colourImage->resize(p_size);
+			// m_SSAOTexture->resize(p_size);
+			// m_SSAOBlurredImage->resize(p_size);
 
-			m_MSAAcolourImage->resize(p_size);
-			m_colourTexture->resize(p_size);
+			// m_MSAAcolourImage->resize(p_size);
+			// m_colourTexture->resize(p_size);
 
-			m_renderer2D->onResize(p_size);
+			// m_renderer2D->onResize(p_size);
 		}
 	}
 
-	auto SceneRenderer::reloadEnvironmentMaps(const gpu::Texture3DHandle &p_skybox, const gpu::Texture3DHandle &p_diffuse_irradiance) -> void
+	auto DynamicSceneRenderer::reloadEnvironmentMaps(const render::ImageHandle &p_skybox, const render::ImageHandle &p_diffuse_irradiance) -> void
 	{
-		m_skyboxPass->setInput("u_CubeMapImage", p_skybox);
-		m_geometryPass->setInput("u_DiffuseIrradianceMap", p_diffuse_irradiance);
+		m_skyboxImage = p_skybox;
+		// m_skyboxPass->setInput("u_CubeMapImage", p_skybox);
+		// m_geometryPass->setInput("u_DiffuseIrradianceMap", p_diffuse_irradiance);
 	}
 
-	auto SceneRenderer::_renderDepthPrePass(gpu::VKCommandBuffer *p_cmd) -> void
+	auto DynamicSceneRenderer::_renderDepthPrePass(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		render::RenderingInfo rendering_info{};
-		rendering_info.renderArea = render::getRenderingArea(m_specInfo.viewportSize);
+		rendering_info.renderArea = render::getRenderingArea(m_viewportSize);
 
-		auto depth_attachment_info{render::getRenderingAttachmentInfo(*m_MSAADepthImage, *m_depthTexture->getImage())};
+		auto depth_attachment_info{render::getRenderingAttachmentInfo(*m_MSAADepthImage, *m_depthImage->getImage())};
 		rendering_info.depthAttachment = depth_attachment_info;
 
 		auto &geo_normals_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		geo_normals_attachment_info = render::getRenderingAttachmentInfo(*m_MSAAGeometryNormalsImage, *m_geometryNormalsTexture->getImage());
+		geo_normals_attachment_info = render::getRenderingAttachmentInfo(*m_MSAAGeometryNormalsImage, *m_geometryNormalsImage->getImage());
 
 		auto &geo_positions_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		geo_positions_attachment_info = render::getRenderingAttachmentInfo(*m_MSAAGeometryPositionsImage, *m_geometryPositionsTexture->getImage());
+		geo_positions_attachment_info = render::getRenderingAttachmentInfo(*m_MSAAGeometryPositionsImage, *m_geometryPositionsImage->getImage());
 
-		m_renderCtx->beginRenderPass(rendering_info, m_depthPrePass, p_cmd);
+		m_depthPreGraphicsState->bind();
+		m_renderCtx->beginRendering(rendering_info);
+
+		// p_cmd->setRenderArea(rendering_info.renderArea);
+
+		DepthPreConstants depth_pre_constants{};
+		depth_pre_constants.cameraPtr = m_cameraUBOs->getDeviceAddress();
+
+		p_cmd->pushData(depth_pre_constants);
+
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
 			{
-				Dx::XMMATRIX draw_cmd_transform{Dx::XMLoadFloat4x4(&draw_cmd.transform)};
-				Dx::XMMATRIX submesh_transform{Dx::XMLoadFloat4x4(&draw_cmd.mesh->getSubmeshes()[i].transform)};
-				m_renderCtx->renderMesh(draw_cmd.mesh, i, m_depthPrePipeline, Dx::XMMatrixMultiply(submesh_transform, draw_cmd_transform), nullptr, p_cmd);
+				auto &mesh{draw_cmd.mesh};
+
+				// Dx::XMMATRIX draw_cmd_transform{Dx::XMLoadFloat4x4(&draw_cmd.transform)};
+				// Dx::XMMATRIX submesh_transform{Dx::XMLoadFloat4x4(&mesh->getSubmeshes()[i].transform)};
+
+				auto &submesh{mesh->getSubmeshes()[i]};
+				p_cmd->pushData<Dx::XMFLOAT4X4>(submesh.transform, sizeof(DepthPreConstants));
+
+				mesh->getVertexBuffer()->bind();
+				mesh->getIndexBuffer()->bind();
+
+				p_cmd->drawIndexed(submesh.indexCount, 1, submesh.baseIndex, static_cast<int32>(submesh.baseVertex), 0);
 			}
 		}
+
+		// p_cmd->getVulkanCommandBuffer().endRendering();
+
 		m_renderCtx->endRendering(rendering_info, p_cmd);
 	}
 
-	auto SceneRenderer::_renderAOPass(gpu::VKCommandBuffer *p_cmd) -> void
+	auto DynamicSceneRenderer::_renderSkyboxPass(gpu::VKCommandBuffer *p_cmd) -> void
+	{
+		render::RenderingInfo rendering_info{};
+		rendering_info.renderArea = render::getRenderingArea(m_viewportSize);
+
+		render::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
+		colour_attachment_info = render::getRenderingAttachmentInfo(*m_MSAAColourImage, *m_colourImage->getImage());
+
+		m_skyboxGraphicsState->bind(p_cmd);
+		m_renderCtx->beginRendering(rendering_info, p_cmd);
+
+		SkyboxConstants skybox_constants{};
+		skybox_constants.cameraPtr = m_cameraUBOs->getDeviceAddress();
+		skybox_constants.samplerId = m_renderCtx->getSampler(render::ESamplerType::eNearest);
+		// skybox_constants.skyboxMapId = m_renderCtx->getGlobals()->whiteImage()->getAlignedHeapID();
+		skybox_constants.skyboxMapId = m_skyboxImage->getAlignedHeapID();
+		p_cmd->pushData(skybox_constants);
+
+		m_renderCtx->renderFullscreenQuad();
+		m_renderCtx->endRendering(rendering_info, p_cmd);
+	}
+
+	#if 0
+
+	auto DynamicSceneRenderer::_renderAOPass(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		tsm::float2 noise_scale{static_cast<tsm::float2>(m_specInfo.viewportSize) / static_cast<tsm::float2>(m_SSAONoiseTexture->getSpecInfo().size)};
 		m_SSAOFrameDataMaterial->set(".u_NoiseScale", noise_scale);
@@ -411,28 +479,13 @@ namespace toaster
 		out_ssao_attachment_info.clearValue = vk::ClearColorValue{1.0f, 1.0, 1.0f, 1.0f};
 		out_ssao_attachment_info.image      = m_SSAOTexture->getImage();
 
-		m_renderCtx->beginRenderPass(rendering_info, m_SSAOPass, p_cmd);
+		m_renderCtx->beginRendering(rendering_info, m_SSAOPass, p_cmd);
 		m_renderCtx->renderFullscreenQuad(m_SSAOPass, m_SSAOFrameDataMaterial, p_cmd);
 		m_renderCtx->endRendering(rendering_info, p_cmd);
 
 		m_renderCtx->beginCompute(m_SSAOBlurPass, p_cmd);
 		m_renderCtx->dispatchCompute(m_SSAOBlurPass, nullptr, {(m_specInfo.viewportSize + 15u) / 16u, 1u}, p_cmd);
-	}
-
-	auto SceneRenderer::_renderSkyboxPass(gpu::VKCommandBuffer *p_cmd) -> void
-	{
-		render::RenderingInfo rendering_info{};
-		rendering_info.renderArea = render::getRenderingArea(m_specInfo.viewportSize);
-
-		render::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		colour_attachment_info = render::getRenderingAttachmentInfo(*m_MSAAcolourImage, *m_colourTexture->getImage());
-
-		m_renderCtx->beginRenderPass(rendering_info, m_skyboxPass, p_cmd);
-		m_renderCtx->renderFullscreenQuad(m_skyboxPass, m_skyboxMaterial, p_cmd);
-		m_renderCtx->endRendering(rendering_info, p_cmd);
-	}
-
-	auto SceneRenderer::_renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void
+	}auto DynamicSceneRenderer::_renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		if (m_meshDrawCommands.empty())
 			return;
@@ -447,7 +500,7 @@ namespace toaster
 		auto depth_attachment_info{render::getRenderingAttachmentInfo(*m_MSAADepthImage, *m_depthTexture->getImage(), render::EAttachmentUsageOP::eLoadDontCare)};
 		rendering_info.depthAttachment = depth_attachment_info;
 
-		m_renderCtx->beginRenderPass(rendering_info, m_geometryPass, p_cmd);
+		m_renderCtx->beginRendering(rendering_info, m_geometryPass, p_cmd);
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
 			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
@@ -458,13 +511,8 @@ namespace toaster
 			}
 		}
 		m_renderCtx->endRendering(rendering_info, p_cmd);
-	}
-
-	static std::uniform_real_distribution<float32> s_random_floats{0.0f, 1.0f};
-	static std::random_device                      s_device{};
-	static std::default_random_engine              s_generator{s_device()};
-
-	auto SceneRenderer::_generateSSAONoise(uint32 p_texture_size) -> std::vector<tsm::float4>
+	} static std::uniform_real_distribution<float32> s_random_floats{0.0f, 1.0f}; static std::random_device s_device{}; static std::default_random_engine s_generator
+			{s_device()}; auto                       DynamicSceneRenderer::_generateSSAONoise(uint32 p_texture_size) -> std::vector<tsm::float4>
 	{
 		std::vector<tsm::float4> ssaoNoise;
 
@@ -478,9 +526,7 @@ namespace toaster
 			noise = {x, y, z, 1.0f};
 		}
 		return ssaoNoise;
-	}
-
-	SceneRenderer::SSAOKernel::SSAOKernel()
+	} DynamicSceneRenderer::SSAOKernel::SSAOKernel()
 	{
 		for (uint32 i{0u}; i < c_SSAOSampleCount; ++i)
 		{
@@ -498,4 +544,5 @@ namespace toaster
 			Dx::XMStoreFloat4(&samples[i], sample);
 		}
 	}
+	#endif
 }

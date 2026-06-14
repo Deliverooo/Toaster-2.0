@@ -81,7 +81,7 @@ namespace toaster::render
 
 		rendering_info.depthAttachment = depth_attachment_info;
 
-		m_renderCtx->beginRendering(rendering_info, m_quadRenderPass, p_cmd);
+		m_renderCtx->beginRenderPass(rendering_info, m_quadRenderPass, p_cmd);
 
 		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
 		if (size) // Apparently you have to check ts, or things won't work correctly and there will be artifacts...
@@ -99,7 +99,7 @@ namespace toaster::render
 			m_renderCtx->renderGeometry(m_quadPipeline, m_quadVertexBuffer, m_quadIndexBuffer, m_quadIndexCount, m_quadMaterial, Dx::XMMatrixIdentity(), p_cmd);
 		}
 
-		m_renderCtx->endRendering(rendering_info, p_cmd);
+		m_renderCtx->endRenderPass(rendering_info, p_cmd);
 	}
 
 	auto Renderer2D::submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void
@@ -299,8 +299,7 @@ namespace toaster::render
 		CameraUB ubo{};
 		Dx::XMStoreFloat4x4(&ubo.view, p_view);
 		Dx::XMStoreFloat4x4(&ubo.proj, p_projection);
-
-		std::memcpy(m_mappedCameraUBs[m_renderCtx->getCurrentFrameIndex()], &ubo, sizeof(CameraUB));
+		m_cameraUBs->setData(ubo);
 
 		m_quadIndexCount = 0u;
 		m_quadVertexPtr  = m_quadVertexBase;
@@ -338,7 +337,7 @@ namespace toaster::render
 
 		rendering_info.depthAttachment = depth_attachment_info;
 
-		m_renderCtx->beginRendering(rendering_info, nullptr, p_cmd);
+		m_renderCtx->beginRenderPass(rendering_info, nullptr, p_cmd);
 		p_cmd->setRenderArea(rendering_info.renderArea);
 
 		m_graphicsState->bind();
@@ -445,8 +444,7 @@ namespace toaster::render
 		m_graphicsState->setShaders({quad_vs, quad_ps}).setVertexBufferLayout(quadVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).
 				setEnableMultisample(m_specInfo.msaa);
 
-		m_cameraUBs       = m_renderCtx->createRef<UniformBufferPFF>(sizeof(CameraUB));
-		m_mappedCameraUBs = m_cameraUBs->mapAllMemory(sizeof(CameraUB));
+		m_cameraUBs = m_renderCtx->createRef<UniformBufferPFF>(sizeof(CameraUB));
 
 		if (!m_specInfo.overrideAttachments)
 		{

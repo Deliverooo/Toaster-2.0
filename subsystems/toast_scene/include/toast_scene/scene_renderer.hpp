@@ -73,6 +73,9 @@ namespace toaster
 		RefPtr<render::Renderer2D> m_renderer2D{nullptr};
 
 		#pragma region depth-pre
+
+		// render::GraphicsStateUnique m_depthPreGraphicsState{nullptr};
+
 		gpu::PipelineHandle      m_depthPrePipeline{nullptr};
 		render::RenderPassHandle m_depthPrePass{nullptr};
 

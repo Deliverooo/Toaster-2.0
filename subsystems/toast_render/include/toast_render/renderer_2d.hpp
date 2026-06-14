@@ -206,7 +206,6 @@ namespace toaster::render
 		};
 
 		UniformBufferPFFHandle m_cameraUBs{nullptr};
-		std::vector<void *>    m_mappedCameraUBs;
 
 		std::array<ImageHandle, 32u> m_textureSlots;
 		uint32                       m_textureSlotIndex{1u};

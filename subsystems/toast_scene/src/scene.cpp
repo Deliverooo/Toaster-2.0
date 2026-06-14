@@ -180,7 +180,7 @@ namespace toaster
 	{
 		m_registry.view<NativeScriptComponent>().each([&p_event](auto p_entity, auto &p_script) -> void
 		{
-			(void)p_entity;
+			(void) p_entity;
 			if (p_script.instance)
 				p_script.instance->onEvent(p_event);
 		});
@@ -201,7 +201,7 @@ namespace toaster
 	{
 		m_viewportSize = p_size;
 
-		m_registry.view<NativeScriptComponent>().each([this](auto p_entity, NativeScriptComponent& p_script) -> void
+		m_registry.view<NativeScriptComponent>().each([this](auto p_entity, NativeScriptComponent &p_script) -> void
 		{
 			if (p_script.instance)
 				p_script.instance->onResize(m_viewportSize);
@@ -729,6 +729,12 @@ namespace toaster
 	}
 
 	ON_COMPONENT_ADDED(MeshComponent)
+	{
+		(void) p_entity;
+		(void) p_component;
+	}
+
+	ON_COMPONENT_ADDED(DynamicMeshComponent)
 	{
 		(void) p_entity;
 		(void) p_component;
