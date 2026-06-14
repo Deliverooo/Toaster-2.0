@@ -169,6 +169,8 @@ namespace toaster::render
 		[[nodiscard]] auto createAttachmentTexture(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
 												   vk::Format p_format = vk::Format::eUndefined) const -> gpu::Texture2DHandle;
 
+		[[nodiscard]] auto createEnvironmentMapImage(const io::filesystem::Path &p_path) -> RefPtr<Image>;
+
 		[[nodiscard]] auto createEnvironmentMap(const io::filesystem::Path &p_path) -> gpu::Texture3DHandle;
 		[[nodiscard]] auto createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) -> gpu::Texture3DHandle;
 		[[nodiscard]] auto createDiffuseIrradianceMap(const gpu::Texture3DHandle &p_environment_map) -> gpu::Texture3DHandle;

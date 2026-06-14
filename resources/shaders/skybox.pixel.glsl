@@ -10,6 +10,7 @@ layout(location = 0) out vec4 o_Colour;
 
 layout(descriptor_heap) uniform texture2D globalTextures[];
 layout(descriptor_heap) uniform textureCube globalCubeMaps[];
+
 layout(descriptor_heap) uniform sampler globalSamplers[];
 
 layout(buffer_reference, std140) readonly buffer Camera
@@ -31,7 +32,7 @@ layout(push_constant) uniform PushConstants
 void main()
 {
     vec4 texture_colour = textureLod(samplerCube(globalCubeMaps[pcs.skyboxMapId], globalSamplers[pcs.samplerId]), normalize(v_Position), 1);
-    // vec4 texture_colour = texture(sampler2D(globalTextures[pcs.skyboxMapId], globalSamplers[pcs.samplerId]), v_TexCoord);
+    // vec4 texture_colour =imageLoad(globalCubeMaps, );
 
-    o_Colour = vec4(texture_colour.xyz, 1.0f);
+    o_Colour = vec4(texture_colour.rgb, 1.0f);
 }

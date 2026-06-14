@@ -36,6 +36,8 @@ namespace toaster::render
 
 		auto resize(tsm::uint2 p_size) -> void;
 
+		auto setShaderRead() -> void;
+
 		auto getHeapID() const -> gpu::DescriptorSlot;
 		auto getAlignedHeapID() const -> gpu::DescriptorSlot;
 

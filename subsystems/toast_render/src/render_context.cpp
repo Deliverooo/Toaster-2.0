@@ -280,6 +280,42 @@ namespace toaster::render
 		return createGPURef<gpu::Texture2D>(attachment_texture_spec_info);
 	}
 
+	auto RenderContext::createEnvironmentMapImage(const io::filesystem::Path &p_path) -> RefPtr<Image>
+	{
+		auto env_input{createImageRef(p_path)};
+
+		constexpr uint32 skybox_resolution{2048};
+
+		ImageSpecInfo env_output_spec_info{};
+		env_output_spec_info.size       = {skybox_resolution};
+		env_output_spec_info.format     = vk::Format::eR16G16B16A16Sfloat;
+		env_output_spec_info.layerCount = 6u;
+		env_output_spec_info.usageFlags = vk::ImageUsageFlagBits::eStorage;
+
+		auto env_output{createRef<Image>(env_output_spec_info)};
+
+		gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
+		command_buffer.begin();
+
+		m_descriptorHeap->bind(&command_buffer);
+
+		m_globals->dynamicShaderLibrary().get("Equirectangular_To_CubeMap")->bind(&command_buffer);
+
+		Globals::EquirectangularToCubeMapConstants equirectangular_to_cube_map_constants{};
+		equirectangular_to_cube_map_constants.equirectangularMapId = env_input->getAlignedHeapID();
+		equirectangular_to_cube_map_constants.cubeMapId            = env_output->getAlignedHeapID();
+		equirectangular_to_cube_map_constants.samplerId            = m_samplers.at(ESamplerType::eDefault);
+		command_buffer.pushData(equirectangular_to_cube_map_constants);
+
+		command_buffer.getVulkanCommandBuffer().dispatch(skybox_resolution / 32, skybox_resolution / 32, 6);
+
+		command_buffer.endAndSubmit();
+
+		env_output->setShaderRead();
+
+		return env_output;
+	}
+
 	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) -> gpu::Texture3DHandle
 	{
 		auto env_tex{createGPURef<gpu::Texture2D>(gpu::TextureSpecInfo{}, p_path)};

@@ -16,7 +16,7 @@ namespace toaster::render
 		// You will only use this constructor if you are going to set the data
 		m_image = m_renderCtx->createGPURef<gpu::RawImage>(image_spec_info);
 
-		m_heapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image);
+		m_heapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, m_specInfo.usageFlags & vk::ImageUsageFlagBits::eStorage ? true : false);
 	}
 
 	Image::Image(RenderContext &p_render_ctx, const ImageSpecInfo &p_spec_info, const Buffer &p_data) : m_renderCtx(&p_render_ctx), m_specInfo(p_spec_info)
@@ -36,7 +36,7 @@ namespace toaster::render
 		m_renderCtx->getLogicalDevice()->generateMipmaps(m_image->getImage(), {m_specInfo.size.x, m_specInfo.size.y, 1u}, 1);
 		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal); // Generate mips leaves the image in the eShaderReadOnlyOptimal layout
 
-		m_heapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image);
+		m_heapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, m_specInfo.usageFlags & vk::ImageUsageFlagBits::eStorage ? true : false);
 	}
 
 	Image::~Image()
@@ -71,6 +71,13 @@ namespace toaster::render
 	{
 		m_image->resize(p_size);
 		m_renderCtx->getDescriptorHeap()->setImage(m_heapID, *m_image);
+	}
+
+	auto Image::setShaderRead() -> void
+	{
+		m_renderCtx->getDescriptorHeap()->setImage(m_heapID, *m_image, false);
+
+		gpu::util::toShaderRead(m_image);
 	}
 
 	auto Image::getHeapID() const -> gpu::DescriptorSlot

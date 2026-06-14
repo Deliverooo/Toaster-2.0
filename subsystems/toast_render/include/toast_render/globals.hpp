@@ -20,7 +20,17 @@ namespace toaster::render
 			tsm::float2 texCoord;
 		};
 
+		TST_PUSH_CONSTANT_BLOCK(EquirectangularToCubeMapConstants)
+		{
+			uint32 equirectangularMapId;
+			uint32 cubeMapId;
+			uint32 samplerId;
+
+			char _padd[2];
+		};
+
 		Globals(RenderContext &p_render_ctx, const io::filesystem::Path &p_binary_dir);
+
 		~Globals();
 
 		/*!

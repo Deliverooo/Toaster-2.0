@@ -50,11 +50,11 @@ namespace toaster::gpu
 		auto getImageOffset() const -> uintptr_t;
 
 		auto allocBuffer(const Buffer &p_buffer) -> DescriptorSlot;
-		auto allocImage(const RawImage &p_image) -> DescriptorSlot;
+		auto allocImage(const RawImage &p_image, bool p_storage = false) -> DescriptorSlot;
 		auto allocSampler(const vk::SamplerCreateInfo &p_sampler) -> DescriptorSlot;
 
 		auto setBuffer(DescriptorSlot p_slot, const Buffer &p_buffer) -> void;
-		auto setImage(DescriptorSlot p_slot, const RawImage &p_image) -> void;
+		auto setImage(DescriptorSlot p_slot, const RawImage &p_image, bool p_storage = false) -> void;
 		auto setSampler(DescriptorSlot p_slot, const vk::SamplerCreateInfo &p_sampler) -> void;
 
 		auto getOffset(DescriptorSlot p_slot) const -> uint64;

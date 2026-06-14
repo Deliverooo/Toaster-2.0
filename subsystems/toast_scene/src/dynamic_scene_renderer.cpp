@@ -131,11 +131,14 @@ namespace toaster
 			m_MSAAColourImage = m_renderCtx->createMultisampleAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor);
 			m_colourImage     = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor);
 
+			m_skyboxImage = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/grasslands_sunset_1k.hdr");
+			// m_skyboxImage = m_renderCtx->createImageRef(resources_dir / "environments/'Environment_map'.jpg");
+			#if 0
 			render::ImageSpecInfo image_spec{};
 			image_spec.layerCount = 6u;
 			image_spec.size       = {1u};
 			image_spec.format     = vk::Format::eR8G8B8A8Unorm;
-
+			// image_spec.usageFlags = vk::ImageUsageFlagBits::eStorage;
 			Buffer image_data{};
 			image_data.allocate(sizeof(uint32) * 6u);
 			image_data.writeType(0x000BB000, sizeof(uint32) * 0u);
@@ -144,10 +147,9 @@ namespace toaster
 			image_data.writeType(0xFFFFFFFF, sizeof(uint32) * 3u);
 			image_data.writeType(0xFFFF0FF, sizeof(uint32) * 4u);
 			image_data.writeType(0xF00FFFFF, sizeof(uint32) * 5u);
-
 			m_skyboxImage = m_renderCtx->createRef<render::Image>(image_spec, image_data);
-
 			image_data.release();
+			#endif
 			// m_skyboxImage = m_renderCtx->getGlobals()->whiteImage();
 		}
 		#pragma endregion
