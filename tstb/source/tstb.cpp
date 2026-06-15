@@ -113,7 +113,7 @@ INT APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 	char *toaster_sdk_dir{{std::getenv("TOASTER_SDK")}};
 
 	if (!toaster_sdk_dir)
-		TST_PERMA_ASSERT_MSG(false, "Dondé está Toaster? How did you manage to build ts without the SDK");
+		TST_PERMA_ASSERT_MSG(false, "Dondé está Toaster? If you just installed the SDK, please restart your computer to apply the environment variable settings.");
 
 	tst::ApplicationSpecInfo app_spec{{}};
 	app_spec.printGPUDebugInfo             = false;
@@ -138,7 +138,7 @@ INT APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 #include <toast_kernel/application.hpp>
 
 #include <toast_scene/entity.hpp>
-#include <toast_scene/scene_renderer.hpp>
+#include <toast_scene/dynamic_scene_renderer.hpp>
 
 namespace tst = toaster;
 
@@ -157,14 +157,21 @@ namespace {0}
 		// It is good practice to store the viewport's current size
 		tsm::uint2 m_viewportSize{{0u}};
 
-		// Ts is needed so we can render to the swapchain... :)
-		tst::render::RenderPassHandle m_swapchainPass{{nullptr}};
+		tst::UniquePtr<tst::render::GraphicsState> m_graphicsState{{nullptr}};
+		tst::render::ImageHandle                   m_image{{nullptr}};
 
-		tst::UniquePtr<tst::Scene>         m_scene{{nullptr}};
-		tst::UniquePtr<tst::SceneRenderer> m_sceneRenderer{{nullptr}};
+		TST_PUSH_CONSTANT_BLOCK(FullscreenQuadConstants)
+		{{
+			uint32 samplerIndex;
+			uint32 textureIndex;
+
+			char _padd[8];
+		}};
+
+		tst::UniquePtr<tst::Scene>                m_scene{{nullptr}};
+		tst::UniquePtr<tst::DynamicSceneRenderer> m_sceneRenderer{{nullptr}};
 
 		tst::Entity m_cameraEntity;
-		tst::Entity m_quadEntity;
 	}};
 }}
 )"
@@ -190,37 +197,29 @@ namespace {0}
 		// Get the initial viewport size
 		m_viewportSize = m_app->getWindow().getRenderAreaSize();
 
+		// Useful
+		auto binary_dir{{tst::os::getBinaryDirectory()}};
+		auto resources_dir{{binary_dir / "../resources"}};
+
+		m_graphicsState = m_renderCtx->createUnique<tst::render::GraphicsState>();
+		m_graphicsState->setShaders({{m_globals->dynamicShaderLibrary().get("Fullscreen_Quad_VS"), m_globals->dynamicShaderLibrary().get("Fullscreen_Quad_PS")}}).
+				setVertexBufferLayout(tst::render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).
+				setEnableDepthTest(false).setEnableDepthWrite(false);
+
 		// Create both the scene and scene renderer
 		m_scene         = m_app->createScene("New_Scene");
-		m_sceneRenderer = m_app->createSceneRenderer(m_scene.get());
-
-		// Boilerplate swapchain rendering setup
-		tst::gpu::PipelineSpecInfo pipeline_spec_info{{}};
-		pipeline_spec_info.colourAttachments = {{vk::Format::eR8G8B8A8Srgb}};
-
-		// You can use any shader you want E.g. post-processing, I am just using the most basic one... :)
-		pipeline_spec_info.shader             = m_globals->shaderLibrary().get("Composite");
-		pipeline_spec_info.vertexBufferLayout = tst::render::RenderContext::fullscreenQuadVbl;
-		auto pipeline{{m_renderCtx->createGPURef<tst::gpu::Pipeline>(pipeline_spec_info, "Composite")}};
-
-		// Create the swapchain pass. The texture is what the final scene will look like... :)
-		m_swapchainPass = m_renderCtx->createRef<tst::render::RenderPass>(pipeline);
-		m_swapchainPass->setInput("u_Texture", m_sceneRenderer->getColourTexture()).bake();
+		m_sceneRenderer = tst::make_unique<toaster::DynamicSceneRenderer>(m_scene.get(), m_viewportSize);
 
 		// Set the scene environment to a skybox thingy
-		tst::io::filesystem::Path environment_map_path{{tst::os::getBinaryDirectory() / "../resources/environments/Toaster-Default.hdr"}};
-		m_scene->setSceneEnvironment(m_renderCtx->createEnvironmentMap(environment_map_path));
+		const tst::io::filesystem::Path environment_map_path{{resources_dir / "environments/overcast_soil_puresky_2k.hdr"}};
+		m_scene->setSceneEnvironmentImage(m_renderCtx->createEnvironmentMapImage(environment_map_path));
+
 
 		// Create the main camera entity
 		m_cameraEntity = m_scene->createEntity("Main_Camera");
 		tst::FirstPersonCameraEntityCreateParams params{{m_inputCtx, 90.0f, m_viewportSize.aspect(), 0.1f, 1000.0f}};
 		m_cameraEntity.addComponent<tst::NativeScriptComponent>().bind<tst::FirstPersonCameraEntity>(&params);
 		m_scene->initNativeScripts(); // I have to call ts
-
-		// Example of how to create an entity and add a sprite renderer component
-		m_quadEntity = m_scene->createEntity("Quad");
-		auto &sprite_renderer{{m_quadEntity.addComponent<tst::SpriteRendererComponent>()}};
-		sprite_renderer.colour = tsm::colours::weezer; // Use tsm::colours for easy colour templates, such as the elusive weezer colour... :}}
 	}}
 
 	auto NewLayer::onDestroy() -> void
@@ -230,18 +229,28 @@ namespace {0}
 
 	auto NewLayer::onUpdate(float32 p_dt) -> void
 	{{
+		// Get the swapchain's rendering info from the window and set the clear colour to white, while using no depth because the scene renderer provides that.
+		auto rendering_info{{m_app->getWindow().getSwapchainRenderingInfo({{0.0f, 1.0f, 1.0f, 1.0f}}, false)}};
+		auto cmd{{m_renderCtx->getCurrentSwapchainCommandBuffer()}};
+
+		// Bind the render context's descriptor heap. TODO: Probably don't expose ts to the client
+		m_renderCtx->getDescriptorHeap()->bind();
+
 		// Update and render the scene
 		m_scene->onUpdate(p_dt);
 		m_sceneRenderer->onRender();
 
-		// Get the swapchain's rendering info from the window and set the clear colour to white, while using no depth because the scene renderer provides that.
-		const auto rendering_info{{m_app->getWindow().getSwapchainRenderingInfo({{1.0f, 1.0f, 1.0f, 1.0f}}, false)}};
-		const auto cmd{{m_renderCtx->getCurrentSwapchainCommandBuffer()}};
+		m_graphicsState->bind();
+		m_renderCtx->beginRendering(rendering_info);
+
+		FullscreenQuadConstants quad_constants{{}};
+		quad_constants.samplerIndex = m_renderCtx->getSampler(tst::render::ESamplerType::eDefault);
+		quad_constants.textureIndex = m_sceneRenderer->getColourImage()->getAlignedShaderReadHeapID();
+		cmd->pushData(quad_constants);
 
 		// Render a fullscreen quad with the scene renderer's output as the texture
-		m_renderCtx->beginRendering(cmd, rendering_info, m_swapchainPass);
-		m_renderCtx->renderFullscreenQuad(cmd, m_swapchainPass, nullptr);
-		m_renderCtx->endRendering(cmd, rendering_info);
+		m_renderCtx->renderFullscreenQuad();
+		m_renderCtx->endRendering(rendering_info);
 	}}
 
 	auto NewLayer::onEvent(tst::Event &p_event) -> void
@@ -332,9 +341,23 @@ cmake --build build --config Release)"
 		LOG_INFO("Creating utility build script");
 		io::filesystem::writeFile(project_root / "build_project.bat", c_buildProjectScriptData);
 
+		auto working_directory{os::getBinaryDirectory()};
 		LOG_INFO("Adding default resources");
-		std::filesystem::copy_file(os::getBinaryDirectory() / "../resources/environments/overcast_soil_puresky_2k.hdr",
-								   fmt::format("{0}/Toaster-Default.hdr", resource_directory / "environments"), std::filesystem::copy_options::overwrite_existing);
+
+		// Environments
+		std::filesystem::copy_file(working_directory / "../resources/environments/overcast_soil_puresky_2k.hdr",
+								   fmt::format("{0}/overcast_soil_puresky_2k.hdr", resource_directory / "environments"),
+								   std::filesystem::copy_options::overwrite_existing);
+
+		std::filesystem::copy_file(working_directory / "../resources/environments/grasslands_sunset_1k.hdr",
+								   fmt::format("{0}/grasslands_sunset_1k.hdr", resource_directory / "environments"), std::filesystem::copy_options::overwrite_existing);
+
+		std::filesystem::copy_file(working_directory / "../resources/environments/ferndale_studio_11_2k.hdr",
+								   fmt::format("{0}/ferndale_studio_11_2k.hdr", resource_directory / "environments"), std::filesystem::copy_options::overwrite_existing);
+
+		// Textures
+		std::filesystem::copy_file(working_directory / "../resources/textures/Peeber.png", fmt::format("{0}/peeber.png", resource_directory / "textures"),
+								   std::filesystem::copy_options::overwrite_existing);
 
 		return 0;
 	}

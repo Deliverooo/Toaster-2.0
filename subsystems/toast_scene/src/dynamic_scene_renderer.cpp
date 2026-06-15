@@ -27,9 +27,6 @@ namespace toaster
 		// m_sceneDataUBOs       = m_renderCtx->createUniformBuffers<SceneDataUB>(render::RenderContext::maxFramesInFlight);
 		// m_mappedSceneDataUBOs = m_sceneDataUBOs->mapAllMemory(sizeof(SceneDataUB));
 
-		auto binary_dir{os::getBinaryDirectory()};
-		auto resources_dir{binary_dir / "../resources"};
-
 		#pragma region depth-pre
 		{
 			m_depthPreGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
@@ -115,8 +112,7 @@ namespace toaster
 			m_MSAAColourImage = m_renderCtx->createMultisampleAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor);
 			m_colourImage     = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor);
 
-			m_skyboxImage = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/grasslands_sunset_1k.hdr");
-			// m_skyboxImage = m_renderCtx->createImageRef(resources_dir / "environments/'Environment_map'.jpg");
+			m_skyboxImage = m_renderCtx->getGlobals()->whiteImage();
 			#if 0
 			render::ImageSpecInfo image_spec{}; image_spec.layerCount = 6u; image_spec.size = {1u}; image_spec.format = vk::Format::eR8G8B8A8Unorm;
 			// image_spec.usageFlags = vk::ImageUsageFlagBits::eStorage;
@@ -182,6 +178,8 @@ namespace toaster
 
 		if (!main_camera)
 		{
+			LOG_WARN("Scene has no main camera!!!");
+
 			// Fixes vulkan validation error messages...
 			auto       output_colour_image{m_colourImage->getImage()};
 			const auto current_image_layout{output_colour_image->getCurrentImageLayout()};
@@ -236,7 +234,7 @@ namespace toaster
 		{
 			if (m_scene->m_reloadEnvironment)
 			{
-				reloadEnvironmentMaps(m_scene->m_sceneEnvironment.skyboxMap, m_scene->m_sceneEnvironment.diffuseIrradianceMap);
+				reloadEnvironmentMaps(m_scene->m_sceneEnvironment.skyboxMapImage, m_scene->m_sceneEnvironment.diffuseIrradianceMap);
 				m_scene->m_reloadEnvironment = false;
 			}
 
@@ -367,6 +365,7 @@ namespace toaster
 	auto DynamicSceneRenderer::reloadEnvironmentMaps(const render::ImageHandle &p_skybox, const render::ImageHandle &p_diffuse_irradiance) -> void
 	{
 		m_skyboxImage = p_skybox;
+
 		// m_skyboxPass->setInput("u_CubeMapImage", p_skybox);
 		// m_geometryPass->setInput("u_DiffuseIrradianceMap", p_diffuse_irradiance);
 	}

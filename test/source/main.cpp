@@ -52,6 +52,9 @@ public:
 		m_scene         = m_app->createScene();
 		m_sceneRenderer = toaster::make_unique<DynamicSceneRenderer>(m_scene.get(), m_viewportSize);
 
+		const io::filesystem::Path environment_map_path{resources_dir / "environments/grasslands_sunset_1k.hdr"};
+		m_scene->setSceneEnvironmentImage(m_renderCtx->createEnvironmentMapImage(environment_map_path));
+
 		{
 			Entity e{m_scene->createEntity("Mesh thing")};
 			e.addComponent<DynamicMeshComponent>().mesh = m_mesh;

@@ -109,5 +109,5 @@ namespace toaster::gpu
 
 	TST_GPU_DEFINE_HANDLE(VKDynamicShader, DynamicShader)
 
-	#define TST_PUSH_CONSTANT_BLOCK(__name) struct alignas(16) __name
+	#define TST_PUSH_CONSTANT_BLOCK(__name) struct  alignas(16) __name
 }

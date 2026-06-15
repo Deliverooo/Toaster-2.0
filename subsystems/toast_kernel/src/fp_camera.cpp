@@ -237,7 +237,7 @@ namespace toaster
 
 	auto FirstPersonCameraEntity::getRotationMatrix() const -> Dx::XMMATRIX
 	{
-		return Dx::XMMatrixRotationRollPitchYaw(m_pitch, -m_yaw, 0.0f);
+		return Dx::XMMatrixRotationRollPitchYaw(-m_pitch, -m_yaw, 0.0f);
 	}
 
 	auto FirstPersonCameraEntity::getViewProjection() const -> Dx::XMMATRIX

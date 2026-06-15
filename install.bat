@@ -12,6 +12,10 @@ if %errorLevel% == 0 (
 :adminTask
 cd /d "%~dp0"
 
+setx TOASTER_SDK "C:\Program Files\Toaster-SDK" /M
+
+echo %PATH%
+
 cmake -B build -S . --install-prefix "C:/Program Files/Toaster-SDK/"
 cmake --build build --config Debug
 cmake --build build --config Release

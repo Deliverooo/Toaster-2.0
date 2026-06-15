@@ -110,6 +110,11 @@ install(EXPORT ToasterTargets
 		DESTINATION lib/cmake/Toaster
 )
 
+install(DIRECTORY
+		"${CMAKE_CURRENT_SOURCE_DIR}/resources/"
+		DESTINATION "resources"
+)
+
 add_subdirectory(runtime)
 add_subdirectory(tstb)
 add_subdirectory(test)

@@ -535,6 +535,8 @@ namespace toaster::gpu
 	VKDynamicShader::VKDynamicShader(VKLogicalDevice *       p_device, const ShaderBytecode &p_bytecode, vk::ShaderStageFlagBits p_stage,
 									 vk::ShaderStageFlagBits p_next_stage) : m_device(p_device), m_stage(p_stage), m_nextStage(p_next_stage)
 	{
+		TST_PERMA_ASSERT_MSG(!p_bytecode.empty(), "Your shader compilation failed, or you have the wrong path");
+
 		vk::ShaderCreateInfoEXT shader_create_info{};
 		shader_create_info.stage     = m_stage;
 		shader_create_info.nextStage = m_nextStage;

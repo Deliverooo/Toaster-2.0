@@ -11,6 +11,9 @@ namespace toaster::render
 	{
 		#pragma region shaders
 
+		if (!io::filesystem::exists(m_binaryDir / "shaders/fullscreen_quad.vert.hlsl.spv"))
+			TST_PERMA_ASSERT(false);
+
 		// Fullscreen quad shaders
 		m_dynamicShaderLibrary.add("Fullscreen_Quad_VS",
 								   m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/fullscreen_quad.vert.hlsl.spv", EShaderStage::eVertex,

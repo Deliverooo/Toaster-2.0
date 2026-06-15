@@ -331,6 +331,18 @@ namespace toaster
 		m_reloadEnvironment                     = true;
 	}
 
+	auto Scene::getSceneEnvironmentImage() const -> const render::ImageHandle &
+	{
+		return m_sceneEnvironment.skyboxMapImage;
+	}
+
+	auto Scene::setSceneEnvironmentImage(const render::ImageHandle &p_environment) -> void
+	{
+		m_sceneEnvironment.skyboxMapImage = p_environment;
+		// m_sceneEnvironment.diffuseIrradianceMapImage = m_renderCtx->createDiffuseIrradianceMap(p_environment);
+		m_reloadEnvironment = true;
+	}
+
 	auto Scene::initNativeScripts() -> void
 	{
 		m_registry.view<NativeScriptComponent>().each([this](auto p_entity, auto &p_script) -> void

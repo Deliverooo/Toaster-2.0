@@ -100,6 +100,9 @@ namespace toaster
 		auto getSceneEnvironment() const -> const gpu::Texture3DHandle &;
 		auto setSceneEnvironment(const gpu::Texture3DHandle &p_environment) -> void;
 
+		auto getSceneEnvironmentImage() const -> const render::ImageHandle &;
+		auto setSceneEnvironmentImage(const render::ImageHandle &p_environment) -> void;
+
 		auto initNativeScripts() -> void; // You can actually call this any time you need to immediately construct a script
 
 		auto getScriptEngine() -> NonOwningPtr<script::ScriptEngine>;
@@ -138,7 +141,8 @@ namespace toaster
 		// The asset the represents the .hdr / environment map file for the scene renderer to use
 		struct
 		{
-			gpu::Texture3DHandle skyboxMap{nullptr};
+			render::ImageHandle  skyboxMapImage{nullptr};
+			gpu::Texture3DHandle skyboxMap{nullptr}; // TODO: Remove
 			gpu::Texture3DHandle diffuseIrradianceMap{nullptr}; // Created from the skybox and updated if it changes
 		} m_sceneEnvironment;
 

@@ -108,7 +108,7 @@ namespace toaster::render
 		m_shaderCompiler = toaster::make_unique<ShaderCompiler>(*this);
 
 		if (m_specInfo.createGlobals)
-			m_globals = new Globals{*this, os::getBinaryDirectory()};
+			m_globals = new Globals{*this, io::filesystem::exists(m_specInfo.sdkDir) ? m_specInfo.sdkDir : os::getBinaryDirectory()};
 	}
 
 	RenderContext::~RenderContext()
