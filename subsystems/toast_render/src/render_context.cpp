@@ -261,11 +261,13 @@ namespace toaster::render
 		if (p_format == vk::Format::eUndefined)
 			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
 
-		ImageSpecInfo image_spec_info{};
-		image_spec_info.size       = p_size;
-		image_spec_info.usageFlags = gpu::util::getImageUsageFlags(p_image_aspect_flags);;
-		image_spec_info.format     = p_format;
-		return createRef<Image>(image_spec_info);
+		gpu::ImageSpecInfo image_spec_info{};
+		image_spec_info.size  = p_size;
+		image_spec_info.usage = gpu::util::getImageUsageFlags(p_image_aspect_flags);
+		image_spec_info.usage |= vk::ImageUsageFlagBits::eSampled; // An attachment image is only used if it needs to be sampled from, else just create a raw image.
+
+		image_spec_info.format = p_format;
+		return createRef<Image>(createGPURef<gpu::RawImage>(image_spec_info));
 	}
 
 	auto RenderContext::createAttachmentTexture(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) const -> gpu::Texture2DHandle
@@ -290,7 +292,7 @@ namespace toaster::render
 		env_output_spec_info.size       = {skybox_resolution};
 		env_output_spec_info.format     = vk::Format::eR16G16B16A16Sfloat;
 		env_output_spec_info.layerCount = 6u;
-		env_output_spec_info.usageFlags = vk::ImageUsageFlagBits::eStorage;
+		env_output_spec_info.storage    = true;
 
 		auto env_output{createRef<Image>(env_output_spec_info)};
 
@@ -299,19 +301,18 @@ namespace toaster::render
 
 		m_descriptorHeap->bind(&command_buffer);
 
-		m_globals->dynamicShaderLibrary().get("Equirectangular_To_CubeMap")->bind(&command_buffer);
+		m_globals->dynamicShaderLibrary().get("Equirectangular_To_Cube_Map")->bind(&command_buffer);
 
 		Globals::EquirectangularToCubeMapConstants equirectangular_to_cube_map_constants{};
-		equirectangular_to_cube_map_constants.equirectangularMapId = env_input->getAlignedHeapID();
-		equirectangular_to_cube_map_constants.cubeMapId            = env_output->getAlignedHeapID();
+		equirectangular_to_cube_map_constants.equirectangularMapId = env_input->getAlignedShaderReadHeapID();
+		equirectangular_to_cube_map_constants.cubeMapId            = env_output->getAlignedStorageHeapID();
 		equirectangular_to_cube_map_constants.samplerId            = m_samplers.at(ESamplerType::eDefault);
+
 		command_buffer.pushData(equirectangular_to_cube_map_constants);
-
 		command_buffer.getVulkanCommandBuffer().dispatch(skybox_resolution / 32, skybox_resolution / 32, 6);
-
 		command_buffer.endAndSubmit();
 
-		env_output->setShaderRead();
+		env_output->toShaderReadOptimal();
 
 		return env_output;
 	}
@@ -391,6 +392,12 @@ namespace toaster::render
 									 EShaderLanguage             p_shader_lang) const -> gpu::DynamicShaderHandle
 	{
 		return m_shaderCompiler->compileToShaderFromPath(p_path, p_stage, p_next_stage, p_shader_lang);
+	}
+
+	auto RenderContext::createShaderFromSpirV(const io::filesystem::Path &p_spir_v_path, EShaderStage p_stage,
+											  EShaderStage                p_next_stage) const -> gpu::DynamicShaderHandle
+	{
+		return createGPURef<gpu::DynamicShader>(io::filesystem::readBinary(p_spir_v_path), getVulkanShaderStage(p_stage), getVulkanShaderStage((p_next_stage)));
 	}
 
 	auto RenderContext::beginRenderPass(const RenderingInfo &p_rendering_info, RenderPass *p_render_pass, gpu::CommandBuffer *p_command_buffer,
@@ -1012,8 +1019,8 @@ namespace toaster::render
 		auto &material{p_mesh->getMaterials().getMaterial(submesh.materialIndex)};
 
 		MeshPushConstants pcs{};
-		pcs.albedoMap    = material.albedoMap->getAlignedHeapID();
-		pcs.normalMap    = material.normalMap->getAlignedHeapID();
+		pcs.albedoMap    = material.albedoMap->getAlignedShaderReadHeapID();
+		pcs.normalMap    = material.normalMap->getAlignedShaderReadHeapID();
 		pcs.hasNormalMap = material.hasNormalMap;
 		pcs.albedoColour = {material.albedoColour, 1.0f};
 		pcs.roughness    = material.roughness;

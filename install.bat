@@ -17,3 +17,5 @@ cmake --build build --config Debug
 cmake --build build --config Release
 cmake --install build --config Debug
 cmake --install build --config Release
+
+pause

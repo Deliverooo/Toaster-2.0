@@ -68,9 +68,6 @@ namespace toaster
 
 		#pragma region depth-pre
 
-		gpu::DynamicShaderHandle m_depthPreVertexShader{nullptr};
-		gpu::DynamicShaderHandle m_depthPrePixelShader{nullptr};
-
 		render::GraphicsStateUnique m_depthPreGraphicsState{nullptr};
 		TST_PUSH_CONSTANT_BLOCK(DepthPreConstants)
 		{
@@ -89,9 +86,6 @@ namespace toaster
 		#pragma endregion
 
 		#pragma region skybox
-
-		gpu::DynamicShaderHandle m_skyboxVertexShader{nullptr};
-		gpu::DynamicShaderHandle m_skyboxPixelShader{nullptr};
 
 		render::GraphicsStateUnique m_skyboxGraphicsState{nullptr};
 		TST_PUSH_CONSTANT_BLOCK(SkyboxConstants)

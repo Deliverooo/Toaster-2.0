@@ -32,26 +32,12 @@ namespace toaster
 
 		#pragma region depth-pre
 		{
-			// gpu::PipelineSpecInfo depth_pre_pipeline_spec_info{};
-			// depth_pre_pipeline_spec_info.vertexBufferLayout = render::RenderContext::meshVbl;
-			// depth_pre_pipeline_spec_info.depthFormat        = vk::Format::eD32Sfloat;
-			// depth_pre_pipeline_spec_info.colourAttachments  = {vk::Format::eR16G16B16A16Sfloat, vk::Format::eR16G16B16A16Sfloat};
-			// depth_pre_pipeline_spec_info.multisample        = true;
-			// depth_pre_pipeline_spec_info.cullMode           = m_specInfo.backfaceCulling ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone;
-			// depth_pre_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Depth-Pre");
-			// m_depthPrePipeline                              = m_renderCtx->createGPURef<gpu::VKPipeline>(depth_pre_pipeline_spec_info, "Depth-Pre");
-
-			// m_depthPrePass = m_renderCtx->createRef<render::RenderPass>(m_depthPrePipeline);
-			// m_depthPrePass->setInput("Camera", m_cameraUBOs).bake();
-
-			m_depthPreVertexShader = m_renderCtx->createShader(resources_dir / "shaders/depth_pre.vert.hlsl", render::EShaderStage::eVertex, render::EShaderStage::ePixel,
-															   render::EShaderLanguage::eHLSL);
-			m_depthPrePixelShader = m_renderCtx->createShader(resources_dir / "shaders/depth_pre.pixel.glsl", render::EShaderStage::ePixel, render::EShaderStage::eNone,
-															  render::EShaderLanguage::eGLSL);
-
 			m_depthPreGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
-			m_depthPreGraphicsState->setShaders({m_depthPreVertexShader, m_depthPrePixelShader}).setVertexBufferLayout(render::RenderContext::meshVbl).
-					setAttachmentCount(3u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(true).setEnableDepthWrite(true).setEnableMultisample(true);
+			m_depthPreGraphicsState->setShaders({
+													m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Depth_Pre_VS"),
+													m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Depth_Pre_PS")
+												}).setVertexBufferLayout(render::RenderContext::meshVbl).setAttachmentCount(3u).setCullMode(vk::CullModeFlagBits::eNone).
+					setEnableDepthTest(true).setEnableDepthWrite(true).setEnableMultisample(true);
 
 			m_MSAADepthImage = m_renderCtx->createMultisampleAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eDepth);
 			m_depthImage     = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eDepth);
@@ -119,14 +105,12 @@ namespace toaster
 
 		#pragma region skybox
 		{
-			m_skyboxVertexShader = m_renderCtx->createShader(resources_dir / "shaders/skybox.vert.hlsl", render::EShaderStage::eVertex, render::EShaderStage::ePixel,
-															 render::EShaderLanguage::eHLSL);
-			m_skyboxPixelShader = m_renderCtx->createShader(resources_dir / "shaders/skybox.pixel.glsl", render::EShaderStage::ePixel, render::EShaderStage::eNone,
-															render::EShaderLanguage::eGLSL);
-
 			m_skyboxGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
-			m_skyboxGraphicsState->setShaders({m_skyboxVertexShader, m_skyboxPixelShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).
-					setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(false).setEnableDepthWrite(false).setEnableMultisample(true);
+			m_skyboxGraphicsState->setShaders({
+												  m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Skybox_VS"),
+												  m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Skybox_PS")
+											  }).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).
+					setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(false).setEnableDepthWrite(false).setEnableMultisample(true);
 
 			m_MSAAColourImage = m_renderCtx->createMultisampleAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor);
 			m_colourImage     = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor);
@@ -134,21 +118,12 @@ namespace toaster
 			m_skyboxImage = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/grasslands_sunset_1k.hdr");
 			// m_skyboxImage = m_renderCtx->createImageRef(resources_dir / "environments/'Environment_map'.jpg");
 			#if 0
-			render::ImageSpecInfo image_spec{};
-			image_spec.layerCount = 6u;
-			image_spec.size       = {1u};
-			image_spec.format     = vk::Format::eR8G8B8A8Unorm;
+			render::ImageSpecInfo image_spec{}; image_spec.layerCount = 6u; image_spec.size = {1u}; image_spec.format = vk::Format::eR8G8B8A8Unorm;
 			// image_spec.usageFlags = vk::ImageUsageFlagBits::eStorage;
-			Buffer image_data{};
-			image_data.allocate(sizeof(uint32) * 6u);
-			image_data.writeType(0x000BB000, sizeof(uint32) * 0u);
-			image_data.writeType(0xFFFF0FF, sizeof(uint32) * 1u);
-			image_data.writeType(0xFFF00AFF, sizeof(uint32) * 2u);
-			image_data.writeType(0xFFFFFFFF, sizeof(uint32) * 3u);
-			image_data.writeType(0xFFFF0FF, sizeof(uint32) * 4u);
-			image_data.writeType(0xF00FFFFF, sizeof(uint32) * 5u);
-			m_skyboxImage = m_renderCtx->createRef<render::Image>(image_spec, image_data);
-			image_data.release();
+			Buffer image_data{}; image_data.allocate(sizeof(uint32) * 6u); image_data.writeType(0x000BB000, sizeof(uint32) * 0u); image_data.
+					writeType(0xFFFF0FF, sizeof(uint32) * 1u); image_data.writeType(0xFFF00AFF, sizeof(uint32) * 2u); image_data.
+					writeType(0xFFFFFFFF, sizeof(uint32) * 3u); image_data.writeType(0xFFFF0FF, sizeof(uint32) * 4u); image_data.
+					writeType(0xF00FFFFF, sizeof(uint32) * 5u); m_skyboxImage = m_renderCtx->createRef<render::Image>(image_spec, image_data); image_data.release();
 			#endif
 			// m_skyboxImage = m_renderCtx->getGlobals()->whiteImage();
 		}
@@ -459,7 +434,7 @@ namespace toaster
 		skybox_constants.cameraPtr = m_cameraUBOs->getDeviceAddress();
 		skybox_constants.samplerId = m_renderCtx->getSampler(render::ESamplerType::eNearest);
 		// skybox_constants.skyboxMapId = m_renderCtx->getGlobals()->whiteImage()->getAlignedHeapID();
-		skybox_constants.skyboxMapId = m_skyboxImage->getAlignedHeapID();
+		skybox_constants.skyboxMapId = m_skyboxImage->getAlignedShaderReadHeapID();
 		p_cmd->pushData(skybox_constants);
 
 		m_renderCtx->renderFullscreenQuad();

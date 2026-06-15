@@ -41,14 +41,10 @@ public:
 
 		m_image = m_renderCtx->createImageRef(resources_dir / "textures/Peeber.png");
 
-		m_vertexShader = m_renderCtx->createShader(resources_dir / "shaders/fullscreen_quad.vert.hlsl", render::EShaderStage::eVertex, render::EShaderStage::ePixel,
-												   render::EShaderLanguage::eHLSL);
-		m_fragmentShader = m_renderCtx->createShader(resources_dir / "shaders/fullscreen_quad.pixel.glsl", render::EShaderStage::ePixel, render::EShaderStage::eNone,
-													 render::EShaderLanguage::eGLSL);
-
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
-		m_graphicsState->setShaders({m_vertexShader, m_fragmentShader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).
-				setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(false).setEnableDepthWrite(false);
+		m_graphicsState->setShaders({m_globals->dynamicShaderLibrary().get("Fullscreen_Quad_VS"), m_globals->dynamicShaderLibrary().get("Fullscreen_Quad_PS")}).
+				setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(false).
+				setEnableDepthWrite(false);
 
 		// m_mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Tall_Orange_Mike.fbx");
 		m_mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Test_scene.fbx");
@@ -82,7 +78,7 @@ public:
 
 		FullscreenQuadConstants quad_constants{};
 		quad_constants.samplerIndex = m_renderCtx->getSampler(render::ESamplerType::eDefault);
-		quad_constants.textureIndex = m_sceneRenderer->getColourImage()->getAlignedHeapID();
+		quad_constants.textureIndex = m_sceneRenderer->getColourImage()->getAlignedShaderReadHeapID();
 		cmd->pushData(quad_constants);
 
 		m_renderCtx->renderFullscreenQuad();

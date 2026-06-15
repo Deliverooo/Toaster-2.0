@@ -362,9 +362,9 @@ namespace toaster::render
 			for (uint32 i{0u}; i < m_textureSlots.size(); ++i)
 			{
 				if (m_textureSlots[i])
-					pcs.textureIndex = m_textureSlots[i]->getAlignedHeapID();
+					pcs.textureIndex = m_textureSlots[i]->getAlignedShaderReadHeapID();
 				else
-					pcs.textureIndex = m_renderCtx->getGlobals()->whiteImage()->getAlignedHeapID();
+					pcs.textureIndex = m_renderCtx->getGlobals()->whiteImage()->getAlignedShaderReadHeapID();
 			}
 
 			p_cmd->pushData(pcs);
@@ -394,7 +394,7 @@ namespace toaster::render
 			Dx::XMStoreFloat4(&m_quadVertexPtr->position, Dx::XMVector4Transform(Dx::XMLoadFloat4(&m_quadVertexPositions[i]), p_transform));
 			m_quadVertexPtr->colour   = p_colour;
 			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
-			m_quadVertexPtr->texIndex = m_renderCtx->getGlobals()->whiteImage()->getAlignedHeapID();
+			m_quadVertexPtr->texIndex = m_renderCtx->getGlobals()->whiteImage()->getAlignedShaderReadHeapID();
 			m_quadVertexPtr++;
 		}
 		m_quadIndexCount += 6u;
@@ -412,7 +412,7 @@ namespace toaster::render
 			Dx::XMStoreFloat4(&m_quadVertexPtr->position, Dx::XMVector4Transform(Dx::XMLoadFloat4(&m_quadVertexPositions[i]), p_transform));
 			m_quadVertexPtr->colour   = p_colour;
 			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
-			m_quadVertexPtr->texIndex = static_cast<float32>(p_texture->getAlignedHeapID());
+			m_quadVertexPtr->texIndex = static_cast<float32>(p_texture->getAlignedShaderReadHeapID());
 			m_quadVertexPtr++;
 		}
 		m_quadIndexCount += 6u;
@@ -507,7 +507,7 @@ namespace toaster::render
 		uint32 texture_index{0u};
 		for (uint32 i{1u}; i < m_textureSlotIndex; ++i)
 		{
-			if (m_textureSlots[i]->getHeapID() == p_texture->getHeapID())
+			if (m_textureSlots[i]->getShaderReadHeapID() == p_texture->getShaderReadHeapID())
 			{
 				texture_index = i;
 				break;

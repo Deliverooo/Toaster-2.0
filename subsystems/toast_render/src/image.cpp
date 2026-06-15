@@ -6,27 +6,34 @@ namespace toaster::render
 {
 	Image::Image(RenderContext &p_render_ctx, const ImageSpecInfo &p_spec_info) : m_renderCtx(&p_render_ctx), m_specInfo(p_spec_info)
 	{
-		m_specInfo.usageFlags |= vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled;
+		vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled};
+		if (m_specInfo.storage)
+			usage_flags |= vk::ImageUsageFlagBits::eStorage;
+
 		gpu::ImageSpecInfo image_spec_info{};
 		image_spec_info.size       = m_specInfo.size;
 		image_spec_info.format     = m_specInfo.format;
-		image_spec_info.usage      = m_specInfo.usageFlags;
+		image_spec_info.usage      = usage_flags;
 		image_spec_info.layerCount = m_specInfo.layerCount;
 
 		// You will only use this constructor if you are going to set the data
 		m_image = m_renderCtx->createGPURef<gpu::RawImage>(image_spec_info);
 
-		m_heapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, m_specInfo.usageFlags & vk::ImageUsageFlagBits::eStorage ? true : false);
+		if (m_specInfo.storage)
+			m_storageHeapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, true);
+		m_shaderReadHeapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, false);
 	}
 
 	Image::Image(RenderContext &p_render_ctx, const ImageSpecInfo &p_spec_info, const Buffer &p_data) : m_renderCtx(&p_render_ctx), m_specInfo(p_spec_info)
 	{
-		m_specInfo.usageFlags |= vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled;
+		vk::ImageUsageFlags usage_flags{vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eSampled};
+		if (m_specInfo.storage)
+			usage_flags |= vk::ImageUsageFlagBits::eStorage;
 
 		gpu::ImageSpecInfo image_spec_info{};
 		image_spec_info.size       = m_specInfo.size;
 		image_spec_info.format     = m_specInfo.format;
-		image_spec_info.usage      = m_specInfo.usageFlags;
+		image_spec_info.usage      = usage_flags;
 		image_spec_info.layerCount = m_specInfo.layerCount;
 		m_image                    = m_renderCtx->createGPURef<gpu::RawImage>(image_spec_info);
 
@@ -36,13 +43,31 @@ namespace toaster::render
 		m_renderCtx->getLogicalDevice()->generateMipmaps(m_image->getImage(), {m_specInfo.size.x, m_specInfo.size.y, 1u}, 1);
 		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal); // Generate mips leaves the image in the eShaderReadOnlyOptimal layout
 
-		m_heapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, m_specInfo.usageFlags & vk::ImageUsageFlagBits::eStorage ? true : false);
+		if (m_specInfo.storage)
+			m_storageHeapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, true);
+		m_shaderReadHeapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, false);
+	}
+
+	Image::Image(RenderContext &p_render_ctx, const gpu::RawImageHandle &p_raw_image) : m_renderCtx(&p_render_ctx), m_image(p_raw_image)
+	{
+		m_specInfo.size       = m_image->getSpecInfo().size;
+		m_specInfo.layerCount = m_image->getSpecInfo().layerCount;
+		m_specInfo.format     = m_image->getSpecInfo().format;
+		m_specInfo.storage    = !!(m_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eStorage);
+
+		if (m_specInfo.storage)
+			m_storageHeapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, true);
+		m_shaderReadHeapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, false);
 	}
 
 	Image::~Image()
 	{
 		if (m_renderCtx)
-			m_renderCtx->getDescriptorHeap()->freeImage(m_heapID);
+		{
+			if (m_specInfo.storage)
+				m_renderCtx->getDescriptorHeap()->freeImage(m_storageHeapID);
+			m_renderCtx->getDescriptorHeap()->freeImage(m_shaderReadHeapID);
+		}
 	}
 
 	auto Image::setData(const Buffer &p_data) -> void
@@ -67,26 +92,42 @@ namespace toaster::render
 		return m_image;
 	}
 
-	auto Image::resize(tsm::uint2 p_size) -> void
+	auto Image::resize(ImageSize p_size) -> void
 	{
 		m_image->resize(p_size);
-		m_renderCtx->getDescriptorHeap()->setImage(m_heapID, *m_image);
+
+		if (m_specInfo.storage)
+			m_renderCtx->getDescriptorHeap()->setImage(m_storageHeapID, *m_image);
+		m_renderCtx->getDescriptorHeap()->setImage(m_shaderReadHeapID, *m_image);
 	}
 
-	auto Image::setShaderRead() -> void
+	auto Image::toStorageOptimal() -> void
 	{
-		m_renderCtx->getDescriptorHeap()->setImage(m_heapID, *m_image, false);
+		gpu::util::toGeneral(m_image);
+	}
 
+	auto Image::toShaderReadOptimal() -> void
+	{
 		gpu::util::toShaderRead(m_image);
 	}
 
-	auto Image::getHeapID() const -> gpu::DescriptorSlot
+	auto Image::getStorageHeapID() const -> gpu::DescriptorSlot
 	{
-		return m_heapID;
+		return m_storageHeapID;
 	}
 
-	auto Image::getAlignedHeapID() const -> gpu::DescriptorSlot
+	auto Image::getShaderReadHeapID() const -> gpu::DescriptorSlot
 	{
-		return m_heapID + (m_renderCtx->getDescriptorHeap()->getImageOffset() / m_renderCtx->getDescriptorHeap()->getImageDescriptorSize());
+		return m_shaderReadHeapID;
+	}
+
+	auto Image::getAlignedStorageHeapID() const -> gpu::DescriptorSlot
+	{
+		return m_storageHeapID + (m_renderCtx->getDescriptorHeap()->getImageOffset() / m_renderCtx->getDescriptorHeap()->getImageDescriptorSize());
+	}
+
+	auto Image::getAlignedShaderReadHeapID() const -> gpu::DescriptorSlot
+	{
+		return m_shaderReadHeapID + (m_renderCtx->getDescriptorHeap()->getImageOffset() / m_renderCtx->getDescriptorHeap()->getImageDescriptorSize());
 	}
 }

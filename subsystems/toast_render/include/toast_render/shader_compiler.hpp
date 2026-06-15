@@ -4,16 +4,6 @@
 #include "toast_render.hpp"
 #include "toast_lib/io/filesystem.hpp"
 
-// #include <wrl/client.h>
-
-// #undef min
-// #undef max
-
-// struct IDxcUtils;
-// struct IDxcCompiler3;
-// struct IDxcIncludeHandler;
-// struct IDxcBlob;
-
 namespace toaster::render
 {
 	class RenderContext;
@@ -31,6 +21,9 @@ namespace toaster::render
 		ePixel,
 		eCompute
 	};
+
+	constexpr auto getVulkanShaderStage(EShaderStage p_stage) -> vk::ShaderStageFlagBits;
+	constexpr auto getDxShaderStage(EShaderStage p_stage) -> WString;
 
 	class TST_RENDER_API ShaderCompiler
 	{
@@ -53,7 +46,6 @@ namespace toaster::render
 		auto _compileToDxBlob(const String &p_source, EShaderStage p_stage) const -> void *; // Microsoft::WRL::ComPtr<IDxcBlob>*
 
 		struct Impl; // I am not exposing Dx...
-		Impl *                m_impl{nullptr};
-		// std::unique_ptr<Impl> m_impl;
+		Impl *m_impl{nullptr};
 	};
 }

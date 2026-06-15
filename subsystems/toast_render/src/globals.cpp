@@ -9,15 +9,36 @@ namespace toaster::render
 {
 	Globals::Globals(RenderContext &p_render_ctx, const io::filesystem::Path &p_binary_dir) : m_renderCtx(&p_render_ctx), m_binaryDir(p_binary_dir)
 	{
+		#pragma region shaders
+
+		// Fullscreen quad shaders
+		m_dynamicShaderLibrary.add("Fullscreen_Quad_VS",
+								   m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/fullscreen_quad.vert.hlsl.spv", EShaderStage::eVertex,
+																	  EShaderStage::ePixel));
+		m_dynamicShaderLibrary.add("Fullscreen_Quad_PS",
+								   m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/fullscreen_quad.pixel.glsl.spv", EShaderStage::ePixel));
+
+		// Quad shaders
+		m_dynamicShaderLibrary.add("Quad_VS", m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/quad_dynamic.vert.hlsl.spv", EShaderStage::eVertex,
+																				 EShaderStage::ePixel));
+		m_dynamicShaderLibrary.add("Quad_PS", m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/quad_dynamic.pixel.glsl.spv", EShaderStage::ePixel));
+
+		// Equirectangular to cube map shader
+		m_dynamicShaderLibrary.add("Equirectangular_To_Cube_Map",
+								   m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/equirectangular_to_cube_map.comp.glsl.spv", EShaderStage::eCompute));
+
+		// Depth pre shaders
+		m_dynamicShaderLibrary.add("Depth_Pre_VS",
+								   m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/depth_pre.vert.hlsl.spv", EShaderStage::eVertex, EShaderStage::ePixel));
+		m_dynamicShaderLibrary.add("Depth_Pre_PS", m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/depth_pre.pixel.glsl.spv", EShaderStage::ePixel));
+
+		// Skybox shaders
+		m_dynamicShaderLibrary.add("Skybox_VS", m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/skybox.vert.hlsl.spv", EShaderStage::eVertex,
+																				   EShaderStage::ePixel));
+		m_dynamicShaderLibrary.add("Skybox_PS", m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/skybox.pixel.glsl.spv", EShaderStage::ePixel));
+
+		#pragma endregion
 		InitialiserList shader_stages = {vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment};
-		{
-			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/depth-pre.vert.glsl.spv")};
-			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/depth-pre.pixel.glsl.spv")};
-			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-			InitialiserList bytecode = {vs_bytecode, ps_bytecode};
-			const auto      depth_pre_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), shader_stages, bytecode, "Depth-Pre")};
-			m_shaderLibrary.add("Depth-Pre", depth_pre_shader);
-		}
 		{
 			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/ambient_occlusion.comp.glsl.spv")};
 			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
@@ -43,67 +64,12 @@ namespace toaster::render
 			m_shaderLibrary.add("Composite", composite_shader);
 		}
 		{
-			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/skybox.vert.glsl.spv")};
-			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/skybox.pixel.glsl.spv")};
-			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
-			const auto skybox_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), shader_stages, bytecode, "Skybox")};
-			m_shaderLibrary.add("Skybox", skybox_shader);
-		}
-		{
-			{
-				gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/quad.vert.glsl.spv")};
-				gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/quad.pixel.glsl.spv")};
-				TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-				std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
-				const auto quad_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), shader_stages, bytecode, "Quad")};
-				m_shaderLibrary.add("Quad", quad_shader);
-			}
-
-			{
-				m_dynamicShaderLibrary.add("Quad_VS", m_renderCtx->createShader(m_binaryDir / "../resources/shaders/quad_dynamic.vert.hlsl", EShaderStage::eVertex,
-																				EShaderStage::ePixel));
-				m_dynamicShaderLibrary.add("Quad_PS", m_renderCtx->createShader(m_binaryDir / "../resources/shaders/quad_dynamic.pixel.glsl", EShaderStage::ePixel,
-																				EShaderStage::eNone, EShaderLanguage::eGLSL));
-			}
-
-			{
-				m_dynamicShaderLibrary.add("Equirectangular_To_CubeMap",
-										   m_renderCtx->createShader(m_binaryDir / "../resources/shaders/equirectangular_to_cube_map.comp.glsl", EShaderStage::eCompute,
-																	 EShaderStage::eNone, EShaderLanguage::eGLSL));
-			}
-		}
-		{
-			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/anti-aliasing.vert.glsl.spv")};
-			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/anti-aliasing.pixel.glsl.spv")};
-			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
-			const auto anti_aliasing_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), shader_stages, bytecode, "Anti-Aliasing")};
-			m_shaderLibrary.add("Anti-Aliasing", anti_aliasing_shader);
-		}
-		{
 			gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/ssao.vert.glsl.spv")};
 			gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/ssao.pixel.glsl.spv")};
 			TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
 			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
 			const auto ssao_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), shader_stages, bytecode, "SSAO_Graphics")};
 			m_shaderLibrary.add("SSAO_Graphics", ssao_shader);
-		}
-		{
-			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/test.comp.glsl.spv")};
-			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {cs_bytecode};
-			auto stage = {vk::ShaderStageFlagBits::eCompute};
-			const auto compute_test_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), stage, bytecode, "Compute-Test")};
-			m_shaderLibrary.add("Compute-Test", compute_test_shader);
-		}
-		{
-			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/equirectangular_to_cubemap.comp.glsl.spv")};
-			TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-			std::initializer_list<gpu::VKShader::Bytecode> bytecode = {cs_bytecode};
-			auto stage = {vk::ShaderStageFlagBits::eCompute};
-			const auto compute_test_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), stage, bytecode, "Equirectangular_To_CubeMap")};
-			m_shaderLibrary.add("Equirectangular_To_CubeMap", compute_test_shader);
 		}
 		{
 			gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_binary_dir / "shaders/diffuse_irradiance_convolution.comp.glsl.spv")};

@@ -178,11 +178,14 @@ namespace toaster::render
 		[[nodiscard]] auto createShader(const io::filesystem::Path &p_path, EShaderStage p_stage, EShaderStage p_next_stage = EShaderStage::eNone,
 										EShaderLanguage             p_shader_lang = EShaderLanguage::eHLSL) const -> gpu::DynamicShaderHandle;
 
+		[[nodiscard]] auto createShaderFromSpirV(const io::filesystem::Path &p_spir_v_path, EShaderStage p_stage,
+												 EShaderStage                p_next_stage = EShaderStage::eNone) const -> gpu::DynamicShaderHandle;
+
 		#pragma region render logic
 		// For all of these, if the frame index or command buffer parameter is null / 0, they will be obtained from the swapchain instead
 
 		[[deprecated]] auto beginRenderPass(const RenderingInfo &p_rendering_info, RenderPass *p_render_pass = nullptr, gpu::CommandBuffer *p_command_buffer = nullptr,
-										   uint32               p_frame_index                               = UINT32_MAX) const -> void;
+											uint32               p_frame_index                               = UINT32_MAX) const -> void;
 		[[deprecated]] auto endRenderPass(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr) const -> void;
 
 		auto beginCompute(ComputePass *p_compute_pass, gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;

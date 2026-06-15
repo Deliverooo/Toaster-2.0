@@ -14,18 +14,25 @@ namespace toaster::render
 	{
 		ImageSize size{0u};
 
-		vk::Format          format{vk::Format::eR8G8B8A8Srgb};
-		vk::ImageUsageFlags usageFlags{vk::ImageUsageFlagBits::eSampled};
+		vk::Format format{vk::Format::eR8G8B8A8Srgb};
+
+		// True if the image should be able to be used as a storage image inside of shaders. Also dictates whether the storage heap id is created in the constructor
+		bool32 storage{false};
 
 		uint32 layerCount{1u};
 	};
 
+	// The ultimate image class. Ts can be used for basically anything inside the engine.
+	// You can use this as a storage image, sampled image, colour attachment or a 3d cube map image
+	// For functions to create images for these specialised functionalities, check the render context class
 	class TST_RENDER_API Image
 	{
 		TST_RENDER_OBJECT
 	public:
 		Image(RenderContext &p_render_ctx, const ImageSpecInfo &p_spec_info);
 		Image(RenderContext &p_render_ctx, const ImageSpecInfo &p_spec_info, const Buffer &p_data);
+		Image(RenderContext &p_render_ctx, const gpu::RawImageHandle &p_raw_image);
+
 		~Image();
 
 		auto setData(const Buffer &p_data) -> void;
@@ -34,19 +41,25 @@ namespace toaster::render
 		auto getImage() const -> const gpu::RawImageHandle &;
 		auto getImage() -> gpu::RawImageHandle &;
 
-		auto resize(tsm::uint2 p_size) -> void;
+		auto resize(ImageSize p_size) -> void;
 
-		auto setShaderRead() -> void;
+		// Use when switching the image's usage to storage or shader read
+		auto toStorageOptimal() -> void;
+		auto toShaderReadOptimal() -> void;
 
-		auto getHeapID() const -> gpu::DescriptorSlot;
-		auto getAlignedHeapID() const -> gpu::DescriptorSlot;
+		auto getStorageHeapID() const -> gpu::DescriptorSlot;    // Use for storage images
+		auto getShaderReadHeapID() const -> gpu::DescriptorSlot; // Use for sampled images
+
+		auto getAlignedStorageHeapID() const -> gpu::DescriptorSlot;    // Pass ts to shaders!!!!
+		auto getAlignedShaderReadHeapID() const -> gpu::DescriptorSlot; // Pass ts to shaders!!!!
 
 	private:
 		ImageSpecInfo m_specInfo{};
 
 		gpu::RawImageHandle m_image{nullptr};
 
-		gpu::DescriptorSlot m_heapID{UINT32_MAX};
+		gpu::DescriptorSlot m_storageHeapID{UINT32_MAX};
+		gpu::DescriptorSlot m_shaderReadHeapID{UINT32_MAX};
 	};
 
 	TST_RENDER_DEFINE_HANDLE(Image, Image)

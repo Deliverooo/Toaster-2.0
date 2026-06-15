@@ -18,7 +18,7 @@ endif ()
 # Project definition
 project(Toaster VERSION 1.0.0)
 
-find_package(Vulkan REQUIRED COMPONENTS glslangValidator shaderc_combined SPIRV-Tools)
+find_package(Vulkan REQUIRED COMPONENTS dxc glslangValidator shaderc_combined SPIRV-Tools)
 
 if (NOT ${Vulkan_FOUND} OR NOT ${Vulkan_glslangValidator_FOUND} OR NOT ${Vulkan_shaderc_combined_FOUND} OR NOT ${Vulkan_SPIRV-Tools_FOUND})
 	message(FATAL_ERROR "Vulkan enabled as a graphics backend, but cannot be found or cannot find required components!")
