@@ -1034,8 +1034,6 @@ namespace toaster::render
 		p_mesh->getVertexBuffer()->bind(command_buffer);
 		p_mesh->getIndexBuffer()->bind(command_buffer);
 
-		// LOG_ERROR("{}", submesh.vertexCount);
-
 		command_buffer->drawIndexed(submesh.indexCount, 1, submesh.baseIndex, static_cast<int32>(submesh.baseVertex), 0);
 	}
 

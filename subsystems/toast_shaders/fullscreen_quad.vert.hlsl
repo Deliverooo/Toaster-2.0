@@ -29,7 +29,7 @@ VSOutput main(VSInput p_input)
 
     output.position =  output.vert_position.xyz;
     output.texCoord = p_input.texCoord;
-    output.texCoord.y *= -1.0f;
+//    output.texCoord.y *= -1.0f;
 
         // Calculate UV coordinates based on vertex ID (0, 1, or 2)
     // output.texCoord = float2((id << 1) & 2, id & 2);

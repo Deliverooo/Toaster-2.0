@@ -18,14 +18,14 @@ layout(buffer_reference, std140) readonly buffer Camera
 
 layout(push_constant) uniform PushConstants
 {
-    uint textureIndex;
-    uint samplerIndex;
-
     Camera camera;
+
+    uint samplerIndex;
+    uint textureIndex;
 } pcs;
 
 void main()
 {
     vec4 texture_colour = texture(sampler2D(globalTextures[pcs.textureIndex], globalSamplers[pcs.samplerIndex]), v_TexCoord);
-    o_Colour = texture_colour;
+    o_Colour = vec4(1.0f);
 }

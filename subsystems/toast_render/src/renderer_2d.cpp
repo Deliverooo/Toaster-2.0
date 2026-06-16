@@ -291,7 +291,7 @@ namespace toaster::render
 	{
 		if (m_specInfo.overrideAttachments && !p_override_colour_attachment && !p_override_depth_attachment)
 		{
-			TST_ASSERT_MSG(false, "Please provide the attachment infos...");
+			TST_PERMA_ASSERT_MSG(false, "Please provide the attachment infos...");
 		}
 		m_colourAttachmentInfo = p_override_colour_attachment;
 		m_depthAttachmentInfo  = p_override_depth_attachment;
@@ -337,19 +337,15 @@ namespace toaster::render
 
 		rendering_info.depthAttachment = depth_attachment_info;
 
-		m_renderCtx->beginRenderPass(rendering_info, nullptr, p_cmd);
-		p_cmd->setRenderArea(rendering_info.renderArea);
-
+		m_renderCtx->beginRendering(rendering_info, p_cmd);
 		m_graphicsState->bind();
-
-		m_renderCtx->getDescriptorHeap()->bind();
 
 		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
 		if (size) // Apparently you have to check ts, or things won't work correctly and there will be artifacts...
 		{
 			m_quadVertexBuffer->setData(m_quadVertexBase, size, 0);
 
-			struct PushConstants
+			TST_PUSH_CONSTANT_BLOCK(PushConstants)
 			{
 				uint32 textureIndex;
 				uint32 samplerIndex;
@@ -375,7 +371,7 @@ namespace toaster::render
 			p_cmd->drawIndexed(m_quadIndexCount);
 		}
 
-		p_cmd->getVulkanCommandBuffer().endRendering();
+		m_renderCtx->endRendering(rendering_info);
 	}
 
 	auto Renderer2DV2::submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void
@@ -456,6 +452,8 @@ namespace toaster::render
 			m_renderTargetImage      = nullptr;
 			m_renderTargetDepthImage = nullptr;
 		}
+
+		m_renderTargetImage = m_renderCtx->getGlobals()->whiteImage();
 
 		vk::DeviceSize quad_vertex_buffer_size{sizeof(QuadVertex) * m_maxVertices};
 		m_quadVertexBuffer = m_renderCtx->createGPURef<gpu::VKVertexBuffer>(quad_vertex_buffer_size);

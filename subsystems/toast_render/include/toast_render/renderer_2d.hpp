@@ -176,7 +176,7 @@ namespace toaster::render
 
 		struct QuadVertex
 		{
-			Dx::XMFLOAT4 position{0.0f, 0.0f, 0.0f, 0.0f};
+			Dx::XMFLOAT4 position{0.0f, 0.0f, 0.0f, 1.0f};
 			tsm::float4  colour{1.0f};
 			tsm::float2  texCoord{0.0f};
 			float32      texIndex{0u};
@@ -214,4 +214,5 @@ namespace toaster::render
 		RenderingAttachmentInfo *m_depthAttachmentInfo{nullptr};
 	};
 	#endif
+
 }

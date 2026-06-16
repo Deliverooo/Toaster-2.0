@@ -8,8 +8,6 @@ set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(ASSIMP_INSTALL ON CACHE BOOL "" FORCE)
 add_subdirectory(assimp)
 
-add_subdirectory(miniaudio)
-
 add_subdirectory(stb)
 
 set(ENTT_INSTALL ON CACHE BOOL "" FORCE)
@@ -25,10 +23,6 @@ if (MSVC)
 	target_compile_options(yaml-cpp PUBLIC /wd4251)
 	target_compile_options(yaml-cpp PUBLIC /wd4275)
 endif ()
-
-add_subdirectory(imgui)
-
-add_subdirectory(ImGuizmo)
 
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)

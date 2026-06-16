@@ -40,6 +40,11 @@ namespace toaster::render
 																				   EShaderStage::ePixel));
 		m_dynamicShaderLibrary.add("Skybox_PS", m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/skybox.pixel.glsl.spv", EShaderStage::ePixel));
 
+		// Mesh geometry shaders
+		m_dynamicShaderLibrary.add("Mesh_Geo_VS", m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/mesh_geo.vert.hlsl.spv", EShaderStage::eVertex,
+																					 EShaderStage::ePixel));
+		m_dynamicShaderLibrary.add("Mesh_Geo_PS", m_renderCtx->createShaderFromSpirV(m_binaryDir / "shaders/mesh_geo.pixel.glsl.spv", EShaderStage::ePixel));
+
 		#pragma endregion
 		InitialiserList shader_stages = {vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment};
 		{
@@ -91,14 +96,14 @@ namespace toaster::render
 			m_shaderLibrary.add("SSAO_Blur", compute_test_shader);
 		}
 
-		m_quadVertices.emplace_back(QuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
-		m_quadVertices.emplace_back(QuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});
-		m_quadVertices.emplace_back(QuadVertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}});
-		m_quadVertices.emplace_back(QuadVertex{{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}});
+		m_quadVertices.emplace_back(FullscreenQuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
+		m_quadVertices.emplace_back(FullscreenQuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});
+		m_quadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}});
+		m_quadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}});
 
 		m_quadIndices = {0, 1, 3, 1, 2, 3};
 
-		vk::DeviceSize vbo_size{m_quadVertices.size() * sizeof(QuadVertex)};
+		vk::DeviceSize vbo_size{m_quadVertices.size() * sizeof(FullscreenQuadVertex)};
 		m_quadVertexBuffer = make_reference<gpu::VKVertexBuffer>(m_renderCtx->getLogicalDevice(), m_quadVertices.data(), vbo_size);
 
 		vk::DeviceSize ibo_size{m_quadIndices.size() * sizeof(uint32)};
@@ -150,7 +155,7 @@ namespace toaster::render
 		return m_quadIndexBuffer;
 	}
 
-	auto Globals::fullscreenQuadVertices() const -> const std::vector<QuadVertex> &
+	auto Globals::fullscreenQuadVertices() const -> const std::vector<FullscreenQuadVertex> &
 	{
 		return m_quadVertices;
 	}

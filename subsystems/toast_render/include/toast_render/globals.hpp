@@ -14,10 +14,26 @@ namespace toaster::render
 	{
 		TST_RENDER_OBJECT
 	public:
-		struct QuadVertex
+		struct FullscreenQuadVertex
 		{
 			tsm::float3 position;
 			tsm::float2 texCoord;
+		};
+
+		// Useful
+		struct CameraUB
+		{
+			Dx::XMFLOAT4X4 viewMatrix;
+			Dx::XMFLOAT4X4 projectionMatrix;
+			Dx::XMFLOAT4X4 inverseProjectionMatrix;
+			Dx::XMFLOAT4   position;
+		};
+
+		// Use if you only need the view and projection matrix...
+		struct ViewProjCameraUB
+		{
+			Dx::XMFLOAT4X4 viewMatrix;
+			Dx::XMFLOAT4X4 projectionMatrix;
 		};
 
 		TST_PUSH_CONSTANT_BLOCK(EquirectangularToCubeMapConstants)
@@ -44,7 +60,7 @@ namespace toaster::render
 		auto fullscreenQuadVertexBuffer() const -> const gpu::VertexBufferHandle &;
 		auto fullscreenQuadIndexBuffer() const -> const gpu::IndexBufferHandle &;
 
-		auto fullscreenQuadVertices() const -> const std::vector<QuadVertex> &;
+		auto fullscreenQuadVertices() const -> const std::vector<FullscreenQuadVertex> &;
 		auto fullscreenQuadIndices() const -> const std::vector<uint32> &;
 
 		auto whiteTexture() const -> const gpu::Texture2DHandle &;
@@ -60,8 +76,8 @@ namespace toaster::render
 		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
 		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
 
-		std::vector<QuadVertex> m_quadVertices;
-		std::vector<uint32>     m_quadIndices;
+		std::vector<FullscreenQuadVertex> m_quadVertices;
+		std::vector<uint32>               m_quadIndices;
 
 		gpu::Texture2DHandle m_whiteTexture{nullptr};
 		gpu::Texture3DHandle m_whiteTexture3D{nullptr};

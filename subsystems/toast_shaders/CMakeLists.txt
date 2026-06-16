@@ -27,8 +27,7 @@ set(SHADER_SOURCES_VULKAN
 		${CMAKE_CURRENT_SOURCE_DIR}/ambient_occlusion.comp.glsl
 
 		${CMAKE_CURRENT_SOURCE_DIR}/quad_dynamic.pixel.glsl
-
-
+		${CMAKE_CURRENT_SOURCE_DIR}/mesh_geo.pixel.glsl
 )
 
 set(SHADER_SOURCES_HLSL
@@ -37,6 +36,7 @@ set(SHADER_SOURCES_HLSL
 		${CMAKE_CURRENT_SOURCE_DIR}/mesh_dynamic.vert.hlsl
 		${CMAKE_CURRENT_SOURCE_DIR}/quad_dynamic.vert.hlsl
 		${CMAKE_CURRENT_SOURCE_DIR}/skybox.vert.hlsl
+		${CMAKE_CURRENT_SOURCE_DIR}/mesh_geo.vert.hlsl
 )
 
 

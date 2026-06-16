@@ -18,6 +18,8 @@
 
 #include <stb/stb_image.h>
 
+#include "toast_render/dynamic_renderer_2d.hpp"
+
 using namespace toaster;
 
 class ClientLayer : public IAppLayer
@@ -59,6 +61,21 @@ public:
 			Entity e{m_scene->createEntity("Mesh thing")};
 			e.addComponent<DynamicMeshComponent>().mesh = m_mesh;
 		}
+		{
+			Entity e{m_scene->createEntity("Light")};
+			auto & dlc{e.addComponent<PointLightComponent>()};
+			dlc.multiplier = 100.0f;
+
+			auto &tc{e.getComponent<TransformComponent>()};
+			tc.translation = {0.0f, 2.0f, 0.0f};
+		}
+
+		m_renderer2D = toaster::make_unique<render::DynamicRenderer2D>(*m_renderCtx, m_viewportSize);
+
+		// auto &tex{m_renderer2D->getOutputColourImage()};
+		// TST_PERMA_ASSERT(tex);
+
+		// tex->getImage()->saveToFile(binary_dir / "whatisdis.bmp");
 	}
 
 	auto onDestroy() -> void override
@@ -67,10 +84,14 @@ public:
 
 	auto onUpdate(float32 p_dt) -> void override
 	{
-		auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({0.0f, 1.0f, 1.0f, 1.0f}, false)};
-		auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
+		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({0.0f, 1.0f, 1.0f, 1.0f}, false)};
+		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 
 		m_renderCtx->getDescriptorHeap()->bind();
+
+		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), {1.0f, 0.0f, 0.0f, 1.0f});
+		m_renderer2D->render();
+		// m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), {1.0f, 0.0f, 0.0f, 1.0f});
 
 		m_camera.onUpdate(p_dt);
 		m_scene->onUpdate(p_dt);
@@ -81,6 +102,10 @@ public:
 
 		FullscreenQuadConstants quad_constants{};
 		quad_constants.samplerIndex = m_renderCtx->getSampler(render::ESamplerType::eDefault);
+
+		auto &tex{m_renderer2D->getColourImage()};
+		TST_PERMA_ASSERT(tex);
+		// quad_constants.textureIndex = tex->getAlignedShaderReadHeapID();
 		quad_constants.textureIndex = m_sceneRenderer->getColourImage()->getAlignedShaderReadHeapID();
 		cmd->pushData(quad_constants);
 
@@ -94,6 +119,8 @@ public:
 		m_camera.onResize(p_size);
 		m_scene->onResize(p_size);
 		m_sceneRenderer->onResize(p_size);
+
+		// m_renderer2D->onResize(p_size);
 	}
 
 	auto onEvent(Event &p_event) -> void override
@@ -103,9 +130,6 @@ public:
 
 private:
 	tsm::uint2 m_viewportSize{0u};
-
-	gpu::DynamicShaderHandle m_vertexShader;
-	gpu::DynamicShaderHandle m_fragmentShader;
 
 	UniquePtr<render::GraphicsState> m_graphicsState{nullptr};
 
@@ -118,11 +142,14 @@ private:
 	UniquePtr<Scene>                m_scene{nullptr};
 	UniquePtr<DynamicSceneRenderer> m_sceneRenderer{nullptr};
 
+	UniquePtr<render::DynamicRenderer2D> m_renderer2D{nullptr};
+
 	TST_PUSH_CONSTANT_BLOCK(FullscreenQuadConstants)
 	{
 		uint32 samplerIndex;
 		uint32 textureIndex;
 
+	private:
 		char _padd[8];
 	};
 };

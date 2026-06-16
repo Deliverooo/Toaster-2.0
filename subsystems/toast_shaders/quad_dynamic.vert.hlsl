@@ -21,12 +21,11 @@ struct Camera
 
 struct PushConstants
 {
-    uint textureIndex;
-    uint samplerIndex;
-
     vk::BufferPointer<Camera> cameraPtr;
-};
 
+    uint samplerIndex;
+    uint textureIndex;
+};
 [[vk::push_constant]] PushConstants pushData;
 
 VSOutput main(VSInput p_input)
@@ -35,7 +34,8 @@ VSOutput main(VSInput p_input)
 
     float4 world_pos = float4(p_input.position.xyz, 1.0f);
     float4 view_pos = mul(pushData.cameraPtr.Get().view, world_pos);
-    output.position = mul(pushData.cameraPtr.Get().proj, view_pos);
+    output.position = world_pos;
+//    output.position = mul(pushData.cameraPtr.Get().proj, view_pos);
 
     output.texCoord = p_input.texCoord;
     output.texCoord.y *= -1.0f; // Silly Vulkan

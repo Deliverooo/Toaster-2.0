@@ -1,4 +1,7 @@
 #include "toast_scene/dynamic_scene_renderer.hpp"
+#include "toast_scene/dynamic_scene_renderer.hpp"
+#include "toast_scene/dynamic_scene_renderer.hpp"
+#include "toast_scene/dynamic_scene_renderer.hpp"
 
 #include "toast_render/globals.hpp"
 #include "toast_render/render_context.hpp"
@@ -18,14 +21,9 @@ namespace toaster
 	{
 		m_cameraUBOs = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(CameraUB));
 
-		// m_directionalLightUBOs       = m_renderCtx->createUniformBuffers<DirectionalLightUB>(render::RenderContext::maxFramesInFlight);
-		// m_mappedDirectionalLightUBOs = m_directionalLightUBOs->mapAllMemory(sizeof(DirectionalLightUB));
-
-		// m_pointLightUBOs       = m_renderCtx->createUniformBuffers<PointLightUB>(render::RenderContext::maxFramesInFlight);
-		// m_mappedPointLightUBOs = m_pointLightUBOs->mapAllMemory(sizeof(PointLightUB));
-
-		// m_sceneDataUBOs       = m_renderCtx->createUniformBuffers<SceneDataUB>(render::RenderContext::maxFramesInFlight);
-		// m_mappedSceneDataUBOs = m_sceneDataUBOs->mapAllMemory(sizeof(SceneDataUB));
+		m_directionalLightUBOs = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(DirectionalLightUB));
+		m_pointLightUBOs       = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(PointLightUB));
+		m_sceneDataUBOs        = m_renderCtx->createRef<render::UniformBufferPFF>(sizeof(SceneDataUB));
 
 		#pragma region depth-pre
 		{
@@ -113,47 +111,19 @@ namespace toaster
 			m_colourImage     = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor);
 
 			m_skyboxImage = m_renderCtx->getGlobals()->whiteImage();
-			#if 0
-			render::ImageSpecInfo image_spec{}; image_spec.layerCount = 6u; image_spec.size = {1u}; image_spec.format = vk::Format::eR8G8B8A8Unorm;
-			// image_spec.usageFlags = vk::ImageUsageFlagBits::eStorage;
-			Buffer image_data{}; image_data.allocate(sizeof(uint32) * 6u); image_data.writeType(0x000BB000, sizeof(uint32) * 0u); image_data.
-					writeType(0xFFFF0FF, sizeof(uint32) * 1u); image_data.writeType(0xFFF00AFF, sizeof(uint32) * 2u); image_data.
-					writeType(0xFFFFFFFF, sizeof(uint32) * 3u); image_data.writeType(0xFFFF0FF, sizeof(uint32) * 4u); image_data.
-					writeType(0xF00FFFFF, sizeof(uint32) * 5u); m_skyboxImage = m_renderCtx->createRef<render::Image>(image_spec, image_data); image_data.release();
-			#endif
-			// m_skyboxImage = m_renderCtx->getGlobals()->whiteImage();
 		}
 		#pragma endregion
 
-		#if 0
 		#pragma region geometry
 		{
-			auto shader_choice{m_specInfo.overrideGeometryShader ? m_specInfo.overrideGeometryShader : m_renderCtx->getGlobals()->shaderLibrary().get("Geometry")};
-			gpu::PipelineSpecInfo geometry_pipeline_spec_info{};
-			geometry_pipeline_spec_info.vertexBufferLayout = render::RenderContext::meshVbl;
-			geometry_pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
-			geometry_pipeline_spec_info.depthFormat        = vk::Format::eD32Sfloat;
-			geometry_pipeline_spec_info.depthWrite         = false; // The depth buffer is gathered from the depth pre-pass
-			geometry_pipeline_spec_info.depthTest          = true;
-			geometry_pipeline_spec_info.depthCompare       = vk::CompareOp::eLessOrEqual;
-			geometry_pipeline_spec_info.multisample        = true;
-			geometry_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
-			geometry_pipeline_spec_info.cullMode           = m_specInfo.backfaceCulling ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone;
-			geometry_pipeline_spec_info.shader             = shader_choice;
-			m_geometryPipeline                             = m_renderCtx->createGPURef<gpu::VKPipeline>(geometry_pipeline_spec_info, "Geometry");
-
-			m_geometryPass = m_renderCtx->createRef<render::RenderPass>(m_geometryPipeline);
-			m_geometryPass->setInput("Camera", m_cameraUBOs).setInput("DirectionalLightData", m_directionalLightUBOs).setInput("PointLightData", m_pointLightUBOs).
-					setInput("SceneData", m_sceneDataUBOs).setInput("u_AOTexture", m_SSAOBlurredImage).bake();
+			m_geometryGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
+			m_geometryGraphicsState->setShaders({
+													m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Mesh_Geo_VS"),
+													m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Mesh_Geo_PS")
+												}).setVertexBufferLayout(render::RenderContext::meshVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).
+					setEnableDepthTest(true).setEnableDepthWrite(false).setEnableMultisample(true).setEnableDepthCompareOp(vk::CompareOp::eLessOrEqual);
 		}
 		#pragma endregion
-
-		m_MSAAcolourImage = m_renderCtx->createMultisampleAttachmentImage(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eColor);
-		m_colourTexture = m_renderCtx->createAttachmentTexture(m_specInfo.viewportSize, vk::ImageAspectFlagBits::eColor); render::Renderer2DSpecInfo
-				renderer_2d_create_info{}; renderer_2d_create_info.renderTargetSize = m_specInfo.viewportSize; renderer_2d_create_info.overrideAttachments = true;
-		renderer_2d_create_info.msaa = true; m_renderer2D = m_renderCtx->createRef<render::Renderer2D>(renderer_2d_create_info);
-
-		#endif
 	}
 
 	DynamicSceneRenderer::~DynamicSceneRenderer()
@@ -290,7 +260,6 @@ namespace toaster
 
 		m_cameraUBOs->setData(camera_ub);
 
-		#if 0
 		const auto &[directional_lights, point_lights]{m_scene->getLightEnvironment()};
 		{
 			DirectionalLightUB directional_light_ub{};
@@ -300,7 +269,7 @@ namespace toaster
 				directional_light_ub.directionalLights[i].direction = directional_lights[i].direction;
 				directional_light_ub.directionalLights[i].radiance  = directional_lights[i].radiance;
 			}
-			std::memcpy(m_mappedDirectionalLightUBOs[frame_index], &directional_light_ub, sizeof(DirectionalLightUB));
+			m_directionalLightUBOs->setData(directional_light_ub);
 		}
 		{
 			PointLightUB point_light_ub{};
@@ -310,18 +279,20 @@ namespace toaster
 				point_light_ub.pointLights[i].position = point_lights[i].position;
 				point_light_ub.pointLights[i].radiance = point_lights[i].radiance;
 			}
-			std::memcpy(m_mappedPointLightUBOs[frame_index], &point_light_ub, sizeof(PointLightUB));
-		} SceneDataUB scene_data_ub{}; Dx::XMStoreFloat3(&scene_data_ub.cameraPos, p_camera_position); std::memcpy(m_mappedSceneDataUBOs[frame_index], &scene_data_ub,
-																												   sizeof(SceneDataUB));
-		#endif
+			m_pointLightUBOs->setData(point_light_ub);
+		}
+		SceneDataUB scene_data_ub{};
+		Dx::XMStoreFloat3(&scene_data_ub.cameraPos, p_camera_position);
+		m_sceneDataUBOs->setData(scene_data_ub);
 	}
 
 	auto DynamicSceneRenderer::end() -> void
 	{
-		_renderDepthPrePass(m_renderCtx->getCurrentSwapchainCommandBuffer());
-		// _renderAOPass(p_cmd);
-		_renderSkyboxPass(m_renderCtx->getCurrentSwapchainCommandBuffer());
-		// _renderGeometryPass(p_cmd);
+		auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
+		_renderDepthPrePass(cmd);
+		// _renderAOPass(cmd);
+		_renderSkyboxPass(cmd);
+		_renderGeometryPass(cmd);
 
 		m_meshDrawCommands.clear();
 	}
@@ -440,6 +411,43 @@ namespace toaster
 		m_renderCtx->endRendering(rendering_info, p_cmd);
 	}
 
+	auto DynamicSceneRenderer::_renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void
+	{
+		if (m_meshDrawCommands.empty())
+			return;
+
+		render::RenderingInfo rendering_info{};
+		rendering_info.renderArea    = render::getRenderingArea(m_viewportSize);
+		rendering_info.depthReadOnly = true;
+
+		render::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
+		colour_attachment_info = render::getRenderingAttachmentInfo(*m_MSAAColourImage, *m_colourImage->getImage(), render::EAttachmentUsageOP::eLoadStore);
+
+		auto depth_attachment_info{render::getRenderingAttachmentInfo(*m_MSAADepthImage, *m_depthImage->getImage(), render::EAttachmentUsageOP::eLoadDontCare)};
+		rendering_info.depthAttachment = depth_attachment_info;
+
+		m_geometryGraphicsState->bind(p_cmd);
+		m_renderCtx->beginRendering(rendering_info, p_cmd);
+
+		GeometryConstants geometry_constants{};
+		geometry_constants.cameraPtr            = m_cameraUBOs->getDeviceAddress();
+		geometry_constants.directionalLightsPtr = m_directionalLightUBOs->getDeviceAddress();
+		geometry_constants.pointLightsPtr       = m_pointLightUBOs->getDeviceAddress();
+		geometry_constants.sceneDataPtr         = m_sceneDataUBOs->getDeviceAddress();
+		p_cmd->pushData(geometry_constants);
+
+		for (const auto &draw_cmd: m_meshDrawCommands)
+		{
+			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
+			{
+				// Dx::XMMATRIX draw_cmd_transform{Dx::XMLoadFloat4x4(&draw_cmd.transform)};
+				// Dx::XMMATRIX submesh_transform{Dx::XMLoadFloat4x4(&draw_cmd.mesh->getSubmeshes()[i].transform)};
+				m_renderCtx->renderSubmesh(draw_cmd.mesh, i, sizeof(GeometryConstants), p_cmd);
+			}
+		}
+		m_renderCtx->endRendering(rendering_info, p_cmd);
+	}
+
 	#if 0
 
 	auto DynamicSceneRenderer::_renderAOPass(gpu::VKCommandBuffer *p_cmd) -> void
@@ -461,32 +469,6 @@ namespace toaster
 
 		m_renderCtx->beginCompute(m_SSAOBlurPass, p_cmd);
 		m_renderCtx->dispatchCompute(m_SSAOBlurPass, nullptr, {(m_specInfo.viewportSize + 15u) / 16u, 1u}, p_cmd);
-	}auto DynamicSceneRenderer::_renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void
-	{
-		if (m_meshDrawCommands.empty())
-			return;
-
-		render::RenderingInfo rendering_info{};
-		rendering_info.renderArea    = render::getRenderingArea(m_specInfo.viewportSize);
-		rendering_info.depthReadOnly = true;
-
-		render::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		colour_attachment_info = render::getRenderingAttachmentInfo(*m_MSAAcolourImage, *m_colourTexture->getImage(), render::EAttachmentUsageOP::eLoadStore);
-
-		auto depth_attachment_info{render::getRenderingAttachmentInfo(*m_MSAADepthImage, *m_depthTexture->getImage(), render::EAttachmentUsageOP::eLoadDontCare)};
-		rendering_info.depthAttachment = depth_attachment_info;
-
-		m_renderCtx->beginRendering(rendering_info, m_geometryPass, p_cmd);
-		for (const auto &draw_cmd: m_meshDrawCommands)
-		{
-			for (uint32 i{0u}; i < draw_cmd.mesh->getSubmeshes().size(); ++i)
-			{
-				Dx::XMMATRIX draw_cmd_transform{Dx::XMLoadFloat4x4(&draw_cmd.transform)};
-				Dx::XMMATRIX submesh_transform{Dx::XMLoadFloat4x4(&draw_cmd.mesh->getSubmeshes()[i].transform)};
-				m_renderCtx->renderMesh(draw_cmd.mesh, i, m_geometryPipeline, Dx::XMMatrixMultiply(submesh_transform, draw_cmd_transform), p_cmd);
-			}
-		}
-		m_renderCtx->endRendering(rendering_info, p_cmd);
 	} static std::uniform_real_distribution<float32> s_random_floats{0.0f, 1.0f}; static std::random_device s_device{}; static std::default_random_engine s_generator
 			{s_device()}; auto                       DynamicSceneRenderer::_generateSSAONoise(uint32 p_texture_size) -> std::vector<tsm::float4>
 	{

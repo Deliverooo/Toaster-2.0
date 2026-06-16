@@ -38,7 +38,7 @@ namespace toaster
 		// auto getSSAOTexture() const -> const render::ImageHandle & { return m_SSAOTexture; }
 		// auto getSSAOBlurredImage() const -> const render::ImageHandle & { return m_SSAOBlurredImage; }
 
-		// auto getRenderer2D() -> const RefPtr<render::Renderer2D> & { return m_renderer2D; }
+		// auto getRenderer2D() -> const RefPtr<render::Renderer2DV2> & { return m_renderer2D; }
 
 		auto onResize(tsm::uint2 p_size) -> void;
 
@@ -48,7 +48,7 @@ namespace toaster
 		auto _renderDepthPrePass(gpu::VKCommandBuffer *p_cmd) -> void;
 		// auto _renderAOPass(gpu::VKCommandBuffer *p_cmd) -> void;
 		auto _renderSkyboxPass(gpu::VKCommandBuffer *p_cmd) -> void;
-		// auto _renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void;
+		auto _renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void;
 
 		// static auto _generateSSAONoise(uint32 p_texture_size) -> std::vector<tsm::float4>;
 
@@ -57,7 +57,15 @@ namespace toaster
 
 		tsm::uint2 m_viewportSize{0u};
 
-		// RefPtr<render::Renderer2D> m_renderer2D{nullptr};
+		struct CameraUB
+		{
+			Dx::XMFLOAT4X4 view;
+			Dx::XMFLOAT4X4 proj;
+			Dx::XMFLOAT4X4 invProj;
+		};
+
+		render::UniformBufferPFFHandle m_cameraUBOs{nullptr};
+
 		TST_PUSH_CONSTANT_BLOCK(SceneDataConstants)
 		{
 			uintptr cameraPtr;            // m_cameraUBOs
@@ -93,7 +101,6 @@ namespace toaster
 			uintptr cameraPtr;
 			uint32  samplerId;
 			uint32  skyboxMapId;
-			// char    _padd[4];
 		};
 
 		render::ImageHandle m_skyboxImage{nullptr};
@@ -118,31 +125,8 @@ namespace toaster
 		gpu::ComputePipelineHandle m_SSAOBlurPipeline{nullptr}; render::ComputePassHandle m_SSAOBlurPass{nullptr}; gpu::StorageImageHandle m_SSAOBlurredImage{nullptr};
 
 		#pragma endregion
-
-		#pragma region skybox
-		gpu::PipelineHandle m_skyboxPipeline{nullptr}; render::RenderPassHandle m_skyboxPass{nullptr}; render::MaterialHandle m_skyboxMaterial{nullptr};
-
-		#pragma endregion
-
-		#pragma region geometry
-		gpu::PipelineHandle m_geometryPipeline{nullptr}; render::RenderPassHandle m_geometryPass{nullptr};
-		#pragma endregion
-
 		#endif
 
-		gpu::RawImageHandle m_MSAAColourImage{nullptr};
-		render::ImageHandle m_colourImage{nullptr};
-
-		struct CameraUB
-		{
-			Dx::XMFLOAT4X4 view;
-			Dx::XMFLOAT4X4 proj;
-			Dx::XMFLOAT4X4 invProj;
-		};
-
-		render::UniformBufferPFFHandle m_cameraUBOs{nullptr};
-
-		#if 0
 		struct DirectionalLightUB
 		{
 			static constexpr uint32 c_maxDirectionalLights{4u};
@@ -150,18 +134,44 @@ namespace toaster
 			uint32           count{0u};
 			tsm::float3      _padding{0.0f};
 			DirectionalLight directionalLights[c_maxDirectionalLights]{};
-		}; gpu::UniformBufferPFFHandle m_directionalLightUBOs; gpu::UBOMappedDataPFF m_mappedDirectionalLightUBOs; struct PointLightUB
+		};
+
+		struct PointLightUB
 		{
 			static constexpr uint32 c_maxPointLights{128u};
 
 			uint32      count{0u};
 			tsm::float3 _padding{0.0f};
 			PointLight  pointLights[c_maxPointLights]{};
-		}; gpu::UniformBufferPFFHandle m_pointLightUBOs; gpu::UBOMappedDataPFF m_mappedPointLightUBOs; struct SceneDataUB
+		};
+
+		struct SceneDataUB
 		{
 			Dx::XMFLOAT3 cameraPos{0.0f, 0.0f, 0.0f};
 			char         _padd[4];
-		}; gpu::UniformBufferPFFHandle m_sceneDataUBOs; gpu::UBOMappedDataPFF m_mappedSceneDataUBOs;
+		};
+
+		render::UniformBufferPFFHandle m_directionalLightUBOs;
+		render::UniformBufferPFFHandle m_pointLightUBOs;
+		render::UniformBufferPFFHandle m_sceneDataUBOs;
+
+		#pragma region geometry
+
+		render::GraphicsStateUnique m_geometryGraphicsState{nullptr};
+
+		TST_PUSH_CONSTANT_BLOCK(GeometryConstants)
+		{
+			uintptr cameraPtr;            // m_cameraUBOs
+			uintptr directionalLightsPtr; // m_directionalLightUBOs
+			uintptr pointLightsPtr;       // m_pointLightUBOs
+			uintptr sceneDataPtr;         // m_sceneDataUBOs
+		};
+		#pragma endregion
+
+		gpu::RawImageHandle m_MSAAColourImage{nullptr};
+		render::ImageHandle m_colourImage{nullptr};
+
+		#if 1
 
 		#endif
 

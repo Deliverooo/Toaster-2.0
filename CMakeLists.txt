@@ -115,6 +115,6 @@ install(DIRECTORY
 		DESTINATION "resources"
 )
 
-add_subdirectory(runtime)
+#add_subdirectory(runtime)
 add_subdirectory(tstb)
 add_subdirectory(test)
