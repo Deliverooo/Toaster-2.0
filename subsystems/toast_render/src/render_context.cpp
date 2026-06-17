@@ -108,7 +108,11 @@ namespace toaster::render
 		m_shaderCompiler = toaster::make_unique<ShaderCompiler>(*this);
 
 		if (m_specInfo.createGlobals)
-			m_globals = new Globals{*this, io::filesystem::exists(m_specInfo.sdkDir) ? m_specInfo.sdkDir : os::getBinaryDirectory()};
+		{
+			GlobalsSpecInfo globals_spec_info{};
+			globals_spec_info.shaderBinaryDir = io::filesystem::exists(m_specInfo.sdkDir) ? m_specInfo.sdkDir / "shaders" : os::getBinaryDirectory() / "shaders";
+			m_globals                         = new Globals{*this, globals_spec_info};
+		}
 	}
 
 	RenderContext::~RenderContext()
@@ -191,7 +195,11 @@ namespace toaster::render
 		ImageSpecInfo image_spec_info{};
 		Buffer        image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
 		if (!image_data)
-			TST_PERMA_ASSERT(false);
+		{
+			LOG_ERROR("Failed to load image: {}", p_path);
+			return m_globals->debugImage();
+		}
+
 		auto out_image{createRef<Image>(image_spec_info, image_data)}; // The image takes ownership of the image data from here...
 		return out_image;
 	}
@@ -201,7 +209,10 @@ namespace toaster::render
 		ImageSpecInfo image_spec_info{};
 		Buffer        image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
 		if (!image_data)
-			TST_PERMA_ASSERT(false);
+		{
+			LOG_ERROR("Failed to load image: {}", p_path);
+			return nullptr;
+		}
 		auto out_image{createUnique<Image>(image_spec_info, image_data)}; // The image takes ownership of the image data from here...
 		return std::move(out_image);
 	}
@@ -301,7 +312,7 @@ namespace toaster::render
 
 		m_descriptorHeap->bind(&command_buffer);
 
-		m_globals->dynamicShaderLibrary().get("Equirectangular_To_Cube_Map")->bind(&command_buffer);
+		m_globals->getShader("Equirectangular_To_Cube_Map")->bind(&command_buffer);
 
 		Globals::EquirectangularToCubeMapConstants equirectangular_to_cube_map_constants{};
 		equirectangular_to_cube_map_constants.equirectangularMapId = env_input->getAlignedShaderReadHeapID();
@@ -319,73 +330,76 @@ namespace toaster::render
 
 	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) -> gpu::Texture3DHandle
 	{
-		auto env_tex{createGPURef<gpu::Texture2D>(gpu::TextureSpecInfo{}, p_path)};
-
-		constexpr uint32     skybox_resolution{2048};
-		gpu::TextureSpecInfo skybox_texture_map_spec_info{};
-		skybox_texture_map_spec_info.size   = {skybox_resolution};
-		skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
-		RefPtr<gpu::Texture3D> env_map      = createGPURef<gpu::Texture3D>(skybox_texture_map_spec_info);
-
-		auto equirectangular_to_cube_map_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
-		auto equirectangular_to_cube_map_pass{createRef<ComputePass>(equirectangular_to_cube_map_pipeline)};
-		equirectangular_to_cube_map_pass->setInput("u_EquirectangularMap", env_tex).setInput("o_CubeMap", env_map).bake();
-
-		gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
-		command_buffer.begin();
-
-		beginCompute(equirectangular_to_cube_map_pass, &command_buffer, 0);
-		dispatchCompute(equirectangular_to_cube_map_pass, nullptr, {skybox_resolution / 32, skybox_resolution / 32, 6}, &command_buffer, 0);
-
-		command_buffer.endAndSubmit();
-		return env_map;
+		// auto env_tex{createGPURef<gpu::Texture2D>(gpu::TextureSpecInfo{}, p_path)};
+		//
+		// constexpr uint32     skybox_resolution{2048};
+		// gpu::TextureSpecInfo skybox_texture_map_spec_info{};
+		// skybox_texture_map_spec_info.size   = {skybox_resolution};
+		// skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+		// RefPtr<gpu::Texture3D> env_map      = createGPURef<gpu::Texture3D>(skybox_texture_map_spec_info);
+		//
+		// auto equirectangular_to_cube_map_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->getShader("Equirectangular_To_CubeMap"))};
+		// auto equirectangular_to_cube_map_pass{createRef<ComputePass>(equirectangular_to_cube_map_pipeline)};
+		// equirectangular_to_cube_map_pass->setInput("u_EquirectangularMap", env_tex).setInput("o_CubeMap", env_map).bake();
+		//
+		// gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
+		// command_buffer.begin();
+		//
+		// beginCompute(equirectangular_to_cube_map_pass, &command_buffer, 0);
+		// dispatchCompute(equirectangular_to_cube_map_pass, nullptr, {skybox_resolution / 32, skybox_resolution / 32, 6}, &command_buffer, 0);
+		//
+		// command_buffer.endAndSubmit();
+		return nullptr;
 	}
 
 	auto RenderContext::createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) -> gpu::Texture3DHandle
 	{
-		auto env_tex{make_reference<gpu::VKTexture2D>(m_logicalDevice, p_spec_info, p_data.data(), p_data.size())};
-
-		constexpr uint32     skybox_resolution{2048};
-		gpu::TextureSpecInfo skybox_texture_map_spec_info{};
-		skybox_texture_map_spec_info.size   = {skybox_resolution};
-		skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
-		RefPtr<gpu::Texture3D> env_map      = createGPURef<gpu::Texture3D>(skybox_texture_map_spec_info);
-
-		auto equirectangular_to_cube_map_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
-		auto equirectangular_to_cube_map_pass{createRef<ComputePass>(equirectangular_to_cube_map_pipeline)};
-		equirectangular_to_cube_map_pass->setInput("u_EquirectangularMap", env_tex).setInput("o_CubeMap", env_map).bake();
-
-		gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
-		command_buffer.begin();
-
-		beginCompute(equirectangular_to_cube_map_pass, &command_buffer, 0);
-		dispatchCompute(equirectangular_to_cube_map_pass, nullptr, {skybox_resolution / 32, skybox_resolution / 32, 6}, &command_buffer, 0);
-
-		command_buffer.endAndSubmit();
-		return env_map;
+		// auto env_tex{make_reference<gpu::VKTexture2D>(m_logicalDevice, p_spec_info, p_data.data(), p_data.size())};
+		//
+		// constexpr uint32     skybox_resolution{2048};
+		// gpu::TextureSpecInfo skybox_texture_map_spec_info{};
+		// skybox_texture_map_spec_info.size   = {skybox_resolution};
+		// skybox_texture_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+		// RefPtr<gpu::Texture3D> env_map      = createGPURef<gpu::Texture3D>(skybox_texture_map_spec_info);
+		//
+		// auto equirectangular_to_cube_map_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Equirectangular_To_CubeMap"))};
+		// auto equirectangular_to_cube_map_pass{createRef<ComputePass>(equirectangular_to_cube_map_pipeline)};
+		// equirectangular_to_cube_map_pass->setInput("u_EquirectangularMap", env_tex).setInput("o_CubeMap", env_map).bake();
+		//
+		// gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
+		// command_buffer.begin();
+		//
+		// beginCompute(equirectangular_to_cube_map_pass, &command_buffer, 0);
+		// dispatchCompute(equirectangular_to_cube_map_pass, nullptr, {skybox_resolution / 32, skybox_resolution / 32, 6}, &command_buffer, 0);
+		//
+		// command_buffer.endAndSubmit();
+		// return env_map;
+		return nullptr;
 	}
 
 	auto RenderContext::createDiffuseIrradianceMap(const gpu::Texture3DHandle &p_environment_map) -> gpu::Texture3DHandle
 	{
-		static constexpr uint32 c_diffuse_irradiance_resolution{32u};
+		// static constexpr uint32 c_diffuse_irradiance_resolution{32u};
+		//
+		// gpu::TextureSpecInfo irradiance_map_spec_info{};
+		// irradiance_map_spec_info.size   = {c_diffuse_irradiance_resolution};
+		// irradiance_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
+		// auto out_irradiance_map{createGPURef<gpu::Texture3D>(irradiance_map_spec_info)};
+		//
+		// auto irradiance_convolution_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Diffuse_Irradiance_Convolution"))};
+		// auto irradiance_convolution_pass{createRef<ComputePass>(irradiance_convolution_pipeline)};
+		// irradiance_convolution_pass->setInput("u_EnvironmentMap", p_environment_map).setInput("o_Irradiance", out_irradiance_map).bake();
+		//
+		// gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
+		// command_buffer.begin();
+		//
+		// beginCompute(irradiance_convolution_pass, &command_buffer, 0);
+		// dispatchCompute(irradiance_convolution_pass, nullptr, {tsm::uint2{(c_diffuse_irradiance_resolution + 15u) / 16u}, 6u}, &command_buffer, 0);
+		//
+		// command_buffer.endAndSubmit();
+		// return out_irradiance_map;
 
-		gpu::TextureSpecInfo irradiance_map_spec_info{};
-		irradiance_map_spec_info.size   = {c_diffuse_irradiance_resolution};
-		irradiance_map_spec_info.format = vk::Format::eR16G16B16A16Sfloat;
-		auto out_irradiance_map{createGPURef<gpu::Texture3D>(irradiance_map_spec_info)};
-
-		auto irradiance_convolution_pipeline{createGPURef<gpu::ComputePipeline>(m_globals->shaderLibrary().get("Diffuse_Irradiance_Convolution"))};
-		auto irradiance_convolution_pass{createRef<ComputePass>(irradiance_convolution_pipeline)};
-		irradiance_convolution_pass->setInput("u_EnvironmentMap", p_environment_map).setInput("o_Irradiance", out_irradiance_map).bake();
-
-		gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
-		command_buffer.begin();
-
-		beginCompute(irradiance_convolution_pass, &command_buffer, 0);
-		dispatchCompute(irradiance_convolution_pass, nullptr, {tsm::uint2{(c_diffuse_irradiance_resolution + 15u) / 16u}, 6u}, &command_buffer, 0);
-
-		command_buffer.endAndSubmit();
-		return out_irradiance_map;
+		return nullptr;
 	}
 
 	auto RenderContext::createShader(const io::filesystem::Path &p_path, EShaderStage p_stage, EShaderStage p_next_stage,
@@ -397,6 +411,7 @@ namespace toaster::render
 	auto RenderContext::createShaderFromSpirV(const io::filesystem::Path &p_spir_v_path, EShaderStage p_stage,
 											  EShaderStage                p_next_stage) const -> gpu::DynamicShaderHandle
 	{
+		TST_ASSERT(io::filesystem::exists(p_spir_v_path));
 		return createGPURef<gpu::DynamicShader>(io::filesystem::readBinary(p_spir_v_path), getVulkanShaderStage(p_stage), getVulkanShaderStage((p_next_stage)));
 	}
 

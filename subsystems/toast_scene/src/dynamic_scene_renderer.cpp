@@ -28,11 +28,9 @@ namespace toaster
 		#pragma region depth-pre
 		{
 			m_depthPreGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
-			m_depthPreGraphicsState->setShaders({
-													m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Depth_Pre_VS"),
-													m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Depth_Pre_PS")
-												}).setVertexBufferLayout(render::RenderContext::meshVbl).setAttachmentCount(3u).setCullMode(vk::CullModeFlagBits::eNone).
-					setEnableDepthTest(true).setEnableDepthWrite(true).setEnableMultisample(true);
+			m_depthPreGraphicsState->setShaders({m_renderCtx->getGlobals()->getShader("Depth_Pre_VS"), m_renderCtx->getGlobals()->getShader("Depth_Pre_PS")}).
+					setVertexBufferLayout(render::RenderContext::meshVbl).setAttachmentCount(3u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(true).
+					setEnableDepthWrite(true).setEnableMultisample(true);
 
 			m_MSAADepthImage = m_renderCtx->createMultisampleAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eDepth);
 			m_depthImage     = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eDepth);
@@ -101,11 +99,9 @@ namespace toaster
 		#pragma region skybox
 		{
 			m_skyboxGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
-			m_skyboxGraphicsState->setShaders({
-												  m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Skybox_VS"),
-												  m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Skybox_PS")
-											  }).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).
-					setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(false).setEnableDepthWrite(false).setEnableMultisample(true);
+			m_skyboxGraphicsState->setShaders({m_renderCtx->getGlobals()->getShader("Skybox_VS"), m_renderCtx->getGlobals()->getShader("Skybox_PS")}).
+					setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).
+					setEnableDepthTest(false).setEnableDepthWrite(false).setEnableMultisample(true);
 
 			m_MSAAColourImage = m_renderCtx->createMultisampleAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor);
 			m_colourImage     = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor);
@@ -117,11 +113,9 @@ namespace toaster
 		#pragma region geometry
 		{
 			m_geometryGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
-			m_geometryGraphicsState->setShaders({
-													m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Mesh_Geo_VS"),
-													m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Mesh_Geo_PS")
-												}).setVertexBufferLayout(render::RenderContext::meshVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).
-					setEnableDepthTest(true).setEnableDepthWrite(false).setEnableMultisample(true).setEnableDepthCompareOp(vk::CompareOp::eLessOrEqual);
+			m_geometryGraphicsState->setShaders({m_renderCtx->getGlobals()->getShader("Mesh_Geo_VS"), m_renderCtx->getGlobals()->getShader("Mesh_Geo_PS")}).
+					setVertexBufferLayout(render::RenderContext::meshVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(true).
+					setEnableDepthWrite(false).setEnableMultisample(true).setEnableDepthCompareOp(vk::CompareOp::eLessOrEqual);
 		}
 		#pragma endregion
 	}

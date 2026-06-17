@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_set>
+
 #include "image.hpp"
 #include "shader_library.hpp"
 
@@ -10,6 +12,11 @@
 
 namespace toaster::render
 {
+	struct TST_RENDER_API GlobalsSpecInfo
+	{
+		io::filesystem::Path shaderBinaryDir; // From the sdk, or local to the project...
+	};
+
 	class TST_RENDER_API Globals final
 	{
 		TST_RENDER_OBJECT
@@ -45,17 +52,10 @@ namespace toaster::render
 			char _padd[2];
 		};
 
-		Globals(RenderContext &p_render_ctx, const io::filesystem::Path &p_binary_dir);
+		Globals(RenderContext &p_render_ctx, const GlobalsSpecInfo &p_spec_info);
 
-		~Globals();
-
-		/*!
-		 * @brief use ->get("") to get a shader
-		 * The shaders included are "Depth-Pre", "Geometry", "Composite", "Skybox", "Quad", "Compute-Test"
-		 * @return Returns the shader library
-		 */
-		auto shaderLibrary() const -> const ShaderLibrary &;
-		auto dynamicShaderLibrary() const -> const DynamicShaderLibrary &;
+		auto getShader(const String &p_name) const -> const gpu::DynamicShaderHandle &;
+		auto addShader(const String &p_name, const gpu::DynamicShaderHandle &p_shader) -> void;
 
 		auto fullscreenQuadVertexBuffer() const -> const gpu::VertexBufferHandle &;
 		auto fullscreenQuadIndexBuffer() const -> const gpu::IndexBufferHandle &;
@@ -70,10 +70,11 @@ namespace toaster::render
 		auto debugImage() const -> const ImageHandle &;
 
 	private:
-		io::filesystem::Path m_binaryDir;
+		GlobalsSpecInfo m_specInfo{};
 
-		ShaderLibrary        m_shaderLibrary;
-		DynamicShaderLibrary m_dynamicShaderLibrary;
+		std::unordered_map<String, gpu::DynamicShaderHandle> m_shaders;
+
+		// DynamicShaderLibrary m_dynamicShaderLibrary;
 
 		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
 		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
@@ -85,6 +86,6 @@ namespace toaster::render
 		gpu::Texture3DHandle m_whiteTexture3D{nullptr};
 		ImageHandle          m_whiteImage{nullptr};
 
-		ImageHandle          m_debugImage{nullptr};
+		ImageHandle m_debugImage{nullptr};
 	};
 }

@@ -167,12 +167,12 @@ namespace toaster::render
 
 	auto Renderer2D::_construct() -> void
 	{
-		auto                  quad_shader{m_renderCtx->getGlobals()->shaderLibrary().get("Quad")};
+		// auto                  quad_shader{m_renderCtx->getGlobals()->shaderLibrary().get("Quad")};
 		gpu::PipelineSpecInfo pipeline_create_info{};
 		pipeline_create_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
 		pipeline_create_info.depthFormat        = m_renderCtx->getPhysicalDevice()->getDepthFormat();
 		pipeline_create_info.vertexBufferLayout = quadVbl;
-		pipeline_create_info.shader             = quad_shader;
+		// pipeline_create_info.shader             = quad_shader;
 		pipeline_create_info.multisample        = m_specInfo.msaa;
 		pipeline_create_info.cullMode           = vk::CullModeFlagBits::eNone;
 		m_quadPipeline                          = m_renderCtx->createGPURef<gpu::VKPipeline>(pipeline_create_info, "Quad");
@@ -183,7 +183,7 @@ namespace toaster::render
 		m_quadRenderPass = m_renderCtx->createRef<RenderPass>(m_quadPipeline);
 		m_quadRenderPass->setInput("Camera", m_cameraUBs).bake();
 
-		m_quadMaterial = m_renderCtx->createRef<Material>(quad_shader);
+		// m_quadMaterial = m_renderCtx->createRef<Material>(quad_shader);
 
 		if (!m_specInfo.overrideAttachments)
 		{
@@ -390,7 +390,7 @@ namespace toaster::render
 			Dx::XMStoreFloat4(&m_quadVertexPtr->position, Dx::XMVector4Transform(Dx::XMLoadFloat4(&m_quadVertexPositions[i]), p_transform));
 			m_quadVertexPtr->colour   = p_colour;
 			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
-			m_quadVertexPtr->texIndex = m_renderCtx->getGlobals()->whiteImage()->getAlignedShaderReadHeapID();
+			m_quadVertexPtr->texIndex = static_cast<float32>(m_renderCtx->getGlobals()->whiteImage()->getAlignedShaderReadHeapID());
 			m_quadVertexPtr++;
 		}
 		m_quadIndexCount += 6u;
@@ -434,8 +434,8 @@ namespace toaster::render
 	{
 		m_graphicsState = m_renderCtx->createRef<GraphicsState>();
 
-		auto quad_vs{m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Quad_VS")};
-		auto quad_ps{m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Quad_PS")};
+		auto quad_vs{m_renderCtx->getGlobals()->getShader("Quad_VS")};
+		auto quad_ps{m_renderCtx->getGlobals()->getShader("Quad_PS")};
 
 		m_graphicsState->setShaders({quad_vs, quad_ps}).setVertexBufferLayout(quadVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).
 				setEnableMultisample(m_specInfo.msaa);

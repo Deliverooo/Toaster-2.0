@@ -131,7 +131,10 @@ namespace toaster::render
 			}
 		}
 		else
-			m_materials.addMaterial(0, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"), "Default");
+		{
+
+		}
+			// m_materials.addMaterial(0, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"), "Default");
 
 		m_vertexBuffer = m_renderCtx->createVertexBuffer(m_vertices);
 		m_indexBuffer  = m_renderCtx->createIndexBuffer(m_indices);
@@ -304,7 +307,7 @@ namespace toaster::render
 		String material_name{ai_mat->GetName().C_Str()};
 		LOG_INFO("Creating new material: {}", material_name);
 
-		auto &mat_data{m_materials.addMaterial(p_mat_index, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"), material_name)};
+		auto &mat_data{m_materials.addMaterial(p_mat_index, nullptr, "gfiusYIFGHweipg")};
 		auto &material{mat_data.material};
 
 		// Albedo/base colour

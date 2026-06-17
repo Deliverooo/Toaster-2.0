@@ -41,7 +41,7 @@ public:
 		m_image = m_renderCtx->createImageRef(resources_dir / "textures/Peeber.png");
 
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
-		m_graphicsState->setShaders({m_globals->dynamicShaderLibrary().get("Fullscreen_Quad_VS"), m_globals->dynamicShaderLibrary().get("Fullscreen_Quad_PS")}).
+		m_graphicsState->setShaders({m_globals->getShader("Fullscreen_Quad_VS"), m_globals->getShader("Fullscreen_Quad_PS")}).
 				setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(false).
 				setEnableDepthWrite(false);
 
@@ -69,14 +69,7 @@ public:
 
 		m_renderer2D = toaster::make_unique<render::DynamicRenderer2D>(*m_renderCtx, m_viewportSize);
 
-		// auto &tex{m_renderer2D->getOutputColourImage()};
-		// TST_PERMA_ASSERT(tex);
-
-		// tex->getImage()->saveToFile(binary_dir / "whatisdis.bmp");
-
-		// m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), {1.0f, 1.0f, 1.0f, 1.0f});
-
-		// LOG_ERROR("{}", m_renderer2D->getQuadIndexCount());
+		LOG_INFO("{}", m_renderCtx->getSampler(render::ESamplerType::eDefault));
 	}
 
 	auto onDestroy() -> void override
@@ -85,17 +78,13 @@ public:
 
 	auto onUpdate(float32 p_dt) -> void override
 	{
-		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({0.0f, 1.0f, 1.0f, 1.0f}, false)};
+		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo(false, {0.0f, 1.0f, 1.0f, 1.0f}, false)};
 		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
-
-		// Dx::XMFLOAT3 pos;
-		// Dx::XMStoreFloat3(&pos, m_camera.getPosition());
-		// LOG_INFO("{}", pos);
 
 		m_renderCtx->getDescriptorHeap()->bind();
 
-		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, -2.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), m_image, 2.0f);
-		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), {1.0f, 0.0f, 0.0f, 1.0f});
+		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, -2.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), m_image, 2.0f, {1.0f});
+		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), {1.0f, 0.0f, 0.0f});
 		m_renderer2D->render(m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
 
 		m_camera.onUpdate(p_dt);

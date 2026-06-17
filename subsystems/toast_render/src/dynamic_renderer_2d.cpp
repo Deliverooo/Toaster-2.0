@@ -26,7 +26,7 @@ namespace toaster::render
 		delete[] m_quadVertexBase;
 	}
 
-	auto DynamicRenderer2D::submitQuad(Dx::FXMMATRIX p_transform, const tsm::float4 &p_colour) -> void
+	auto DynamicRenderer2D::submitQuad(Dx::FXMMATRIX p_transform, const tsm::float3 &p_colour) -> void
 	{
 		if (m_quadIndexCount >= m_maxIndices)
 			TST_PERMA_ASSERT(false);
@@ -35,24 +35,35 @@ namespace toaster::render
 		{
 			// m_quadVertexPtr->position = m_quadVertexPositions[i];
 			Dx::XMStoreFloat4(&m_quadVertexPtr->position, Dx::XMVector4Transform(Dx::XMLoadFloat4(&m_quadVertexPositions[i]), p_transform));
-			m_quadVertexPtr->colour   = p_colour;
-			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
-			m_quadVertexPtr->texIndex = static_cast<float32>(m_renderCtx->getGlobals()->debugImage()->getAlignedShaderReadHeapID());
+			m_quadVertexPtr->colour       = p_colour;
+			m_quadVertexPtr->texCoord     = m_quadVertexTexCoords[i];
+			m_quadVertexPtr->texIndex     = static_cast<float32>(m_renderCtx->getGlobals()->debugImage()->getAlignedShaderReadHeapID());
+			m_quadVertexPtr->samplerIndex = static_cast<float32>(m_renderCtx->getSampler(ESamplerType::eNearest));
 			m_quadVertexPtr++;
 		}
 		m_quadIndexCount += 6u;
 	}
 
-	auto DynamicRenderer2D::submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void
+	auto DynamicRenderer2D::submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float3 &p_colour) -> void
 	{
 		Dx::XMMATRIX transform{Dx::XMMatrixTransformation2D(Dx::XMVectorZero(), 0.0f, p_scale, Dx::XMVectorZero(), 0.0f, p_position)};
 		submitQuad(transform, p_colour);
 	}
 
-	auto DynamicRenderer2D::submitQuad(Dx::FXMMATRIX p_transform, const ImageHandle &p_image, float32 p_tiling_factor, const tsm::float4 &p_tint_colour) -> void
+	auto DynamicRenderer2D::submitQuad(Dx::FXMMATRIX       p_transform, const ImageHandle &p_image, float32 p_tiling_factor, const tsm::float3 &p_tint_colour,
+									   gpu::DescriptorSlot p_sampler) -> void
 	{
 		if (m_quadIndexCount >= m_maxIndices)
 			TST_PERMA_ASSERT(false);
+
+		if (p_sampler == UINT32_MAX)
+		{
+			if (p_image->getSpecInfo().size.x < 64 || p_image->getSpecInfo().size.y < 64)
+				p_sampler = m_renderCtx->getSampler(ESamplerType::eNearest);
+			else
+				p_sampler = m_renderCtx->getSampler(ESamplerType::eDefault);
+
+		}
 
 		for (uint32 i{0u}; i < 4u; ++i)
 		{
@@ -60,21 +71,21 @@ namespace toaster::render
 			m_quadVertexPtr->colour       = p_tint_colour;
 			m_quadVertexPtr->texCoord     = m_quadVertexTexCoords[i];
 			m_quadVertexPtr->texIndex     = static_cast<float32>(p_image->getAlignedShaderReadHeapID());
+			m_quadVertexPtr->samplerIndex = static_cast<float32>(p_sampler);
 			m_quadVertexPtr->tilingFactor = p_tiling_factor;
 			m_quadVertexPtr++;
 		}
 		m_quadIndexCount += 6u;
 	}
 
-	auto DynamicRenderer2D::submitQuad(Dx::FXMVECTOR      p_position, Dx::FXMVECTOR p_scale, const ImageHandle &p_image, float32 p_tiling_factor,
-									   const tsm::float4 &p_tint_colour) -> void
+	auto DynamicRenderer2D::submitQuad(Dx::FXMVECTOR      p_position, Dx::FXMVECTOR          p_scale, const ImageHandle &p_image, float32 p_tiling_factor,
+									   const tsm::float3 &p_tint_colour, gpu::DescriptorSlot p_sampler) -> void
 	{
 		Dx::XMMATRIX transform{Dx::XMMatrixTransformation2D(Dx::XMVectorZero(), 0.0f, p_scale, Dx::XMVectorZero(), 0.0f, p_position)};
-		submitQuad(transform, p_image, p_tiling_factor, p_tint_colour);
+		submitQuad(transform, p_image, p_tiling_factor, p_tint_colour, p_sampler);
 	}
 
-	auto DynamicRenderer2D::render(Dx::FXMMATRIX            p_view, Dx::CXMMATRIX p_projection, RenderingAttachmentInfo *p_override_colour_attachment,
-								   RenderingAttachmentInfo *p_override_depth_attachment) -> void
+	auto DynamicRenderer2D::render(Dx::FXMMATRIX p_view, Dx::CXMMATRIX p_projection, RenderingInfo *p_override_rendering_info) -> void
 	{
 		// Update the camera uniform buffers
 		Globals::ViewProjCameraUB camera_ub{};
@@ -83,32 +94,28 @@ namespace toaster::render
 		m_cameraUBOs->setData(camera_ub);
 
 		#pragma region rendering info
-		RenderingInfo rendering_info{};
-		rendering_info.renderArea = getRenderingArea(m_specInfo.renderTargetSize);
 
-		auto &colour_attachment{rendering_info.colourAttachments.emplace_back()};
-		if (p_override_colour_attachment)
-			colour_attachment = *p_override_colour_attachment;
+		RenderingInfo rendering_info{};
+		if (p_override_rendering_info)
+			rendering_info = *p_override_rendering_info;
 		else
 		{
+			rendering_info.renderArea = getRenderingArea(m_specInfo.renderTargetSize);
+
+			auto &colour_attachment{rendering_info.colourAttachments.emplace_back()};
+
 			if (m_specInfo.msaa)
 				colour_attachment = getRenderingAttachmentInfo(*m_MSAAColourImage, *m_colourImage->getImage());
 			else
 				colour_attachment = getRenderingAttachmentInfo(*m_colourImage->getImage());
 
 			colour_attachment.clearValue = vk::ClearColorValue{1.0f, 1.0f, 1.0f, 1.0f};
-		}
 
-		if (p_override_depth_attachment)
-			rendering_info.depthAttachment = *p_override_depth_attachment;
-		else
-		{
 			if (m_specInfo.msaa)
 				rendering_info.depthAttachment = getRenderingAttachmentInfo(*m_MSAADepthImage, *m_depthImage->getImage());
 			else
 				rendering_info.depthAttachment = getRenderingAttachmentInfo(*m_depthImage->getImage());
 		}
-
 		#pragma endregion
 
 		m_graphicsState->bind();
@@ -122,8 +129,6 @@ namespace toaster::render
 
 			QuadConstants quad_constants{};
 			quad_constants.cameraAddress = m_cameraUBOs->getDeviceAddress();
-			quad_constants.samplerOffset = m_renderCtx->getSampler(ESamplerType::eNearest);
-			quad_constants.textureOffset = m_renderCtx->getGlobals()->debugImage()->getAlignedShaderReadHeapID();
 			cmd->pushData(quad_constants);
 
 			m_quadVertexBuffer->bind();
@@ -173,8 +178,8 @@ namespace toaster::render
 		m_cameraUBOs = m_renderCtx->createUnique<UniformBufferPFF>(sizeof(Globals::ViewProjCameraUB));
 
 		m_graphicsState = m_renderCtx->createUnique<GraphicsState>();
-		auto quad_vs{m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Quad_VS")};
-		auto quad_ps{m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Quad_PS")};
+		auto quad_vs{m_renderCtx->getGlobals()->getShader("Quad_VS")};
+		auto quad_ps{m_renderCtx->getGlobals()->getShader("Quad_PS")};
 		m_graphicsState->setShaders({quad_vs, quad_ps}).setVertexBufferLayout(quadVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).
 				setEnableMultisample(m_specInfo.msaa).setEnableDepthTest(true).setEnableDepthWrite(true);
 

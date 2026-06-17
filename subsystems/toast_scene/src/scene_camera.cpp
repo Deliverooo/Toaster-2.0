@@ -42,9 +42,6 @@ namespace toaster
 			case EProjectionType::ePerspective:
 			{
 				__super::setPerspective(m_perspectiveFov, m_aspectRatio, m_perspectiveNear, m_perspectiveFar);
-				// Dx::XMMATRIX proj{Dx::XMMatrixPerspectiveFovLH(m_perspectiveFov, m_aspectRatio, m_perspectiveNear, m_perspectiveFar)};
-				// Dx::XMStoreFloat4x4(&m_projection, proj);
-
 				break;
 			}
 			case EProjectionType::eOrthographic:

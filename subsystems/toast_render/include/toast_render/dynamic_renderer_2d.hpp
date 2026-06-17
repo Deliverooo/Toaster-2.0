@@ -27,8 +27,9 @@ namespace toaster::render
 	public:
 		static inline const gpu::VertexBufferLayout quadVbl{
 			{gpu::EBufferDataType::eFloat4, "a_Position"},
-			{gpu::EBufferDataType::eFloat4, "a_Colour"},
+			{gpu::EBufferDataType::eFloat3, "a_Colour"},
 			{gpu::EBufferDataType::eFloat2, "a_TexCoord"},
+			{gpu::EBufferDataType::eFloat, "a_SamplerIndex"},
 			{gpu::EBufferDataType::eFloat, "a_TexIndex"},
 			{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
 		};
@@ -36,8 +37,9 @@ namespace toaster::render
 		struct QuadVertex
 		{
 			Dx::XMFLOAT4 position{0.0f, 0.0f, 0.0f, 1.0f};
-			tsm::float4  colour{1.0f};
+			tsm::float3  colour{1.0f};
 			tsm::float2  texCoord{0.0f};
+			float32      samplerIndex{0u};
 			float32      texIndex{0u};
 			float32      tilingFactor{1.0f};
 		};
@@ -45,9 +47,6 @@ namespace toaster::render
 		TST_PUSH_CONSTANT_BLOCK(QuadConstants)
 		{
 			uintptr cameraAddress;
-
-			gpu::DescriptorSlot samplerOffset;
-			gpu::DescriptorSlot textureOffset;
 		};
 
 		// Ts makes creating renderer 2Ds look better, as, for simple use cases, you only need to specify the viewport size.
@@ -65,17 +64,17 @@ namespace toaster::render
 
 		auto getQuadIndexCount() const -> uint32 { return m_quadIndexCount; }
 
-		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX p_transform, const tsm::float4 &p_colour) -> void;
-		auto XM_CALLCONV submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void;
+		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX p_transform, const tsm::float3 &p_colour) -> void;
+		auto XM_CALLCONV submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float3 &p_colour) -> void;
 
 		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX      p_transform, const ImageHandle &p_image, float32 p_tiling_factor = 1.0f,
-									const tsm::float4 &p_tint_colour                                                    = {1.0f, 1.0f, 1.0f, 1.0f}) -> void;
+									const tsm::float3 &p_tint_colour = {1.0f, 1.0f, 1.0f}, gpu::DescriptorSlot p_sampler = UINT32_MAX) -> void;
 
 		auto XM_CALLCONV submitQuad(Dx::FXMVECTOR      p_position, Dx::FXMVECTOR p_scale, const ImageHandle &p_image, float32 p_tiling_factor = 1.0f,
-									const tsm::float4 &p_tint_colour = {1.0f, 1.0f, 1.0f, 1.0f}) -> void;
+									const tsm::float3 &p_tint_colour = {1.0f, 1.0f, 1.0f}, gpu::DescriptorSlot p_sampler = UINT32_MAX) -> void;
 
-		auto XM_CALLCONV render(Dx::FXMMATRIX            p_view                       = Dx::XMMatrixIdentity(), Dx::CXMMATRIX p_projection = Dx::XMMatrixIdentity(),
-								RenderingAttachmentInfo *p_override_colour_attachment = nullptr, RenderingAttachmentInfo *p_override_depth_attachment = nullptr) -> void;
+		auto XM_CALLCONV render(Dx::FXMMATRIX  p_view                    = Dx::XMMatrixIdentity(), Dx::CXMMATRIX p_projection = Dx::XMMatrixIdentity(),
+								RenderingInfo *p_override_rendering_info = nullptr) -> void;
 
 		auto onResize(tsm::uint2 p_size) -> void;
 

@@ -20,16 +20,13 @@ namespace toaster
 	{
 		Window::initWindowingAPI();
 
-		// const char *sdk_dir{std::getenv("TOASTER_SDK")};
-		// String      toaster_sdk_dir_str{sdk_dir ? sdk_dir : ""};
-
-		// LOG_ERROR("Toaster SDK: {}", sdk_dir);
-
 		render::RenderContextSpecInfo render_context_spec_info{};
-		render_context_spec_info.sdkDir             = io::filesystem::Path{m_specInfo.sdkDir} / "bin";
+		render_context_spec_info.sdkDir             = m_specInfo.sdkDir / "bin";
 		render_context_spec_info.instanceExtensions = Window::getRequiredInstanceExtensions();
 		render_context_spec_info.printDebugInfo     = m_specInfo.printGPUDebugInfo;
 		m_renderContext                             = new render::RenderContext{render_context_spec_info};
+
+		TST_PERMA_ASSERT(m_renderContext);
 
 		#pragma region create window
 		m_window = new Window(m_renderContext, m_specInfo.windowSpecInfo);

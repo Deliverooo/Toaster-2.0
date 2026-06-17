@@ -29,7 +29,7 @@ VSOutput main(VSInput p_input)
 
     output.position =  output.vert_position.xyz;
     output.texCoord = p_input.texCoord;
-    output.texCoord.y *= -1.0f;
+//    output.texCoord.y *= -1.0f;
 
     return output;
 }

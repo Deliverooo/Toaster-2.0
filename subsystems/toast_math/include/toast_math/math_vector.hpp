@@ -24,6 +24,8 @@ namespace tsm
 	using double2 = Vec2<f64>;
 	using double3 = Vec3<f64>;
 	using double4 = Vec4<f64>;
+
+	const Dx::XMVECTORI32 vulkanUpDir{.v{0.0f, -1.0f, 0.0f, 1.0f}};
 }
 
 // Incredibly useful for cameras where you want to normalize the change in position without it being infinity... :)

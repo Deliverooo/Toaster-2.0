@@ -34,7 +34,7 @@ namespace toaster
 			depth_pre_pipeline_spec_info.colourAttachments  = {vk::Format::eR16G16B16A16Sfloat, vk::Format::eR16G16B16A16Sfloat};
 			depth_pre_pipeline_spec_info.multisample        = true;
 			depth_pre_pipeline_spec_info.cullMode           = m_specInfo.backfaceCulling ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone;
-			depth_pre_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Depth-Pre");
+			// depth_pre_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->getShader("Depth-Pre");
 			m_depthPrePipeline                              = m_renderCtx->createGPURef<gpu::VKPipeline>(depth_pre_pipeline_spec_info, "Depth-Pre");
 
 			m_depthPrePass = m_renderCtx->createRef<render::RenderPass>(m_depthPrePipeline);
@@ -59,7 +59,7 @@ namespace toaster
 			gpu::PipelineSpecInfo ssao_pipeline_spec_info{};
 			ssao_pipeline_spec_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
 			ssao_pipeline_spec_info.colourAttachments  = {vk::Format::eR16G16B16A16Sfloat};
-			ssao_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Graphics");
+			// ssao_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Graphics");
 			ssao_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
 			ssao_pipeline_spec_info.multisample        = false;
 			ssao_pipeline_spec_info.depthTest          = false;
@@ -84,7 +84,7 @@ namespace toaster
 			m_SSAOPass = m_renderCtx->createRef<render::RenderPass>(m_SSAOPipeline);
 			m_SSAOPass->setInput("Camera", m_cameraUBOs).setInput("SSAOKernel", ssao_kernel_ubo).setInput("u_NoiseTex", m_SSAONoiseTexture).bake();
 
-			m_SSAOFrameDataMaterial = m_renderCtx->createRef<render::Material>(m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Graphics"), "SSAO");
+			// m_SSAOFrameDataMaterial = m_renderCtx->createRef<render::Material>(m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Graphics"), "SSAO");
 			m_SSAOFrameDataMaterial->set(".u_Radius", 0.5f).set(".u_Bias", 0.025f);
 
 			{
@@ -94,7 +94,7 @@ namespace toaster
 				blurred_ao_image_spec_info.usage  = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled;
 				m_SSAOBlurredImage                = m_renderCtx->createGPURef<gpu::VKStorageImage>(blurred_ao_image_spec_info);
 
-				m_SSAOBlurPipeline = m_renderCtx->createGPURef<gpu::VKComputePipeline>(m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Blur"));
+				// m_SSAOBlurPipeline = m_renderCtx->createGPURef<gpu::VKComputePipeline>(m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Blur"));
 				m_SSAOBlurPass     = m_renderCtx->createRef<render::ComputePass>(m_SSAOBlurPipeline);
 
 				m_SSAOBlurPass->setInput("u_Occlusion", m_SSAOTexture).setInput("o_BlurredOcclusion", m_SSAOBlurredImage).bake();
@@ -107,7 +107,7 @@ namespace toaster
 			gpu::PipelineSpecInfo skybox_pipeline_spec_info{};
 			skybox_pipeline_spec_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
 			skybox_pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
-			skybox_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Skybox");
+			// skybox_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Skybox");
 			skybox_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
 			skybox_pipeline_spec_info.multisample        = true;
 			skybox_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
@@ -116,13 +116,13 @@ namespace toaster
 			m_skyboxPass = m_renderCtx->createRef<render::RenderPass>(m_skyboxPipeline);
 			m_skyboxPass->setInput("Camera", m_cameraUBOs).bake();
 
-			m_skyboxMaterial = m_renderCtx->createRef<render::Material>(m_renderCtx->getGlobals()->shaderLibrary().get("Skybox"));
+			// m_skyboxMaterial = m_renderCtx->createRef<render::Material>(m_renderCtx->getGlobals()->shaderLibrary().get("Skybox"));
 		}
 		#pragma endregion
 
 		#pragma region geometry
 		{
-			auto shader_choice{m_specInfo.overrideGeometryShader ? m_specInfo.overrideGeometryShader : m_renderCtx->getGlobals()->shaderLibrary().get("Geometry")};
+			// auto shader_choice{m_specInfo.overrideGeometryShader ? m_specInfo.overrideGeometryShader : m_renderCtx->getGlobals()->shaderLibrary().get("Geometry")};
 			gpu::PipelineSpecInfo geometry_pipeline_spec_info{};
 			geometry_pipeline_spec_info.vertexBufferLayout = render::RenderContext::meshVbl;
 			geometry_pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
@@ -133,7 +133,7 @@ namespace toaster
 			geometry_pipeline_spec_info.multisample        = true;
 			geometry_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
 			geometry_pipeline_spec_info.cullMode           = m_specInfo.backfaceCulling ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone;
-			geometry_pipeline_spec_info.shader             = shader_choice;
+			// geometry_pipeline_spec_info.shader             = shader_choice;
 			m_geometryPipeline                             = m_renderCtx->createGPURef<gpu::VKPipeline>(geometry_pipeline_spec_info, "Geometry");
 
 			m_geometryPass = m_renderCtx->createRef<render::RenderPass>(m_geometryPipeline);

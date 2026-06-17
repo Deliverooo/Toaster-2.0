@@ -99,8 +99,8 @@ namespace toaster
 		[[nodiscard]] auto getSwapchain() const -> gpu::VKSwapchain *;
 		[[nodiscard]] auto getInputContext() const -> InputContext *;
 
-		[[nodiscard]] auto getSwapchainRenderingInfo(const tsm::float4 &p_clear_colour, bool p_use_depth = true,
-													 tsm::float2        p_clear_depth                    = {1.0f, 0.0f}) const -> render::RenderingInfo;
+		[[nodiscard]] auto getSwapchainRenderingInfo(bool        p_msaa, const tsm::float4 &p_clear_colour, bool p_use_depth = true,
+													 tsm::float2 p_clear_depth = {1.0f, 0.0f}) const -> render::RenderingInfo;
 
 	private:
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};

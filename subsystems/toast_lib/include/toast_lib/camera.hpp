@@ -34,6 +34,12 @@ namespace toaster
 			Dx::XMStoreFloat4x4(&m_projection, proj);
 		}
 
+		auto setOrthographic(float32 p_width, float32 p_height, float32 p_z_near, float32 p_z_far) -> void
+		{
+			Dx::XMMATRIX proj{Dx::XMMatrixOrthographicLH(p_width, p_height, p_z_near, p_z_far)};
+			Dx::XMStoreFloat4x4(&m_projection, proj);
+		}
+
 	protected:
 		Dx::XMFLOAT4X4 m_projection;
 	};

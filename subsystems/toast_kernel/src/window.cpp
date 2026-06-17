@@ -435,23 +435,42 @@ namespace toaster
 		return m_inputCtx;
 	}
 
-	auto Window::getSwapchainRenderingInfo(const tsm::float4 &p_clear_colour, bool p_use_depth, tsm::float2 p_clear_depth) const -> render::RenderingInfo
+	auto Window::getSwapchainRenderingInfo(bool p_msaa, const tsm::float4 &p_clear_colour, bool p_use_depth, tsm::float2 p_clear_depth) const -> render::RenderingInfo
 	{
 		render::RenderingInfo rendering_info{};
 		rendering_info.renderArea = render::getRenderingArea({m_swapchain->getExtent().width, m_swapchain->getExtent().height});
 
 		auto &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		colour_attachment_info.imageView   = m_swapchain->getCurrentImageView();
-		colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-		colour_attachment_info.clearValue  = vk::ClearColorValue{p_clear_colour.x, p_clear_colour.y, p_clear_colour.z, p_clear_colour.w};
+		if (p_msaa)
+		{
+			colour_attachment_info.resolveImageView   = m_swapchain->getCurrentImageView();
+			colour_attachment_info.resolveImageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+			colour_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eAverage;
+		}
+		else
+		{
+			colour_attachment_info.imageView   = m_swapchain->getCurrentImageView();
+			colour_attachment_info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+		}
+		colour_attachment_info.clearValue = vk::ClearColorValue{p_clear_colour.x, p_clear_colour.y, p_clear_colour.z, p_clear_colour.w};
 
 		if (p_use_depth)
 		{
 			render::RenderingAttachmentInfo depth_attachment_info{};
-			depth_attachment_info.imageView   = m_swapchain->getDepthImageView();
-			depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
-			depth_attachment_info.clearValue  = vk::ClearDepthStencilValue{p_clear_depth.x, static_cast<uint32>(p_clear_depth.y)};
-			rendering_info.depthAttachment    = depth_attachment_info;
+			if (p_msaa)
+			{
+				depth_attachment_info.resolveImageView   = m_swapchain->getDepthImageView();
+				depth_attachment_info.resolveImageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+				depth_attachment_info.resolveMode        = vk::ResolveModeFlagBits::eMin;
+			}
+			else
+			{
+				depth_attachment_info.imageView   = m_swapchain->getDepthImageView();
+				depth_attachment_info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
+			}
+
+			depth_attachment_info.clearValue = vk::ClearDepthStencilValue{p_clear_depth.x, static_cast<uint32>(p_clear_depth.y)};
+			rendering_info.depthAttachment   = depth_attachment_info;
 		}
 		return rendering_info;
 	}

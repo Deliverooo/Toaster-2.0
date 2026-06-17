@@ -389,17 +389,7 @@ namespace toaster::gpu
 			{
 				const auto data{reinterpret_cast<uint8 *>(stbi_loadf(p_path.string().c_str(), &width, &height, &num_channels, 4))};
 				if (!data)
-				{
-					DEBUG_LOG_ERROR("Failed to load texture: {}", p_path);
-					uint32 fallback_data{0xFF00FFFF};
-					image_data.allocate(4u);
-					image_data.write(&fallback_data, 4u);
-					p_out_format = vk::Format::eR8G8B8A8Unorm;
-					p_out_width  = 1u;
-					p_out_height = 1u;
-
-					return image_data;
-				}
+					return Buffer{};
 				TST_ASSERT_MSG(width != 0 && height != 0, "Bradar, wat is dis?");
 				uint64 size{width * height * 4 * sizeof(float32)};
 				image_data.allocate(size);
@@ -413,18 +403,8 @@ namespace toaster::gpu
 			{
 				uint8 *data{stbi_load(p_path.string().c_str(), &width, &height, &num_channels, 4)};
 				if (!data)
-				{
-					DEBUG_LOG_ERROR("Failed to load texture: {}", p_path);
+					return Buffer{};
 
-					uint32 fallback_data{0xFF00FFFF};
-					image_data.allocate(4u);
-					image_data.write(&fallback_data, 4u);
-					p_out_format = vk::Format::eR8G8B8A8Unorm;
-					p_out_width  = 1u;
-					p_out_height = 1u;
-
-					return image_data;
-				}
 				TST_ASSERT_MSG(width != 0 && height != 0, "Bradar, wat is dis?");
 				const uint64 size{width * height * sizeof(uint32)};
 				image_data.allocate(size);
