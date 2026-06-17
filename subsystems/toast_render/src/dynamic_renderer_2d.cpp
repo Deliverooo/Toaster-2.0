@@ -33,10 +33,11 @@ namespace toaster::render
 
 		for (uint32 i{0u}; i < 4u; ++i)
 		{
+			// m_quadVertexPtr->position = m_quadVertexPositions[i];
 			Dx::XMStoreFloat4(&m_quadVertexPtr->position, Dx::XMVector4Transform(Dx::XMLoadFloat4(&m_quadVertexPositions[i]), p_transform));
 			m_quadVertexPtr->colour   = p_colour;
 			m_quadVertexPtr->texCoord = m_quadVertexTexCoords[i];
-			m_quadVertexPtr->texIndex = m_renderCtx->getGlobals()->whiteImage()->getAlignedShaderReadHeapID();
+			m_quadVertexPtr->texIndex = static_cast<float32>(m_renderCtx->getGlobals()->debugImage()->getAlignedShaderReadHeapID());
 			m_quadVertexPtr++;
 		}
 		m_quadIndexCount += 6u;
@@ -46,6 +47,30 @@ namespace toaster::render
 	{
 		Dx::XMMATRIX transform{Dx::XMMatrixTransformation2D(Dx::XMVectorZero(), 0.0f, p_scale, Dx::XMVectorZero(), 0.0f, p_position)};
 		submitQuad(transform, p_colour);
+	}
+
+	auto DynamicRenderer2D::submitQuad(Dx::FXMMATRIX p_transform, const ImageHandle &p_image, float32 p_tiling_factor, const tsm::float4 &p_tint_colour) -> void
+	{
+		if (m_quadIndexCount >= m_maxIndices)
+			TST_PERMA_ASSERT(false);
+
+		for (uint32 i{0u}; i < 4u; ++i)
+		{
+			Dx::XMStoreFloat4(&m_quadVertexPtr->position, Dx::XMVector4Transform(Dx::XMLoadFloat4(&m_quadVertexPositions[i]), p_transform));
+			m_quadVertexPtr->colour       = p_tint_colour;
+			m_quadVertexPtr->texCoord     = m_quadVertexTexCoords[i];
+			m_quadVertexPtr->texIndex     = static_cast<float32>(p_image->getAlignedShaderReadHeapID());
+			m_quadVertexPtr->tilingFactor = p_tiling_factor;
+			m_quadVertexPtr++;
+		}
+		m_quadIndexCount += 6u;
+	}
+
+	auto DynamicRenderer2D::submitQuad(Dx::FXMVECTOR      p_position, Dx::FXMVECTOR p_scale, const ImageHandle &p_image, float32 p_tiling_factor,
+									   const tsm::float4 &p_tint_colour) -> void
+	{
+		Dx::XMMATRIX transform{Dx::XMMatrixTransformation2D(Dx::XMVectorZero(), 0.0f, p_scale, Dx::XMVectorZero(), 0.0f, p_position)};
+		submitQuad(transform, p_image, p_tiling_factor, p_tint_colour);
 	}
 
 	auto DynamicRenderer2D::render(Dx::FXMMATRIX            p_view, Dx::CXMMATRIX p_projection, RenderingAttachmentInfo *p_override_colour_attachment,
@@ -71,7 +96,7 @@ namespace toaster::render
 			else
 				colour_attachment = getRenderingAttachmentInfo(*m_colourImage->getImage());
 
-			colour_attachment.clearValue = vk::ClearColorValue{1.0f, 0.0f, 1.0f, 1.0f};
+			colour_attachment.clearValue = vk::ClearColorValue{1.0f, 1.0f, 1.0f, 1.0f};
 		}
 
 		if (p_override_depth_attachment)
@@ -97,8 +122,8 @@ namespace toaster::render
 
 			QuadConstants quad_constants{};
 			quad_constants.cameraAddress = m_cameraUBOs->getDeviceAddress();
-			quad_constants.samplerOffset = m_renderCtx->getSampler(ESamplerType::eDefault);
-			quad_constants.textureOffset = m_renderCtx->getGlobals()->whiteImage()->getAlignedShaderReadHeapID();
+			quad_constants.samplerOffset = m_renderCtx->getSampler(ESamplerType::eNearest);
+			quad_constants.textureOffset = m_renderCtx->getGlobals()->debugImage()->getAlignedShaderReadHeapID();
 			cmd->pushData(quad_constants);
 
 			m_quadVertexBuffer->bind();
@@ -151,7 +176,7 @@ namespace toaster::render
 		auto quad_vs{m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Quad_VS")};
 		auto quad_ps{m_renderCtx->getGlobals()->dynamicShaderLibrary().get("Quad_PS")};
 		m_graphicsState->setShaders({quad_vs, quad_ps}).setVertexBufferLayout(quadVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).
-				setEnableMultisample(m_specInfo.msaa);
+				setEnableMultisample(m_specInfo.msaa).setEnableDepthTest(true).setEnableDepthWrite(true);
 
 		m_quadVertexBase = new QuadVertex[m_maxVertices];
 		m_quadIndexCount = 0u;
@@ -173,7 +198,7 @@ namespace toaster::render
 		}
 
 		m_quadVertexBuffer = m_renderCtx->createGPUUnique<gpu::VertexBuffer>(m_maxVertices * sizeof(QuadVertex));
-		m_quadIndexBuffer  = m_renderCtx->createGPUUnique<gpu::IndexBuffer>(m_maxIndices * sizeof(uint32));
+		m_quadIndexBuffer  = m_renderCtx->createGPUUnique<gpu::IndexBuffer>(quad_indices.data(), m_maxIndices * sizeof(uint32));
 
 		m_quadVertexPositions[0] = {0.5f, 0.5f, 0.0f, 1.0f};
 		m_quadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};

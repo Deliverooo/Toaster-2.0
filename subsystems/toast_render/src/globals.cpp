@@ -119,16 +119,34 @@ namespace toaster::render
 		m_whiteTexture3D = make_reference<gpu::VKTexture3D>(m_renderCtx->getLogicalDevice(), white_texture_spec_info,
 															toaster::Buffer{texture_3d_data, sizeof(uint32) * 6});
 
-		Buffer image_data{};
-		image_data.allocate(sizeof(uint32));
-		image_data.writeType<uint32>(0xFFFFFFFF);
+		{
+			Buffer image_data{};
+			image_data.allocate(sizeof(uint32));
+			image_data.writeType<uint32>(0xFFFFFFFF);
 
-		ImageSpecInfo image_spec_info{};
-		image_spec_info.size   = {1u, 1u};
-		image_spec_info.format = vk::Format::eR8G8B8A8Unorm;
-		m_whiteImage           = make_reference<Image>(*m_renderCtx, image_spec_info, image_data);
+			ImageSpecInfo image_spec_info{};
+			image_spec_info.size   = {1u, 1u};
+			image_spec_info.format = vk::Format::eR8G8B8A8Unorm;
+			m_whiteImage           = make_reference<Image>(*m_renderCtx, image_spec_info, image_data);
 
-		image_data.release();
+			image_data.release();
+		}
+
+		{
+			Buffer image_data{};
+			image_data.allocate(sizeof(uint32) * 4u);
+			image_data.writeType<uint32>(0xFFFF00FF);
+			image_data.writeType<uint32>(0x00000000, sizeof(uint32));
+			image_data.writeType<uint32>(0x00000000, sizeof(uint32) * 2u);
+			image_data.writeType<uint32>(0xFFFF00FF, sizeof(uint32) * 3u);
+
+			ImageSpecInfo image_spec_info{};
+			image_spec_info.size   = {2u, 2u};
+			image_spec_info.format = vk::Format::eR8G8B8A8Unorm;
+			m_debugImage           = make_reference<Image>(*m_renderCtx, image_spec_info, image_data);
+
+			image_data.release();
+		}
 	}
 
 	Globals::~Globals()
@@ -178,5 +196,10 @@ namespace toaster::render
 	auto Globals::whiteImage() const -> const ImageHandle &
 	{
 		return m_whiteImage;
+	}
+
+	auto Globals::debugImage() const -> const ImageHandle &
+	{
+		return m_debugImage;
 	}
 }

@@ -10,7 +10,10 @@ struct VSInput
 struct VSOutput
 {
     float4 position : SV_POSITION;
-    [[vk::location(0)]] float2 texCoord : TEXCOORD0;
+    [[vk::location(0)]] float4 colour : COLOR0;
+    [[vk::location(1)]] float2 texCoord : TEXCOORD0;
+    [[vk::location(2)]] uint texIndex : TEXINDEX0;
+    [[vk::location(3)]] float tilingFactor : TILINGFACTOR0;
 };
 
 struct Camera
@@ -32,12 +35,14 @@ VSOutput main(VSInput p_input)
 {
     VSOutput output = (VSOutput)0;
 
-    float4 world_pos = float4(p_input.position.xyz, 1.0f);
+    float4 world_pos = p_input.position;
     float4 view_pos = mul(pushData.cameraPtr.Get().view, world_pos);
-    output.position = world_pos;
-//    output.position = mul(pushData.cameraPtr.Get().proj, view_pos);
+    output.position = mul(pushData.cameraPtr.Get().proj, view_pos);
 
+    output.colour = p_input.colour;
     output.texCoord = p_input.texCoord;
-    output.texCoord.y *= -1.0f; // Silly Vulkan
+    output.texIndex = (uint)p_input.texIndex;
+    output.tilingFactor = p_input.tilingFactor;
+//    output.texCoord.y *= -1.0f; // Silly Vulkan
     return output;
 }

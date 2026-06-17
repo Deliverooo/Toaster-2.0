@@ -25,11 +25,11 @@ namespace toaster
 			if (m_ctx->isKeyDown(input::EKeyCode::eW))
 				delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f));
 			if (m_ctx->isKeyDown(input::EKeyCode::eA))
-				delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(-1.0f, 0.0f, 0.0f, 0.0f));
+				delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f));
 			if (m_ctx->isKeyDown(input::EKeyCode::eS))
 				delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f));
 			if (m_ctx->isKeyDown(input::EKeyCode::eD))
-				delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f));
+				delta_position = Dx::XMVectorAdd(delta_position, Dx::XMVectorSet(-1.0f, 0.0f, 0.0f, 0.0f));
 
 			Dx::XMVECTOR position{Dx::XMLoadFloat3(&m_position)};
 
@@ -79,12 +79,12 @@ namespace toaster
 	auto FPCamera::getViewMatrix() const -> Dx::XMMATRIX
 	{
 		Dx::XMVECTOR position{getPosition()};
-		return Dx::XMMatrixLookAtLH(position, Dx::XMVectorAdd(position, getForwardDirection()), Dx::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
+		return Dx::XMMatrixLookToLH(position, getForwardDirection(), c_upDir);
 	}
 
 	auto FPCamera::getRotationMatrix() const -> Dx::XMMATRIX
 	{
-		return Dx::XMMatrixRotationRollPitchYaw(m_pitch, -m_yaw, 0.0f);
+		return Dx::XMMatrixRotationRollPitchYaw(m_pitch, m_yaw, 0.0f);
 	}
 
 	auto FPCamera::getViewProjection() const -> Dx::XMMATRIX
@@ -124,8 +124,6 @@ namespace toaster
 
 	auto FPCamera::_updateProjection() -> void
 	{
-		// Dx::XMMATRIX projection{Dx::XMMatrixPerspectiveFovLH(Dx::XMConvertToRadians(90.0f), m_aspectRatio, 0.1f, 1000.0f)};
-		// Dx::XMStoreFloat4x4(&m_projection, projection);
 		setPerspective(tsm::radians(m_fov) * m_zoom, m_aspectRatio, m_zNear, m_zFar);
 	}
 
@@ -227,7 +225,7 @@ namespace toaster
 	auto FirstPersonCameraEntity::getViewMatrix() const -> Dx::XMMATRIX
 	{
 		Dx::XMVECTOR position{getPosition()};
-		return Dx::XMMatrixLookAtLH(position, Dx::XMVectorAdd(position, getForwardDirection()), Dx::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f));
+		return Dx::XMMatrixLookAtLH(position, Dx::XMVectorAdd(position, getForwardDirection()), Dx::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
 	}
 
 	auto FirstPersonCameraEntity::getProjectionMatrix() const -> Dx::XMMATRIX

@@ -3,7 +3,6 @@
 #include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_kernel/application.hpp"
 #include "toast_kernel/input.hpp"
-#include "toast_lib/os/file_dialog.hpp"
 #include "toast_lib/os/terminal.hpp"
 #include "toast_render/globals.hpp"
 #include "toast_render/graphics_state.hpp"
@@ -15,8 +14,6 @@
 
 #include "toast_kernel/fp_camera.hpp"
 #include "toast_math/colours.hpp"
-
-#include <stb/stb_image.h>
 
 #include "toast_render/dynamic_renderer_2d.hpp"
 
@@ -76,6 +73,10 @@ public:
 		// TST_PERMA_ASSERT(tex);
 
 		// tex->getImage()->saveToFile(binary_dir / "whatisdis.bmp");
+
+		// m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), {1.0f, 1.0f, 1.0f, 1.0f});
+
+		// LOG_ERROR("{}", m_renderer2D->getQuadIndexCount());
 	}
 
 	auto onDestroy() -> void override
@@ -87,11 +88,15 @@ public:
 		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo({0.0f, 1.0f, 1.0f, 1.0f}, false)};
 		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 
+		// Dx::XMFLOAT3 pos;
+		// Dx::XMStoreFloat3(&pos, m_camera.getPosition());
+		// LOG_INFO("{}", pos);
+
 		m_renderCtx->getDescriptorHeap()->bind();
 
+		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, -2.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), m_image, 2.0f);
 		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), {1.0f, 0.0f, 0.0f, 1.0f});
-		m_renderer2D->render();
-		// m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), {1.0f, 0.0f, 0.0f, 1.0f});
+		m_renderer2D->render(m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
 
 		m_camera.onUpdate(p_dt);
 		m_scene->onUpdate(p_dt);
@@ -103,10 +108,10 @@ public:
 		FullscreenQuadConstants quad_constants{};
 		quad_constants.samplerIndex = m_renderCtx->getSampler(render::ESamplerType::eDefault);
 
-		auto &tex{m_renderer2D->getColourImage()};
-		TST_PERMA_ASSERT(tex);
-		// quad_constants.textureIndex = tex->getAlignedShaderReadHeapID();
-		quad_constants.textureIndex = m_sceneRenderer->getColourImage()->getAlignedShaderReadHeapID();
+		// auto &tex{};
+		// TST_PERMA_ASSERT(tex);
+		quad_constants.textureIndex = m_renderer2D->getColourImage()->getAlignedShaderReadHeapID();
+		// quad_constants.textureIndex = m_sceneRenderer->getColourImage()->getAlignedShaderReadHeapID();
 		cmd->pushData(quad_constants);
 
 		m_renderCtx->renderFullscreenQuad();

@@ -28,6 +28,8 @@ namespace toaster
 
 	struct TST_KERNEL_API ApplicationSpecInfo
 	{
+		io::filesystem::Path sdkDir{};
+
 		WindowSpecInfo windowSpecInfo{};
 
 		bool printGPUDebugInfo{true};

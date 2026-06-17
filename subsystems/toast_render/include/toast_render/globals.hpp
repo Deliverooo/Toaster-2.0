@@ -67,6 +67,8 @@ namespace toaster::render
 		auto whiteTexture3D() const -> const gpu::Texture3DHandle &;
 		auto whiteImage() const -> const ImageHandle &;
 
+		auto debugImage() const -> const ImageHandle &;
+
 	private:
 		io::filesystem::Path m_binaryDir;
 
@@ -82,5 +84,7 @@ namespace toaster::render
 		gpu::Texture2DHandle m_whiteTexture{nullptr};
 		gpu::Texture3DHandle m_whiteTexture3D{nullptr};
 		ImageHandle          m_whiteImage{nullptr};
+
+		ImageHandle          m_debugImage{nullptr};
 	};
 }

@@ -86,7 +86,7 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE namespace toaster::gpu
 				vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
 			};
 			constexpr vk::DebugUtilsMessageTypeFlagsEXT message_type_flags{
-				vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation
+				vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
 			};
 			debug_messenger_create_info.messageSeverity = severity_flags;
 			debug_messenger_create_info.messageType     = message_type_flags;

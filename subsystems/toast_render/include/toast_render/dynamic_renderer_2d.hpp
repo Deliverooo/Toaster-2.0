@@ -63,8 +63,16 @@ namespace toaster::render
 		[[nodiscard]] auto getMSAADepthImage() const -> const gpu::RawImageHandle & { return m_MSAADepthImage; }
 		[[nodiscard]] auto getDepthImage() const -> const ImageHandle & { return m_depthImage; }
 
+		auto getQuadIndexCount() const -> uint32 { return m_quadIndexCount; }
+
 		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX p_transform, const tsm::float4 &p_colour) -> void;
 		auto XM_CALLCONV submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float4 &p_colour) -> void;
+
+		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX      p_transform, const ImageHandle &p_image, float32 p_tiling_factor = 1.0f,
+									const tsm::float4 &p_tint_colour                                                    = {1.0f, 1.0f, 1.0f, 1.0f}) -> void;
+
+		auto XM_CALLCONV submitQuad(Dx::FXMVECTOR      p_position, Dx::FXMVECTOR p_scale, const ImageHandle &p_image, float32 p_tiling_factor = 1.0f,
+									const tsm::float4 &p_tint_colour = {1.0f, 1.0f, 1.0f, 1.0f}) -> void;
 
 		auto XM_CALLCONV render(Dx::FXMMATRIX            p_view                       = Dx::XMMatrixIdentity(), Dx::CXMMATRIX p_projection = Dx::XMMatrixIdentity(),
 								RenderingAttachmentInfo *p_override_colour_attachment = nullptr, RenderingAttachmentInfo *p_override_depth_attachment = nullptr) -> void;

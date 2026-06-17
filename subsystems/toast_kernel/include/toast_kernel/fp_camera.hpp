@@ -48,7 +48,7 @@ namespace toaster
 
 		static constexpr Dx::XMVECTORF32 c_forwardDir{.f{0.0f, 0.0f, -1.0f, 0.0f}};
 		static constexpr Dx::XMVECTORF32 c_rightDir{.f{1.0f, 0.0f, 0.0f, 0.0f}};
-		static constexpr Dx::XMVECTORF32 c_upDir{.f{0.0f, -1.0f, 0.0f, 0.0f}};
+		static constexpr Dx::XMVECTORF32 c_upDir{.f{0.0f, 1.0f, 0.0f, 0.0f}};
 
 		tsm::float2 m_initialMousePosition{0.0f};
 
