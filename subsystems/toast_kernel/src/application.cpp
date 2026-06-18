@@ -87,6 +87,7 @@ namespace toaster
 			m_window->beginFrame();
 
 			m_renderContext->setCurrentSwapchainCommandBuffer(&m_window->getSwapchain()->getCurrentCommandBuffer());
+			m_renderContext->getDescriptorHeap()->bind();
 
 			if (!m_minimized)
 			{

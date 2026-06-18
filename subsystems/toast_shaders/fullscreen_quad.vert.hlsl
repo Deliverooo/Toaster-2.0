@@ -22,7 +22,6 @@ struct PushConstants
 
 VSOutput main(VSInput p_input)
 {
-
     VSOutput output = (VSOutput)0;
 
     output.vert_position = float4(p_input.position.xy, 0.0f, 1.0f);

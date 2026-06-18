@@ -19,7 +19,9 @@ namespace toaster::render
 		eNone,
 		eVertex,
 		ePixel,
-		eCompute
+		eCompute,
+		eTask,
+		eMesh
 	};
 
 	constexpr auto getVulkanShaderStage(EShaderStage p_stage) -> vk::ShaderStageFlagBits;

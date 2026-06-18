@@ -28,6 +28,10 @@ set(SHADER_SOURCES_VULKAN
 
 		${CMAKE_CURRENT_SOURCE_DIR}/quad_dynamic.pixel.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/mesh_geo.pixel.glsl
+
+		${CMAKE_CURRENT_SOURCE_DIR}/test_shader.mesh.glsl
+		${CMAKE_CURRENT_SOURCE_DIR}/test_shader.pixel.glsl
+
 )
 
 set(SHADER_SOURCES_HLSL
@@ -62,6 +66,11 @@ foreach (SHADER_FILE IN LISTS SHADER_SOURCES_VULKAN)
 
 		set(SHADER_TYPE comp)
 		set(SHADER_VARIABLE_NAME "g_cs_${SHADER_FILENAME}")
+
+	elseif (SHADER_FILE MATCHES "\\.mesh\\.glsl$")
+
+		set(SHADER_TYPE mesh)
+		set(SHADER_VARIABLE_NAME "g_ms_${SHADER_FILENAME}")
 
 	elseif (SHADER_FILE MATCHES "\\.rgen\\.glsl$")
 

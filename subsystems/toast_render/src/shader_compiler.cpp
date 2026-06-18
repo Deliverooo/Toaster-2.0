@@ -20,6 +20,8 @@ namespace toaster::render
 			case EShaderStage::eVertex: return vk::ShaderStageFlagBits::eVertex;
 			case EShaderStage::ePixel: return vk::ShaderStageFlagBits::eFragment;
 			case EShaderStage::eCompute: return vk::ShaderStageFlagBits::eCompute;
+			case EShaderStage::eTask: return vk::ShaderStageFlagBits::eTaskEXT;
+			case EShaderStage::eMesh: return vk::ShaderStageFlagBits::eMeshEXT;
 		}
 
 		return static_cast<vk::ShaderStageFlagBits>(0);
@@ -33,6 +35,8 @@ namespace toaster::render
 			case EShaderStage::eVertex: return L"vs_6_6";
 			case EShaderStage::ePixel: return L"ps_6_6";
 			case EShaderStage::eCompute: return L"cs_6_6";
+			case EShaderStage::eTask: return L"ts_6_6";
+			case EShaderStage::eMesh: return L"ms_6_6";
 		}
 
 		return L"";
@@ -167,7 +171,6 @@ namespace toaster::render
 			L"-fvk-invert-y",
 			L"-fspv-use-legacy-buffer-matrix-order",
 			L"-fspv-target-env=vulkan1.3",
-
 			L"-fspv-use-descriptor-heap",
 			L"-fspv-extension=SPV_EXT_descriptor_heap",
 			L"-fspv-extension=SPV_KHR_untyped_pointers",

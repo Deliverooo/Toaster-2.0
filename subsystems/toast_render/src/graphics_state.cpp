@@ -14,14 +14,23 @@ namespace toaster::render
 	{
 		auto &cmd{p_command_buffer ? p_command_buffer->getVulkanCommandBuffer() : m_renderCtx->getCurrentSwapchainCommandBuffer()->getVulkanCommandBuffer()};
 
-		std::vector<vk::ShaderEXT>           shaders;
-		std::vector<vk::ShaderStageFlagBits> stages;
+		// Apparently, if certain shader features are enabled, you have to specify all shader stages even if they are unused...
+		std::unordered_map<vk::ShaderStageFlagBits, vk::ShaderEXT> shader_stages_map{
+			{vk::ShaderStageFlagBits::eVertex, nullptr},
+			// {vk::ShaderStageFlagBits::eTessellationControl, nullptr},
+			// {vk::ShaderStageFlagBits::eTessellationEvaluation, nullptr},
+			// {vk::ShaderStageFlagBits::eGeometry, nullptr},
+			{vk::ShaderStageFlagBits::eTaskEXT, nullptr},
+			{vk::ShaderStageFlagBits::eMeshEXT, nullptr},
+			{vk::ShaderStageFlagBits::eFragment, nullptr}
+		};
+
 		for (const auto &shader: m_shaders)
-		{
-			shaders.emplace_back(shader->getShader());
-			stages.emplace_back(shader->getStage());
-		}
-		cmd.bindShadersEXT(stages, shaders);
+			shader_stages_map[shader->getStage()] = shader->getShader();
+
+		const auto shader_stages{shader_stages_map | std::views::keys | std::ranges::to<std::vector>()};
+		const auto shaders{shader_stages_map | std::views::values | std::ranges::to<std::vector>()};
+		cmd.bindShadersEXT(shader_stages, shaders);
 
 		// set the vertex input state
 		cmd.setVertexInputEXT(m_vertexBufferLayout.getBindingDescription(), m_vertexBufferLayout.getAttributeDescriptions(0));

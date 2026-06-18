@@ -37,7 +37,9 @@ namespace toaster::render
 			vk::EXTShaderObjectExtensionName,
 			vk::KHRBufferDeviceAddressExtensionName,
 			vk::EXTDescriptorHeapExtensionName,
-			vk::KHRShaderUntypedPointersExtensionName
+			vk::KHRShaderUntypedPointersExtensionName,
+			vk::EXTMeshShaderExtensionName,
+			vk::EXTDeviceFaultExtensionName
 		};
 		if (use_present)
 			required_device_extensions.insert(vk::KHRSwapchainExtensionName);
@@ -54,6 +56,7 @@ namespace toaster::render
 		vk_logical_device_spec_info.printDebugInfo       = m_specInfo.printDebugInfo;
 		vk_logical_device_spec_info.printShaderDebugInfo = m_specInfo.printDebugInfo;
 		auto features{gpu::VKLogicalDeviceSpecInfo::getDefaultFeatures()};
+
 		vk_logical_device_spec_info.pNext = features.get<vk::PhysicalDeviceFeatures2>();
 
 		m_logicalDevice = new gpu::VKLogicalDevice{m_physicalDevice, vk_logical_device_spec_info};

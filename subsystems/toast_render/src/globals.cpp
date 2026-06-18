@@ -39,6 +39,9 @@ namespace toaster::render
 		addShader("Mesh_Geo_VS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "mesh_geo.vert.hlsl.spv", EShaderStage::eVertex, EShaderStage::ePixel));
 		addShader("Mesh_Geo_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "mesh_geo.pixel.glsl.spv", EShaderStage::ePixel));
 
+		addShader("Test_Shader_MS",
+				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "test_shader.mesh.glsl.spv", EShaderStage::eMesh, EShaderStage::ePixel));
+		addShader("Test_Shader_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "test_shader.pixel.glsl.spv", EShaderStage::ePixel));
 		#pragma endregion
 		// InitialiserList shader_stages = {vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment};
 		// {
