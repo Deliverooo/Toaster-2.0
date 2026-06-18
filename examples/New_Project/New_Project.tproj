@@ -1,8 +1,0 @@
-Project:
-  Name: New_Project
-  AssetRegistryPath: resources/asset_registry.treg
-  ScriptDirectory: resources/scripts
-  SceneDirectory: resources/scenes
-  MeshDirectory: resources/meshes
-  TextureDirectory: resources/textures
-  StartupSceneName: New_Scene

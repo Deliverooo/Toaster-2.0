@@ -31,7 +31,7 @@ namespace toaster
 		const float32 safe_width  = static_cast<float32>(std::max(p_size.x, 1u));
 		const float32 safe_height = static_cast<float32>(std::max(p_size.y, 1u));
 
-		m_aspectRatio =  p_size.aspect();
+		m_aspectRatio = p_size.aspect();
 		_recalculateProjection();
 	}
 

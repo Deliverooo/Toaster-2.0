@@ -83,7 +83,7 @@ public:
 
 		m_renderCtx->getDescriptorHeap()->bind();
 
-		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, -2.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), m_image, 2.0f, {1.0f});
+		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, -2.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), m_image, 1.0f, {1.0f});
 		m_renderer2D->submitQuad(Dx::XMVectorSet(0.0f, 0.0f, 0.0f, 1.0f), Dx::XMVectorSet(1.0f, 1.0f, 1.0f, 1.0f), {1.0f, 0.0f, 0.0f});
 		m_renderer2D->render(m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
 
