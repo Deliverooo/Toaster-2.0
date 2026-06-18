@@ -14,6 +14,8 @@ namespace toaster::render
 		TST_ASSERT(io::filesystem::exists(m_specInfo.shaderBinaryDir));
 
 		// Fullscreen quad shaders
+		addShader("Fullscreen_Quad_MS",
+				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "fullscreen_quad.mesh.glsl.spv", EShaderStage::eMesh, EShaderStage::ePixel));
 		addShader("Fullscreen_Quad_VS",
 				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "fullscreen_quad.vert.hlsl.spv", EShaderStage::eVertex, EShaderStage::ePixel));
 		addShader("Fullscreen_Quad_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "fullscreen_quad.pixel.glsl.spv", EShaderStage::ePixel));
@@ -43,55 +45,6 @@ namespace toaster::render
 				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "test_shader.mesh.glsl.spv", EShaderStage::eMesh, EShaderStage::ePixel));
 		addShader("Test_Shader_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "test_shader.pixel.glsl.spv", EShaderStage::ePixel));
 		#pragma endregion
-		// InitialiserList shader_stages = {vk::ShaderStageFlagBits::eVertex, vk::ShaderStageFlagBits::eFragment};
-		// {
-		// 	gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_sdk_binary_dir / "shaders/ambient_occlusion.comp.glsl.spv")};
-		// 	TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-		// 	std::initializer_list bytecode = {cs_bytecode};
-		// 	auto                  stage    = {vk::ShaderStageFlagBits::eCompute};
-		// 	const auto            vbao_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), stage, bytecode, "Ambient_Occlusion")};
-		// 	m_shaderLibrary.add("Ambient_Occlusion", vbao_shader);
-		// }
-		// {
-		// 	gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_sdk_binary_dir / "shaders/geometry.vert.glsl.spv")};
-		// 	gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_sdk_binary_dir / "shaders/geometry.pixel.glsl.spv")};
-		// 	TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-		// 	std::initializer_list bytecode = {vs_bytecode, ps_bytecode};
-		// 	const auto            geometry_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), shader_stages, bytecode, "Geometry")};
-		// 	m_shaderLibrary.add("Geometry", geometry_shader); // Shader for geometry, not vk::ShaderStageFlagBits::eGeometry!
-		// }
-		// {
-		// 	gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_sdk_binary_dir / "shaders/composite.vert.glsl.spv")};
-		// 	gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_sdk_binary_dir / "shaders/composite.pixel.glsl.spv")};
-		// 	TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-		// 	std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
-		// 	const auto composite_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), shader_stages, bytecode, "Composite")};
-		// 	m_shaderLibrary.add("Composite", composite_shader);
-		// }
-		// {
-		// 	gpu::VKShader::Bytecode vs_bytecode{io::filesystem::readBinary(p_sdk_binary_dir / "shaders/ssao.vert.glsl.spv")};
-		// 	gpu::VKShader::Bytecode ps_bytecode{io::filesystem::readBinary(p_sdk_binary_dir / "shaders/ssao.pixel.glsl.spv")};
-		// 	TST_ASSERT_MSG(!vs_bytecode.empty() && !ps_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-		// 	std::initializer_list<gpu::VKShader::Bytecode> bytecode = {vs_bytecode, ps_bytecode};
-		// 	const auto ssao_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), shader_stages, bytecode, "SSAO_Graphics")};
-		// 	m_shaderLibrary.add("SSAO_Graphics", ssao_shader);
-		// }
-		// {
-		// 	gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_sdk_binary_dir / "shaders/diffuse_irradiance_convolution.comp.glsl.spv")};
-		// 	TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-		// 	std::initializer_list<gpu::VKShader::Bytecode> bytecode = {cs_bytecode};
-		// 	auto stage = {vk::ShaderStageFlagBits::eCompute};
-		// 	const auto compute_test_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), stage, bytecode, "Diffuse_Irradiance_Convolution")};
-		// 	m_shaderLibrary.add("Diffuse_Irradiance_Convolution", compute_test_shader);
-		// }
-		// {
-		// 	gpu::VKShader::Bytecode cs_bytecode{io::filesystem::readBinary(p_sdk_binary_dir / "shaders/ssao_blur.comp.glsl.spv")};
-		// 	TST_ASSERT_MSG(!cs_bytecode.empty(), "Failed to read shader file. Did you add it to the CMake compilation");
-		// 	std::initializer_list<gpu::VKShader::Bytecode> bytecode = {cs_bytecode};
-		// 	auto stage = {vk::ShaderStageFlagBits::eCompute};
-		// 	const auto compute_test_shader{make_reference<gpu::VKShader>(m_renderCtx->getLogicalDevice(), stage, bytecode, "SSAO_Blur")};
-		// 	m_shaderLibrary.add("SSAO_Blur", compute_test_shader);
-		// }
 
 		m_quadVertices.emplace_back(FullscreenQuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
 		m_quadVertices.emplace_back(FullscreenQuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});

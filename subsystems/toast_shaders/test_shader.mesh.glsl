@@ -2,8 +2,12 @@
 #extension GL_EXT_mesh_shader : require
 
 layout(local_size_x = 3, local_size_y = 1, local_size_z = 1) in;
-
 layout(triangles, max_vertices = 3, max_primitives = 3) out;
+
+struct Out
+{
+    vec2 texCoord;
+};
 
 layout(location = 0) out vec3 outColor[];
 

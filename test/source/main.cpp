@@ -25,10 +25,8 @@ public:
 
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 
-		auto mesh_shader{m_globals->getShader("Test_Shader_MS")};
-		auto pixel_shader{m_globals->getShader("Test_Shader_PS")};
-		// auto mesh_shader{m_globals->getShader("Fullscreen_Quad_VS")};
-		// auto pixel_shader{m_globals->getShader("Fullscreen_Quad_PS")};
+		auto mesh_shader{m_globals->getShader("Fullscreen_Quad_MS")};
+		auto pixel_shader{m_globals->getShader("Fullscreen_Quad_PS")};
 		m_graphicsState->setShaders({mesh_shader, pixel_shader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).
 				setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(false).setEnableDepthWrite(false);
 	}
@@ -46,7 +44,12 @@ public:
 		m_graphicsState->bind();
 		m_renderCtx->beginRendering(rendering_info);
 
-		vk_cmd.drawMeshTasksEXT(1, 1, 1);
+		FullscreenQuadConstants fullscreen_quad_constants{};
+		fullscreen_quad_constants.samplerIndex = m_renderCtx->getSampler(render::ESamplerType::eDefault);
+		fullscreen_quad_constants.textureIndex = m_image->getAlignedShaderReadHeapID();
+		cmd->pushData(fullscreen_quad_constants);
+
+		m_renderCtx->renderFullscreenQuad();
 
 		m_renderCtx->endRendering(rendering_info);
 	}
@@ -66,8 +69,7 @@ private:
 	tsm::uint2 m_viewportSize{0u};
 
 	UniquePtr<render::GraphicsState> m_graphicsState{nullptr};
-
-	render::ImageHandle m_image{nullptr};
+	render::ImageHandle              m_image{nullptr};
 
 	FPCamera m_camera{};
 

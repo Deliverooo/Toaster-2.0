@@ -32,6 +32,8 @@ set(SHADER_SOURCES_VULKAN
 		${CMAKE_CURRENT_SOURCE_DIR}/test_shader.mesh.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/test_shader.pixel.glsl
 
+		${CMAKE_CURRENT_SOURCE_DIR}/fullscreen_quad.mesh.glsl
+
 )
 
 set(SHADER_SOURCES_HLSL

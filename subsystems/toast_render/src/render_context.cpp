@@ -1057,12 +1057,9 @@ namespace toaster::render
 
 	auto RenderContext::renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer, uint32 p_frame_index) const -> void
 	{
+		// That's it...
 		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
-
-		m_globals->fullscreenQuadVertexBuffer()->bind(command_buffer);
-		m_globals->fullscreenQuadIndexBuffer()->bind(command_buffer);
-
-		command_buffer->drawIndexed(m_globals->fullscreenQuadIndices().size());
+		command_buffer->getVulkanCommandBuffer().drawMeshTasksEXT(1, 1, 1);
 	}
 
 	#undef TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX
