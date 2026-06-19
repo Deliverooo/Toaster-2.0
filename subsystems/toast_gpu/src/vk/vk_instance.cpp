@@ -2,7 +2,11 @@
 
 #include <vulkan/vulkan.hpp>
 
-VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE namespace toaster::gpu
+#include "toast_lib/os/terminal.hpp"
+
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
+namespace toaster::gpu
 {
 	auto getDispatchLoader() -> vk::detail::DispatchLoaderDynamic
 	{
@@ -18,17 +22,26 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE namespace toaster::gpu
 			m_specInfo.debugCallback = &_debugCallback; // Fallback to the default one :)
 
 		if (m_specInfo.enableValidationLayers)
+		{
 			m_specInfo.requiredExtensions.emplace(vk::EXTDebugUtilsExtensionName);
+		}
 
 		vk::ApplicationInfo app_info{};
 		app_info.pApplicationName = "Toaster - Vulkan"; // The app and engine name for this can be completely arbitrary
 		app_info.pEngineName      = "Toaster";
 		// I want to use the latest vulkan version.
-		// TODO: Think about determining this beforehand to add support for older Vulkan versions.
 		//		 However I don't know if the vk::raii stuff will work with them or not
 		app_info.apiVersion = vk::ApiVersion14;
 
 		auto extension_props = m_context.enumerateInstanceExtensionProperties();
+
+		if (m_specInfo.printDebugInfo)
+		{
+			LOG_INFO("Available instance extensions:");
+			for (auto &prop: extension_props)
+				LOG_INFO("\t{}", prop.extensionName.data());
+			LOG_INFO("");
+		}
 
 		// Make sure that all the glfw extensions are present in the extension_props vector
 		const auto unsupported_extension = std::ranges::find_if(m_specInfo.requiredExtensions, [extension_props](const auto &extension)
@@ -46,18 +59,21 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE namespace toaster::gpu
 			LOG_ERROR("Required extension \"{}\" is not supported", *unsupported_extension);
 			TST_PERMA_ASSERT(false);
 		}
-
-		if (m_specInfo.printDebugInfo)
-		{
-			LOG_INFO("Available instance extensions:");
-			for (auto &prop: extension_props)
-				LOG_INFO("\t{}", prop.extensionName.data());
-			LOG_INFO("");
-		}
-
 		std::vector<CString> required_validation_layers;
 		if (m_specInfo.enableValidationLayers)
+		{
 			required_validation_layers.emplace_back("VK_LAYER_KHRONOS_validation");
+			required_validation_layers.emplace_back("VK_LAYER_LUNARG_crash_diagnostic");
+
+			auto output_path{os::getBinaryDirectory().string()};
+			auto output_path_str{"C:/dev/Toaster-2.0/bin/"};
+
+			_putenv_s("VK_LUNARG_CRASH_DIAGNOSTIC_OUTPUT_PATH", output_path_str);
+			_putenv_s("VK_LUNARG_CRASH_DIAGNOSTIC_DUMP_SHADERS", "all");
+
+			_putenv_s("VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES", "true");
+			_putenv_s("VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES_NVIDIA", "true");
+		}
 
 		auto layer_props = m_context.enumerateInstanceLayerProperties();
 

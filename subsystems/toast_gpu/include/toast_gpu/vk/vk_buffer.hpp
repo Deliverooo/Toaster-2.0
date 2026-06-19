@@ -42,6 +42,8 @@ namespace toaster::gpu
 			unmapMemory();
 		}
 
+		auto setData(const void *p_data, uint64 p_size) -> void;
+
 	private:
 		BufferSpecInfo         m_specInfo{};
 		vk::DeviceSize         m_size{0u};

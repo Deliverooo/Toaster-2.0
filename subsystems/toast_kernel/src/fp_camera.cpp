@@ -37,9 +37,9 @@ namespace toaster
 																   speed * p_dt));
 
 			if (m_ctx->isKeyDown(input::EKeyCode::eSpace))
-				position = Dx::XMVectorAdd(position, Dx::XMVectorScale(c_upDir, speed * p_dt));
-			if (m_ctx->isKeyDown(input::EKeyCode::eLeftShift))
 				position = Dx::XMVectorSubtract(position, Dx::XMVectorScale(c_upDir, speed * p_dt));
+			if (m_ctx->isKeyDown(input::EKeyCode::eLeftShift))
+				position = Dx::XMVectorAdd(position, Dx::XMVectorScale(c_upDir, speed * p_dt));
 
 			Dx::XMStoreFloat3(&m_position, position);
 
@@ -84,7 +84,7 @@ namespace toaster
 
 	auto FPCamera::getRotationMatrix() const -> Dx::XMMATRIX
 	{
-		return Dx::XMMatrixRotationRollPitchYaw(m_pitch, m_yaw, 0.0f);
+		return Dx::XMMatrixRotationRollPitchYaw(-m_pitch, m_yaw, 0.0f);
 	}
 
 	auto FPCamera::getViewProjection() const -> Dx::XMMATRIX

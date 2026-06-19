@@ -32,3 +32,5 @@ set(GLFW_BUILD_SHARED_LIBRARY ON CACHE BOOL "" FORCE)
 set(GLFW_INSTALL ON CACHE BOOL "" FORCE)
 
 add_subdirectory(glfw)
+
+add_subdirectory(meshoptimizer)

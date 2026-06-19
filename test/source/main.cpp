@@ -7,6 +7,9 @@
 
 #include <toast_lib/os/terminal.hpp>
 
+#include "toast_render/dynamic_mesh.hpp"
+#include "toast_render/storage_buffer.hpp"
+
 using namespace toaster;
 
 class ClientLayer : public IAppLayer
@@ -25,10 +28,27 @@ public:
 
 		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 
-		auto mesh_shader{m_globals->getShader("Fullscreen_Quad_MS")};
-		auto pixel_shader{m_globals->getShader("Fullscreen_Quad_PS")};
-		m_graphicsState->setShaders({mesh_shader, pixel_shader}).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).
+		auto mesh_shader{m_globals->getShader("Dynamic_Mesh_MS")};
+		auto pixel_shader{m_globals->getShader("Dynamic_Mesh_PS")};
+		m_graphicsState->setShaders({mesh_shader, pixel_shader}).setVertexBufferLayout(render::RenderContext::meshVbl).setAttachmentCount(1u).
 				setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(false).setEnableDepthWrite(false);
+
+		m_cameraUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::ViewProjCameraUB));
+
+		m_meshData = render::importMeshFromFile(resources_dir / "meshes/utah_teapot.obj");
+
+		m_vertexBuffer               = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.vertices, "Raw_mesh_vertices");
+		m_meshletBuffer              = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshlets, "Meshlets");
+		m_meshletVertexIndexBuffer   = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshletVertices, "Meshlet_vertices");
+		m_meshletTriangleIndexBuffer = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshletTriangles, "Meshlet_triangles");
+
+		// vk::PhysicalDeviceMeshShaderPropertiesEXT mesh_shader_props{};
+		// vk::PhysicalDeviceProperties2             props{};
+		// props.pNext = &mesh_shader_props;
+		// m_renderCtx->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties2(&props);
+		//
+		// LOG_INFO("Max output vertices: {}", mesh_shader_props.maxMeshOutputVertices);
+		// LOG_INFO("Max output primitives: {}", mesh_shader_props.maxMeshOutputPrimitives);
 	}
 
 	auto onDestroy() -> void override
@@ -44,12 +64,27 @@ public:
 		m_graphicsState->bind();
 		m_renderCtx->beginRendering(rendering_info);
 
-		FullscreenQuadConstants fullscreen_quad_constants{};
-		fullscreen_quad_constants.samplerIndex = m_renderCtx->getSampler(render::ESamplerType::eDefault);
-		fullscreen_quad_constants.textureIndex = m_image->getAlignedShaderReadHeapID();
-		cmd->pushData(fullscreen_quad_constants);
+		m_camera.onUpdate(p_dt);
 
-		m_renderCtx->renderFullscreenQuad();
+		render::Globals::ViewProjCameraUB camera_ub{};
+		Dx::XMStoreFloat4x4(&camera_ub.viewMatrix, m_camera.getViewMatrix());
+		Dx::XMStoreFloat4x4(&camera_ub.projectionMatrix, m_camera.getProjectionMatrix());
+		m_cameraUBOs->setData(camera_ub);
+
+		MeshletMeshConstants meshlet_mesh_constants{};
+		meshlet_mesh_constants.vertexBuffer               = m_vertexBuffer->getDeviceAddress();
+		meshlet_mesh_constants.meshletBuffer              = m_meshletBuffer->getDeviceAddress();
+		meshlet_mesh_constants.meshletVertexIndexBuffer   = m_meshletVertexIndexBuffer->getDeviceAddress();
+		meshlet_mesh_constants.meshletTriangleIndexBuffer = m_meshletTriangleIndexBuffer->getDeviceAddress();
+
+		meshlet_mesh_constants.cameraPtr = m_cameraUBOs->getDeviceAddress();
+
+		meshlet_mesh_constants.samplerIndex = m_renderCtx->getSampler(render::ESamplerType::eDefault);
+		meshlet_mesh_constants.textureIndex = m_image->getAlignedShaderReadHeapID();
+
+		cmd->pushData(meshlet_mesh_constants);
+
+		vk_cmd.drawMeshTasksEXT(m_meshData.meshlets.size(), 1, 1);
 
 		m_renderCtx->endRendering(rendering_info);
 	}
@@ -73,13 +108,26 @@ private:
 
 	FPCamera m_camera{};
 
-	TST_PUSH_CONSTANT_BLOCK(FullscreenQuadConstants)
+	render::UniformBufferPFFUnique m_cameraUBOs{nullptr};
+
+	render::StorageBufferUnique m_vertexBuffer{nullptr};
+	render::StorageBufferUnique m_meshletBuffer{nullptr};
+	render::StorageBufferUnique m_meshletVertexIndexBuffer{nullptr};
+	render::StorageBufferUnique m_meshletTriangleIndexBuffer{nullptr};
+
+	render::DynamicMeshData m_meshData;
+
+	TST_PUSH_CONSTANT_BLOCK(MeshletMeshConstants)
 	{
+		uintptr vertexBuffer;
+		uintptr meshletBuffer;
+		uintptr meshletVertexIndexBuffer;
+		uintptr meshletTriangleIndexBuffer;
+
+		uintptr cameraPtr;
+
 		uint32 samplerIndex;
 		uint32 textureIndex;
-
-	private:
-		char _padd[8];
 	};
 };
 

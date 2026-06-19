@@ -1,19 +1,12 @@
 #include "toast_render/mesh.hpp"
 
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/scene.h>
+#include "assimp_common.hpp"
 
 #include "toast_render/globals.hpp"
 #include "toast_render/render_context.hpp"
 
 namespace toaster::render
 {
-	static constexpr uint32 s_MeshImportFlags{
-		aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_SortByPType | aiProcess_GenNormals | aiProcess_GenUVCoords | aiProcess_OptimizeMeshes |
-		aiProcess_JoinIdenticalVertices | aiProcess_LimitBoneWeights | aiProcess_ValidateDataStructure | aiProcess_GlobalScale | aiProcess_FlipUVs
-	};
-
 	auto mat4FromAIMatrix4x4(const aiMatrix4x4 &matrix) -> Dx::XMFLOAT4X4
 	{
 		Dx::XMFLOAT4X4 result;
@@ -132,9 +125,8 @@ namespace toaster::render
 		}
 		else
 		{
-
 		}
-			// m_materials.addMaterial(0, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"), "Default");
+		// m_materials.addMaterial(0, m_renderCtx->getGlobals()->shaderLibrary().get("Geometry"), "Default");
 
 		m_vertexBuffer = m_renderCtx->createVertexBuffer(m_vertices);
 		m_indexBuffer  = m_renderCtx->createIndexBuffer(m_indices);

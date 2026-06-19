@@ -20,6 +20,11 @@ namespace toaster::render
 				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "fullscreen_quad.vert.hlsl.spv", EShaderStage::eVertex, EShaderStage::ePixel));
 		addShader("Fullscreen_Quad_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "fullscreen_quad.pixel.glsl.spv", EShaderStage::ePixel));
 
+		// Dynamic mesh/meshlet shaders
+		addShader("Dynamic_Mesh_MS",
+				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "dynamic_mesh.mesh.glsl.spv", EShaderStage::eMesh, EShaderStage::ePixel));
+		addShader("Dynamic_Mesh_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "dynamic_mesh.pixel.glsl.spv", EShaderStage::ePixel));
+
 		// Quad shaders
 		addShader("Quad_VS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "quad_dynamic.vert.hlsl.spv", EShaderStage::eVertex, EShaderStage::ePixel));
 		addShader("Quad_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "quad_dynamic.pixel.glsl.spv", EShaderStage::ePixel));

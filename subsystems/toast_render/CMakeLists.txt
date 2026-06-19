@@ -9,9 +9,11 @@ set(RENDER_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/render_context.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/renderer_2d.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/dynamic_renderer_2d.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/dynamic_mesh.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/render_pass.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/image.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/uniform_buffer.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/storage_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/compute_pass.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/shader_library.cpp
 )
@@ -39,6 +41,7 @@ target_link_libraries(ToastRender PRIVATE dxcompiler d3dcompiler dxgi d3d12)
 #target_link_libraries(ToastRender PRIVATE dxil)
 
 target_link_libraries(ToastRender PUBLIC Toaster::ToastGPU)
+target_link_libraries(ToastRender PUBLIC meshoptimizer)
 target_link_libraries(ToastRender PRIVATE assimp::assimp)
 add_dependencies(ToastRender Toaster::ToastShaders)
 

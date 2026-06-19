@@ -127,10 +127,10 @@ namespace toaster::gpu
 		return m_imageArrayOffset;
 	}
 
-	auto VKDescriptorHeap::allocBuffer(const Buffer &p_buffer) -> DescriptorSlot
+	auto VKDescriptorHeap::allocBuffer(const Buffer &p_buffer, bool p_storage) -> DescriptorSlot
 	{
 		DescriptorSlot allocated_slot{m_bufferSlotManager.allocSlot()};
-		setBuffer(allocated_slot, p_buffer);
+		setBuffer(allocated_slot, p_buffer, p_storage);
 		return allocated_slot;
 	}
 
@@ -148,7 +148,7 @@ namespace toaster::gpu
 		return allocated_slot;
 	}
 
-	auto VKDescriptorHeap::setBuffer(DescriptorSlot p_slot, const Buffer &p_buffer) -> void
+	auto VKDescriptorHeap::setBuffer(DescriptorSlot p_slot, const Buffer &p_buffer, bool p_storage) -> void
 	{
 		vk::DeviceAddressRangeEXT buffer_range{p_buffer.getDeviceAddressRange()};
 
@@ -157,7 +157,7 @@ namespace toaster::gpu
 		host_range.size    = m_bufferDescriptorSize;
 
 		vk::ResourceDescriptorInfoEXT resource_info{};
-		resource_info.type               = vk::DescriptorType::eUniformBuffer;
+		resource_info.type               = p_storage ? vk::DescriptorType::eStorageBuffer : vk::DescriptorType::eUniformBuffer;
 		resource_info.data.pAddressRange = &buffer_range;
 
 		m_device->getVulkanLogicalDevice().writeResourceDescriptorsEXT(resource_info, host_range);

@@ -28,6 +28,10 @@ namespace toaster::gpu
 			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                     = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().bufferDeviceAddress                   = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().runtimeDescriptorArray                = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().shaderInt8                            = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().storagePushConstant8                  = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().uniformAndStorageBuffer8BitAccess     = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().storageBuffer8BitAccess               = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                      = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                      = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().maintenance4                          = true;
@@ -176,7 +180,7 @@ namespace toaster::gpu
 		auto generateMipmaps(vk::Image &p_src_image, const ImageExtent &p_image_extent, uint32 p_mip_levels) -> void;
 
 		template<typename TObj>
-		auto setDebugObjectName(TObj &p_obj, const String &p_name) -> void
+		auto setDebugObjectName(const TObj &p_obj, const String &p_name) -> void
 		{
 			vk::DebugUtilsObjectNameInfoEXT name_info{};
 			name_info.objectType   = TObj::objectType;

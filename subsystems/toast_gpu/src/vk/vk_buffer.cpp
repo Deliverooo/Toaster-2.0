@@ -95,4 +95,11 @@ namespace toaster::gpu
 	{
 		m_bufferMemory.unmapMemory();
 	}
+
+	auto VKBuffer::setData(const void *p_data, uint64 p_size) -> void
+	{
+		void *mapped{mapMemory(p_size)};
+		std::memcpy(mapped, p_data, p_size);
+		unmapMemory();
+	}
 }

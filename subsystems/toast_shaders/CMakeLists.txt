@@ -34,6 +34,9 @@ set(SHADER_SOURCES_VULKAN
 
 		${CMAKE_CURRENT_SOURCE_DIR}/fullscreen_quad.mesh.glsl
 
+		${CMAKE_CURRENT_SOURCE_DIR}/dynamic_mesh.mesh.glsl
+		${CMAKE_CURRENT_SOURCE_DIR}/dynamic_mesh.pixel.glsl
+
 )
 
 set(SHADER_SOURCES_HLSL
@@ -144,7 +147,7 @@ foreach (SHADER_FILE IN LISTS SHADER_SOURCES_HLSL)
 
 	add_custom_command(
 			OUTPUT ${SHADER_FILE_OUT}
-			COMMAND ${Vulkan_dxc_EXECUTABLE} -spirv -T ${SHADER_TYPE} -E main "${SHADER_FILE}" -Fo "${SHADER_FILE_OUT}" -fvk-use-dx-layout -fvk-invert-y  -fspv-use-legacy-buffer-matrix-order -fspv-target-env=vulkan1.3  -fspv-use-descriptor-heap -fspv-extension=SPV_EXT_descriptor_heap -fspv-extension=SPV_KHR_untyped_pointers -fspv-extension=SPV_KHR_physical_storage_buffer
+			COMMAND ${Vulkan_dxc_EXECUTABLE} -spirv -T ${SHADER_TYPE} -E main "${SHADER_FILE}" -Fo "${SHADER_FILE_OUT}" -fvk-use-dx-layout -fvk-invert-y -fspv-use-legacy-buffer-matrix-order -fspv-target-env=vulkan1.3 -fspv-use-descriptor-heap -fspv-extension=SPV_EXT_descriptor_heap -fspv-extension=SPV_KHR_untyped_pointers -fspv-extension=SPV_KHR_physical_storage_buffer
 			DEPENDS ${SHADER_FILE}
 			COMMENT "Compiling HLSL to ${SHADER_FILE_OUT}"
 			VERBATIM
