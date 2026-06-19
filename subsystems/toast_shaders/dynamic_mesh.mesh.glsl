@@ -66,8 +66,9 @@ void main()
         vec4 pos = pcs.vertexBuffer.vertices[global_index].position;
         gl_MeshVerticesEXT[i].gl_Position = pcs.camera.proj * pcs.camera.view * pos;
 
-        o_TexCoord[i] = pcs.vertexBuffer.vertices[global_index].position.xy;
-        //        o_TexCoord[i] = pcs.vertexBuffer.vertices[global_index].texCoord;
+        vec2 tex_coord = pcs.vertexBuffer.vertices[global_index].position.xy;
+        tex_coord.y *= -1.0f;
+        o_TexCoord[i] = tex_coord;
     }
 
     for (uint i = thread_id; i < m.triangleCount; i += MESH_SHADER_DISPATCH_SIZE)

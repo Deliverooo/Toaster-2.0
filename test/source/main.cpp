@@ -30,8 +30,8 @@ public:
 
 		auto mesh_shader{m_globals->getShader("Dynamic_Mesh_MS")};
 		auto pixel_shader{m_globals->getShader("Dynamic_Mesh_PS")};
-		m_graphicsState->setShaders({mesh_shader, pixel_shader}).setVertexBufferLayout(render::RenderContext::meshVbl).setAttachmentCount(1u).
-				setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(false).setEnableDepthWrite(false);
+		m_graphicsState->setShaders({mesh_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(true).
+				setEnableDepthWrite(true);
 
 		m_cameraUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::ViewProjCameraUB));
 
@@ -49,7 +49,7 @@ public:
 
 	auto onUpdate(float32 p_dt) -> void override
 	{
-		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo(false, {0.0f, 1.0f, 1.0f, 1.0f}, false)};
+		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo(false, {0.0f, 1.0f, 1.0f, 1.0f}, true)};
 		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 		auto &     vk_cmd{cmd->getVulkanCommandBuffer()};
 
