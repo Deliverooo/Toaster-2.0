@@ -24,21 +24,21 @@ namespace toaster::render
 
 		for (uint32 i{0u}; i < ai_mesh->mNumVertices; ++i)
 		{
-			raw_vertices[i].position = {ai_mesh->mVertices[i].x, ai_mesh->mVertices[i].y, ai_mesh->mVertices[i].z};
+			raw_vertices[i].position = {ai_mesh->mVertices[i].x, ai_mesh->mVertices[i].y, ai_mesh->mVertices[i].z, 1.0f};
 
-			if (ai_mesh->HasNormals())
-				raw_vertices[i].normal = {ai_mesh->mNormals[i].x, ai_mesh->mNormals[i].y, ai_mesh->mNormals[i].z};
+			// if (ai_mesh->HasNormals())
+				// raw_vertices[i].normal = {ai_mesh->mNormals[i].x, ai_mesh->mNormals[i].y, ai_mesh->mNormals[i].z};
 
-			if (ai_mesh->HasTangentsAndBitangents())
-			{
-				raw_vertices[i].tangent   = {ai_mesh->mTangents[i].x, ai_mesh->mTangents[i].y, ai_mesh->mTangents[i].z};
-				raw_vertices[i].bitangent = {ai_mesh->mBitangents[i].x, ai_mesh->mBitangents[i].y, ai_mesh->mBitangents[i].z};
-			}
+			// if (ai_mesh->HasTangentsAndBitangents())
+			// {
+				// raw_vertices[i].tangent   = {ai_mesh->mTangents[i].x, ai_mesh->mTangents[i].y, ai_mesh->mTangents[i].z};
+				// raw_vertices[i].bitangent = {ai_mesh->mBitangents[i].x, ai_mesh->mBitangents[i].y, ai_mesh->mBitangents[i].z};
+			// }
 
-			if (ai_mesh->HasTextureCoords(i))
-				raw_vertices[i].texCoord = {ai_mesh->mTextureCoords[i]->x, ai_mesh->mTextureCoords[i]->y};
-			else
-				raw_vertices[i].texCoord = {0.0f, 0.0f};
+			// if (ai_mesh->HasTextureCoords(0))
+				// raw_vertices[i].texCoord = {ai_mesh->mTextureCoords[0][i].x, ai_mesh->mTextureCoords[0][i].y};
+			// else
+				// raw_vertices[i].texCoord = {0.0f, 0.0f};
 		}
 
 		raw_indices.reserve(ai_mesh->mNumFaces * 3u);
@@ -53,17 +53,17 @@ namespace toaster::render
 		out_mesh_data.vertices = raw_vertices;
 
 		constexpr uint64  max_vertices{64u};
-		constexpr uint64  max_triangles{124u};
+		constexpr uint64  max_triangles{126u};
 		constexpr float32 cone_weight{0.5f};
 
 		uint64 max_meshlets{meshopt_buildMeshletsBound(raw_indices.size(), max_vertices, max_triangles)};
 
 		std::vector<meshopt_Meshlet> local_meshlets(max_meshlets);
 		out_mesh_data.meshletVertices.resize(raw_indices.size());
-		out_mesh_data.meshletTriangles.resize(raw_indices.size());
+		std::vector<uint8> raw_triangle_data(raw_indices.size());
 
 		uint64 actual_meshlet_count{
-			meshopt_buildMeshlets(local_meshlets.data(), out_mesh_data.meshletVertices.data(), out_mesh_data.meshletTriangles.data(), raw_indices.data(),
+			meshopt_buildMeshlets(local_meshlets.data(), out_mesh_data.meshletVertices.data(), raw_triangle_data.data(), raw_indices.data(),
 								  raw_indices.size(), &out_mesh_data.vertices[0].position.x, out_mesh_data.vertices.size(), sizeof(DynamicMeshVertex), max_vertices,
 								  max_triangles, cone_weight)
 		};
@@ -76,7 +76,15 @@ namespace toaster::render
 		{
 			const auto &last_meshlet{local_meshlets.back()};
 			out_mesh_data.meshletVertices.resize(last_meshlet.vertex_offset + last_meshlet.vertex_count);
-			out_mesh_data.meshletTriangles.resize(last_meshlet.triangle_offset + last_meshlet.triangle_count * 3);
+			raw_triangle_data.resize(last_meshlet.triangle_offset + last_meshlet.triangle_count * 3);
+		}
+
+		// Pack uint8 triangle indices into uint32 for proper alignment in shader
+		out_mesh_data.meshletTriangles.resize((raw_triangle_data.size() + 3) / 4);
+		for (uint64 i{0u}; i < raw_triangle_data.size(); ++i)
+		{
+			uint32 &packed = out_mesh_data.meshletTriangles[i / 4];
+			packed |= (uint32)raw_triangle_data[i] << ((i % 4) * 8);
 		}
 
 		out_mesh_data.meshlets.resize(actual_meshlet_count);
@@ -88,15 +96,6 @@ namespace toaster::render
 			out_mesh_data.meshlets[i].triangleOffset = local_meshlets[i].triangle_offset;
 			out_mesh_data.meshlets[i].vertexCount    = local_meshlets[i].vertex_count;
 			out_mesh_data.meshlets[i].triangleCount  = local_meshlets[i].triangle_count;
-
-			// meshopt_Bounds bounds{
-			// 	meshopt_computeMeshletBounds(&out_mesh_data.meshletVertices[local_meshlets[i].vertex_offset],
-			// 								 &out_mesh_data.meshletTriangles[local_meshlets[i].triangle_offset], local_meshlets[i].triangle_count,
-			// 								 reinterpret_cast<const float32 *>(out_mesh_data.vertices.data()), out_mesh_data.vertices.size(), sizeof(DynamicMeshVertex))
-			// };
-			//
-			// out_mesh_data.meshletBounds[i].center = {bounds.center[0], bounds.center[1], bounds.center[2]};
-			// out_mesh_data.meshletBounds[i].radius = bounds.radius;
 		}
 
 		return out_mesh_data;

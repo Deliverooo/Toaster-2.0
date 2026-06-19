@@ -66,7 +66,7 @@ namespace toaster::gpu
 			required_validation_layers.emplace_back("VK_LAYER_LUNARG_crash_diagnostic");
 
 			auto output_path{os::getBinaryDirectory().string()};
-			auto output_path_str{"C:/dev/Toaster-2.0/bin/"};
+			auto output_path_str{output_path.c_str()};
 
 			_putenv_s("VK_LUNARG_CRASH_DIAGNOSTIC_OUTPUT_PATH", output_path_str);
 			_putenv_s("VK_LUNARG_CRASH_DIAGNOSTIC_DUMP_SHADERS", "all");

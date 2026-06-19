@@ -129,7 +129,7 @@ namespace toaster
 
 	auto FPCamera::_onMouseScrollEvent(MouseScrollEvent &p_event) -> bool
 	{
-		m_zoom += p_event.getScrollY() * 0.02f;
+		m_zoom -= p_event.getScrollY() * 0.02f;
 		if (m_zoom < tsm::radians(1.0f))
 			m_zoom = tsm::radians(1.0f);
 		if (m_zoom > tsm::radians(89.0f))

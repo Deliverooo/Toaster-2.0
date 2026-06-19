@@ -41,14 +41,6 @@ public:
 		m_meshletBuffer              = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshlets, "Meshlets");
 		m_meshletVertexIndexBuffer   = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshletVertices, "Meshlet_vertices");
 		m_meshletTriangleIndexBuffer = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshletTriangles, "Meshlet_triangles");
-
-		// vk::PhysicalDeviceMeshShaderPropertiesEXT mesh_shader_props{};
-		// vk::PhysicalDeviceProperties2             props{};
-		// props.pNext = &mesh_shader_props;
-		// m_renderCtx->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties2(&props);
-		//
-		// LOG_INFO("Max output vertices: {}", mesh_shader_props.maxMeshOutputVertices);
-		// LOG_INFO("Max output primitives: {}", mesh_shader_props.maxMeshOutputPrimitives);
 	}
 
 	auto onDestroy() -> void override
@@ -76,12 +68,9 @@ public:
 		meshlet_mesh_constants.meshletBuffer              = m_meshletBuffer->getDeviceAddress();
 		meshlet_mesh_constants.meshletVertexIndexBuffer   = m_meshletVertexIndexBuffer->getDeviceAddress();
 		meshlet_mesh_constants.meshletTriangleIndexBuffer = m_meshletTriangleIndexBuffer->getDeviceAddress();
-
-		meshlet_mesh_constants.cameraPtr = m_cameraUBOs->getDeviceAddress();
-
-		meshlet_mesh_constants.samplerIndex = m_renderCtx->getSampler(render::ESamplerType::eDefault);
-		meshlet_mesh_constants.textureIndex = m_image->getAlignedShaderReadHeapID();
-
+		meshlet_mesh_constants.cameraPtr                  = m_cameraUBOs->getDeviceAddress();
+		meshlet_mesh_constants.samplerIndex               = m_renderCtx->getSampler(render::ESamplerType::eDefault);
+		meshlet_mesh_constants.textureIndex               = m_image->getAlignedShaderReadHeapID();
 		cmd->pushData(meshlet_mesh_constants);
 
 		vk_cmd.drawMeshTasksEXT(m_meshData.meshlets.size(), 1, 1);
