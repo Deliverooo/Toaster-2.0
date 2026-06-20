@@ -30,7 +30,7 @@ namespace toaster::render
 
 	enum class ESamplerType
 	{
-		eDefault, eNearest
+		eDefault, eNearest, eIrradianceMap
 	};
 
 	struct TST_RENDER_API RenderContextSpecInfo

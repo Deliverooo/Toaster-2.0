@@ -50,6 +50,7 @@ void main()
     kd *= 1.0f - glob.metalness;
 
     vec3 irradiance = textureLod(samplerCube(textureCubeHeap[pcs.diffuseIrradianceMapIndex], samplerHeap[pcs.samplerIndex]), glob.normal, 0).rgb;
+    irradiance /= irradiance + vec3(1.0f);
 
     vec3 diffuse_ambient = kd * irradiance * glob.albedo;
 

@@ -108,6 +108,28 @@ namespace toaster::render
 			m_samplers[ESamplerType::eNearest] = m_descriptorHeap->allocSampler(nearest_sampler_create_info);
 		}
 
+		{
+			vk::SamplerCreateInfo irradiance_sampler_create_info{};
+
+			irradiance_sampler_create_info.magFilter               = vk::Filter::eLinear;
+			irradiance_sampler_create_info.minFilter               = vk::Filter::eLinear;
+			irradiance_sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eLinear;
+			irradiance_sampler_create_info.addressModeU            = vk::SamplerAddressMode::eClampToEdge;
+			irradiance_sampler_create_info.addressModeV            = vk::SamplerAddressMode::eClampToEdge;
+			irradiance_sampler_create_info.addressModeW            = vk::SamplerAddressMode::eClampToEdge;
+			irradiance_sampler_create_info.mipLodBias              = 0.0f;
+			irradiance_sampler_create_info.anisotropyEnable        = false;
+			irradiance_sampler_create_info.maxAnisotropy           = 1.0f;
+			irradiance_sampler_create_info.compareEnable           = false;
+			irradiance_sampler_create_info.compareOp               = vk::CompareOp::eNever;
+			irradiance_sampler_create_info.minLod                  = 0.0f;
+			irradiance_sampler_create_info.maxLod                  = 0.0f;
+			irradiance_sampler_create_info.borderColor             = vk::BorderColor::eFloatOpaqueWhite;
+			irradiance_sampler_create_info.unnormalizedCoordinates = false;
+
+			m_samplers[ESamplerType::eIrradianceMap] = m_descriptorHeap->allocSampler(irradiance_sampler_create_info);
+		}
+
 		m_shaderCompiler = toaster::make_unique<ShaderCompiler>(*this);
 
 		if (m_specInfo.createGlobals)
@@ -353,7 +375,7 @@ namespace toaster::render
 		Globals::DiffuseIrradianceConvolutionConstants diffuse_irradiance_convolution_constants{};
 		diffuse_irradiance_convolution_constants.environmentMapId       = p_environment_map->getAlignedShaderReadHeapID();
 		diffuse_irradiance_convolution_constants.diffuseIrradianceMapId = out_irradiance_map->getAlignedStorageHeapID();
-		diffuse_irradiance_convolution_constants.samplerId              = m_samplers.at(ESamplerType::eDefault);
+		diffuse_irradiance_convolution_constants.samplerId              = m_samplers.at(ESamplerType::eIrradianceMap);
 
 		command_buffer.pushData(diffuse_irradiance_convolution_constants);
 		command_buffer.getVulkanCommandBuffer().dispatch((c_diffuse_irradiance_resolution + 15u) / 16u, (c_diffuse_irradiance_resolution + 15u) / 16u, 6);

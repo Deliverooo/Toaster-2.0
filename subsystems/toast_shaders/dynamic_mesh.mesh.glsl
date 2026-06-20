@@ -84,7 +84,7 @@ void main()
         tex_coord.y *= -1.0f;
         o_TexCoord[i] = tex_coord;
 
-        o_Normal[i] = pcs.vertexBuffer.vertices[global_index].normal.xyz;
+        o_Normal[i] = mat3(transpose(inverse(mat4(1.0f)))) * pcs.vertexBuffer.vertices[global_index].normal.xyz;
 
         o_SubmeshIndex[i] = m.submeshIndex;
     }

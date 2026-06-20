@@ -41,11 +41,11 @@ public:
 		m_cameraUBOs    = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::ViewProjCameraUB));
 		m_sceneDataUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(SceneDataUB));
 
-		m_environmentMap       = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/overcast_soil_puresky_2k.hdr");
+		m_environmentMap       = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/grasslands_sunset_1k.hdr");
 		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMapImage(m_environmentMap);
 
-		m_meshData = render::importMeshFromFile(resources_dir / "meshes/utah_teapot.obj");
-		// m_meshData = render::importMeshFromFile(resources_dir / "meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
+		// m_meshData = render::importMeshFromFile(resources_dir / "meshes/utah_teapot.obj");
+		m_meshData = render::importMeshFromFile(resources_dir / "meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
 
 		m_vertexBufferSSBO               = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.vertices, "Raw_mesh_vertices");
 		m_meshletBufferSSBO              = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshlets, "Meshlets");
@@ -86,7 +86,7 @@ public:
 		meshlet_mesh_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
 		meshlet_mesh_constants.sceneDataPtr = m_sceneDataUBOs->getDeviceAddress();
 
-		meshlet_mesh_constants.samplerIndex              = m_renderCtx->getSampler(render::ESamplerType::eDefault);
+		meshlet_mesh_constants.samplerIndex              = m_renderCtx->getSampler(render::ESamplerType::eIrradianceMap);
 		meshlet_mesh_constants.diffuseIrradianceMapIndex = m_diffuseIrradianceMap->getAlignedShaderReadHeapID();
 		cmd->pushData(meshlet_mesh_constants);
 
