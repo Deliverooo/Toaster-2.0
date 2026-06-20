@@ -114,7 +114,9 @@ namespace toaster
 		auto _registerScriptMethods() -> void;
 
 		template<typename Type>
-		TST_SCENE_API auto onComponentAdded(Entity p_entity, Type &p_component) -> void;
+		auto onComponentAdded(Entity &p_entity, Type &p_component) -> void
+		{
+		}
 
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
 		NonOwningPtr<script::ScriptEngine>  m_scriptEngine{nullptr};
@@ -142,7 +144,7 @@ namespace toaster
 		struct
 		{
 			render::ImageHandle  skyboxMapImage{nullptr};
-			gpu::Texture3DHandle skyboxMap{nullptr}; // TODO: Remove
+			gpu::Texture3DHandle skyboxMap{nullptr};            // TODO: Remove
 			gpu::Texture3DHandle diffuseIrradianceMap{nullptr}; // Created from the skybox and updated if it changes
 		} m_sceneEnvironment;
 
@@ -155,4 +157,10 @@ namespace toaster
 		friend class DynamicSceneRenderer;
 		friend class SceneImporter;
 	};
+
+	template<>
+	inline auto Scene::onComponentAdded<CameraComponent>(Entity &p_entity, CameraComponent &p_component) -> void
+	{
+		p_component.camera.setViewportSize(m_viewportSize);
+	}
 }

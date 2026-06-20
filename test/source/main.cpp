@@ -37,6 +37,14 @@ struct Mesh
 	render::DynamicMeshData meshData;
 };
 
+struct MeshletMeshComponent
+{
+	MeshletMeshComponent()  = default;
+	~MeshletMeshComponent() = default;
+
+	RefPtr<Mesh> mesh{nullptr};
+};
+
 class ClientLayer : public IAppLayer
 {
 public:
@@ -56,6 +64,8 @@ public:
 
 		m_image = m_renderCtx->createImageRef(resources_dir / "textures/Peeber.png");
 
+		m_scene = toaster::make_unique<Scene>(m_renderCtx);
+
 		m_geometryGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 
 		auto mesh_shader{m_globals->getShader("Dynamic_Mesh_MS")};
@@ -69,7 +79,11 @@ public:
 		m_environmentMap       = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/overcast_soil_puresky_2k.hdr");
 		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMapImage(m_environmentMap);
 
-		m_mesh = m_renderCtx->createUnique<Mesh>(resources_dir / "meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
+		m_mesh = m_renderCtx->createRef<Mesh>(resources_dir / "meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
+
+		Entity mesh_entity{m_scene->createEntity("Mesh entity")};
+		auto & mmc{mesh_entity.addComponent<MeshletMeshComponent>()};
+		mmc.mesh = m_mesh;
 	}
 
 	auto onDestroy() -> void override
@@ -78,14 +92,15 @@ public:
 
 	auto onUpdate(float32 p_dt) -> void override
 	{
+		m_scene->onUpdate(p_dt);
+		m_camera.onUpdate(p_dt);
+
 		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo(false, {0.025f, 0.025f, 0.025f, 1.0f}, true)};
 		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 		auto &     vk_cmd{cmd->getVulkanCommandBuffer()};
 
 		m_geometryGraphicsState->bind();
 		m_renderCtx->beginRendering(rendering_info);
-
-		m_camera.onUpdate(p_dt);
 
 		SceneDataUB scene_data_ub{};
 		Dx::XMStoreFloat4(&scene_data_ub.cameraPos, m_camera.getPosition());
@@ -96,21 +111,33 @@ public:
 		Dx::XMStoreFloat4x4(&camera_ub.projectionMatrix, m_camera.getProjectionMatrix());
 		m_cameraUBOs->setData(camera_ub);
 
-		MeshletMeshConstants meshlet_mesh_constants{};
-		meshlet_mesh_constants.vertexBuffer               = m_mesh->vertexBufferSSBO->getDeviceAddress();
-		meshlet_mesh_constants.meshletBuffer              = m_mesh->meshletBufferSSBO->getDeviceAddress();
-		meshlet_mesh_constants.meshletVertexIndexBuffer   = m_mesh->meshletVertexIndexBufferSSBO->getDeviceAddress();
-		meshlet_mesh_constants.meshletTriangleIndexBuffer = m_mesh->meshletTriangleIndexBufferSSBO->getDeviceAddress();
-		meshlet_mesh_constants.submeshBuffer              = m_mesh->submeshBufferSSBO->getDeviceAddress();
+		for (const auto view{m_scene->getRegistry().view<MeshletMeshComponent>()}; const auto entity: view)
+		{
+			const auto &mesh_comp{view.get<MeshletMeshComponent>(entity)};
 
-		meshlet_mesh_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
-		meshlet_mesh_constants.sceneDataPtr = m_sceneDataUBOs->getDeviceAddress();
+			auto mesh{mesh_comp.mesh};
+			if (mesh)
+			{
+				Entity       e{entity, m_scene.get()};
+				Dx::XMMATRIX transform{m_scene->getEntityWorldTransformMatrix(e)};
 
-		meshlet_mesh_constants.samplerIndex              = m_renderCtx->getSampler(render::ESamplerType::eIrradianceMap);
-		meshlet_mesh_constants.diffuseIrradianceMapIndex = m_diffuseIrradianceMap->getAlignedShaderReadHeapID();
-		cmd->pushData(meshlet_mesh_constants);
+				MeshletMeshConstants meshlet_mesh_constants{};
+				meshlet_mesh_constants.vertexBuffer               = mesh->vertexBufferSSBO->getDeviceAddress();
+				meshlet_mesh_constants.meshletBuffer              = mesh->meshletBufferSSBO->getDeviceAddress();
+				meshlet_mesh_constants.meshletVertexIndexBuffer   = mesh->meshletVertexIndexBufferSSBO->getDeviceAddress();
+				meshlet_mesh_constants.meshletTriangleIndexBuffer = mesh->meshletTriangleIndexBufferSSBO->getDeviceAddress();
+				meshlet_mesh_constants.submeshBuffer              = mesh->submeshBufferSSBO->getDeviceAddress();
 
-		vk_cmd.drawMeshTasksEXT(m_mesh->meshData.meshlets.size(), 1, 1);
+				meshlet_mesh_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
+				meshlet_mesh_constants.sceneDataPtr = m_sceneDataUBOs->getDeviceAddress();
+
+				meshlet_mesh_constants.samplerIndex              = m_renderCtx->getSampler(render::ESamplerType::eIrradianceMap);
+				meshlet_mesh_constants.diffuseIrradianceMapIndex = m_diffuseIrradianceMap->getAlignedShaderReadHeapID();
+				cmd->pushData(meshlet_mesh_constants);
+
+				vk_cmd.drawMeshTasksEXT(mesh->meshData.meshlets.size(), 1, 1);
+			}
+		}
 
 		m_renderCtx->endRendering(rendering_info);
 	}
@@ -132,6 +159,8 @@ private:
 	FPCamera            m_camera{};
 	render::ImageHandle m_image{nullptr};
 
+	UniquePtr<Scene> m_scene{nullptr};
+
 	render::UniformBufferPFFUnique m_cameraUBOs{nullptr};
 	render::UniformBufferPFFUnique m_sceneDataUBOs{nullptr};
 
@@ -140,7 +169,7 @@ private:
 
 	render::GraphicsStateUnique m_geometryGraphicsState{nullptr};
 
-	UniquePtr<Mesh> m_mesh{nullptr};
+	RefPtr<Mesh> m_mesh{nullptr};
 
 	TST_PUSH_CONSTANT_BLOCK(MeshletMeshConstants)
 	{

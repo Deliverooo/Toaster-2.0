@@ -701,97 +701,92 @@ namespace toaster
 		#pragma endregion
 	}
 
-	template<typename Type>
-	auto Scene::onComponentAdded([[maybe_unused]] Entity p_entity, [[maybe_unused]] Type &p_component) -> void
-	{
-		TST_PERMA_ASSERT(false);
-	}
 
 	#define ON_COMPONENT_ADDED(__type)	template<>\
-											TST_SCENE_API auto Scene::onComponentAdded<__type>([[maybe_unused]] Entity p_entity, __type &p_component) -> void
+											TST_SCENE_API auto Scene::onComponentAdded<__type>([[maybe_unused]] Entity &p_entity, __type &p_component) -> void
 
-	ON_COMPONENT_ADDED(UUIDComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
-
-	ON_COMPONENT_ADDED(RelationshipComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
-
-	ON_COMPONENT_ADDED(TagComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
-
-	ON_COMPONENT_ADDED(TransformComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
-
-	ON_COMPONENT_ADDED(SpriteRendererComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
-
-	ON_COMPONENT_ADDED(MeshComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
-
-	ON_COMPONENT_ADDED(DynamicMeshComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
-
-	ON_COMPONENT_ADDED(SubmeshComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
-
-	ON_COMPONENT_ADDED(CameraComponent)
-	{
-		(void) p_entity;
-		p_component.camera.setViewportSize(m_viewportSize);
-	}
-
-	ON_COMPONENT_ADDED(NativeScriptComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
-
-	ON_COMPONENT_ADDED(ScriptComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
-
-	ON_COMPONENT_ADDED(DirectionalLightComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
-
-	ON_COMPONENT_ADDED(PointLightComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
-
-	ON_COMPONENT_ADDED(SpotLightComponent)
-	{
-		(void) p_entity;
-		(void) p_component;
-	}
+	// ON_COMPONENT_ADDED(UUIDComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
+	//
+	// ON_COMPONENT_ADDED(RelationshipComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
+	//
+	// ON_COMPONENT_ADDED(TagComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
+	//
+	// ON_COMPONENT_ADDED(TransformComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
+	//
+	// ON_COMPONENT_ADDED(SpriteRendererComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
+	//
+	// ON_COMPONENT_ADDED(MeshComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
+	//
+	// ON_COMPONENT_ADDED(DynamicMeshComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
+	//
+	// ON_COMPONENT_ADDED(SubmeshComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
+	//
+	// ON_COMPONENT_ADDED(CameraComponent)
+	// {
+	// 	(void) p_entity;
+	// 	p_component.camera.setViewportSize(m_viewportSize);
+	// }
+	//
+	// ON_COMPONENT_ADDED(NativeScriptComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
+	//
+	// ON_COMPONENT_ADDED(ScriptComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
+	//
+	// ON_COMPONENT_ADDED(DirectionalLightComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
+	//
+	// ON_COMPONENT_ADDED(PointLightComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
+	//
+	// ON_COMPONENT_ADDED(SpotLightComponent)
+	// {
+	// 	(void) p_entity;
+	// 	(void) p_component;
+	// }
 	#undef ON_COMPONENT_ADDED
 }
