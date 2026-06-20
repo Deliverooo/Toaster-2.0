@@ -41,16 +41,16 @@ public:
 		m_cameraUBOs    = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::ViewProjCameraUB));
 		m_sceneDataUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(SceneDataUB));
 
-		m_environmentMap       = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/ferndale_studio_11_2k.hdr");
+		m_environmentMap       = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/overcast_soil_puresky_2k.hdr");
 		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMapImage(m_environmentMap);
 
 		m_meshData = render::importMeshFromFile(resources_dir / "meshes/utah_teapot.obj");
 		// m_meshData = render::importMeshFromFile(resources_dir / "meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
 
-		m_vertexBuffer               = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.vertices, "Raw_mesh_vertices");
-		m_meshletBuffer              = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshlets, "Meshlets");
-		m_meshletVertexIndexBuffer   = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshletVertices, "Meshlet_vertices");
-		m_meshletTriangleIndexBuffer = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshletTriangles, "Meshlet_triangles");
+		m_vertexBufferSSBO               = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.vertices, "Raw_mesh_vertices");
+		m_meshletBufferSSBO              = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshlets, "Meshlets");
+		m_meshletVertexIndexBufferSSBO   = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshletVertices, "Meshlet_vertices");
+		m_meshletTriangleIndexBufferSSBO = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshletTriangles, "Meshlet_triangles");
 	}
 
 	auto onDestroy() -> void override
@@ -78,10 +78,10 @@ public:
 		m_cameraUBOs->setData(camera_ub);
 
 		MeshletMeshConstants meshlet_mesh_constants{};
-		meshlet_mesh_constants.vertexBuffer               = m_vertexBuffer->getDeviceAddress();
-		meshlet_mesh_constants.meshletBuffer              = m_meshletBuffer->getDeviceAddress();
-		meshlet_mesh_constants.meshletVertexIndexBuffer   = m_meshletVertexIndexBuffer->getDeviceAddress();
-		meshlet_mesh_constants.meshletTriangleIndexBuffer = m_meshletTriangleIndexBuffer->getDeviceAddress();
+		meshlet_mesh_constants.vertexBuffer               = m_vertexBufferSSBO->getDeviceAddress();
+		meshlet_mesh_constants.meshletBuffer              = m_meshletBufferSSBO->getDeviceAddress();
+		meshlet_mesh_constants.meshletVertexIndexBuffer   = m_meshletVertexIndexBufferSSBO->getDeviceAddress();
+		meshlet_mesh_constants.meshletTriangleIndexBuffer = m_meshletTriangleIndexBufferSSBO->getDeviceAddress();
 
 		meshlet_mesh_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
 		meshlet_mesh_constants.sceneDataPtr = m_sceneDataUBOs->getDeviceAddress();
@@ -91,9 +91,6 @@ public:
 		cmd->pushData(meshlet_mesh_constants);
 
 		vk_cmd.drawMeshTasksEXT(m_meshData.meshlets.size(), 1, 1);
-
-		// vk::DrawIndirect2InfoKHR draw_indirect_info{};
-		// vk_cmd.drawMeshTasksIndirect2EXT(draw_indirect_info);
 
 		m_renderCtx->endRendering(rendering_info);
 	}
@@ -123,10 +120,10 @@ private:
 
 	render::GraphicsStateUnique m_geometryGraphicsState{nullptr};
 
-	render::StorageBufferUnique m_vertexBuffer{nullptr};
-	render::StorageBufferUnique m_meshletBuffer{nullptr};
-	render::StorageBufferUnique m_meshletVertexIndexBuffer{nullptr};
-	render::StorageBufferUnique m_meshletTriangleIndexBuffer{nullptr};
+	render::StorageBufferUnique m_vertexBufferSSBO{nullptr};
+	render::StorageBufferUnique m_meshletBufferSSBO{nullptr};
+	render::StorageBufferUnique m_meshletVertexIndexBufferSSBO{nullptr};
+	render::StorageBufferUnique m_meshletTriangleIndexBufferSSBO{nullptr};
 
 	render::DynamicMeshData m_meshData;
 

@@ -13,7 +13,6 @@ layout(push_constant) uniform PushConstants
     uint samplerId;
 } pcs;
 
-
 vec3 getCubeMapDirection(vec2 p_uv, uint p_face)
 {
     vec3 dir = vec3(0.0f);
