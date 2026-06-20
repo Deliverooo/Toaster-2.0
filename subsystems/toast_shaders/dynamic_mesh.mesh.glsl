@@ -48,6 +48,7 @@ layout(push_constant) uniform Constants
     MeshletTriangleIndexBuffer meshletTriangleIndexBuffer;
 
     Camera                     camera;
+    uint64_t                   sceneData;
 
     uint                       samplerIndex;
     uint                       diffuseIrradianceMapIndex;
@@ -55,9 +56,10 @@ layout(push_constant) uniform Constants
 
 layout(triangles, max_vertices = 64, max_primitives = 126) out;
 
-layout(location = 0) out vec3 o_Normal[];
-layout(location = 1) out vec2 o_TexCoord[];
-layout(location = 2) out flat uint o_SubmeshIndex[];
+layout(location = 0) out vec3 o_WorldPos[];
+layout(location = 1) out vec3 o_Normal[];
+layout(location = 2) out vec2 o_TexCoord[];
+layout(location = 3) out flat uint o_SubmeshIndex[];
 
 void main()
 {
@@ -74,6 +76,8 @@ void main()
         uint global_index = pcs.meshletVertexIndexBuffer.meshletVertices[m.vertexOffset + i];
 
         vec4 pos = pcs.vertexBuffer.vertices[global_index].position;
+        o_WorldPos[i] = pos.xyz;
+
         gl_MeshVerticesEXT[i].gl_Position = pcs.camera.proj * pcs.camera.view * pos;
 
         vec2 tex_coord = pcs.vertexBuffer.vertices[global_index].texCoord.xy;

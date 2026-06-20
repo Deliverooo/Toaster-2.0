@@ -1,23 +1,17 @@
 #version 460
-#extension GL_EXT_nonuniform_qualifier : require
-#extension GL_EXT_buffer_reference2 : require
-#extension GL_EXT_descriptor_heap : enable
+#extension GL_GOOGLE_include_directive : require
+#include "common.glslh"
 
 layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
-layout(descriptor_heap) uniform texture2D globalTextures[];
-layout(descriptor_heap, rgba16f) restrict uniform writeonly imageCube globalCubeMaps[];
-layout(descriptor_heap) uniform sampler globalSamplers[];
+layout(descriptor_heap, rgba16f) restrict uniform writeonly imageCube o_Cubemap[];
 
 layout(push_constant) uniform PushConstants
 {
     uint equirectangularMapId;
     uint cubeMapId;
     uint samplerId;
-
 } pcs;
-
-const float PI = 3.14159265359;
 
 vec3 getCubeMapTexCoord(vec2 imageSize)
 {
@@ -36,14 +30,14 @@ vec3 getCubeMapTexCoord(vec2 imageSize)
 
 void main()
 {
-    vec3 cubeTC = getCubeMapTexCoord(vec2(imageSize(globalCubeMaps[pcs.cubeMapId])));
+    vec3 cube_uv = getCubeMapTexCoord(vec2(imageSize(o_Cubemap[pcs.cubeMapId])));
 
-    float phi = atan(cubeTC.z, cubeTC.x);
-    float theta = acos(cubeTC.y);
-    vec2 uv = vec2(phi / (2.0 * PI) + 0.5, theta / PI);
+    float phi = atan(cube_uv.z, cube_uv.x);
+    float theta = acos(cube_uv.y);
+    vec2 uv = vec2(phi / (2.0f * PI) + 0.5f, theta / PI);
 
-    vec4 color = texture(sampler2D(globalTextures[pcs.equirectangularMapId], globalSamplers[pcs.samplerId]), uv);
-    color = min(color, vec4(500.0));
+    vec4 colour = texture(sampler2D(texture2DHeap[pcs.equirectangularMapId], samplerHeap[pcs.samplerId]), uv);
+    colour = min(colour, vec4(500.0f));
 
-    imageStore(globalCubeMaps[pcs.cubeMapId], ivec3(gl_GlobalInvocationID), color);
+    imageStore(o_Cubemap[pcs.cubeMapId], ivec3(gl_GlobalInvocationID), colour);
 }

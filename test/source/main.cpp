@@ -15,6 +15,11 @@ using namespace toaster;
 class ClientLayer : public IAppLayer
 {
 public:
+	struct SceneDataUB
+	{
+		Dx::XMFLOAT4 cameraPos;
+	};
+
 	auto onInit() -> void override
 	{
 		m_viewportSize = m_app->getWindow().getRenderAreaSize();
@@ -33,13 +38,14 @@ public:
 		m_geometryGraphicsState->setShaders({mesh_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(true).
 				setEnableDepthWrite(true);
 
-		m_cameraUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::ViewProjCameraUB));
+		m_cameraUBOs    = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::ViewProjCameraUB));
+		m_sceneDataUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(SceneDataUB));
 
 		m_environmentMap       = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/ferndale_studio_11_2k.hdr");
 		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMapImage(m_environmentMap);
 
-		// m_meshData = render::importMeshFromFile(resources_dir / "meshes/utah_teapot.obj");
-		m_meshData = render::importMeshFromFile(resources_dir / "meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
+		m_meshData = render::importMeshFromFile(resources_dir / "meshes/utah_teapot.obj");
+		// m_meshData = render::importMeshFromFile(resources_dir / "meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
 
 		m_vertexBuffer               = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.vertices, "Raw_mesh_vertices");
 		m_meshletBuffer              = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshlets, "Meshlets");
@@ -62,6 +68,10 @@ public:
 
 		m_camera.onUpdate(p_dt);
 
+		SceneDataUB scene_data_ub{};
+		Dx::XMStoreFloat4(&scene_data_ub.cameraPos, m_camera.getPosition());
+		m_sceneDataUBOs->setData(scene_data_ub);
+
 		render::Globals::ViewProjCameraUB camera_ub{};
 		Dx::XMStoreFloat4x4(&camera_ub.viewMatrix, m_camera.getViewMatrix());
 		Dx::XMStoreFloat4x4(&camera_ub.projectionMatrix, m_camera.getProjectionMatrix());
@@ -73,7 +83,8 @@ public:
 		meshlet_mesh_constants.meshletVertexIndexBuffer   = m_meshletVertexIndexBuffer->getDeviceAddress();
 		meshlet_mesh_constants.meshletTriangleIndexBuffer = m_meshletTriangleIndexBuffer->getDeviceAddress();
 
-		meshlet_mesh_constants.cameraPtr = m_cameraUBOs->getDeviceAddress();
+		meshlet_mesh_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
+		meshlet_mesh_constants.sceneDataPtr = m_sceneDataUBOs->getDeviceAddress();
 
 		meshlet_mesh_constants.samplerIndex              = m_renderCtx->getSampler(render::ESamplerType::eDefault);
 		meshlet_mesh_constants.diffuseIrradianceMapIndex = m_diffuseIrradianceMap->getAlignedShaderReadHeapID();
@@ -105,6 +116,7 @@ private:
 	render::ImageHandle m_image{nullptr};
 
 	render::UniformBufferPFFUnique m_cameraUBOs{nullptr};
+	render::UniformBufferPFFUnique m_sceneDataUBOs{nullptr};
 
 	render::ImageHandle m_environmentMap{nullptr};
 	render::ImageHandle m_diffuseIrradianceMap{nullptr};
@@ -126,6 +138,7 @@ private:
 		uintptr meshletTriangleIndexBuffer;
 
 		uintptr cameraPtr;
+		uintptr sceneDataPtr;
 
 		uint32 samplerIndex;
 		uint32 diffuseIrradianceMapIndex;

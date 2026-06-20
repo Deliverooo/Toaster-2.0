@@ -1,0 +1,51 @@
+#include "common.glslh"
+
+struct PBRGlobals
+{
+    vec3 normal;
+    vec3 view;
+    float nDotV;
+
+    vec3 f0;
+    vec3 albedo;
+    float roughness;
+    float metalness;
+} glob;
+
+float distributionGGX(vec3 p_normal, vec3 p_halfway, float p_roughness)
+{
+    float a = p_roughness * p_roughness;
+    float a_squared = a * a;
+    float n_dot_h = max(dot(p_normal, p_halfway), 0.0);
+    float n_dot_h_squared = n_dot_h * n_dot_h;
+
+    float numerator   = a_squared;
+    float denominator = (n_dot_h_squared * (a_squared - 1.0) + 1.0);
+    denominator = PI * denominator * denominator;
+
+    return numerator / denominator;
+}
+
+float geometrySchlickGGX(float p_n_dot_v, float p_roughness)
+{
+    float r = (p_roughness + 1.0f);
+    float k = (r * r) / 8.0f;
+
+    float numerator   = p_n_dot_v;
+    float denominator = p_n_dot_v * (1.0f - k) + k;
+
+    return numerator / denominator;
+}
+
+float geometrySmith(float p_n_dot_v, float p_n_dot_l, float p_roughness)
+{
+    float ggx2 = geometrySchlickGGX(p_n_dot_v, p_roughness);
+    float ggx1 = geometrySchlickGGX(p_n_dot_l, p_roughness);
+
+    return ggx1 * ggx2;
+}
+
+vec3 fresnelSchlick(vec3 p_f0, float p_cos_theta)
+{
+    return p_f0 + (1.0f - p_f0) * pow(clamp(1.0f - p_cos_theta, 0.0f, 1.0f), 5.0f);
+}

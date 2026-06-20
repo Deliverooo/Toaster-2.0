@@ -1,0 +1,11 @@
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_descriptor_heap : enable
+#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable
+
+#define PI 3.14159265358f
+#define FLT_EPSILON 0x34000000
+
+layout(descriptor_heap) uniform texture2D texture2DHeap[];
+layout(descriptor_heap) uniform textureCube textureCubeHeap[];
+layout(descriptor_heap) uniform sampler samplerHeap[];
