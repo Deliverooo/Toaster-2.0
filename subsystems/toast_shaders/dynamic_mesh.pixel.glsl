@@ -24,10 +24,29 @@ layout(push_constant) uniform Constants
     uint textureIndex;
 } pcs;
 
+vec3 getSubmeshDebugColour(uint p_submesh_index)
+{
+    switch(p_submesh_index)
+    {
+        case 0: return vec3(0.0f);
+        case 1: return vec3(1.0f, 0.0f, 0.0f);
+        case 2: return vec3(0.0f, 1.0f, 0.0f);
+        case 3: return vec3(0.0f, 1.0f, 1.0f);
+        case 4: return vec3(1.0f, 1.0f, 1.0f);
+        case 5: return vec3(1.0f ,1.0f, 0.0f);
+        case 6: return vec3(0.5f, 0.25f, 0.8f);
+        case 7: return vec3(0.76f, 1.0f, 0.1f);
+        case 8: return vec3(1.0f, 0.1f, 0.1f);
+    }
+
+    return vec3(1.0f, 0.0f, 1.0f);
+}
 
 void main()
 {
     vec4 texture_colour = texture(sampler2D(globalTextures[pcs.textureIndex], globalSamplers[pcs.samplerIndex]), m_TexCoord);
 
-    o_Colour =texture_colour;
+    //    o_Colour = texture_colour;
+
+    o_Colour = vec4(getSubmeshDebugColour(m_SubmeshIndex), 1.0f);
 }

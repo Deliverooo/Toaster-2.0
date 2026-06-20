@@ -9,6 +9,8 @@
 struct Vertex
 {
     vec4 position;
+    vec2 texCoord;
+    float _padd[2];
 };
 
 struct Meshlet
@@ -17,6 +19,10 @@ struct Meshlet
     uint triangleOffset;
     uint vertexCount;
     uint triangleCount;
+
+    uint submeshIndex;
+
+    float _padd[3];
 };
 
 layout(local_size_x = MESH_SHADER_DISPATCH_SIZE, local_size_y = 1, local_size_z = 1) in;
@@ -48,6 +54,7 @@ layout(push_constant) uniform Constants
 layout(triangles, max_vertices = 64, max_primitives = 126) out;
 
 layout(location = 0) out vec2 o_TexCoord[];
+layout(location = 1) out flat uint o_SubmeshIndex[];
 
 void main()
 {
@@ -66,9 +73,10 @@ void main()
         vec4 pos = pcs.vertexBuffer.vertices[global_index].position;
         gl_MeshVerticesEXT[i].gl_Position = pcs.camera.proj * pcs.camera.view * pos;
 
-        vec2 tex_coord = pcs.vertexBuffer.vertices[global_index].position.xy;
+        vec2 tex_coord = pcs.vertexBuffer.vertices[global_index].texCoord.xy;
         tex_coord.y *= -1.0f;
         o_TexCoord[i] = tex_coord;
+        o_SubmeshIndex[i] = m.submeshIndex;
     }
 
     for (uint i = thread_id; i < m.triangleCount; i += MESH_SHADER_DISPATCH_SIZE)

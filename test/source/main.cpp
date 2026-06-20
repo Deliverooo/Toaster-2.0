@@ -26,16 +26,16 @@ public:
 
 		m_image = m_renderCtx->createImageRef(resources_dir / "textures/Peeber.png");
 
-		m_graphicsState = m_renderCtx->createUnique<render::GraphicsState>();
+		m_geometryGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 
 		auto mesh_shader{m_globals->getShader("Dynamic_Mesh_MS")};
 		auto pixel_shader{m_globals->getShader("Dynamic_Mesh_PS")};
-		m_graphicsState->setShaders({mesh_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(true).
+		m_geometryGraphicsState->setShaders({mesh_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(true).
 				setEnableDepthWrite(true);
 
 		m_cameraUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::ViewProjCameraUB));
 
-		m_meshData = render::importMeshFromFile(resources_dir / "meshes/utah_teapot.obj");
+		m_meshData = render::importMeshFromFile(resources_dir / "meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
 
 		m_vertexBuffer               = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.vertices, "Raw_mesh_vertices");
 		m_meshletBuffer              = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshlets, "Meshlets");
@@ -49,11 +49,11 @@ public:
 
 	auto onUpdate(float32 p_dt) -> void override
 	{
-		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo(false, {0.0f, 1.0f, 1.0f, 1.0f}, true)};
+		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo(false, {0.025f, 0.025f, 0.025f, 1.0f}, true)};
 		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 		auto &     vk_cmd{cmd->getVulkanCommandBuffer()};
 
-		m_graphicsState->bind();
+		m_geometryGraphicsState->bind();
 		m_renderCtx->beginRendering(rendering_info);
 
 		m_camera.onUpdate(p_dt);
@@ -75,6 +75,9 @@ public:
 
 		vk_cmd.drawMeshTasksEXT(m_meshData.meshlets.size(), 1, 1);
 
+		// vk::DrawIndirect2InfoKHR draw_indirect_info{};
+		// vk_cmd.drawMeshTasksIndirect2EXT(draw_indirect_info);
+
 		m_renderCtx->endRendering(rendering_info);
 	}
 
@@ -92,12 +95,12 @@ public:
 private:
 	tsm::uint2 m_viewportSize{0u};
 
-	UniquePtr<render::GraphicsState> m_graphicsState{nullptr};
-	render::ImageHandle              m_image{nullptr};
-
-	FPCamera m_camera{};
+	FPCamera            m_camera{};
+	render::ImageHandle m_image{nullptr};
 
 	render::UniformBufferPFFUnique m_cameraUBOs{nullptr};
+
+	render::GraphicsStateUnique m_geometryGraphicsState{nullptr};
 
 	render::StorageBufferUnique m_vertexBuffer{nullptr};
 	render::StorageBufferUnique m_meshletBuffer{nullptr};
