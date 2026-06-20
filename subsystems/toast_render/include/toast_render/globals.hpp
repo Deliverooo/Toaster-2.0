@@ -52,6 +52,15 @@ namespace toaster::render
 			char _padd[2];
 		};
 
+		TST_PUSH_CONSTANT_BLOCK(DiffuseIrradianceConvolutionConstants)
+		{
+			uint32 environmentMapId;
+			uint32 diffuseIrradianceMapId;
+			uint32 samplerId;
+
+			char _padd[2];
+		};
+
 		Globals(RenderContext &p_render_ctx, const GlobalsSpecInfo &p_spec_info);
 
 		auto getShader(const String &p_name) const -> const gpu::DynamicShaderHandle &;

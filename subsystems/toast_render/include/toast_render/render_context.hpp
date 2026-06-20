@@ -170,6 +170,7 @@ namespace toaster::render
 												   vk::Format p_format = vk::Format::eUndefined) const -> gpu::Texture2DHandle;
 
 		[[nodiscard]] auto createEnvironmentMapImage(const io::filesystem::Path &p_path) -> RefPtr<Image>;
+		[[nodiscard]] auto createDiffuseIrradianceMapImage(const RefPtr<Image> &p_environment_map) -> RefPtr<Image>;
 
 		[[nodiscard]] auto createEnvironmentMap(const io::filesystem::Path &p_path) -> gpu::Texture3DHandle;
 		[[nodiscard]] auto createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) -> gpu::Texture3DHandle;

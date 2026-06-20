@@ -1,10 +1,25 @@
 #version 460
+#extension GL_EXT_nonuniform_qualifier : require
+#extension GL_EXT_buffer_reference2 : require
+#extension GL_EXT_descriptor_heap : enable
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout(set = 1, binding = 0) uniform samplerCube u_EnvironmentMap;
 
 layout(set = 1, binding = 1, rgba16f) uniform writeonly imageCube o_Irradiance;
+
+layout(descriptor_heap) uniform textureCube globalTextureCubes[];
+layout(descriptor_heap, rgba16f) restrict uniform writeonly imageCube globalCubeMaps[];
+layout(descriptor_heap) uniform sampler globalSamplers[];
+
+layout(push_constant) uniform PushConstants
+{
+    uint environmentMapId;
+    uint diffuseIrradianceMapId;
+    uint samplerId;
+
+} pcs;
 
 const float PI = 3.14159265359f;
 
@@ -24,7 +39,7 @@ vec3 getCubeMapDirection(vec2 p_uv, uint p_face)
 
 void main()
 {
-    ivec2 image_size = imageSize(o_Irradiance);
+    ivec2 image_size = imageSize(globalCubeMaps[pcs.diffuseIrradianceMapId]);
     ivec3 global_id = ivec3(gl_GlobalInvocationID);
 
     if (global_id.x >= image_size.x || global_id.y >= image_size.y) return;
@@ -49,12 +64,12 @@ void main()
             vec3 tangent_sample = vec3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
             vec3 sample_vec = tangent_sample.x * right + tangent_sample.y * up + tangent_sample.z * normal;
 
-            irradiance += texture(u_EnvironmentMap, sample_vec).rgb * cos(theta) * sin(theta);
+            irradiance += texture(samplerCube(globalTextureCubes[pcs.environmentMapId], globalSamplers[pcs.samplerId]), sample_vec).rgb * cos(theta) * sin(theta);
             num_samples++;
         }
     }
 
     irradiance = PI * irradiance * (1.0f / num_samples);
 
-    imageStore(o_Irradiance, global_id, vec4(irradiance, 1.0f));
+    imageStore(globalCubeMaps[pcs.diffuseIrradianceMapId], global_id, vec4(irradiance, 1.0f));
 }

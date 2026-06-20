@@ -9,8 +9,10 @@
 struct Vertex
 {
     vec4 position;
+    vec3 normal;
+    float _padd[1];
     vec2 texCoord;
-    float _padd[2];
+    float _padd2[2];
 };
 
 struct Meshlet
@@ -48,13 +50,14 @@ layout(push_constant) uniform Constants
     Camera                     camera;
 
     uint                       samplerIndex;
-    uint                       textureIndex;
+    uint                       diffuseIrradianceMapIndex;
 } pcs;
 
 layout(triangles, max_vertices = 64, max_primitives = 126) out;
 
-layout(location = 0) out vec2 o_TexCoord[];
-layout(location = 1) out flat uint o_SubmeshIndex[];
+layout(location = 0) out vec3 o_Normal[];
+layout(location = 1) out vec2 o_TexCoord[];
+layout(location = 2) out flat uint o_SubmeshIndex[];
 
 void main()
 {
@@ -76,6 +79,9 @@ void main()
         vec2 tex_coord = pcs.vertexBuffer.vertices[global_index].texCoord.xy;
         tex_coord.y *= -1.0f;
         o_TexCoord[i] = tex_coord;
+
+        o_Normal[i] = pcs.vertexBuffer.vertices[global_index].normal.xyz;
+
         o_SubmeshIndex[i] = m.submeshIndex;
     }
 

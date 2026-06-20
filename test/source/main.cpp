@@ -35,6 +35,10 @@ public:
 
 		m_cameraUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::ViewProjCameraUB));
 
+		m_environmentMap       = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/ferndale_studio_11_2k.hdr");
+		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMapImage(m_environmentMap);
+
+		// m_meshData = render::importMeshFromFile(resources_dir / "meshes/utah_teapot.obj");
 		m_meshData = render::importMeshFromFile(resources_dir / "meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
 
 		m_vertexBuffer               = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.vertices, "Raw_mesh_vertices");
@@ -68,9 +72,11 @@ public:
 		meshlet_mesh_constants.meshletBuffer              = m_meshletBuffer->getDeviceAddress();
 		meshlet_mesh_constants.meshletVertexIndexBuffer   = m_meshletVertexIndexBuffer->getDeviceAddress();
 		meshlet_mesh_constants.meshletTriangleIndexBuffer = m_meshletTriangleIndexBuffer->getDeviceAddress();
-		meshlet_mesh_constants.cameraPtr                  = m_cameraUBOs->getDeviceAddress();
-		meshlet_mesh_constants.samplerIndex               = m_renderCtx->getSampler(render::ESamplerType::eDefault);
-		meshlet_mesh_constants.textureIndex               = m_image->getAlignedShaderReadHeapID();
+
+		meshlet_mesh_constants.cameraPtr = m_cameraUBOs->getDeviceAddress();
+
+		meshlet_mesh_constants.samplerIndex              = m_renderCtx->getSampler(render::ESamplerType::eDefault);
+		meshlet_mesh_constants.diffuseIrradianceMapIndex = m_diffuseIrradianceMap->getAlignedShaderReadHeapID();
 		cmd->pushData(meshlet_mesh_constants);
 
 		vk_cmd.drawMeshTasksEXT(m_meshData.meshlets.size(), 1, 1);
@@ -100,6 +106,9 @@ private:
 
 	render::UniformBufferPFFUnique m_cameraUBOs{nullptr};
 
+	render::ImageHandle m_environmentMap{nullptr};
+	render::ImageHandle m_diffuseIrradianceMap{nullptr};
+
 	render::GraphicsStateUnique m_geometryGraphicsState{nullptr};
 
 	render::StorageBufferUnique m_vertexBuffer{nullptr};
@@ -119,7 +128,7 @@ private:
 		uintptr cameraPtr;
 
 		uint32 samplerIndex;
-		uint32 textureIndex;
+		uint32 diffuseIrradianceMapIndex;
 	};
 };
 

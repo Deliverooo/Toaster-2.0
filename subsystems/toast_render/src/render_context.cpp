@@ -331,6 +331,39 @@ namespace toaster::render
 		return env_output;
 	}
 
+	auto RenderContext::createDiffuseIrradianceMapImage(const RefPtr<Image> &p_environment_map) -> RefPtr<Image>
+	{
+		static constexpr uint32 c_diffuse_irradiance_resolution{32u};
+
+		ImageSpecInfo env_output_spec_info{};
+		env_output_spec_info.size       = {c_diffuse_irradiance_resolution};
+		env_output_spec_info.format     = vk::Format::eR16G16B16A16Sfloat;
+		env_output_spec_info.layerCount = 6u;
+		env_output_spec_info.storage    = true;
+
+		auto out_irradiance_map{createRef<Image>(env_output_spec_info)};
+
+		gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
+		command_buffer.begin();
+
+		m_descriptorHeap->bind(&command_buffer);
+
+		m_globals->getShader("Diffuse_Irradiance_Convolution")->bind(&command_buffer);
+
+		Globals::DiffuseIrradianceConvolutionConstants diffuse_irradiance_convolution_constants{};
+		diffuse_irradiance_convolution_constants.environmentMapId       = p_environment_map->getAlignedShaderReadHeapID();
+		diffuse_irradiance_convolution_constants.diffuseIrradianceMapId = out_irradiance_map->getAlignedStorageHeapID();
+		diffuse_irradiance_convolution_constants.samplerId              = m_samplers.at(ESamplerType::eDefault);
+
+		command_buffer.pushData(diffuse_irradiance_convolution_constants);
+		command_buffer.getVulkanCommandBuffer().dispatch((c_diffuse_irradiance_resolution + 15u) / 16u, (c_diffuse_irradiance_resolution + 15u) / 16u, 6);
+		command_buffer.endAndSubmit();
+
+		out_irradiance_map->toShaderReadOptimal();
+
+		return out_irradiance_map;
+	}
+
 	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) -> gpu::Texture3DHandle
 	{
 		// auto env_tex{createGPURef<gpu::Texture2D>(gpu::TextureSpecInfo{}, p_path)};

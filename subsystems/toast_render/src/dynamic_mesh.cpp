@@ -29,6 +29,9 @@ namespace toaster::render
 			{
 				raw_vertices[i].position = {submesh->mVertices[i].x, submesh->mVertices[i].y, submesh->mVertices[i].z, 1.0f};
 
+				if (submesh->HasNormals())
+					raw_vertices[i].normal = {submesh->mNormals[i].x, submesh->mNormals[i].y, submesh->mNormals[i].z};
+
 				if (submesh->HasTextureCoords(0))
 					raw_vertices[i].texCoord = {submesh->mTextureCoords[0][i].x, submesh->mTextureCoords[0][i].y};
 				else

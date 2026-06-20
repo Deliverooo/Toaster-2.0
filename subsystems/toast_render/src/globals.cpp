@@ -33,6 +33,10 @@ namespace toaster::render
 		addShader("Equirectangular_To_Cube_Map",
 				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "equirectangular_to_cube_map.comp.glsl.spv", EShaderStage::eCompute));
 
+		// Diffuse irradiance convolution shader
+		addShader("Diffuse_Irradiance_Convolution",
+				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "diffuse_irradiance_convolution.comp.glsl.spv", EShaderStage::eCompute));
+
 		// Depth pre shaders
 		addShader("Depth_Pre_VS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "depth_pre.vert.hlsl.spv", EShaderStage::eVertex,
 																	 EShaderStage::ePixel));
