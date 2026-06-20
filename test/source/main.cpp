@@ -12,6 +12,31 @@
 
 using namespace toaster;
 
+struct Mesh
+{
+	Mesh(render::RenderContext &p_render_ctx, const io::filesystem::Path &p_path) : m_renderCtx(&p_render_ctx)
+	{
+		meshData = render::importMeshFromFile(p_path);
+
+		vertexBufferSSBO               = m_renderCtx->createUnique<render::StorageBuffer>(meshData.vertices, "Raw_mesh_vertices");
+		meshletBufferSSBO              = m_renderCtx->createUnique<render::StorageBuffer>(meshData.meshlets, "Meshlets");
+		meshletVertexIndexBufferSSBO   = m_renderCtx->createUnique<render::StorageBuffer>(meshData.meshletVertices, "Meshlet_vertices");
+		meshletTriangleIndexBufferSSBO = m_renderCtx->createUnique<render::StorageBuffer>(meshData.meshletTriangles, "Meshlet_triangles");
+
+		submeshBufferSSBO = m_renderCtx->createUnique<render::StorageBuffer>(meshData.submeshes, "Submeshes");
+	}
+
+	NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
+
+	render::StorageBufferUnique vertexBufferSSBO{nullptr};
+	render::StorageBufferUnique meshletBufferSSBO{nullptr};
+	render::StorageBufferUnique meshletVertexIndexBufferSSBO{nullptr};
+	render::StorageBufferUnique meshletTriangleIndexBufferSSBO{nullptr};
+	render::StorageBufferUnique submeshBufferSSBO{nullptr};
+
+	render::DynamicMeshData meshData;
+};
+
 class ClientLayer : public IAppLayer
 {
 public:
@@ -41,16 +66,10 @@ public:
 		m_cameraUBOs    = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::ViewProjCameraUB));
 		m_sceneDataUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(SceneDataUB));
 
-		m_environmentMap       = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/grasslands_sunset_1k.hdr");
+		m_environmentMap       = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/overcast_soil_puresky_2k.hdr");
 		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMapImage(m_environmentMap);
 
-		// m_meshData = render::importMeshFromFile(resources_dir / "meshes/utah_teapot.obj");
-		m_meshData = render::importMeshFromFile(resources_dir / "meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
-
-		m_vertexBufferSSBO               = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.vertices, "Raw_mesh_vertices");
-		m_meshletBufferSSBO              = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshlets, "Meshlets");
-		m_meshletVertexIndexBufferSSBO   = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshletVertices, "Meshlet_vertices");
-		m_meshletTriangleIndexBufferSSBO = m_renderCtx->createUnique<render::StorageBuffer>(m_meshData.meshletTriangles, "Meshlet_triangles");
+		m_mesh = m_renderCtx->createUnique<Mesh>(resources_dir / "meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
 	}
 
 	auto onDestroy() -> void override
@@ -78,10 +97,11 @@ public:
 		m_cameraUBOs->setData(camera_ub);
 
 		MeshletMeshConstants meshlet_mesh_constants{};
-		meshlet_mesh_constants.vertexBuffer               = m_vertexBufferSSBO->getDeviceAddress();
-		meshlet_mesh_constants.meshletBuffer              = m_meshletBufferSSBO->getDeviceAddress();
-		meshlet_mesh_constants.meshletVertexIndexBuffer   = m_meshletVertexIndexBufferSSBO->getDeviceAddress();
-		meshlet_mesh_constants.meshletTriangleIndexBuffer = m_meshletTriangleIndexBufferSSBO->getDeviceAddress();
+		meshlet_mesh_constants.vertexBuffer               = m_mesh->vertexBufferSSBO->getDeviceAddress();
+		meshlet_mesh_constants.meshletBuffer              = m_mesh->meshletBufferSSBO->getDeviceAddress();
+		meshlet_mesh_constants.meshletVertexIndexBuffer   = m_mesh->meshletVertexIndexBufferSSBO->getDeviceAddress();
+		meshlet_mesh_constants.meshletTriangleIndexBuffer = m_mesh->meshletTriangleIndexBufferSSBO->getDeviceAddress();
+		meshlet_mesh_constants.submeshBuffer              = m_mesh->submeshBufferSSBO->getDeviceAddress();
 
 		meshlet_mesh_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
 		meshlet_mesh_constants.sceneDataPtr = m_sceneDataUBOs->getDeviceAddress();
@@ -90,7 +110,7 @@ public:
 		meshlet_mesh_constants.diffuseIrradianceMapIndex = m_diffuseIrradianceMap->getAlignedShaderReadHeapID();
 		cmd->pushData(meshlet_mesh_constants);
 
-		vk_cmd.drawMeshTasksEXT(m_meshData.meshlets.size(), 1, 1);
+		vk_cmd.drawMeshTasksEXT(m_mesh->meshData.meshlets.size(), 1, 1);
 
 		m_renderCtx->endRendering(rendering_info);
 	}
@@ -120,12 +140,7 @@ private:
 
 	render::GraphicsStateUnique m_geometryGraphicsState{nullptr};
 
-	render::StorageBufferUnique m_vertexBufferSSBO{nullptr};
-	render::StorageBufferUnique m_meshletBufferSSBO{nullptr};
-	render::StorageBufferUnique m_meshletVertexIndexBufferSSBO{nullptr};
-	render::StorageBufferUnique m_meshletTriangleIndexBufferSSBO{nullptr};
-
-	render::DynamicMeshData m_meshData;
+	UniquePtr<Mesh> m_mesh{nullptr};
 
 	TST_PUSH_CONSTANT_BLOCK(MeshletMeshConstants)
 	{
@@ -133,6 +148,7 @@ private:
 		uintptr meshletBuffer;
 		uintptr meshletVertexIndexBuffer;
 		uintptr meshletTriangleIndexBuffer;
+		uintptr submeshBuffer;
 
 		uintptr cameraPtr;
 		uintptr sceneDataPtr;

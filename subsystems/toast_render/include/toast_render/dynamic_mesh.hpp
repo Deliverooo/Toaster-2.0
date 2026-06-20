@@ -33,6 +33,13 @@ namespace toaster::render
 		float32      radius;
 	};
 
+	struct TST_RENDER_API SubmeshData
+	{
+		Dx::XMFLOAT4X4 modelMatrix{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+		uint32         materialIndex;
+		float32        _padd[3];
+	};
+
 	struct TST_RENDER_API DynamicMeshData
 	{
 		std::vector<DynamicMeshVertex> vertices;
@@ -40,6 +47,8 @@ namespace toaster::render
 		std::vector<MeshletBounds>     meshletBounds;
 		std::vector<uint32>            meshletVertices;
 		std::vector<uint8>             meshletTriangles;
+
+		std::vector<SubmeshData> submeshes;
 	};
 
 	TST_RENDER_API auto importMeshFromFile(const io::filesystem::Path &p_path) -> DynamicMeshData;

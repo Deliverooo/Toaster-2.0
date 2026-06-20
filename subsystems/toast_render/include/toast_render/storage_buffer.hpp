@@ -46,6 +46,12 @@ namespace toaster::render
 			setData(&p_data, sizeof(Type));
 		}
 
+		template<typename Type>
+		auto setData(const std::vector<Type> &p_data) -> void
+		{
+			setData(p_data.data(), p_data.size() * sizeof(Type));
+		}
+
 	private:
 		auto _construct(uint64 p_size, const void *p_data = nullptr) -> void;
 

@@ -27,12 +27,21 @@ struct Meshlet
     float _padd[3];
 };
 
+struct Submesh
+{
+    mat4 model;
+    uint materialIndex;
+    float _padd[3];
+};
+
 layout(local_size_x = MESH_SHADER_DISPATCH_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 layout(std430, buffer_reference) readonly buffer VertexBuffer { Vertex vertices[]; };
 layout(std430, buffer_reference) readonly buffer MeshletBuffer { Meshlet meshlets[]; };
 layout(std430, buffer_reference) readonly buffer MeshletVertexIndexBuffer { uint meshletVertices[]; };
 layout(std430, buffer_reference) readonly buffer MeshletTriangleIndexBuffer { uint8_t meshletTriangles[]; };
+
+layout(std430, buffer_reference) readonly buffer SubmeshBuffer { Submesh submeshes[]; };
 
 layout(buffer_reference, std140) readonly buffer Camera
 {
@@ -47,6 +56,8 @@ layout(push_constant) uniform Constants
     MeshletVertexIndexBuffer   meshletVertexIndexBuffer;
     MeshletTriangleIndexBuffer meshletTriangleIndexBuffer;
 
+    SubmeshBuffer              submeshBuffer;
+
     Camera                     camera;
     uint64_t                   sceneData;
 
@@ -59,13 +70,14 @@ layout(triangles, max_vertices = 64, max_primitives = 126) out;
 layout(location = 0) out vec3 o_WorldPos[];
 layout(location = 1) out vec3 o_Normal[];
 layout(location = 2) out vec2 o_TexCoord[];
-layout(location = 3) out flat uint o_SubmeshIndex[];
+//layout(location = 3) out flat uint o_SubmeshIndex[];
 
 void main()
 {
     uint meshlet_index = gl_WorkGroupID.x;
 
     Meshlet m = pcs.meshletBuffer.meshlets[meshlet_index];
+    Submesh submesh = pcs.submeshBuffer.submeshes[m.submeshIndex];
 
     SetMeshOutputsEXT(m.vertexCount, m.triangleCount);
 
@@ -75,7 +87,7 @@ void main()
     {
         uint global_index = pcs.meshletVertexIndexBuffer.meshletVertices[m.vertexOffset + i];
 
-        vec4 pos = pcs.vertexBuffer.vertices[global_index].position;
+        vec4 pos = submesh.model * pcs.vertexBuffer.vertices[global_index].position;
         o_WorldPos[i] = pos.xyz;
 
         gl_MeshVerticesEXT[i].gl_Position = pcs.camera.proj * pcs.camera.view * pos;
@@ -86,7 +98,7 @@ void main()
 
         o_Normal[i] = mat3(transpose(inverse(mat4(1.0f)))) * pcs.vertexBuffer.vertices[global_index].normal.xyz;
 
-        o_SubmeshIndex[i] = m.submeshIndex;
+        //        o_SubmeshIndex[i] = m.submeshIndex;
     }
 
     for (uint i = thread_id; i < m.triangleCount; i += MESH_SHADER_DISPATCH_SIZE)

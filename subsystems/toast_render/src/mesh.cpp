@@ -7,13 +7,6 @@
 
 namespace toaster::render
 {
-	auto mat4FromAIMatrix4x4(const aiMatrix4x4 &matrix) -> Dx::XMFLOAT4X4
-	{
-		Dx::XMFLOAT4X4 result;
-		Dx::XMStoreFloat4x4(&result, Dx::XMMatrixTranspose(Dx::XMLoadFloat4x4(reinterpret_cast<const Dx::XMFLOAT4X4 *>(&matrix))));
-		return result;
-	}
-
 	MaterialList::MaterialList(RenderContext &p_render_ctx) : m_renderCtx(&p_render_ctx)
 	{
 	}

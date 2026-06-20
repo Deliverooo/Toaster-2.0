@@ -22,26 +22,26 @@ namespace toaster::render
 		uint32 current_vertex_offset{0u};
 		for (uint32 m{0u}; m < scene->mNumMeshes; ++m)
 		{
-			const aiMesh *submesh{scene->mMeshes[m]};
+			const aiMesh *ai_submesh{scene->mMeshes[m]};
 
-			std::vector<DynamicMeshVertex> raw_vertices(submesh->mNumVertices);
-			for (uint32 i{0u}; i < submesh->mNumVertices; ++i)
+			std::vector<DynamicMeshVertex> raw_vertices(ai_submesh->mNumVertices);
+			for (uint32 i{0u}; i < ai_submesh->mNumVertices; ++i)
 			{
-				raw_vertices[i].position = {submesh->mVertices[i].x, submesh->mVertices[i].y, submesh->mVertices[i].z, 1.0f};
+				raw_vertices[i].position = {ai_submesh->mVertices[i].x, ai_submesh->mVertices[i].y, ai_submesh->mVertices[i].z, 1.0f};
 
-				if (submesh->HasNormals())
-					raw_vertices[i].normal = {submesh->mNormals[i].x, submesh->mNormals[i].y, submesh->mNormals[i].z};
+				if (ai_submesh->HasNormals())
+					raw_vertices[i].normal = {ai_submesh->mNormals[i].x, ai_submesh->mNormals[i].y, ai_submesh->mNormals[i].z};
 
-				if (submesh->HasTextureCoords(0))
-					raw_vertices[i].texCoord = {submesh->mTextureCoords[0][i].x, submesh->mTextureCoords[0][i].y};
+				if (ai_submesh->HasTextureCoords(0))
+					raw_vertices[i].texCoord = {ai_submesh->mTextureCoords[0][i].x, ai_submesh->mTextureCoords[0][i].y};
 				else
 					raw_vertices[i].texCoord = {0.0f, 0.0f};
 			}
 
-			std::vector<uint32> raw_indices(submesh->mNumFaces * 3u);
-			for (uint32 i{0u}; i < submesh->mNumFaces; ++i)
+			std::vector<uint32> raw_indices(ai_submesh->mNumFaces * 3u);
+			for (uint32 i{0u}; i < ai_submesh->mNumFaces; ++i)
 			{
-				aiFace face{submesh->mFaces[i]};
+				aiFace face{ai_submesh->mFaces[i]};
 				for (uint32 j{0u}; j < face.mNumIndices; ++j)
 					raw_indices.push_back(face.mIndices[j]);
 			}
@@ -98,6 +98,9 @@ namespace toaster::render
 				out_mesh_data.meshletTriangles.insert(out_mesh_data.meshletTriangles.end(), local_meshlet_triangles.begin(),
 													  local_meshlet_triangles.begin() + static_cast<int64>(total_triangles_used));
 			}
+
+			SubmeshData &submesh{out_mesh_data.submeshes.emplace_back()};
+			submesh.materialIndex = ai_submesh->mMaterialIndex;
 
 			current_vertex_offset += static_cast<uint32>(raw_vertices.size());
 		}

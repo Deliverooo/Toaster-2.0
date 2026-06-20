@@ -5,7 +5,7 @@
 layout(location = 0) in vec3 m_WorldPos;
 layout(location = 1) in vec3 m_Normal;
 layout(location = 2) in vec2 m_TexCoord;
-layout(location = 3) in flat uint m_SubmeshIndex;
+//layout(location = 3) in flat uint m_SubmeshIndex;
 
 layout(location = 0) out vec4 o_Colour;
 
@@ -23,6 +23,8 @@ layout(push_constant) uniform Constants
     uint64_t meshletBuffer;
     uint64_t meshletVertexIndexBuffer;
     uint64_t meshletTriangleIndexBuffer;
+
+    uint64_t submeshBuffer;
 
     Camera camera;
     SceneData sceneData;
