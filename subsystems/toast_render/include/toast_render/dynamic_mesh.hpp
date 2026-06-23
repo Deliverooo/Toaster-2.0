@@ -1,5 +1,7 @@
 #pragma once
 
+#include "image.hpp"
+#include "storage_buffer.hpp"
 #include "toast_render.hpp"
 
 #include "toast_gpu/vk/vk_buffer.hpp"
@@ -40,6 +42,20 @@ namespace toaster::render
 		float32        _padd[3];
 	};
 
+	struct TST_RENDER_API DynamicMaterial
+	{
+		ImageHandle albedoMap{nullptr};
+	};
+
+	struct TST_RENDER_API DynamicMaterialGPUData
+	{
+		uint32  samplerIndex;
+		uint32  albedoMapIndex;
+		float32 _padd[2];
+
+		Dx::XMFLOAT4 albedoColour;
+	};
+
 	struct TST_RENDER_API DynamicMeshData
 	{
 		std::vector<DynamicMeshVertex> vertices;
@@ -49,7 +65,40 @@ namespace toaster::render
 		std::vector<uint8>             meshletTriangles;
 
 		std::vector<SubmeshData> submeshes;
+
+		std::vector<DynamicMaterial>        materials;
+		std::vector<DynamicMaterialGPUData> materialsGPUData;
 	};
 
-	TST_RENDER_API auto importMeshFromFile(const io::filesystem::Path &p_path) -> DynamicMeshData;
+	class TST_RENDER_API DynamicMesh
+	{
+		TST_RENDER_OBJECT
+	public:
+		DynamicMesh(RenderContext &p_render_ctx, const io::filesystem::Path &p_path);
+
+		auto getVertexBufferAddress() const -> uintptr;
+		auto getMeshletBufferAddress() const -> uintptr;
+		auto getMeshletVertexIndexBufferAddress() const -> uintptr;
+		auto getMeshletTriangleIndexBufferAddress() const -> uintptr;
+		auto getSubmeshBufferAddress() const -> uintptr;
+		auto getMaterialBufferAddress() const -> uintptr;
+
+		auto getMeshData() const -> const DynamicMeshData &;
+
+	private:
+		auto _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
+
+		StorageBufferUnique vertexBufferSSBO{nullptr};
+		StorageBufferUnique meshletBufferSSBO{nullptr};
+		StorageBufferUnique meshletVertexIndexBufferSSBO{nullptr};
+		StorageBufferUnique meshletTriangleIndexBufferSSBO{nullptr};
+		StorageBufferUnique submeshBufferSSBO{nullptr};
+		StorageBufferUnique materialBufferSSBO{nullptr};
+
+		DynamicMeshData meshData;
+	};
+
+	TST_RENDER_DEFINE_HANDLE(DynamicMesh, DynamicMesh);
+
+	TST_RENDER_API auto importMeshFromScene(const void *p_scene, DynamicMeshData &p_out_mesh_data) -> void; // const aiScene*
 }

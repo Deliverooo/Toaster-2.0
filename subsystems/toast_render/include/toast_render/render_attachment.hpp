@@ -43,6 +43,9 @@ namespace toaster::render
 
 	struct TST_RENDER_API RenderingInfo
 	{
+		RenderingInfo() = default;
+		RenderingInfo(tsm::uint2 p_viewport_size);
+
 		vk::Rect2D renderArea{};
 		uint32     layerCount{1u};
 
@@ -56,6 +59,8 @@ namespace toaster::render
 		auto getViewport() const -> vk::Viewport;
 		auto getScissor() const -> vk::Rect2D;
 		auto getVulkanRenderingInfo() const -> vk::RenderingInfo;
+
+		auto addColourAttachment(gpu::RawImage &p_image) -> void;
 	};
 
 	TST_RENDER_API auto getLoadOp(EAttachmentUsageOP p_usage_op) -> vk::AttachmentLoadOp;

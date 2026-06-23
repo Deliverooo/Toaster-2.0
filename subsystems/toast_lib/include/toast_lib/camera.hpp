@@ -32,6 +32,7 @@ namespace toaster
 		{
 			Dx::XMMATRIX proj{Dx::XMMatrixPerspectiveFovLH(p_fov, p_aspect, p_z_near, p_z_far)};
 			Dx::XMStoreFloat4x4(&m_projection, proj);
+			// m_projection.m[1][1] *= -1.0f;
 		}
 
 		auto setOrthographic(float32 p_width, float32 p_height, float32 p_z_near, float32 p_z_far) -> void

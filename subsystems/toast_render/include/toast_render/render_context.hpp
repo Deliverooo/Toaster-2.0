@@ -21,7 +21,7 @@ namespace toaster::render
 	class Globals;
 	class Material;
 	class MeshData;
-	class DynamicMesh;
+	class DynamicMeshOLD;
 	class Renderer2D;
 	class RenderPass;
 	class ComputePass;
@@ -212,10 +212,11 @@ namespace toaster::render
 		auto beginRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
 		auto endRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
 
-		auto renderSubmesh(const DynamicMesh *p_mesh, uint32 p_submesh_index, uint64 p_push_constant_offset, gpu::CommandBuffer *p_command_buffer = nullptr,
+		auto renderSubmesh(const DynamicMeshOLD *p_mesh, uint32 p_submesh_index, uint64 p_push_constant_offset, gpu::CommandBuffer *p_command_buffer = nullptr,
 						   uint32             p_frame_index                                                                                       = UINT32_MAX) -> void;
 
 		auto renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
+		auto renderFullscreenQuadMeshShader(gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
 
 		#pragma endregion
 

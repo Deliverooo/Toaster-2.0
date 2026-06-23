@@ -161,6 +161,7 @@ namespace toaster
 	template<>
 	inline auto Scene::onComponentAdded<CameraComponent>(Entity &p_entity, CameraComponent &p_component) -> void
 	{
+		(void)p_entity;
 		p_component.camera.setViewportSize(m_viewportSize);
 	}
 }

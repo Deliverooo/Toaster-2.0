@@ -5,17 +5,22 @@
 layout(location = 0) in vec3 m_WorldPos;
 layout(location = 1) in vec3 m_Normal;
 layout(location = 2) in vec2 m_TexCoord;
-//layout(location = 3) in flat uint m_SubmeshIndex;
+layout(location = 3) in flat uint m_MaterialIndex;
 
 layout(location = 0) out vec4 o_Colour;
 
-layout(buffer_reference, std140) readonly buffer Camera
+struct Material
 {
-    mat4 view;
-    mat4 proj;
+    uint samplerIndex;
+    uint albedoMapIndex;
+    float _padd[2];
+
+    vec4 albedoColour;
+
 };
 
 layout(buffer_reference, std140) readonly buffer SceneData { vec4 cameraPosition; };
+layout(std430, buffer_reference) readonly buffer MaterialBuffer { Material materials[]; };
 
 layout(push_constant) uniform Constants
 {
@@ -24,9 +29,11 @@ layout(push_constant) uniform Constants
     uint64_t meshletVertexIndexBuffer;
     uint64_t meshletTriangleIndexBuffer;
 
-    uint64_t submeshBuffer;
+    mat4           meshTransform;
+    uint64_t       submeshBuffer;
+    MaterialBuffer materialBuffer;
 
-    Camera camera;
+    uint64_t camera;
     SceneData sceneData;
 
     uint samplerIndex;
@@ -40,7 +47,11 @@ void main()
     glob.view = normalize(pcs.sceneData.cameraPosition.xyz - m_WorldPos);// Get the direction of the view from the camera to the frag pos
     glob.nDotV = max(dot(glob.normal, glob.view), 0.0001f);// Tells us how much the view direction is aligned with the surface normal
 
-    glob.albedo = vec3(1.0f);// Temp
+    Material material = pcs.materialBuffer.materials[m_MaterialIndex];
+
+    glob.albedo = texture(sampler2D(texture2DHeap[material.albedoMapIndex], samplerHeap[material.samplerIndex]), m_TexCoord).rgb;// Temp
+    //    glob.albedo = material.albedoColour.rgb;// Temp
+    //    glob.albedo = vec3(1.0f);// Temp
     glob.metalness = 0.0f;// Temp
     glob.roughness = 0.5f;// Temp
 
@@ -61,4 +72,5 @@ void main()
     vec3 final_colour = ambient;// + lo
 
     o_Colour = vec4(final_colour, 1.0f);
+    //    o_Colour = vec4(final_colour, 1.0f);
 }

@@ -49,6 +49,11 @@ layout(buffer_reference, std140) readonly buffer Camera
     mat4 proj;
 };
 
+layout(std140, buffer_reference) readonly buffer TransformBuffer
+{
+    mat4 transform;
+};
+
 layout(push_constant) uniform Constants
 {
     VertexBuffer               vertexBuffer;
@@ -56,7 +61,9 @@ layout(push_constant) uniform Constants
     MeshletVertexIndexBuffer   meshletVertexIndexBuffer;
     MeshletTriangleIndexBuffer meshletTriangleIndexBuffer;
 
+    mat4                       meshTransform;
     SubmeshBuffer              submeshBuffer;
+    uint64_t                   materialBuffer;
 
     Camera                     camera;
     uint64_t                   sceneData;
@@ -70,7 +77,7 @@ layout(triangles, max_vertices = 64, max_primitives = 126) out;
 layout(location = 0) out vec3 o_WorldPos[];
 layout(location = 1) out vec3 o_Normal[];
 layout(location = 2) out vec2 o_TexCoord[];
-//layout(location = 3) out flat uint o_SubmeshIndex[];
+layout(location = 3) out flat uint o_MaterialIndex[];
 
 void main()
 {
@@ -87,18 +94,20 @@ void main()
     {
         uint global_index = pcs.meshletVertexIndexBuffer.meshletVertices[m.vertexOffset + i];
 
-        vec4 pos = submesh.model * pcs.vertexBuffer.vertices[global_index].position;
+        mat4 submesh_transform = pcs.meshTransform *  submesh.model;
+
+        vec4 pos = submesh_transform * pcs.vertexBuffer.vertices[global_index].position;
         o_WorldPos[i] = pos.xyz;
 
         gl_MeshVerticesEXT[i].gl_Position = pcs.camera.proj * pcs.camera.view * pos;
 
         vec2 tex_coord = pcs.vertexBuffer.vertices[global_index].texCoord.xy;
-        tex_coord.y *= -1.0f;
+//        tex_coord.y *= -1.0f;
         o_TexCoord[i] = tex_coord;
 
-        o_Normal[i] = mat3(transpose(inverse(mat4(1.0f)))) * pcs.vertexBuffer.vertices[global_index].normal.xyz;
+        o_Normal[i] = mat3(transpose(inverse(mat4(submesh_transform)))) * pcs.vertexBuffer.vertices[global_index].normal.xyz;
 
-        //        o_SubmeshIndex[i] = m.submeshIndex;
+        o_MaterialIndex[i] = submesh.materialIndex;
     }
 
     for (uint i = thread_id; i < m.triangleCount; i += MESH_SHADER_DISPATCH_SIZE)

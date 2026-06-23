@@ -33,7 +33,6 @@ namespace toaster::render
 			Dx::XMFLOAT4X4 viewMatrix;
 			Dx::XMFLOAT4X4 projectionMatrix;
 			Dx::XMFLOAT4X4 inverseProjectionMatrix;
-			Dx::XMFLOAT4   position;
 		};
 
 		// Use if you only need the view and projection matrix...

@@ -37,6 +37,16 @@ namespace toaster::render
 		return attachment_info;
 	}
 
+	RenderingInfo::RenderingInfo(tsm::uint2 p_viewport_size)
+	{
+		renderArea = getRenderingArea(p_viewport_size);
+	}
+
+	auto RenderingInfo::addColourAttachment(gpu::RawImage &p_image) -> void
+	{
+		colourAttachments.emplace_back(getRenderingAttachmentInfo(p_image));
+	}
+
 	auto RenderingInfo::getViewport() const -> vk::Viewport
 	{
 		const vk::Extent2D rendering_extent{renderArea.extent};

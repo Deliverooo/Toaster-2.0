@@ -125,7 +125,7 @@ namespace toaster
 
 		auto reset() -> void { mesh.reset(); }
 
-		render::DynamicMeshHandle mesh{nullptr};
+		render::DynamicMeshOLDHandle mesh{nullptr};
 	};
 
 	DEFINE_COMPONENT(SubmeshComponent)

@@ -291,7 +291,7 @@ namespace toaster
 		m_meshDrawCommands.clear();
 	}
 
-	auto DynamicSceneRenderer::renderMesh(const render::DynamicMeshHandle &p_mesh, Dx::FXMMATRIX p_transform) -> void
+	auto DynamicSceneRenderer::renderMesh(const render::DynamicMeshOLDHandle &p_mesh, Dx::FXMMATRIX p_transform) -> void
 	{
 		DrawCommand &draw_command{m_meshDrawCommands.emplace_back()};
 		draw_command.mesh = p_mesh;

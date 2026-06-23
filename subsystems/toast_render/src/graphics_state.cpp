@@ -33,7 +33,7 @@ namespace toaster::render
 		cmd.bindShadersEXT(shader_stages, shaders);
 
 		// set the vertex input state
-		// cmd.setVertexInputEXT(m_vertexBufferLayout.getBindingDescription(), m_vertexBufferLayout.getAttributeDescriptions(0));
+		cmd.setVertexInputEXT(m_vertexBufferLayout.getBindingDescription(), m_vertexBufferLayout.getAttributeDescriptions(0));
 
 		// set the input assembly state
 		cmd.setPrimitiveTopologyEXT(vk::PrimitiveTopology::eTriangleList);

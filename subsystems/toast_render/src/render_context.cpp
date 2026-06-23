@@ -1082,8 +1082,8 @@ namespace toaster::render
 		}
 	}
 
-	auto RenderContext::renderSubmesh(const DynamicMesh *p_mesh, uint32 p_submesh_index, uint64 p_push_constant_offset, gpu::CommandBuffer *p_command_buffer,
-									  uint32             p_frame_index) -> void
+	auto RenderContext::renderSubmesh(const DynamicMeshOLD *p_mesh, uint32 p_submesh_index, uint64 p_push_constant_offset, gpu::CommandBuffer *p_command_buffer,
+									  uint32                p_frame_index) -> void
 	{
 		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
 
@@ -1111,6 +1111,16 @@ namespace toaster::render
 	}
 
 	auto RenderContext::renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer, uint32 p_frame_index) const -> void
+	{
+		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
+
+		m_globals->fullscreenQuadVertexBuffer()->bind(command_buffer);
+		m_globals->fullscreenQuadIndexBuffer()->bind(command_buffer);
+
+		command_buffer->drawIndexed(m_globals->fullscreenQuadIndices().size());
+	}
+
+	auto RenderContext::renderFullscreenQuadMeshShader(gpu::CommandBuffer *p_command_buffer, uint32 p_frame_index) const -> void
 	{
 		// That's it...
 		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();

@@ -7,42 +7,18 @@
 
 #include <toast_lib/os/terminal.hpp>
 
+#include "toast_kernel/input.hpp"
 #include "toast_render/dynamic_mesh.hpp"
-#include "toast_render/storage_buffer.hpp"
+#include "toast_render/skybox_pass.hpp"
 
 using namespace toaster;
-
-struct Mesh
-{
-	Mesh(render::RenderContext &p_render_ctx, const io::filesystem::Path &p_path) : m_renderCtx(&p_render_ctx)
-	{
-		meshData = render::importMeshFromFile(p_path);
-
-		vertexBufferSSBO               = m_renderCtx->createUnique<render::StorageBuffer>(meshData.vertices, "Raw_mesh_vertices");
-		meshletBufferSSBO              = m_renderCtx->createUnique<render::StorageBuffer>(meshData.meshlets, "Meshlets");
-		meshletVertexIndexBufferSSBO   = m_renderCtx->createUnique<render::StorageBuffer>(meshData.meshletVertices, "Meshlet_vertices");
-		meshletTriangleIndexBufferSSBO = m_renderCtx->createUnique<render::StorageBuffer>(meshData.meshletTriangles, "Meshlet_triangles");
-
-		submeshBufferSSBO = m_renderCtx->createUnique<render::StorageBuffer>(meshData.submeshes, "Submeshes");
-	}
-
-	NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
-
-	render::StorageBufferUnique vertexBufferSSBO{nullptr};
-	render::StorageBufferUnique meshletBufferSSBO{nullptr};
-	render::StorageBufferUnique meshletVertexIndexBufferSSBO{nullptr};
-	render::StorageBufferUnique meshletTriangleIndexBufferSSBO{nullptr};
-	render::StorageBufferUnique submeshBufferSSBO{nullptr};
-
-	render::DynamicMeshData meshData;
-};
 
 struct MeshletMeshComponent
 {
 	MeshletMeshComponent()  = default;
 	~MeshletMeshComponent() = default;
 
-	RefPtr<Mesh> mesh{nullptr};
+	RefPtr<render::DynamicMesh> mesh{nullptr};
 };
 
 class ClientLayer : public IAppLayer
@@ -73,17 +49,20 @@ public:
 		m_geometryGraphicsState->setShaders({mesh_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(true).
 				setEnableDepthWrite(true);
 
-		m_cameraUBOs    = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::ViewProjCameraUB));
+		m_cameraUBOs    = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::CameraUB));
 		m_sceneDataUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(SceneDataUB));
 
 		m_environmentMap       = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/overcast_soil_puresky_2k.hdr");
 		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMapImage(m_environmentMap);
 
-		m_mesh = m_renderCtx->createRef<Mesh>(resources_dir / "meshes/source/Backrooms_Bake/Backrooms_Bake.obj");
+		m_mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Backrooms.fbx");
+		// m_mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/utah_teapot.obj");
 
-		Entity mesh_entity{m_scene->createEntity("Mesh entity")};
-		auto & mmc{mesh_entity.addComponent<MeshletMeshComponent>()};
+		m_meshEntity = m_scene->createEntity("Mesh entity");
+		auto &mmc{m_meshEntity.addComponent<MeshletMeshComponent>()};
 		mmc.mesh = m_mesh;
+
+		m_skyboxPass = m_renderCtx->createUnique<render::SkyboxPass>(m_viewportSize, m_environmentMap);
 	}
 
 	auto onDestroy() -> void override
@@ -95,21 +74,39 @@ public:
 		m_scene->onUpdate(p_dt);
 		m_camera.onUpdate(p_dt);
 
-		const auto rendering_info{m_app->getWindow().getSwapchainRenderingInfo(false, {0.025f, 0.025f, 0.025f, 1.0f}, true)};
+		{
+			auto &tc{m_meshEntity.getComponent<TransformComponent>()};
+
+			Dx::XMVECTOR translation{Dx::XMLoadFloat3(&tc.translation)};
+			if (m_inputCtx->isKeyDown(input::EKeyCode::eUp))
+				translation = Dx::XMVectorAdd(translation, Dx::XMVectorSet(0.0f, 1.0f * p_dt, 0.0f, 1.0f));
+			if (m_inputCtx->isKeyDown(input::EKeyCode::eDown))
+				translation = Dx::XMVectorSubtract(translation, Dx::XMVectorSet(0.0f, 1.0f * p_dt, 0.0f, 1.0f));
+
+			Dx::XMStoreFloat3(&tc.translation, translation);
+		}
+
+		render::Globals::CameraUB camera_ub{};
+		Dx::XMStoreFloat4x4(&camera_ub.viewMatrix, m_camera.getViewMatrix());
+		Dx::XMStoreFloat4x4(&camera_ub.projectionMatrix, m_camera.getProjectionMatrix());
+		Dx::XMStoreFloat4x4(&camera_ub.inverseProjectionMatrix, Dx::XMMatrixInverse(nullptr, m_camera.getProjectionMatrix()));
+		camera_ub.inverseProjectionMatrix.m[1][1] *= -1.0f; // I have to do ts...
+		m_cameraUBOs->setData(camera_ub);
+
+		auto       rendering_info{m_app->getWindow().getSwapchainRenderingInfo(false, {0.025f, 0.025f, 0.025f, 1.0f}, true)};
 		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 		auto &     vk_cmd{cmd->getVulkanCommandBuffer()};
 
+		m_skyboxPass->onRender(*cmd, m_cameraUBOs->getDeviceAddress(), rendering_info);
+
+		#if 1
+
+		rendering_info.colourAttachments[0].attachmentOp = render::EAttachmentUsageOP::eLoadStore;
 		m_geometryGraphicsState->bind();
 		m_renderCtx->beginRendering(rendering_info);
-
 		SceneDataUB scene_data_ub{};
 		Dx::XMStoreFloat4(&scene_data_ub.cameraPos, m_camera.getPosition());
 		m_sceneDataUBOs->setData(scene_data_ub);
-
-		render::Globals::ViewProjCameraUB camera_ub{};
-		Dx::XMStoreFloat4x4(&camera_ub.viewMatrix, m_camera.getViewMatrix());
-		Dx::XMStoreFloat4x4(&camera_ub.projectionMatrix, m_camera.getProjectionMatrix());
-		m_cameraUBOs->setData(camera_ub);
 
 		for (const auto view{m_scene->getRegistry().view<MeshletMeshComponent>()}; const auto entity: view)
 		{
@@ -122,11 +119,14 @@ public:
 				Dx::XMMATRIX transform{m_scene->getEntityWorldTransformMatrix(e)};
 
 				MeshletMeshConstants meshlet_mesh_constants{};
-				meshlet_mesh_constants.vertexBuffer               = mesh->vertexBufferSSBO->getDeviceAddress();
-				meshlet_mesh_constants.meshletBuffer              = mesh->meshletBufferSSBO->getDeviceAddress();
-				meshlet_mesh_constants.meshletVertexIndexBuffer   = mesh->meshletVertexIndexBufferSSBO->getDeviceAddress();
-				meshlet_mesh_constants.meshletTriangleIndexBuffer = mesh->meshletTriangleIndexBufferSSBO->getDeviceAddress();
-				meshlet_mesh_constants.submeshBuffer              = mesh->submeshBufferSSBO->getDeviceAddress();
+				meshlet_mesh_constants.vertexBuffer               = mesh->getVertexBufferAddress();
+				meshlet_mesh_constants.meshletBuffer              = mesh->getMeshletBufferAddress();
+				meshlet_mesh_constants.meshletVertexIndexBuffer   = mesh->getMeshletVertexIndexBufferAddress();
+				meshlet_mesh_constants.meshletTriangleIndexBuffer = mesh->getMeshletTriangleIndexBufferAddress();
+
+				Dx::XMStoreFloat4x4(&meshlet_mesh_constants.meshTransform, transform);
+				meshlet_mesh_constants.submeshBuffer  = mesh->getSubmeshBufferAddress();
+				meshlet_mesh_constants.materialBuffer = mesh->getMaterialBufferAddress();
 
 				meshlet_mesh_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
 				meshlet_mesh_constants.sceneDataPtr = m_sceneDataUBOs->getDeviceAddress();
@@ -135,17 +135,19 @@ public:
 				meshlet_mesh_constants.diffuseIrradianceMapIndex = m_diffuseIrradianceMap->getAlignedShaderReadHeapID();
 				cmd->pushData(meshlet_mesh_constants);
 
-				vk_cmd.drawMeshTasksEXT(mesh->meshData.meshlets.size(), 1, 1);
+				vk_cmd.drawMeshTasksEXT(mesh->getMeshData().meshlets.size(), 1, 1);
 			}
 		}
-
 		m_renderCtx->endRendering(rendering_info);
+		#endif
 	}
 
 	auto onResize(tsm::uint2 p_size) -> void override
 	{
 		m_viewportSize = p_size;
 		m_camera.onResize(p_size);
+
+		m_skyboxPass->onResize(p_size);
 	}
 
 	auto onEvent(Event &p_event) -> void override
@@ -169,7 +171,8 @@ private:
 
 	render::GraphicsStateUnique m_geometryGraphicsState{nullptr};
 
-	RefPtr<Mesh> m_mesh{nullptr};
+	RefPtr<render::DynamicMesh> m_mesh{nullptr};
+	Entity                      m_meshEntity;
 
 	TST_PUSH_CONSTANT_BLOCK(MeshletMeshConstants)
 	{
@@ -177,7 +180,10 @@ private:
 		uintptr meshletBuffer;
 		uintptr meshletVertexIndexBuffer;
 		uintptr meshletTriangleIndexBuffer;
-		uintptr submeshBuffer;
+
+		Dx::XMFLOAT4X4 meshTransform;
+		uintptr        submeshBuffer;
+		uintptr        materialBuffer;
 
 		uintptr cameraPtr;
 		uintptr sceneDataPtr;
@@ -185,6 +191,8 @@ private:
 		uint32 samplerIndex;
 		uint32 diffuseIrradianceMapIndex;
 	};
+
+	UniquePtr<render::SkyboxPass> m_skyboxPass{nullptr};
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32

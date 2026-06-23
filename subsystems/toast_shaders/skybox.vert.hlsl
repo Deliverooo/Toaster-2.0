@@ -124,11 +124,13 @@ VSOutput main(VSInput p_input)
 
     float3x3 inv_view = (float3x3)Inverse(pushData.cameraPtr.Get().view);
 
-    float4 view_pos = mul(pushData.cameraPtr.Get().invProj, output.vert_position);
+    float4x4 proj  = pushData.cameraPtr.Get().invProj;
+//    proj[1][1] *= -1.0f;
+
+    float4 view_pos = mul(proj, output.vert_position);
 
     output.position =  mul(inv_view, view_pos.xyz).xyz;
     output.texCoord = p_input.texCoord;
-    output.position.y *= -1.0f;
 
     return output;
 }

@@ -412,7 +412,8 @@ namespace toaster::render
 		return m_materialDatas.at(p_index);
 	}
 
-	DynamicMesh::DynamicMesh(RenderContext &p_render_ctx, const io::filesystem::Path &p_path) : m_renderCtx(&p_render_ctx), m_path(p_path), m_materials(p_render_ctx)
+	DynamicMeshOLD::DynamicMeshOLD(RenderContext &p_render_ctx, const io::filesystem::Path &p_path) : m_renderCtx(&p_render_ctx), m_path(p_path),
+																									  m_materials(p_render_ctx)
 	{
 		Assimp::Importer importer;
 
@@ -499,7 +500,7 @@ namespace toaster::render
 		m_indexBuffer  = m_renderCtx->createIndexBuffer(m_indices);
 	}
 
-	auto DynamicMesh::_traverseNodes(void *p_assimp_node, uint32 p_node_index, Dx::FXMMATRIX p_parent_transform, uint32 p_level) -> void
+	auto DynamicMeshOLD::_traverseNodes(void *p_assimp_node, uint32 p_node_index, Dx::FXMMATRIX p_parent_transform, uint32 p_level) -> void
 	{
 		auto ai_node = static_cast<aiNode *>(p_assimp_node);
 
@@ -531,7 +532,7 @@ namespace toaster::render
 		}
 	}
 
-	auto DynamicMesh::_createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void
+	auto DynamicMeshOLD::_createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void
 	{
 		auto ai_mat{static_cast<aiMaterial *>(p_mat)};
 

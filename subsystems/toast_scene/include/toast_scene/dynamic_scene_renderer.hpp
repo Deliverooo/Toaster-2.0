@@ -20,7 +20,7 @@ namespace toaster
 		// Passing the position avoids unnecessary calculations
 		auto XM_CALLCONV begin(Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void;
 		auto             end() -> void;
-		auto XM_CALLCONV renderMesh(const render::DynamicMeshHandle &p_mesh, Dx::FXMMATRIX p_transform) -> void;
+		auto XM_CALLCONV renderMesh(const render::DynamicMeshOLDHandle &p_mesh, Dx::FXMMATRIX p_transform) -> void;
 
 		auto getViewportSize() const -> tsm::uint2 { return m_viewportSize; }
 
@@ -177,7 +177,7 @@ namespace toaster
 
 		struct DrawCommand
 		{
-			render::DynamicMeshHandle mesh{nullptr};
+			render::DynamicMeshOLDHandle mesh{nullptr};
 			Dx::XMFLOAT4X4            transform;
 		};
 

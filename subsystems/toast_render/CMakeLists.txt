@@ -14,6 +14,7 @@ set(RENDER_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/image.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/uniform_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/storage_buffer.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/skybox_pass.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/compute_pass.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/shader_library.cpp
 )

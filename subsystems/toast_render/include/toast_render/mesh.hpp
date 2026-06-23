@@ -170,11 +170,11 @@ namespace toaster::render
 		std::unordered_map<uint32, DynamicMeshMaterialData> m_materialDatas;
 	};
 
-	class TST_RENDER_API DynamicMesh
+	class TST_RENDER_API DynamicMeshOLD
 	{
 		TST_RENDER_OBJECT
 	public:
-		DynamicMesh(RenderContext &p_render_ctx, const io::filesystem::Path &p_path);
+		DynamicMeshOLD(RenderContext &p_render_ctx, const io::filesystem::Path &p_path);
 
 		auto getVertexBuffer() const -> const gpu::VertexBufferHandle & { return m_vertexBuffer; }
 		auto getIndexBuffer() const -> const gpu::IndexBufferHandle & { return m_indexBuffer; }
@@ -206,5 +206,5 @@ namespace toaster::render
 		DynamicMaterialList m_materials;
 	};
 
-	TST_RENDER_DEFINE_HANDLE(DynamicMesh, DynamicMesh)
+	TST_RENDER_DEFINE_HANDLE(DynamicMeshOLD, DynamicMeshOLD)
 }
