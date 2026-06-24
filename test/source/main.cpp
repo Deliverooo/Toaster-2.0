@@ -21,6 +21,12 @@ struct MeshletMeshComponent
 	RefPtr<render::DynamicMesh> mesh{nullptr};
 };
 
+struct MaterialComponent
+{
+	MaterialComponent()  = default;
+	~MaterialComponent() = default;
+};
+
 class ClientLayer : public IAppLayer
 {
 public:
@@ -38,16 +44,18 @@ public:
 		auto binary_dir{os::getBinaryDirectory()};
 		auto resources_dir{binary_dir / "../resources"};
 
-		m_image = m_renderCtx->createImageRef(resources_dir / "textures/Peeber.png");
+		m_MSAAColour = m_renderCtx->createMultisampleAttachmentImageUnique(m_viewportSize, vk::ImageAspectFlagBits::eColor, vk::Format::eR8G8B8A8Srgb);
+		m_MSAADepth  = m_renderCtx->createMultisampleAttachmentImageUnique(m_viewportSize, vk::ImageAspectFlagBits::eDepth);
 
 		m_scene = toaster::make_unique<Scene>(m_renderCtx);
 
 		m_geometryGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 
+		auto task_shader{m_globals->getShader("Dynamic_Mesh_TS")};
 		auto mesh_shader{m_globals->getShader("Dynamic_Mesh_MS")};
 		auto pixel_shader{m_globals->getShader("Dynamic_Mesh_PS")};
-		m_geometryGraphicsState->setShaders({mesh_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(true).
-				setEnableDepthWrite(true);
+		m_geometryGraphicsState->setShaders({task_shader, mesh_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).
+				setEnableDepthTest(true).setEnableDepthWrite(true).setEnableMultisample(true);
 
 		m_cameraUBOs    = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::CameraUB));
 		m_sceneDataUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(SceneDataUB));
@@ -62,7 +70,7 @@ public:
 		auto &mmc{m_meshEntity.addComponent<MeshletMeshComponent>()};
 		mmc.mesh = m_mesh;
 
-		m_skyboxPass = m_renderCtx->createUnique<render::SkyboxPass>(m_viewportSize, m_environmentMap);
+		m_skyboxPass = m_renderCtx->createUnique<render::SkyboxPass>(m_viewportSize, m_environmentMap, true);
 	}
 
 	auto onDestroy() -> void override
@@ -93,13 +101,14 @@ public:
 		camera_ub.inverseProjectionMatrix.m[1][1] *= -1.0f; // I have to do ts...
 		m_cameraUBOs->setData(camera_ub);
 
-		auto       rendering_info{m_app->getWindow().getSwapchainRenderingInfo(false, {0.025f, 0.025f, 0.025f, 1.0f}, true)};
+		auto       rendering_info{m_app->getWindow().getSwapchainRenderingInfo(true, {0.025f, 0.025f, 0.025f, 1.0f}, true)};
 		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
 		auto &     vk_cmd{cmd->getVulkanCommandBuffer()};
 
-		m_skyboxPass->onRender(*cmd, m_cameraUBOs->getDeviceAddress(), rendering_info);
+		rendering_info.colourAttachments[0].image = m_MSAAColour.get();
+		rendering_info.depthAttachment->image     = m_MSAADepth.get();
 
-		#if 1
+		m_skyboxPass->onRender(*cmd, m_cameraUBOs->getDeviceAddress(), rendering_info);
 
 		rendering_info.colourAttachments[0].attachmentOp = render::EAttachmentUsageOP::eLoadStore;
 		m_geometryGraphicsState->bind();
@@ -135,18 +144,21 @@ public:
 				meshlet_mesh_constants.diffuseIrradianceMapIndex = m_diffuseIrradianceMap->getAlignedShaderReadHeapID();
 				cmd->pushData(meshlet_mesh_constants);
 
-				vk_cmd.drawMeshTasksEXT(mesh->getMeshData().meshlets.size(), 1, 1);
+				vk_cmd.drawMeshTasksEXT((mesh->getMeshData().meshlets.size() + 32 - 1) / 32, 1, 1);
 			}
 		}
+
 		m_renderCtx->endRendering(rendering_info);
-		#endif
 	}
 
 	auto onResize(tsm::uint2 p_size) -> void override
 	{
 		m_viewportSize = p_size;
-		m_camera.onResize(p_size);
 
+		m_MSAAColour->resize(m_viewportSize);
+		m_MSAADepth->resize(m_viewportSize);
+
+		m_camera.onResize(p_size);
 		m_skyboxPass->onResize(p_size);
 	}
 
@@ -159,7 +171,8 @@ private:
 	tsm::uint2 m_viewportSize{0u};
 
 	FPCamera            m_camera{};
-	render::ImageHandle m_image{nullptr};
+	gpu::RawImageUnique m_MSAAColour{nullptr};
+	gpu::RawImageUnique m_MSAADepth{nullptr};
 
 	UniquePtr<Scene> m_scene{nullptr};
 

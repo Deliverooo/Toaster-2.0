@@ -4,7 +4,7 @@
 #extension GL_EXT_shader_8bit_storage : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
 
-#define MESH_SHADER_DISPATCH_SIZE 64
+#define MESH_SHADER_DISPATCH_SIZE 32
 
 struct Vertex
 {
@@ -79,9 +79,17 @@ layout(location = 1) out vec3 o_Normal[];
 layout(location = 2) out vec2 o_TexCoord[];
 layout(location = 3) out flat uint o_MaterialIndex[];
 
+struct TaskPayload
+{
+    uint meshletIndices[MESH_SHADER_DISPATCH_SIZE];
+};
+
+taskPayloadSharedEXT TaskPayload payload;
+
 void main()
 {
-    uint meshlet_index = gl_WorkGroupID.x;
+    //    uint meshlet_index = gl_WorkGroupID.x;
+    uint meshlet_index = payload.meshletIndices[gl_WorkGroupID.x];
 
     Meshlet m = pcs.meshletBuffer.meshlets[meshlet_index];
     Submesh submesh = pcs.submeshBuffer.submeshes[m.submeshIndex];
@@ -102,7 +110,6 @@ void main()
         gl_MeshVerticesEXT[i].gl_Position = pcs.camera.proj * pcs.camera.view * pos;
 
         vec2 tex_coord = pcs.vertexBuffer.vertices[global_index].texCoord.xy;
-//        tex_coord.y *= -1.0f;
         o_TexCoord[i] = tex_coord;
 
         o_Normal[i] = mat3(transpose(inverse(mat4(submesh_transform)))) * pcs.vertexBuffer.vertices[global_index].normal.xyz;

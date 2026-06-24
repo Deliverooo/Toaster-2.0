@@ -35,6 +35,7 @@ set(SHADER_SOURCES_VULKAN
 		${CMAKE_CURRENT_SOURCE_DIR}/fullscreen_quad.mesh.glsl
 
 		${CMAKE_CURRENT_SOURCE_DIR}/dynamic_mesh.mesh.glsl
+		${CMAKE_CURRENT_SOURCE_DIR}/dynamic_mesh.task.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/dynamic_mesh.pixel.glsl
 
 )
@@ -76,6 +77,12 @@ foreach (SHADER_FILE IN LISTS SHADER_SOURCES_VULKAN)
 
 		set(SHADER_TYPE mesh)
 		set(SHADER_VARIABLE_NAME "g_ms_${SHADER_FILENAME}")
+
+
+	elseif (SHADER_FILE MATCHES "\\.task\\.glsl$")
+
+		set(SHADER_TYPE task)
+		set(SHADER_VARIABLE_NAME "g_ts_${SHADER_FILENAME}")
 
 	elseif (SHADER_FILE MATCHES "\\.rgen\\.glsl$")
 

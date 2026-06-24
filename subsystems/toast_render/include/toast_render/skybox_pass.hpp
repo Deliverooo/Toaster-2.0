@@ -19,9 +19,9 @@ namespace toaster::render
 			uint32  environmentMapAddressOffset;
 		};
 
-		SkyboxPass(RenderContext &p_render_ctx); // Only use if you intend on using an override rendering info!
-		SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size);
-		SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size, const ImageHandle &p_environment_map);
+		SkyboxPass(RenderContext &p_render_ctx, bool32 p_msaa = false); // Only use if you intend on using an override rendering info!
+		SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size, bool32 p_msaa = false);
+		SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size, const ImageHandle &p_environment_map, bool32 p_msaa = false);
 
 		auto getOutputImage() const -> const ImageHandle &;
 
@@ -32,7 +32,7 @@ namespace toaster::render
 		auto setEnvironmentMap(const ImageHandle &p_environment_map) -> void;
 
 	private:
-		auto _construct() -> void;
+		auto _construct(bool32 p_msaa) -> void;
 
 		tsm::uint2 m_viewportSize{UINT32_MAX};
 

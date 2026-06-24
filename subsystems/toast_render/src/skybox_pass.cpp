@@ -5,22 +5,22 @@
 
 namespace toaster::render
 {
-	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx) : m_renderCtx(&p_render_ctx)
+	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, bool32 p_msaa) : m_renderCtx(&p_render_ctx)
 	{
-		_construct();
+		_construct(p_msaa);
 	}
 
-	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size) : m_renderCtx(&p_render_ctx), m_viewportSize(p_initial_viewport_size)
+	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size, bool32 p_msaa) : m_renderCtx(&p_render_ctx), m_viewportSize(p_initial_viewport_size)
 	{
-		_construct();
+		_construct(p_msaa);
 		m_environmentMap = m_renderCtx->getGlobals()->whiteImage();
 	}
 
-	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size, const ImageHandle &p_environment_map) : m_renderCtx(&p_render_ctx),
+	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size, const ImageHandle &p_environment_map, bool32 p_msaa) : m_renderCtx(&p_render_ctx),
 																																	m_viewportSize(p_initial_viewport_size),
 																																	m_environmentMap(p_environment_map)
 	{
-		_construct();
+		_construct(p_msaa);
 	}
 
 	auto SkyboxPass::getOutputImage() const -> const ImageHandle &
@@ -69,11 +69,11 @@ namespace toaster::render
 		m_environmentMap = p_environment_map;
 	}
 
-	auto SkyboxPass::_construct() -> void
+	auto SkyboxPass::_construct(bool32 p_msaa) -> void
 	{
 		m_skyboxState = m_renderCtx->createUnique<GraphicsState>();
 		m_skyboxState->setShaders({m_renderCtx->getGlobals()->getShader("Skybox_VS"), m_renderCtx->getGlobals()->getShader("Skybox_PS")}).setAttachmentCount(1u).
 				setCullMode(vk::CullModeFlagBits::eNone).setVertexBufferLayout(RenderContext::fullscreenQuadVbl).setEnableDepthTest(false).setEnableDepthWrite(false).
-				setEnableMultisample(false);
+				setEnableMultisample(p_msaa);
 	}
 }

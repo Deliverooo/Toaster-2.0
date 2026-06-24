@@ -119,7 +119,7 @@ namespace toaster::render
 
 		// Use for objects that take the render context into their constructor
 		template<typename TObj, typename... TArgs>
-		[[nodiscard]] auto createGPUUnique(TArgs &&... p_args) -> UniquePtr<TObj>
+		[[nodiscard]] auto createGPUUnique(TArgs &&... p_args) const -> UniquePtr<TObj>
 		{
 			return toaster::make_unique<TObj>(m_logicalDevice, std::forward<TArgs>(p_args)...);
 		}
@@ -163,6 +163,8 @@ namespace toaster::render
 													vk::Format p_format = vk::Format::eUndefined) const -> gpu::RawImageHandle;
 		[[nodiscard]] auto createMultisampleAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
 															vk::Format p_format = vk::Format::eUndefined) const -> gpu::RawImageHandle;
+		[[nodiscard]] auto createMultisampleAttachmentImageUnique(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
+																  vk::Format p_format = vk::Format::eUndefined) const -> gpu::RawImageUnique;
 
 		[[nodiscard]] auto createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
 												 vk::Format p_format = vk::Format::eUndefined) -> RefPtr<Image>;
@@ -213,7 +215,7 @@ namespace toaster::render
 		auto endRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
 
 		auto renderSubmesh(const DynamicMeshOLD *p_mesh, uint32 p_submesh_index, uint64 p_push_constant_offset, gpu::CommandBuffer *p_command_buffer = nullptr,
-						   uint32             p_frame_index                                                                                       = UINT32_MAX) -> void;
+						   uint32                p_frame_index = UINT32_MAX) -> void;
 
 		auto renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
 		auto renderFullscreenQuadMeshShader(gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;

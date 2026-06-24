@@ -29,7 +29,7 @@ namespace toaster::io
 		virtual auto writeData(const uint8 *p_data, uint64 p_size) -> bool = 0;
 
 		// writes to the current stream into the destination type by the size of that type
-		template<typename Type> requires std::is_trivial_v<Type>
+		template<typename Type> requires std::is_default_constructible_v<Type>
 		auto writeRaw(const Type &p_type) -> void
 		{
 			const uint8 *    data{(const uint8 * )&p_type};
@@ -41,7 +41,7 @@ namespace toaster::io
 		// This requires that the object derives from the Serializable interface and implements the serialize
 		// and deserialize methods
 		template<typename TObj> requires std::is_object_v<TObj> && std::derived_from<TObj, Serializable>
-		auto writeRaw(TObj &p_obj) -> void
+		auto writeObject(TObj &p_obj) -> void
 		{
 			p_obj.serialize(this);
 		}

@@ -28,8 +28,8 @@ namespace toaster::io
 		virtual auto readData(uint8 *p_dst, uint64 p_size) -> bool = 0;
 
 		// reads from the current stream into the destination type by the size of that type
-		template<typename Type> requires std::is_trivial_v<Type>
-		auto read(Type &p_out_type) -> void
+		template<typename Type> requires std::is_default_constructible_v<Type>
+		auto readRaw(Type &p_out_type) -> void
 		{
 			const bool success = readData(reinterpret_cast<uint8 *>(&p_out_type), sizeof(Type));
 			TST_ASSERT_MSG(success, "Failed to read type");
@@ -39,7 +39,7 @@ namespace toaster::io
 		// This requires that the object derives from the Serializable interface and implements the serialize
 		// and deserialize methods
 		template<typename TObj> requires std::is_object_v<TObj> && std::derived_from<TObj, Serializable>
-		auto readRaw(TObj &p_out_obj) -> void
+		auto readObject(TObj &p_out_obj) -> void
 		{
 			p_out_obj.deserialize(this);
 		}

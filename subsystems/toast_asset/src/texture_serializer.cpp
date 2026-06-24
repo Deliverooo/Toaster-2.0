@@ -1,10 +1,18 @@
 #include "toast_asset/texture_serializer.hpp"
 
+#include <fstream>
+
+#include "../../toast_render/include/toast_render/render_context.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
+#include "toast_lib/io/file_stream.hpp"
 
 namespace toaster::asset
 {
-	auto serializeTextureToFile(gpu::VKLogicalDevice &p_device, gpu::RawImage &p_image, const io::filesystem::Path &p_dst_path) -> void
+	TextureSerializer::TextureSerializer(render::RenderContext &p_render_ctx) : m_renderCtx(&p_render_ctx)
+	{
+	}
+
+	auto TextureSerializer::serializeTextureToFile(gpu::RawImage &p_image, const io::filesystem::Path &p_dst_path) -> void
 	{
 		const auto &image_spec_info{p_image.getSpecInfo()};
 
@@ -17,17 +25,26 @@ namespace toaster::asset
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
 
-		const uint64 buffer_size{util::getBytesPerPixel(m_specInfo.format) * m_specInfo.size.x * m_specInfo.size.y};
-		m_device->createBuffer(buffer_size, vk::BufferUsageFlagBits::eTransferDst, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-							   staging_buffer, staging_buffer_memory);
+		const uint64 buffer_size{gpu::util::getBytesPerPixel(image_spec_info.format) * image_spec_info.size.x * image_spec_info.size.y};
+		out_header.dataSize = buffer_size;
 
-		vk::ImageLayout previous_layout{m_currentImageLayout};
-		util::transitionImageLayout(this, m_currentImageLayout, vk::ImageLayout::eTransferSrcOptimal);
-		m_device->copyImageToBuffer(m_image, staging_buffer, {m_specInfo.size.x, m_specInfo.size.y, 1u}, m_specInfo.layerCount);
-		util::transitionImageLayout(this, vk::ImageLayout::eTransferSrcOptimal, previous_layout);
+		m_renderCtx->getLogicalDevice()->createBuffer(buffer_size, vk::BufferUsageFlagBits::eTransferDst,
+													  vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, staging_buffer,
+													  staging_buffer_memory);
+
+		vk::ImageLayout previous_layout{p_image.getCurrentImageLayout()};
+		gpu::util::transitionImageLayout(&p_image, previous_layout, vk::ImageLayout::eTransferSrcOptimal);
+		m_renderCtx->getLogicalDevice()->copyImageToBuffer(p_image.getImage(), staging_buffer, {image_spec_info.size.x, image_spec_info.size.y, 1u},
+														   image_spec_info.layerCount);
+		gpu::util::transitionImageLayout(&p_image, vk::ImageLayout::eTransferSrcOptimal, previous_layout);
 
 		void *image_data{staging_buffer_memory.mapMemory(0u, buffer_size)};
 
-		p_device.copyImageToBuffer(p_image.getImage(), *image_data, {image_spec_info.size.x, image_spec_info.size.y, 1u}, image_spec_info.layerCount);
+		io::FileStreamWriter out{p_dst_path};
+		out.writeRaw(out_header);
+		out.setStreamPos(sizeof(TextureHeader));
+		out.writeData(static_cast<const uint8 *>(image_data), buffer_size);
+
+		staging_buffer_memory.unmapMemory();
 	}
 }

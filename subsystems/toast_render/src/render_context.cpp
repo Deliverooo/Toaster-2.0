@@ -292,6 +292,20 @@ namespace toaster::render
 		return createGPURef<gpu::RawImage>(attachment_image_spec_info);
 	}
 
+	auto RenderContext::createMultisampleAttachmentImageUnique(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
+															   vk::Format p_format) const -> gpu::RawImageUnique
+	{
+		if (p_format == vk::Format::eUndefined)
+			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
+
+		gpu::ImageSpecInfo attachment_image_spec_info{};
+		attachment_image_spec_info.size        = p_size;
+		attachment_image_spec_info.format      = p_format;
+		attachment_image_spec_info.sampleCount = m_physicalDevice->getMaxUsableSampleCount();
+		attachment_image_spec_info.usage       = vk::ImageUsageFlagBits::eTransientAttachment | gpu::util::getImageUsageFlags(p_image_aspect_flags);
+		return createGPUUnique<gpu::RawImage>(attachment_image_spec_info);
+	}
+
 	auto RenderContext::createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) -> RefPtr<Image>
 	{
 		if (p_format == vk::Format::eUndefined)

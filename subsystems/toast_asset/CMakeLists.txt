@@ -9,7 +9,7 @@ target_include_directories(ToastAsset PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_S
 
 target_sources(ToastAsset PRIVATE ${ASSET_SRC})
 
-target_link_libraries(ToastAsset PUBLIC Toaster::ToastGPU)
+target_link_libraries(ToastAsset PUBLIC Toaster::ToastRender)
 
 add_library(Toaster::ToastAsset ALIAS ToastAsset)
 
