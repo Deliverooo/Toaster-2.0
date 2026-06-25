@@ -9,9 +9,9 @@ namespace toaster::gpu
 {
 	struct TST_GPU_API BufferSpecInfo
 	{
-		vk::BufferUsageFlags2   usageFlags{};
-		vk::MemoryPropertyFlags memoryPropertyFlags{vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent};
-		vk::QueueFlags          queueAccessFlags{vk::QueueFlagBits::eGraphics}; // Also determines if the sharing mode is exclusive or not
+		vk::BufferUsageFlags2 usageFlags{};
+		vk::QueueFlags        queueAccessFlags{vk::QueueFlagBits::eGraphics}; // Also determines if the sharing mode is exclusive or not
+		bool32                deviceLocal{false};
 	};
 
 	class TST_GPU_API VKBuffer
@@ -34,15 +34,19 @@ namespace toaster::gpu
 		auto mapMemory(uint64 p_size, uint64 p_offset = 0u) -> void *;
 		auto unmapMemory() -> void;
 
+		// Only usable if not device local!!
 		template<typename Type>
 		auto setData(const Type &p_data)
 		{
+			TST_PERMA_ASSERT(!m_specInfo.deviceLocal);
 			void *mapped{mapMemory(sizeof(Type))};
 			std::memcpy(mapped, &p_data, sizeof(Type));
 			unmapMemory();
 		}
 
 		auto setData(const void *p_data, uint64 p_size) -> void;
+
+		auto copyFromBuffer(VKBuffer& p_other) -> void;
 
 	private:
 		BufferSpecInfo         m_specInfo{};

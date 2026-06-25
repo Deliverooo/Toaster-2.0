@@ -13,18 +13,12 @@
 
 using namespace toaster;
 
-struct MeshletMeshComponent
+struct NewMeshComponent
 {
-	MeshletMeshComponent()  = default;
-	~MeshletMeshComponent() = default;
+	NewMeshComponent()  = default;
+	~NewMeshComponent() = default;
 
 	RefPtr<render::DynamicMesh> mesh{nullptr};
-};
-
-struct MaterialComponent
-{
-	MaterialComponent()  = default;
-	~MaterialComponent() = default;
 };
 
 class ClientLayer : public IAppLayer
@@ -51,11 +45,10 @@ public:
 
 		m_geometryGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 
-		auto task_shader{m_globals->getShader("Dynamic_Mesh_TS")};
-		auto mesh_shader{m_globals->getShader("Dynamic_Mesh_MS")};
+		auto vertex_shader{m_globals->getShader("Dynamic_Mesh_VS")};
 		auto pixel_shader{m_globals->getShader("Dynamic_Mesh_PS")};
-		m_geometryGraphicsState->setShaders({task_shader, mesh_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).
-				setEnableDepthTest(true).setEnableDepthWrite(true).setEnableMultisample(true);
+		m_geometryGraphicsState->setShaders({vertex_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eBack).setEnableDepthTest(true).
+				setEnableDepthWrite(true).setEnableMultisample(true);
 
 		m_cameraUBOs    = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::CameraUB));
 		m_sceneDataUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(SceneDataUB));
@@ -64,11 +57,18 @@ public:
 		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMapImage(m_environmentMap);
 
 		m_mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Backrooms.fbx");
-		// m_mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/utah_teapot.obj");
+		// m_mesh = m_renderCtx->createRef<render::Dyn amicMesh>(resources_dir / "meshes/utah_teapot.obj");
+		{
+			m_meshEntity = m_scene->createEntity("Mesh entity");
+			auto &mmc{m_meshEntity.addComponent<NewMeshComponent>()};
+			mmc.mesh = m_mesh;
+		}
 
-		m_meshEntity = m_scene->createEntity("Mesh entity");
-		auto &mmc{m_meshEntity.addComponent<MeshletMeshComponent>()};
-		mmc.mesh = m_mesh;
+		{
+			Entity orbo_entity{m_scene->createEntity("Orbo")};
+			auto & mmc{orbo_entity.addComponent<NewMeshComponent>()};
+			mmc.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Wait_Dance.fbx");
+		}
 
 		m_skyboxPass = m_renderCtx->createUnique<render::SkyboxPass>(m_viewportSize, m_environmentMap, true);
 	}
@@ -117,9 +117,9 @@ public:
 		Dx::XMStoreFloat4(&scene_data_ub.cameraPos, m_camera.getPosition());
 		m_sceneDataUBOs->setData(scene_data_ub);
 
-		for (const auto view{m_scene->getRegistry().view<MeshletMeshComponent>()}; const auto entity: view)
+		for (const auto view{m_scene->getRegistry().view<NewMeshComponent>()}; const auto entity: view)
 		{
-			const auto &mesh_comp{view.get<MeshletMeshComponent>(entity)};
+			const auto &mesh_comp{view.get<NewMeshComponent>(entity)};
 
 			auto mesh{mesh_comp.mesh};
 			if (mesh)
@@ -128,13 +128,9 @@ public:
 				Dx::XMMATRIX transform{m_scene->getEntityWorldTransformMatrix(e)};
 
 				MeshletMeshConstants meshlet_mesh_constants{};
-				meshlet_mesh_constants.vertexBuffer               = mesh->getVertexBufferAddress();
-				meshlet_mesh_constants.meshletBuffer              = mesh->getMeshletBufferAddress();
-				meshlet_mesh_constants.meshletVertexIndexBuffer   = mesh->getMeshletVertexIndexBufferAddress();
-				meshlet_mesh_constants.meshletTriangleIndexBuffer = mesh->getMeshletTriangleIndexBufferAddress();
+				meshlet_mesh_constants.vertexBuffer = mesh->getVertexBufferAddress();
 
 				Dx::XMStoreFloat4x4(&meshlet_mesh_constants.meshTransform, transform);
-				meshlet_mesh_constants.submeshBuffer  = mesh->getSubmeshBufferAddress();
 				meshlet_mesh_constants.materialBuffer = mesh->getMaterialBufferAddress();
 
 				meshlet_mesh_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
@@ -142,9 +138,16 @@ public:
 
 				meshlet_mesh_constants.samplerIndex              = m_renderCtx->getSampler(render::ESamplerType::eIrradianceMap);
 				meshlet_mesh_constants.diffuseIrradianceMapIndex = m_diffuseIrradianceMap->getAlignedShaderReadHeapID();
-				cmd->pushData(meshlet_mesh_constants);
 
-				vk_cmd.drawMeshTasksEXT((mesh->getMeshData().meshlets.size() + 32 - 1) / 32, 1, 1);
+				vk_cmd.bindIndexBuffer(mesh->getIndexBuffer().getBuffer(), 0u, vk::IndexType::eUint32);
+
+				for (const auto &submesh: mesh->getMeshData().submeshes)
+				{
+					meshlet_mesh_constants.materialIndex = submesh.materialIndex;
+					cmd->pushData(meshlet_mesh_constants);
+
+					cmd->drawIndexed(submesh.indexCount, 1, submesh.indexOffset, submesh.vertexOffset, 0);
+				}
 			}
 		}
 
@@ -190,13 +193,12 @@ private:
 	TST_PUSH_CONSTANT_BLOCK(MeshletMeshConstants)
 	{
 		uintptr vertexBuffer;
-		uintptr meshletBuffer;
-		uintptr meshletVertexIndexBuffer;
-		uintptr meshletTriangleIndexBuffer;
+		float32 _padd[2];
 
 		Dx::XMFLOAT4X4 meshTransform;
-		uintptr        submeshBuffer;
 		uintptr        materialBuffer;
+		uint32         materialIndex;
+		float32        _padd2[1];
 
 		uintptr cameraPtr;
 		uintptr sceneDataPtr;

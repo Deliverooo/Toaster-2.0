@@ -1,4 +1,7 @@
 #include "toast_gpu/vk/vk_logical_device.hpp"
+
+#include <ranges>
+
 #include "toast_gpu/vk/vk_command_buffer.hpp"
 
 #include <Windows.h>
@@ -336,17 +339,21 @@ namespace toaster::gpu
 		(static_cast<vk::Device>(m_logicalDevice)).unmapMemory(p_memory);
 	}
 
-	auto VKLogicalDevice::createBuffer(vk::DeviceSize    p_size, vk::BufferUsageFlags          p_usage_flags, vk::MemoryPropertyFlags p_memory_properties,
-									   vk::raii::Buffer &p_out_buffer, vk::raii::DeviceMemory &p_out_memory) -> void
+	auto VKLogicalDevice::createBuffer(vk::raii::Buffer &p_out_buffer, vk::raii::DeviceMemory &p_out_memory, vk::DeviceSize p_size, vk::BufferUsageFlags2 p_usage_flags,
+									   vk::MemoryPropertyFlags p_memory_properties, vk::QueueFlags p_queue_access_flags) -> void
 	{
 		vk::BufferCreateInfo buffer_create_info{};
-		buffer_create_info.size        = p_size;
-		buffer_create_info.usage       = p_usage_flags;
-		buffer_create_info.sharingMode = vk::SharingMode::eConcurrent;
+		buffer_create_info.size = p_size;
 
-		buffer_create_info.queueFamilyIndexCount = 2;
-		uint32 qfi[]                             = {m_queueFamilyIndices.graphics, m_queueFamilyIndices.transfer};
-		buffer_create_info.pQueueFamilyIndices   = qfi;
+		const auto qfi{getQueueFamilyIndices(p_queue_access_flags)};
+		buffer_create_info.queueFamilyIndexCount = qfi.size();
+		auto qfi_vec{qfi | std::ranges::to<std::vector>()};
+		buffer_create_info.pQueueFamilyIndices = qfi_vec.data();
+		buffer_create_info.sharingMode         = (qfi.size() > 1 ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive);
+
+		vk::BufferUsageFlags2CreateInfo buffer_flags_create_info{};
+		buffer_flags_create_info.usage = p_usage_flags;
+		buffer_create_info.pNext       = &buffer_flags_create_info;
 
 		p_out_buffer = {m_logicalDevice, buffer_create_info};
 
@@ -355,22 +362,32 @@ namespace toaster::gpu
 		memory_allocate_info.memoryTypeIndex = m_physicalDevice->findMemoryType(memory_requirements.memoryTypeBits, p_memory_properties);
 		memory_allocate_info.allocationSize  = memory_requirements.size;
 
+		vk::MemoryAllocateFlagsInfo memory_allocate_flags_info{};
+		memory_allocate_flags_info.flags = (p_usage_flags & vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR)
+											   ? vk::MemoryAllocateFlagBits::eDeviceAddressKHR
+											   : static_cast<vk::MemoryAllocateFlagBits>(0u);
+		memory_allocate_info.pNext = &memory_allocate_flags_info;
+
 		p_out_memory = {m_logicalDevice, memory_allocate_info};
 
 		p_out_buffer.bindMemory(p_out_memory, 0u);
 	}
 
-	auto VKLogicalDevice::createBuffer(vk::DeviceSize p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::Buffer &p_out_buffer,
-									   vk::DeviceMemory &p_out_memory) const -> void
+	auto VKLogicalDevice::createBuffer(vk::Buffer &            p_out_buffer, vk::DeviceMemory &p_out_memory, vk::DeviceSize p_size, vk::BufferUsageFlags2 p_usage_flags,
+									   vk::MemoryPropertyFlags p_memory_properties, vk::QueueFlags p_queue_access_flags) const -> void
 	{
 		vk::BufferCreateInfo buffer_create_info{};
-		buffer_create_info.size        = p_size;
-		buffer_create_info.usage       = p_usage_flags;
-		buffer_create_info.sharingMode = vk::SharingMode::eConcurrent;
+		buffer_create_info.size = p_size;
 
-		buffer_create_info.queueFamilyIndexCount = 2;
-		uint32 qfi[]                             = {m_queueFamilyIndices.graphics, m_queueFamilyIndices.transfer};
-		buffer_create_info.pQueueFamilyIndices   = qfi;
+		const auto qfi{getQueueFamilyIndices(p_queue_access_flags)};
+		buffer_create_info.queueFamilyIndexCount = qfi.size();
+		auto qfi_vec{qfi | std::ranges::to<std::vector>()};
+		buffer_create_info.pQueueFamilyIndices = qfi_vec.data();
+		buffer_create_info.sharingMode         = (qfi.size() > 1 ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive);
+
+		vk::BufferUsageFlags2CreateInfo buffer_flags_create_info{};
+		buffer_flags_create_info.usage = p_usage_flags;
+		buffer_create_info.pNext       = &buffer_flags_create_info;
 
 		p_out_buffer = (static_cast<vk::Device>(m_logicalDevice)).createBuffer(buffer_create_info);
 

@@ -68,8 +68,8 @@ namespace toaster::gpu
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
 
 		const uint64 buffer_size{util::getBytesPerPixel(m_specInfo.format) * m_specInfo.size.x * m_specInfo.size.y};
-		m_device->createBuffer(buffer_size, vk::BufferUsageFlagBits::eTransferDst, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-							   staging_buffer, staging_buffer_memory);
+		m_device->createBuffer(staging_buffer, staging_buffer_memory, buffer_size, vk::BufferUsageFlagBits2::eTransferDst,
+							   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
 		vk::ImageLayout previous_layout{m_currentImageLayout};
 		util::transitionImageLayout(this, m_currentImageLayout, vk::ImageLayout::eTransferSrcOptimal);
@@ -88,8 +88,8 @@ namespace toaster::gpu
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
 
-		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-							   staging_buffer, staging_buffer_memory);
+		m_device->createBuffer(staging_buffer, staging_buffer_memory, p_size, vk::BufferUsageFlagBits2::eTransferSrc,
+							   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
 		void *mapped{staging_buffer_memory.mapMemory(0, p_size, {})};
 		std::memcpy(mapped, p_data, p_size);

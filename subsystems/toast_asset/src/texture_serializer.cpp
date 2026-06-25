@@ -28,9 +28,8 @@ namespace toaster::asset
 		const uint64 buffer_size{gpu::util::getBytesPerPixel(image_spec_info.format) * image_spec_info.size.x * image_spec_info.size.y};
 		out_header.dataSize = buffer_size;
 
-		m_renderCtx->getLogicalDevice()->createBuffer(buffer_size, vk::BufferUsageFlagBits::eTransferDst,
-													  vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, staging_buffer,
-													  staging_buffer_memory);
+		m_renderCtx->getLogicalDevice()->createBuffer(staging_buffer, staging_buffer_memory, buffer_size, vk::BufferUsageFlagBits2::eTransferDst,
+													  vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
 		vk::ImageLayout previous_layout{p_image.getCurrentImageLayout()};
 		gpu::util::transitionImageLayout(&p_image, previous_layout, vk::ImageLayout::eTransferSrcOptimal);

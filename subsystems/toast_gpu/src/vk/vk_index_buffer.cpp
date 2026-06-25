@@ -10,22 +10,20 @@ namespace toaster::gpu
 		vk::raii::Buffer       staging_buffer{nullptr};
 		vk::raii::DeviceMemory staging_buffer_memory{nullptr};
 
-		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-							   staging_buffer, staging_buffer_memory);
+		m_device->createBuffer(staging_buffer, staging_buffer_memory, p_size, vk::BufferUsageFlagBits2::eTransferSrc, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
 
 		void *mapped = staging_buffer_memory.mapMemory(0, p_size, {});
 		std::memcpy(mapped, p_data, p_size);
 		staging_buffer_memory.unmapMemory();
 
-		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal,
-							   m_indexBuffer, m_indexBufferMemory);
+		m_device->createBuffer(m_indexBuffer, m_indexBufferMemory, p_size, vk::BufferUsageFlagBits2::eTransferDst | vk::BufferUsageFlagBits2::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal);
 		m_device->copyBuffer(staging_buffer, m_indexBuffer, p_size);
 	}
 
 	VKIndexBuffer::VKIndexBuffer(VKLogicalDevice *p_device, uint64 p_size) : m_device(p_device)
 	{
-		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible,
-							   m_indexBuffer, m_indexBufferMemory);
+		m_device->createBuffer( m_indexBuffer, m_indexBufferMemory, p_size, vk::BufferUsageFlagBits2::eIndexBuffer, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible
+							  );
 	}
 
 	VKIndexBuffer::~VKIndexBuffer()

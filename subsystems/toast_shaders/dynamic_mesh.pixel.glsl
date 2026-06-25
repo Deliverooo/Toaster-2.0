@@ -5,7 +5,7 @@
 layout(location = 0) in vec3 m_WorldPos;
 layout(location = 1) in vec3 m_Normal;
 layout(location = 2) in vec2 m_TexCoord;
-layout(location = 3) in flat uint m_MaterialIndex;
+//layout(location = 3) in flat uint m_MaterialIndex;
 
 layout(location = 0) out vec4 o_Colour;
 
@@ -13,10 +13,11 @@ struct Material
 {
     uint samplerIndex;
     uint albedoMapIndex;
-    float _padd[2];
+
+    float roughness;
+    float metalness;
 
     vec4 albedoColour;
-
 };
 
 layout(buffer_reference, std140) readonly buffer SceneData { vec4 cameraPosition; };
@@ -24,17 +25,16 @@ layout(std430, buffer_reference) readonly buffer MaterialBuffer { Material mater
 
 layout(push_constant) uniform Constants
 {
-    uint64_t vertexBuffer;
-    uint64_t meshletBuffer;
-    uint64_t meshletVertexIndexBuffer;
-    uint64_t meshletTriangleIndexBuffer;
+    uint64_t vbo;
+    float _padd[2];
 
-    mat4           meshTransform;
-    uint64_t       submeshBuffer;
-    MaterialBuffer materialBuffer;
+    mat4 meshTransform;
+    MaterialBuffer        materialBuffer;
+    uint            materialIndex;
+    float           _padd2[1];
 
-    uint64_t camera;
-    SceneData sceneData;
+    uint64_t cameraPtr;
+    SceneData sceneDataPtr;
 
     uint samplerIndex;
     uint diffuseIrradianceMapIndex;
@@ -44,16 +44,16 @@ void main()
 {
     glob.normal = normalize(m_Normal);
 
-    glob.view = normalize(pcs.sceneData.cameraPosition.xyz - m_WorldPos);// Get the direction of the view from the camera to the frag pos
+    glob.view = normalize(pcs.sceneDataPtr.cameraPosition.xyz - m_WorldPos);// Get the direction of the view from the camera to the frag pos
     glob.nDotV = max(dot(glob.normal, glob.view), 0.0001f);// Tells us how much the view direction is aligned with the surface normal
 
-    Material material = pcs.materialBuffer.materials[m_MaterialIndex];
+    Material material = pcs.materialBuffer.materials[pcs.materialIndex];
 
-    glob.albedo = texture(sampler2D(texture2DHeap[material.albedoMapIndex], samplerHeap[material.samplerIndex]), m_TexCoord).rgb;// Temp
-    //    glob.albedo = material.albedoColour.rgb;// Temp
-    //    glob.albedo = vec3(1.0f);// Temp
-    glob.metalness = 0.0f;// Temp
-    glob.roughness = 0.5f;// Temp
+    glob.albedo = texture(sampler2D(texture2DHeap[material.albedoMapIndex], samplerHeap[material.samplerIndex]), m_TexCoord).rgb;
+    glob.albedo *= material.albedoColour.rgb;
+
+    glob.roughness = material.roughness;
+    glob.metalness = material.metalness;
 
     glob.f0 = vec3(0.04f);
     glob.f0 = mix(glob.f0, glob.albedo, glob.metalness);

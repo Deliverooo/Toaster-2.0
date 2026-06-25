@@ -4,15 +4,15 @@
 
 namespace toaster::render
 {
-	StorageBuffer::StorageBuffer(RenderContext &p_render_ctx, uint64 p_size, const String &p_debug_name) : m_renderCtx(&p_render_ctx), m_debugName(p_debug_name)
+	StorageBuffer::StorageBuffer(RenderContext &p_render_ctx, uint64 p_size, bool32 p_device_local) : m_renderCtx(&p_render_ctx)
 	{
-		_construct(p_size);
+		_construct(p_size, nullptr, p_device_local);
 	}
 
-	StorageBuffer::StorageBuffer(RenderContext &p_render_ctx, const void *p_data, uint64 p_size, const String &p_debug_name) : m_renderCtx(&p_render_ctx),
-																															   m_debugName(p_debug_name)
+	StorageBuffer::StorageBuffer(RenderContext &p_render_ctx, const void *p_data, uint64 p_size, bool32 p_device_local) : m_renderCtx(&p_render_ctx)
+
 	{
-		_construct(p_size, p_data);
+		_construct(p_size, p_data, p_device_local);
 	}
 
 	StorageBuffer::~StorageBuffer()
@@ -45,16 +45,35 @@ namespace toaster::render
 		m_SSBO->setData(p_data, p_size);
 	}
 
-	auto StorageBuffer::_construct(uint64 p_size, const void *p_data) -> void
+	auto StorageBuffer::_construct(uint64 p_size, const void *p_data, bool32 p_device_local) -> void
 	{
-		gpu::BufferSpecInfo ubo_spec_info{};
-		ubo_spec_info.usageFlags = vk::BufferUsageFlagBits2::eStorageBuffer | vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
-		m_SSBO                   = m_renderCtx->createGPURef<gpu::Buffer>(p_size, ubo_spec_info);
+		if (!p_device_local)
+		{
+			gpu::BufferSpecInfo ubo_spec_info{};
+			ubo_spec_info.usageFlags = vk::BufferUsageFlagBits2::eStorageBuffer;
+			m_SSBO                   = m_renderCtx->createGPURef<gpu::Buffer>(p_size, ubo_spec_info);
 
-		if (p_data)
-			m_SSBO->setData(p_data, p_size);
+			if (p_data)
+				m_SSBO->setData(p_data, p_size);
+		}
+		else
+		{
+			gpu::BufferSpecInfo ubo_spec_info{};
+			ubo_spec_info.deviceLocal = true;
+			ubo_spec_info.usageFlags  = vk::BufferUsageFlagBits2::eStorageBuffer | vk::BufferUsageFlagBits2::eTransferDst;
+			m_SSBO                    = m_renderCtx->createGPURef<gpu::Buffer>(p_size, ubo_spec_info);
 
-		m_renderCtx->getLogicalDevice()->setDebugObjectName(m_SSBO->getBuffer(), m_debugName);
+			if (p_data)
+			{
+				gpu::BufferSpecInfo staging_buffer_spec_info{};
+				staging_buffer_spec_info.deviceLocal = false;
+				staging_buffer_spec_info.usageFlags  = vk::BufferUsageFlagBits2::eTransferSrc;
+				gpu::Buffer staging_buffer{m_renderCtx->getLogicalDevice(), p_size, staging_buffer_spec_info};
+				staging_buffer.setData(p_data, p_size);
+
+				m_SSBO->copyFromBuffer(staging_buffer);
+			}
+		}
 
 		m_heapID = m_renderCtx->getDescriptorHeap()->allocBuffer(*m_SSBO, true);
 	}

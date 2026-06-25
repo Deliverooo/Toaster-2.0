@@ -18,28 +18,14 @@ namespace toaster::render
 		float32      _padd2[2];
 	};
 
-	struct TST_RENDER_API alignas(16) Meshlet
-	{
-		uint32 vertexOffset{0u};
-		uint32 triangleOffset{0u};
-		uint32 vertexCount{0u};
-		uint32 triangleCount{0u};
-
-		uint32  submeshIndex{0u};
-		float32 _padd[3];
-	};
-
-	struct TST_RENDER_API MeshletBounds
-	{
-		Dx::XMFLOAT3 center;
-		float32      radius;
-	};
-
 	struct TST_RENDER_API SubmeshData
 	{
-		Dx::XMFLOAT4X4 modelMatrix{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-		uint32         materialIndex;
-		float32        _padd[3];
+		uint32 vertexOffset{0u};
+		uint32 vertexCount{0u};
+		uint32 indexOffset{0u};
+		uint32 indexCount{0u};
+
+		uint32 materialIndex{0u}; // The index of the material in the array of per-mesh materials
 	};
 
 	struct TST_RENDER_API DynamicMaterial
@@ -49,9 +35,11 @@ namespace toaster::render
 
 	struct TST_RENDER_API DynamicMaterialGPUData
 	{
-		uint32  samplerIndex;
-		uint32  albedoMapIndex;
-		float32 _padd[2];
+		uint32 samplerIndex;
+		uint32 albedoMapIndex;
+
+		float32 roughness;
+		float32 metalness;
 
 		Dx::XMFLOAT4 albedoColour;
 	};
@@ -59,10 +47,7 @@ namespace toaster::render
 	struct TST_RENDER_API DynamicMeshData
 	{
 		std::vector<DynamicMeshVertex> vertices;
-		std::vector<Meshlet>           meshlets;
-		std::vector<MeshletBounds>     meshletBounds;
-		std::vector<uint32>            meshletVertices;
-		std::vector<uint8>             meshletTriangles;
+		std::vector<uint32>            indices;
 
 		std::vector<SubmeshData> submeshes;
 
@@ -76,11 +61,10 @@ namespace toaster::render
 	public:
 		DynamicMesh(RenderContext &p_render_ctx, const io::filesystem::Path &p_path);
 
+		auto getIndexBuffer() const -> const gpu::Buffer &;
+
 		auto getVertexBufferAddress() const -> uintptr;
-		auto getMeshletBufferAddress() const -> uintptr;
-		auto getMeshletVertexIndexBufferAddress() const -> uintptr;
-		auto getMeshletTriangleIndexBufferAddress() const -> uintptr;
-		auto getSubmeshBufferAddress() const -> uintptr;
+		auto getIndexBufferAddress() const -> uintptr;
 		auto getMaterialBufferAddress() const -> uintptr;
 
 		auto getMeshData() const -> const DynamicMeshData &;
@@ -88,11 +72,9 @@ namespace toaster::render
 	private:
 		auto _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
 
-		StorageBufferUnique vertexBufferSSBO{nullptr};
-		StorageBufferUnique meshletBufferSSBO{nullptr};
-		StorageBufferUnique meshletVertexIndexBufferSSBO{nullptr};
-		StorageBufferUnique meshletTriangleIndexBufferSSBO{nullptr};
-		StorageBufferUnique submeshBufferSSBO{nullptr};
+		VertexBufferUnique vertexBufferSSBO{nullptr};
+
+		gpu::BufferUnique   m_indexBuffer{nullptr};
 		StorageBufferUnique materialBufferSSBO{nullptr};
 
 		DynamicMeshData meshData;

@@ -21,32 +21,18 @@ namespace toaster::gpu
 
 	VKBuffer::VKBuffer(VKLogicalDevice *p_device, uint64 p_size, const BufferSpecInfo &p_spec_info) : m_device(p_device), m_specInfo(p_spec_info), m_size(p_size)
 	{
-		vk::BufferCreateInfo buffer_create_info{};
-		buffer_create_info.size = m_size;
+		m_specInfo.usageFlags |= vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
 
-		const auto qfi{m_device->getQueueFamilyIndices(m_specInfo.queueAccessFlags)};
-		buffer_create_info.queueFamilyIndexCount = qfi.size();
-		auto qfi_vec{qfi | std::ranges::to<std::vector>()};
-		buffer_create_info.pQueueFamilyIndices = qfi_vec.data();
-		buffer_create_info.sharingMode         = (qfi.size() > 1 ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive);
-
-		vk::BufferUsageFlags2CreateInfo buffer_flags_create_info{};
-		buffer_flags_create_info.usage = m_specInfo.usageFlags;
-		buffer_create_info.pNext       = &buffer_flags_create_info;
-
-		m_buffer = {m_device->getVulkanLogicalDevice(), buffer_create_info};
-
-		vk::MemoryRequirements memory_requirements = m_buffer.getMemoryRequirements();
-		vk::MemoryAllocateInfo memory_allocate_info{};
-		memory_allocate_info.memoryTypeIndex = m_device->getPhysicalDevice()->findMemoryType(memory_requirements.memoryTypeBits, m_specInfo.memoryPropertyFlags);
-		memory_allocate_info.allocationSize  = memory_requirements.size;
-		vk::MemoryAllocateFlagsInfo memory_alloc_flags_info{};
-		memory_alloc_flags_info.flags = vk::MemoryAllocateFlagBits::eDeviceAddress;
-		memory_allocate_info.pNext    = &memory_alloc_flags_info;
-
-		m_bufferMemory = {m_device->getVulkanLogicalDevice(), memory_allocate_info};
-
-		m_buffer.bindMemory(m_bufferMemory, 0u);
+		if (!m_specInfo.deviceLocal)
+		{
+			m_device->createBuffer(m_buffer, m_bufferMemory, p_size, m_specInfo.usageFlags,
+								   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, m_specInfo.queueAccessFlags);
+		}
+		else
+		{
+			m_device->createBuffer(m_buffer, m_bufferMemory, p_size, vk::BufferUsageFlagBits2::eTransferDst | m_specInfo.usageFlags,
+								   vk::MemoryPropertyFlagBits::eDeviceLocal, m_specInfo.queueAccessFlags);
+		}
 	}
 
 	VKBuffer::~VKBuffer()
@@ -98,8 +84,15 @@ namespace toaster::gpu
 
 	auto VKBuffer::setData(const void *p_data, uint64 p_size) -> void
 	{
+		TST_PERMA_ASSERT(!m_specInfo.deviceLocal);
+
 		void *mapped{mapMemory(p_size)};
 		std::memcpy(mapped, p_data, p_size);
 		unmapMemory();
+	}
+
+	auto VKBuffer::copyFromBuffer(VKBuffer &p_other) -> void
+	{
+		m_device->copyBuffer(p_other.m_buffer, m_buffer, m_size);
 	}
 }

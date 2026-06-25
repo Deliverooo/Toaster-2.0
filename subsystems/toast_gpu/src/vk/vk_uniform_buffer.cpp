@@ -7,8 +7,8 @@ namespace toaster::gpu
 	{
 		TST_ASSERT_MSG(p_dev, "Device cannot be null");
 
-		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-							   m_buffer, m_bufferMemory);
+		m_device->createBuffer(m_buffer, m_bufferMemory, p_size, vk::BufferUsageFlagBits2::eUniformBuffer,
+							   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
 		m_descriptorInfo.buffer = m_buffer;
 		m_descriptorInfo.offset = 0;
@@ -78,8 +78,8 @@ namespace toaster::gpu
 		{
 			vk::Buffer &      buffer{m_uniformBuffers.emplace_back(nullptr)};
 			vk::DeviceMemory &memory{m_uniformBufferMemories.emplace_back(nullptr)};
-			m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent,
-								   buffer, memory);
+			m_device->createBuffer(buffer, memory, p_size, vk::BufferUsageFlagBits2::eUniformBuffer,
+								   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
 			auto &descriptor_info{m_descriptorBufferInfos.emplace_back()};
 			descriptor_info.buffer = buffer;

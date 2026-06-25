@@ -39,7 +39,7 @@ namespace toaster::render
 			vk::EXTDescriptorHeapExtensionName,
 			vk::KHRShaderUntypedPointersExtensionName,
 			vk::EXTMeshShaderExtensionName,
-			vk::EXTDeviceFaultExtensionName
+			// vk::EXTDeviceFaultExtensionName,
 		};
 		if (use_present)
 			required_device_extensions.insert(vk::KHRSwapchainExtensionName);

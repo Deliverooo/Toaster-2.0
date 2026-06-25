@@ -34,6 +34,7 @@ set(SHADER_SOURCES_VULKAN
 
 		${CMAKE_CURRENT_SOURCE_DIR}/fullscreen_quad.mesh.glsl
 
+		${CMAKE_CURRENT_SOURCE_DIR}/dynamic_mesh.vert.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/dynamic_mesh.mesh.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/dynamic_mesh.task.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/dynamic_mesh.pixel.glsl

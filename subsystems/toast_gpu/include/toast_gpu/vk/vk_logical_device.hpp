@@ -14,12 +14,12 @@ namespace toaster::gpu
 		static auto getDefaultFeatures() -> vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
 			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceShaderObjectFeaturesEXT,
 			vk::PhysicalDeviceDescriptorBufferFeaturesEXT, vk::PhysicalDeviceDescriptorHeapFeaturesEXT, vk::PhysicalDeviceShaderUntypedPointersFeaturesKHR,
-			vk::PhysicalDeviceMeshShaderFeaturesEXT, vk::PhysicalDeviceFaultFeaturesKHR>
+			vk::PhysicalDeviceMeshShaderFeaturesEXT>
 		{
 			vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
 				vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceShaderObjectFeaturesEXT,
 				vk::PhysicalDeviceDescriptorBufferFeaturesEXT, vk::PhysicalDeviceDescriptorHeapFeaturesEXT, vk::PhysicalDeviceShaderUntypedPointersFeaturesKHR,
-				vk::PhysicalDeviceMeshShaderFeaturesEXT, vk::PhysicalDeviceFaultFeaturesKHR> feature_chain{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}};
+				vk::PhysicalDeviceMeshShaderFeaturesEXT> feature_chain{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}};
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                   = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                   = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                    = true;
@@ -45,7 +45,7 @@ namespace toaster::gpu
 			feature_chain.get<vk::PhysicalDeviceShaderUntypedPointersFeaturesKHR>().shaderUntypedPointers = true;
 			feature_chain.get<vk::PhysicalDeviceMeshShaderFeaturesEXT>().meshShader                       = true;
 			feature_chain.get<vk::PhysicalDeviceMeshShaderFeaturesEXT>().taskShader                       = true;
-			feature_chain.get<vk::PhysicalDeviceFaultFeaturesKHR>().deviceFault                           = true;
+			// feature_chain.get<vk::PhysicalDeviceFaultFeaturesKHR>().deviceFault                           = true;
 			return feature_chain;
 		}
 
@@ -128,10 +128,11 @@ namespace toaster::gpu
 		}
 		#pragma endregion
 
-		auto createBuffer(vk::DeviceSize          p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Buffer &p_out_buffer,
-						  vk::raii::DeviceMemory &p_out_memory) -> void;
-		auto createBuffer(vk::DeviceSize    p_size, vk::BufferUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::Buffer &p_out_buffer,
-						  vk::DeviceMemory &p_out_memory) const -> void;
+		auto createBuffer(vk::raii::Buffer &      p_out_buffer, vk::raii::DeviceMemory &p_out_memory, vk::DeviceSize p_size, vk::BufferUsageFlags2 p_usage_flags,
+						  vk::MemoryPropertyFlags p_memory_properties, vk::QueueFlags   p_queue_access_flags = vk::QueueFlagBits::eGraphics) -> void;
+
+		auto createBuffer(vk::Buffer &            p_out_buffer, vk::DeviceMemory &    p_out_memory, vk::DeviceSize p_size, vk::BufferUsageFlags2 p_usage_flags,
+						  vk::MemoryPropertyFlags p_memory_properties, vk::QueueFlags p_queue_access_flags = vk::QueueFlagBits::eGraphics) const -> void;
 
 		auto createImage(const ImageExtent &p_image_extent, uint32 p_layer_count, uint32 p_mip_levels, vk::SampleCountFlagBits p_sample_count, vk::Format p_format,
 						 vk::ImageTiling p_image_tiling, vk::ImageUsageFlags p_usage_flags, vk::MemoryPropertyFlags p_memory_properties, vk::raii::Image &p_out_image,

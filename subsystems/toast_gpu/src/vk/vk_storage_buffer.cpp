@@ -7,8 +7,8 @@ namespace toaster::gpu
 	{
 		TST_ASSERT_MSG(p_device, "Context cannot be null");
 
-		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer,
-							   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, m_buffer, m_bufferMemory);
+		m_device->createBuffer(m_buffer, m_bufferMemory, p_size, vk::BufferUsageFlagBits2::eTransferDst | vk::BufferUsageFlagBits2::eStorageBuffer,
+							   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
 		m_descriptorInfo.buffer = m_buffer;
 		m_descriptorInfo.offset = 0;
@@ -68,8 +68,8 @@ namespace toaster::gpu
 		m_buffer         = nullptr;
 		m_descriptorInfo = vk::DescriptorBufferInfo{};
 
-		m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer,
-							   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, m_buffer, m_bufferMemory);
+		m_device->createBuffer(m_buffer, m_bufferMemory, p_size, vk::BufferUsageFlagBits2::eTransferDst | vk::BufferUsageFlagBits2::eStorageBuffer,
+							   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
 		m_descriptorInfo.buffer = m_buffer;
 		m_descriptorInfo.offset = 0;
@@ -86,8 +86,8 @@ namespace toaster::gpu
 		{
 			vk::Buffer &      buffer{m_storageBuffers.emplace_back(nullptr)};
 			vk::DeviceMemory &memory{m_storageBufferMemories.emplace_back(nullptr)};
-			m_device->createBuffer(p_size, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer,
-								   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, buffer, memory);
+			m_device->createBuffer(buffer, memory, p_size, vk::BufferUsageFlagBits2::eTransferDst | vk::BufferUsageFlagBits2::eStorageBuffer,
+								   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent);
 
 			auto &descriptor_info{m_descriptorBufferInfos.emplace_back()};
 			descriptor_info.buffer = buffer;

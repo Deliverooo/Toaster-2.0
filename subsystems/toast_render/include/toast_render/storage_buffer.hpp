@@ -14,21 +14,19 @@ namespace toaster::render
 		TST_RENDER_OBJECT
 	public:
 		template<typename Type>
-		StorageBuffer(RenderContext &p_render_ctx, const Type &p_data, const String &p_debug_name = "Storage_buffer") : m_renderCtx(&p_render_ctx),
-																														m_debugName(p_debug_name)
+		StorageBuffer(RenderContext &p_render_ctx, const Type &p_data, bool32 p_device_local = false) : m_renderCtx(&p_render_ctx)
 		{
-			_construct(sizeof(Type), (const void *) &p_data);
+			_construct(sizeof(Type), (const void *) &p_data, p_device_local);
 		}
 
 		template<typename Type>
-		StorageBuffer(RenderContext &p_render_ctx, const std::vector<Type> &p_data, const String &p_debug_name = "Storage_buffer") : m_renderCtx(&p_render_ctx),
-																																	 m_debugName(p_debug_name)
+		StorageBuffer(RenderContext &p_render_ctx, const std::vector<Type> &p_data, bool32 p_device_local = false) : m_renderCtx(&p_render_ctx)
 		{
-			_construct(p_data.size() * sizeof(Type), p_data.data());
+			_construct(p_data.size() * sizeof(Type), p_data.data(), p_device_local);
 		}
 
-		StorageBuffer(RenderContext &p_render_ctx, uint64 p_size, const String &p_debug_name = "Storage_buffer");
-		StorageBuffer(RenderContext &p_render_ctx, const void *p_data, uint64 p_size, const String &p_debug_name = "Storage_buffer");
+		StorageBuffer(RenderContext &p_render_ctx, uint64 p_size, bool32 p_device_local = false);
+		StorageBuffer(RenderContext &p_render_ctx, const void *p_data, uint64 p_size, bool32 p_device_local = false);
 		~StorageBuffer();
 
 		auto getDeviceAddress() const -> uintptr;
@@ -53,9 +51,7 @@ namespace toaster::render
 		}
 
 	private:
-		auto _construct(uint64 p_size, const void *p_data = nullptr) -> void;
-
-		String m_debugName;
+		auto _construct(uint64 p_size, const void *p_data = nullptr, bool32 p_device_local = false) -> void;
 
 		gpu::BufferHandle m_SSBO{nullptr};
 
@@ -63,6 +59,11 @@ namespace toaster::render
 	};
 
 	TST_RENDER_DEFINE_HANDLE(StorageBuffer, StorageBuffer);
+
+	using VertexBuffer = StorageBuffer;
+	using IndexBuffer  = StorageBuffer; // Technically I am still waiting on the driver update that will let me use storage buffers as index buffers (24/06/26)
+	TST_RENDER_DEFINE_HANDLE(VertexBuffer, VertexBuffer);
+	TST_RENDER_DEFINE_HANDLE(IndexBuffer, IndexBuffer);
 
 	class TST_RENDER_API StorageBufferPFF
 	{
