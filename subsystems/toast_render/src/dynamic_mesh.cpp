@@ -47,7 +47,13 @@ namespace toaster::render
 			TST_PERMA_ASSERT(false);
 		}
 
-		materialBufferSSBO = m_renderCtx->createUnique<StorageBuffer>(meshData.materialsGPUData, false);
+		materialBufferSSBO   = m_renderCtx->createUnique<StorageBuffer>(meshData.materialsGPUData, false);
+		m_mappedMaterialData = materialBufferSSBO->getBuffer()->mapMemory(materialBufferSSBO->getBuffer()->getSize());
+	}
+
+	DynamicMesh::~DynamicMesh()
+	{
+		materialBufferSSBO->getBuffer()->unmapMemory();
 	}
 
 	auto DynamicMesh::getIndexBuffer() const -> const gpu::Buffer &
@@ -170,6 +176,12 @@ namespace toaster::render
 	auto DynamicMesh::getMeshData() const -> const DynamicMeshData &
 	{
 		return meshData;
+	}
+
+	auto DynamicMesh::getMaterialData(uint32 p_material_index) const -> DynamicMaterialGPUData *
+	{
+		return reinterpret_cast<DynamicMaterialGPUData *>(reinterpret_cast<ptrdiff_t>(m_mappedMaterialData) + static_cast<ptrdiff_t>(
+															  p_material_index * sizeof(DynamicMaterialGPUData)));
 	}
 
 	auto importMeshFromScene(const void *p_scene, DynamicMeshData &p_out_mesh_data) -> void

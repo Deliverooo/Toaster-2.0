@@ -110,6 +110,7 @@ namespace toaster::render
 			const shaderc::Compiler compiler{};
 			shaderc::CompileOptions compile_options{};
 			compile_options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
+			compile_options.SetTargetSpirv(shaderc_spirv_version_1_6);
 
 			compile_options.SetSourceLanguage(shaderc_source_language_glsl);
 

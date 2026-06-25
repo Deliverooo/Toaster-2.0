@@ -62,14 +62,4 @@ namespace toaster::render
 	};
 
 	TST_RENDER_DEFINE_HANDLE(Material, Material)
-
-	// class TST_RENDER_API DynamicMaterial
-	// {
-		// TST_RENDER_OBJECT
-	// public:
-		// DynamicMaterial(RenderContext &p_render_ctx);
-
-	// private:
-		// UniformBufferHandle
-	// };
 }

@@ -28,6 +28,20 @@ namespace toaster::render
 		uint32 materialIndex{0u}; // The index of the material in the array of per-mesh materials
 	};
 
+	// class TST_RENDER_API Material
+	// {
+	// 	TST_RENDER_OBJECT
+	// public:
+	// 	Material(RenderContext &p_render_ctx);
+	//
+	// 	template<typename Type>
+	// 	auto set(const String &p_name, const Type &p_data) -> void
+	// 	{
+	// 	}
+	//
+	// private:
+	// };
+
 	struct TST_RENDER_API DynamicMaterial
 	{
 		ImageHandle albedoMap{nullptr};
@@ -54,12 +68,25 @@ namespace toaster::render
 		std::vector<DynamicMaterial>        materials;
 		std::vector<DynamicMaterialGPUData> materialsGPUData;
 	};
+	//
+	// class TST_RENDER_API RealMaterial
+	// {
+	// 	TST_RENDER_OBJECT
+	// public:
+	// 	RealMaterial(RenderContext &p_render_ctx, DynamicMaterialGPUData *p_data);
+	//
+	// 	auto getData() -> DynamicMaterialGPUData * { return m_mappedData; }
+	//
+	// private:
+	// 	DynamicMaterialGPUData *m_mappedData{nullptr};
+	// };
 
 	class TST_RENDER_API DynamicMesh
 	{
 		TST_RENDER_OBJECT
 	public:
 		DynamicMesh(RenderContext &p_render_ctx, const io::filesystem::Path &p_path);
+		~DynamicMesh();
 
 		auto getIndexBuffer() const -> const gpu::Buffer &;
 
@@ -69,6 +96,8 @@ namespace toaster::render
 
 		auto getMeshData() const -> const DynamicMeshData &;
 
+		auto getMaterialData(uint32 p_material_index) const -> DynamicMaterialGPUData *;
+
 	private:
 		auto _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
 
@@ -76,6 +105,7 @@ namespace toaster::render
 
 		gpu::BufferUnique   m_indexBuffer{nullptr};
 		StorageBufferUnique materialBufferSSBO{nullptr};
+		void *              m_mappedMaterialData{nullptr};
 
 		DynamicMeshData meshData;
 	};

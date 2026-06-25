@@ -20,6 +20,7 @@ namespace toaster::gpu
 		vk::SampleCountFlagBits sampleCount{vk::SampleCountFlagBits::e1};
 		uint32                  mipCount{1u};
 		uint32                  layerCount{1u};
+		bool32                  hostAccess{false}; // Dictates the image tiling
 	};
 
 	// An "Image" represents a texture without a sampler

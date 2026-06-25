@@ -125,10 +125,14 @@ namespace toaster::gpu
 		m_currentImageLayout = vk::ImageLayout::eUndefined;
 
 		auto image_tiling{vk::ImageTiling::eOptimal};
-		if (m_specInfo.usage & vk::ImageUsageFlagBits::eStorage)
+
+		if (m_specInfo.hostAccess) // Linear means that the CPU can read/write to the image. Ts is similar to host visible/coherent for mem props...
 			image_tiling = vk::ImageTiling::eLinear;
-		if (m_specInfo.layerCount > 1)
-			image_tiling = vk::ImageTiling::eOptimal;
+
+		// // if (m_specInfo.usage & vk::ImageUsageFlagBits::eStorage)
+		// 	// image_tiling = vk::ImageTiling::eLinear;
+		// if (m_specInfo.layerCount > 1)
+		// 	image_tiling = vk::ImageTiling::eOptimal;
 
 		m_device->createImage({m_specInfo.size.x, m_specInfo.size.y, 1u}, m_specInfo.layerCount, m_specInfo.mipCount, m_specInfo.sampleCount, m_specInfo.format,
 							  image_tiling, m_specInfo.usage, vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);

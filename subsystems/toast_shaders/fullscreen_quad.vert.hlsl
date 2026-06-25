@@ -7,7 +7,7 @@ struct VSInput
 struct VSOutput
 {
     float4 vert_position : SV_POSITION;
-    [[vk::location(0)]] float3 position : POSITION0;
+    [[vk::location(0)]] float2 position : POSITION0;
     [[vk::location(1)]] float2 texCoord : TEXCOORD0;
 };
 
@@ -26,9 +26,8 @@ VSOutput main(VSInput p_input)
 
     output.vert_position = float4(p_input.position.xy, 0.0f, 1.0f);
 
-    output.position =  output.vert_position.xyz;
+    output.position = p_input.position.xy;
     output.texCoord = p_input.texCoord;
-//    output.texCoord.y *= -1.0f;
 
     return output;
 }

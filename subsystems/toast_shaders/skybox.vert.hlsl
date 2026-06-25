@@ -123,9 +123,7 @@ VSOutput main(VSInput p_input)
     output.vert_position = float4(p_input.position.xy, 0.0f, 1.0f);
 
     float3x3 inv_view = (float3x3)Inverse(pushData.cameraPtr.Get().view);
-
     float4x4 proj  = pushData.cameraPtr.Get().invProj;
-//    proj[1][1] *= -1.0f;
 
     float4 view_pos = mul(proj, output.vert_position);
 

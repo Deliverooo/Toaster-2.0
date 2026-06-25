@@ -218,7 +218,8 @@ namespace toaster::render
 	auto RenderContext::createImageRef(const io::filesystem::Path &p_path) -> RefPtr<Image>
 	{
 		ImageSpecInfo image_spec_info{};
-		Buffer        image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
+		image_spec_info.hostAccess = true;
+		Buffer image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
 		if (!image_data)
 		{
 			LOG_ERROR("Failed to load image: {}", p_path);
@@ -232,6 +233,7 @@ namespace toaster::render
 	auto RenderContext::createImageUnique(const io::filesystem::Path &p_path) -> UniquePtr<Image>
 	{
 		ImageSpecInfo image_spec_info{};
+		image_spec_info.hostAccess = true;
 		Buffer        image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
 		if (!image_data)
 		{
@@ -245,6 +247,7 @@ namespace toaster::render
 	auto RenderContext::loadTextureIntoImage(const io::filesystem::Path &p_path) const -> gpu::RawImageHandle
 	{
 		gpu::ImageSpecInfo image_spec_info{};
+		image_spec_info.hostAccess = true;
 		Buffer             texture_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
 		if (!texture_data)
 		{

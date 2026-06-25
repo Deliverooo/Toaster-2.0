@@ -19,6 +19,8 @@ namespace toaster::render
 		// True if the image should be able to be used as a storage image inside of shaders. Also dictates whether the storage heap id is created in the constructor
 		bool32 storage{false};
 
+		bool32 hostAccess{false};
+
 		uint32 layerCount{1u};
 	};
 

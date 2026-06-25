@@ -33,4 +33,5 @@ set(GLFW_INSTALL ON CACHE BOOL "" FORCE)
 
 add_subdirectory(glfw)
 
+set(MESHOPT_INSTALL ON CACHE BOOL "" FORCE)
 add_subdirectory(meshoptimizer)

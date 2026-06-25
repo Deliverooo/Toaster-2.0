@@ -15,6 +15,7 @@ namespace toaster::render
 		image_spec_info.format     = m_specInfo.format;
 		image_spec_info.usage      = usage_flags;
 		image_spec_info.layerCount = m_specInfo.layerCount;
+		image_spec_info.hostAccess = m_specInfo.hostAccess;
 
 		// You will only use this constructor if you are going to set the data
 		m_image = m_renderCtx->createGPURef<gpu::RawImage>(image_spec_info);
@@ -35,6 +36,7 @@ namespace toaster::render
 		image_spec_info.format     = m_specInfo.format;
 		image_spec_info.usage      = usage_flags;
 		image_spec_info.layerCount = m_specInfo.layerCount;
+		image_spec_info.hostAccess = m_specInfo.hostAccess;
 		m_image                    = m_renderCtx->createGPURef<gpu::RawImage>(image_spec_info);
 
 		gpu::util::toTransferDst(m_image.get());
@@ -54,6 +56,7 @@ namespace toaster::render
 		m_specInfo.layerCount = m_image->getSpecInfo().layerCount;
 		m_specInfo.format     = m_image->getSpecInfo().format;
 		m_specInfo.storage    = !!(m_image->getSpecInfo().usage & vk::ImageUsageFlagBits::eStorage);
+		m_specInfo.hostAccess = m_image->getSpecInfo().hostAccess;
 
 		if (m_specInfo.storage)
 			m_storageHeapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, true);

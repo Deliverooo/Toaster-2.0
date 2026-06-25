@@ -57,7 +57,6 @@ public:
 		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMapImage(m_environmentMap);
 
 		m_mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Backrooms.fbx");
-		// m_mesh = m_renderCtx->createRef<render::Dyn amicMesh>(resources_dir / "meshes/utah_teapot.obj");
 		{
 			m_meshEntity = m_scene->createEntity("Mesh entity");
 			auto &mmc{m_meshEntity.addComponent<NewMeshComponent>()};
@@ -79,6 +78,9 @@ public:
 
 	auto onUpdate(float32 p_dt) -> void override
 	{
+		static float32 time{0.0f};
+		time += p_dt;
+
 		m_scene->onUpdate(p_dt);
 		m_camera.onUpdate(p_dt);
 
