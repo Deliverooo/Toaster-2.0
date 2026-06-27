@@ -20,6 +20,11 @@ namespace toaster::render
 
 	struct TST_RENDER_API SubmeshData
 	{
+		Dx::XMFLOAT4X4 transform{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+		Dx::XMFLOAT4X4 localTransform{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+
+		String name;
+
 		uint32 vertexOffset{0u};
 		uint32 vertexCount{0u};
 		uint32 indexOffset{0u};
@@ -27,20 +32,6 @@ namespace toaster::render
 
 		uint32 materialIndex{0u}; // The index of the material in the array of per-mesh materials
 	};
-
-	// class TST_RENDER_API Material
-	// {
-	// 	TST_RENDER_OBJECT
-	// public:
-	// 	Material(RenderContext &p_render_ctx);
-	//
-	// 	template<typename Type>
-	// 	auto set(const String &p_name, const Type &p_data) -> void
-	// 	{
-	// 	}
-	//
-	// private:
-	// };
 
 	struct TST_RENDER_API DynamicMaterial
 	{
@@ -58,6 +49,17 @@ namespace toaster::render
 		Dx::XMFLOAT4 albedoColour;
 	};
 
+	struct TST_RENDER_API DynamicMeshNode
+	{
+		Dx::XMFLOAT4X4 transform;
+		String         name;
+
+		// The reason I am not using pointers here is that when vectors reallocate, the data gets copied and any pointers may become invalid... :(
+		uint32              parent{UINT32_MAX}; // Index of the parent in DynamicMeshData::nodes
+		std::vector<uint32> children;           // Indices of children in DynamicMeshData::nodes
+		std::vector<uint32> submeshes;          // Indices of the submeshes in the DynamicMeshData submesh array
+	};
+
 	struct TST_RENDER_API DynamicMeshData
 	{
 		std::vector<DynamicMeshVertex> vertices;
@@ -67,19 +69,9 @@ namespace toaster::render
 
 		std::vector<DynamicMaterial>        materials;
 		std::vector<DynamicMaterialGPUData> materialsGPUData;
+
+		std::vector<DynamicMeshNode> nodes;
 	};
-	//
-	// class TST_RENDER_API RealMaterial
-	// {
-	// 	TST_RENDER_OBJECT
-	// public:
-	// 	RealMaterial(RenderContext &p_render_ctx, DynamicMaterialGPUData *p_data);
-	//
-	// 	auto getData() -> DynamicMaterialGPUData * { return m_mappedData; }
-	//
-	// private:
-	// 	DynamicMaterialGPUData *m_mappedData{nullptr};
-	// };
 
 	class TST_RENDER_API DynamicMesh
 	{
@@ -102,8 +94,8 @@ namespace toaster::render
 		auto _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
 
 		VertexBufferUnique vertexBufferSSBO{nullptr};
+		gpu::BufferUnique  m_indexBuffer{nullptr};
 
-		gpu::BufferUnique   m_indexBuffer{nullptr};
 		StorageBufferUnique materialBufferSSBO{nullptr};
 		void *              m_mappedMaterialData{nullptr};
 
@@ -113,4 +105,5 @@ namespace toaster::render
 	TST_RENDER_DEFINE_HANDLE(DynamicMesh, DynamicMesh);
 
 	TST_RENDER_API auto importMeshFromScene(const void *p_scene, DynamicMeshData &p_out_mesh_data) -> void; // const aiScene*
+	TST_RENDER_API auto traverseNodes(DynamicMeshData &p_out_mesh_data, void *p_node, uint32 p_node_index, const Dx::XMFLOAT4X4 &p_parent_transform) -> void;
 }

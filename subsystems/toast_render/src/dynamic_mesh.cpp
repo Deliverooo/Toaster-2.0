@@ -193,14 +193,16 @@ namespace toaster::render
 		uint32 vertex_count{0u};
 		uint32 index_count{0u};
 
-		// uint32 current_vertex_offset{0u};
 		for (uint32 m{0u}; m < scene->mNumMeshes; ++m)
 		{
 			const aiMesh *ai_submesh{scene->mMeshes[m]};
 
+			LOG_INFO("Submesh: {}", ai_submesh->mName.C_Str());
+
 			TST_PERMA_ASSERT_MSG(ai_submesh->HasPositions() && ai_submesh->HasNormals(), "What kind of mesh is ts?!");
 
 			SubmeshData &submesh{p_out_mesh_data.submeshes.emplace_back()};
+			submesh.name          = ai_submesh->mName.C_Str();
 			submesh.materialIndex = ai_submesh->mMaterialIndex;
 			submesh.vertexOffset  = vertex_count;
 			submesh.vertexCount   = ai_submesh->mNumVertices;
@@ -234,6 +236,80 @@ namespace toaster::render
 
 			p_out_mesh_data.vertices.insert(p_out_mesh_data.vertices.end(), raw_vertices.begin(), raw_vertices.end());
 			p_out_mesh_data.indices.insert(p_out_mesh_data.indices.end(), raw_indices.begin(), raw_indices.end());
+		}
+
+		p_out_mesh_data.nodes.emplace_back();
+		traverseNodes(p_out_mesh_data, scene->mRootNode, 0,
+					  Dx::XMFLOAT4X4{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f});
+
+		if (scene->HasAnimations())
+		{
+			LOG_WARN("Scene has animations");
+
+			LOG_INFO("Num animations: {}", scene->mNumAnimations);
+			for (uint32 i{0u}; i < scene->mNumAnimations; ++i)
+			{
+				aiAnimation *anim{scene->mAnimations[i]};
+
+				aiString anim_name{anim->mName};
+				LOG_INFO("Animation name: {}", anim_name.C_Str());
+			}
+
+			LOG_INFO("Num skeletons: {}", scene->mNumSkeletons);
+			for (uint32 i{0u}; i < scene->mNumSkeletons; ++i)
+			{
+				aiSkeleton *skele{scene->mSkeletons[i]};
+
+				aiString skele_name{skele->mName};
+				LOG_INFO("Skeleton name: {}", skele_name.C_Str());
+			}
+		}
+	}
+
+	auto traverseNodes(DynamicMeshData &p_out_mesh_data, void *p_node, uint32 p_node_index, const Dx::XMFLOAT4X4 &p_parent_transform) -> void
+	{
+		auto ai_node{static_cast<aiNode *>(p_node)};
+
+		LOG_INFO("Node: {}", ai_node->mName.C_Str());
+		LOG_INFO("Submesh count: {}", ai_node->mNumMeshes);
+
+		Dx::XMFLOAT4X4 local_transform = mat4FromAIMatrix4x4(ai_node->mTransformation);
+
+		Dx::XMMATRIX local_transform_simd{Dx::XMLoadFloat4x4(&local_transform)};
+		Dx::XMMATRIX parent_transform_simd{Dx::XMLoadFloat4x4(&p_parent_transform)};
+
+		Dx::XMMATRIX global_transform_simd = Dx::XMMatrixMultiply(local_transform_simd, parent_transform_simd);
+
+		Dx::XMFLOAT4X4 global_transform;
+		Dx::XMStoreFloat4x4(&global_transform, global_transform_simd);
+
+		DynamicMeshNode &node{p_out_mesh_data.nodes[p_node_index]};
+		node.name      = ai_node->mName.C_Str();
+		node.transform = local_transform;
+
+		for (uint32 i{0u}; i < ai_node->mNumMeshes; ++i)
+		{
+			uint32 submesh_index{ai_node->mMeshes[i]};
+			auto & submesh{p_out_mesh_data.submeshes[submesh_index]};
+			submesh.transform      = global_transform;
+			submesh.localTransform = local_transform;
+
+			node.submeshes.emplace_back(submesh_index);
+		}
+
+		node.children.resize(ai_node->mNumChildren);
+
+		for (uint32 i{0u}; i < ai_node->mNumChildren; ++i)
+		{
+			p_out_mesh_data.nodes.emplace_back();
+			uint32 child_index{static_cast<uint32>(p_out_mesh_data.nodes.size()) - 1u};
+
+			DynamicMeshNode &parent_node{p_out_mesh_data.nodes[p_node_index]};
+			parent_node.children[i] = child_index;
+
+			p_out_mesh_data.nodes[child_index].parent = p_node_index; // FIX: Use explicit p_node_index
+
+			traverseNodes(p_out_mesh_data, ai_node->mChildren[i], child_index, global_transform);
 		}
 	}
 }

@@ -26,7 +26,8 @@ class ClientLayer : public IAppLayer
 public:
 	struct SceneDataUB
 	{
-		Dx::XMFLOAT4 cameraPos;
+		Dx::XMFLOAT3 cameraPos;
+		float32      _padd[1];
 	};
 
 	auto onInit() -> void override
@@ -56,17 +57,28 @@ public:
 		m_environmentMap       = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/overcast_soil_puresky_2k.hdr");
 		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMapImage(m_environmentMap);
 
-		m_mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Backrooms.fbx");
-		{
-			m_meshEntity = m_scene->createEntity("Mesh entity");
-			auto &mmc{m_meshEntity.addComponent<NewMeshComponent>()};
-			mmc.mesh = m_mesh;
-		}
-
 		{
 			Entity orbo_entity{m_scene->createEntity("Orbo")};
 			auto & mmc{orbo_entity.addComponent<NewMeshComponent>()};
-			mmc.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Wait_Dance.fbx");
+			mmc.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.fbx");
+
+			// auto body_mat{mmc.mesh->getMaterialData(0)};
+			// body_mat->metalness = 0.0f;
+
+			// auto outline_mat{mmc.mesh->getMaterialData(1)};
+			// outline_mat->metalness    = 1.0f;
+			// outline_mat->albedoColour = {0.0f, 0.0f, 0.0f, 1.0f};
+		}
+
+		{
+			Entity teapot_entity{m_scene->createEntity("Teapot")};
+			auto & mmc{teapot_entity.addComponent<NewMeshComponent>()};
+			mmc.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/utah_teapot.obj");
+
+			auto mat{mmc.mesh->getMaterialData(0)};
+			mat->roughness = 0.0f;
+
+			teapot_entity.getTranslation() = {10.0f, 0.0f, 0.0f};
 		}
 
 		m_skyboxPass = m_renderCtx->createUnique<render::SkyboxPass>(m_viewportSize, m_environmentMap, true);
@@ -83,18 +95,6 @@ public:
 
 		m_scene->onUpdate(p_dt);
 		m_camera.onUpdate(p_dt);
-
-		{
-			auto &tc{m_meshEntity.getComponent<TransformComponent>()};
-
-			Dx::XMVECTOR translation{Dx::XMLoadFloat3(&tc.translation)};
-			if (m_inputCtx->isKeyDown(input::EKeyCode::eUp))
-				translation = Dx::XMVectorAdd(translation, Dx::XMVectorSet(0.0f, 1.0f * p_dt, 0.0f, 1.0f));
-			if (m_inputCtx->isKeyDown(input::EKeyCode::eDown))
-				translation = Dx::XMVectorSubtract(translation, Dx::XMVectorSet(0.0f, 1.0f * p_dt, 0.0f, 1.0f));
-
-			Dx::XMStoreFloat3(&tc.translation, translation);
-		}
 
 		render::Globals::CameraUB camera_ub{};
 		Dx::XMStoreFloat4x4(&camera_ub.viewMatrix, m_camera.getViewMatrix());
@@ -116,7 +116,7 @@ public:
 		m_geometryGraphicsState->bind();
 		m_renderCtx->beginRendering(rendering_info);
 		SceneDataUB scene_data_ub{};
-		Dx::XMStoreFloat4(&scene_data_ub.cameraPos, m_camera.getPosition());
+		Dx::XMStoreFloat3(&scene_data_ub.cameraPos, m_camera.getPosition());
 		m_sceneDataUBOs->setData(scene_data_ub);
 
 		for (const auto view{m_scene->getRegistry().view<NewMeshComponent>()}; const auto entity: view)
@@ -132,7 +132,6 @@ public:
 				MeshletMeshConstants meshlet_mesh_constants{};
 				meshlet_mesh_constants.vertexBuffer = mesh->getVertexBufferAddress();
 
-				Dx::XMStoreFloat4x4(&meshlet_mesh_constants.meshTransform, transform);
 				meshlet_mesh_constants.materialBuffer = mesh->getMaterialBufferAddress();
 
 				meshlet_mesh_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
@@ -145,6 +144,8 @@ public:
 
 				for (const auto &submesh: mesh->getMeshData().submeshes)
 				{
+					Dx::XMStoreFloat4x4(&meshlet_mesh_constants.meshTransform, Dx::XMMatrixMultiply(Dx::XMLoadFloat4x4(&submesh.transform), transform));
+
 					meshlet_mesh_constants.materialIndex = submesh.materialIndex;
 					cmd->pushData(meshlet_mesh_constants);
 
