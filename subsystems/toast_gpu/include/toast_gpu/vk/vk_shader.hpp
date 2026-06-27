@@ -95,16 +95,19 @@ namespace toaster::gpu
 						vk::ShaderStageFlagBits p_next_stage = vk::ShaderStageFlagBits{0u});
 		~VKDynamicShader();
 
-		auto bind(VKCommandBuffer * p_command_buffer = nullptr) const -> void;
+		auto bind(VKCommandBuffer *p_command_buffer = nullptr) const -> void;
 
 		[[nodiscard]] auto getShader() const -> vk::ShaderEXT;
 		[[nodiscard]] auto getStage() const -> vk::ShaderStageFlagBits;
 		[[nodiscard]] auto getNextStage() const -> vk::ShaderStageFlagBits;
+		[[nodiscard]] auto getBytecode() const -> const ShaderBytecode &;
 
 	private:
 		vk::raii::ShaderEXT     m_shader{nullptr};
 		vk::ShaderStageFlagBits m_stage{};
 		vk::ShaderStageFlagBits m_nextStage{};
+
+		ShaderBytecode m_bytecode;
 	};
 
 	TST_GPU_DEFINE_HANDLE(VKDynamicShader, DynamicShader)

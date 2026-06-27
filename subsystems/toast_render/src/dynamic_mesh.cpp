@@ -66,7 +66,6 @@ namespace toaster::render
 		auto ai_mat{static_cast<aiMaterial *>(p_mat)};
 
 		String material_name{ai_mat->GetName().C_Str()};
-		LOG_INFO("Creating new material: {}", material_name);
 
 		auto &mat_data{meshData.materials.emplace_back()};
 		auto &gpu_mat_data{meshData.materialsGPUData.emplace_back()};
@@ -96,7 +95,7 @@ namespace toaster::render
 					}
 				}
 
-				LOG_INFO("\tSuccessfully found {} map: {}", p_tex_name, tex_map_path);
+				// LOG_INFO("\tSuccessfully found {} map: {}", p_tex_name, tex_map_path);
 				return tex_map_path;
 			}
 		};
@@ -197,8 +196,6 @@ namespace toaster::render
 		{
 			const aiMesh *ai_submesh{scene->mMeshes[m]};
 
-			LOG_INFO("Submesh: {}", ai_submesh->mName.C_Str());
-
 			TST_PERMA_ASSERT_MSG(ai_submesh->HasPositions() && ai_submesh->HasNormals(), "What kind of mesh is ts?!");
 
 			SubmeshData &submesh{p_out_mesh_data.submeshes.emplace_back()};
@@ -244,24 +241,18 @@ namespace toaster::render
 
 		if (scene->HasAnimations())
 		{
-			LOG_WARN("Scene has animations");
-
-			LOG_INFO("Num animations: {}", scene->mNumAnimations);
 			for (uint32 i{0u}; i < scene->mNumAnimations; ++i)
 			{
 				aiAnimation *anim{scene->mAnimations[i]};
 
 				aiString anim_name{anim->mName};
-				LOG_INFO("Animation name: {}", anim_name.C_Str());
 			}
 
-			LOG_INFO("Num skeletons: {}", scene->mNumSkeletons);
 			for (uint32 i{0u}; i < scene->mNumSkeletons; ++i)
 			{
 				aiSkeleton *skele{scene->mSkeletons[i]};
 
 				aiString skele_name{skele->mName};
-				LOG_INFO("Skeleton name: {}", skele_name.C_Str());
 			}
 		}
 	}
@@ -269,9 +260,6 @@ namespace toaster::render
 	auto traverseNodes(DynamicMeshData &p_out_mesh_data, void *p_node, uint32 p_node_index, const Dx::XMFLOAT4X4 &p_parent_transform) -> void
 	{
 		auto ai_node{static_cast<aiNode *>(p_node)};
-
-		LOG_INFO("Node: {}", ai_node->mName.C_Str());
-		LOG_INFO("Submesh count: {}", ai_node->mNumMeshes);
 
 		Dx::XMFLOAT4X4 local_transform = mat4FromAIMatrix4x4(ai_node->mTransformation);
 

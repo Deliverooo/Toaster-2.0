@@ -533,27 +533,27 @@ namespace toaster::gpu
 	}
 
 	VKDynamicShader::VKDynamicShader(VKLogicalDevice *       p_device, const ShaderBytecode &p_bytecode, vk::ShaderStageFlagBits p_stage,
-									 vk::ShaderStageFlagBits p_next_stage) : m_device(p_device), m_stage(p_stage), m_nextStage(p_next_stage)
+									 vk::ShaderStageFlagBits p_next_stage) : m_device(p_device), m_stage(p_stage), m_nextStage(p_next_stage), m_bytecode(p_bytecode)
 	{
 		TST_PERMA_ASSERT_MSG(!p_bytecode.empty(), "Your shader compilation failed, or you have the wrong path");
 
 		vk::ShaderCreateInfoEXT shader_create_info{};
 		shader_create_info.stage     = m_stage;
 		shader_create_info.nextStage = m_nextStage;
-		shader_create_info.codeSize  = p_bytecode.size() * sizeof(uint32);
-		shader_create_info.pCode     = p_bytecode.data();
+		shader_create_info.codeSize  = m_bytecode.size() * sizeof(uint32);
+		shader_create_info.pCode     = m_bytecode.data();
 		shader_create_info.codeType  = vk::ShaderCodeTypeEXT::eSpirv;
 		shader_create_info.pName     = "main";
 		shader_create_info.flags     = vk::ShaderCreateFlagBitsEXT::eDescriptorHeap;
 		// if (m_stage == vk::ShaderStageFlagBits::eMeshEXT)
-			// shader_create_info.flags |= vk::ShaderCreateFlagBitsEXT::eNoTaskShader;
+		// shader_create_info.flags |= vk::ShaderCreateFlagBitsEXT::eNoTaskShader;
 
 		m_shader = m_device->getVulkanLogicalDevice().createShaderEXT(shader_create_info);
 	}
 
 	VKDynamicShader::~VKDynamicShader()
 	{
-		m_device->deferDestruction([device = m_device, shader = std::move(m_shader)]() mutable -> void
+		m_device->deferDestruction([shader = std::move(m_shader)]() mutable -> void
 		{
 			shader = nullptr;
 		});
@@ -578,6 +578,11 @@ namespace toaster::gpu
 	auto VKDynamicShader::getNextStage() const -> vk::ShaderStageFlagBits
 	{
 		return m_nextStage;
+	}
+
+	auto VKDynamicShader::getBytecode() const -> const ShaderBytecode &
+	{
+		return m_bytecode;
 	}
 }
 

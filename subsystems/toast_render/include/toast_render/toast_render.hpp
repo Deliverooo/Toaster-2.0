@@ -13,6 +13,10 @@
 // Everyone should get the core stuff
 #include "toast_lib/core_basic.hpp"
 
+namespace toaster::render
+{
+	class RenderContext;
+}
 #define TST_RENDER_DEFINE_HANDLE(__type, __name) using __name##Handle = ::toaster::RefPtr<__type>; using __name##Unique = ::toaster::UniquePtr<__type>;
 #define TST_RENDER_OBJECT\
 						private:\

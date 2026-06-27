@@ -5,11 +5,10 @@
 layout(location = 0) in vec3 m_WorldPos;
 layout(location = 1) in vec3 m_Normal;
 layout(location = 2) in vec2 m_TexCoord;
-//layout(location = 3) in flat uint m_MaterialIndex;
 
 layout(location = 0) out vec4 o_Colour;
 
-struct Material
+struct TST__Material
 {
     uint samplerIndex;
     uint albedoMapIndex;
@@ -18,10 +17,10 @@ struct Material
     float metalness;
 
     vec4 albedoColour;
-};
+};  
 
 layout(buffer_reference, std140) readonly buffer SceneData { vec4 cameraPosition; };
-layout(std430, buffer_reference) readonly buffer MaterialBuffer { Material materials[]; };
+layout(std430, buffer_reference) readonly buffer MaterialBuffer { TST__Material materials[]; };
 
 layout(push_constant) uniform Constants
 {
@@ -49,7 +48,7 @@ void main()
     glob.view = normalize(cam_pos - m_WorldPos);// Get the direction of the view from the camera to the frag pos
     glob.nDotV = max(dot(glob.normal, glob.view), 0.0001f);// Tells us how much the view direction is aligned with the surface normal
 
-    Material material = pcs.materialBuffer.materials[pcs.materialIndex];
+    TST__Material material = pcs.materialBuffer.materials[pcs.materialIndex];
 
     glob.albedo = texture(sampler2D(texture2DHeap[material.albedoMapIndex], samplerHeap[material.samplerIndex]), m_TexCoord).rgb;
     glob.albedo *= material.albedoColour.rgb;
@@ -73,8 +72,8 @@ void main()
 
     vec3 final_colour = ambient;// + lo
 
-//    o_Colour = vec4(glob.normal, 1.0f);
-//        o_Colour = vec4(glob.f0, 1.0f);
-//        o_Colour = vec4(vec3(glob.nDotV), 1.0f);
-            o_Colour = vec4(final_colour, 1.0f);
+    //    o_Colour = vec4(glob.normal, 1.0f);
+    //        o_Colour = vec4(glob.f0, 1.0f);
+    //        o_Colour = vec4(vec3(glob.nDotV), 1.0f);
+    o_Colour = vec4(final_colour, 1.0f);
 }

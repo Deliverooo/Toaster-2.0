@@ -11,6 +11,8 @@
 #include "toast_render/dynamic_mesh.hpp"
 #include "toast_render/skybox_pass.hpp"
 
+#include "toast_render/shader_reflection.hpp"
+
 using namespace toaster;
 
 struct NewMeshComponent
@@ -48,6 +50,9 @@ public:
 
 		auto vertex_shader{m_globals->getShader("Dynamic_Mesh_VS")};
 		auto pixel_shader{m_globals->getShader("Dynamic_Mesh_PS")};
+
+		render::reflectShader(*pixel_shader);
+
 		m_geometryGraphicsState->setShaders({vertex_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eBack).setEnableDepthTest(true).
 				setEnableDepthWrite(true).setEnableMultisample(true);
 
@@ -61,13 +66,6 @@ public:
 			Entity orbo_entity{m_scene->createEntity("Orbo")};
 			auto & mmc{orbo_entity.addComponent<NewMeshComponent>()};
 			mmc.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.fbx");
-
-			// auto body_mat{mmc.mesh->getMaterialData(0)};
-			// body_mat->metalness = 0.0f;
-
-			// auto outline_mat{mmc.mesh->getMaterialData(1)};
-			// outline_mat->metalness    = 1.0f;
-			// outline_mat->albedoColour = {0.0f, 0.0f, 0.0f, 1.0f};
 		}
 
 		{

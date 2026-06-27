@@ -10,7 +10,9 @@ struct PBRGlobals
     vec3 albedo;
     float roughness;
     float metalness;
-} glob;
+};
+
+PBRGlobals glob;
 
 float distributionGGX(vec3 p_normal, vec3 p_halfway, float p_roughness)
 {
