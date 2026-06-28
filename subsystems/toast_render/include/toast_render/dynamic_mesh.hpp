@@ -33,12 +33,12 @@ namespace toaster::render
 		uint32 materialIndex{0u}; // The index of the material in the array of per-mesh materials
 	};
 
-	struct TST_RENDER_API DynamicMaterial
+	struct TST_RENDER_API MeshDynamicMaterial
 	{
 		ImageHandle albedoMap{nullptr};
 	};
 
-	struct TST_RENDER_API DynamicMaterialGPUData
+	struct TST_RENDER_API MeshDynamicMaterialGPUData
 	{
 		uint32 samplerIndex;
 		uint32 albedoMapIndex;
@@ -67,8 +67,8 @@ namespace toaster::render
 
 		std::vector<SubmeshData> submeshes;
 
-		std::vector<DynamicMaterial>        materials;
-		std::vector<DynamicMaterialGPUData> materialsGPUData;
+		std::vector<MeshDynamicMaterial>        materials;
+		std::vector<MeshDynamicMaterialGPUData> materialsGPUData;
 
 		std::vector<DynamicMeshNode> nodes;
 	};
@@ -88,7 +88,7 @@ namespace toaster::render
 
 		auto getMeshData() const -> const DynamicMeshData &;
 
-		auto getMaterialData(uint32 p_material_index) const -> DynamicMaterialGPUData *;
+		auto getMaterialData(uint32 p_material_index) const -> MeshDynamicMaterialGPUData *;
 
 	private:
 		auto _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;

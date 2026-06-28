@@ -11,7 +11,7 @@
 #include "toast_render/dynamic_mesh.hpp"
 #include "toast_render/skybox_pass.hpp"
 
-#include "toast_render/shader_reflection.hpp"
+#include "toast_render/dynamic_material.hpp"
 
 using namespace toaster;
 
@@ -51,7 +51,15 @@ public:
 		auto vertex_shader{m_globals->getShader("Dynamic_Mesh_VS")};
 		auto pixel_shader{m_globals->getShader("Dynamic_Mesh_PS")};
 
-		render::reflectShader(*pixel_shader);
+		m_image = m_renderCtx->createImageRef(resources_dir / "textures/Peeber.png");
+
+		auto reflection_data{render::reflection::reflectShader(*pixel_shader)};
+		auto material_struct{render::findMaterialDeclaration(reflection_data)};
+		TST_PERMA_ASSERT(material_struct);
+		m_material = m_renderCtx->createUnique<render::DynamicMaterial>("New_Material", *material_struct);
+
+		m_material->set("albedoMapIndex", m_image);
+		m_material->set("samplerIndex", m_renderCtx->getSampler(render::ESamplerType::eDefault));
 
 		m_geometryGraphicsState->setShaders({vertex_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eBack).setEnableDepthTest(true).
 				setEnableDepthWrite(true).setEnableMultisample(true);
@@ -130,6 +138,8 @@ public:
 				MeshletMeshConstants meshlet_mesh_constants{};
 				meshlet_mesh_constants.vertexBuffer = mesh->getVertexBufferAddress();
 
+				meshlet_mesh_constants.materialTest = m_material->getDeviceAddress();
+
 				meshlet_mesh_constants.materialBuffer = mesh->getMaterialBufferAddress();
 
 				meshlet_mesh_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
@@ -147,7 +157,7 @@ public:
 					meshlet_mesh_constants.materialIndex = submesh.materialIndex;
 					cmd->pushData(meshlet_mesh_constants);
 
-					cmd->drawIndexed(submesh.indexCount, 1, submesh.indexOffset, submesh.vertexOffset, 0);
+					cmd->drawIndexed(submesh.indexCount, 1, submesh.indexOffset, static_cast<int32>(submesh.vertexOffset), 0);
 				}
 			}
 		}
@@ -178,6 +188,8 @@ private:
 	gpu::RawImageUnique m_MSAAColour{nullptr};
 	gpu::RawImageUnique m_MSAADepth{nullptr};
 
+	render::ImageHandle m_image{nullptr};
+
 	UniquePtr<Scene> m_scene{nullptr};
 
 	render::UniformBufferPFFUnique m_cameraUBOs{nullptr};
@@ -188,13 +200,13 @@ private:
 
 	render::GraphicsStateUnique m_geometryGraphicsState{nullptr};
 
-	RefPtr<render::DynamicMesh> m_mesh{nullptr};
-	Entity                      m_meshEntity;
+	render::DynamicMaterialUnique m_material{nullptr};
 
 	TST_PUSH_CONSTANT_BLOCK(MeshletMeshConstants)
 	{
 		uintptr vertexBuffer;
-		float32 _padd[2];
+
+		uintptr materialTest;
 
 		Dx::XMFLOAT4X4 meshTransform;
 		uintptr        materialBuffer;

@@ -177,10 +177,10 @@ namespace toaster::render
 		return meshData;
 	}
 
-	auto DynamicMesh::getMaterialData(uint32 p_material_index) const -> DynamicMaterialGPUData *
+	auto DynamicMesh::getMaterialData(uint32 p_material_index) const -> MeshDynamicMaterialGPUData *
 	{
-		return reinterpret_cast<DynamicMaterialGPUData *>(reinterpret_cast<ptrdiff_t>(m_mappedMaterialData) + static_cast<ptrdiff_t>(
-															  p_material_index * sizeof(DynamicMaterialGPUData)));
+		return reinterpret_cast<MeshDynamicMaterialGPUData *>(reinterpret_cast<ptrdiff_t>(m_mappedMaterialData) + static_cast<ptrdiff_t>(
+															  p_material_index * sizeof(MeshDynamicMaterialGPUData)));
 	}
 
 	auto importMeshFromScene(const void *p_scene, DynamicMeshData &p_out_mesh_data) -> void
