@@ -27,10 +27,16 @@ namespace toaster::render
 	class ComputePass;
 	class Image;
 	class ShaderCompiler;
+	class DynamicMaterial;
 
 	enum class ESamplerType
 	{
 		eDefault, eNearest, eIrradianceMap
+	};
+
+	enum class EMaterialType
+	{
+		ePBR, eFlat
 	};
 
 	struct TST_RENDER_API RenderContextSpecInfo
@@ -184,6 +190,7 @@ namespace toaster::render
 		[[nodiscard]] auto createShaderFromSpirV(const io::filesystem::Path &p_spir_v_path, EShaderStage p_stage,
 												 EShaderStage                p_next_stage = EShaderStage::eNone) const -> gpu::DynamicShaderHandle;
 
+		[[nodiscard]] auto createMaterial(const String &p_name, EMaterialType p_material_type) -> RefPtr<DynamicMaterial>;
 		#pragma region render logic
 		// For all of these, if the frame index or command buffer parameter is null / 0, they will be obtained from the swapchain instead
 

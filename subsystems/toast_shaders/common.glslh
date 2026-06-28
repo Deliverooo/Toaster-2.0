@@ -9,6 +9,3 @@
 layout(descriptor_heap) uniform texture2D texture2DHeap[];
 layout(descriptor_heap) uniform textureCube textureCubeHeap[];
 layout(descriptor_heap) uniform sampler samplerHeap[];
-
-#define TST_MATERIAL_NAME(__name) TST__##__name
-#define TST_MATERIAL(__name) struct TST_MATERIAL_NAME(__name)

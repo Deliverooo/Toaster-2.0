@@ -3,6 +3,7 @@
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_lib/io/filesystem.hpp"
+#include "toast_render/dynamic_material.hpp"
 #include "toast_render/render_context.hpp"
 
 namespace toaster::render
@@ -121,6 +122,21 @@ namespace toaster::render
 	{
 		TST_PERMA_ASSERT(!m_shaders.contains(p_name));
 		m_shaders[p_name] = p_shader;
+	}
+
+	auto Globals::reflectShader(const String &p_name) -> const ShaderReflectionData &
+	{
+		auto shader{m_shaders.at(p_name)};
+
+		auto &data{m_shaderReflectionData[p_name]};
+		data.reflectionData = reflection::reflectShader(*shader);
+		data.materialStruct = *findMaterialDeclaration(data.reflectionData);
+		return m_shaderReflectionData.at(p_name);
+	}
+
+	auto Globals::getShaderReflectionData(const String &p_name) const -> const ShaderReflectionData &
+	{
+		return m_shaderReflectionData.at(p_name);
 	}
 
 	auto Globals::fullscreenQuadVertexBuffer() const -> const gpu::VertexBufferHandle &

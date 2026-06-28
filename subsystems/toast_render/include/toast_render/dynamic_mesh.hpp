@@ -1,5 +1,6 @@
 #pragma once
 
+#include "dynamic_material.hpp"
 #include "image.hpp"
 #include "storage_buffer.hpp"
 #include "toast_render.hpp"
@@ -67,8 +68,8 @@ namespace toaster::render
 
 		std::vector<SubmeshData> submeshes;
 
-		std::vector<MeshDynamicMaterial>        materials;
-		std::vector<MeshDynamicMaterialGPUData> materialsGPUData;
+		// std::vector<MeshDynamicMaterial>        materials;
+		// std::vector<MeshDynamicMaterialGPUData> materialsGPUData;
 
 		std::vector<DynamicMeshNode> nodes;
 	};
@@ -80,15 +81,18 @@ namespace toaster::render
 		DynamicMesh(RenderContext &p_render_ctx, const io::filesystem::Path &p_path);
 		~DynamicMesh();
 
-		auto getIndexBuffer() const -> const gpu::Buffer &;
+		[[nodiscard]] auto getIndexBuffer() const -> const gpu::Buffer &;
 
-		auto getVertexBufferAddress() const -> uintptr;
-		auto getIndexBufferAddress() const -> uintptr;
-		auto getMaterialBufferAddress() const -> uintptr;
+		[[nodiscard]] auto getVertexBufferAddress() const -> uintptr;
+		[[nodiscard]] auto getIndexBufferAddress() const -> uintptr;
 
-		auto getMeshData() const -> const DynamicMeshData &;
+		[[nodiscard]] auto getMeshData() const -> const DynamicMeshData &;
 
-		auto getMaterialData(uint32 p_material_index) const -> MeshDynamicMaterialGPUData *;
+		[[nodiscard]] auto getMaterials() const -> const std::vector<DynamicMaterialHandle> &;
+		[[nodiscard]] auto getMaterials() -> std::vector<DynamicMaterialHandle> &;
+
+		[[nodiscard]] auto getMaterial(uint32 p_index) const -> const DynamicMaterialHandle &;
+		[[nodiscard]] auto getMaterial(uint32 p_index) -> DynamicMaterialHandle &;
 
 	private:
 		auto _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
@@ -96,8 +100,7 @@ namespace toaster::render
 		VertexBufferUnique vertexBufferSSBO{nullptr};
 		gpu::BufferUnique  m_indexBuffer{nullptr};
 
-		StorageBufferUnique materialBufferSSBO{nullptr};
-		void *              m_mappedMaterialData{nullptr};
+		std::vector<DynamicMaterialHandle> m_materials;
 
 		DynamicMeshData meshData;
 	};

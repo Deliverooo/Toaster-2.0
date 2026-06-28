@@ -8,11 +8,13 @@
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_lib/os/terminal.hpp"
 #include "toast_render/compute_pass.hpp"
+#include "toast_render/dynamic_material.hpp"
 #include "toast_render/image.hpp"
 #include "toast_render/renderer_2d.hpp"
 #include "toast_render/render_pass.hpp"
 
 #include "toast_render/shader_compiler.hpp"
+#include "toast_render/shader_reflection.hpp"
 
 namespace toaster::render
 {
@@ -137,6 +139,8 @@ namespace toaster::render
 			GlobalsSpecInfo globals_spec_info{};
 			globals_spec_info.shaderBinaryDir = io::filesystem::exists(m_specInfo.sdkDir) ? m_specInfo.sdkDir / "shaders" : os::getBinaryDirectory() / "shaders";
 			m_globals                         = new Globals{*this, globals_spec_info};
+
+			m_globals->reflectShader("Dynamic_Mesh_PS"); // Create the necessary reflection data for the PBR material
 		}
 	}
 
@@ -234,7 +238,7 @@ namespace toaster::render
 	{
 		ImageSpecInfo image_spec_info{};
 		image_spec_info.hostAccess = true;
-		Buffer        image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
+		Buffer image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
 		if (!image_data)
 		{
 			LOG_ERROR("Failed to load image: {}", p_path);
@@ -248,7 +252,7 @@ namespace toaster::render
 	{
 		gpu::ImageSpecInfo image_spec_info{};
 		image_spec_info.hostAccess = true;
-		Buffer             texture_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
+		Buffer texture_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
 		if (!texture_data)
 		{
 			TST_ASSERT(false);
@@ -488,6 +492,23 @@ namespace toaster::render
 	{
 		TST_ASSERT(io::filesystem::exists(p_spir_v_path));
 		return createGPURef<gpu::DynamicShader>(io::filesystem::readBinary(p_spir_v_path), getVulkanShaderStage(p_stage), getVulkanShaderStage((p_next_stage)));
+	}
+
+	auto RenderContext::createMaterial(const String &p_name, EMaterialType p_material_type) -> RefPtr<DynamicMaterial>
+	{
+		switch (p_material_type)
+		{
+			case EMaterialType::ePBR:
+			{
+				const auto &material_struct{m_globals->getShaderReflectionData("Dynamic_Mesh_PS").materialStruct};
+				return createRef<DynamicMaterial>(p_name, material_struct);
+			}
+			case EMaterialType::eFlat:
+			{
+				return nullptr;
+			}
+		}
+		return nullptr;
 	}
 
 	auto RenderContext::beginRenderPass(const RenderingInfo &p_rendering_info, RenderPass *p_render_pass, gpu::CommandBuffer *p_command_buffer,

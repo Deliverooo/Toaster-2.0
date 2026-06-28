@@ -23,13 +23,11 @@ layout(buffer_reference, std140) readonly buffer Camera
 
 layout(push_constant) uniform Constants
 {
-    VertexBuffer vbo;
-    float _padd[2];
-
     mat4 meshTransform;
-    uint64_t        materialBuffer;
-    uint            materialIndex;
-    float           _padd2[1];
+
+    VertexBuffer vbo;
+
+    uint64_t material;
 
     Camera cameraPtr;
     uint64_t sceneDataPtr;

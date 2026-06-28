@@ -38,8 +38,8 @@ public:
 
 		m_camera = FPCamera{m_inputCtx, 90.0f, m_viewportSize.aspect(), 0.1f, 1000.0f};
 
-		auto binary_dir{os::getBinaryDirectory()};
-		auto resources_dir{binary_dir / "../resources"};
+		const auto binary_dir{os::getBinaryDirectory()};
+		const auto resources_dir{binary_dir / "../resources"};
 
 		m_MSAAColour = m_renderCtx->createMultisampleAttachmentImageUnique(m_viewportSize, vk::ImageAspectFlagBits::eColor, vk::Format::eR8G8B8A8Srgb);
 		m_MSAADepth  = m_renderCtx->createMultisampleAttachmentImageUnique(m_viewportSize, vk::ImageAspectFlagBits::eDepth);
@@ -48,18 +48,10 @@ public:
 
 		m_geometryGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
 
-		auto vertex_shader{m_globals->getShader("Dynamic_Mesh_VS")};
-		auto pixel_shader{m_globals->getShader("Dynamic_Mesh_PS")};
+		const auto vertex_shader{m_globals->getShader("Dynamic_Mesh_VS")};
+		const auto pixel_shader{m_globals->getShader("Dynamic_Mesh_PS")};
 
-		m_image = m_renderCtx->createImageRef(resources_dir / "textures/Peeber.png");
-
-		auto reflection_data{render::reflection::reflectShader(*pixel_shader)};
-		auto material_struct{render::findMaterialDeclaration(reflection_data)};
-		TST_PERMA_ASSERT(material_struct);
-		m_material = m_renderCtx->createUnique<render::DynamicMaterial>("New_Material", *material_struct);
-
-		m_material->set("albedoMapIndex", m_image);
-		m_material->set("samplerIndex", m_renderCtx->getSampler(render::ESamplerType::eDefault));
+		m_image = m_renderCtx->createImageRef(resources_dir / "textures/ooorbo.png");
 
 		m_geometryGraphicsState->setShaders({vertex_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eBack).setEnableDepthTest(true).
 				setEnableDepthWrite(true).setEnableMultisample(true);
@@ -73,18 +65,17 @@ public:
 		{
 			Entity orbo_entity{m_scene->createEntity("Orbo")};
 			auto & mmc{orbo_entity.addComponent<NewMeshComponent>()};
-			mmc.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.fbx");
+			mmc.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Backrooms.fbx");
 		}
 
 		{
 			Entity teapot_entity{m_scene->createEntity("Teapot")};
 			auto & mmc{teapot_entity.addComponent<NewMeshComponent>()};
-			mmc.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/utah_teapot.obj");
+			mmc.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.fbx");
 
-			auto mat{mmc.mesh->getMaterialData(0)};
-			mat->roughness = 0.0f;
+			mmc.mesh->getMaterial(0)->set("metalness", 0.0f);
+			mmc.mesh->getMaterial(1)->set("metalness", 1.0f);
 
-			teapot_entity.getTranslation() = {10.0f, 0.0f, 0.0f};
 		}
 
 		m_skyboxPass = m_renderCtx->createUnique<render::SkyboxPass>(m_viewportSize, m_environmentMap, true);
@@ -138,10 +129,6 @@ public:
 				MeshletMeshConstants meshlet_mesh_constants{};
 				meshlet_mesh_constants.vertexBuffer = mesh->getVertexBufferAddress();
 
-				meshlet_mesh_constants.materialTest = m_material->getDeviceAddress();
-
-				meshlet_mesh_constants.materialBuffer = mesh->getMaterialBufferAddress();
-
 				meshlet_mesh_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
 				meshlet_mesh_constants.sceneDataPtr = m_sceneDataUBOs->getDeviceAddress();
 
@@ -154,7 +141,9 @@ public:
 				{
 					Dx::XMStoreFloat4x4(&meshlet_mesh_constants.meshTransform, Dx::XMMatrixMultiply(Dx::XMLoadFloat4x4(&submesh.transform), transform));
 
-					meshlet_mesh_constants.materialIndex = submesh.materialIndex;
+					const auto &material{mesh->getMaterial(submesh.materialIndex)};
+					meshlet_mesh_constants.material = material->getDeviceAddress();
+
 					cmd->pushData(meshlet_mesh_constants);
 
 					cmd->drawIndexed(submesh.indexCount, 1, submesh.indexOffset, static_cast<int32>(submesh.vertexOffset), 0);
@@ -200,18 +189,13 @@ private:
 
 	render::GraphicsStateUnique m_geometryGraphicsState{nullptr};
 
-	render::DynamicMaterialUnique m_material{nullptr};
-
 	TST_PUSH_CONSTANT_BLOCK(MeshletMeshConstants)
 	{
+		Dx::XMFLOAT4X4 meshTransform;
+
 		uintptr vertexBuffer;
 
-		uintptr materialTest;
-
-		Dx::XMFLOAT4X4 meshTransform;
-		uintptr        materialBuffer;
-		uint32         materialIndex;
-		float32        _padd2[1];
+		uintptr material;
 
 		uintptr cameraPtr;
 		uintptr sceneDataPtr;

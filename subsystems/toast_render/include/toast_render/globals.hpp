@@ -4,6 +4,7 @@
 
 #include "image.hpp"
 #include "shader_library.hpp"
+#include "shader_reflection.hpp"
 
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
@@ -65,6 +66,15 @@ namespace toaster::render
 		auto getShader(const String &p_name) const -> const gpu::DynamicShaderHandle &;
 		auto addShader(const String &p_name, const gpu::DynamicShaderHandle &p_shader) -> void;
 
+		struct ShaderReflectionData
+		{
+			reflection::ReflectionData  reflectionData;
+			reflection::ReflectedStruct materialStruct;
+		};
+
+		auto reflectShader(const String &p_name) -> const ShaderReflectionData &;
+		auto getShaderReflectionData(const String &p_name) const -> const ShaderReflectionData &;
+
 		auto fullscreenQuadVertexBuffer() const -> const gpu::VertexBufferHandle &;
 		auto fullscreenQuadIndexBuffer() const -> const gpu::IndexBufferHandle &;
 
@@ -80,9 +90,8 @@ namespace toaster::render
 	private:
 		GlobalsSpecInfo m_specInfo{};
 
-		std::unordered_map<String, gpu::DynamicShaderHandle> m_shaders;
-
-		// DynamicShaderLibrary m_dynamicShaderLibrary;
+		std::unordered_map<String, gpu::DynamicShaderHandle>   m_shaders;
+		std::unordered_map<String, ShaderReflectionData> m_shaderReflectionData;
 
 		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
 		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};

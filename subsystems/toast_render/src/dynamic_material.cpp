@@ -44,7 +44,7 @@ namespace toaster::render
 		return m_uniformData->getDeviceAddress();
 	}
 
-	auto DynamicMaterial::set(const String &p_name, const ImageHandle &p_image) -> void
+	auto DynamicMaterial::_set(const String &p_name, const void *p_value) -> void
 	{
 		auto it{m_materialDeclaration.members.find(p_name)};
 		if (it == m_materialDeclaration.members.end())
@@ -52,26 +52,8 @@ namespace toaster::render
 			LOG_ERROR("Material '{}' does not contain member '{}' | struct: {}", m_name, p_name, m_internalMaterialStructName);
 			return;
 		}
-		m_imageRefs[p_name] = p_image;
-
-		uint32 image_heap_id{p_image->getAlignedShaderReadHeapID()};
-
 		uintptr offset{(uintptr) it->second.offset};
 		uint32  size{it->second.size};
-		std::memcpy(reinterpret_cast<void *>(reinterpret_cast<uintptr>(m_mappedUniformData) + offset), &image_heap_id, size);
-	}
-
-	auto DynamicMaterial::set(const String &p_name, uint32 p_val) -> void
-	{
-		auto it{m_materialDeclaration.members.find(p_name)};
-		if (it == m_materialDeclaration.members.end())
-		{
-			LOG_ERROR("Material '{}' does not contain member '{}' | struct: {}", m_name, p_name, m_internalMaterialStructName);
-			return;
-		}
-
-		uintptr offset{(uintptr) it->second.offset};
-		uint32  size{it->second.size};
-		std::memcpy(reinterpret_cast<void *>(reinterpret_cast<uintptr>(m_mappedUniformData) + offset), &p_val, size);
+		std::memcpy(reinterpret_cast<void *>(reinterpret_cast<uintptr>(m_mappedUniformData) + offset), p_value, size);
 	}
 }

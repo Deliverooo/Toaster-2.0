@@ -10,8 +10,8 @@ layout (location = 0) out vec4 o_Colour;
 
 struct Material
 {
-    uint samplerIndex;
-    uint albedoMapIndex;
+    uint textureSampler;
+    uint albedoMap;
 
     float roughness;
     float metalness;
@@ -19,28 +19,26 @@ struct Material
     vec4 albedoColour;
 };
 
-layout (std430, buffer_reference) readonly buffer TST__MaterialFairs
+layout (std140, buffer_reference) readonly buffer TST__MaterialFairs
 {
-    uint samplerIndex;
-    uint albedoMapIndex;
+    uint textureSampler;
+    uint albedoMap;
     float roughness;
     float metalness;
 
     vec4 albedoColour;
 };
+#define MaterialFairs TST__MaterialFairs
 
 layout (buffer_reference, std140) readonly buffer SceneData { vec4 cameraPosition; };
-layout (std430, buffer_reference) readonly buffer MaterialBuffer { Material materials[]; };
 
 layout (push_constant) uniform Constants
 {
-    uint64_t vbo;
-    TST__MaterialFairs material;
-
     mat4 meshTransform;
-    MaterialBuffer materialBuffer;
-    uint materialIndex;
-    float _padd2[1];
+
+    uint64_t vbo;
+
+    MaterialFairs material;
 
     uint64_t cameraPtr;
     SceneData sceneDataPtr;
@@ -58,11 +56,11 @@ void main()
     glob.view = normalize(cam_pos - m_WorldPos); // Get the direction of the view from the camera to the frag pos
     glob.nDotV = max(dot(glob.normal, glob.view), 0.0001f); // Tells us how much the view direction is aligned with the surface normal
 
-    TST__MaterialFairs material = pcs.material;
+    MaterialFairs material = pcs.material;
     //    Material material = pcs.materialBuffer.materials[pcs.materialIndex];
 
-    glob.albedo = texture(sampler2D(texture2DHeap[material.albedoMapIndex], samplerHeap[material.samplerIndex]), m_TexCoord).rgb;
-//    glob.albedo *= material.albedoColour.rgb;
+    glob.albedo = texture(sampler2D(texture2DHeap[material.albedoMap], samplerHeap[material.textureSampler]), m_TexCoord).rgb;
+    glob.albedo *= material.albedoColour.rgb;
 
     glob.roughness = material.roughness;
     glob.metalness = material.metalness;
@@ -86,6 +84,6 @@ void main()
     //    o_Colour = vec4(glob.normal, 1.0f);
     //        o_Colour = vec4(glob.f0, 1.0f);
     //        o_Colour = vec4(vec3(glob.nDotV), 1.0f);
-    o_Colour = vec4(glob.albedo, 1.0f);
-//    o_Colour = vec4(final_colour, 1.0f);
+    //    o_Colour = vec4(glob.albedo, 1.0f);
+    o_Colour = vec4(final_colour, 1.0f);
 }

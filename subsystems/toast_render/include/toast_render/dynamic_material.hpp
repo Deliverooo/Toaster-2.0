@@ -17,12 +17,17 @@ namespace toaster::render
 		DynamicMaterial(RenderContext &p_render_ctx, const String &p_name, const reflection::ReflectedStruct &p_material_struct_declaration);
 		~DynamicMaterial();
 
-		auto getDeviceAddress() const -> uintptr;
+		[[nodiscard]] auto getDeviceAddress() const -> uintptr;
 
-		auto set(const String &p_name, const ImageHandle &p_image) -> void;
-		auto set(const String &p_name, uint32 p_val) -> void;
+		template<typename Type>
+		auto set(const String &p_name, const Type &p_value) -> void
+		{
+			_set(p_name, static_cast<const void *>(&p_value));
+		}
 
 	private:
+		auto _set(const String &p_name, const void *p_value) -> void;
+
 		String m_name;
 
 		String                      m_internalMaterialStructName;
@@ -34,6 +39,14 @@ namespace toaster::render
 		UniformBufferUnique m_uniformData{nullptr};
 		void *              m_mappedUniformData{nullptr};
 	};
+
+	template<>
+	inline auto DynamicMaterial::set<ImageHandle>(const String &p_name, const ImageHandle &p_value) -> void
+	{
+		uint32 image_heap_id{p_value->getAlignedShaderReadHeapID()};
+		_set(p_name, &image_heap_id);
+		m_imageRefs[p_name] = p_value;
+	}
 
 	TST_RENDER_DEFINE_HANDLE(DynamicMaterial, DynamicMaterial);
 }

@@ -33,7 +33,8 @@ namespace toaster::render::reflection
 					}
 					catch (const std::exception &e)
 					{
-						LOG_WARN("{}", e.what());
+						// I don't need to report the "error" every time
+						(void)e;
 					}
 
 					uint32 total_struct_members_size{0u};

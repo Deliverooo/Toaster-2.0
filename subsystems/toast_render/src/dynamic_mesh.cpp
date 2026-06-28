@@ -1,7 +1,6 @@
 #include "toast_render/dynamic_mesh.hpp"
 
 #include "assimp_common.hpp"
-#include "meshoptimizer.h"
 #include "toast_render/globals.hpp"
 
 namespace toaster::render
@@ -47,13 +46,19 @@ namespace toaster::render
 			TST_PERMA_ASSERT(false);
 		}
 
-		materialBufferSSBO   = m_renderCtx->createUnique<StorageBuffer>(meshData.materialsGPUData, false);
-		m_mappedMaterialData = materialBufferSSBO->getBuffer()->mapMemory(materialBufferSSBO->getBuffer()->getSize());
+		const auto pixel_shader{m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS")};
+
+		const auto reflection_data{reflection::reflectShader(*pixel_shader)};
+		const auto material_struct{findMaterialDeclaration(reflection_data)};
+		TST_PERMA_ASSERT(material_struct);
+
+		// materialBufferSSBO   = m_renderCtx->createUnique<StorageBuffer>(meshData.materialsGPUData, false);
+		// m_mappedMaterialData = materialBufferSSBO->getBuffer()->mapMemory(materialBufferSSBO->getBuffer()->getSize());
 	}
 
 	DynamicMesh::~DynamicMesh()
 	{
-		materialBufferSSBO->getBuffer()->unmapMemory();
+		// materialBufferSSBO->getBuffer()->unmapMemory();
 	}
 
 	auto DynamicMesh::getIndexBuffer() const -> const gpu::Buffer &
@@ -67,17 +72,17 @@ namespace toaster::render
 
 		String material_name{ai_mat->GetName().C_Str()};
 
-		auto &mat_data{meshData.materials.emplace_back()};
-		auto &gpu_mat_data{meshData.materialsGPUData.emplace_back()};
+		auto &material{m_materials.emplace_back()};
+		material = m_renderCtx->createMaterial(material_name, EMaterialType::ePBR);
 
 		if (aiColor3D ai_colour{1.0f, 1.0f, 1.0f}; ai_mat->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS)
-			gpu_mat_data.albedoColour = {ai_colour.r, ai_colour.g, ai_colour.b, 1.0f};
+			material->set("albedoColour", tsm::float4{ai_colour.r, ai_colour.g, ai_colour.b, 1.0f});
 
 		if (float32 roughness{0.4f}; ai_mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == AI_SUCCESS)
-			gpu_mat_data.roughness = roughness;
+			material->set("roughness", roughness);
 
 		if (float32 metalness{0.0f}; ai_mat->Get(AI_MATKEY_REFLECTIVITY, metalness) == AI_SUCCESS)
-			gpu_mat_data.metalness = metalness;
+			material->set("metalness", metalness);
 
 		auto get_path_and_create_texture_if_exists{
 			[p_parent_path](const aiString &p_ai_path, const String &p_tex_name) -> std::optional<io::filesystem::Path>
@@ -100,7 +105,7 @@ namespace toaster::render
 			}
 		};
 
-		gpu_mat_data.samplerIndex = m_renderCtx->getSampler(ESamplerType::eDefault);
+		uint32 sampler_index{m_renderCtx->getSampler(ESamplerType::eDefault)};
 
 		// Load albedo map
 		{
@@ -115,21 +120,22 @@ namespace toaster::render
 				auto albedo_map_path{get_path_and_create_texture_if_exists(ai_albedo_map_path, "albedo")};
 				if (albedo_map_path.has_value())
 				{
-					mat_data.albedoMap          = m_renderCtx->createImageRef(*albedo_map_path);
-					gpu_mat_data.albedoMapIndex = mat_data.albedoMap->getAlignedShaderReadHeapID();
+					auto albedo_map{m_renderCtx->createImageRef(*albedo_map_path)};
+					material->set("albedoMap", albedo_map);
 				}
 				else
 				{
-					gpu_mat_data.albedoMapIndex = m_renderCtx->getGlobals()->debugImage()->getAlignedShaderReadHeapID();
-					gpu_mat_data.samplerIndex   = m_renderCtx->getSampler(ESamplerType::eNearest);
+					material->set("albedoMap", m_renderCtx->getGlobals()->debugImage());
+					sampler_index = m_renderCtx->getSampler(ESamplerType::eNearest);
 				}
 			}
 			else
 			{
-				gpu_mat_data.albedoMapIndex = m_renderCtx->getGlobals()->whiteImage()->getAlignedShaderReadHeapID();
-				LOG_WARN("\tMaterial '{}' does not have an albedo map", material_name);
+				material->set("albedoMap", m_renderCtx->getGlobals()->whiteImage());
 			}
 		}
+
+		material->set("textureSampler", sampler_index);
 		#if 0
 
 		// Load normal map
@@ -167,20 +173,29 @@ namespace toaster::render
 		return m_indexBuffer->getDeviceAddress();
 	}
 
-	auto DynamicMesh::getMaterialBufferAddress() const -> uintptr
-	{
-		return materialBufferSSBO->getDeviceAddress();
-	}
-
 	auto DynamicMesh::getMeshData() const -> const DynamicMeshData &
 	{
 		return meshData;
 	}
 
-	auto DynamicMesh::getMaterialData(uint32 p_material_index) const -> MeshDynamicMaterialGPUData *
+	auto DynamicMesh::getMaterials() const -> const std::vector<DynamicMaterialHandle> &
 	{
-		return reinterpret_cast<MeshDynamicMaterialGPUData *>(reinterpret_cast<ptrdiff_t>(m_mappedMaterialData) + static_cast<ptrdiff_t>(
-															  p_material_index * sizeof(MeshDynamicMaterialGPUData)));
+		return m_materials;
+	}
+
+	auto DynamicMesh::getMaterials() -> std::vector<DynamicMaterialHandle> &
+	{
+		return m_materials;
+	}
+
+	auto DynamicMesh::getMaterial(uint32 p_index) const -> const DynamicMaterialHandle &
+	{
+		return m_materials.at(p_index);
+	}
+
+	auto DynamicMesh::getMaterial(uint32 p_index) -> DynamicMaterialHandle &
+	{
+		return m_materials.at(p_index);
 	}
 
 	auto importMeshFromScene(const void *p_scene, DynamicMeshData &p_out_mesh_data) -> void
