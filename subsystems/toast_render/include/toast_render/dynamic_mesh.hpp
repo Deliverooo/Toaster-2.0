@@ -13,10 +13,11 @@ namespace toaster::render
 	struct TST_RENDER_API alignas(16) DynamicMeshVertex
 	{
 		Dx::XMFLOAT4 position;
-		Dx::XMFLOAT3 normal;
-		float32      _padd[1];
+		Dx::XMFLOAT4 normal;
+		Dx::XMFLOAT4 tangent;
+		Dx::XMFLOAT4 bitangent;
 		Dx::XMFLOAT2 texCoord;
-		float32      _padd2[2];
+		float32      _padd[2];
 	};
 
 	struct TST_RENDER_API SubmeshData

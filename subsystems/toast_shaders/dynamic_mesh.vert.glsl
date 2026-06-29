@@ -1,27 +1,31 @@
 #version 460
-#extension GL_EXT_buffer_reference : require
-#extension GL_EXT_shader_8bit_storage : require
-#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require
+#extension GL_EXT_buffer_reference: require
+#extension GL_EXT_shader_8bit_storage: require
+#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
 
 struct Vertex
 {
     vec4 position;
     vec3 normal;
     float _padd1[1];
+    vec3 tangent;
+    float _padd2[1];
+    vec3 bitangent;
+    float _padd3[1];
     vec2 texCoord;
-    float _padd2[2];
+    float _padd4[2];
 };
 
-layout(std430, buffer_reference) readonly buffer VertexBuffer { Vertex vertices[]; };
+layout (std430, buffer_reference) readonly buffer VertexBuffer { Vertex vertices[]; };
 
-layout(buffer_reference, std140) readonly buffer Camera
+layout (buffer_reference, std140) readonly buffer Camera
 {
     mat4 view;
     mat4 proj;
     mat4 invProj;
 };
 
-layout(push_constant) uniform Constants
+layout (push_constant) uniform Constants
 {
     mat4 meshTransform;
 
@@ -36,9 +40,10 @@ layout(push_constant) uniform Constants
     uint diffuseIrradianceMapIndex;
 } pcs;
 
-layout(location = 0) out vec3 o_WorldPos;
-layout(location = 1) out vec3 o_Normal;
-layout(location = 2) out vec2 o_TexCoord;
+layout (location = 0) out vec3 o_WorldPos;
+layout (location = 1) out vec3 o_Normal;
+layout (location = 2) out vec2 o_TexCoord;
+layout (location = 3) out mat3 o_TBN;
 
 void main()
 {
@@ -50,6 +55,10 @@ void main()
     gl_Position = pcs.cameraPtr.proj * view_pos;
 
     o_WorldPos = world_pos.xyz;
-    o_Normal = v_in.normal;
+
+    // Ts has to be world Normals!!
+    o_Normal = mat3(transpose(inverse(pcs.meshTransform))) * v_in.normal;
     o_TexCoord = v_in.texCoord;
+
+    o_TBN = mat3(pcs.meshTransform) * mat3(v_in.tangent, v_in.bitangent, v_in.normal);
 }

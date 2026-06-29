@@ -191,13 +191,6 @@ namespace toaster::gpu
 		m_device->getVulkanLogicalDevice().writeSamplerDescriptorsEXT(p_sampler, host_range);
 	}
 
-	auto VKDescriptorHeap::getOffset(DescriptorSlot p_slot) const -> uint64
-	{
-		vk::DeviceSize image_descriptor_size{ALIGN(m_heapProperties.imageDescriptorSize, m_heapProperties.imageDescriptorAlignment)};
-		uintptr_t      byte_offset{p_slot * image_descriptor_size + ALIGN(m_imageArrayOffset, m_heapProperties.imageDescriptorAlignment)};
-		return byte_offset;
-	}
-
 	auto VKDescriptorHeap::freeBuffer(DescriptorSlot p_slot) -> void
 	{
 		m_bufferSlotManager.freeSlot(p_slot);

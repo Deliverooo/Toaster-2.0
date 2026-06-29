@@ -14,6 +14,8 @@ namespace toaster::render
 		image_spec_info.size       = m_specInfo.size;
 		image_spec_info.format     = m_specInfo.format;
 		image_spec_info.usage      = usage_flags;
+		if (m_specInfo.generateMipmaps)
+			image_spec_info.mipCount = static_cast<uint32>(std::floor(std::log2(std::max(m_specInfo.size.x, m_specInfo.size.y)))) + 1u;
 		image_spec_info.layerCount = m_specInfo.layerCount;
 		image_spec_info.hostAccess = m_specInfo.hostAccess;
 
@@ -32,9 +34,11 @@ namespace toaster::render
 			usage_flags |= vk::ImageUsageFlagBits::eStorage;
 
 		gpu::ImageSpecInfo image_spec_info{};
-		image_spec_info.size       = m_specInfo.size;
-		image_spec_info.format     = m_specInfo.format;
-		image_spec_info.usage      = usage_flags;
+		image_spec_info.size   = m_specInfo.size;
+		image_spec_info.format = m_specInfo.format;
+		image_spec_info.usage  = usage_flags;
+		if (m_specInfo.generateMipmaps)
+			image_spec_info.mipCount = static_cast<uint32>(std::floor(std::log2(std::max(m_specInfo.size.x, m_specInfo.size.y)))) + 1u;
 		image_spec_info.layerCount = m_specInfo.layerCount;
 		image_spec_info.hostAccess = m_specInfo.hostAccess;
 		m_image                    = m_renderCtx->createGPURef<gpu::RawImage>(image_spec_info);
@@ -42,7 +46,9 @@ namespace toaster::render
 		gpu::util::toTransferDst(m_image.get());
 		m_image->setData(p_data);
 
-		m_renderCtx->getLogicalDevice()->generateMipmaps(m_image->getImage(), {m_specInfo.size.x, m_specInfo.size.y, 1u}, 1);
+		if (m_specInfo.generateMipmaps)
+			m_renderCtx->getLogicalDevice()->generateMipmaps(m_image->getImage(), {m_specInfo.size.x, m_specInfo.size.y, 1u}, image_spec_info.mipCount);
+
 		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal); // Generate mips leaves the image in the eShaderReadOnlyOptimal layout
 
 		if (m_specInfo.storage)

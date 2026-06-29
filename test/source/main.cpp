@@ -65,7 +65,8 @@ public:
 		{
 			Entity orbo_entity{m_scene->createEntity("Orbo")};
 			auto & mmc{orbo_entity.addComponent<NewMeshComponent>()};
-			mmc.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Backrooms.fbx");
+			mmc.mesh = m_renderCtx->createRef<render::DynamicMesh>("Normal_test.fbx");
+			// mmc.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/DJT_sculpt.fbx");
 		}
 
 		{
@@ -75,7 +76,6 @@ public:
 
 			mmc.mesh->getMaterial(0)->set("metalness", 0.0f);
 			mmc.mesh->getMaterial(1)->set("metalness", 1.0f);
-
 		}
 
 		m_skyboxPass = m_renderCtx->createUnique<render::SkyboxPass>(m_viewportSize, m_environmentMap, true);
@@ -110,6 +110,7 @@ public:
 		m_skyboxPass->onRender(*cmd, m_cameraUBOs->getDeviceAddress(), rendering_info);
 
 		rendering_info.colourAttachments[0].attachmentOp = render::EAttachmentUsageOP::eLoadStore;
+
 		m_geometryGraphicsState->bind();
 		m_renderCtx->beginRendering(rendering_info);
 		SceneDataUB scene_data_ub{};

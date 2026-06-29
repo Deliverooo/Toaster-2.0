@@ -136,7 +136,6 @@ namespace toaster::render
 		}
 
 		material->set("textureSampler", sampler_index);
-		#if 0
 
 		// Load normal map
 		{
@@ -144,23 +143,23 @@ namespace toaster::render
 			aiString ai_normal_map_path;
 			if (ai_mat->GetTexture(aiTextureType_NORMALS, 0, &ai_normal_map_path) == AI_SUCCESS)
 			{
-				auto normal_map_path{get_path_and_create_texture_if_exists(ai_normal_map_path, "normal")};
-				if (normal_map_path.has_value())
+				auto albedo_map_path{get_path_and_create_texture_if_exists(ai_normal_map_path, "normal")};
+				if (albedo_map_path.has_value())
 				{
-					gpu::TextureSpecInfo texture_spec_info{};
-					texture_spec_info.generateMips = true;
-					mat_data.setNormalMap(m_renderCtx->createGPURef<gpu::VKTexture2D>(texture_spec_info, *normal_map_path));
+					auto albedo_map{m_renderCtx->createImageRef(*albedo_map_path)};
+					material->set("hasNormalMap", 1u);
+					material->set("normalMap", albedo_map);
 				}
-				material->set<uint32>("u_Material.hasNormalMap", 1u);
+				else
+				{
+					material->set("hasNormalMap", 0u);
+				}
 			}
 			else
 			{
-				material->set<uint32>("u_Material.hasNormalMap", 0u);
-				LOG_WARN("\tMaterial '{}' does not have a normal map", material_name);
+				material->set("hasNormalMap", 0u);
 			}
 		}
-
-		#endif
 	}
 
 	auto DynamicMesh::getVertexBufferAddress() const -> uintptr
@@ -230,7 +229,13 @@ namespace toaster::render
 				raw_vertices[i].position = {ai_submesh->mVertices[i].x, ai_submesh->mVertices[i].y, ai_submesh->mVertices[i].z, 1.0f};
 
 				if (ai_submesh->HasNormals())
-					raw_vertices[i].normal = {ai_submesh->mNormals[i].x, ai_submesh->mNormals[i].y, ai_submesh->mNormals[i].z};
+					raw_vertices[i].normal = {ai_submesh->mNormals[i].x, ai_submesh->mNormals[i].y, ai_submesh->mNormals[i].z, 1.0f};
+
+				if (ai_submesh->HasTangentsAndBitangents())
+				{
+					raw_vertices[i].tangent   = {ai_submesh->mTangents[i].x, ai_submesh->mTangents[i].y, ai_submesh->mTangents[i].z, 1.0f};
+					raw_vertices[i].bitangent = {ai_submesh->mBitangents[i].x, ai_submesh->mBitangents[i].y, ai_submesh->mBitangents[i].z, 1.0f};
+				}
 
 				if (ai_submesh->HasTextureCoords(0))
 					raw_vertices[i].texCoord = {ai_submesh->mTextureCoords[0][i].x, ai_submesh->mTextureCoords[0][i].y};

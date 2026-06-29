@@ -20,6 +20,7 @@ namespace toaster::render
 		bool32 storage{false};
 
 		bool32 hostAccess{false};
+		bool32 generateMipmaps{false}; // make ts true for loaded texture images!!
 
 		uint32 layerCount{1u};
 	};

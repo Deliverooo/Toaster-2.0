@@ -5,6 +5,7 @@
 layout (location = 0) in vec3 m_WorldPos;
 layout (location = 1) in vec3 m_Normal;
 layout (location = 2) in vec2 m_TexCoord;
+layout (location = 3) in mat3 v_TBN;
 
 layout (location = 0) out vec4 o_Colour;
 
@@ -23,6 +24,9 @@ layout (std140, buffer_reference) readonly buffer TST__MaterialFairs
 {
     uint textureSampler;
     uint albedoMap;
+    uint hasNormalMap;
+    uint normalMap;
+
     float roughness;
     float metalness;
 
@@ -51,16 +55,26 @@ void main()
 {
     glob.normal = normalize(m_Normal);
 
+    MaterialFairs material = pcs.material;
+
+    if (material.hasNormalMap != 0u)
+    {
+        vec3 normal = texture(sampler2D(texture2DHeap[material.normalMap], samplerHeap[material.textureSampler]), m_TexCoord).xyz;
+        normal = normalize(normal * 2.0f - 1.0f);
+        glob.normal = normalize(v_TBN * normal);
+    }
+
     vec3 cam_pos = pcs.sceneDataPtr.cameraPosition.xyz;
 
     glob.view = normalize(cam_pos - m_WorldPos); // Get the direction of the view from the camera to the frag pos
     glob.nDotV = max(dot(glob.normal, glob.view), 0.0001f); // Tells us how much the view direction is aligned with the surface normal
 
-    MaterialFairs material = pcs.material;
     //    Material material = pcs.materialBuffer.materials[pcs.materialIndex];
+    // Test!!!
 
     glob.albedo = texture(sampler2D(texture2DHeap[material.albedoMap], samplerHeap[material.textureSampler]), m_TexCoord).rgb;
     glob.albedo *= material.albedoColour.rgb;
+
 
     glob.roughness = material.roughness;
     glob.metalness = material.metalness;
@@ -81,9 +95,8 @@ void main()
 
     vec3 final_colour = ambient; // + lo
 
-    //    o_Colour = vec4(glob.normal, 1.0f);
-    //        o_Colour = vec4(glob.f0, 1.0f);
-    //        o_Colour = vec4(vec3(glob.nDotV), 1.0f);
+//        o_Colour = vec4(glob.normal, 1.0f);
+//            o_Colour = vec4(vec3(glob.nDotV), 1.0f);
     //    o_Colour = vec4(glob.albedo, 1.0f);
     o_Colour = vec4(final_colour, 1.0f);
 }

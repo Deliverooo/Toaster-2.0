@@ -40,14 +40,14 @@ namespace toaster::gpu
 		[[nodiscard]] auto getResourceHeap() const -> const VKBuffer &;
 		[[nodiscard]] auto getSamplerHeap() const -> const VKBuffer &;
 
-		auto getResourceHeapMemory() const -> void *;
-		auto getSamplerHeapMemory() const -> void *;
+		[[nodiscard]] auto getResourceHeapMemory() const -> void *;
+		[[nodiscard]] auto getSamplerHeapMemory() const -> void *;
 
-		auto getBufferDescriptorSize() const -> vk::DeviceSize;
-		auto getImageDescriptorSize() const -> vk::DeviceSize;
+		[[nodiscard]] auto getBufferDescriptorSize() const -> vk::DeviceSize;
+		[[nodiscard]] auto getImageDescriptorSize() const -> vk::DeviceSize;
 
-		auto getBufferOffset() const -> uintptr_t;
-		auto getImageOffset() const -> uintptr_t;
+		[[nodiscard]] auto getBufferOffset() const -> uintptr_t;
+		[[nodiscard]] auto getImageOffset() const -> uintptr_t;
 
 		auto allocBuffer(const Buffer &p_buffer, bool p_storage = false) -> DescriptorSlot;
 		auto allocImage(const RawImage &p_image, bool p_storage = false) -> DescriptorSlot;
@@ -56,8 +56,6 @@ namespace toaster::gpu
 		auto setBuffer(DescriptorSlot p_slot, const Buffer &p_buffer, bool p_storage = false) -> void;
 		auto setImage(DescriptorSlot p_slot, const RawImage &p_image, bool p_storage = false) -> void;
 		auto setSampler(DescriptorSlot p_slot, const vk::SamplerCreateInfo &p_sampler) -> void;
-
-		auto getOffset(DescriptorSlot p_slot) const -> uint64;
 
 		auto freeBuffer(DescriptorSlot p_slot) -> void;
 		auto freeImage(DescriptorSlot p_slot) -> void;
