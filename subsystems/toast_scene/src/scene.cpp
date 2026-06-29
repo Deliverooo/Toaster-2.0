@@ -338,9 +338,9 @@ namespace toaster
 
 	auto Scene::setSceneEnvironmentImage(const render::ImageHandle &p_environment) -> void
 	{
-		m_sceneEnvironment.skyboxMapImage = p_environment;
-		// m_sceneEnvironment.diffuseIrradianceMapImage = m_renderCtx->createDiffuseIrradianceMap(p_environment);
-		m_reloadEnvironment = true;
+		m_sceneEnvironment.skyboxMapImage            = p_environment;
+		m_sceneEnvironment.diffuseIrradianceMapImage = m_renderCtx->createDiffuseIrradianceMapImage(p_environment);
+		m_reloadEnvironment                          = true;
 	}
 
 	auto Scene::initNativeScripts() -> void
@@ -700,7 +700,6 @@ namespace toaster
 		});
 		#pragma endregion
 	}
-
 
 	#define ON_COMPONENT_ADDED(__type)	template<>\
 											TST_SCENE_API auto Scene::onComponentAdded<__type>([[maybe_unused]] Entity &p_entity, __type &p_component) -> void

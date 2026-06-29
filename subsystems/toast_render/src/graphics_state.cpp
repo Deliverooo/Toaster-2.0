@@ -49,13 +49,21 @@ namespace toaster::render
 		cmd.setLineWidth(1.0f);
 
 		// set the colour blend attachment state
-		const auto colour_blend_enables{m_colourBlendAttachmentInfos | std::views::transform(&ColourBlendAttachmentInfo::blendEnable) | std::ranges::to<std::vector>()};
-		const auto blend_equations{m_colourBlendAttachmentInfos | std::views::transform(&ColourBlendAttachmentInfo::blendEquation) | std::ranges::to<std::vector>()};
-		const auto colour_write_masks{m_colourBlendAttachmentInfos | std::views::transform(&ColourBlendAttachmentInfo::colourWriteMask) | std::ranges::to<std::vector>()};
 
-		cmd.setColorBlendEnableEXT(0, colour_blend_enables);
-		cmd.setColorBlendEquationEXT(0, blend_equations);
-		cmd.setColorWriteMaskEXT(0, colour_write_masks);
+		if (!m_colourBlendAttachmentInfos.empty())
+		{
+			const auto colour_blend_enables{
+				m_colourBlendAttachmentInfos | std::views::transform(&ColourBlendAttachmentInfo::blendEnable) | std::ranges::to<std::vector>()
+			};
+			const auto blend_equations{m_colourBlendAttachmentInfos | std::views::transform(&ColourBlendAttachmentInfo::blendEquation) | std::ranges::to<std::vector>()};
+			const auto colour_write_masks{
+				m_colourBlendAttachmentInfos | std::views::transform(&ColourBlendAttachmentInfo::colourWriteMask) | std::ranges::to<std::vector>()
+			};
+
+			cmd.setColorBlendEnableEXT(0, colour_blend_enables);
+			cmd.setColorBlendEquationEXT(0, blend_equations);
+			cmd.setColorWriteMaskEXT(0, colour_write_masks);
+		}
 
 		// set depth stencil state
 		cmd.setDepthTestEnableEXT(m_depthTestEnable);

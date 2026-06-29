@@ -4,6 +4,7 @@
 
 #include "toast_lib/uuid.hpp"
 #include "toast_render/mesh.hpp"
+#include "toast_render/dynamic_mesh.hpp"
 #include "toast_script/script_object.hpp"
 
 #define DEFINE_COMPONENT(__name) struct TST_SCENE_API __name
@@ -118,6 +119,16 @@ namespace toaster
 		render::MeshHandle mesh{nullptr};
 	};
 
+	DEFINE_COMPONENT(OldDynamicMeshComponent)
+	{
+		OldDynamicMeshComponent()  = default;
+		~OldDynamicMeshComponent() = default;
+
+		auto reset() -> void { mesh.reset(); }
+
+		render::DynamicMeshOLDHandle mesh{nullptr};
+	};
+
 	DEFINE_COMPONENT(DynamicMeshComponent)
 	{
 		DynamicMeshComponent()  = default;
@@ -125,7 +136,7 @@ namespace toaster
 
 		auto reset() -> void { mesh.reset(); }
 
-		render::DynamicMeshOLDHandle mesh{nullptr};
+		render::DynamicMeshHandle mesh{nullptr};
 	};
 
 	DEFINE_COMPONENT(SubmeshComponent)

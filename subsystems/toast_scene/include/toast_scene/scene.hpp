@@ -144,6 +144,7 @@ namespace toaster
 		struct
 		{
 			render::ImageHandle  skyboxMapImage{nullptr};
+			render::ImageHandle  diffuseIrradianceMapImage{nullptr};
 			gpu::Texture3DHandle skyboxMap{nullptr};            // TODO: Remove
 			gpu::Texture3DHandle diffuseIrradianceMap{nullptr}; // Created from the skybox and updated if it changes
 		} m_sceneEnvironment;
@@ -161,7 +162,7 @@ namespace toaster
 	template<>
 	inline auto Scene::onComponentAdded<CameraComponent>(Entity &p_entity, CameraComponent &p_component) -> void
 	{
-		(void)p_entity;
+		(void) p_entity;
 		p_component.camera.setViewportSize(m_viewportSize);
 	}
 }

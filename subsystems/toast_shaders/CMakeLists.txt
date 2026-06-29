@@ -3,6 +3,7 @@ set(SHADER_OUTPUT_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders")
 set(SHADER_SPV_OUTPUTS "")
 
 set(SHADER_SOURCES_VULKAN
+		${CMAKE_CURRENT_SOURCE_DIR}/depth_pre.vert.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/depth_pre.pixel.glsl
 
 		${CMAKE_CURRENT_SOURCE_DIR}/geometry.vert.glsl
@@ -43,7 +44,6 @@ set(SHADER_SOURCES_VULKAN
 
 set(SHADER_SOURCES_HLSL
 		${CMAKE_CURRENT_SOURCE_DIR}/fullscreen_quad.vert.hlsl
-		${CMAKE_CURRENT_SOURCE_DIR}/depth_pre.vert.hlsl
 		${CMAKE_CURRENT_SOURCE_DIR}/mesh_dynamic.vert.hlsl
 		${CMAKE_CURRENT_SOURCE_DIR}/quad_dynamic.vert.hlsl
 		${CMAKE_CURRENT_SOURCE_DIR}/skybox.vert.hlsl
