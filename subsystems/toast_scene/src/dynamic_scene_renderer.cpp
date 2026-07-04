@@ -198,7 +198,7 @@ namespace toaster
 
 	auto DynamicSceneRenderer::end() -> void
 	{
-		auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
+		auto cmd{m_renderCtx->getCurrentCommandBuffer()};
 
 		_performMeshTransformPrePass();
 		_renderDepthPrePass(cmd);
@@ -257,15 +257,13 @@ namespace toaster
 		m_meshDrawCommands.clear();
 	}
 
-	auto DynamicSceneRenderer::_renderDepthPrePass(gpu::VKCommandBuffer *p_cmd) -> void
+	auto DynamicSceneRenderer::_renderDepthPrePass(gpu::CommandBuffer *p_cmd) -> void
 	{
 		if (m_submeshDrawCommands.empty())
 			return;
 
-		render::RenderingInfo rendering_info{};
-		rendering_info.renderArea = render::getRenderingArea(m_viewportSize);
-		auto depth_attachment_info{render::getRenderingAttachmentInfo(*m_depthRenderTarget->getImage())};
-		rendering_info.depthAttachment = depth_attachment_info;
+		render::RenderingInfo rendering_info{m_viewportSize};
+		rendering_info.setDepthAttachment(*m_depthRenderTarget->getImage());
 
 		m_depthPreGraphicsState->bind();
 		m_renderCtx->beginRendering(rendering_info);
@@ -279,39 +277,64 @@ namespace toaster
 			depth_pre_constants.vertexBuffer  = draw_cmd.mesh->getVertexBufferAddress();
 
 			p_cmd->pushData(depth_pre_constants);
-			p_cmd->getVulkanCommandBuffer().bindIndexBuffer(draw_cmd.mesh->getIndexBuffer().getBuffer(), 0u, vk::IndexType::eUint32);
+			p_cmd->bindIndexBuffer(draw_cmd.mesh->getIndexBuffer());
 			p_cmd->drawIndexed(draw_cmd.indexCount, 1, draw_cmd.indexOffset, draw_cmd.vertexOffset, 0);
 		}
 		m_renderCtx->endRendering(rendering_info, p_cmd);
 	}
 
-	auto DynamicSceneRenderer::_renderSkyboxPass(gpu::VKCommandBuffer *p_cmd) -> void
+	auto DynamicSceneRenderer::_renderSkyboxPass(gpu::CommandBuffer *p_cmd) -> void
 	{
-		render::RenderingInfo rendering_info{};
-		rendering_info.renderArea = render::getRenderingArea(m_viewportSize);
-
-		render::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		colour_attachment_info = render::getRenderingAttachmentInfo(*m_colourRenderTarget->getImage());
+		render::RenderingInfo rendering_info{m_viewportSize};
+		rendering_info.addColourAttachment(*m_colourRenderTarget->getImage());
 
 		m_skyboxPass->onRender(*p_cmd, m_cameraUBOs->getDeviceAddress(), rendering_info);
 	}
 
-	auto DynamicSceneRenderer::_renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void
+	auto DynamicSceneRenderer::_renderGeometryPass(gpu::CommandBuffer *p_cmd) -> void
 	{
 		if (m_submeshDrawCommands.empty())
 			return;
 
-		render::RenderingInfo rendering_info{};
-		rendering_info.renderArea    = render::getRenderingArea(m_viewportSize);
+		render::RenderingInfo rendering_info{m_viewportSize};
+		rendering_info.addColourAttachment(*m_colourRenderTarget->getImage(), render::EAttachmentUsageOP::eLoadStore);
+		rendering_info.setDepthAttachment(*m_depthRenderTarget->getImage(), render::EAttachmentUsageOP::eLoadDontCare);
 		rendering_info.depthReadOnly = true;
 
-		render::RenderingAttachmentInfo &colour_attachment_info{rendering_info.colourAttachments.emplace_back()};
-		colour_attachment_info = render::getRenderingAttachmentInfo(*m_colourRenderTarget->getImage(), render::EAttachmentUsageOP::eLoadStore);
+		auto &vk_cmd{p_cmd->getVulkanCommandBuffer()};
 
-		auto depth_attachment_info{render::getRenderingAttachmentInfo(*m_depthRenderTarget->getImage(), render::EAttachmentUsageOP::eLoadDontCare)};
-		rendering_info.depthAttachment = depth_attachment_info;
+		p_cmd->bindShaders({m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_VS").get(), m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS").get()});
 
-		m_geometryGraphicsState->bind(p_cmd);
+		p_cmd->setPrimitiveTopology(gpu::EPrimitiveTopology::eTriangleList);
+		p_cmd->setCullMode(gpu::ECullMode::eBack);
+		p_cmd->setFrontFace(gpu::EFrontFace::eCCW);
+
+		p_cmd->setPolygonMode(gpu::EPolygonMode::eFill);
+
+		// set the rasterization state
+		// vk_cmd.setDepthClampEnableEXT(false);
+		// vk_cmd.setDepthBiasEnableEXT(false);
+		// vk_cmd.setRasterizerDiscardEnableEXT(false);
+		// vk_cmd.setLineWidth(1.0f);
+
+		// vk_cmd.setColorBlendEnableEXT(0, {false});
+		// vk_cmd.setColorBlendEquationEXT(0, vk::ColorBlendEquationEXT{});
+		// vk_cmd.setColorWriteMaskEXT(0, {
+		// 								{
+		// 									vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
+		// 									vk::ColorComponentFlagBits::eA
+		// 								}
+		// 							});
+
+		p_cmd->setDepthTestEnable(true);
+		p_cmd->setDepthWriteEnable(false);
+		p_cmd->setDepthCompareOp(gpu::ECompareOp::eLessOrEqual);
+
+		p_cmd->setStencilTestEnable(false);
+
+		vk_cmd.setSampleMaskEXT(vk::SampleCountFlagBits::e1, 0xFFFFFFFF);
+		vk_cmd.setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1);
+
 		m_renderCtx->beginRendering(rendering_info, p_cmd);
 
 		MeshDrawConstants mesh_draw_constants{};
@@ -330,7 +353,7 @@ namespace toaster
 			mesh_draw_constants.material     = draw_cmd.mesh->getMaterial(draw_cmd.materialIndex)->getDeviceAddress();
 
 			p_cmd->pushData(mesh_draw_constants);
-			p_cmd->getVulkanCommandBuffer().bindIndexBuffer(draw_cmd.mesh->getIndexBuffer().getBuffer(), 0u, vk::IndexType::eUint32);
+			p_cmd->bindIndexBuffer(draw_cmd.mesh->getIndexBuffer());
 			p_cmd->drawIndexed(draw_cmd.indexCount, 1, draw_cmd.indexOffset, draw_cmd.vertexOffset, 0);
 		}
 

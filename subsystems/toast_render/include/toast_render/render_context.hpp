@@ -99,8 +99,8 @@ namespace toaster::render
 		auto               setCurrentFrameIndex(uint32 p_index) -> void;
 		auto               performGarbageCollection() const -> void;
 
-		[[nodiscard]] auto getCurrentSwapchainCommandBuffer() const -> gpu::VKCommandBuffer *;
-		auto               setCurrentSwapchainCommandBuffer(gpu::VKCommandBuffer *p_cmd) -> void; // ONLY THE APPLICATION SHOULD USE TS...
+		[[nodiscard]] auto getCurrentCommandBuffer() const -> gpu::VKCommandBuffer *;
+		auto               setCurrentCommandBuffer(gpu::VKCommandBuffer *p_cmd) -> void; // ONLY THE APPLICATION SHOULD USE TS...
 
 		// Use for objects that take the render context into their constructor
 		template<typename TObj, typename... TArgs>
@@ -218,14 +218,11 @@ namespace toaster::render
 
 		#pragma region new render logic
 
-		auto beginRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
-		auto endRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
+		auto beginRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr) const -> void;
+		auto endRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer = nullptr) const -> void;
 
-		auto renderSubmesh(const DynamicMeshOLD *p_mesh, uint32 p_submesh_index, uint64 p_push_constant_offset, gpu::CommandBuffer *p_command_buffer = nullptr,
-						   uint32                p_frame_index = UINT32_MAX) -> void;
-
-		auto renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
-		auto renderFullscreenQuadMeshShader(gpu::CommandBuffer *p_command_buffer = nullptr, uint32 p_frame_index = UINT32_MAX) const -> void;
+		auto renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer = nullptr) const -> void;
+		auto renderFullscreenQuadMeshShader(gpu::CommandBuffer *p_command_buffer = nullptr) const -> void;
 
 		#pragma endregion
 

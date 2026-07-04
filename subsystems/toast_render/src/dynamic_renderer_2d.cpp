@@ -124,7 +124,7 @@ namespace toaster::render
 		const auto size = static_cast<uint32>(reinterpret_cast<uint8 *>(m_quadVertexPtr) - reinterpret_cast<uint8 *>(m_quadVertexBase));
 		if (size)
 		{
-			auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
+			auto cmd{m_renderCtx->getCurrentCommandBuffer()};
 			m_quadVertexBuffer->setData(m_quadVertexBase, size, 0);
 
 			QuadConstants quad_constants{};

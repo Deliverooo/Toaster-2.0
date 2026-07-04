@@ -12,7 +12,7 @@ namespace toaster::render
 
 	auto GraphicsState::bind(gpu::VKCommandBuffer *p_command_buffer) const -> void
 	{
-		auto &cmd{p_command_buffer ? p_command_buffer->getVulkanCommandBuffer() : m_renderCtx->getCurrentSwapchainCommandBuffer()->getVulkanCommandBuffer()};
+		auto &cmd{p_command_buffer ? p_command_buffer->getVulkanCommandBuffer() : m_renderCtx->getCurrentCommandBuffer()->getVulkanCommandBuffer()};
 
 		// Apparently, if certain shader features are enabled, you have to specify all shader stages even if they are unused...
 		std::unordered_map<vk::ShaderStageFlagBits, vk::ShaderEXT> shader_stages_map{

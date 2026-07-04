@@ -18,7 +18,7 @@
 
 namespace toaster::render
 {
-	#define TST_GET_VALID_CMD_BUFFER() gpu::VKCommandBuffer* command_buffer{(!p_command_buffer) ? getCurrentSwapchainCommandBuffer() : p_command_buffer}
+	#define TST_GET_VALID_CMD_BUFFER() gpu::VKCommandBuffer* command_buffer{(!p_command_buffer) ? getCurrentCommandBuffer() : p_command_buffer}
 	#define TST_GET_VALID_FRAME_INDEX() uint32 frame_index{(p_frame_index == UINT32_MAX) ? getCurrentFrameIndex() : p_frame_index}
 	#define TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX() TST_GET_VALID_CMD_BUFFER(); TST_GET_VALID_FRAME_INDEX()
 
@@ -204,12 +204,12 @@ namespace toaster::render
 		m_logicalDevice->performGarbageCollection();
 	}
 
-	auto RenderContext::getCurrentSwapchainCommandBuffer() const -> gpu::CommandBuffer *
+	auto RenderContext::getCurrentCommandBuffer() const -> gpu::CommandBuffer *
 	{
 		return m_logicalDevice->getCurrentCommandBuffer();
 	}
 
-	auto RenderContext::setCurrentSwapchainCommandBuffer(gpu::CommandBuffer *p_cmd) -> void
+	auto RenderContext::setCurrentCommandBuffer(gpu::CommandBuffer *p_cmd) -> void
 	{
 		m_logicalDevice->setCurrentCommandBuffer(p_cmd);
 	}
@@ -923,9 +923,9 @@ namespace toaster::render
 		command_buffer->getVulkanCommandBuffer().drawIndexed(submesh.indexCount, 1, submesh.baseIndex, static_cast<int32>(submesh.baseVertex), 0);
 	}
 
-	auto RenderContext::beginRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer, uint32 p_frame_index) const -> void
+	auto RenderContext::beginRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer) const -> void
 	{
-		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
+		TST_GET_VALID_CMD_BUFFER();
 
 		command_buffer->setRenderArea(p_rendering_info.renderArea);
 
@@ -1077,9 +1077,9 @@ namespace toaster::render
 		command_buffer->getVulkanCommandBuffer().beginRendering(rendering_info);
 	}
 
-	auto RenderContext::endRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer, uint32 p_frame_index) const -> void
+	auto RenderContext::endRendering(const RenderingInfo &p_rendering_info, gpu::CommandBuffer *p_command_buffer) const -> void
 	{
-		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
+		TST_GET_VALID_CMD_BUFFER();
 
 		command_buffer->getVulkanCommandBuffer().endRendering();
 
@@ -1119,37 +1119,9 @@ namespace toaster::render
 		}
 	}
 
-	auto RenderContext::renderSubmesh(const DynamicMeshOLD *p_mesh, uint32 p_submesh_index, uint64 p_push_constant_offset, gpu::CommandBuffer *p_command_buffer,
-									  uint32                p_frame_index) -> void
+	auto RenderContext::renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer) const -> void
 	{
-		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
-
-		auto &submesh{p_mesh->getSubmeshes()[p_submesh_index]};
-
-		auto &material{p_mesh->getMaterials().getMaterial(submesh.materialIndex)};
-
-		MeshPushConstants pcs{};
-		pcs.albedoMap    = material.albedoMap->getAlignedShaderReadHeapID();
-		pcs.normalMap    = material.normalMap->getAlignedShaderReadHeapID();
-		pcs.hasNormalMap = material.hasNormalMap;
-		pcs.albedoColour = {material.albedoColour, 1.0f};
-		pcs.roughness    = material.roughness;
-		pcs.metalness    = material.metalness;
-
-		pcs.samplerIndex = m_samplers.at(ESamplerType::eDefault);
-		pcs.model        = submesh.transform;
-
-		command_buffer->pushData(pcs, p_push_constant_offset);
-
-		p_mesh->getVertexBuffer()->bind(command_buffer);
-		p_mesh->getIndexBuffer()->bind(command_buffer);
-
-		command_buffer->drawIndexed(submesh.indexCount, 1, submesh.baseIndex, static_cast<int32>(submesh.baseVertex), 0);
-	}
-
-	auto RenderContext::renderFullscreenQuad(gpu::CommandBuffer *p_command_buffer, uint32 p_frame_index) const -> void
-	{
-		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
+		TST_GET_VALID_CMD_BUFFER();
 
 		m_globals->fullscreenQuadVertexBuffer()->bind(command_buffer);
 		m_globals->fullscreenQuadIndexBuffer()->bind(command_buffer);
@@ -1157,10 +1129,10 @@ namespace toaster::render
 		command_buffer->drawIndexed(m_globals->fullscreenQuadIndices().size());
 	}
 
-	auto RenderContext::renderFullscreenQuadMeshShader(gpu::CommandBuffer *p_command_buffer, uint32 p_frame_index) const -> void
+	auto RenderContext::renderFullscreenQuadMeshShader(gpu::CommandBuffer *p_command_buffer) const -> void
 	{
 		// That's it...
-		TST_GET_VALID_CMD_BUFFER_AND_FRAME_INDEX();
+		TST_GET_VALID_CMD_BUFFER();
 		command_buffer->getVulkanCommandBuffer().drawMeshTasksEXT(1, 1, 1);
 	}
 

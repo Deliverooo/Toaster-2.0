@@ -1,5 +1,7 @@
 #include "toast_render/dynamic_mesh.hpp"
 
+#include <thread>
+
 #include "assimp_common.hpp"
 #include "toast_render/globals.hpp"
 
@@ -15,7 +17,23 @@ namespace toaster::render
 			LOG_ERROR("Failed to load mesh file: {0}", p_path.string());
 			TST_PERMA_ASSERT(false);
 		}
-		importMeshFromScene(scene, meshData);
+
+		std::thread import_thread{[&]() -> void { importMeshFromScene(scene, meshData); }};
+
+		if (scene->HasMaterials())
+		{
+			for (uint32 i{0u}; i < scene->mNumMaterials; ++i)
+			{
+				auto ai_material = scene->mMaterials[i];
+				_createMaterial(ai_material, i, p_path);
+			}
+		}
+		else
+		{
+			TST_PERMA_ASSERT(false);
+		}
+
+		import_thread.join();
 
 		uint64              index_buffer_size{meshData.indices.size() * sizeof(uint32)};
 		gpu::BufferSpecInfo staging_buffer_spec{};
@@ -32,19 +50,6 @@ namespace toaster::render
 		m_indexBuffer->copyFromBuffer(staging_buffer);
 
 		vertexBufferSSBO = m_renderCtx->createUnique<StorageBuffer>(meshData.vertices, true);
-
-		if (scene->HasMaterials())
-		{
-			for (uint32 i{0u}; i < scene->mNumMaterials; ++i)
-			{
-				auto ai_material = scene->mMaterials[i];
-				_createMaterial(ai_material, i, p_path);
-			}
-		}
-		else
-		{
-			TST_PERMA_ASSERT(false);
-		}
 
 		const auto pixel_shader{m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS")};
 

@@ -56,7 +56,7 @@ namespace toaster::render
 	auto Renderer2D::end(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		if (!p_cmd)
-			p_cmd = m_renderCtx->getCurrentSwapchainCommandBuffer();
+			p_cmd = m_renderCtx->getCurrentCommandBuffer();
 
 		RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_specInfo.renderTargetSize.x, m_specInfo.renderTargetSize.y}};
@@ -312,7 +312,7 @@ namespace toaster::render
 	auto Renderer2DV2::end(gpu::VKCommandBuffer *p_cmd) -> void
 	{
 		if (!p_cmd)
-			p_cmd = m_renderCtx->getCurrentSwapchainCommandBuffer();
+			p_cmd = m_renderCtx->getCurrentCommandBuffer();
 
 		RenderingInfo rendering_info{};
 		rendering_info.renderArea = vk::Rect2D{{0, 0}, {m_specInfo.renderTargetSize.x, m_specInfo.renderTargetSize.y}};

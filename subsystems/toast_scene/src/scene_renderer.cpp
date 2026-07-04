@@ -161,12 +161,12 @@ namespace toaster
 
 	auto SceneRenderer::onRender() -> void
 	{
-		onRender(m_renderCtx->getCurrentSwapchainCommandBuffer());
+		onRender(m_renderCtx->getCurrentCommandBuffer());
 	}
 
 	auto SceneRenderer::onRender(Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
 	{
-		onRender(m_renderCtx->getCurrentSwapchainCommandBuffer(), p_camera_position, p_view_matrix, p_projection_matrix);
+		onRender(m_renderCtx->getCurrentCommandBuffer(), p_camera_position, p_view_matrix, p_projection_matrix);
 	}
 
 	auto SceneRenderer::onRender(gpu::VKCommandBuffer *p_cmd) -> void

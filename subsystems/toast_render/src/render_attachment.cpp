@@ -42,9 +42,24 @@ namespace toaster::render
 		renderArea = getRenderingArea(p_viewport_size);
 	}
 
-	auto RenderingInfo::addColourAttachment(gpu::RawImage &p_image) -> void
+	auto RenderingInfo::addColourAttachment(gpu::RawImage &p_image, EAttachmentUsageOP p_usage_op) -> void
 	{
-		colourAttachments.emplace_back(getRenderingAttachmentInfo(p_image));
+		colourAttachments.emplace_back(getRenderingAttachmentInfo(p_image, p_usage_op));
+	}
+
+	auto RenderingInfo::addMSAAColourAttachment(gpu::RawImage &p_image, gpu::RawImage &p_resolve_image, EAttachmentUsageOP p_usage_op) -> void
+	{
+		colourAttachments.emplace_back(getRenderingAttachmentInfo(p_image, p_resolve_image, p_usage_op));
+	}
+
+	auto RenderingInfo::setDepthAttachment(gpu::RawImage &p_image, EAttachmentUsageOP p_usage_op) -> void
+	{
+		depthAttachment = getRenderingAttachmentInfo(p_image, p_usage_op);
+	}
+
+	auto RenderingInfo::setMSAADepthAttachment(gpu::RawImage &p_image, gpu::RawImage &p_resolve_image, EAttachmentUsageOP p_usage_op) -> void
+	{
+		depthAttachment = getRenderingAttachmentInfo(p_image, p_resolve_image, p_usage_op);
 	}
 
 	auto RenderingInfo::getViewport() const -> vk::Viewport

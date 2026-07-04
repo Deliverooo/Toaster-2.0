@@ -31,9 +31,9 @@ namespace toaster
 
 	private:
 		auto _performMeshTransformPrePass() -> void;
-		auto _renderDepthPrePass(gpu::VKCommandBuffer *p_cmd) -> void;
-		auto _renderSkyboxPass(gpu::VKCommandBuffer *p_cmd) -> void;
-		auto _renderGeometryPass(gpu::VKCommandBuffer *p_cmd) -> void;
+		auto _renderDepthPrePass(gpu::CommandBuffer *p_cmd) -> void;
+		auto _renderSkyboxPass(gpu::CommandBuffer *p_cmd) -> void;
+		auto _renderGeometryPass(gpu::CommandBuffer *p_cmd) -> void;
 
 		NonOwningPtr<Scene>                 m_scene{nullptr};
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};

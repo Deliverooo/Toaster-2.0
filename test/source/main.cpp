@@ -49,9 +49,9 @@ public:
 				setEnableDepthWrite(false).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl);
 
 		{
-			Entity orbo_entity{m_scene->createEntity("Orbo")};
-			auto & mesh_comp{orbo_entity.addComponent<DynamicMeshComponent>()};
-			mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Backrooms.fbx");
+			// Entity orbo_entity{m_scene->createEntity("Orbo")};
+			// auto & mesh_comp{orbo_entity.addComponent<DynamicMeshComponent>()};
+			// mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Backrooms.fbx");
 		}
 
 		{
@@ -78,15 +78,15 @@ public:
 		m_sceneRenderer->onRender(m_camera.getPosition(), m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
 
 		auto       rendering_info{m_app->getWindow().getSwapchainRenderingInfo(false, {0.025f, 0.025f, 0.025f, 1.0f}, false)};
-		const auto cmd{m_renderCtx->getCurrentSwapchainCommandBuffer()};
+		const auto cmd{m_renderCtx->getCurrentCommandBuffer()};
 
 		m_fullscreenState->bind();
 
 		m_renderCtx->beginRendering(rendering_info);
-		FullscreenQuadConstants quad_constants{};
-		quad_constants.sampler = m_renderCtx->getSampler(render::ESamplerType::eDefault);
-		quad_constants.texture = m_sceneRenderer->getColourImage()->getAlignedShaderReadHeapID();
-		cmd->pushData(quad_constants);
+		cmd->pushData<FullscreenQuadConstants>({
+												   m_renderCtx->getSampler(render::ESamplerType::eDefault),
+												   m_sceneRenderer->getColourImage()->getAlignedShaderReadHeapID()
+											   });
 		m_renderCtx->renderFullscreenQuad();
 		m_renderCtx->endRendering(rendering_info);
 	}
@@ -98,11 +98,7 @@ public:
 		m_scene->onResize(m_viewportSize);
 		m_sceneRenderer->onResize(m_viewportSize);
 
-		// m_MSAAColour->resize(m_viewportSize);
-		// m_MSAADepth->resize(m_viewportSize);
-
 		m_camera.onResize(p_size);
-		// m_skyboxPass->onResize(p_size);
 	}
 
 	auto onEvent(Event &p_event) -> void override
@@ -113,12 +109,7 @@ public:
 private:
 	tsm::uint2 m_viewportSize{0u};
 
-	FPCamera m_camera{};
-	// gpu::RawImageUnique m_MSAAColour{nullptr};
-	// gpu::RawImageUnique m_MSAADepth{nullptr};
-
-	// render::ImageHandle m_image{nullptr};
-
+	FPCamera                    m_camera{};
 	render::GraphicsStateUnique m_fullscreenState{nullptr};
 
 	TST_PUSH_CONSTANT_BLOCK(FullscreenQuadConstants)
@@ -130,30 +121,8 @@ private:
 	UniquePtr<Scene>                m_scene{nullptr};
 	UniquePtr<DynamicSceneRenderer> m_sceneRenderer{nullptr};
 
-	// render::UniformBufferPFFUnique m_cameraUBOs{nullptr};
-	// render::UniformBufferPFFUnique m_sceneDataUBOs{nullptr};
-
 	render::ImageHandle m_environmentMap{nullptr};
 	render::ImageHandle m_diffuseIrradianceMap{nullptr};
-
-	// render::GraphicsStateUnique m_geometryGraphicsState{nullptr};
-
-	#if 0
-	TST_PUSH_CONSTANT_BLOCK(MeshletMeshConstants)
-	{
-		Dx::XMFLOAT4X4 meshTransform;
-
-		uintptr vertexBuffer;
-
-		uintptr material;
-
-		uintptr cameraPtr;
-		uintptr sceneDataPtr;
-
-		uint32 samplerIndex;
-		uint32 diffuseIrradianceMapIndex;
-	}; UniquePtr<render::SkyboxPass> m_skyboxPass{nullptr};
-	#endif
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <ranges>
+
 #include "initialiser_list.hpp"
 #include "logging.hpp"
 #include "ptr.hpp"

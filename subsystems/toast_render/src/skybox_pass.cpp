@@ -10,15 +10,15 @@ namespace toaster::render
 		_construct(p_msaa);
 	}
 
-	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size, bool32 p_msaa) : m_renderCtx(&p_render_ctx), m_viewportSize(p_initial_viewport_size)
+	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size, bool32 p_msaa) : m_renderCtx(&p_render_ctx),
+																											 m_viewportSize(p_initial_viewport_size)
 	{
 		_construct(p_msaa);
 		m_environmentMap = m_renderCtx->getGlobals()->whiteImage();
 	}
 
-	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size, const ImageHandle &p_environment_map, bool32 p_msaa) : m_renderCtx(&p_render_ctx),
-																																	m_viewportSize(p_initial_viewport_size),
-																																	m_environmentMap(p_environment_map)
+	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size, const ImageHandle &p_environment_map,
+						   bool32         p_msaa) : m_renderCtx(&p_render_ctx), m_viewportSize(p_initial_viewport_size), m_environmentMap(p_environment_map)
 	{
 		_construct(p_msaa);
 	}

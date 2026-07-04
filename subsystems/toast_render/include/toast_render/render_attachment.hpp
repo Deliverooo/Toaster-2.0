@@ -60,7 +60,11 @@ namespace toaster::render
 		auto getScissor() const -> vk::Rect2D;
 		auto getVulkanRenderingInfo() const -> vk::RenderingInfo;
 
-		auto addColourAttachment(gpu::RawImage &p_image) -> void;
+		auto addColourAttachment(gpu::RawImage &p_image, EAttachmentUsageOP p_usage_op = EAttachmentUsageOP::eClearStore) -> void;
+		auto addMSAAColourAttachment(gpu::RawImage &p_image, gpu::RawImage &p_resolve_image, EAttachmentUsageOP p_usage_op = EAttachmentUsageOP::eClearStore) -> void;
+
+		auto setDepthAttachment(gpu::RawImage &p_image, EAttachmentUsageOP p_usage_op = EAttachmentUsageOP::eClearStore) -> void;
+		auto setMSAADepthAttachment(gpu::RawImage &p_image, gpu::RawImage &p_resolve_image, EAttachmentUsageOP p_usage_op = EAttachmentUsageOP::eClearStore) -> void;
 	};
 
 	TST_RENDER_API auto getLoadOp(EAttachmentUsageOP p_usage_op) -> vk::AttachmentLoadOp;
