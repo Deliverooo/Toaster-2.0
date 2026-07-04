@@ -11,9 +11,9 @@ namespace toaster::render
 			usage_flags |= vk::ImageUsageFlagBits::eStorage;
 
 		gpu::ImageSpecInfo image_spec_info{};
-		image_spec_info.size       = m_specInfo.size;
-		image_spec_info.format     = m_specInfo.format;
-		image_spec_info.usage      = usage_flags;
+		image_spec_info.size   = m_specInfo.size;
+		image_spec_info.format = m_specInfo.format;
+		image_spec_info.usage  = usage_flags;
 		if (m_specInfo.generateMipmaps)
 			image_spec_info.mipCount = static_cast<uint32>(std::floor(std::log2(std::max(m_specInfo.size.x, m_specInfo.size.y)))) + 1u;
 		image_spec_info.layerCount = m_specInfo.layerCount;
@@ -46,10 +46,10 @@ namespace toaster::render
 		gpu::util::toTransferDst(m_image.get());
 		m_image->setData(p_data);
 
-		if (m_specInfo.generateMipmaps)
-			m_renderCtx->getLogicalDevice()->generateMipmaps(m_image->getImage(), {m_specInfo.size.x, m_specInfo.size.y, 1u}, image_spec_info.mipCount);
+		// if (m_specInfo.generateMipmaps)
+		// m_renderCtx->getLogicalDevice()->generateMipmaps(m_image->getImage(), {m_specInfo.size.x, m_specInfo.size.y, 1u}, image_spec_info.mipCount);
 
-		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal); // Generate mips leaves the image in the eShaderReadOnlyOptimal layout
+		// m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal); // Generate mips leaves the image in the eShaderReadOnlyOptimal layout
 
 		if (m_specInfo.storage)
 			m_storageHeapID = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, true);
@@ -74,8 +74,15 @@ namespace toaster::render
 		if (m_renderCtx)
 		{
 			if (m_specInfo.storage)
+			{
 				m_renderCtx->getDescriptorHeap()->freeImage(m_storageHeapID);
+
+				for (const auto mip_id: m_perMipStorageHeapIDs | std::views::values)
+					m_renderCtx->getDescriptorHeap()->freeImage(mip_id);
+			}
 			m_renderCtx->getDescriptorHeap()->freeImage(m_shaderReadHeapID);
+			for (const auto mip_id: m_perMipShaderReadHeapIDs | std::views::values)
+				m_renderCtx->getDescriptorHeap()->freeImage(mip_id);
 		}
 	}
 
@@ -84,6 +91,16 @@ namespace toaster::render
 		gpu::util::toTransferDst(m_image.get());
 		m_image->setData(p_data);
 		gpu::util::transferDstToShaderRead(m_image.get());
+	}
+
+	auto Image::generateMipmaps() -> void
+	{
+		vk::ImageLayout prev_layout{m_image->getCurrentImageLayout()};
+		if (m_specInfo.generateMipmaps)
+			m_renderCtx->getLogicalDevice()->generateMipmaps(m_image->getImage(), {m_specInfo.size.x, m_specInfo.size.y, 1u}, m_image->getSpecInfo().mipCount);
+
+		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal); // Generate mips leaves the image in the eShaderReadOnlyOptimal layout
+		gpu::util::transitionImageLayout(m_image.get(), vk::ImageLayout::eShaderReadOnlyOptimal, prev_layout);
 	}
 
 	auto Image::getSpecInfo() const -> const ImageSpecInfo &
@@ -138,5 +155,33 @@ namespace toaster::render
 	auto Image::getAlignedShaderReadHeapID() const -> gpu::DescriptorSlot
 	{
 		return m_shaderReadHeapID + (m_renderCtx->getDescriptorHeap()->getImageOffset() / m_renderCtx->getDescriptorHeap()->getImageDescriptorSize());
+	}
+
+	auto Image::createMipHeapID(uint32 p_level) -> void
+	{
+		if (m_specInfo.storage)
+			m_perMipStorageHeapIDs[p_level] = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, true, p_level);
+
+		m_perMipShaderReadHeapIDs[p_level] = m_renderCtx->getDescriptorHeap()->allocImage(*m_image, false, p_level);
+	}
+
+	auto Image::getMipStorageHeapID(uint32 p_level) const -> gpu::DescriptorSlot
+	{
+		return m_perMipStorageHeapIDs.at(p_level);
+	}
+
+	auto Image::getMipShaderReadHeapID(uint32 p_level) const -> gpu::DescriptorSlot
+	{
+		return m_perMipShaderReadHeapIDs.at(p_level);
+	}
+
+	auto Image::getMipAlignedStorageHeapID(uint32 p_level) const -> gpu::DescriptorSlot
+	{
+		return m_perMipStorageHeapIDs.at(p_level) + (m_renderCtx->getDescriptorHeap()->getImageOffset() / m_renderCtx->getDescriptorHeap()->getImageDescriptorSize());
+	}
+
+	auto Image::getMipAlignedShaderReadHeapID(uint32 p_level) const -> gpu::DescriptorSlot
+	{
+		return m_perMipShaderReadHeapIDs.at(p_level) + (m_renderCtx->getDescriptorHeap()->getImageOffset() / m_renderCtx->getDescriptorHeap()->getImageDescriptorSize());
 	}
 }

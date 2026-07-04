@@ -53,6 +53,6 @@ vec3 fresnelSchlick(vec3 p_f0, float p_cos_theta)
 }
 
 vec3 fresnelSchlickRoughness(float p_cos_theta, vec3 p_f0, float p_roughness)
- {
+{
     return p_f0 + (max(vec3(1.0f - p_roughness), p_f0) - p_f0) * pow(clamp(1.0f - p_cos_theta, 0.0f, 1.0f), 5.0f);
 }

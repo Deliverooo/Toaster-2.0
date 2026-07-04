@@ -114,7 +114,8 @@ namespace toaster
 		{
 			if (m_scene->m_reloadEnvironment)
 			{
-				reloadEnvironmentMaps(m_scene->m_sceneEnvironment.skyboxMapImage, m_scene->m_sceneEnvironment.diffuseIrradianceMapImage);
+				reloadEnvironmentMaps(m_scene->m_sceneEnvironment.skyboxMapImage, m_scene->m_sceneEnvironment.diffuseIrradianceMapImage,
+									  m_scene->m_sceneEnvironment.specularIrradianceMapImage);
 				m_scene->m_reloadEnvironment = false;
 			}
 
@@ -227,10 +228,12 @@ namespace toaster
 		}
 	}
 
-	auto DynamicSceneRenderer::reloadEnvironmentMaps(const render::ImageHandle &p_skybox, const render::ImageHandle &p_diffuse_irradiance) -> void
+	auto DynamicSceneRenderer::reloadEnvironmentMaps(const render::ImageHandle &p_skybox, const render::ImageHandle &p_diffuse_irradiance,
+													 const render::ImageHandle &p_specular_irradiance) -> void
 	{
 		m_skyboxPass->setEnvironmentMap(p_skybox);
-		m_diffuseIrradianceMap = p_diffuse_irradiance;
+		m_diffuseIrradianceMap  = p_diffuse_irradiance;
+		m_specularIrradianceMap = p_specular_irradiance;
 	}
 
 	auto DynamicSceneRenderer::_performMeshTransformPrePass() -> void
@@ -247,12 +250,16 @@ namespace toaster
 				submesh_draw_cmd.mesh = draw_cmd.mesh;
 
 				submesh_draw_cmd.vertexOffset  = static_cast<int32>(submesh.vertexOffset);
-				submesh_draw_cmd.vertexCount   = submesh.vertexCount;
 				submesh_draw_cmd.indexOffset   = submesh.indexOffset;
 				submesh_draw_cmd.indexCount    = submesh.indexCount;
 				submesh_draw_cmd.materialIndex = submesh.materialIndex;
 			}
 		}
+
+		// std::ranges::sort(m_submeshDrawCommands, [](const SubmeshDrawCommand &lhs, const SubmeshDrawCommand &rhs) -> bool
+		// {
+		// return false;
+		// });
 
 		m_meshDrawCommands.clear();
 	}
@@ -303,8 +310,6 @@ namespace toaster
 
 		auto &vk_cmd{p_cmd->getVulkanCommandBuffer()};
 
-		p_cmd->bindShaders({m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_VS").get(), m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS").get()});
-
 		p_cmd->setPrimitiveTopology(gpu::EPrimitiveTopology::eTriangleList);
 		p_cmd->setCullMode(gpu::ECullMode::eBack);
 		p_cmd->setFrontFace(gpu::EFrontFace::eCCW);
@@ -342,18 +347,37 @@ namespace toaster
 		mesh_draw_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
 		mesh_draw_constants.sceneDataPtr = m_sceneDataUBOs->getDeviceAddress();
 
-		mesh_draw_constants.samplerIndex              = m_renderCtx->getSampler(render::ESamplerType::eIrradianceMap);
-		mesh_draw_constants.diffuseIrradianceMapIndex = m_diffuseIrradianceMap->getAlignedShaderReadHeapID();
+		mesh_draw_constants.samplerIndex               = m_renderCtx->getSampler(render::ESamplerType::eIrradianceMap);
+		mesh_draw_constants.diffuseIrradianceMapIndex  = m_diffuseIrradianceMap->getAlignedShaderReadHeapID();
+		mesh_draw_constants.specularIrradianceMapIndex = m_specularIrradianceMap->getAlignedShaderReadHeapID();
 
+		mesh_draw_constants.BRDFLUTSamplerIndex = m_renderCtx->getSampler(render::ESamplerType::eBRDFLUT);
+		mesh_draw_constants.BRDFLUT             = m_renderCtx->getGlobals()->BRDFLUT()->getAlignedShaderReadHeapID();
+
+		render::DynamicMeshHandle last_mesh{nullptr};
+		gpu::DynamicShaderHandle  last_ps{nullptr};
 		for (const auto &draw_cmd: m_submeshDrawCommands)
 		{
+			const auto &material{draw_cmd.mesh->getMaterial(draw_cmd.materialIndex)};
+
+			const auto material_shader{draw_cmd.mesh->getMaterialShader(draw_cmd.mesh->getMaterialType(draw_cmd.materialIndex))};
+			if (last_ps.get() != material_shader.get())
+			{
+				last_ps = material_shader;
+				p_cmd->bindShaders({m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_VS").get(), last_ps.get()});
+			}
+
 			mesh_draw_constants.meshTransform = draw_cmd.transform;
 
 			mesh_draw_constants.vertexBuffer = draw_cmd.mesh->getVertexBufferAddress();
-			mesh_draw_constants.material     = draw_cmd.mesh->getMaterial(draw_cmd.materialIndex)->getDeviceAddress();
+			mesh_draw_constants.material     = material->getDeviceAddress();
 
 			p_cmd->pushData(mesh_draw_constants);
-			p_cmd->bindIndexBuffer(draw_cmd.mesh->getIndexBuffer());
+			if (draw_cmd.mesh.get() != last_mesh)
+			{
+				last_mesh = draw_cmd.mesh;
+				p_cmd->bindIndexBuffer(last_mesh->getIndexBuffer());
+			}
 			p_cmd->drawIndexed(draw_cmd.indexCount, 1, draw_cmd.indexOffset, draw_cmd.vertexOffset, 0);
 		}
 

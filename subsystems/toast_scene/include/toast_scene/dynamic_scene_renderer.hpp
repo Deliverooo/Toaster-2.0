@@ -27,7 +27,8 @@ namespace toaster
 
 		auto onResize(tsm::uint2 p_size) -> void;
 
-		auto reloadEnvironmentMaps(const render::ImageHandle &p_skybox, const render::ImageHandle &p_diffuse_irradiance) -> void;
+		auto reloadEnvironmentMaps(const render::ImageHandle &p_skybox, const render::ImageHandle &p_diffuse_irradiance,
+								   const render::ImageHandle &p_specular_irradiance) -> void;
 
 	private:
 		auto _performMeshTransformPrePass() -> void;
@@ -63,6 +64,7 @@ namespace toaster
 		};
 
 		render::ImageHandle           m_diffuseIrradianceMap{nullptr};
+		render::ImageHandle           m_specularIrradianceMap{nullptr};
 		UniquePtr<render::SkyboxPass> m_skyboxPass{nullptr};
 
 		render::GraphicsStateUnique m_geometryGraphicsState{nullptr};
@@ -79,6 +81,11 @@ namespace toaster
 
 			uint32 samplerIndex;
 			uint32 diffuseIrradianceMapIndex;
+			uint32 specularIrradianceMapIndex;
+
+
+			uint32 BRDFLUTSamplerIndex;
+			uint32 BRDFLUT;
 		};
 
 		struct MeshDrawCommand
@@ -95,7 +102,6 @@ namespace toaster
 			render::DynamicMeshHandle mesh{nullptr};
 
 			int32  vertexOffset{0};
-			uint32 vertexCount{0u};
 			uint32 indexOffset{0u};
 			uint32 indexCount{0u};
 

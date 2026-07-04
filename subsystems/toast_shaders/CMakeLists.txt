@@ -24,6 +24,7 @@ set(SHADER_SOURCES_VULKAN
 
 		${CMAKE_CURRENT_SOURCE_DIR}/equirectangular_to_cube_map.comp.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/diffuse_irradiance_convolution.comp.glsl
+		${CMAKE_CURRENT_SOURCE_DIR}/specular_irradiance_convolution.comp.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/ssao_blur.comp.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/ambient_occlusion.comp.glsl
 

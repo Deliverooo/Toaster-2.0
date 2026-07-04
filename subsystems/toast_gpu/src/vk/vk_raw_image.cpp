@@ -27,6 +27,30 @@ namespace toaster::gpu
 		return m_imageViewCreateInfo;
 	}
 
+	auto VKRawImage::getMipImageViewCreateInfo(uint32 p_mip_level, uint32 p_mip_count) const -> vk::ImageViewCreateInfo
+	{
+		vk::ImageViewCreateInfo image_view_create_info{};
+
+		image_view_create_info.viewType   = (m_specInfo.layerCount > 1) ? vk::ImageViewType::eCube : vk::ImageViewType::e2D;;
+		image_view_create_info.image      = m_image;
+		image_view_create_info.components = {
+			vk::ComponentSwizzle::eIdentity,
+			vk::ComponentSwizzle::eIdentity,
+			vk::ComponentSwizzle::eIdentity,
+			vk::ComponentSwizzle::eIdentity
+		};
+		image_view_create_info.subresourceRange = vk::ImageSubresourceRange{
+			util::getImageAspectMask(m_specInfo.format),
+			p_mip_level,
+			p_mip_count,
+			0,
+			m_specInfo.layerCount
+		};
+		image_view_create_info.format = m_specInfo.format;
+
+		return image_view_create_info;
+	}
+
 	auto VKRawImage::getImage() -> vk::Image &
 	{
 		return m_image;
@@ -129,11 +153,6 @@ namespace toaster::gpu
 		if (m_specInfo.hostAccess) // Linear means that the CPU can read/write to the image. Ts is similar to host visible/coherent for mem props...
 			image_tiling = vk::ImageTiling::eLinear;
 
-		// // if (m_specInfo.usage & vk::ImageUsageFlagBits::eStorage)
-		// 	// image_tiling = vk::ImageTiling::eLinear;
-		// if (m_specInfo.layerCount > 1)
-		// 	image_tiling = vk::ImageTiling::eOptimal;
-
 		m_device->createImage({m_specInfo.size.x, m_specInfo.size.y, 1u}, m_specInfo.layerCount, m_specInfo.mipCount, m_specInfo.sampleCount, m_specInfo.format,
 							  image_tiling, m_specInfo.usage, vk::MemoryPropertyFlagBits::eDeviceLocal, m_image, m_imageMemory);
 
@@ -145,21 +164,8 @@ namespace toaster::gpu
 		else if (m_specInfo.usage & vk::ImageUsageFlagBits::eStorage)
 			util::transitionImageLayout(this, vk::ImageLayout::eUndefined, vk::ImageLayout::eGeneral);
 
-		{
-			m_imageViewCreateInfo            = vk::ImageViewCreateInfo{};
-			m_imageViewCreateInfo.viewType   = (m_specInfo.layerCount > 1) ? vk::ImageViewType::eCube : vk::ImageViewType::e2D;;
-			m_imageViewCreateInfo.image      = m_image;
-			m_imageViewCreateInfo.components = {
-				vk::ComponentSwizzle::eIdentity,
-				vk::ComponentSwizzle::eIdentity,
-				vk::ComponentSwizzle::eIdentity,
-				vk::ComponentSwizzle::eIdentity
-			};
-			m_imageViewCreateInfo.subresourceRange = vk::ImageSubresourceRange{aspect_flags, 0, m_specInfo.mipCount, 0, m_specInfo.layerCount};
-			m_imageViewCreateInfo.format           = m_specInfo.format;
-
-			m_imageView = (static_cast<vk::Device>(m_device->getVulkanLogicalDevice())).createImageView(m_imageViewCreateInfo);
-		}
+		m_imageViewCreateInfo = getMipImageViewCreateInfo(0u, m_specInfo.mipCount);
+		m_imageView           = (static_cast<vk::Device>(m_device->getVulkanLogicalDevice())).createImageView(m_imageViewCreateInfo);
 	}
 
 	namespace util

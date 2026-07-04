@@ -25,6 +25,8 @@ namespace toaster::render
 			_set(p_name, static_cast<const void *>(&p_value));
 		}
 
+		auto getImage(const String& p_name) const -> const ImageHandle&;
+
 	private:
 		auto _set(const String &p_name, const void *p_value) -> void;
 

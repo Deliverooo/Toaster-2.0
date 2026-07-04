@@ -134,10 +134,10 @@ namespace toaster::gpu
 		return allocated_slot;
 	}
 
-	auto VKDescriptorHeap::allocImage(const VKRawImage &p_image, bool p_storage) -> DescriptorSlot
+	auto VKDescriptorHeap::allocImage(const VKRawImage &p_image, bool p_storage, uint32 p_mip_level) -> DescriptorSlot
 	{
 		DescriptorSlot allocated_slot{m_imageSlotManager.allocSlot()};
-		setImage(allocated_slot, p_image, p_storage);
+		setImage(allocated_slot, p_image, p_storage, p_mip_level);
 		return allocated_slot;
 	}
 
@@ -163,15 +163,20 @@ namespace toaster::gpu
 		m_device->getVulkanLogicalDevice().writeResourceDescriptorsEXT(resource_info, host_range);
 	}
 
-	auto VKDescriptorHeap::setImage(DescriptorSlot p_slot, const RawImage &p_image, bool p_storage) -> void
+	auto VKDescriptorHeap::setImage(DescriptorSlot p_slot, const RawImage &p_image, bool p_storage, uint32 p_mip_level) -> void
 	{
 		vk::HostAddressRangeEXT host_range{};
 		host_range.address = static_cast<uint8 *>(m_resourceHeapMemory) + m_imageArrayOffset + p_slot * m_imageDescriptorSize;
 		host_range.size    = m_imageDescriptorSize;
 
 		vk::ImageDescriptorInfoEXT image_info{};
+		vk::ImageViewCreateInfo    image_view_create_info{};
 		image_info.layout = (p_storage) ? vk::ImageLayout::eGeneral : vk::ImageLayout::eShaderReadOnlyOptimal;
-		image_info.pView  = &p_image.getImageViewCreateInfo();
+		if (p_mip_level == UINT32_MAX)
+			image_view_create_info = p_image.getImageViewCreateInfo();
+		else
+			image_view_create_info = p_image.getMipImageViewCreateInfo(p_mip_level, 1u);
+		image_info.pView = &image_view_create_info;
 
 		vk::ResourceDescriptorInfoEXT resource_info{};
 		resource_info.type        = (p_storage) ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eSampledImage;

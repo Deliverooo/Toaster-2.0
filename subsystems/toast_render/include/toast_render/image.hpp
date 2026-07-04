@@ -20,7 +20,7 @@ namespace toaster::render
 		bool32 storage{false};
 
 		bool32 hostAccess{false};
-		bool32 generateMipmaps{false}; // make ts true for loaded texture images!!
+		bool32 generateMipmaps{false}; // make ts true for loaded texture images
 
 		uint32 layerCount{1u};
 	};
@@ -40,6 +40,8 @@ namespace toaster::render
 
 		auto setData(const Buffer &p_data) -> void;
 
+		auto generateMipmaps() -> void;
+
 		auto getSpecInfo() const -> const ImageSpecInfo &;
 		auto getImage() const -> const gpu::RawImageHandle &;
 		auto getImage() -> gpu::RawImageHandle &;
@@ -56,6 +58,14 @@ namespace toaster::render
 		auto getAlignedStorageHeapID() const -> gpu::DescriptorSlot;    // Pass ts to shaders!!!!
 		auto getAlignedShaderReadHeapID() const -> gpu::DescriptorSlot; // Pass ts to shaders!!!!
 
+		auto createMipHeapID(uint32 p_level) -> void;
+
+		auto getMipStorageHeapID(uint32 p_level) const -> gpu::DescriptorSlot;
+		auto getMipShaderReadHeapID(uint32 p_level) const -> gpu::DescriptorSlot;
+
+		auto getMipAlignedStorageHeapID(uint32 p_level) const -> gpu::DescriptorSlot;
+		auto getMipAlignedShaderReadHeapID(uint32 p_level) const -> gpu::DescriptorSlot;
+
 	private:
 		ImageSpecInfo m_specInfo{};
 
@@ -63,6 +73,9 @@ namespace toaster::render
 
 		gpu::DescriptorSlot m_storageHeapID{UINT32_MAX};
 		gpu::DescriptorSlot m_shaderReadHeapID{UINT32_MAX};
+
+		std::unordered_map<uint32, gpu::DescriptorSlot> m_perMipStorageHeapIDs;
+		std::unordered_map<uint32, gpu::DescriptorSlot> m_perMipShaderReadHeapIDs;
 	};
 
 	TST_RENDER_DEFINE_HANDLE(Image, Image)

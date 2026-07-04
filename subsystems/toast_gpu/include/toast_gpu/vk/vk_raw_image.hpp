@@ -33,6 +33,7 @@ namespace toaster::gpu
 		~VKRawImage();
 
 		[[nodiscard]] auto getImageViewCreateInfo() const -> const vk::ImageViewCreateInfo &;
+		[[nodiscard]] auto getMipImageViewCreateInfo(uint32 p_mip_level, uint32 p_mip_count) const -> vk::ImageViewCreateInfo;
 
 		auto getImage() -> vk::Image &;
 		auto getImageMemory() -> vk::DeviceMemory &;

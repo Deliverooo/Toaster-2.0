@@ -145,6 +145,7 @@ namespace toaster
 		{
 			render::ImageHandle  skyboxMapImage{nullptr};
 			render::ImageHandle  diffuseIrradianceMapImage{nullptr};
+			render::ImageHandle  specularIrradianceMapImage{nullptr};
 			gpu::Texture3DHandle skyboxMap{nullptr};            // TODO: Remove
 			gpu::Texture3DHandle diffuseIrradianceMap{nullptr}; // Created from the skybox and updated if it changes
 		} m_sceneEnvironment;

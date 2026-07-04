@@ -49,6 +49,10 @@ layout (push_constant) uniform Constants
 
     uint samplerIndex;
     uint diffuseIrradianceMapIndex;
+    uint specularIrradianceMapIndex;
+
+    uint BRDFLUTSamplerIndex;
+    uint BRDFLUT;
 } pcs;
 
 void main()
@@ -75,8 +79,7 @@ void main()
     glob.albedo = texture(sampler2D(texture2DHeap[material.albedoMap], samplerHeap[material.textureSampler]), m_TexCoord).rgb;
     glob.albedo *= material.albedoColour.rgb;
 
-
-    glob.roughness = material.roughness;
+    glob.roughness = 1.0f;
     glob.metalness = material.metalness;
 
     glob.f0 = vec3(0.04f);
@@ -86,17 +89,26 @@ void main()
     vec3 kd = vec3(1.0f) - ks;
     kd *= 1.0f - glob.metalness;
 
-    vec3 irradiance = textureLod(samplerCube(textureCubeHeap[pcs.diffuseIrradianceMapIndex], samplerHeap[pcs.samplerIndex]), glob.normal, 0).rgb;
-    irradiance /= irradiance + vec3(1.0f);
+    vec3 reflection_vec = reflect(-glob.view, glob.normal);
 
-    vec3 diffuse_ambient = kd * irradiance * glob.albedo;
+    float lod = glob.roughness * float(textureQueryLevels(samplerCube(textureCubeHeap[pcs.specularIrradianceMapIndex], samplerHeap[pcs.samplerIndex])) - 1);
+    vec3 prefiltered_colour = textureLod(samplerCube(textureCubeHeap[pcs.specularIrradianceMapIndex], samplerHeap[pcs.samplerIndex]), reflection_vec, lod).rgb;
 
-    vec3 ambient = diffuse_ambient;
+    vec2 brdfCoord = vec2(glob.nDotV, glob.roughness);
+    vec2 brdf = texture(sampler2D(texture2DHeap[pcs.BRDFLUT], samplerHeap[pcs.BRDFLUTSamplerIndex]), brdfCoord).rg;
+
+    vec3 specular_ambient = prefiltered_colour * (ks * brdf.x + brdf.y);
+
+    vec3 diffuse_irradiance = textureLod(samplerCube(textureCubeHeap[pcs.diffuseIrradianceMapIndex], samplerHeap[pcs.samplerIndex]), glob.normal, 0).rgb;
+
+    vec3 diffuse_ambient = kd * diffuse_irradiance * glob.albedo;
+
+    vec3 ambient = diffuse_ambient + specular_ambient;
 
     vec3 final_colour = ambient; // + lo
 
-//        o_Colour = vec4(glob.normal, 1.0f);
-//            o_Colour = vec4(vec3(glob.nDotV), 1.0f);
+    //        o_Colour = vec4(glob.normal, 1.0f);
+    //            o_Colour = vec4(vec3(glob.nDotV), 1.0f);
     //    o_Colour = vec4(glob.albedo, 1.0f);
     o_Colour = vec4(final_colour, 1.0f);
 }

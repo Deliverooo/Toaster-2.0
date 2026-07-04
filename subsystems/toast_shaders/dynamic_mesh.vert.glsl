@@ -38,6 +38,7 @@ layout (push_constant) uniform Constants
 
     uint samplerIndex;
     uint diffuseIrradianceMapIndex;
+    uint specularIrradianceMapIndex;
 } pcs;
 
 layout (location = 0) out vec3 o_WorldPos;

@@ -39,5 +39,7 @@ void main()
     vec4 colour = texture(sampler2D(texture2DHeap[pcs.equirectangularMapId], samplerHeap[pcs.samplerId]), uv);
     colour = min(colour, vec4(500.0f));
 
+    colour.rgb /= colour.rgb + vec3(1.0f);
+
     imageStore(o_Cubemap[pcs.cubeMapId], ivec3(gl_GlobalInvocationID), colour);
 }

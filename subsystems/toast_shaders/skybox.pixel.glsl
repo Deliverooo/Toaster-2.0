@@ -32,7 +32,5 @@ layout(push_constant) uniform PushConstants
 void main()
 {
     vec4 texture_colour = textureLod(samplerCube(globalCubeMaps[pcs.skyboxMapId], globalSamplers[pcs.samplerId]), normalize(v_Position), 1);
-    // vec4 texture_colour =imageLoad(globalCubeMaps, );
-    texture_colour.rgb = texture_colour.rgb / (texture_colour.rgb + vec3(1.0f));
     o_Colour = vec4(texture_colour.rgb, 1.0f);
 }

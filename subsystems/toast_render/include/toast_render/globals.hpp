@@ -58,7 +58,19 @@ namespace toaster::render
 			uint32 diffuseIrradianceMapId;
 			uint32 samplerId;
 
-			char _padd[2];
+			char _padd[4];
+		};
+
+		TST_PUSH_CONSTANT_BLOCK(SpecularIrradianceConvolutionConstants)
+		{
+			uint32 environmentMapId;
+			uint32 specularIrradianceMapId;
+			uint32 samplerId;
+
+			uint32  numSamples;
+			float32 roughness;
+
+			char _padd[12];
 		};
 
 		Globals(RenderContext &p_render_ctx, const GlobalsSpecInfo &p_spec_info);
@@ -86,6 +98,7 @@ namespace toaster::render
 		auto whiteImage() const -> const ImageHandle &;
 
 		auto debugImage() const -> const ImageHandle &;
+		auto BRDFLUT() const -> const ImageHandle &;
 
 	private:
 		GlobalsSpecInfo m_specInfo{};
@@ -104,5 +117,7 @@ namespace toaster::render
 		ImageHandle          m_whiteImage{nullptr};
 
 		ImageHandle m_debugImage{nullptr};
+
+		ImageHandle m_BRDFLUT{nullptr};
 	};
 }

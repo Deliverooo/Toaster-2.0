@@ -34,8 +34,7 @@ public:
 		const auto binary_dir{os::getBinaryDirectory()};
 		const auto resources_dir{binary_dir / "../resources"};
 
-		m_environmentMap       = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/overcast_soil_puresky_2k.hdr");
-		m_diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMapImage(m_environmentMap);
+		m_environmentMap = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/overcast_soil_puresky_2k.hdr");
 
 		m_scene = toaster::make_unique<Scene>(m_renderCtx);
 		m_scene->setSceneEnvironmentImage(m_environmentMap);
@@ -49,19 +48,24 @@ public:
 				setEnableDepthWrite(false).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl);
 
 		{
-			// Entity orbo_entity{m_scene->createEntity("Orbo")};
-			// auto & mesh_comp{orbo_entity.addComponent<DynamicMeshComponent>()};
-			// mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Backrooms.fbx");
+			Entity test_scene_entity{m_scene->createEntity("Test_Scene")};
+			auto & mesh_comp{test_scene_entity.addComponent<DynamicMeshComponent>()};
+			mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Backrooms.fbx");
 		}
 
-		{
-			Entity teapot_entity{m_scene->createEntity("Teapot")};
-			auto & mesh_comp{teapot_entity.addComponent<DynamicMeshComponent>()};
-			mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.fbx");
-
-			mesh_comp.mesh->getMaterial(0)->set("metalness", 0.0f);
-			mesh_comp.mesh->getMaterial(1)->set("metalness", 1.0f);
-		}
+		// {
+		// 	Entity orbo_entity{m_scene->createEntity("Orbo")};
+		// 	auto & mesh_comp{orbo_entity.addComponent<DynamicMeshComponent>()};
+		// 	mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.fbx");
+		//
+		// 	auto mat0{mesh_comp.mesh->getMaterial(0)};
+		// 	// mat0->set("metalness", 0.0f);
+		// 	// mat0->set("roughness", 0.0f);
+		//
+		// 	auto mat1{mesh_comp.mesh->getMaterial(1)};
+		// 	// mat0->set("roughness", 1.0f);
+		// 	// mat1->set("metalness", 0.0f);
+		// }
 	}
 
 	auto onDestroy() -> void override
@@ -122,7 +126,6 @@ private:
 	UniquePtr<DynamicSceneRenderer> m_sceneRenderer{nullptr};
 
 	render::ImageHandle m_environmentMap{nullptr};
-	render::ImageHandle m_diffuseIrradianceMap{nullptr};
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32

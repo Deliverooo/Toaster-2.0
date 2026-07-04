@@ -42,6 +42,10 @@ namespace toaster::render
 		addShader("Diffuse_Irradiance_Convolution",
 				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "diffuse_irradiance_convolution.comp.glsl.spv", EShaderStage::eCompute));
 
+		// Specular irradiance convolution shader
+		addShader("Specular_Irradiance_Convolution",
+				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "specular_irradiance_convolution.comp.glsl.spv", EShaderStage::eCompute));
+
 		// Depth pre shaders
 		addShader("Depth_Pre_VS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "depth_pre.vert.glsl.spv", EShaderStage::eVertex,
 																	 EShaderStage::ePixel));
@@ -111,6 +115,8 @@ namespace toaster::render
 
 			image_data.release();
 		}
+
+		m_BRDFLUT = m_renderCtx->createImageRef(m_specInfo.shaderBinaryDir / "../../resources/textures/BRDF_LUT.png");
 	}
 
 	auto Globals::getShader(const String &p_name) const -> const gpu::DynamicShaderHandle &
@@ -177,5 +183,10 @@ namespace toaster::render
 	auto Globals::debugImage() const -> const ImageHandle &
 	{
 		return m_debugImage;
+	}
+
+	auto Globals::BRDFLUT() const -> const ImageHandle &
+	{
+		return m_BRDFLUT;
 	}
 }

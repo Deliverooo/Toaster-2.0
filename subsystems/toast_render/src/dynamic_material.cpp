@@ -44,6 +44,11 @@ namespace toaster::render
 		return m_uniformData->getDeviceAddress();
 	}
 
+	auto DynamicMaterial::getImage(const String &p_name) const -> const ImageHandle &
+	{
+		return m_imageRefs.at(p_name);
+	}
+
 	auto DynamicMaterial::_set(const String &p_name, const void *p_value) -> void
 	{
 		auto it{m_materialDeclaration.members.find(p_name)};

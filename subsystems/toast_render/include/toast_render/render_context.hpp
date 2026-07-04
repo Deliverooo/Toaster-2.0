@@ -31,12 +31,7 @@ namespace toaster::render
 
 	enum class ESamplerType
 	{
-		eDefault, eNearest, eIrradianceMap
-	};
-
-	enum class EMaterialType
-	{
-		ePBR, eFlat
+		eDefault, eNearest, eIrradianceMap, eBRDFLUT
 	};
 
 	struct TST_RENDER_API RenderContextSpecInfo
@@ -179,6 +174,7 @@ namespace toaster::render
 
 		[[nodiscard]] auto createEnvironmentMapImage(const io::filesystem::Path &p_path) -> RefPtr<Image>;
 		[[nodiscard]] auto createDiffuseIrradianceMapImage(const RefPtr<Image> &p_environment_map) -> RefPtr<Image>;
+		[[nodiscard]] auto createSpecularIrradianceMapImage(const RefPtr<Image> &p_environment_map) -> RefPtr<Image>;
 
 		[[nodiscard]] auto createEnvironmentMap(const io::filesystem::Path &p_path) -> gpu::Texture3DHandle;
 		[[nodiscard]] auto createEnvironmentMap(const gpu::TextureSpecInfo &p_spec_info, const Buffer &p_data) -> gpu::Texture3DHandle;
@@ -190,7 +186,6 @@ namespace toaster::render
 		[[nodiscard]] auto createShaderFromSpirV(const io::filesystem::Path &p_spir_v_path, EShaderStage p_stage,
 												 EShaderStage                p_next_stage = EShaderStage::eNone) const -> gpu::DynamicShaderHandle;
 
-		[[nodiscard]] auto createMaterial(const String &p_name, EMaterialType p_material_type) -> RefPtr<DynamicMaterial>;
 		#pragma region render logic
 		// For all of these, if the frame index or command buffer parameter is null / 0, they will be obtained from the swapchain instead
 

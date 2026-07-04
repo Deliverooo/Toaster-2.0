@@ -132,6 +132,27 @@ namespace toaster::render
 			m_samplers[ESamplerType::eIrradianceMap] = m_descriptorHeap->allocSampler(irradiance_sampler_create_info);
 		}
 
+		{
+			vk::SamplerCreateInfo brdf_lut_sampler_create_info{};
+			brdf_lut_sampler_create_info.magFilter               = vk::Filter::eLinear;
+			brdf_lut_sampler_create_info.minFilter               = vk::Filter::eLinear;
+			brdf_lut_sampler_create_info.mipmapMode              = vk::SamplerMipmapMode::eNearest;
+			brdf_lut_sampler_create_info.addressModeU            = vk::SamplerAddressMode::eClampToEdge;
+			brdf_lut_sampler_create_info.addressModeV            = vk::SamplerAddressMode::eClampToEdge;
+			brdf_lut_sampler_create_info.addressModeW            = vk::SamplerAddressMode::eClampToEdge;
+			brdf_lut_sampler_create_info.mipLodBias              = 0.0f;
+			brdf_lut_sampler_create_info.anisotropyEnable        = false;
+			brdf_lut_sampler_create_info.maxAnisotropy           = 1.0f;
+			brdf_lut_sampler_create_info.compareEnable           = false;
+			brdf_lut_sampler_create_info.compareOp               = vk::CompareOp::eNever;
+			brdf_lut_sampler_create_info.minLod                  = 0.0f;
+			brdf_lut_sampler_create_info.maxLod                  = 0.0f;
+			brdf_lut_sampler_create_info.borderColor             = vk::BorderColor::eFloatOpaqueBlack;
+			brdf_lut_sampler_create_info.unnormalizedCoordinates = false;
+
+			m_samplers[ESamplerType::eBRDFLUT] = m_descriptorHeap->allocSampler(brdf_lut_sampler_create_info);
+		}
+
 		m_shaderCompiler = toaster::make_unique<ShaderCompiler>(*this);
 
 		if (m_specInfo.createGlobals)
@@ -231,6 +252,7 @@ namespace toaster::render
 		}
 
 		auto out_image{createRef<Image>(image_spec_info, image_data)}; // The image takes ownership of the image data from here...
+		out_image->generateMipmaps();
 		return out_image;
 	}
 
@@ -245,6 +267,7 @@ namespace toaster::render
 			return nullptr;
 		}
 		auto out_image{createUnique<Image>(image_spec_info, image_data)}; // The image takes ownership of the image data from here...
+		out_image->generateMipmaps();
 		return std::move(out_image);
 	}
 
@@ -406,6 +429,53 @@ namespace toaster::render
 		return out_irradiance_map;
 	}
 
+	auto RenderContext::createSpecularIrradianceMapImage(const RefPtr<Image> &p_environment_map) -> RefPtr<Image>
+	{
+		static constexpr uint32 c_specular_irradiance_resolution{512u};
+
+		ImageSpecInfo env_output_spec_info{};
+		env_output_spec_info.size            = {c_specular_irradiance_resolution};
+		env_output_spec_info.format          = vk::Format::eR16G16B16A16Sfloat;
+		env_output_spec_info.layerCount      = 6u;
+		env_output_spec_info.storage         = true;
+		env_output_spec_info.generateMipmaps = true;
+
+		auto out_irradiance_map{createRef<Image>(env_output_spec_info)};
+
+		gpu::CommandBuffer command_buffer{m_logicalDevice, vk::QueueFlagBits::eCompute};
+		command_buffer.begin();
+		m_descriptorHeap->bind(&command_buffer);
+
+		m_globals->getShader("Specular_Irradiance_Convolution")->bind(&command_buffer);
+
+		Globals::SpecularIrradianceConvolutionConstants specular_irradiance_convolution_constants{};
+		specular_irradiance_convolution_constants.environmentMapId = p_environment_map->getAlignedShaderReadHeapID();
+		specular_irradiance_convolution_constants.samplerId        = m_samplers.at(ESamplerType::eIrradianceMap);
+		specular_irradiance_convolution_constants.numSamples       = 1028u;
+
+		for (uint32 i{0u}; i < out_irradiance_map->getImage()->getSpecInfo().mipCount; ++i)
+		{
+			out_irradiance_map->createMipHeapID(i);
+
+			specular_irradiance_convolution_constants.specularIrradianceMapId = out_irradiance_map->getMipAlignedStorageHeapID(i);
+			specular_irradiance_convolution_constants.roughness = (float32)i / (float32)(out_irradiance_map->getImage()->getSpecInfo().mipCount - 1u);
+
+			command_buffer.pushData(specular_irradiance_convolution_constants);
+
+			uint32 mip_dim{std::max(1u, c_specular_irradiance_resolution >> i)};
+			command_buffer.getVulkanCommandBuffer().dispatch((mip_dim + 15u) / 16u, (mip_dim + 15u) / 16u, 6);
+
+
+			// command_buffer.getVulkanCommandBuffer().pipelineBarrier2();
+		}
+
+		command_buffer.endAndSubmit();
+
+		out_irradiance_map->toShaderReadOptimal();
+
+		return out_irradiance_map;
+	}
+
 	auto RenderContext::createEnvironmentMap(const io::filesystem::Path &p_path) -> gpu::Texture3DHandle
 	{
 		// auto env_tex{createGPURef<gpu::Texture2D>(gpu::TextureSpecInfo{}, p_path)};
@@ -491,23 +561,6 @@ namespace toaster::render
 	{
 		TST_ASSERT(io::filesystem::exists(p_spir_v_path));
 		return createGPURef<gpu::DynamicShader>(io::filesystem::readBinary(p_spir_v_path), getVulkanShaderStage(p_stage), getVulkanShaderStage((p_next_stage)));
-	}
-
-	auto RenderContext::createMaterial(const String &p_name, EMaterialType p_material_type) -> RefPtr<DynamicMaterial>
-	{
-		switch (p_material_type)
-		{
-			case EMaterialType::ePBR:
-			{
-				const auto &material_struct{m_globals->getShaderReflectionData("Dynamic_Mesh_PS").materialStruct};
-				return createRef<DynamicMaterial>(p_name, material_struct);
-			}
-			case EMaterialType::eFlat:
-			{
-				return nullptr;
-			}
-		}
-		return nullptr;
 	}
 
 	auto RenderContext::beginRenderPass(const RenderingInfo &p_rendering_info, RenderPass *p_render_pass, gpu::CommandBuffer *p_command_buffer,

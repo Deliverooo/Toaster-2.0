@@ -7,6 +7,26 @@
 
 namespace toaster::render
 {
+	static auto aiShadingModeToString(aiShadingMode p_shading_mode) -> String
+	{
+		switch (p_shading_mode)
+		{
+			case aiShadingMode_Flat: return "Flat";
+			case aiShadingMode_Gouraud: return "Gouraud";
+			case aiShadingMode_Phong: return "Phong";
+			case aiShadingMode_Blinn: return "Blinn";
+			case aiShadingMode_Toon: return "Toon";
+			case aiShadingMode_OrenNayar: return "OrenNayar";
+			case aiShadingMode_Minnaert: return "Minnaert";
+			case aiShadingMode_CookTorrance: return "CookTorrance";
+			case aiShadingMode_Unlit: return "Unlit";
+			case aiShadingMode_Fresnel: return "Fresnel";
+			case aiShadingMode_PBR_BRDF: return "PBR_BRDF";
+			case _aiShadingMode_Force32Bit: return "Force32Bit";
+		}
+		return "";
+	}
+
 	DynamicMesh::DynamicMesh(RenderContext &p_render_ctx, const io::filesystem::Path &p_path) : m_renderCtx(&p_render_ctx)
 	{
 		Assimp::Importer importer;
@@ -73,21 +93,55 @@ namespace toaster::render
 
 	auto DynamicMesh::_createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void
 	{
-		auto ai_mat{static_cast<aiMaterial *>(p_mat)};
-
+		auto   ai_mat{static_cast<aiMaterial *>(p_mat)};
 		String material_name{ai_mat->GetName().C_Str()};
 
 		auto &material{m_materials.emplace_back()};
-		material = m_renderCtx->createMaterial(material_name, EMaterialType::ePBR);
 
-		if (aiColor3D ai_colour{1.0f, 1.0f, 1.0f}; ai_mat->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS)
+		aiShadingMode shading_mode;
+		aiReturn      res{ai_mat->Get(AI_MATKEY_SHADING_MODEL, shading_mode)};
+		TST_PERMA_ASSERT(res == AI_SUCCESS);
+
+		LOG_INFO("Shading mode: {}", aiShadingModeToString(shading_mode));
+
+		EMaterialType material_type{EMaterialType::ePBR};
+		m_materialTypes.emplace_back(material_type);
+
+		switch (material_type)
+		{
+			case EMaterialType::ePBR:
+			{
+				const auto &material_struct{m_renderCtx->getGlobals()->getShaderReflectionData("Dynamic_Mesh_PS").materialStruct};
+				material = m_renderCtx->createRef<DynamicMaterial>(material_name, material_struct);
+				break;
+			}
+			case EMaterialType::eFlat:
+			{
+				material = nullptr;
+				break;
+			}
+		}
+
+		// bool two_sided;
+		// if (ai_mat->Get(AI_MATKEY_TWOSIDED, two_sided) == AI_SUCCESS)
+		// {
+		// 	LOG_INFO("Two sided: {}", (bool)two_sided);
+		// }
+
+		if (aiColor3D ai_colour; ai_mat->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS)
 			material->set("albedoColour", tsm::float4{ai_colour.r, ai_colour.g, ai_colour.b, 1.0f});
+		else
+			material->set("albedoColour", tsm::float4{1.0f});
 
-		if (float32 roughness{0.4f}; ai_mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == AI_SUCCESS)
+		if (float32 roughness; ai_mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == AI_SUCCESS)
 			material->set("roughness", roughness);
+		else
+			material->set("roughness", 0.0f);
 
-		if (float32 metalness{0.0f}; ai_mat->Get(AI_MATKEY_REFLECTIVITY, metalness) == AI_SUCCESS)
+		if (float32 metalness; ai_mat->Get(AI_MATKEY_REFLECTIVITY, metalness) == AI_SUCCESS)
 			material->set("metalness", metalness);
+		else
+			material->set("metalness", 0.0f);
 
 		auto get_path_and_create_texture_if_exists{
 			[p_parent_path](const aiString &p_ai_path, const String &p_tex_name) -> std::optional<io::filesystem::Path>
@@ -200,6 +254,29 @@ namespace toaster::render
 	auto DynamicMesh::getMaterial(uint32 p_index) -> DynamicMaterialHandle &
 	{
 		return m_materials.at(p_index);
+	}
+
+	auto DynamicMesh::getMaterialType(uint32 p_index) const -> EMaterialType
+	{
+		return m_materialTypes.at(p_index);
+	}
+
+	auto DynamicMesh::getMaterialShader(EMaterialType p_material_type) const -> gpu::DynamicShaderHandle
+	{
+		switch (p_material_type)
+		{
+			case EMaterialType::ePBR:
+			{
+				return m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS");
+				break;
+			}
+			case EMaterialType::eFlat:
+			{
+				return m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS");
+				break;
+			}
+		}
+		return nullptr;
 	}
 
 	auto importMeshFromScene(const void *p_scene, DynamicMeshData &p_out_mesh_data) -> void
