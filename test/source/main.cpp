@@ -108,28 +108,21 @@ public:
 		const auto cmd{m_renderCtx->getCurrentCommandBuffer()};
 
 		cmd->bindShaders({m_globals->getShader("Fullscreen_Quad_VS"), m_globals->getShader("Fullscreen_Quad_PS")});
-
 		cmd->setPrimitiveTopology(gpu::EPrimitiveTopology::eTriangleList);
-		cmd->getVulkanCommandBuffer().setPrimitiveRestartEnableEXT(false);
-
-		cmd->getVulkanCommandBuffer().setDepthClampEnableEXT(false);
-		cmd->getVulkanCommandBuffer().setDepthBiasEnableEXT(false);
-		cmd->getVulkanCommandBuffer().setRasterizerDiscardEnableEXT(false);
+		cmd->setPrimitiveRestartEnable(false);
+		cmd->setDepthClampEnable(false);
+		cmd->setDepthBiasEnable(false);
+		cmd->setRasterizerDiscardEnable(false);
 		cmd->setPolygonMode(gpu::EPolygonMode::eFill);
 		cmd->setCullMode(gpu::ECullMode::eNone);
 		cmd->setFrontFace(gpu::EFrontFace::eCCW);
-		cmd->getVulkanCommandBuffer().setLineWidth(1.0f);
-
+		cmd->setLineWidth(1.0f);
 		cmd->setColourBlendEnable({false});
 		cmd->setColourWriteMask({vk::FlagTraits<vk::ColorComponentFlagBits>::allFlags});
-
 		cmd->setDepthTestEnable(false);
 		cmd->setStencilTestEnable(false);
-
-		cmd->getVulkanCommandBuffer().setSampleMaskEXT(vk::SampleCountFlagBits::e1, 0xFFFFFFFF);
-		cmd->getVulkanCommandBuffer().setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1);
-
-		cmd->getVulkanCommandBuffer().setAlphaToCoverageEnableEXT(false);
+		cmd->setRasterizationSamples(gpu::ESampleCount::e1);
+		cmd->setAlphaToCoverageEnable(false);
 
 		m_renderCtx->beginRendering(rendering_info);
 		cmd->pushData<FullscreenQuadConstants>({
@@ -188,7 +181,7 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	}
 	catch (const std::exception &e)
 	{
-		LOG_FATAL("Exception: {}", e.what());
+		TST_PERMA_ASSERT_MSG(false, fmt::format("Exception: {}", e.what()).c_str());
 		return -1;
 	}
 

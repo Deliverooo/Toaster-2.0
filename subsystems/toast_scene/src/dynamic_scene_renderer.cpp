@@ -222,19 +222,16 @@ namespace toaster
 		p_cmd.setFrontFace(gpu::EFrontFace::eCCW);
 		p_cmd.setPolygonMode(gpu::EPolygonMode::eFill);
 
-		p_cmd.getVulkanCommandBuffer().setPrimitiveRestartEnableEXT(false);
-		p_cmd.getVulkanCommandBuffer().setAlphaToCoverageEnableEXT(false);
-
+		p_cmd.setAlphaToCoverageEnable(false);
+		p_cmd.setPrimitiveRestartEnable(false);
 		p_cmd.setStencilTestEnable(false);
-		p_cmd.getVulkanCommandBuffer().setLineWidth(1.0f);
+		p_cmd.setLineWidth(1.0f);
 
-		p_cmd.getVulkanCommandBuffer().setDepthClampEnableEXT(false);
-		p_cmd.getVulkanCommandBuffer().setDepthBiasEnableEXT(false);
-		p_cmd.getVulkanCommandBuffer().setRasterizerDiscardEnableEXT(false);
+		p_cmd.setDepthBiasEnable(false);
+		p_cmd.setDepthClampEnable(false);
+		p_cmd.setRasterizerDiscardEnable(false);
 
-		p_cmd.getVulkanCommandBuffer().setSampleMaskEXT(vk::SampleCountFlagBits::e1, 0xFFFFFFFF);
-		p_cmd.getVulkanCommandBuffer().setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1);
-
+		p_cmd.setRasterizationSamples(gpu::ESampleCount::e1);
 		p_cmd.setDepthCompareOp(gpu::ECompareOp::eLessOrEqual);
 	}
 

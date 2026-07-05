@@ -194,4 +194,40 @@ namespace toaster::gpu
 	{
 		m_commandBuffer.setColorWriteMaskEXT(0u, p_write_masks);
 	}
+
+	auto VKCommandBuffer::setRasterizationSamples(ESampleCount p_sample_count) -> void
+	{
+		m_commandBuffer.setRasterizationSamplesEXT(static_cast<vk::SampleCountFlagBits>(p_sample_count));
+		m_commandBuffer.setSampleMaskEXT(static_cast<vk::SampleCountFlagBits>(p_sample_count), 0xFFFFFFFF);
+	}
+
+	auto VKCommandBuffer::setPrimitiveRestartEnable(bool32 p_enable) -> void
+	{
+		m_commandBuffer.setPrimitiveRestartEnableEXT(p_enable);
+	}
+
+	auto VKCommandBuffer::setDepthClampEnable(bool32 p_enable) -> void
+	{
+		m_commandBuffer.setDepthClampEnableEXT(p_enable);
+	}
+
+	auto VKCommandBuffer::setDepthBiasEnable(bool32 p_enable) -> void
+	{
+		m_commandBuffer.setDepthBiasEnable(p_enable);
+	}
+
+	auto VKCommandBuffer::setRasterizerDiscardEnable(bool32 p_enable) -> void
+	{
+		m_commandBuffer.setRasterizerDiscardEnableEXT(p_enable);
+	}
+
+	auto VKCommandBuffer::setAlphaToCoverageEnable(bool32 p_enable) -> void
+	{
+		m_commandBuffer.setAlphaToCoverageEnableEXT(p_enable);
+	}
+
+	auto VKCommandBuffer::setLineWidth(float32 p_width) -> void
+	{
+		m_commandBuffer.setLineWidth(p_width);
+	}
 }

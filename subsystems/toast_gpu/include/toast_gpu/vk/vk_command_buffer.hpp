@@ -73,8 +73,19 @@ namespace toaster::gpu
 
 		auto setStencilTestEnable(bool32 p_enable) -> void;
 
-		auto setColourBlendEnable(const InitialiserList<const bool32>& p_enables) -> void;
-		auto setColourWriteMask(const InitialiserList<const vk::ColorComponentFlags>& p_write_masks) -> void;
+		auto setColourBlendEnable(const InitialiserList<const bool32> &p_enables) -> void;
+		auto setColourWriteMask(const InitialiserList<const vk::ColorComponentFlags> &p_write_masks) -> void;
+
+		auto setRasterizationSamples(ESampleCount p_sample_count) -> void;
+
+		auto setPrimitiveRestartEnable(bool32 p_enable) -> void;
+		auto setDepthClampEnable(bool32 p_enable) -> void;
+		auto setDepthBiasEnable(bool32 p_enable) -> void;
+		auto setRasterizerDiscardEnable(bool32 p_enable) -> void;
+
+		auto setAlphaToCoverageEnable(bool32 p_enable) -> void;
+
+		auto setLineWidth(float32 p_width) -> void;
 
 		#pragma endregion
 
