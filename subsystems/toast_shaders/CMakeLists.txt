@@ -12,6 +12,7 @@ set(SHADER_SOURCES_VULKAN
 		${CMAKE_CURRENT_SOURCE_DIR}/composite.vert.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/composite.pixel.glsl
 
+		${CMAKE_CURRENT_SOURCE_DIR}/skybox.vert.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/skybox.pixel.glsl
 
 		${CMAKE_CURRENT_SOURCE_DIR}/quad.vert.glsl
@@ -20,6 +21,7 @@ set(SHADER_SOURCES_VULKAN
 		${CMAKE_CURRENT_SOURCE_DIR}/ssao.vert.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/ssao.pixel.glsl
 
+		${CMAKE_CURRENT_SOURCE_DIR}/fullscreen_quad.vert.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/fullscreen_quad.pixel.glsl
 
 		${CMAKE_CURRENT_SOURCE_DIR}/equirectangular_to_cube_map.comp.glsl
@@ -44,10 +46,10 @@ set(SHADER_SOURCES_VULKAN
 )
 
 set(SHADER_SOURCES_HLSL
-		${CMAKE_CURRENT_SOURCE_DIR}/fullscreen_quad.vert.hlsl
+#		${CMAKE_CURRENT_SOURCE_DIR}/fullscreen_quad.vert.hlsl
 		${CMAKE_CURRENT_SOURCE_DIR}/mesh_dynamic.vert.hlsl
 		${CMAKE_CURRENT_SOURCE_DIR}/quad_dynamic.vert.hlsl
-		${CMAKE_CURRENT_SOURCE_DIR}/skybox.vert.hlsl
+#		${CMAKE_CURRENT_SOURCE_DIR}/skybox.vert.hlsl
 		${CMAKE_CURRENT_SOURCE_DIR}/mesh_geo.vert.hlsl
 )
 

@@ -18,9 +18,16 @@ struct Camera
     float4x4 invProj;
 };
 
+struct VertexBuffer
+{
+VSInput vertices[];
+};
+
+
 struct PushConstants
 {
     vk::BufferPointer<Camera> cameraPtr;
+    vk::BufferPointer<VertexBuffer> cameraPtr;
 
     uint samplerId;
     uint skyboxMapId;
@@ -115,7 +122,7 @@ float4x4 Inverse(float4x4 m)
 }
 
 
-VSOutput main(VSInput p_input)
+VSOutput main()
 {
 
     VSOutput output = (VSOutput)0;

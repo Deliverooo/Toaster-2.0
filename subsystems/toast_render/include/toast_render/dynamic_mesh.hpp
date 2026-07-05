@@ -60,6 +60,11 @@ namespace toaster::render
 		ePBR, eFlat
 	};
 
+	enum class EMeshMaterialFlags
+	{
+		eTwoSided = BIT(0),
+	};
+
 	class TST_RENDER_API DynamicMesh
 	{
 		TST_RENDER_OBJECT
@@ -98,6 +103,6 @@ namespace toaster::render
 
 	TST_RENDER_DEFINE_HANDLE(DynamicMesh, DynamicMesh);
 
-	TST_RENDER_API auto importMeshFromScene(const void *p_scene, DynamicMeshData &p_out_mesh_data) -> void; // const aiScene*
-	TST_RENDER_API auto traverseNodes(DynamicMeshData &p_out_mesh_data, void *p_node, uint32 p_node_index, const Dx::XMFLOAT4X4 &p_parent_transform) -> void;
+	TST_RENDER_API auto             importMeshFromScene(const void *p_scene, DynamicMeshData &p_out_mesh_data) -> void; // const aiScene*
+	TST_RENDER_API auto XM_CALLCONV traverseNodes(DynamicMeshData &p_out_mesh_data, void *p_node, uint32 p_node_index, Dx::FXMMATRIX p_parent_transform) -> void;
 }

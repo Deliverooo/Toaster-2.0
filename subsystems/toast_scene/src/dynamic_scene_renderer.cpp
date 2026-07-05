@@ -3,6 +3,7 @@
 #include "toast_scene/dynamic_scene_renderer.hpp"
 #include "toast_scene/dynamic_scene_renderer.hpp"
 #include "toast_scene/dynamic_scene_renderer.hpp"
+#include "toast_scene/dynamic_scene_renderer.hpp"
 
 #include "toast_render/globals.hpp"
 #include "toast_render/render_context.hpp"
@@ -24,19 +25,10 @@ namespace toaster
 		m_cameraUBOs    = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::CameraUB));
 		m_sceneDataUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(SceneDataUB));
 
+		m_pointLightSSBOs = m_renderCtx->createUnique<render::StorageBufferPFF>(sizeof(PointLightSSBO));
+
 		m_colourRenderTarget = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eColor);
 		m_depthRenderTarget  = m_renderCtx->createAttachmentImage(m_viewportSize, vk::ImageAspectFlagBits::eDepth);
-
-		m_depthPreGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
-		m_depthPreGraphicsState->setShaders({m_renderCtx->getGlobals()->getShader("Depth_Pre_VS"), m_renderCtx->getGlobals()->getShader("Depth_Pre_PS")}).
-				setAttachmentCount(0u).setCullMode(vk::CullModeFlagBits::eBack).setEnableDepthTest(true).setEnableDepthWrite(true).setEnableMultisample(false);
-
-		m_skyboxPass = m_renderCtx->createUnique<render::SkyboxPass>(m_scene->m_sceneEnvironment.skyboxMap);
-
-		m_geometryGraphicsState = m_renderCtx->createUnique<render::GraphicsState>();
-		m_geometryGraphicsState->setShaders({m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_VS"), m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS")}).
-				setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eBack).setEnableDepthTest(true).setEnableDepthWrite(false).setEnableMultisample(false).
-				setEnableDepthCompareOp(vk::CompareOp::eLessOrEqual);
 	}
 
 	DynamicSceneRenderer::~DynamicSceneRenderer()
@@ -77,7 +69,7 @@ namespace toaster
 
 	auto DynamicSceneRenderer::onRender(Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
 	{
-		// m_scene->m_lightEnvironment.pointLights.clear();
+		m_scene->m_lightEnvironment.pointLights.clear();
 		// m_scene->m_lightEnvironment.directionalLights.clear();
 		// #if TST_ENABLE_3D_SCENE_RENDERING
 		// {
@@ -98,66 +90,38 @@ namespace toaster
 		// 	}
 		// }
 		// {
-		// 	for (const auto view{m_scene->m_registry.view<PointLightComponent>()}; const auto entity: view)
-		// 	{
-		// 		auto   point_light{view.get<PointLightComponent>(entity)};
-		// 		Entity e{entity, m_scene};
-		// 		auto   tc{m_scene->getEntityWorldTransformComponent(e)};
-		//
-		// 		auto &light{m_scene->m_lightEnvironment.pointLights.emplace_back()};
-		// 		light.position   = tc.translation;
-		// 		light.radiance   = point_light.radiance;
-		// 		light.multiplier = point_light.multiplier;
-		// 	}
+		for (const auto view{m_scene->m_registry.view<PointLightComponent>()}; const auto entity: view)
+		{
+			auto   point_light{view.get<PointLightComponent>(entity)};
+			Entity e{entity, m_scene};
+			auto   tc{m_scene->getEntityWorldTransformComponent(e)};
+
+			auto &light{m_scene->m_lightEnvironment.pointLights.emplace_back()};
+			light.position          = {tc.translation.x, tc.translation.y, tc.translation.z, 1.0f};
+			light.radianceIntensity = {point_light.radiance, point_light.multiplier};
+		}
 		// }
 		//
+		if (m_scene->m_reloadEnvironment)
 		{
-			if (m_scene->m_reloadEnvironment)
-			{
-				reloadEnvironmentMaps(m_scene->m_sceneEnvironment.skyboxMapImage, m_scene->m_sceneEnvironment.diffuseIrradianceMapImage,
-									  m_scene->m_sceneEnvironment.specularIrradianceMapImage);
-				m_scene->m_reloadEnvironment = false;
-			}
-
-			begin(p_camera_position, p_view_matrix, p_projection_matrix);
-			for (const auto view{m_scene->m_registry.view<DynamicMeshComponent>()}; const auto entity: view)
-			{
-				const auto &mesh_comp{view.get<DynamicMeshComponent>(entity)};
-
-				auto mesh{mesh_comp.mesh};
-				if (mesh)
-				{
-					Entity       e{entity, m_scene};
-					Dx::XMMATRIX transform{m_scene->getEntityWorldTransformMatrix(e)};
-
-					renderMesh(mesh, transform);
-				}
-			}
-			end();
+			reloadEnvironmentMaps(m_scene->m_sceneEnvironment.diffuseIrradianceMapImage, m_scene->m_sceneEnvironment.specularIrradianceMapImage);
+			m_scene->m_reloadEnvironment = false;
 		}
-		// #endif
-		#if TST_ENABLE_2D_SCENE_RENDERING
+
+		begin(p_camera_position, p_view_matrix, p_projection_matrix);
+		for (const auto view{m_scene->m_registry.view<DynamicMeshComponent>()}; const auto entity: view)
 		{
-			auto colour_attachment_info{render::getRenderingAttachmentInfo(*m_MSAAcolourImage, *m_colourTexture->getImage(), render::EAttachmentUsageOP::eNoneStore)};
-			auto depth_attachment_info{render::getRenderingAttachmentInfo(*m_MSAADepthImage, *m_depthTexture->getImage(), render::EAttachmentUsageOP::eLoadStore)};
+			const auto &mesh_comp{view.get<DynamicMeshComponent>(entity)};
 
-			m_renderer2D->begin(p_view, p_projection, &colour_attachment_info, &depth_attachment_info);
-			for (const auto view{m_scene->m_registry.view<SpriteRendererComponent>()}; const auto entity: view)
+			auto mesh{mesh_comp.mesh};
+			if (mesh)
 			{
-				const auto &src{view.get<SpriteRendererComponent>(entity)};
+				Entity e{entity, m_scene};
 
-				Entity       e{entity, m_scene};
-				Dx::XMMATRIX transform{m_scene->getEntityWorldTransformMatrix(e)};
-
-				auto texture{src.texture};
-				if (texture)
-					m_renderer2D->submitQuad(transform, texture, src.colour);
-				else
-					m_renderer2D->submitQuad(transform, src.colour);
+				renderMesh(mesh, m_scene->getEntityWorldTransformMatrix(e));
 			}
-			m_renderer2D->end();
 		}
-		#endif
+		end();
 	}
 
 	auto DynamicSceneRenderer::begin(Dx::FXMVECTOR p_camera_position, Dx::FXMMATRIX p_view_matrix, Dx::CXMMATRIX p_projection_matrix) -> void
@@ -166,32 +130,18 @@ namespace toaster
 		Dx::XMStoreFloat4x4(&camera_ub.viewMatrix, p_view_matrix);
 		Dx::XMStoreFloat4x4(&camera_ub.projectionMatrix, p_projection_matrix);
 		Dx::XMStoreFloat4x4(&camera_ub.inverseProjectionMatrix, Dx::XMMatrixInverse(nullptr, p_projection_matrix));
-		camera_ub.inverseProjectionMatrix.m[1][1] *= -1.0f; // I have to do ts...
 		m_cameraUBOs->setData(camera_ub);
 
-		#if 0
-		const auto &[directional_lights, point_lights]{m_scene->getLightEnvironment()};
+		const auto &   point_lights{m_scene->getLightEnvironment().pointLights};
+		PointLightSSBO point_light_ssbo{};
+		point_light_ssbo.count = std::min(static_cast<uint32>(point_lights.size()), PointLightSSBO::maxPointLights);
+		for (uint32 i{0u}; i < PointLightSSBO::maxPointLights && i < point_lights.size(); ++i)
 		{
-			DirectionalLightUB directional_light_ub{};
-			directional_light_ub.count = directional_lights.size();
-			for (uint32 i{0u}; i < DirectionalLightUB::c_maxDirectionalLights && i < directional_lights.size(); ++i)
-			{
-				directional_light_ub.directionalLights[i].direction = directional_lights[i].direction;
-				directional_light_ub.directionalLights[i].radiance  = directional_lights[i].radiance;
-			}
-			m_directionalLightUBOs->setData(directional_light_ub);
+			point_light_ssbo.pointLights[i].position          = point_lights[i].position;
+			point_light_ssbo.pointLights[i].radianceIntensity = point_lights[i].radianceIntensity;
 		}
-		{
-			PointLightUB point_light_ub{};
-			point_light_ub.count = std::min(static_cast<uint32>(point_lights.size()), PointLightUB::c_maxPointLights);
-			for (uint32 i{0u}; i < PointLightUB::c_maxPointLights && i < point_lights.size(); ++i)
-			{
-				point_light_ub.pointLights[i].position = point_lights[i].position;
-				point_light_ub.pointLights[i].radiance = point_lights[i].radiance;
-			}
-			m_pointLightUBOs->setData(point_light_ub);
-		}
-		#endif
+		m_pointLightSSBOs->setData(point_light_ssbo);
+
 		SceneDataUB scene_data_ub{};
 		Dx::XMStoreFloat4(&scene_data_ub.cameraPos, p_camera_position);
 		m_sceneDataUBOs->setData(scene_data_ub);
@@ -199,9 +149,10 @@ namespace toaster
 
 	auto DynamicSceneRenderer::end() -> void
 	{
-		auto cmd{m_renderCtx->getCurrentCommandBuffer()};
+		auto &cmd{*m_renderCtx->getCurrentCommandBuffer()};
 
-		_performMeshTransformPrePass();
+		_buildDrawCommands();
+		_setRequiredRenderState(cmd);
 		_renderDepthPrePass(cmd);
 		_renderSkyboxPass(cmd);
 		_renderGeometryPass(cmd);
@@ -228,15 +179,13 @@ namespace toaster
 		}
 	}
 
-	auto DynamicSceneRenderer::reloadEnvironmentMaps(const render::ImageHandle &p_skybox, const render::ImageHandle &p_diffuse_irradiance,
-													 const render::ImageHandle &p_specular_irradiance) -> void
+	auto DynamicSceneRenderer::reloadEnvironmentMaps(const render::ImageHandle &p_diffuse_irradiance, const render::ImageHandle &p_specular_irradiance) -> void
 	{
-		m_skyboxPass->setEnvironmentMap(p_skybox);
 		m_diffuseIrradianceMap  = p_diffuse_irradiance;
 		m_specularIrradianceMap = p_specular_irradiance;
 	}
 
-	auto DynamicSceneRenderer::_performMeshTransformPrePass() -> void
+	auto DynamicSceneRenderer::_buildDrawCommands() -> void
 	{
 		for (const auto &draw_cmd: m_meshDrawCommands)
 		{
@@ -264,7 +213,32 @@ namespace toaster
 		m_meshDrawCommands.clear();
 	}
 
-	auto DynamicSceneRenderer::_renderDepthPrePass(gpu::CommandBuffer *p_cmd) -> void
+	auto DynamicSceneRenderer::_setRequiredRenderState(gpu::CommandBuffer &p_cmd) -> void
+	{
+		// As I am using BDA, there is no need to use any vertex input state. But I still have to set it
+		p_cmd.getVulkanCommandBuffer().setVertexInputEXT({}, {});
+
+		p_cmd.setPrimitiveTopology(gpu::EPrimitiveTopology::eTriangleList);
+		p_cmd.setFrontFace(gpu::EFrontFace::eCCW);
+		p_cmd.setPolygonMode(gpu::EPolygonMode::eFill);
+
+		p_cmd.getVulkanCommandBuffer().setPrimitiveRestartEnableEXT(false);
+		p_cmd.getVulkanCommandBuffer().setAlphaToCoverageEnableEXT(false);
+
+		p_cmd.setStencilTestEnable(false);
+		p_cmd.getVulkanCommandBuffer().setLineWidth(1.0f);
+
+		p_cmd.getVulkanCommandBuffer().setDepthClampEnableEXT(false);
+		p_cmd.getVulkanCommandBuffer().setDepthBiasEnableEXT(false);
+		p_cmd.getVulkanCommandBuffer().setRasterizerDiscardEnableEXT(false);
+
+		p_cmd.getVulkanCommandBuffer().setSampleMaskEXT(vk::SampleCountFlagBits::e1, 0xFFFFFFFF);
+		p_cmd.getVulkanCommandBuffer().setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1);
+
+		p_cmd.setDepthCompareOp(gpu::ECompareOp::eLessOrEqual);
+	}
+
+	auto DynamicSceneRenderer::_renderDepthPrePass(gpu::CommandBuffer &p_cmd) -> void
 	{
 		if (m_submeshDrawCommands.empty())
 			return;
@@ -272,8 +246,13 @@ namespace toaster
 		render::RenderingInfo rendering_info{m_viewportSize};
 		rendering_info.setDepthAttachment(*m_depthRenderTarget->getImage());
 
-		m_depthPreGraphicsState->bind();
-		m_renderCtx->beginRendering(rendering_info);
+		p_cmd.bindShaders({m_renderCtx->getGlobals()->getShader("Depth_Pre_VS"), m_renderCtx->getGlobals()->getShader("Depth_Pre_PS")});
+		p_cmd.setCullMode(gpu::ECullMode::eBack);
+
+		p_cmd.setDepthTestEnable(true);
+		p_cmd.setDepthWriteEnable(true);
+
+		m_renderCtx->beginRendering(rendering_info, &p_cmd);
 
 		DepthPreConstants depth_pre_constants{};
 		depth_pre_constants.cameraPtr = m_cameraUBOs->getDeviceAddress();
@@ -283,22 +262,39 @@ namespace toaster
 			depth_pre_constants.meshTransform = draw_cmd.transform;
 			depth_pre_constants.vertexBuffer  = draw_cmd.mesh->getVertexBufferAddress();
 
-			p_cmd->pushData(depth_pre_constants);
-			p_cmd->bindIndexBuffer(draw_cmd.mesh->getIndexBuffer());
-			p_cmd->drawIndexed(draw_cmd.indexCount, 1, draw_cmd.indexOffset, draw_cmd.vertexOffset, 0);
+			p_cmd.pushData(depth_pre_constants);
+			p_cmd.bindIndexBuffer(draw_cmd.mesh->getIndexBuffer());
+			p_cmd.drawIndexed(draw_cmd.indexCount, 1, draw_cmd.indexOffset, draw_cmd.vertexOffset, 0);
 		}
-		m_renderCtx->endRendering(rendering_info, p_cmd);
+		m_renderCtx->endRendering(rendering_info, &p_cmd);
 	}
 
-	auto DynamicSceneRenderer::_renderSkyboxPass(gpu::CommandBuffer *p_cmd) -> void
+	auto DynamicSceneRenderer::_renderSkyboxPass(gpu::CommandBuffer &p_cmd) -> void
 	{
 		render::RenderingInfo rendering_info{m_viewportSize};
 		rendering_info.addColourAttachment(*m_colourRenderTarget->getImage());
 
-		m_skyboxPass->onRender(*p_cmd, m_cameraUBOs->getDeviceAddress(), rendering_info);
+		p_cmd.bindShaders({m_renderCtx->getGlobals()->getShader("Skybox_VS"), m_renderCtx->getGlobals()->getShader("Skybox_PS")});
+		p_cmd.setCullMode(gpu::ECullMode::eNone);
+		p_cmd.setDepthTestEnable(false);
+
+		p_cmd.setColourBlendEnable({false});
+		p_cmd.setColourWriteMask({vk::FlagTraits<vk::ColorComponentFlagBits>::allFlags});
+
+		m_renderCtx->beginRendering(rendering_info, &p_cmd);
+
+		SkyboxConstants skybox_constants{};
+		skybox_constants.vertexBufferBDA             = m_renderCtx->getGlobals()->fullscreenQuadVertexBuffer().getDeviceAddress();
+		skybox_constants.cameraBDA                   = m_cameraUBOs->getDeviceAddress();
+		skybox_constants.samplerAddressOffset        = m_renderCtx->getSampler(render::ESamplerType::eIrradianceMap);
+		skybox_constants.environmentMapAddressOffset = m_scene->m_sceneEnvironment.skyboxMapImage->getAlignedShaderReadHeapID();
+		p_cmd.pushData(skybox_constants);
+
+		m_renderCtx->renderFullscreenQuad();
+		m_renderCtx->endRendering(rendering_info, &p_cmd);
 	}
 
-	auto DynamicSceneRenderer::_renderGeometryPass(gpu::CommandBuffer *p_cmd) -> void
+	auto DynamicSceneRenderer::_renderGeometryPass(gpu::CommandBuffer &p_cmd) -> void
 	{
 		if (m_submeshDrawCommands.empty())
 			return;
@@ -308,44 +304,18 @@ namespace toaster
 		rendering_info.setDepthAttachment(*m_depthRenderTarget->getImage(), render::EAttachmentUsageOP::eLoadDontCare);
 		rendering_info.depthReadOnly = true;
 
-		auto &vk_cmd{p_cmd->getVulkanCommandBuffer()};
+		p_cmd.setCullMode(gpu::ECullMode::eBack);
 
-		p_cmd->setPrimitiveTopology(gpu::EPrimitiveTopology::eTriangleList);
-		p_cmd->setCullMode(gpu::ECullMode::eBack);
-		p_cmd->setFrontFace(gpu::EFrontFace::eCCW);
+		p_cmd.setDepthTestEnable(true);
+		p_cmd.setDepthWriteEnable(false);
 
-		p_cmd->setPolygonMode(gpu::EPolygonMode::eFill);
-
-		// set the rasterization state
-		// vk_cmd.setDepthClampEnableEXT(false);
-		// vk_cmd.setDepthBiasEnableEXT(false);
-		// vk_cmd.setRasterizerDiscardEnableEXT(false);
-		// vk_cmd.setLineWidth(1.0f);
-
-		// vk_cmd.setColorBlendEnableEXT(0, {false});
-		// vk_cmd.setColorBlendEquationEXT(0, vk::ColorBlendEquationEXT{});
-		// vk_cmd.setColorWriteMaskEXT(0, {
-		// 								{
-		// 									vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB |
-		// 									vk::ColorComponentFlagBits::eA
-		// 								}
-		// 							});
-
-		p_cmd->setDepthTestEnable(true);
-		p_cmd->setDepthWriteEnable(false);
-		p_cmd->setDepthCompareOp(gpu::ECompareOp::eLessOrEqual);
-
-		p_cmd->setStencilTestEnable(false);
-
-		vk_cmd.setSampleMaskEXT(vk::SampleCountFlagBits::e1, 0xFFFFFFFF);
-		vk_cmd.setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1);
-
-		m_renderCtx->beginRendering(rendering_info, p_cmd);
+		m_renderCtx->beginRendering(rendering_info, &p_cmd);
 
 		MeshDrawConstants mesh_draw_constants{};
 
-		mesh_draw_constants.cameraPtr    = m_cameraUBOs->getDeviceAddress();
-		mesh_draw_constants.sceneDataPtr = m_sceneDataUBOs->getDeviceAddress();
+		mesh_draw_constants.cameraPtr      = m_cameraUBOs->getDeviceAddress();
+		mesh_draw_constants.sceneDataPtr   = m_sceneDataUBOs->getDeviceAddress();
+		mesh_draw_constants.pointLightsPtr = m_pointLightSSBOs->getDeviceAddress();
 
 		mesh_draw_constants.samplerIndex               = m_renderCtx->getSampler(render::ESamplerType::eIrradianceMap);
 		mesh_draw_constants.diffuseIrradianceMapIndex  = m_diffuseIrradianceMap->getAlignedShaderReadHeapID();
@@ -364,7 +334,7 @@ namespace toaster
 			if (last_ps.get() != material_shader.get())
 			{
 				last_ps = material_shader;
-				p_cmd->bindShaders({m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_VS").get(), last_ps.get()});
+				p_cmd.bindShaders({m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_VS").get(), last_ps.get()});
 			}
 
 			mesh_draw_constants.meshTransform = draw_cmd.transform;
@@ -372,15 +342,22 @@ namespace toaster
 			mesh_draw_constants.vertexBuffer = draw_cmd.mesh->getVertexBufferAddress();
 			mesh_draw_constants.material     = material->getDeviceAddress();
 
-			p_cmd->pushData(mesh_draw_constants);
+			p_cmd.pushData(mesh_draw_constants);
 			if (draw_cmd.mesh.get() != last_mesh)
 			{
 				last_mesh = draw_cmd.mesh;
-				p_cmd->bindIndexBuffer(last_mesh->getIndexBuffer());
+				p_cmd.bindIndexBuffer(last_mesh->getIndexBuffer());
 			}
-			p_cmd->drawIndexed(draw_cmd.indexCount, 1, draw_cmd.indexOffset, draw_cmd.vertexOffset, 0);
+
+			if (material->flags & static_cast<uint64>(render::EMeshMaterialFlags::eTwoSided))
+				p_cmd.setCullMode(gpu::ECullMode::eNone);
+
+			p_cmd.drawIndexed(draw_cmd.indexCount, 1, draw_cmd.indexOffset, draw_cmd.vertexOffset, 0);
+
+			if (material->flags & static_cast<uint64>(render::EMeshMaterialFlags::eTwoSided))
+				p_cmd.setCullMode(gpu::ECullMode::eBack);
 		}
 
-		m_renderCtx->endRendering(rendering_info, p_cmd);
+		m_renderCtx->endRendering(rendering_info, &p_cmd);
 	}
 }

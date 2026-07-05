@@ -5,6 +5,7 @@
 #include "image.hpp"
 #include "shader_library.hpp"
 #include "shader_reflection.hpp"
+#include "storage_buffer.hpp"
 
 #include "toast_gpu/vk/vk_index_buffer.hpp"
 #include "toast_gpu/vk/vk_vertex_buffer.hpp"
@@ -24,7 +25,7 @@ namespace toaster::render
 	public:
 		struct FullscreenQuadVertex
 		{
-			tsm::float3 position;
+			tsm::float2 position;
 			tsm::float2 texCoord;
 		};
 
@@ -87,11 +88,11 @@ namespace toaster::render
 		auto reflectShader(const String &p_name) -> const ShaderReflectionData &;
 		auto getShaderReflectionData(const String &p_name) const -> const ShaderReflectionData &;
 
-		auto fullscreenQuadVertexBuffer() const -> const gpu::VertexBufferHandle &;
-		auto fullscreenQuadIndexBuffer() const -> const gpu::IndexBufferHandle &;
+		auto fullscreenQuadVertexBuffer() const -> const VertexBuffer &;
+		auto fullscreenQuadIndexBuffer() const -> const gpu::Buffer &;
 
 		auto fullscreenQuadVertices() const -> const std::vector<FullscreenQuadVertex> &;
-		auto fullscreenQuadIndices() const -> const std::vector<uint32> &;
+		auto fullscreenQuadIndices() const -> const std::vector<uint8> &;
 
 		auto whiteTexture() const -> const gpu::Texture2DHandle &;
 		auto whiteTexture3D() const -> const gpu::Texture3DHandle &;
@@ -103,14 +104,14 @@ namespace toaster::render
 	private:
 		GlobalsSpecInfo m_specInfo{};
 
-		std::unordered_map<String, gpu::DynamicShaderHandle>   m_shaders;
-		std::unordered_map<String, ShaderReflectionData> m_shaderReflectionData;
+		std::unordered_map<String, gpu::DynamicShaderHandle> m_shaders;
+		std::unordered_map<String, ShaderReflectionData>     m_shaderReflectionData;
 
-		RefPtr<gpu::VKVertexBuffer> m_quadVertexBuffer{nullptr};
-		RefPtr<gpu::VKIndexBuffer>  m_quadIndexBuffer{nullptr};
+		VertexBufferUnique m_quadVertexBuffer{nullptr};
+		gpu::BufferUnique  m_quadIndexBuffer{nullptr};
 
 		std::vector<FullscreenQuadVertex> m_quadVertices;
-		std::vector<uint32>               m_quadIndices;
+		std::vector<uint8>                m_quadIndices;
 
 		gpu::Texture2DHandle m_whiteTexture{nullptr};
 		gpu::Texture3DHandle m_whiteTexture3D{nullptr};

@@ -44,7 +44,7 @@ namespace toaster
 
 		NonOwningPtr<InputContext> m_ctx{nullptr};
 
-		Dx::XMFLOAT3 m_position{0.0f, 0.0f, 3.0f};
+		Dx::XMFLOAT3 m_position{0.0f, 2.0f, 3.0f};
 
 		static constexpr Dx::XMVECTORF32 c_forwardDir{.f{0.0f, 0.0f, -1.0f, 0.0f}};
 		static constexpr Dx::XMVECTORF32 c_rightDir{.f{1.0f, 0.0f, 0.0f, 0.0f}};

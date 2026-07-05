@@ -27,14 +27,14 @@ namespace toaster
 
 		auto onResize(tsm::uint2 p_size) -> void;
 
-		auto reloadEnvironmentMaps(const render::ImageHandle &p_skybox, const render::ImageHandle &p_diffuse_irradiance,
-								   const render::ImageHandle &p_specular_irradiance) -> void;
+		auto reloadEnvironmentMaps(const render::ImageHandle &p_diffuse_irradiance, const render::ImageHandle &p_specular_irradiance) -> void;
 
 	private:
-		auto _performMeshTransformPrePass() -> void;
-		auto _renderDepthPrePass(gpu::CommandBuffer *p_cmd) -> void;
-		auto _renderSkyboxPass(gpu::CommandBuffer *p_cmd) -> void;
-		auto _renderGeometryPass(gpu::CommandBuffer *p_cmd) -> void;
+		auto _buildDrawCommands() -> void;
+		auto _setRequiredRenderState(gpu::CommandBuffer &p_cmd) -> void;
+		auto _renderDepthPrePass(gpu::CommandBuffer &p_cmd) -> void;
+		auto _renderSkyboxPass(gpu::CommandBuffer &p_cmd) -> void;
+		auto _renderGeometryPass(gpu::CommandBuffer &p_cmd) -> void;
 
 		NonOwningPtr<Scene>                 m_scene{nullptr};
 		NonOwningPtr<render::RenderContext> m_renderCtx{nullptr};
@@ -50,24 +50,39 @@ namespace toaster
 
 		render::UniformBufferPFFUnique m_sceneDataUBOs{nullptr};
 
+		struct PointLightSSBO
+		{
+			static constexpr uint32 maxPointLights{128u};
+
+			uint32 count;
+			float32 _padd[3];
+
+			PointLight pointLights[maxPointLights];
+		};
+
+		render::StorageBufferPFFUnique m_pointLightSSBOs{nullptr};
+
 		render::ImageHandle m_colourRenderTarget{nullptr};
 		render::ImageHandle m_depthRenderTarget{nullptr};
 
-		render::GraphicsStateUnique m_depthPreGraphicsState{nullptr};
 		TST_PUSH_CONSTANT_BLOCK(DepthPreConstants)
 		{
 			Dx::XMFLOAT4X4 meshTransform;
 
 			uintptr vertexBuffer;
-
 			uintptr cameraPtr;
 		};
 
-		render::ImageHandle           m_diffuseIrradianceMap{nullptr};
-		render::ImageHandle           m_specularIrradianceMap{nullptr};
-		UniquePtr<render::SkyboxPass> m_skyboxPass{nullptr};
+		render::ImageHandle m_diffuseIrradianceMap{nullptr};
+		render::ImageHandle m_specularIrradianceMap{nullptr};
+		TST_PUSH_CONSTANT_BLOCK(SkyboxConstants)
+		{
+			uintptr vertexBufferBDA;
+			uintptr cameraBDA;
+			uint32  samplerAddressOffset;
+			uint32  environmentMapAddressOffset;
+		};
 
-		render::GraphicsStateUnique m_geometryGraphicsState{nullptr};
 		TST_PUSH_CONSTANT_BLOCK(MeshDrawConstants)
 		{
 			Dx::XMFLOAT4X4 meshTransform;
@@ -78,11 +93,11 @@ namespace toaster
 
 			uintptr cameraPtr;
 			uintptr sceneDataPtr;
+			uintptr pointLightsPtr;
 
 			uint32 samplerIndex;
 			uint32 diffuseIrradianceMapIndex;
 			uint32 specularIrradianceMapIndex;
-
 
 			uint32 BRDFLUTSamplerIndex;
 			uint32 BRDFLUT;

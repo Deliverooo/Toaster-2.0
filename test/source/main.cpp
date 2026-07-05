@@ -19,12 +19,6 @@ using namespace toaster;
 class ClientLayer : public IAppLayer
 {
 public:
-	struct SceneDataUB
-	{
-		Dx::XMFLOAT3 cameraPos;
-		float32      _padd[1];
-	};
-
 	auto onInit() -> void override
 	{
 		m_viewportSize = m_app->getWindow().getRenderAreaSize();
@@ -34,38 +28,26 @@ public:
 		const auto binary_dir{os::getBinaryDirectory()};
 		const auto resources_dir{binary_dir / "../resources"};
 
-		m_environmentMap = m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/overcast_soil_puresky_2k.hdr");
-
 		m_scene = toaster::make_unique<Scene>(m_renderCtx);
-		m_scene->setSceneEnvironmentImage(m_environmentMap);
+
+		auto environment_map{m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/qwantani_dusk_2_puresky_2k.hdr")};
+		m_scene->setSceneEnvironmentImage(environment_map);
 		m_sceneRenderer = toaster::make_unique<DynamicSceneRenderer>(m_scene.get(), m_viewportSize);
-
-		const auto vertex_shader{m_globals->getShader("Fullscreen_Quad_VS")};
-		const auto pixel_shader{m_globals->getShader("Fullscreen_Quad_PS")};
-
-		m_fullscreenState = m_renderCtx->createUnique<render::GraphicsState>();
-		m_fullscreenState->setShaders({vertex_shader, pixel_shader}).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).setEnableDepthTest(false).
-				setEnableDepthWrite(false).setVertexBufferLayout(render::RenderContext::fullscreenQuadVbl);
 
 		{
 			Entity test_scene_entity{m_scene->createEntity("Test_Scene")};
 			auto & mesh_comp{test_scene_entity.addComponent<DynamicMeshComponent>()};
-			mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Backrooms.fbx");
+			mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.gltf");
 		}
+		{
+			Entity light_entity{m_scene->createEntity("Light_001")};
+			auto & plc{light_entity.addComponent<PointLightComponent>()};
+			plc.radiance   = {1.0f, 1.0f, 1.0f};
+			plc.multiplier = 10.0f;
 
-		// {
-		// 	Entity orbo_entity{m_scene->createEntity("Orbo")};
-		// 	auto & mesh_comp{orbo_entity.addComponent<DynamicMeshComponent>()};
-		// 	mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.fbx");
-		//
-		// 	auto mat0{mesh_comp.mesh->getMaterial(0)};
-		// 	// mat0->set("metalness", 0.0f);
-		// 	// mat0->set("roughness", 0.0f);
-		//
-		// 	auto mat1{mesh_comp.mesh->getMaterial(1)};
-		// 	// mat0->set("roughness", 1.0f);
-		// 	// mat1->set("metalness", 0.0f);
-		// }
+			auto &tc{light_entity.getComponent<TransformComponent>()};
+			tc.translation = {0.0f, 5.0f, 1.0f};
+		}
 	}
 
 	auto onDestroy() -> void override
@@ -84,10 +66,33 @@ public:
 		auto       rendering_info{m_app->getWindow().getSwapchainRenderingInfo(false, {0.025f, 0.025f, 0.025f, 1.0f}, false)};
 		const auto cmd{m_renderCtx->getCurrentCommandBuffer()};
 
-		m_fullscreenState->bind();
+		cmd->bindShaders({m_globals->getShader("Fullscreen_Quad_VS"), m_globals->getShader("Fullscreen_Quad_PS")});
+
+		cmd->setPrimitiveTopology(gpu::EPrimitiveTopology::eTriangleList);
+		cmd->getVulkanCommandBuffer().setPrimitiveRestartEnableEXT(false);
+
+		cmd->getVulkanCommandBuffer().setDepthClampEnableEXT(false);
+		cmd->getVulkanCommandBuffer().setDepthBiasEnableEXT(false);
+		cmd->getVulkanCommandBuffer().setRasterizerDiscardEnableEXT(false);
+		cmd->setPolygonMode(gpu::EPolygonMode::eFill);
+		cmd->setCullMode(gpu::ECullMode::eNone);
+		cmd->setFrontFace(gpu::EFrontFace::eCCW);
+		cmd->getVulkanCommandBuffer().setLineWidth(1.0f);
+
+		cmd->setColourBlendEnable({false});
+		cmd->setColourWriteMask({vk::FlagTraits<vk::ColorComponentFlagBits>::allFlags});
+
+		cmd->setDepthTestEnable(false);
+		cmd->setStencilTestEnable(false);
+
+		cmd->getVulkanCommandBuffer().setSampleMaskEXT(vk::SampleCountFlagBits::e1, 0xFFFFFFFF);
+		cmd->getVulkanCommandBuffer().setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1);
+
+		cmd->getVulkanCommandBuffer().setAlphaToCoverageEnableEXT(false);
 
 		m_renderCtx->beginRendering(rendering_info);
 		cmd->pushData<FullscreenQuadConstants>({
+												   m_globals->fullscreenQuadVertexBuffer().getDeviceAddress(),
 												   m_renderCtx->getSampler(render::ESamplerType::eDefault),
 												   m_sceneRenderer->getColourImage()->getAlignedShaderReadHeapID()
 											   });
@@ -113,19 +118,18 @@ public:
 private:
 	tsm::uint2 m_viewportSize{0u};
 
-	FPCamera                    m_camera{};
-	render::GraphicsStateUnique m_fullscreenState{nullptr};
+	FPCamera m_camera{};
 
 	TST_PUSH_CONSTANT_BLOCK(FullscreenQuadConstants)
 	{
+		uintptr vertexBufferBDA;
+
 		uint32 sampler;
 		uint32 texture;
 	};
 
 	UniquePtr<Scene>                m_scene{nullptr};
 	UniquePtr<DynamicSceneRenderer> m_sceneRenderer{nullptr};
-
-	render::ImageHandle m_environmentMap{nullptr};
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32
@@ -141,10 +145,9 @@ auto main(int32 p_argc, char **p_argv) -> int32
 	{
 		app.run();
 	}
-	catch (const vk::DeviceLostError &e)
+	catch (const std::exception &e)
 	{
-		LOG_FATAL("Device lost error: {}", e.what());
-
+		LOG_FATAL("Exception: {}", e.what());
 		return -1;
 	}
 

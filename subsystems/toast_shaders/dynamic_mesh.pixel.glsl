@@ -36,6 +36,13 @@ layout (std140, buffer_reference) readonly buffer TST__MaterialFairs
 
 layout (buffer_reference, std140) readonly buffer SceneData { vec4 cameraPosition; };
 
+struct PointLight
+{
+    vec4 position;
+    vec4 colourIntensity;
+};
+layout (buffer_reference, std430) readonly buffer PointLights { uint count; float _padd[3]; PointLight pointLights[128];};
+
 layout (push_constant) uniform Constants
 {
     mat4 meshTransform;
@@ -46,6 +53,7 @@ layout (push_constant) uniform Constants
 
     uint64_t cameraPtr;
     SceneData sceneDataPtr;
+    PointLights pointLightsPtr;
 
     uint samplerIndex;
     uint diffuseIrradianceMapIndex;
@@ -54,6 +62,43 @@ layout (push_constant) uniform Constants
     uint BRDFLUTSamplerIndex;
     uint BRDFLUT;
 } pcs;
+
+vec3 calcPointLights()
+{
+    vec3 result = vec3(0.0f);
+
+    for (uint i = 0u; i < pcs.pointLightsPtr.count; ++i)
+    {
+        PointLight light = pcs.pointLightsPtr.pointLights[i];
+
+        vec3 l = normalize(light.position.xyz - m_WorldPos);
+        vec3 h = normalize(glob.view + l);
+
+        float distance = length(light.position.xyz - m_WorldPos);
+        float attenuation = 1.0f / (distance * distance);
+
+        vec3 radiance = light.colourIntensity.xyz * vec3(light.colourIntensity.w) * attenuation;
+
+        float ndf = distributionGGX(glob.normal, h, glob.roughness);
+
+        float nDotL = max(dot(glob.normal, l), 0.0f);
+        float g = geometrySmith(glob.nDotV, nDotL, glob.roughness);
+        vec3 f = fresnelSchlick(glob.f0, max(dot(h, glob.view), 0.0f));
+
+        vec3 ks = f;
+        vec3 kd = vec3(1.0f) - ks;
+        kd *= 1.0f - glob.metalness;
+
+        vec3 numerator = ndf * g * f;
+        float denominator = 4.0f * glob.nDotV * nDotL + 0.0001f;
+        vec3 specular = numerator / denominator;
+
+        result += (kd * glob.albedo / PI + specular) * radiance * nDotL;
+    }
+
+
+    return result;
+}
 
 void main()
 {
@@ -79,7 +124,7 @@ void main()
     glob.albedo = texture(sampler2D(texture2DHeap[material.albedoMap], samplerHeap[material.textureSampler]), m_TexCoord).rgb;
     glob.albedo *= material.albedoColour.rgb;
 
-    glob.roughness = 1.0f;
+    glob.roughness = material.roughness;
     glob.metalness = material.metalness;
 
     glob.f0 = vec3(0.04f);
@@ -103,12 +148,12 @@ void main()
 
     vec3 diffuse_ambient = kd * diffuse_irradiance * glob.albedo;
 
-    vec3 ambient = diffuse_ambient + specular_ambient;
+    vec3 ambient = diffuse_ambient;
 
-    vec3 final_colour = ambient; // + lo
+    vec3 lo = vec3(0.0f);
+    lo += calcPointLights();
 
-    //        o_Colour = vec4(glob.normal, 1.0f);
-    //            o_Colour = vec4(vec3(glob.nDotV), 1.0f);
-    //    o_Colour = vec4(glob.albedo, 1.0f);
+    vec3 final_colour = ambient + lo;
+
     o_Colour = vec4(final_colour, 1.0f);
 }

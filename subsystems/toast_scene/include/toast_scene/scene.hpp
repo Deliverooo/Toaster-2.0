@@ -37,12 +37,8 @@ namespace toaster
 
 	struct TST_SCENE_API PointLight
 	{
-		Dx::XMFLOAT3 position{0.0f, 0.0f, 0.0f};
-		char         _padd[4];
-		tsm::float3  radiance{1.0f, 1.0f, 1.0f};
-		float32      multiplier{1.0f};
-		// float32   radius{25.0f};
-		// float32   falloff{1.0f};
+		Dx::XMFLOAT4 position{0.0f, 0.0f, 0.0f, 1.0f};
+		tsm::float4  radianceIntensity{1.0f, 1.0f, 1.0f, 1.0f};
 	};
 
 	struct TST_SCENE_API SpotLight

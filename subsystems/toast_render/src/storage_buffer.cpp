@@ -88,7 +88,7 @@ namespace toaster::render
 		for (uint32 i{0u}; i < RenderContext::maxFramesInFlight; ++i)
 		{
 			m_ssbos[i]   = m_renderCtx->createGPURef<gpu::Buffer>(p_size, ubo_spec_info);
-			m_heapIDs[i] = m_renderCtx->getDescriptorHeap()->allocBuffer(*m_ssbos[i]);
+			m_heapIDs[i] = m_renderCtx->getDescriptorHeap()->allocBuffer(*m_ssbos[i], true);
 		}
 
 		m_mappedData.resize(RenderContext::maxFramesInFlight);

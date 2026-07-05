@@ -458,13 +458,12 @@ namespace toaster::render
 			out_irradiance_map->createMipHeapID(i);
 
 			specular_irradiance_convolution_constants.specularIrradianceMapId = out_irradiance_map->getMipAlignedStorageHeapID(i);
-			specular_irradiance_convolution_constants.roughness = (float32)i / (float32)(out_irradiance_map->getImage()->getSpecInfo().mipCount - 1u);
+			specular_irradiance_convolution_constants.roughness               = (float32) i / (float32) (out_irradiance_map->getImage()->getSpecInfo().mipCount - 1u);
 
 			command_buffer.pushData(specular_irradiance_convolution_constants);
 
 			uint32 mip_dim{std::max(1u, c_specular_irradiance_resolution >> i)};
 			command_buffer.getVulkanCommandBuffer().dispatch((mip_dim + 15u) / 16u, (mip_dim + 15u) / 16u, 6);
-
 
 			// command_buffer.getVulkanCommandBuffer().pipelineBarrier2();
 		}
@@ -882,8 +881,8 @@ namespace toaster::render
 			}
 		}
 		// Bind the vertex and index buffers
-		m_globals->fullscreenQuadVertexBuffer()->bind(command_buffer);
-		m_globals->fullscreenQuadIndexBuffer()->bind(command_buffer, vk::IndexType::eUint32);
+		// m_globals->fullscreenQuadVertexBuffer()->bind(command_buffer);
+		// m_globals->fullscreenQuadIndexBuffer()->bind(command_buffer, vk::IndexType::eUint32);
 
 		// Finally, draw indexed :)
 		command_buffer->getVulkanCommandBuffer().drawIndexed(m_globals->fullscreenQuadIndices().size(), 1, 0, 0, 0);
@@ -1176,9 +1175,7 @@ namespace toaster::render
 	{
 		TST_GET_VALID_CMD_BUFFER();
 
-		m_globals->fullscreenQuadVertexBuffer()->bind(command_buffer);
-		m_globals->fullscreenQuadIndexBuffer()->bind(command_buffer);
-
+		command_buffer->bindIndexBuffer(m_globals->fullscreenQuadIndexBuffer(), 0u, gpu::EIndexType::eUint8);
 		command_buffer->drawIndexed(m_globals->fullscreenQuadIndices().size());
 	}
 

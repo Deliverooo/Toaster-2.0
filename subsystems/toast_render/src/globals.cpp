@@ -18,7 +18,7 @@ namespace toaster::render
 		addShader("Fullscreen_Quad_MS",
 				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "fullscreen_quad.mesh.glsl.spv", EShaderStage::eMesh, EShaderStage::ePixel));
 		addShader("Fullscreen_Quad_VS",
-				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "fullscreen_quad.vert.hlsl.spv", EShaderStage::eVertex, EShaderStage::ePixel));
+				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "fullscreen_quad.vert.glsl.spv", EShaderStage::eVertex, EShaderStage::ePixel));
 		addShader("Fullscreen_Quad_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "fullscreen_quad.pixel.glsl.spv", EShaderStage::ePixel));
 
 		// Dynamic mesh/meshlet shaders
@@ -52,7 +52,7 @@ namespace toaster::render
 		addShader("Depth_Pre_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "depth_pre.pixel.glsl.spv", EShaderStage::ePixel));
 
 		// Skybox shaders
-		addShader("Skybox_VS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "skybox.vert.hlsl.spv", EShaderStage::eVertex, EShaderStage::ePixel));
+		addShader("Skybox_VS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "skybox.vert.glsl.spv", EShaderStage::eVertex, EShaderStage::ePixel));
 		addShader("Skybox_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "skybox.pixel.glsl.spv", EShaderStage::ePixel));
 
 		// Mesh geometry shaders
@@ -64,18 +64,28 @@ namespace toaster::render
 		addShader("Test_Shader_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "test_shader.pixel.glsl.spv", EShaderStage::ePixel));
 		#pragma endregion
 
-		m_quadVertices.emplace_back(FullscreenQuadVertex{{1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}});
-		m_quadVertices.emplace_back(FullscreenQuadVertex{{1.0f, -1.0f, 0.0f}, {1.0f, 0.0f}});
-		m_quadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f}});
-		m_quadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}});
+		m_quadVertices.emplace_back(FullscreenQuadVertex{{1.0f, 1.0f}, {1.0f, 1.0f}});
+		m_quadVertices.emplace_back(FullscreenQuadVertex{{1.0f, -1.0f}, {1.0f, 0.0f}});
+		m_quadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, -1.0f}, {0.0f, 0.0f}});
+		m_quadVertices.emplace_back(FullscreenQuadVertex{{-1.0f, 1.0f}, {0.0f, 1.0f}});
 
 		m_quadIndices = {0, 1, 3, 1, 2, 3};
 
-		vk::DeviceSize vbo_size{m_quadVertices.size() * sizeof(FullscreenQuadVertex)};
-		m_quadVertexBuffer = make_reference<gpu::VKVertexBuffer>(m_renderCtx->getLogicalDevice(), m_quadVertices.data(), vbo_size);
+		uint64              index_buffer_size{m_quadIndices.size() * sizeof(uint8)};
+		gpu::BufferSpecInfo staging_buffer_spec{};
+		staging_buffer_spec.deviceLocal = false;
+		staging_buffer_spec.usageFlags  = vk::BufferUsageFlagBits2::eTransferSrc;
+		gpu::Buffer staging_buffer{m_renderCtx->getLogicalDevice(), index_buffer_size, staging_buffer_spec};
+		staging_buffer.setData(m_quadIndices.data(), index_buffer_size);
 
-		vk::DeviceSize ibo_size{m_quadIndices.size() * sizeof(uint32)};
-		m_quadIndexBuffer = make_reference<gpu::VKIndexBuffer>(m_renderCtx->getLogicalDevice(), m_quadIndices.data(), ibo_size);
+		gpu::BufferSpecInfo index_buffer_spec_info;
+		index_buffer_spec_info.deviceLocal = true;
+		index_buffer_spec_info.usageFlags  = vk::BufferUsageFlagBits2::eTransferDst | vk::BufferUsageFlagBits2::eIndexBuffer;
+		m_quadIndexBuffer                  = m_renderCtx->createGPUUnique<gpu::Buffer>(index_buffer_size, index_buffer_spec_info);
+
+		m_quadIndexBuffer->copyFromBuffer(staging_buffer);
+
+		m_quadVertexBuffer = m_renderCtx->createUnique<StorageBuffer>(m_quadVertices, true);
 
 		gpu::TextureSpecInfo white_texture_spec_info{};
 		white_texture_spec_info.size   = {1u};
@@ -145,14 +155,14 @@ namespace toaster::render
 		return m_shaderReflectionData.at(p_name);
 	}
 
-	auto Globals::fullscreenQuadVertexBuffer() const -> const gpu::VertexBufferHandle &
+	auto Globals::fullscreenQuadVertexBuffer() const -> const VertexBuffer &
 	{
-		return m_quadVertexBuffer;
+		return *m_quadVertexBuffer;
 	}
 
-	auto Globals::fullscreenQuadIndexBuffer() const -> const gpu::IndexBufferHandle &
+	auto Globals::fullscreenQuadIndexBuffer() const -> const gpu::Buffer &
 	{
-		return m_quadIndexBuffer;
+		return *m_quadIndexBuffer;
 	}
 
 	auto Globals::fullscreenQuadVertices() const -> const std::vector<FullscreenQuadVertex> &
@@ -160,7 +170,7 @@ namespace toaster::render
 		return m_quadVertices;
 	}
 
-	auto Globals::fullscreenQuadIndices() const -> const std::vector<uint32> &
+	auto Globals::fullscreenQuadIndices() const -> const std::vector<uint8> &
 	{
 		return m_quadIndices;
 	}

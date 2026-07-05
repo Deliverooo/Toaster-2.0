@@ -184,4 +184,14 @@ namespace toaster::gpu
 	{
 		m_commandBuffer.setStencilTestEnableEXT(p_enable);
 	}
+
+	auto VKCommandBuffer::setColourBlendEnable(const InitialiserList<const bool32> &p_enables) -> void
+	{
+		m_commandBuffer.setColorBlendEnableEXT(0u, p_enables);
+	}
+
+	auto VKCommandBuffer::setColourWriteMask(const InitialiserList<const vk::ColorComponentFlags> &p_write_masks) -> void
+	{
+		m_commandBuffer.setColorWriteMaskEXT(0u, p_write_masks);
+	}
 }

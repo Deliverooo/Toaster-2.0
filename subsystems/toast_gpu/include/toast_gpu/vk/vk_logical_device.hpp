@@ -12,14 +12,14 @@ namespace toaster::gpu
 	struct TST_GPU_API VKLogicalDeviceSpecInfo
 	{
 		static auto getDefaultFeatures() -> vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
-			vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceShaderObjectFeaturesEXT,
-			vk::PhysicalDeviceDescriptorBufferFeaturesEXT, vk::PhysicalDeviceDescriptorHeapFeaturesEXT, vk::PhysicalDeviceShaderUntypedPointersFeaturesKHR,
-			vk::PhysicalDeviceMeshShaderFeaturesEXT>
+			vk::PhysicalDeviceVulkan14Features, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
+			vk::PhysicalDeviceShaderObjectFeaturesEXT, vk::PhysicalDeviceDescriptorBufferFeaturesEXT, vk::PhysicalDeviceDescriptorHeapFeaturesEXT,
+			vk::PhysicalDeviceShaderUntypedPointersFeaturesKHR, vk::PhysicalDeviceMeshShaderFeaturesEXT>
 		{
-			vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
+			vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceVulkan14Features,
 				vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceShaderObjectFeaturesEXT,
 				vk::PhysicalDeviceDescriptorBufferFeaturesEXT, vk::PhysicalDeviceDescriptorHeapFeaturesEXT, vk::PhysicalDeviceShaderUntypedPointersFeaturesKHR,
-				vk::PhysicalDeviceMeshShaderFeaturesEXT> feature_chain{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}};
+				vk::PhysicalDeviceMeshShaderFeaturesEXT> feature_chain{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}};
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                   = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                   = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                    = true;
@@ -37,6 +37,7 @@ namespace toaster::gpu
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                      = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                      = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().maintenance4                          = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan14Features>().indexTypeUint8                        = true;
 			feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState   = true;
 			feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors        = true;
 			feature_chain.get<vk::PhysicalDeviceShaderObjectFeaturesEXT>().shaderObject                   = true;

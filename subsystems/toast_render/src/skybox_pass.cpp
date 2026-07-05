@@ -5,45 +5,45 @@
 
 namespace toaster::render
 {
-	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, bool32 p_msaa) : m_renderCtx(&p_render_ctx)
+	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx) : m_renderCtx(&p_render_ctx)
 	{
-		_construct(p_msaa);
-	}
-
-	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size, bool32 p_msaa) : m_renderCtx(&p_render_ctx),
-																											 m_viewportSize(p_initial_viewport_size)
-	{
-		_construct(p_msaa);
+		_construct();
 		m_environmentMap = m_renderCtx->getGlobals()->whiteImage();
 	}
 
-	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, tsm::uint2 p_initial_viewport_size, const ImageHandle &p_environment_map,
-						   bool32         p_msaa) : m_renderCtx(&p_render_ctx), m_viewportSize(p_initial_viewport_size), m_environmentMap(p_environment_map)
+	SkyboxPass::SkyboxPass(RenderContext &p_render_ctx, const ImageHandle &p_environment_map) : m_renderCtx(&p_render_ctx), m_environmentMap(p_environment_map)
 	{
-		_construct(p_msaa);
+		_construct();
 	}
 
-	auto SkyboxPass::getOutputImage() const -> const ImageHandle &
+	auto SkyboxPass::onRender(gpu::CommandBuffer &p_cmd, const RenderingInfo &p_rendering_info, uintptr p_camera_bda_ptr) const -> void
 	{
-		return m_renderTargetImage;
-	}
+		p_cmd.bindShaders({m_renderCtx->getGlobals()->getShader("Skybox_VS"), m_renderCtx->getGlobals()->getShader("Skybox_PS")});
 
-	auto SkyboxPass::onRender(gpu::CommandBuffer &p_cmd, uintptr p_camera_bda_ptr) const -> void
-	{
-		RenderingInfo rendering_info{m_viewportSize};
-		rendering_info.addColourAttachment(*m_renderTargetImage->getImage());
+		p_cmd.setPrimitiveTopology(gpu::EPrimitiveTopology::eTriangleList);
+		p_cmd.setCullMode(gpu::ECullMode::eNone);
+		p_cmd.setFrontFace(gpu::EFrontFace::eCCW);
 
-		onRender(p_cmd, p_camera_bda_ptr, rendering_info);
-	}
+		p_cmd.setPolygonMode(gpu::EPolygonMode::eFill);
 
-	auto SkyboxPass::onRender(gpu::CommandBuffer &p_cmd, uintptr p_camera_bda_ptr, const RenderingInfo &p_rendering_info) const -> void
-	{
-		m_skyboxState->bind(&p_cmd);
+		p_cmd.setDepthTestEnable(false);
+		p_cmd.setStencilTestEnable(false);
+
+		p_cmd.getVulkanCommandBuffer().setRasterizerDiscardEnableEXT(false);
+
+
+		p_cmd.getVulkanCommandBuffer().setColorBlendEnableEXT(0, {false});
+		p_cmd.getVulkanCommandBuffer().setColorWriteMaskEXT(0, {{vk::FlagTraits<vk::ColorComponentFlagBits>::allFlags}});
+
+		p_cmd.getVulkanCommandBuffer().setSampleMaskEXT(vk::SampleCountFlagBits::e1, 0xFFFFFFFF);
+		p_cmd.getVulkanCommandBuffer().setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1);
+
 		m_renderCtx->beginRendering(p_rendering_info, &p_cmd);
 
 		SkyboxConstants skybox_constants{};
+		skybox_constants.vertexBufferBDA             = m_renderCtx->getGlobals()->fullscreenQuadVertexBuffer().getDeviceAddress();
 		skybox_constants.cameraBDA                   = p_camera_bda_ptr;
-		skybox_constants.samplerAddressOffset        = m_renderCtx->getSampler(ESamplerType::eDefault);
+		skybox_constants.samplerAddressOffset        = m_renderCtx->getSampler(ESamplerType::eIrradianceMap);
 		skybox_constants.environmentMapAddressOffset = m_environmentMap->getAlignedShaderReadHeapID();
 		p_cmd.pushData(skybox_constants);
 
@@ -51,29 +51,16 @@ namespace toaster::render
 		m_renderCtx->endRendering(p_rendering_info, &p_cmd);
 	}
 
-	auto SkyboxPass::onResize(tsm::uint2 p_size) -> void
-	{
-		TST_ASSERT_MSG(p_size.x != 0.0f || p_size.y != 0.0f, "Viewport size cannot be 0!");
-
-		if (m_viewportSize.x == UINT32_MAX || m_viewportSize.y == UINT32_MAX) // Special value if using override rendering info
-			return;
-
-		m_viewportSize = p_size;
-
-		if (m_renderTargetImage)
-			m_renderTargetImage->resize(p_size);
-	}
-
 	auto SkyboxPass::setEnvironmentMap(const ImageHandle &p_environment_map) -> void
 	{
 		m_environmentMap = p_environment_map;
 	}
 
-	auto SkyboxPass::_construct(bool32 p_msaa) -> void
+	auto SkyboxPass::_construct() -> void
 	{
 		m_skyboxState = m_renderCtx->createUnique<GraphicsState>();
 		m_skyboxState->setShaders({m_renderCtx->getGlobals()->getShader("Skybox_VS"), m_renderCtx->getGlobals()->getShader("Skybox_PS")}).setAttachmentCount(1u).
 				setCullMode(vk::CullModeFlagBits::eNone).setVertexBufferLayout(RenderContext::fullscreenQuadVbl).setEnableDepthTest(false).setEnableDepthWrite(false).
-				setEnableMultisample(p_msaa);
+				setEnableMultisample(false);
 	}
 }

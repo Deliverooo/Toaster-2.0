@@ -35,7 +35,7 @@ namespace toaster
 			depth_pre_pipeline_spec_info.multisample        = true;
 			depth_pre_pipeline_spec_info.cullMode           = m_specInfo.backfaceCulling ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone;
 			// depth_pre_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->getShader("Depth-Pre");
-			m_depthPrePipeline                              = m_renderCtx->createGPURef<gpu::VKPipeline>(depth_pre_pipeline_spec_info, "Depth-Pre");
+			m_depthPrePipeline = m_renderCtx->createGPURef<gpu::VKPipeline>(depth_pre_pipeline_spec_info, "Depth-Pre");
 
 			m_depthPrePass = m_renderCtx->createRef<render::RenderPass>(m_depthPrePipeline);
 			m_depthPrePass->setInput("Camera", m_cameraUBOs).bake();
@@ -60,11 +60,11 @@ namespace toaster
 			ssao_pipeline_spec_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
 			ssao_pipeline_spec_info.colourAttachments  = {vk::Format::eR16G16B16A16Sfloat};
 			// ssao_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Graphics");
-			ssao_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
-			ssao_pipeline_spec_info.multisample        = false;
-			ssao_pipeline_spec_info.depthTest          = false;
-			ssao_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
-			m_SSAOPipeline                             = m_renderCtx->createGPURef<gpu::VKPipeline>(ssao_pipeline_spec_info, "SSAO");
+			ssao_pipeline_spec_info.polygonMode = vk::PolygonMode::eFill;
+			ssao_pipeline_spec_info.multisample = false;
+			ssao_pipeline_spec_info.depthTest   = false;
+			ssao_pipeline_spec_info.cullMode    = vk::CullModeFlagBits::eBack;
+			m_SSAOPipeline                      = m_renderCtx->createGPURef<gpu::VKPipeline>(ssao_pipeline_spec_info, "SSAO");
 
 			m_SSAOKernel = make_unique<SSAOKernel>(); // Generates the random rotation vectors
 			auto ssao_kernel_ubo{m_renderCtx->createGPURef<gpu::VKUniformBuffer>(sizeof(SSAOKernel))};
@@ -95,7 +95,7 @@ namespace toaster
 				m_SSAOBlurredImage                = m_renderCtx->createGPURef<gpu::VKStorageImage>(blurred_ao_image_spec_info);
 
 				// m_SSAOBlurPipeline = m_renderCtx->createGPURef<gpu::VKComputePipeline>(m_renderCtx->getGlobals()->shaderLibrary().get("SSAO_Blur"));
-				m_SSAOBlurPass     = m_renderCtx->createRef<render::ComputePass>(m_SSAOBlurPipeline);
+				m_SSAOBlurPass = m_renderCtx->createRef<render::ComputePass>(m_SSAOBlurPipeline);
 
 				m_SSAOBlurPass->setInput("u_Occlusion", m_SSAOTexture).setInput("o_BlurredOcclusion", m_SSAOBlurredImage).bake();
 			}
@@ -108,10 +108,10 @@ namespace toaster
 			skybox_pipeline_spec_info.vertexBufferLayout = {{gpu::EBufferDataType::eFloat3, "a_Position"}, {gpu::EBufferDataType::eFloat2, "a_TexCoord"}};
 			skybox_pipeline_spec_info.colourAttachments  = {vk::Format::eR8G8B8A8Srgb};
 			// skybox_pipeline_spec_info.shader             = m_renderCtx->getGlobals()->shaderLibrary().get("Skybox");
-			skybox_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
-			skybox_pipeline_spec_info.multisample        = true;
-			skybox_pipeline_spec_info.cullMode           = vk::CullModeFlagBits::eBack;
-			m_skyboxPipeline                             = m_renderCtx->createGPURef<gpu::VKPipeline>(skybox_pipeline_spec_info, "Skybox");
+			skybox_pipeline_spec_info.polygonMode = vk::PolygonMode::eFill;
+			skybox_pipeline_spec_info.multisample = true;
+			skybox_pipeline_spec_info.cullMode    = vk::CullModeFlagBits::eBack;
+			m_skyboxPipeline                      = m_renderCtx->createGPURef<gpu::VKPipeline>(skybox_pipeline_spec_info, "Skybox");
 
 			m_skyboxPass = m_renderCtx->createRef<render::RenderPass>(m_skyboxPipeline);
 			m_skyboxPass->setInput("Camera", m_cameraUBOs).bake();
@@ -134,7 +134,7 @@ namespace toaster
 			geometry_pipeline_spec_info.polygonMode        = vk::PolygonMode::eFill;
 			geometry_pipeline_spec_info.cullMode           = m_specInfo.backfaceCulling ? vk::CullModeFlagBits::eBack : vk::CullModeFlagBits::eNone;
 			// geometry_pipeline_spec_info.shader             = shader_choice;
-			m_geometryPipeline                             = m_renderCtx->createGPURef<gpu::VKPipeline>(geometry_pipeline_spec_info, "Geometry");
+			m_geometryPipeline = m_renderCtx->createGPURef<gpu::VKPipeline>(geometry_pipeline_spec_info, "Geometry");
 
 			m_geometryPass = m_renderCtx->createRef<render::RenderPass>(m_geometryPipeline);
 			m_geometryPass->setInput("Camera", m_cameraUBOs).setInput("DirectionalLightData", m_directionalLightUBOs).setInput("PointLightData", m_pointLightUBOs).
@@ -229,9 +229,8 @@ namespace toaster
 				auto   tc{m_scene->getEntityWorldTransformComponent(e)};
 
 				auto &light{m_scene->m_lightEnvironment.pointLights.emplace_back()};
-				light.position   = tc.translation;
-				light.radiance   = point_light.radiance;
-				light.multiplier = point_light.multiplier;
+				light.position          = {tc.translation.x, tc.translation.y, tc.translation.z, 1.0f};
+				light.radianceIntensity = {point_light.radiance, point_light.multiplier};
 			}
 		}
 
@@ -310,8 +309,8 @@ namespace toaster
 			point_light_ub.count = std::min(static_cast<uint32>(point_lights.size()), PointLightUB::c_maxPointLights);
 			for (uint32 i{0u}; i < PointLightUB::c_maxPointLights && i < point_lights.size(); ++i)
 			{
-				point_light_ub.pointLights[i].position = point_lights[i].position;
-				point_light_ub.pointLights[i].radiance = point_lights[i].radiance;
+				point_light_ub.pointLights[i].position          = point_lights[i].position;
+				point_light_ub.pointLights[i].radianceIntensity = point_lights[i].radianceIntensity;
 			}
 			std::memcpy(m_mappedPointLightUBOs[frame_index], &point_light_ub, sizeof(PointLightUB));
 		}

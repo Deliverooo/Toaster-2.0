@@ -35,6 +35,7 @@ layout (push_constant) uniform Constants
 
     Camera cameraPtr;
     uint64_t sceneDataPtr;
+    uint64_t pointLightsPtr;
 
     uint samplerIndex;
     uint diffuseIrradianceMapIndex;

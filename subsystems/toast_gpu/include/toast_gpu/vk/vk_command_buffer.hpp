@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../toast_gpu.hpp"
+#include "../gpu_enums.hpp"
+
 #include <vulkan/vulkan_raii.hpp>
 #include "toast_lib/system_types.h"
 
@@ -11,56 +13,6 @@ namespace toaster::gpu
 	class VKDynamicShader;
 
 	class VKBuffer;
-
-	enum class EPrimitiveTopology
-	{
-		ePointList,
-		eLineList,
-		eLineStrip,
-		eTriangleList,
-		eTriangleStrip,
-		eTriangleFan,
-		eLineListWithAdjacency,
-		eLineStripWithAdjacency,
-		eTriangleListWithAdjacency,
-		eTriangleStripWithAdjacency,
-		ePatchList
-	};
-
-	enum class ECullMode
-	{
-		eNone,
-		eFront,
-		eBack,
-		eFrontAndBack
-	};
-
-	enum class EFrontFace
-	{
-		eCCW, eCW
-	};
-
-	enum class EPolygonMode
-	{
-		eFill, eLine, ePoint
-	};
-
-	enum class ECompareOp
-	{
-		eNever,
-		eLess,
-		eEqual,
-		eLessOrEqual,
-		eGreater,
-		eNotEqual,
-		eGreaterOrEqual,
-		eAlways
-	};
-
-	enum class EIndexType
-	{
-		eUint16 = 0, eUint32 = 1, eUint8 = 1000265000
-	};
 
 	class TST_GPU_API VKCommandBuffer
 	{
@@ -120,6 +72,9 @@ namespace toaster::gpu
 		auto setDepthCompareOp(ECompareOp p_compare_op) -> void;
 
 		auto setStencilTestEnable(bool32 p_enable) -> void;
+
+		auto setColourBlendEnable(const InitialiserList<const bool32>& p_enables) -> void;
+		auto setColourWriteMask(const InitialiserList<const vk::ColorComponentFlags>& p_write_masks) -> void;
 
 		#pragma endregion
 

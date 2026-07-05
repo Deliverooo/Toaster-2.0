@@ -100,7 +100,6 @@ namespace toaster::render
 
 		aiShadingMode shading_mode;
 		aiReturn      res{ai_mat->Get(AI_MATKEY_SHADING_MODEL, shading_mode)};
-		TST_PERMA_ASSERT(res == AI_SUCCESS);
 
 		LOG_INFO("Shading mode: {}", aiShadingModeToString(shading_mode));
 
@@ -122,6 +121,14 @@ namespace toaster::render
 			}
 		}
 
+		bool two_sided;
+		if (ai_mat->Get(AI_MATKEY_TWOSIDED, two_sided) == AI_SUCCESS)
+		{
+			LOG_INFO("Two sided: {}", two_sided);
+
+			if (two_sided)
+				material->flags |= static_cast<uint64>(EMeshMaterialFlags::eTwoSided);
+		}
 		// bool two_sided;
 		// if (ai_mat->Get(AI_MATKEY_TWOSIDED, two_sided) == AI_SUCCESS)
 		// {
@@ -338,8 +345,7 @@ namespace toaster::render
 		}
 
 		p_out_mesh_data.nodes.emplace_back();
-		traverseNodes(p_out_mesh_data, scene->mRootNode, 0,
-					  Dx::XMFLOAT4X4{1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f});
+		traverseNodes(p_out_mesh_data, scene->mRootNode, 0, Dx::XMMatrixIdentity());
 
 		if (scene->HasAnimations())
 		{
@@ -359,16 +365,15 @@ namespace toaster::render
 		}
 	}
 
-	auto traverseNodes(DynamicMeshData &p_out_mesh_data, void *p_node, uint32 p_node_index, const Dx::XMFLOAT4X4 &p_parent_transform) -> void
+	auto XM_CALLCONV traverseNodes(DynamicMeshData &p_out_mesh_data, void *p_node, uint32 p_node_index, Dx::FXMMATRIX p_parent_transform) -> void
 	{
 		auto ai_node{static_cast<aiNode *>(p_node)};
 
 		Dx::XMFLOAT4X4 local_transform = mat4FromAIMatrix4x4(ai_node->mTransformation);
 
 		Dx::XMMATRIX local_transform_simd{Dx::XMLoadFloat4x4(&local_transform)};
-		Dx::XMMATRIX parent_transform_simd{Dx::XMLoadFloat4x4(&p_parent_transform)};
 
-		Dx::XMMATRIX global_transform_simd = Dx::XMMatrixMultiply(local_transform_simd, parent_transform_simd);
+		Dx::XMMATRIX global_transform_simd = Dx::XMMatrixMultiply(local_transform_simd, p_parent_transform);
 
 		Dx::XMFLOAT4X4 global_transform;
 		Dx::XMStoreFloat4x4(&global_transform, global_transform_simd);
@@ -399,7 +404,7 @@ namespace toaster::render
 
 			p_out_mesh_data.nodes[child_index].parent = p_node_index; // FIX: Use explicit p_node_index
 
-			traverseNodes(p_out_mesh_data, ai_node->mChildren[i], child_index, global_transform);
+			traverseNodes(p_out_mesh_data, ai_node->mChildren[i], child_index, global_transform_simd);
 		}
 	}
 }
