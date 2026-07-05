@@ -34,10 +34,49 @@ public:
 		m_scene->setSceneEnvironmentImage(environment_map);
 		m_sceneRenderer = toaster::make_unique<DynamicSceneRenderer>(m_scene.get(), m_viewportSize);
 
+		Entity test_scene_entity{};
 		{
-			Entity test_scene_entity{m_scene->createEntity("Test_Scene")};
-			auto & mesh_comp{test_scene_entity.addComponent<DynamicMeshComponent>()};
+			test_scene_entity = m_scene->createEntity("Test_Scene");
+			auto &mesh_comp{test_scene_entity.addComponent<DynamicMeshComponent>()};
 			mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.gltf");
+
+			class LightController : public ScriptableEntity
+			{
+			public:
+				auto onCreate(void *p_user_data) -> void override
+				{
+					m_inputCtx = static_cast<InputContext *>(p_user_data);
+
+					LOG_INFO("{}", scene->getName());
+				}
+
+				auto onUpdate(float32 p_dt) -> void override
+				{
+					Dx::XMVECTOR translation{Dx::XMLoadFloat3(&transform->translation)};
+
+					if (m_inputCtx->isKeyDown(input::EKeyCode::eUp))
+						translation = Dx::XMVectorAdd(translation, Dx::XMVectorSet(0.0f, p_dt, 0.0f, 0.0f));
+					if (m_inputCtx->isKeyDown(input::EKeyCode::eDown))
+						translation = Dx::XMVectorAdd(translation, Dx::XMVectorSet(0.0f, -p_dt, 0.0f, 0.0f));
+					if (m_inputCtx->isKeyDown(input::EKeyCode::eRight))
+						translation = Dx::XMVectorAdd(translation, Dx::XMVectorSet(p_dt, 0.0f, 0.0f, 0.0f));
+					if (m_inputCtx->isKeyDown(input::EKeyCode::eLeft))
+						translation = Dx::XMVectorAdd(translation, Dx::XMVectorSet(-p_dt, 0.0f, 0.0f, 0.0f));
+
+					Dx::XMStoreFloat3(&transform->translation, translation);
+				}
+
+			private:
+				NonOwningPtr<InputContext> m_inputCtx{nullptr};
+			};
+
+			test_scene_entity.addComponent<NativeScriptComponent>().bind<LightController>(m_inputCtx);
+		}
+
+		{
+			Entity other_entity{m_scene->createEntity("Other")};
+			other_entity.addComponent<DynamicMeshComponent>().mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/DJT_sculpt.fbx");
+			other_entity.setParent(test_scene_entity);
 		}
 		{
 			Entity light_entity{m_scene->createEntity("Light_001")};
@@ -48,6 +87,8 @@ public:
 			auto &tc{light_entity.getComponent<TransformComponent>()};
 			tc.translation = {0.0f, 5.0f, 1.0f};
 		}
+
+		m_scene->initNativeScripts();
 	}
 
 	auto onDestroy() -> void override

@@ -121,19 +121,23 @@ namespace toaster::render
 			}
 		}
 
-		bool two_sided;
+		bool two_sided{false};
 		if (ai_mat->Get(AI_MATKEY_TWOSIDED, two_sided) == AI_SUCCESS)
 		{
 			LOG_INFO("Two sided: {}", two_sided);
-
 			if (two_sided)
-				material->flags |= static_cast<uint64>(EMeshMaterialFlags::eTwoSided);
+				material->flags |= EMaterialPropertyFlags::eTwoSided;
 		}
-		// bool two_sided;
-		// if (ai_mat->Get(AI_MATKEY_TWOSIDED, two_sided) == AI_SUCCESS)
-		// {
-		// 	LOG_INFO("Two sided: {}", (bool)two_sided);
-		// }
+
+
+		bool wireframe{false};
+		if (ai_mat->Get(AI_MATKEY_ENABLE_WIREFRAME, wireframe) == AI_SUCCESS)
+		{
+			LOG_INFO("Wireframe: {}", wireframe);
+			if (wireframe)
+				material->flags |= EMaterialPropertyFlags::eWireframe;
+		}
+
 
 		if (aiColor3D ai_colour; ai_mat->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS)
 			material->set("albedoColour", tsm::float4{ai_colour.r, ai_colour.g, ai_colour.b, 1.0f});

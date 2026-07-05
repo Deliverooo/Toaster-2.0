@@ -349,13 +349,19 @@ namespace toaster
 				p_cmd.bindIndexBuffer(last_mesh->getIndexBuffer());
 			}
 
-			if (material->flags & static_cast<uint64>(render::EMeshMaterialFlags::eTwoSided))
+			if (material->flags & render::EMaterialPropertyFlags::eTwoSided)
 				p_cmd.setCullMode(gpu::ECullMode::eNone);
+
+			if (material->flags & render::EMaterialPropertyFlags::eWireframe)
+				p_cmd.setPolygonMode(gpu::EPolygonMode::eLine);
 
 			p_cmd.drawIndexed(draw_cmd.indexCount, 1, draw_cmd.indexOffset, draw_cmd.vertexOffset, 0);
 
-			if (material->flags & static_cast<uint64>(render::EMeshMaterialFlags::eTwoSided))
+			if (material->flags & render::EMaterialPropertyFlags::eTwoSided)
 				p_cmd.setCullMode(gpu::ECullMode::eBack);
+
+			if (material->flags & render::EMaterialPropertyFlags::eWireframe)
+				p_cmd.setPolygonMode(gpu::EPolygonMode::eFill);
 		}
 
 		m_renderCtx->endRendering(rendering_info, &p_cmd);

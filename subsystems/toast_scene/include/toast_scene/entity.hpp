@@ -101,6 +101,9 @@ namespace toaster
 
 		auto operator==(Entity p_entity) const -> bool { return m_handle == p_entity.m_handle; }
 
+		auto getScene() -> Scene * { return m_scene; }
+		auto getScene() const -> Scene * { return m_scene; }
+
 		auto getUUID() const -> UUID { return getComponent<UUIDComponent>().uuid; }
 		auto getTag() const -> const String & { return getComponent<TagComponent>().tag; }
 

@@ -64,14 +64,18 @@ namespace toaster
 		}
 
 		// Better than the derived classes having to get it manually
-		TagComponent *      tag{nullptr};
-		TransformComponent *transform{nullptr};
+		TagComponent *const       tag{nullptr};
+		TransformComponent *const transform{nullptr};
+
+		const NonOwningPtr<Scene> scene{nullptr};
 
 	private:
 		auto _superInit() -> void
 		{
-			tag       = &m_entity.getComponent<TagComponent>();
-			transform = &m_entity.getComponent<TransformComponent>();
+			// Ts looks very unsafe
+			*const_cast<TagComponent **>(&tag)             = &m_entity.getComponent<TagComponent>();
+			*const_cast<TransformComponent **>(&transform) = &m_entity.getComponent<TransformComponent>();
+			*const_cast<Scene **>(&scene)                  = m_entity.getScene();
 		}
 
 		Entity m_entity;

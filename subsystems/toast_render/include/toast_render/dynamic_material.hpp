@@ -10,6 +10,11 @@ namespace toaster::render
 {
 	[[nodiscard]] TST_RENDER_API auto findMaterialDeclaration(const reflection::ReflectionData &p_reflection_data) -> const reflection::ReflectedStruct *;
 
+	enum EMaterialPropertyFlags : uint32
+	{
+		eNone = 0u, eTwoSided = BIT(0u), eWireframe = BIT(1u)
+	};
+
 	class TST_RENDER_API DynamicMaterial
 	{
 		TST_RENDER_OBJECT
@@ -27,7 +32,7 @@ namespace toaster::render
 
 		auto getImage(const String &p_name) const -> const ImageHandle &;
 
-		uint64 flags{0ull};
+		uint32 flags{EMaterialPropertyFlags::eNone};
 
 	private:
 		auto _set(const String &p_name, const void *p_value) -> void;

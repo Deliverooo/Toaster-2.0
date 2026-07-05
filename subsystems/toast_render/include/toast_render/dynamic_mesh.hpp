@@ -60,11 +60,6 @@ namespace toaster::render
 		ePBR, eFlat
 	};
 
-	enum class EMeshMaterialFlags
-	{
-		eTwoSided = BIT(0),
-	};
-
 	class TST_RENDER_API DynamicMesh
 	{
 		TST_RENDER_OBJECT
