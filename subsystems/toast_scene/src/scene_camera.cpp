@@ -1,6 +1,6 @@
 #include "toast_scene/scene_camera.hpp"
 
-namespace toaster
+namespace toaster::scene
 {
 	SceneCamera::SceneCamera()
 	{

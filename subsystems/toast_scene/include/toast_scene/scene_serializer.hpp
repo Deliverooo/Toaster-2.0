@@ -8,7 +8,7 @@ namespace YAML
 	class Node;
 }
 
-namespace toaster
+namespace toaster::scene
 {
 	class TST_SCENE_API SceneSerializer
 	{

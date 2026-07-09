@@ -12,7 +12,7 @@
 #include "toast_render/skybox_pass.hpp"
 
 #include "toast_render/dynamic_material.hpp"
-#include "toast_scene/dynamic_scene_renderer.hpp"
+#include "toast_scene/scene_renderer.hpp"
 
 using namespace toaster;
 
@@ -28,19 +28,18 @@ public:
 		const auto binary_dir{os::getBinaryDirectory()};
 		const auto resources_dir{binary_dir / "../resources"};
 
-		m_scene = toaster::make_unique<Scene>(m_renderCtx);
+		m_scene = toaster::make_unique<scene::Scene>(m_renderCtx);
 
-		auto environment_map{m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/qwantani_dusk_2_puresky_2k.hdr")};
-		m_scene->setSceneEnvironmentImage(environment_map);
-		m_sceneRenderer = toaster::make_unique<DynamicSceneRenderer>(m_scene.get(), m_viewportSize);
+		m_scene->setSkyboxMap(m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/qwantani_dusk_2_puresky_2k.hdr"));
+		m_sceneRenderer = toaster::make_unique<scene::SceneRenderer>(m_scene.get(), m_viewportSize);
 
-		Entity test_scene_entity{};
+		scene::Entity test_scene_entity{};
 		{
 			test_scene_entity = m_scene->createEntity("Test_Scene");
-			auto &mesh_comp{test_scene_entity.addComponent<DynamicMeshComponent>()};
+			auto &mesh_comp{test_scene_entity.addComponent<scene::DynamicMeshComponent>()};
 			mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.gltf");
 
-			class LightController : public ScriptableEntity
+			class LightController : public scene::ScriptableEntity
 			{
 			public:
 				auto onCreate(void *p_user_data) -> void override
@@ -70,21 +69,21 @@ public:
 				NonOwningPtr<InputContext> m_inputCtx{nullptr};
 			};
 
-			test_scene_entity.addComponent<NativeScriptComponent>().bind<LightController>(m_inputCtx);
+			test_scene_entity.addComponent<scene::NativeScriptComponent>().bind<LightController>(m_inputCtx);
 		}
 
 		{
-			Entity other_entity{m_scene->createEntity("Other")};
-			other_entity.addComponent<DynamicMeshComponent>().mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/DJT_sculpt.fbx");
+			scene::Entity other_entity{m_scene->createEntity("Other")};
+			other_entity.addComponent<scene::DynamicMeshComponent>().mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/DJT_sculpt.fbx");
 			other_entity.setParent(test_scene_entity);
 		}
 		{
-			Entity light_entity{m_scene->createEntity("Light_001")};
-			auto & plc{light_entity.addComponent<PointLightComponent>()};
+			scene::Entity light_entity{m_scene->createEntity("Light_001")};
+			auto &        plc{light_entity.addComponent<scene::PointLightComponent>()};
 			plc.radiance   = {1.0f, 1.0f, 1.0f};
 			plc.multiplier = 10.0f;
 
-			auto &tc{light_entity.getComponent<TransformComponent>()};
+			auto &tc{light_entity.getComponent<scene::TransformComponent>()};
 			tc.translation = {0.0f, 5.0f, 1.0f};
 		}
 
@@ -162,8 +161,8 @@ private:
 		uint32 texture;
 	};
 
-	UniquePtr<Scene>                m_scene{nullptr};
-	UniquePtr<DynamicSceneRenderer> m_sceneRenderer{nullptr};
+	UniquePtr<scene::Scene>                m_scene{nullptr};
+	UniquePtr<scene::SceneRenderer> m_sceneRenderer{nullptr};
 };
 
 auto main(int32 p_argc, char **p_argv) -> int32

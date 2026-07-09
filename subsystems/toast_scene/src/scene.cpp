@@ -6,7 +6,7 @@
 #include "toast_render/globals.hpp"
 #include "toast_render/render_context.hpp"
 
-namespace toaster
+namespace toaster::scene
 {
 	class ScriptableEntityCS
 	{
@@ -135,31 +135,47 @@ namespace toaster
 		s_activeScene = nullptr;
 	}
 
+	auto Scene::getRenderCtx() const -> NonOwningPtr<render::RenderContext>
+	{
+		return m_renderCtx;
+	}
+
 	auto Scene::onUpdate(float32 p_dt) -> void
 	{
+		m_lightEnvironment.pointLights.clear();
+
+		for (const auto view{m_registry.view<PointLightComponent>()}; const auto entity: view)
 		{
-			for (const auto view{m_registry.view<ScriptComponent>()}; const auto entity: view)
+			auto   point_light{view.get<PointLightComponent>(entity)};
+			Entity e{entity, this};
+			auto   tc{getEntityWorldTransformComponent(e)};
+
+			auto &light{m_lightEnvironment.pointLights.emplace_back()};
+			light.position          = {tc.translation.x, tc.translation.y, tc.translation.z, 1.0f};
+			light.radianceIntensity = {point_light.radiance, point_light.multiplier};
+		}
+
+		for (const auto view{m_registry.view<ScriptComponent>()}; const auto entity: view)
+		{
+			auto [class_name]{view.get<ScriptComponent>(entity)};
+
+			Entity e{entity, this};
+			UUID   uuid{e.getComponent<UUIDComponent>().uuid};
+			if (!m_entityScriptMap.contains(uuid))
 			{
-				auto [class_name]{view.get<ScriptComponent>(entity)};
-
-				Entity e{entity, this};
-				UUID   uuid{e.getComponent<UUIDComponent>().uuid};
-				if (!m_entityScriptMap.contains(uuid))
+				if (m_entityClassMap.contains(class_name))
 				{
-					if (m_entityClassMap.contains(class_name))
-					{
-						m_entityScriptMap[uuid] = make_reference<ScriptableEntityCS>(*m_entityClassMap[class_name].get(), this, e);
-						m_entityScriptMap[uuid]->onCreate();
-					}
-					else
-					{
-						LOG_ERROR("Invalid script class name: {}", class_name);
-					}
+					m_entityScriptMap[uuid] = make_reference<ScriptableEntityCS>(*m_entityClassMap[class_name].get(), this, e);
+					m_entityScriptMap[uuid]->onCreate();
 				}
-
-				if (m_entityScriptMap.contains(uuid))
-					m_entityScriptMap[uuid]->onUpdate(p_dt);
+				else
+				{
+					LOG_ERROR("Invalid script class name: {}", class_name);
+				}
 			}
+
+			if (m_entityScriptMap.contains(uuid))
+				m_entityScriptMap[uuid]->onUpdate(p_dt);
 		}
 
 		m_registry.view<NativeScriptComponent>().each([this, p_dt](auto p_entity, auto &p_script) -> void
@@ -247,19 +263,19 @@ namespace toaster
 		m_registry.destroy(p_entity);
 	}
 
-	auto Scene::getEntityByUUID(UUID p_uuid) -> Entity
+	auto Scene::getEntityByUUID(UUID p_uuid) const -> Entity
 	{
 		if (!m_entityUUIDMap.contains(p_uuid))
 			return {};
-		return {m_entityUUIDMap.at(p_uuid), this};
+		return {m_entityUUIDMap.at(p_uuid), const_cast<Scene *>(this)};
 	}
 
-	auto Scene::getEntityByName(const String &p_name) -> Entity
+	auto Scene::getEntityByName(const String &p_name) const -> Entity
 	{
 		for (const auto view = m_registry.view<TagComponent>(); const auto &entity: view)
 		{
 			if (const auto &tag = view.get<TagComponent>(entity); tag.tag == p_name)
-				return Entity{entity, this};
+				return Entity{entity, const_cast<Scene *>(this)};
 		}
 		return {};
 	}
@@ -281,7 +297,7 @@ namespace toaster
 		return transform_component;
 	}
 
-	auto Scene::getMainCameraEntity() -> Entity
+	auto Scene::getMainCameraEntity() const -> Entity
 	{
 		const auto view = m_registry.view<CameraComponent>();
 		for (const auto entity: view)
@@ -289,7 +305,7 @@ namespace toaster
 			auto &camera = view.get<CameraComponent>(entity);
 
 			if (camera.primary)
-				return Entity{entity, this};
+				return Entity{entity, const_cast<Scene *>(this)};
 		}
 		return {};
 	}
@@ -314,34 +330,36 @@ namespace toaster
 		return m_name;
 	}
 
-	auto Scene::getLightEnvironment() const -> const SceneLightEnvironment &
+	auto Scene::getSkyboxMap() const -> const render::ImageHandle &
+	{
+		return m_environment.skyboxMap;
+	}
+
+	auto Scene::getDiffuseIrradianceMap() const -> const render::ImageHandle &
+	{
+		return m_environment.diffuseIrradianceMap;
+	}
+
+	auto Scene::getSpecularIrradianceMap() const -> const render::ImageHandle &
+	{
+		return m_environment.specularIrradianceMap;
+	}
+
+	auto Scene::setSkyboxMap(const render::ImageHandle &p_skybox_map) -> void
+	{
+		m_environment.skyboxMap             = p_skybox_map;
+		m_environment.diffuseIrradianceMap  = m_renderCtx->createDiffuseIrradianceMapImage(m_environment.skyboxMap);
+		m_environment.specularIrradianceMap = m_renderCtx->createSpecularIrradianceMapImage(m_environment.skyboxMap);
+	}
+
+	auto Scene::submitPointLight(const PointLight &p_point_light) -> void
+	{
+		m_lightEnvironment.pointLights.emplace_back(p_point_light);
+	}
+
+	auto Scene::getLightEnvironment() const -> const LightEnvironment &
 	{
 		return m_lightEnvironment;
-	}
-
-	auto Scene::getSceneEnvironment() const -> const gpu::Texture3DHandle &
-	{
-		return m_sceneEnvironment.skyboxMap;
-	}
-
-	auto Scene::setSceneEnvironment(const gpu::Texture3DHandle &p_environment) -> void
-	{
-		m_sceneEnvironment.skyboxMap            = p_environment;
-		m_sceneEnvironment.diffuseIrradianceMap = m_renderCtx->createDiffuseIrradianceMap(p_environment);
-		m_reloadEnvironment                     = true;
-	}
-
-	auto Scene::getSceneEnvironmentImage() const -> const render::ImageHandle &
-	{
-		return m_sceneEnvironment.skyboxMapImage;
-	}
-
-	auto Scene::setSceneEnvironmentImage(const render::ImageHandle &p_environment) -> void
-	{
-		m_sceneEnvironment.skyboxMapImage             = p_environment;
-		m_sceneEnvironment.diffuseIrradianceMapImage  = m_renderCtx->createDiffuseIrradianceMapImage(p_environment);
-		m_sceneEnvironment.specularIrradianceMapImage = m_renderCtx->createSpecularIrradianceMapImage(p_environment);
-		m_reloadEnvironment                           = true;
 	}
 
 	auto Scene::initNativeScripts() -> void

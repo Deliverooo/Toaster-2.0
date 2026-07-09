@@ -2,7 +2,6 @@ set(SCENE_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/scene.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/scene_camera.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/scene_renderer.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/dynamic_scene_renderer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/scene_serializer.cpp
 )
 

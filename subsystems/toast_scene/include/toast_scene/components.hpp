@@ -9,7 +9,7 @@
 
 #define DEFINE_COMPONENT(__name) struct TST_SCENE_API __name
 
-namespace toaster
+namespace toaster::scene
 {
 	DEFINE_COMPONENT(UUIDComponent)
 	{

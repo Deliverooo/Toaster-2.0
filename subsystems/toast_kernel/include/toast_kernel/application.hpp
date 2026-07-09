@@ -17,8 +17,10 @@ namespace toaster
 	class WindowCloseEvent;
 	class WindowResizeEvent;
 
-	class Scene;
-	class SceneRenderer;
+	namespace scene
+	{
+		class Scene;
+	}
 
 	namespace render
 	{
@@ -58,8 +60,7 @@ namespace toaster
 			layer->onInit();
 		}
 
-		auto createScene(const String &p_name = "New_Scene") const -> UniquePtr<Scene>;
-		auto createSceneRenderer(Scene *p_scene) const -> UniquePtr<SceneRenderer>;
+		auto createScene(const String &p_name = "New_Scene") const -> UniquePtr<scene::Scene>;
 
 	private:
 		auto onWindowCloseEvent(WindowCloseEvent &p_event) -> bool;

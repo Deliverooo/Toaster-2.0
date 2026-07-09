@@ -4,7 +4,7 @@
 
 #include "toast_lib/camera.hpp"
 
-namespace toaster
+namespace toaster::scene
 {
 	class TST_SCENE_API SceneCamera final : public Camera
 	{

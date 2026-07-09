@@ -5,7 +5,7 @@
 
 #include "components.hpp"
 
-namespace toaster
+namespace toaster::scene
 {
 	class TST_SCENE_API Entity
 	{

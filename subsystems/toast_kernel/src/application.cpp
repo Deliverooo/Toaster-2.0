@@ -11,7 +11,6 @@
 #include "toast_lib/os/terminal.hpp"
 
 #include "toast_scene/scene.hpp"
-#include "toast_scene/scene_renderer.hpp"
 
 namespace toaster
 {
@@ -114,16 +113,9 @@ namespace toaster
 		m_isRunning = false;
 	}
 
-	auto Application::createScene(const String &p_name) const -> UniquePtr<Scene>
+	auto Application::createScene(const String &p_name) const -> UniquePtr<scene::Scene>
 	{
-		return toaster::make_unique<Scene>(m_renderContext, nullptr, p_name);
-	}
-
-	auto Application::createSceneRenderer(Scene *p_scene) const -> UniquePtr<SceneRenderer>
-	{
-		SceneRendererSpecInfo scene_renderer_spec_info{};
-		scene_renderer_spec_info.viewportSize = m_window->getRenderAreaSize();
-		return make_unique<SceneRenderer>(p_scene, scene_renderer_spec_info);
+		return toaster::make_unique<scene::Scene>(m_renderContext, nullptr, p_name);
 	}
 
 	auto Application::onWindowCloseEvent([[maybe_unused]] WindowCloseEvent &p_event) -> bool

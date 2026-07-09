@@ -241,7 +241,7 @@ namespace YAML
 	};
 }
 
-namespace toaster
+namespace toaster::scene
 {
 	SceneSerializer::SceneSerializer(const RefPtr<Scene> &p_scene) : m_scene(p_scene)
 	{
@@ -263,8 +263,8 @@ namespace toaster
 		p_out << YAML::Key << "Scene" << YAML::BeginMap;
 		p_out << YAML::Key << "Name" << YAML::Value << m_scene->getName();
 
-		String env_path{m_scene->m_sceneEnvironment.skyboxMap->getPath().string()};
-		p_out << YAML::Key << "SceneEnvironmentAssetID" << YAML::Value << env_path;
+		// String env_path{m_scene->m_sceneEnvironment.skyboxMap->getPath().string()};
+		p_out << YAML::Key << "SceneEnvironmentAssetID" << YAML::Value << "skibidi";
 
 		p_out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
 
@@ -310,7 +310,7 @@ namespace toaster
 
 		m_scene->setName(scene_node["Name"].as<String>());
 
-		m_scene->m_sceneEnvironment.skyboxMap = m_scene->m_renderCtx->createEnvironmentMap(scene_node["SceneEnvironmentAssetID"].as<String>());
+		// m_scene->m_sceneEnvironment.skyboxMap = m_scene->m_renderCtx->createEnvironmentMap(scene_node["SceneEnvironmentAssetID"].as<String>());
 
 		auto entities = scene_node["Entities"];
 		if (entities)
@@ -451,10 +451,10 @@ namespace toaster
 			auto sprite_comp = entity["SpriteRendererComponent"];
 			if (sprite_comp)
 			{
-				auto &src          = out_entity.addComponent<SpriteRendererComponent>();
-				src.colour         = sprite_comp["Colour"].as<tsm::float4>();;
-				src.texture = m_scene->m_renderCtx->createGPURef<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, sprite_comp["TextureAssetID"].as<String>());
-				src.tilingFactor   = sprite_comp["TilingFactor"].as<float32>();
+				auto &src        = out_entity.addComponent<SpriteRendererComponent>();
+				src.colour       = sprite_comp["Colour"].as<tsm::float4>();;
+				src.texture      = m_scene->m_renderCtx->createGPURef<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, sprite_comp["TextureAssetID"].as<String>());
+				src.tilingFactor = sprite_comp["TilingFactor"].as<float32>();
 			}
 
 			auto mesh_comp{entity["MeshComponent"]};

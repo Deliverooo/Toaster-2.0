@@ -72,7 +72,7 @@ namespace toaster
 		float32       p_far;
 	};
 
-	class TST_KERNEL_API FirstPersonCameraEntity : public ScriptableEntity
+	class TST_KERNEL_API FirstPersonCameraEntity : public scene::ScriptableEntity
 	{
 	public:
 		auto onCreate(void *p_user_data) -> void override;
@@ -100,8 +100,8 @@ namespace toaster
 
 		NonOwningPtr<InputContext> m_ctx{nullptr};
 
-		CameraComponent *   m_camera{nullptr};
-		TransformComponent *m_transform{nullptr};
+		scene::CameraComponent *   m_camera{nullptr};
+		scene::TransformComponent *m_transform{nullptr};
 
 		static constexpr Dx::XMVECTORF32 c_forwardDir{.f{0.0f, 0.0f, -1.0f, 0.0f}};
 		static constexpr Dx::XMVECTORF32 c_rightDir{.f{1.0f, 0.0f, 0.0f, 0.0f}};

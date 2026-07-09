@@ -45,11 +45,11 @@ namespace toaster::render
 	{
 	public:
 		static inline const gpu::VertexBufferLayout quadVbl{
-			{gpu::EBufferDataType::eFloat4, "a_Position"},
-			{gpu::EBufferDataType::eFloat4, "a_Colour"},
-			{gpu::EBufferDataType::eFloat2, "a_TexCoord"},
-			{gpu::EBufferDataType::eFloat, "a_TexIndex"},
-			{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
+		{gpu::EBufferDataType::eFloat4, "a_Position"},
+		{gpu::EBufferDataType::eFloat4, "a_Colour"},
+		{gpu::EBufferDataType::eFloat2, "a_TexCoord"},
+		{gpu::EBufferDataType::eFloat, "a_TexIndex"},
+		{gpu::EBufferDataType::eFloat, "a_TilingFactor"},
 		};
 
 		struct Stats
@@ -214,5 +214,4 @@ namespace toaster::render
 		RenderingAttachmentInfo *m_depthAttachmentInfo{nullptr};
 	};
 	#endif
-
 }

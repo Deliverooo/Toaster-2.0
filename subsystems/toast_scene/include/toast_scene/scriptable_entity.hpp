@@ -3,7 +3,7 @@
 #include "components.hpp"
 #include "entity.hpp"
 
-namespace toaster
+namespace toaster::scene
 {
 	class InputContext;
 

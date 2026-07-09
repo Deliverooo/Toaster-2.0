@@ -9,6 +9,8 @@
 #include "toast_lib/uuid.hpp"
 #include "toast_lib/events/event.hpp"
 
+#include "light_environment.hpp"
+
 namespace toaster
 {
 	namespace script
@@ -19,43 +21,17 @@ namespace toaster
 	}
 
 	class Project;
-	class Entity;
-	class ScriptableEntityCS; // Inside the scene.cpp file
 
 	namespace render
 	{
 		class RenderContext;
 	}
+}
 
-	struct TST_SCENE_API DirectionalLight
-	{
-		Dx::XMFLOAT3 direction{0.0f, 0.0f, 0.0f};
-		char         _padd[4];
-		tsm::float3  radiance{1.0f, 1.0f, 1.0f};
-		float32      multiplier{1.0f};
-	};
-
-	struct TST_SCENE_API PointLight
-	{
-		Dx::XMFLOAT4 position{0.0f, 0.0f, 0.0f, 1.0f};
-		tsm::float4  radianceIntensity{1.0f, 1.0f, 1.0f, 1.0f};
-	};
-
-	struct TST_SCENE_API SpotLight
-	{
-		tsm::float3 position{0.0f};
-		tsm::float3 radiance{1.0f};
-		float32     falloff{1.0f};
-		float32     multiplier{1.0f};
-		float32     angle{67.0f};
-		float32     range{12.0f};
-	};
-
-	struct TST_SCENE_API SceneLightEnvironment
-	{
-		std::vector<DirectionalLight> directionalLights;
-		std::vector<PointLight>       pointLights;
-	};
+namespace toaster::scene
+{
+	class Entity;
+	class ScriptableEntityCS; // Inside the scene.cpp file
 
 	class TST_SCENE_API Scene
 	{
@@ -68,6 +44,8 @@ namespace toaster
 		Scene(render::RenderContext *p_render_ctx, script::ScriptEngine *p_script_engine = nullptr, const String &p_name = "");
 		~Scene();
 
+		[[nodiscard]] auto getRenderCtx() const -> NonOwningPtr<render::RenderContext>;
+
 		auto onUpdate(float32 p_dt) -> void;
 		auto onEvent(Event &p_event) -> void;
 
@@ -77,13 +55,13 @@ namespace toaster
 		auto createEntityWithUUID(UUID p_uuid, const String &p_name = "") -> Entity;
 		auto destroyEntity(Entity p_entity) -> void;
 
-		auto getEntityByUUID(UUID p_uuid) -> Entity;
-		auto getEntityByName(const String &p_name) -> Entity;
+		auto getEntityByUUID(UUID p_uuid) const -> Entity;
+		auto getEntityByName(const String &p_name) const -> Entity;
 
 		auto XM_CALLCONV getEntityWorldTransformMatrix(Entity p_entity) const -> Dx::XMMATRIX;
 		auto             getEntityWorldTransformComponent(Entity p_entity) const -> TransformComponent;
 
-		auto getMainCameraEntity() -> Entity;
+		auto getMainCameraEntity() const -> Entity;
 
 		auto               getRegistry() -> entt::registry &;
 		[[nodiscard]] auto getRegistry() const -> const entt::registry &;
@@ -91,13 +69,13 @@ namespace toaster
 		auto               setName(const String &p_name) -> void;
 		[[nodiscard]] auto getName() const -> String;
 
-		auto getLightEnvironment() const -> const SceneLightEnvironment &;
+		auto getSkyboxMap() const -> const render::ImageHandle &;
+		auto getDiffuseIrradianceMap() const -> const render::ImageHandle &;
+		auto getSpecularIrradianceMap() const -> const render::ImageHandle &;
+		auto setSkyboxMap(const render::ImageHandle &p_skybox_map) -> void;
 
-		auto getSceneEnvironment() const -> const gpu::Texture3DHandle &;
-		auto setSceneEnvironment(const gpu::Texture3DHandle &p_environment) -> void;
-
-		auto getSceneEnvironmentImage() const -> const render::ImageHandle &;
-		auto setSceneEnvironmentImage(const render::ImageHandle &p_environment) -> void;
+		auto submitPointLight(const PointLight &p_point_light) -> void; // Ts has to be called every frame, because the environment gets cleared
+		auto getLightEnvironment() const -> const LightEnvironment &;
 
 		auto initNativeScripts() -> void; // You can actually call this any time you need to immediately construct a script
 
@@ -134,25 +112,18 @@ namespace toaster
 		std::unordered_map<ComponentType, AddComponentFn>   m_addComponentFnMap;
 		std::unordered_map<ComponentType, ResetComponentFn> m_resetComponentFnMap;
 
-		SceneLightEnvironment m_lightEnvironment;
-
-		// The asset the represents the .hdr / environment map file for the scene renderer to use
 		struct
 		{
-			render::ImageHandle  skyboxMapImage{nullptr};
-			render::ImageHandle  diffuseIrradianceMapImage{nullptr};
-			render::ImageHandle  specularIrradianceMapImage{nullptr};
-			gpu::Texture3DHandle skyboxMap{nullptr};            // TODO: Remove
-			gpu::Texture3DHandle diffuseIrradianceMap{nullptr}; // Created from the skybox and updated if it changes
-		} m_sceneEnvironment;
+			render::ImageHandle skyboxMap{nullptr};
+			render::ImageHandle diffuseIrradianceMap{nullptr};
+			render::ImageHandle specularIrradianceMap{nullptr};
+		} m_environment;
 
-		bool m_reloadEnvironment{false};
+		LightEnvironment m_lightEnvironment;
 
 		friend class ScriptableEntityCS;
 		friend class Entity;
 		friend class SceneSerializer;
-		friend class SceneRenderer;
-		friend class DynamicSceneRenderer;
 		friend class SceneImporter;
 	};
 

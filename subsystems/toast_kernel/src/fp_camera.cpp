@@ -148,9 +148,9 @@ namespace toaster
 		m_zNear       = params.p_near;
 		m_zFar        = params.p_far;
 
-		m_camera          = &getOrAddComponent<CameraComponent>();
+		m_camera          = &getOrAddComponent<scene::CameraComponent>();
 		m_camera->primary = true;
-		m_transform       = &getComponent<TransformComponent>();
+		m_transform       = &getComponent<scene::TransformComponent>();
 
 		_updateProjection();
 	}
