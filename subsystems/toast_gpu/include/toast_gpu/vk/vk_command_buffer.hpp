@@ -4,6 +4,8 @@
 #include "../gpu_enums.hpp"
 
 #include <vulkan/vulkan_raii.hpp>
+
+#include "toast_lib/buffer.hpp"
 #include "toast_lib/system_types.h"
 
 namespace toaster::gpu
@@ -38,13 +40,10 @@ namespace toaster::gpu
 		template<typename TConstants>
 		auto pushData(const TConstants &p_data, uint64 p_offset = 0u) const -> void
 		{
-			vk::PushDataInfoEXT push_data_info{};
-			push_data_info.offset       = p_offset;
-			push_data_info.data.address = &p_data;
-			push_data_info.data.size    = sizeof(TConstants);
-
-			m_commandBuffer.pushDataEXT(push_data_info);
+			pushData(&p_data, sizeof(TConstants), p_offset);
 		}
+
+		auto pushData(const void *p_data, uint64 p_size, uint64 p_offset = 0u) const -> void;
 
 		auto bindIndexBuffer(const VKBuffer &p_buffer, uint64 p_offset = 0u, EIndexType p_index_type = EIndexType::eUint32) -> void;
 
@@ -95,6 +94,12 @@ namespace toaster::gpu
 
 		vk::QueueFlagBits m_queueType{vk::QueueFlagBits::eGraphics};
 	};
+
+	template<>
+	inline auto VKCommandBuffer::pushData(const ::toaster::Buffer &p_data, uint64 p_offset) const -> void
+	{
+		pushData(p_data.data(), p_data.size(), p_offset);
+	}
 
 	TST_GPU_DEFINE_HANDLE(VKCommandBuffer, CommandBuffer);
 }

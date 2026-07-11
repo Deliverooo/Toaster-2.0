@@ -9,6 +9,7 @@ set(RENDER_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/shader_reflection.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/dynamic_mesh.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/image.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/constant_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/uniform_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/storage_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/skybox_pass.cpp

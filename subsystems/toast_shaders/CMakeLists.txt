@@ -21,6 +21,9 @@ set(SHADER_SOURCES_VULKAN
 		${CMAKE_CURRENT_SOURCE_DIR}/ssao.vert.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/ssao.pixel.glsl
 
+		${CMAKE_CURRENT_SOURCE_DIR}/default_unlit.vert.glsl
+		${CMAKE_CURRENT_SOURCE_DIR}/default_unlit.pixel.glsl
+
 		${CMAKE_CURRENT_SOURCE_DIR}/fullscreen_quad.vert.glsl
 		${CMAKE_CURRENT_SOURCE_DIR}/fullscreen_quad.pixel.glsl
 

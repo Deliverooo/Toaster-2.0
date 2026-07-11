@@ -103,6 +103,16 @@ namespace toaster::gpu
 		m_commandBuffer.reset();
 	}
 
+	auto VKCommandBuffer::pushData(const void *p_data, uint64 p_size, uint64 p_offset) const -> void
+	{
+		vk::PushDataInfoEXT push_data_info{};
+		push_data_info.offset       = p_offset;
+		push_data_info.data.address = p_data;
+		push_data_info.data.size    = p_size;
+
+		m_commandBuffer.pushDataEXT(push_data_info);
+	}
+
 	auto VKCommandBuffer::bindIndexBuffer(const VKBuffer &p_buffer, uint64 p_offset, EIndexType p_index_type) -> void
 	{
 		m_commandBuffer.bindIndexBuffer(p_buffer.getBuffer(), p_offset, static_cast<vk::IndexType>(p_index_type));

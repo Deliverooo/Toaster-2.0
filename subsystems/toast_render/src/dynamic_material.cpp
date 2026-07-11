@@ -17,16 +17,19 @@ namespace toaster::render
 		if (it != p_reflection_data.structs.end())
 			return &it->second;
 
-		LOG_ERROR("Failed to find toaster material declaration!");
+		// LOG_ERROR("Failed to find toaster material declaration!");
 		return nullptr;
 	}
 
-	DynamicMaterial::DynamicMaterial(RenderContext &p_render_ctx, const gpu::ShaderHandle &p_shader, const reflection::ReflectedStruct *p_material_struct_declaration,
-									 const String & p_name) : m_renderCtx(&p_render_ctx), m_shader(p_shader), m_name(p_name)
+	DynamicMaterial::DynamicMaterial(RenderContext &                    p_render_ctx, const gpu::ShaderHandle &p_vertex_shader, const gpu::ShaderHandle &p_pixel_shader,
+									 const reflection::ReflectedStruct *p_material_struct_declaration, const String &p_name) : m_renderCtx(&p_render_ctx),
+																															   m_vertexShader(p_vertex_shader),
+																															   m_pixelShader(p_pixel_shader),
+																															   m_name(p_name)
 	{
 		if (!p_material_struct_declaration)
 		{
-			auto reflection_data{reflection::reflectShader(*m_shader)};
+			auto reflection_data{reflection::reflectShader(*m_pixelShader)};
 			auto material_decl{findMaterialDeclaration(reflection_data)};
 			TST_PERMA_ASSERT_MSG(material_decl, "Could not find a suitable material declaration in the provided shader!!");
 			m_materialDeclaration = *material_decl;
@@ -48,9 +51,14 @@ namespace toaster::render
 		m_uniformData->unmapMemory();
 	}
 
-	auto DynamicMaterial::getShader() const -> const gpu::ShaderHandle &
+	auto DynamicMaterial::getVertexShader() const -> const gpu::ShaderHandle &
 	{
-		return m_shader;
+		return m_vertexShader;
+	}
+
+	auto DynamicMaterial::getPixelShader() const -> const gpu::ShaderHandle &
+	{
+		return m_pixelShader;
 	}
 
 	auto DynamicMaterial::getDeviceAddress() const -> uintptr

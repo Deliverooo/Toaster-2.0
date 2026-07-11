@@ -22,12 +22,14 @@ namespace toaster::render
 	{
 		TST_RENDER_OBJECT
 	public:
-		// The shader to pass should be a pixel shader... Actually, technically it doesn't even matter
-		DynamicMaterial(RenderContext &p_render_ctx, const gpu::ShaderHandle &p_shader, const reflection::ReflectedStruct *p_material_struct_declaration,
-						const String & p_name = "New_Material");
+		// If p_material_struct_declaration is nullptr, the pixel shader will be reflected.
+		// The VS is only passed because it is convenient to have the material store the VS as well as the PS
+		DynamicMaterial(RenderContext &                    p_render_ctx, const gpu::ShaderHandle &      p_vertex_shader, const gpu::ShaderHandle &p_pixel_shader,
+						const reflection::ReflectedStruct *p_material_struct_declaration, const String &p_name = "New_Material");
 		~DynamicMaterial();
 
-		[[nodiscard]] auto getShader() const -> const gpu::ShaderHandle &;
+		[[nodiscard]] auto getVertexShader() const -> const gpu::ShaderHandle &;
+		[[nodiscard]] auto getPixelShader() const -> const gpu::ShaderHandle &;
 
 		[[nodiscard]] auto getDeviceAddress() const -> uintptr;
 
@@ -46,7 +48,8 @@ namespace toaster::render
 	private:
 		auto _set(const String &p_name, const void *p_value) -> void;
 
-		gpu::ShaderHandle           m_shader{nullptr};
+		gpu::ShaderHandle           m_vertexShader{nullptr};
+		gpu::ShaderHandle           m_pixelShader{nullptr};
 		reflection::ReflectedStruct m_materialDeclaration;
 
 		String m_name;

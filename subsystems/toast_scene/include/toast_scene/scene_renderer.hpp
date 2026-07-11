@@ -70,7 +70,11 @@ namespace toaster::scene
 			Dx::XMFLOAT4X4 meshTransform;
 
 			uintptr vertexBuffer;
+			// uintptr indexBuffer;
 			uintptr cameraPtr;
+
+			// uint32 indexOffset;
+			// uint32 vertexOffset;
 		};
 
 		TST_PUSH_CONSTANT_BLOCK(SkyboxConstants)
@@ -86,7 +90,11 @@ namespace toaster::scene
 			Dx::XMFLOAT4X4 meshTransform;
 
 			uintptr vertexBuffer;
+			// uintptr indexBuffer;
 			uintptr pointLightsPtr;
+
+			// uint32 indexOffset;
+			// uint32 vertexOffset;
 
 			uint32 materialIndex;
 
@@ -115,6 +123,7 @@ namespace toaster::scene
 			render::DynamicMeshHandle mesh{nullptr};
 
 			int32  vertexOffset{0};
+			uint32 vertexCount{0u};
 			uint32 indexOffset{0u};
 			uint32 indexCount{0u};
 

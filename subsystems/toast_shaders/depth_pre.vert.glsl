@@ -1,7 +1,6 @@
 #version 460
-#extension GL_EXT_buffer_reference: require
-#extension GL_EXT_shader_8bit_storage: require
-#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+#extension GL_GOOGLE_include_directive: require
+#include "common.glslh"
 
 struct Vertex
 {
@@ -17,6 +16,7 @@ struct Vertex
 };
 
 layout (std430, buffer_reference) readonly buffer VertexBuffer { Vertex vertices[]; };
+//layout (std430, buffer_reference, scalar) readonly buffer IndexBuffer { uint indices[]; };
 
 layout (buffer_reference, std140) readonly buffer Camera
 {
@@ -30,12 +30,15 @@ layout (push_constant) uniform Constants
     mat4 meshTransform;
 
     VertexBuffer vbo;
+//    IndexBuffer ibo;
 
     Camera cameraPtr;
 } pcs;
 
 void main()
 {
+//    uint index = pcs.ibo.indices[gl_VertexIndex + pcs.indexOffset];
+//    Vertex v_in = pcs.vbo.vertices[index + pcs.vertexOffset];
     Vertex v_in = pcs.vbo.vertices[gl_VertexIndex];
 
     vec4 world_pos = pcs.meshTransform * v_in.position;

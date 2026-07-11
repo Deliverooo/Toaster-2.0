@@ -57,6 +57,7 @@ namespace toaster::gpu
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                           = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().maintenance4                               = true;
 			feature_chain.get<vk::PhysicalDeviceVulkan14Features>().indexTypeUint8                             = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan14Features>().maintenance6                               = true;
 			feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState        = true;
 			feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors             = true;
 			feature_chain.get<vk::PhysicalDeviceShaderObjectFeaturesEXT>().shaderObject                        = true;

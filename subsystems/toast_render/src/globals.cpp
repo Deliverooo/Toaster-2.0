@@ -2,6 +2,7 @@
 
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_lib/io/filesystem.hpp"
+#include "toast_render/constant_buffer.hpp"
 #include "toast_render/dynamic_material.hpp"
 #include "toast_render/render_context.hpp"
 
@@ -28,6 +29,10 @@ namespace toaster::render
 		addShader("Dynamic_Mesh_MS",
 				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "dynamic_mesh.mesh.glsl.spv", EShaderStage::eMesh, EShaderStage::ePixel));
 		addShader("Dynamic_Mesh_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "dynamic_mesh.pixel.glsl.spv", EShaderStage::ePixel));
+
+		addShader("Default_Unlit_VS",
+				  m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "default_unlit.vert.glsl.spv", EShaderStage::eVertex, EShaderStage::ePixel));
+		addShader("Default_Unlit_PS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "default_unlit.pixel.glsl.spv", EShaderStage::ePixel));
 
 		// Quad shaders
 		addShader("Quad_VS", m_renderCtx->createShaderFromSpirV(m_specInfo.shaderBinaryDir / "quad_dynamic.vert.hlsl.spv", EShaderStage::eVertex, EShaderStage::ePixel));
@@ -135,7 +140,13 @@ namespace toaster::render
 
 		auto &data{m_shaderReflectionData[p_name]};
 		data.reflectionData = reflection::reflectShader(*shader);
-		data.materialStruct = *findMaterialDeclaration(data.reflectionData);
+
+		if (const auto mat_struct{findMaterialDeclaration(data.reflectionData)})
+			data.materialStruct = *mat_struct;
+
+		if (const auto cb_struct{findConstantBufferDeclaration(data.reflectionData)})
+			data.constantBufferStruct = *cb_struct;
+
 		return m_shaderReflectionData.at(p_name);
 	}
 

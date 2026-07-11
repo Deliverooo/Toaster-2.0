@@ -76,6 +76,7 @@ namespace toaster::render
 		{
 			reflection::ReflectionData  reflectionData;
 			reflection::ReflectedStruct materialStruct;
+			reflection::ReflectedStruct constantBufferStruct;
 		};
 
 		auto reflectShader(const String &p_name) -> const ShaderReflectionData &;
@@ -95,8 +96,8 @@ namespace toaster::render
 	private:
 		GlobalsSpecInfo m_specInfo{};
 
-		std::unordered_map<String, gpu::ShaderHandle> m_shaders;
-		std::unordered_map<String, ShaderReflectionData>     m_shaderReflectionData;
+		std::unordered_map<String, gpu::ShaderHandle>    m_shaders;
+		std::unordered_map<String, ShaderReflectionData> m_shaderReflectionData;
 
 		VertexBufferUnique m_quadVertexBuffer{nullptr};
 		gpu::BufferUnique  m_quadIndexBuffer{nullptr};
@@ -104,7 +105,7 @@ namespace toaster::render
 		std::vector<FullscreenQuadVertex> m_quadVertices;
 		std::vector<uint8>                m_quadIndices;
 
-		ImageHandle          m_whiteImage{nullptr};
+		ImageHandle m_whiteImage{nullptr};
 
 		ImageHandle m_debugImage{nullptr};
 

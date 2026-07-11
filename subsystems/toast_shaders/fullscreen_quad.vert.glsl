@@ -11,7 +11,7 @@ struct Vertex
 
 layout (std430, buffer_reference) readonly buffer VertexBuffer { Vertex vertices[]; };
 
-layout (push_constant) uniform Constants
+layout (push_constant) uniform TSTC__Constants
 {
     VertexBuffer vbo;
 

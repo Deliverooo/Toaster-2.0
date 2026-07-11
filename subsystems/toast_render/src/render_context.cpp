@@ -118,6 +118,8 @@ namespace toaster::render
 			m_globals                         = new Globals{*this, globals_spec_info};
 
 			m_globals->reflectShader("Dynamic_Mesh_PS"); // Create the necessary reflection data for the PBR material
+			m_globals->reflectShader("Default_Unlit_PS");
+			m_globals->reflectShader("Fullscreen_Quad_PS");
 		}
 	}
 

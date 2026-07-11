@@ -48,7 +48,7 @@ struct PointLight
 };
 layout (buffer_reference, std430) readonly buffer PointLights { uint count; float _padd[3]; PointLight pointLights[128];};
 
-layout (push_constant) uniform TSTC__Constants
+layout (push_constant) uniform Constants
 {
     mat4 meshTransform;
 

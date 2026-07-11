@@ -7,8 +7,6 @@ namespace toaster::gpu
 {
 	VKSwapchain::VKSwapchain(VKGPUContext &p_gpu_ctx, vk::SurfaceKHR *p_surface) : m_gpuCtx(&p_gpu_ctx), m_windowSurface(p_surface)
 	{
-		TST_ASSERT_MSG(p_dev, "Device cannot be null");
-
 		for (uint32 i{0u}; i < m_gpuCtx->getSpecInfo().maxFramesInFlight; ++i)
 		{
 			m_commandBuffers.emplace_back(*m_gpuCtx, vk::QueueFlagBits::eGraphics, true);

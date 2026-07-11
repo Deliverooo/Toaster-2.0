@@ -8,6 +8,8 @@
 #include <toast_lib/os/terminal.hpp>
 
 #include "toast_kernel/input.hpp"
+#include "toast_lib/events/key_event.hpp"
+#include "toast_render/constant_buffer.hpp"
 #include "toast_render/dynamic_mesh.hpp"
 #include "toast_render/skybox_pass.hpp"
 
@@ -31,11 +33,23 @@ public:
 		m_scene = toaster::make_unique<scene::Scene>(m_renderCtx);
 
 		m_scene->setSkyboxMap(m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/qwantani_dusk_2_puresky_2k.hdr"));
-		m_sceneRenderer = toaster::make_unique<scene::SceneRenderer>(*m_scene, m_viewportSize);
+		m_sceneRenderer = toaster::make_unique<scene::SceneRenderer>(*m_scene, m_viewportSize);;
+
+		m_fullscreenConstants = toaster::make_unique<render::ConstantBuffer>(m_globals->getShaderReflectionData("Fullscreen_Quad_PS").constantBufferStruct);
+		m_fullscreenConstants->set("samplerIndex", m_renderCtx->getSampler(render::ESamplerType::eDefault));
 
 		auto orbo_geo{m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.fbx")};
+
+		const auto &material_struct{m_renderCtx->getGlobals()->getShaderReflectionData("Default_Unlit_PS").materialStruct};
+		auto &      body_mat{orbo_geo->getMaterial(1)};
+		body_mat = m_renderCtx->createRef<render::DynamicMaterial>(m_renderCtx->getGlobals()->getShader("Default_Unlit_VS"),
+																   m_renderCtx->getGlobals()->getShader("Default_Unlit_PS"), &material_struct, "Unlit_Outline");
+
+		body_mat->set("textureSampler", m_renderCtx->getSampler(render::ESamplerType::eNearest));
+		body_mat->set("albedoMap", m_globals->whiteImage()->getAlignedShaderReadHeapID());
+		body_mat->set("albedoColour", tsm::float4{0.0f, 0.0f, 0.0f, 1.0f});
+
 		orbo_geo->getMaterial(0)->set("metalness", 0.0f);
-		orbo_geo->getMaterial(1)->set("metalness", 1.0f);
 
 		auto djt_geo{m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/DJT_sculpt.fbx")};
 
@@ -147,11 +161,12 @@ public:
 		cmd->setAlphaToCoverageEnable(false);
 
 		m_renderCtx->beginRendering(rendering_info);
-		cmd->pushData<FullscreenQuadConstants>({
-												   m_globals->fullscreenQuadVertexBuffer().getDeviceAddress(),
-												   m_renderCtx->getSampler(render::ESamplerType::eDefault),
-												   m_sceneRenderer->getColourImage()->getAlignedShaderReadHeapID()
-											   });
+
+		m_fullscreenConstants->set("vertexBuffer", m_globals->fullscreenQuadVertexBuffer().getDeviceAddress());
+		m_fullscreenConstants->set("textureIndex", m_sceneRenderer->getColourImage()->getAlignedShaderReadHeapID());
+
+		cmd->pushData(m_fullscreenConstants->getBuffer());
+
 		m_renderCtx->renderFullscreenQuad();
 		m_renderCtx->endRendering(rendering_info);
 	}
@@ -168,7 +183,32 @@ public:
 
 	auto onEvent(Event &p_event) -> void override
 	{
+		EventDispatcher ed{p_event};
+		ed.dispatch<KeyPressEvent>(TST_BIND_EVENT_FN(ClientLayer::onKeyPressEvent));
 		m_camera.onEvent(p_event);
+	}
+
+	auto onKeyPressEvent(KeyPressEvent &p_key_press_event) -> bool
+	{
+		auto &window{m_app->getWindow()};
+
+		switch (p_key_press_event.getKeyCode())
+		{
+			case input::EKeyCode::eF11:
+			{
+				if (window.isFullscreen())
+				{
+					window.setWindowed();
+					window.maximize();
+				}
+				else
+					window.setFullscreen();
+				break;
+			}
+			default: break;
+		}
+
+		return false;
 	}
 
 private:
@@ -176,13 +216,7 @@ private:
 
 	FPCamera m_camera{};
 
-	TST_PUSH_CONSTANT_BLOCK(FullscreenQuadConstants)
-	{
-		uintptr vertexBufferBDA;
-
-		uint32 sampler;
-		uint32 texture;
-	};
+	render::ConstantBufferUnique m_fullscreenConstants{nullptr};
 
 	UniquePtr<scene::Scene>         m_scene{nullptr};
 	UniquePtr<scene::SceneRenderer> m_sceneRenderer{nullptr};

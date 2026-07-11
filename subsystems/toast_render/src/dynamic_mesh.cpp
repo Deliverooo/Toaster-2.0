@@ -111,7 +111,8 @@ namespace toaster::render
 			case EMaterialType::ePBR:
 			{
 				const auto &material_struct{m_renderCtx->getGlobals()->getShaderReflectionData("Dynamic_Mesh_PS").materialStruct};
-				material = m_renderCtx->createRef<DynamicMaterial>(m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS"), &material_struct, material_name);
+				material = m_renderCtx->createRef<DynamicMaterial>(m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_VS"),
+																   m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS"), &material_struct, material_name);
 				break;
 			}
 			case EMaterialType::eFlat:

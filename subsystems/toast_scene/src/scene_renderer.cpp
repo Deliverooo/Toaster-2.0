@@ -207,9 +207,13 @@ namespace toaster::scene
 		{
 			depth_pre_constants.meshTransform = draw_cmd.transform;
 			depth_pre_constants.vertexBuffer  = draw_cmd.mesh->getVertexBufferAddress();
+			// depth_pre_constants.indexBuffer   = draw_cmd.mesh->getIndexBufferAddress();
+
+			// depth_pre_constants.indexOffset = draw_cmd.indexOffset;
+
+			p_cmd.bindIndexBuffer(draw_cmd.mesh->getIndexBuffer());
 
 			p_cmd.pushData(depth_pre_constants);
-			p_cmd.bindIndexBuffer(draw_cmd.mesh->getIndexBuffer());
 			p_cmd.drawIndexed(draw_cmd.indexCount, 1, draw_cmd.indexOffset, draw_cmd.vertexOffset, 0);
 		}
 		m_renderCtx->endRendering(rendering_info, &p_cmd);
@@ -272,24 +276,27 @@ namespace toaster::scene
 		mesh_draw_constants.BRDFLUT             = m_renderCtx->getGlobals()->BRDFLUT()->getAlignedShaderReadHeapID();
 
 		render::DynamicMeshHandle last_mesh{nullptr};
+		gpu::ShaderHandle         last_vs{nullptr};
 		gpu::ShaderHandle         last_ps{nullptr};
 		for (const auto &draw_cmd: m_submeshDrawCommands)
 		{
 			const auto &material{draw_cmd.mesh->getMaterial(draw_cmd.materialIndex)};
 
-			const auto &material_shader{material->getShader()};
-			if (last_ps.get() != material_shader.get())
+			if (last_vs.get() != material->getVertexShader().get() || last_ps.get() != material->getPixelShader().get())
 			{
-				last_ps = material_shader;
-				p_cmd.bindShaders({m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_VS").get(), last_ps.get()});
+				last_vs = material->getVertexShader();
+				last_ps = material->getPixelShader();
+				p_cmd.bindShaders({last_vs, last_ps});
 			}
 
 			mesh_draw_constants.meshTransform = draw_cmd.transform;
 
 			mesh_draw_constants.vertexBuffer = draw_cmd.mesh->getVertexBufferAddress();
+
 			mesh_draw_constants.materialIndex = material->getHeapID();
 
 			p_cmd.pushData(mesh_draw_constants);
+
 			if (draw_cmd.mesh.get() != last_mesh)
 			{
 				last_mesh = draw_cmd.mesh;

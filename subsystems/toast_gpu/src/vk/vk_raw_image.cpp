@@ -10,8 +10,6 @@ namespace toaster::gpu
 {
 	VKRawImage::VKRawImage(VKGPUContext &p_gpu_ctx, const ImageSpecInfo &p_spec_info) : m_gpuCtx(&p_gpu_ctx), m_specInfo(p_spec_info)
 	{
-		TST_ASSERT_MSG(p_device, "Device cannot be null");
-
 		recreate();
 	}
 

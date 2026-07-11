@@ -16,7 +16,6 @@ struct Vertex
 };
 
 layout (std430, buffer_reference) readonly buffer VertexBuffer { Vertex vertices[]; };
-//layout (std430, buffer_reference, scalar) readonly buffer IndexBuffer { uint indices[]; };
 
 struct Camera
 {
@@ -36,30 +35,19 @@ layout (push_constant) uniform TSTC__Constants
 
     VertexBuffer vbo;
 
-    uint64_t pointLightsPtr;
+    uint _unused0[2];
 
     uint materialIndex;
-
     uint cameraIndex;
-    uint sceneDataIndex;
 
-    uint samplerIndex;
-    uint diffuseIrradianceMapIndex;
-    uint specularIrradianceMapIndex;
-
-    uint BRDFLUTSamplerIndex;
-    uint BRDFLUT;
+    uint _unused1[6];
 } pcs;
 
 layout (location = 0) out vec3 o_WorldPos;
-layout (location = 1) out vec3 o_Normal;
-layout (location = 2) out vec2 o_TexCoord;
-layout (location = 3) out mat3 o_TBN;
+layout (location = 1) out vec2 o_TexCoord;
 
 void main()
 {
-    //    uint index = pcs.ibo.indices[gl_VertexIndex + pcs.indexOffset];
-    //    Vertex v_in = pcs.vbo.vertices[index + pcs.vertexOffset];
     Vertex v_in = pcs.vbo.vertices[gl_VertexIndex];
 
     Camera camera = cameraHeap[nonuniformEXT(pcs.cameraIndex)].data;
@@ -71,9 +59,5 @@ void main()
 
     o_WorldPos = world_pos.xyz;
 
-    // Ts has to be world Normals!!
-    o_Normal = mat3(transpose(inverse(pcs.meshTransform))) * v_in.normal;
     o_TexCoord = v_in.texCoord;
-
-    o_TBN = mat3(pcs.meshTransform) * mat3(v_in.tangent, v_in.bitangent, v_in.normal);
 }

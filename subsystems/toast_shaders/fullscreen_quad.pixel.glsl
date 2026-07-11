@@ -7,7 +7,7 @@ layout(location = 1) in vec2 v_TexCoord;
 
 layout(location = 0) out vec4 o_Colour;
 
-layout(push_constant) uniform PushConstants
+layout(push_constant) uniform TSTC__Constants
 {
     uint64_t vertexBuffer;
 

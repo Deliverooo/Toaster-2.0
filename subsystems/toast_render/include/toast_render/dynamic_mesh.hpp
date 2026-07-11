@@ -90,6 +90,7 @@ namespace toaster::render
 		gpu::IndexBufferUnique   m_indexBuffer{nullptr};
 
 		std::vector<DynamicMaterialHandle> m_materials;
+
 		std::vector<EMaterialType>         m_materialTypes;
 
 		DynamicMeshData m_meshData;
