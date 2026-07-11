@@ -158,5 +158,5 @@ void main()
 
     vec3 final_colour = ambient + lo;
 
-    o_Colour = vec4(final_colour, 1.0f);
+    o_Colour = vec4(final_colour , 1.0f);
 }

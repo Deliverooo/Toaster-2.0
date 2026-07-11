@@ -102,7 +102,7 @@ namespace toaster::scene
 		Dx::XMStoreFloat4x4(&camera_ub.viewMatrix, p_view_matrix);
 		Dx::XMStoreFloat4x4(&camera_ub.projectionMatrix, p_projection_matrix);
 		Dx::XMStoreFloat4x4(&camera_ub.inverseProjectionMatrix, Dx::XMMatrixInverse(nullptr, p_projection_matrix));
-		m_cameraUBOs->setData(camera_ub);
+		m_cameraUBOs->copyData(camera_ub);
 
 		const auto &   point_lights{m_scene->getLightEnvironment().pointLights};
 		PointLightSSBO point_light_ssbo{};
@@ -116,7 +116,7 @@ namespace toaster::scene
 
 		SceneDataUB scene_data_ub{};
 		Dx::XMStoreFloat4(&scene_data_ub.cameraPos, p_camera_position);
-		m_sceneDataUBOs->setData(scene_data_ub);
+		m_sceneDataUBOs->copyData(scene_data_ub);
 	}
 
 	auto SceneRenderer::_end() -> void
@@ -152,10 +152,10 @@ namespace toaster::scene
 			}
 		}
 
-		// std::ranges::sort(m_submeshDrawCommands, [](const SubmeshDrawCommand &lhs, const SubmeshDrawCommand &rhs) -> bool
-		// {
-		// return false;
-		// });
+		std::ranges::sort(m_submeshDrawCommands, [](const SubmeshDrawCommand &lhs, const SubmeshDrawCommand &rhs) -> bool
+		{
+			return lhs.mesh->getIndexBufferAddress() < rhs.mesh->getIndexBufferAddress();
+		});
 
 		m_meshDrawCommands.clear();
 	}
@@ -300,6 +300,8 @@ namespace toaster::scene
 				p_cmd.setPolygonMode(gpu::EPolygonMode::eLine);
 
 			p_cmd.drawIndexed(draw_cmd.indexCount, 1, draw_cmd.indexOffset, draw_cmd.vertexOffset, 0);
+
+			// p_cmd.getVulkanCommandBuffer().drawIndexedIndirect();
 
 			if (material->flags & render::EMaterialPropertyFlags::eTwoSided)
 				p_cmd.setCullMode(gpu::ECullMode::eBack);

@@ -75,7 +75,7 @@ namespace toaster::render
 		staging_buffer_spec.deviceLocal = false;
 		staging_buffer_spec.usageFlags  = vk::BufferUsageFlagBits2::eTransferSrc;
 		gpu::Buffer staging_buffer{*m_renderCtx->getGPUContext(), index_buffer_size, staging_buffer_spec};
-		staging_buffer.setData(m_quadIndices.data(), index_buffer_size);
+		staging_buffer.copyData(m_quadIndices.data(), index_buffer_size);
 
 		gpu::BufferSpecInfo index_buffer_spec_info;
 		index_buffer_spec_info.deviceLocal = true;

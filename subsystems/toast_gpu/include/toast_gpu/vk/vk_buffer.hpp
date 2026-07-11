@@ -18,9 +18,7 @@ namespace toaster::gpu
 	{
 		TST_GPU_OBJECT
 	public:
-		VKBuffer() = default;
-		auto operator=(VKBuffer &&p_other) noexcept -> VKBuffer &;
-		VKBuffer(VKGPUContext& p_gpu_ctx, vk::DeviceSize p_size, const BufferSpecInfo &p_spec_info);
+		VKBuffer(VKGPUContext &p_gpu_ctx, vk::DeviceSize p_size, const BufferSpecInfo &p_spec_info);
 		~VKBuffer();
 
 		[[nodiscard]] auto getSpecInfo() const -> const BufferSpecInfo &;
@@ -28,25 +26,33 @@ namespace toaster::gpu
 		[[nodiscard]] auto getBuffer() const -> vk::Buffer;
 		[[nodiscard]] auto getBufferMemory() const -> vk::DeviceMemory;
 
+		// You should probably only call this once and then store the result
 		[[nodiscard]] auto getDeviceAddress() const -> vk::DeviceAddress;
 		[[nodiscard]] auto getDeviceAddressRange() const -> vk::DeviceAddressRangeKHR;
 
+		// Only usable if not device local!!
 		auto mapMemory(uint64 p_size, uint64 p_offset = 0u) -> void *;
 		auto unmapMemory() -> void;
 
 		// Only usable if not device local!!
 		template<typename Type>
-		auto setData(const Type &p_data)
+		auto copyData(const Type &p_data) -> void
 		{
-			TST_PERMA_ASSERT(!m_specInfo.deviceLocal);
-			void *mapped{mapMemory(sizeof(Type))};
-			std::memcpy(mapped, &p_data, sizeof(Type));
-			unmapMemory();
+			copyData(&p_data, sizeof(Type));
 		}
 
-		auto setData(const void *p_data, uint64 p_size) -> void;
+		// Only usable if not device local!!
+		template<typename Type>
+		auto copyData(const std::vector<Type> &p_data) -> void
+		{
+			copyData(p_data.data(), p_data.size() * sizeof(Type));
+		}
 
-		auto copyFromBuffer(VKBuffer& p_other) -> void;
+		// Only usable if not device local!!
+		auto copyData(const void *p_data, uint64 p_size) -> void;
+
+		// Executes a buffer copy operation, use if the target is device local
+		auto copyFromBuffer(VKBuffer &p_other) -> void;
 
 	private:
 		BufferSpecInfo         m_specInfo{};

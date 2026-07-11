@@ -33,12 +33,17 @@ public:
 		m_scene->setSkyboxMap(m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/qwantani_dusk_2_puresky_2k.hdr"));
 		m_sceneRenderer = toaster::make_unique<scene::SceneRenderer>(*m_scene, m_viewportSize);
 
+		auto orbo_geo{m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.fbx")};
+		orbo_geo->getMaterial(0)->set("metalness", 0.0f);
+		orbo_geo->getMaterial(1)->set("metalness", 1.0f);
+
+		auto djt_geo{m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/DJT_sculpt.fbx")};
+
 		scene::Entity test_scene_entity{};
 		{
 			test_scene_entity = m_scene->createEntity("Test_Scene");
 			auto &mesh_comp{test_scene_entity.addComponent<scene::DynamicMeshComponent>()};
-			mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.gltf");
-			// mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Transparency.gltf");
+			mesh_comp.mesh = orbo_geo;
 
 			class LightController : public scene::ScriptableEntity
 			{
@@ -75,9 +80,22 @@ public:
 
 		{
 			scene::Entity other_entity{m_scene->createEntity("Other")};
-			other_entity.addComponent<scene::DynamicMeshComponent>().mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/DJT_sculpt.fbx");
+			other_entity.addComponent<scene::DynamicMeshComponent>().mesh = djt_geo;
 			other_entity.setParent(test_scene_entity);
 		}
+
+		for (uint32 i{0u}; i < 10; ++i)
+		{
+			for (uint32 j{0u}; j < 10; ++j)
+			{
+				scene::Entity entity{m_scene->createEntity(fmt::format("Entity_{}", i * 10 + j))};
+				entity.addComponent<scene::DynamicMeshComponent>().mesh = orbo_geo;
+
+				auto &tc{entity.getComponent<scene::TransformComponent>()};
+				tc.translation = {(float32) i * 2.0f, 0.0f, (float32) j * 2.0f};
+			}
+		}
+
 		{
 			scene::Entity light_entity{m_scene->createEntity("Light_001")};
 			auto &        plc{light_entity.addComponent<scene::PointLightComponent>()};

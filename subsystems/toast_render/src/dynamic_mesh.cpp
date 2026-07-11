@@ -38,7 +38,7 @@ namespace toaster::render
 			TST_PERMA_ASSERT(false);
 		}
 
-		std::thread import_thread{[&]() -> void { importMeshFromScene(scene, meshData); }};
+		std::thread import_thread{[&]() -> void { importMeshFromScene(scene, m_meshData); }};
 
 		if (scene->HasMaterials())
 		{
@@ -55,35 +55,35 @@ namespace toaster::render
 
 		import_thread.join();
 
-		uint64              index_buffer_size{meshData.indices.size() * sizeof(uint32)};
-		gpu::BufferSpecInfo staging_buffer_spec{};
-		staging_buffer_spec.deviceLocal = false;
-		staging_buffer_spec.usageFlags  = vk::BufferUsageFlagBits2::eTransferSrc;
-		gpu::Buffer staging_buffer{*m_renderCtx->getGPUContext(), index_buffer_size, staging_buffer_spec};
-		staging_buffer.setData(meshData.indices.data(), index_buffer_size);
+		{
+			uint64              index_buffer_size{m_meshData.indices.size() * sizeof(uint32)};
+			gpu::BufferSpecInfo staging_buffer_spec{};
+			staging_buffer_spec.deviceLocal = false;
+			staging_buffer_spec.usageFlags  = vk::BufferUsageFlagBits2::eTransferSrc;
+			gpu::Buffer staging_buffer{*m_renderCtx->getGPUContext(), index_buffer_size, staging_buffer_spec};
+			staging_buffer.copyData(m_meshData.indices);
 
-		gpu::BufferSpecInfo index_buffer_spec_info;
-		index_buffer_spec_info.deviceLocal = true;
-		index_buffer_spec_info.usageFlags  = vk::BufferUsageFlagBits2::eTransferDst | vk::BufferUsageFlagBits2::eIndexBuffer;
-		m_indexBuffer                      = m_renderCtx->createGPUUnique<gpu::Buffer>(index_buffer_size, index_buffer_spec_info);
+			m_indexBuffer = m_renderCtx->createGPUUnique<gpu::IndexBuffer>(index_buffer_size, true);
+			m_indexBuffer->copyFromBuffer(staging_buffer);
+		}
 
-		m_indexBuffer->copyFromBuffer(staging_buffer);
+		{
+			uint64              vertex_buffer_size{m_meshData.vertices.size() * sizeof(DynamicMeshVertex)};
+			gpu::BufferSpecInfo staging_buffer_spec{};
+			staging_buffer_spec.deviceLocal = false;
+			staging_buffer_spec.usageFlags  = vk::BufferUsageFlagBits2::eTransferSrc;
+			gpu::Buffer staging_buffer{*m_renderCtx->getGPUContext(), vertex_buffer_size, staging_buffer_spec};
+			staging_buffer.copyData(m_meshData.vertices);
 
-		vertexBufferSSBO = m_renderCtx->createUnique<StorageBuffer>(meshData.vertices, true);
+			m_vertexBufferSSBO = m_renderCtx->createGPUUnique<gpu::StorageBuffer>(vertex_buffer_size, true);
+			m_vertexBufferSSBO->copyFromBuffer(staging_buffer);
+		}
 
 		const auto pixel_shader{m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS")};
 
 		const auto reflection_data{reflection::reflectShader(*pixel_shader)};
 		const auto material_struct{findMaterialDeclaration(reflection_data)};
 		TST_PERMA_ASSERT(material_struct);
-
-		// materialBufferSSBO   = m_renderCtx->createUnique<StorageBuffer>(meshData.materialsGPUData, false);
-		// m_mappedMaterialData = materialBufferSSBO->getBuffer()->mapMemory(materialBufferSSBO->getBuffer()->getSize());
-	}
-
-	DynamicMesh::~DynamicMesh()
-	{
-		// materialBufferSSBO->getBuffer()->unmapMemory();
 	}
 
 	auto DynamicMesh::getIndexBuffer() const -> const gpu::Buffer &
@@ -241,7 +241,7 @@ namespace toaster::render
 
 	auto DynamicMesh::getVertexBufferAddress() const -> uintptr
 	{
-		return vertexBufferSSBO->getDeviceAddress();
+		return m_vertexBufferSSBO->getDeviceAddress();
 	}
 
 	auto DynamicMesh::getIndexBufferAddress() const -> uintptr
@@ -251,7 +251,7 @@ namespace toaster::render
 
 	auto DynamicMesh::getMeshData() const -> const DynamicMeshData &
 	{
-		return meshData;
+		return m_meshData;
 	}
 
 	auto DynamicMesh::getMaterials() const -> const std::vector<DynamicMaterialHandle> &

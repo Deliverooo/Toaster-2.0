@@ -1,25 +1,9 @@
 #include "toast_gpu/vk/vk_buffer.hpp"
 
-#include <ranges>
-
 #include "toast_gpu/vk/vk_gpu_context.hpp"
-#include "toast_gpu/vk/vk_logical_device.hpp"
 
 namespace toaster::gpu
 {
-	auto VKBuffer::operator=(VKBuffer &&p_other) noexcept -> VKBuffer &
-	{
-		if (this != &p_other)
-		{
-			m_gpuCtx       = p_other.m_gpuCtx;
-			m_specInfo     = p_other.m_specInfo;
-			m_size         = p_other.m_size;;
-			m_buffer       = std::move(p_other.m_buffer);
-			m_bufferMemory = std::move(p_other.m_bufferMemory);
-		}
-		return *this;
-	}
-
 	VKBuffer::VKBuffer(VKGPUContext &p_gpu_ctx, uint64 p_size, const BufferSpecInfo &p_spec_info) : m_gpuCtx(&p_gpu_ctx), m_specInfo(p_spec_info), m_size(p_size)
 	{
 		m_specInfo.usageFlags |= vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
@@ -83,7 +67,7 @@ namespace toaster::gpu
 		m_bufferMemory.unmapMemory();
 	}
 
-	auto VKBuffer::setData(const void *p_data, uint64 p_size) -> void
+	auto VKBuffer::copyData(const void *p_data, uint64 p_size) -> void
 	{
 		TST_PERMA_ASSERT(!m_specInfo.deviceLocal);
 

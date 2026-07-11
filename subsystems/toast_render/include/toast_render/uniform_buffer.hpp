@@ -23,14 +23,16 @@ namespace toaster::render
 		auto getAlignedHeapID() const -> gpu::DescriptorSlot;
 
 		template<typename Type>
-		auto setData(const Type &p_data) -> void
+		auto copyData(const Type &p_data) -> void
 		{
-			m_ubo->setData(p_data);
+			m_ubo->copyData(p_data);
 		}
 
 	private:
 		gpu::BufferHandle   m_ubo{nullptr};
 		gpu::DescriptorSlot m_heapID{UINT32_MAX};
+
+		uintptr m_deviceAddress{0u};
 	};
 
 	TST_RENDER_DEFINE_HANDLE(UniformBuffer, UniformBuffer);
@@ -49,13 +51,13 @@ namespace toaster::render
 		auto getAlignedHeapID() const -> gpu::DescriptorSlot;
 
 		template<typename Type>
-		auto setData(const Type &p_data) -> void
+		auto copyData(const Type &p_data) -> void
 		{
 			std::memcpy(m_mappedData[m_renderCtx->getCurrentFrameIndex()], &p_data, sizeof(Type));
 		}
 
 		template<typename Type>
-		auto setAllData(const Type &p_data) -> void
+		auto copyAllData(const Type &p_data) -> void
 		{
 			for (auto &data: m_mappedData)
 				std::memcpy(data, &p_data, sizeof(Type));
@@ -64,6 +66,7 @@ namespace toaster::render
 	private:
 		gpu::PerFrameVec<gpu::BufferHandle>   m_ubos;
 		gpu::PerFrameVec<gpu::DescriptorSlot> m_heapIDs;
+		gpu::PerFrameVec<uintptr>             m_deviceAddresses;
 
 		gpu::PerFrameVec<void *> m_mappedData;
 	};

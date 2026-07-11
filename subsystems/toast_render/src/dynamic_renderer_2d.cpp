@@ -91,7 +91,7 @@ namespace toaster::render
 		Globals::ViewProjCameraUB camera_ub{};
 		Dx::XMStoreFloat4x4(&camera_ub.viewMatrix, p_view);
 		Dx::XMStoreFloat4x4(&camera_ub.projectionMatrix, p_projection);
-		m_cameraUBOs->setData(camera_ub);
+		m_cameraUBOs->copyData(camera_ub);
 
 		#pragma region rendering info
 

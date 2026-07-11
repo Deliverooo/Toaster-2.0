@@ -9,6 +9,7 @@ namespace toaster::render
 		gpu::BufferSpecInfo ubo_spec_info{};
 		ubo_spec_info.usageFlags = vk::BufferUsageFlagBits2::eUniformBuffer | vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
 		m_ubo                    = m_renderCtx->createGPURef<gpu::Buffer>(p_size, ubo_spec_info);
+		m_deviceAddress          = m_ubo->getDeviceAddress();
 
 		m_heapID = m_renderCtx->getDescriptorHeap()->allocBuffer(*m_ubo);
 	}
@@ -20,7 +21,7 @@ namespace toaster::render
 
 	auto UniformBuffer::getDeviceAddress() const -> uintptr
 	{
-		return m_ubo->getDeviceAddress();
+		return m_deviceAddress;
 	}
 
 	auto UniformBuffer::getBuffer() const -> const gpu::BufferHandle &
@@ -45,10 +46,12 @@ namespace toaster::render
 
 		m_ubos.resize(RenderContext::maxFramesInFlight);
 		m_heapIDs.resize(RenderContext::maxFramesInFlight);
+		m_deviceAddresses.resize(RenderContext::maxFramesInFlight);
 		for (uint32 i{0u}; i < RenderContext::maxFramesInFlight; ++i)
 		{
-			m_ubos[i]    = m_renderCtx->createGPURef<gpu::Buffer>(p_size, ubo_spec_info);
-			m_heapIDs[i] = m_renderCtx->getDescriptorHeap()->allocBuffer(*m_ubos[i]);
+			m_ubos[i]            = m_renderCtx->createGPURef<gpu::Buffer>(p_size, ubo_spec_info);
+			m_heapIDs[i]         = m_renderCtx->getDescriptorHeap()->allocBuffer(*m_ubos[i]);
+			m_deviceAddresses[i] = m_ubos[i]->getDeviceAddress();
 		}
 
 		m_mappedData.resize(RenderContext::maxFramesInFlight);
@@ -67,7 +70,7 @@ namespace toaster::render
 
 	auto UniformBufferPFF::getDeviceAddress() const -> uintptr
 	{
-		return m_ubos[m_renderCtx->getCurrentFrameIndex()]->getDeviceAddress();
+		return m_deviceAddresses[m_renderCtx->getCurrentFrameIndex()];
 	}
 
 	auto UniformBufferPFF::getBuffer() const -> const gpu::BufferHandle &

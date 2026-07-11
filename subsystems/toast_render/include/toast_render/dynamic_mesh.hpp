@@ -6,6 +6,8 @@
 #include "toast_render.hpp"
 
 #include "toast_gpu/vk/vk_buffer.hpp"
+#include "toast_gpu/vk/vk_index_buffer.hpp"
+#include "toast_gpu/vk/vk_storage_buffer.hpp"
 #include "toast_lib/io/filesystem.hpp"
 
 namespace toaster::render
@@ -65,7 +67,6 @@ namespace toaster::render
 		TST_RENDER_OBJECT
 	public:
 		DynamicMesh(RenderContext &p_render_ctx, const io::filesystem::Path &p_path);
-		~DynamicMesh();
 
 		[[nodiscard]] auto getIndexBuffer() const -> const gpu::Buffer &;
 
@@ -85,13 +86,13 @@ namespace toaster::render
 	private:
 		auto _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
 
-		VertexBufferUnique vertexBufferSSBO{nullptr};
-		gpu::BufferUnique  m_indexBuffer{nullptr};
+		gpu::StorageBufferUnique m_vertexBufferSSBO{nullptr};
+		gpu::IndexBufferUnique   m_indexBuffer{nullptr};
 
 		std::vector<DynamicMaterialHandle> m_materials;
 		std::vector<EMaterialType>         m_materialTypes;
 
-		DynamicMeshData meshData;
+		DynamicMeshData m_meshData;
 	};
 
 	TST_RENDER_DEFINE_HANDLE(DynamicMesh, DynamicMesh);

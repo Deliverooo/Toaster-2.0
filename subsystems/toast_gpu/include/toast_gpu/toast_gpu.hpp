@@ -18,7 +18,7 @@ namespace toaster::gpu
 }
 
 #define TST_GPU_OBJECT\
-	private:\
+	protected:\
 		::toaster::NonOwningPtr<::toaster::gpu::VKGPUContext> m_gpuCtx{nullptr};\
 	public:\
 		[[nodiscard]] auto getGPUCtx() const -> ::toaster::NonOwningPtr<::toaster::gpu::VKGPUContext> { return m_gpuCtx; }\

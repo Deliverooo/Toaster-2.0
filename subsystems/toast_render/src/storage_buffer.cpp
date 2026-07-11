@@ -42,7 +42,7 @@ namespace toaster::render
 
 	auto StorageBuffer::setData(const void *p_data, uint64 p_size) -> void
 	{
-		m_SSBO->setData(p_data, p_size);
+		m_SSBO->copyData(p_data, p_size);
 	}
 
 	auto StorageBuffer::_construct(uint64 p_size, const void *p_data, bool32 p_device_local) -> void
@@ -54,7 +54,7 @@ namespace toaster::render
 			m_SSBO                   = m_renderCtx->createGPURef<gpu::Buffer>(p_size, ubo_spec_info);
 
 			if (p_data)
-				m_SSBO->setData(p_data, p_size);
+				m_SSBO->copyData(p_data, p_size);
 		}
 		else
 		{
@@ -69,7 +69,7 @@ namespace toaster::render
 				staging_buffer_spec_info.deviceLocal = false;
 				staging_buffer_spec_info.usageFlags  = vk::BufferUsageFlagBits2::eTransferSrc;
 				gpu::Buffer staging_buffer{*m_renderCtx->getGPUContext(), p_size, staging_buffer_spec_info};
-				staging_buffer.setData(p_data, p_size);
+				staging_buffer.copyData(p_data, p_size);
 
 				m_SSBO->copyFromBuffer(staging_buffer);
 			}
