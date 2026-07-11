@@ -93,7 +93,7 @@ vec3 calcPointLights()
         float denominator = 4.0f * glob.nDotV * nDotL + 0.0001f;
         vec3 specular = numerator / denominator;
 
-        result += (kd * glob.albedo / PI + specular) * radiance * nDotL;
+        result += (kd * glob.albedo.rgb / PI + specular) * radiance * nDotL;
     }
 
 
@@ -118,17 +118,20 @@ void main()
     glob.view = normalize(cam_pos - m_WorldPos); // Get the direction of the view from the camera to the frag pos
     glob.nDotV = max(dot(glob.normal, glob.view), 0.0001f); // Tells us how much the view direction is aligned with the surface normal
 
-    //    Material material = pcs.materialBuffer.materials[pcs.materialIndex];
-    // Test!!!
+    glob.albedo = vec4(1.0f);
+    glob.albedo = texture(sampler2D(texture2DHeap[material.albedoMap], samplerHeap[material.textureSampler]), m_TexCoord);
+    glob.albedo.rgb *= material.albedoColour.rgb;
 
-    glob.albedo = texture(sampler2D(texture2DHeap[material.albedoMap], samplerHeap[material.textureSampler]), m_TexCoord).rgb;
-    glob.albedo *= material.albedoColour.rgb;
+    if (glob.albedo.a < 1.0f)
+    {
+        glob.albedo = vec4(1.0f, 0.0f, 1.0f, 1.0f);
+    }
 
     glob.roughness = material.roughness;
     glob.metalness = material.metalness;
 
     glob.f0 = vec3(0.04f);
-    glob.f0 = mix(glob.f0, glob.albedo, glob.metalness);
+    glob.f0 = mix(glob.f0, glob.albedo.rgb, glob.metalness);
 
     vec3 ks = fresnelSchlickRoughness(glob.nDotV, glob.f0, glob.roughness);
     vec3 kd = vec3(1.0f) - ks;
@@ -146,7 +149,7 @@ void main()
 
     vec3 diffuse_irradiance = textureLod(samplerCube(textureCubeHeap[pcs.diffuseIrradianceMapIndex], samplerHeap[pcs.samplerIndex]), glob.normal, 0).rgb;
 
-    vec3 diffuse_ambient = kd * diffuse_irradiance * glob.albedo;
+    vec3 diffuse_ambient = kd * diffuse_irradiance * glob.albedo.rgb;
 
     vec3 ambient = diffuse_ambient;
 

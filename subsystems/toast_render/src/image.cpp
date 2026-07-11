@@ -97,7 +97,7 @@ namespace toaster::render
 	{
 		vk::ImageLayout prev_layout{m_image->getCurrentImageLayout()};
 		if (m_specInfo.generateMipmaps)
-			m_renderCtx->getLogicalDevice()->generateMipmaps(m_image->getImage(), {m_specInfo.size.x, m_specInfo.size.y, 1u}, m_image->getSpecInfo().mipCount);
+			m_renderCtx->getGPUContext()->generateMipmaps(m_image->getImage(), {m_specInfo.size.x, m_specInfo.size.y, 1u}, m_image->getSpecInfo().mipCount);
 
 		m_image->setCurrentImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal); // Generate mips leaves the image in the eShaderReadOnlyOptimal layout
 		gpu::util::transitionImageLayout(m_image.get(), vk::ImageLayout::eShaderReadOnlyOptimal, prev_layout);

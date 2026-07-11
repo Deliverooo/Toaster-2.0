@@ -1,23 +1,17 @@
 set(RENDER_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/globals.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/material.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/render_attachment.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/descriptor_set_manager.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/graphics_state.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/shader_compiler.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/render_context.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/renderer_2d.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/dynamic_renderer_2d.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/dynamic_material.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/shader_reflection.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/dynamic_mesh.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/render_pass.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/image.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/uniform_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/storage_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/skybox_pass.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/compute_pass.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/shader_library.cpp
 )
 

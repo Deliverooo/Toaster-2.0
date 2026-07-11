@@ -12,15 +12,22 @@ namespace toaster::render
 
 	enum EMaterialPropertyFlags : uint32
 	{
-		eNone = 0u, eTwoSided = BIT(0u), eWireframe = BIT(1u)
+		eNone        = 0u,
+		eTwoSided    = BIT(0u),
+		eWireframe   = BIT(1u),
+		eTransparent = BIT(2u)
 	};
 
 	class TST_RENDER_API DynamicMaterial
 	{
 		TST_RENDER_OBJECT
 	public:
-		DynamicMaterial(RenderContext &p_render_ctx, const String &p_name, const reflection::ReflectedStruct &p_material_struct_declaration);
+		// The shader to pass should be a pixel shader... Actually, technically it doesn't even matter
+		DynamicMaterial(RenderContext &p_render_ctx, const gpu::ShaderHandle &p_shader, const reflection::ReflectedStruct *p_material_struct_declaration,
+						const String & p_name = "New_Material");
 		~DynamicMaterial();
+
+		[[nodiscard]] auto getShader() const -> const gpu::ShaderHandle &;
 
 		[[nodiscard]] auto getDeviceAddress() const -> uintptr;
 
@@ -30,17 +37,18 @@ namespace toaster::render
 			_set(p_name, static_cast<const void *>(&p_value));
 		}
 
-		auto getImage(const String &p_name) const -> const ImageHandle &;
+		[[nodiscard]] auto getImage(const String &p_name) const -> const ImageHandle &;
 
 		uint32 flags{EMaterialPropertyFlags::eNone};
 
 	private:
 		auto _set(const String &p_name, const void *p_value) -> void;
 
-		String m_name;
-
-		String                      m_internalMaterialStructName;
+		gpu::ShaderHandle           m_shader{nullptr};
 		reflection::ReflectedStruct m_materialDeclaration;
+
+		String m_name;
+		String m_internalMaterialStructName;
 
 		std::unordered_map<String, ImageHandle> m_imageRefs;
 

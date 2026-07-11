@@ -2,14 +2,13 @@
 
 #include "scene.hpp"
 #include "toast_render/dynamic_mesh.hpp"
-#include "toast_render/skybox_pass.hpp"
 
 namespace toaster::scene
 {
 	class TST_SCENE_API SceneRenderer
 	{
 	public:
-		SceneRenderer(Scene *p_scene, tsm::uint2 p_initial_viewport_size);
+		SceneRenderer(Scene &p_scene, tsm::uint2 p_initial_viewport_size);
 		~SceneRenderer();
 
 		auto onRender() -> void;

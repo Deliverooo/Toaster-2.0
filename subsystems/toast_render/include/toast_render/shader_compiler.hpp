@@ -40,9 +40,9 @@ namespace toaster::render
 													 EShaderLanguage             p_shader_lang = EShaderLanguage::eHLSL) const -> gpu::ShaderBytecode;
 
 		[[nodiscard]] auto compileToShaderFromString(const String &p_source, EShaderStage p_stage, EShaderStage p_next_stage = EShaderStage::eNone,
-													 EShaderLanguage p_shader_lang = EShaderLanguage::eHLSL) const -> gpu::DynamicShaderHandle;
+													 EShaderLanguage p_shader_lang = EShaderLanguage::eHLSL) const -> gpu::ShaderHandle;
 		[[nodiscard]] auto compileToShaderFromPath(const io::filesystem::Path &p_path, EShaderStage p_stage, EShaderStage p_next_stage = EShaderStage::eNone,
-												   EShaderLanguage             p_shader_lang = EShaderLanguage::eHLSL) const -> gpu::DynamicShaderHandle;
+												   EShaderLanguage             p_shader_lang = EShaderLanguage::eHLSL) const -> gpu::ShaderHandle;
 
 	private:
 		auto _compileToDxBlob(const String &p_source, EShaderStage p_stage) const -> void *; // Microsoft::WRL::ComPtr<IDxcBlob>*

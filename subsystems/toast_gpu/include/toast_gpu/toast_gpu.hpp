@@ -14,16 +14,14 @@
 
 namespace toaster::gpu
 {
-	class VKInstance;
-	class VKPhysicalDevice;
-	class VKLogicalDevice;
+	class VKGPUContext;
 }
 
 #define TST_GPU_OBJECT\
 	private:\
-		::toaster::NonOwningPtr<::toaster::gpu::VKLogicalDevice> m_device{nullptr};\
+		::toaster::NonOwningPtr<::toaster::gpu::VKGPUContext> m_gpuCtx{nullptr};\
 	public:\
-		[[nodiscard]] auto getDevice() const -> ::toaster::NonOwningPtr<::toaster::gpu::VKLogicalDevice> { return m_device; }\
+		[[nodiscard]] auto getGPUCtx() const -> ::toaster::NonOwningPtr<::toaster::gpu::VKGPUContext> { return m_gpuCtx; }\
 	private:
 
 #define TST_GPU_DEFINE_HANDLE(__type, __name) using __name##Handle = ::toaster::RefPtr<__type>; using __name = __type; using __name##Unique = ::toaster::UniquePtr<__type>;

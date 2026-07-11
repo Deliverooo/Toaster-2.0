@@ -1,15 +1,17 @@
 #include "toast_gpu/vk/vk_swapchain.hpp"
+
+#include "toast_gpu/vk/vk_gpu_context.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 
 namespace toaster::gpu
 {
-	VKSwapchain::VKSwapchain(VKLogicalDevice *p_dev, vk::SurfaceKHR *p_surface) : m_device(p_dev), m_windowSurface(p_surface)
+	VKSwapchain::VKSwapchain(VKGPUContext &p_gpu_ctx, vk::SurfaceKHR *p_surface) : m_gpuCtx(&p_gpu_ctx), m_windowSurface(p_surface)
 	{
 		TST_ASSERT_MSG(p_dev, "Device cannot be null");
 
-		for (uint32 i{0u}; i < m_device->getSpecInfo().maxFramesInFlight; ++i)
+		for (uint32 i{0u}; i < m_gpuCtx->getSpecInfo().maxFramesInFlight; ++i)
 		{
-			m_commandBuffers.emplace_back(m_device, vk::QueueFlagBits::eGraphics, true);
+			m_commandBuffers.emplace_back(*m_gpuCtx, vk::QueueFlagBits::eGraphics, true);
 		}
 		_create();
 		_createImageViews();
@@ -20,7 +22,7 @@ namespace toaster::gpu
 	VKSwapchain::~VKSwapchain()
 	{
 		for (auto &view: m_swapchainImageViews)
-			m_device->destroyObject(view);
+			m_gpuCtx->getLogicalDevice()->destroyObject(view);
 		m_swapchainImageViews.clear();
 	}
 
@@ -45,16 +47,15 @@ namespace toaster::gpu
 			_recreateSwapchain();
 			return;
 		}
-		if (res != vk::Result::eSuccess)
-			TST_ASSERT_MSG(false, "Failed to acquire swapchain image!");
+		if (res != vk::Result::eSuccess) TST_ASSERT_MSG(false, "Failed to acquire swapchain image!");
 
 		current_command_buffer.resetCommandBuffer();
 		current_command_buffer.begin();
 
-		m_device->transitionImageLayout(m_swapchainImages[m_imageIndex], c_swapchainEndFrameLayoutInfo, c_swapchainBeginFrameLayoutInfo, 1, 1,
+		m_gpuCtx->transitionImageLayout(m_swapchainImages[m_imageIndex], c_swapchainEndFrameLayoutInfo, c_swapchainBeginFrameLayoutInfo, 1, 1,
 										vk::ImageAspectFlagBits::eColor, current_command_buffer);
 
-		m_device->transitionImageLayout(m_depthImage, c_swapchainEndFrameDepthLayoutInfo, util::getImageLayoutInfo(vk::ImageLayout::eDepthAttachmentOptimal), 1, 1,
+		m_gpuCtx->transitionImageLayout(m_depthImage, c_swapchainEndFrameDepthLayoutInfo, util::getImageLayoutInfo(vk::ImageLayout::eDepthAttachmentOptimal), 1, 1,
 										vk::ImageAspectFlagBits::eDepth, current_command_buffer);
 	}
 
@@ -62,7 +63,7 @@ namespace toaster::gpu
 	{
 		auto &current_command_buffer{m_commandBuffers[m_frameIndex]};
 
-		m_device->transitionImageLayout(m_swapchainImages[m_imageIndex], c_swapchainBeginFrameLayoutInfo, c_swapchainPresentSrcLayoutInfo, 1, 1,
+		m_gpuCtx->transitionImageLayout(m_swapchainImages[m_imageIndex], c_swapchainBeginFrameLayoutInfo, c_swapchainPresentSrcLayoutInfo, 1, 1,
 										vk::ImageAspectFlagBits::eColor, current_command_buffer);
 
 		current_command_buffer.end();
@@ -72,7 +73,7 @@ namespace toaster::gpu
 		current_command_buffer.submit(vk::PipelineStageFlagBits2::eColorAttachmentOutput, {*m_imageAvailableSemaphores[m_frameIndex]},
 									  {*m_renderFinishedSemaphores[m_imageIndex]});
 
-		const vk::Result res{m_device->presentKHR(&*m_swapchain, &m_imageIndex, {*m_renderFinishedSemaphores[m_imageIndex]})};
+		const vk::Result res{m_gpuCtx->getLogicalDevice()->presentKHR(&*m_swapchain, &m_imageIndex, {*m_renderFinishedSemaphores[m_imageIndex]})};
 		if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR || m_framebufferResized)
 		{
 			m_framebufferResized = false;
@@ -81,7 +82,7 @@ namespace toaster::gpu
 		else if (res != vk::Result::eSuccess)
 			TST_PERMA_ASSERT_MSG(false, "Failed to present swapchain image!");
 
-		m_frameIndex = (m_frameIndex + 1) % m_device->getSpecInfo().maxFramesInFlight;
+		m_frameIndex = (m_frameIndex + 1) % m_gpuCtx->getSpecInfo().maxFramesInFlight;
 	}
 
 	auto VKSwapchain::getFrameIndex() const -> uint32
@@ -158,7 +159,7 @@ namespace toaster::gpu
 
 	auto VKSwapchain::getDepthFormat() const -> vk::Format
 	{
-		return m_device->getPhysicalDevice()->getDepthFormat();
+		return m_gpuCtx->getPhysicalDevice()->getDepthFormat();
 	}
 
 	auto VKSwapchain::getMinImageCount() const -> uint32
@@ -209,32 +210,34 @@ namespace toaster::gpu
 	auto VKSwapchain::_createImageViews() -> void
 	{
 		for (auto &img: m_swapchainImages)
-			m_swapchainImageViews.emplace_back(m_device->createImageView(img, m_swapchainSurfaceFormat.format, vk::ImageAspectFlagBits::eColor, 1u, 1u));
+			m_swapchainImageViews.emplace_back(m_gpuCtx->getLogicalDevice()->createImageView(img, m_swapchainSurfaceFormat.format, vk::ImageAspectFlagBits::eColor, 1u,
+																							 1u));
 	}
 
 	auto VKSwapchain::_createDepthResources() -> void
 	{
-		m_device->createImage({m_swapchainExtent.width, m_swapchainExtent.height, 1u}, 1u, 1u, vk::SampleCountFlagBits::e1, getDepthFormat(), vk::ImageTiling::eOptimal,
-							  vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal, m_depthImage, m_depthImageMemory);
-		m_depthImageView = m_device->createImageView(m_depthImage, getDepthFormat(), vk::ImageAspectFlagBits::eDepth, 1u, 1u);
+		m_gpuCtx->getLogicalDevice()->createImage({m_swapchainExtent.width, m_swapchainExtent.height, 1u}, 1u, 1u, vk::SampleCountFlagBits::e1, getDepthFormat(),
+												  vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal,
+												  m_depthImage, m_depthImageMemory);
+		m_depthImageView = m_gpuCtx->getLogicalDevice()->createImageView(m_depthImage, getDepthFormat(), vk::ImageAspectFlagBits::eDepth, 1u, 1u);
 	}
 
 	auto VKSwapchain::_createSyncObjects() -> void
 	{
-		for (uint32 i{0u}; i < m_device->getSpecInfo().maxFramesInFlight; ++i)
+		for (uint32 i{0u}; i < m_gpuCtx->getSpecInfo().maxFramesInFlight; ++i)
 		{
 			// I don't know why vk::SemaphoreCreateInfo exists, there are no parameters that you can set for it
-			m_imageAvailableSemaphores.emplace_back(m_device->getVulkanLogicalDevice(), vk::SemaphoreCreateInfo{});
+			m_imageAvailableSemaphores.emplace_back(m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice(), vk::SemaphoreCreateInfo{});
 		}
 		for (uint32 i{0u}; i < m_swapchainImages.size(); ++i)
 		{
-			m_renderFinishedSemaphores.emplace_back(m_device->getVulkanLogicalDevice(), vk::SemaphoreCreateInfo{});
+			m_renderFinishedSemaphores.emplace_back(m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice(), vk::SemaphoreCreateInfo{});
 		}
 	}
 
 	auto VKSwapchain::_create() -> void
 	{
-		const auto physical_device{m_device->getPhysicalDevice()};
+		const auto physical_device{m_gpuCtx->getPhysicalDevice()};
 
 		m_swapchainSurfaceFormat = physical_device->chooseSwapchainSurfaceFormat(*m_windowSurface);
 
@@ -271,7 +274,7 @@ namespace toaster::gpu
 			swapchain_create_info.oldSwapchain = *m_swapchain;
 		}
 
-		m_swapchain       = {m_device->getVulkanLogicalDevice(), swapchain_create_info};
+		m_swapchain       = {m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice(), swapchain_create_info};
 		m_swapchainImages = m_swapchain.getImages();
 	}
 
@@ -284,10 +287,10 @@ namespace toaster::gpu
 			m_handleMinimisationCallback();
 
 		// Wait for the GPU to finish processing anything before recreating, so nothing that depends on the swapchain becomes invalid
-		m_device->getVulkanLogicalDevice().waitIdle();
+		m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
 
 		for (auto &view: m_swapchainImageViews)
-			m_device->destroyObject(view);
+			m_gpuCtx->getLogicalDevice()->destroyObject(view);
 		m_swapchainImageViews.clear();
 
 		_create();
@@ -297,6 +300,6 @@ namespace toaster::gpu
 		if (m_resizeCallback)
 			m_resizeCallback(m_resizeData, {m_swapchainExtent.width, m_swapchainExtent.height});
 
-		m_device->getVulkanLogicalDevice().waitIdle();
+		m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice().waitIdle();
 	}
 }

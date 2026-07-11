@@ -2,22 +2,14 @@ set(GPU_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_instance.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_physical_device.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_logical_device.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_gpu_context.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_command_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_swapchain.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_descriptor_heap.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_pipeline.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_vertex_buffer.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_index_buffer.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_uniform_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_shader.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_shader_compiler.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_common.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_raw_image.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_storage_image.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_texture.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_compute_pipeline.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_storage_buffer.cpp
 )
 
 add_library(ToastGPU SHARED)

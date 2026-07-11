@@ -59,7 +59,7 @@ namespace toaster::render
 		gpu::BufferSpecInfo staging_buffer_spec{};
 		staging_buffer_spec.deviceLocal = false;
 		staging_buffer_spec.usageFlags  = vk::BufferUsageFlagBits2::eTransferSrc;
-		gpu::Buffer staging_buffer{m_renderCtx->getLogicalDevice(), index_buffer_size, staging_buffer_spec};
+		gpu::Buffer staging_buffer{*m_renderCtx->getGPUContext(), index_buffer_size, staging_buffer_spec};
 		staging_buffer.setData(meshData.indices.data(), index_buffer_size);
 
 		gpu::BufferSpecInfo index_buffer_spec_info;
@@ -111,7 +111,7 @@ namespace toaster::render
 			case EMaterialType::ePBR:
 			{
 				const auto &material_struct{m_renderCtx->getGlobals()->getShaderReflectionData("Dynamic_Mesh_PS").materialStruct};
-				material = m_renderCtx->createRef<DynamicMaterial>(material_name, material_struct);
+				material = m_renderCtx->createRef<DynamicMaterial>(m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS"), &material_struct, material_name);
 				break;
 			}
 			case EMaterialType::eFlat:
@@ -129,7 +129,6 @@ namespace toaster::render
 				material->flags |= EMaterialPropertyFlags::eTwoSided;
 		}
 
-
 		bool wireframe{false};
 		if (ai_mat->Get(AI_MATKEY_ENABLE_WIREFRAME, wireframe) == AI_SUCCESS)
 		{
@@ -138,6 +137,14 @@ namespace toaster::render
 				material->flags |= EMaterialPropertyFlags::eWireframe;
 		}
 
+		float32 opacity{1.0f};
+		if (ai_mat->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS)
+		{
+			LOG_INFO("Opacity: {}", opacity);
+
+			if (opacity < 1.0f)
+				material->flags |= EMaterialPropertyFlags::eTransparent;
+		}
 
 		if (aiColor3D ai_colour; ai_mat->Get(AI_MATKEY_COLOR_DIFFUSE, ai_colour) == AI_SUCCESS)
 			material->set("albedoColour", tsm::float4{ai_colour.r, ai_colour.g, ai_colour.b, 1.0f});
@@ -270,24 +277,6 @@ namespace toaster::render
 	auto DynamicMesh::getMaterialType(uint32 p_index) const -> EMaterialType
 	{
 		return m_materialTypes.at(p_index);
-	}
-
-	auto DynamicMesh::getMaterialShader(EMaterialType p_material_type) const -> gpu::DynamicShaderHandle
-	{
-		switch (p_material_type)
-		{
-			case EMaterialType::ePBR:
-			{
-				return m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS");
-				break;
-			}
-			case EMaterialType::eFlat:
-			{
-				return m_renderCtx->getGlobals()->getShader("Dynamic_Mesh_PS");
-				break;
-			}
-		}
-		return nullptr;
 	}
 
 	auto importMeshFromScene(const void *p_scene, DynamicMeshData &p_out_mesh_data) -> void

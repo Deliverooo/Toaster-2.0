@@ -26,7 +26,7 @@ namespace toaster::render
 
 		GraphicsState(RenderContext &p_render_ctx);
 
-		auto setShaders(const std::vector<gpu::DynamicShaderHandle> &p_shaders) -> GraphicsState &
+		auto setShaders(const std::vector<gpu::ShaderHandle> &p_shaders) -> GraphicsState &
 		{
 			m_shaders = p_shaders;
 			return *this;
@@ -84,7 +84,7 @@ namespace toaster::render
 		auto bind(gpu::VKCommandBuffer *p_command_buffer = nullptr) const -> void;
 
 	private:
-		std::vector<gpu::DynamicShaderHandle> m_shaders;
+		std::vector<gpu::ShaderHandle> m_shaders;
 
 		gpu::VertexBufferLayout m_vertexBufferLayout;
 

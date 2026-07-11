@@ -8,17 +8,15 @@
 
 namespace toaster::gpu
 {
-	class VKLogicalDevice;
-
-	class VKDynamicShader;
-
+	class VKShader;
 	class VKBuffer;
 
 	class TST_GPU_API VKCommandBuffer
 	{
 		TST_GPU_OBJECT
 	public:
-		VKCommandBuffer(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, bool p_fence_signaled = false);
+		VKCommandBuffer(VKGPUContext &p_gpu_ctx, vk::QueueFlagBits p_queue_type, bool p_fence_signaled = false);
+		// ~VKCommandBuffer();
 
 		auto begin() -> void;
 		auto end() -> void;
@@ -56,7 +54,7 @@ namespace toaster::gpu
 
 		#pragma region render logic
 
-		auto bindShaders(const InitialiserList<const VKDynamicShader *> &p_shaders) -> void;
+		auto bindShaders(const InitialiserList<const VKShader *> &p_shaders) -> void;
 
 		auto setRenderArea(const vk::Rect2D &p_area) const -> void;
 

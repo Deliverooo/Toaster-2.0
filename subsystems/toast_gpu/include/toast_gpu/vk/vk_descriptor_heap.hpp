@@ -1,12 +1,10 @@
 #pragma once
 
 #include "vk_buffer.hpp"
-#include "vk_texture.hpp"
+#include "vk_raw_image.hpp"
 
 namespace toaster::gpu
 {
-	class VKCommandBuffer;
-
 	using HeapProperties = vk::PhysicalDeviceDescriptorHeapPropertiesEXT; // I ain't writing allat
 
 	using DescriptorSlot = uint32;
@@ -33,7 +31,7 @@ namespace toaster::gpu
 
 		static constexpr uint32 maxSamplers{24u};
 
-		VKDescriptorHeap(VKLogicalDevice *p_device);
+		VKDescriptorHeap(VKGPUContext &p_gpu_ctx);
 		~VKDescriptorHeap();
 
 		[[nodiscard]] auto getHeapProperties() const -> const HeapProperties &;
@@ -60,8 +58,6 @@ namespace toaster::gpu
 		auto freeBuffer(DescriptorSlot p_slot) -> void;
 		auto freeImage(DescriptorSlot p_slot) -> void;
 		auto freeSampler(DescriptorSlot p_slot) -> void;
-
-		auto bind(VKCommandBuffer *p_command_buffer = nullptr) const -> void;
 
 	private:
 		HeapProperties m_heapProperties{};

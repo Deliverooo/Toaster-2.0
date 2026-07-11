@@ -103,7 +103,8 @@ namespace toaster
 		}
 		m_windowSurface = surface;
 
-		m_swapchain = new gpu::VKSwapchain(m_renderCtx->getLogicalDevice(), &m_windowSurface);
+		m_swapchain = new gpu::VKSwapchain(*m_renderCtx->getGPUContext(), &m_windowSurface);
+
 		m_swapchain->setGetWindowBackBufferSizeCallback([this]()
 		{
 			int32 width;

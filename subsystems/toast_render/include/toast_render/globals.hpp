@@ -1,16 +1,9 @@
 #pragma once
 
-#include <unordered_set>
-
 #include "image.hpp"
 #include "shader_library.hpp"
 #include "shader_reflection.hpp"
 #include "storage_buffer.hpp"
-
-#include "toast_gpu/vk/vk_index_buffer.hpp"
-#include "toast_gpu/vk/vk_vertex_buffer.hpp"
-
-#include "toast_gpu/vk/vk_texture.hpp"
 
 namespace toaster::render
 {
@@ -76,8 +69,8 @@ namespace toaster::render
 
 		Globals(RenderContext &p_render_ctx, const GlobalsSpecInfo &p_spec_info);
 
-		auto getShader(const String &p_name) const -> const gpu::DynamicShaderHandle &;
-		auto addShader(const String &p_name, const gpu::DynamicShaderHandle &p_shader) -> void;
+		auto getShader(const String &p_name) const -> const gpu::ShaderHandle &;
+		auto addShader(const String &p_name, const gpu::ShaderHandle &p_shader) -> void;
 
 		struct ShaderReflectionData
 		{
@@ -94,8 +87,6 @@ namespace toaster::render
 		auto fullscreenQuadVertices() const -> const std::vector<FullscreenQuadVertex> &;
 		auto fullscreenQuadIndices() const -> const std::vector<uint8> &;
 
-		auto whiteTexture() const -> const gpu::Texture2DHandle &;
-		auto whiteTexture3D() const -> const gpu::Texture3DHandle &;
 		auto whiteImage() const -> const ImageHandle &;
 
 		auto debugImage() const -> const ImageHandle &;
@@ -104,7 +95,7 @@ namespace toaster::render
 	private:
 		GlobalsSpecInfo m_specInfo{};
 
-		std::unordered_map<String, gpu::DynamicShaderHandle> m_shaders;
+		std::unordered_map<String, gpu::ShaderHandle> m_shaders;
 		std::unordered_map<String, ShaderReflectionData>     m_shaderReflectionData;
 
 		VertexBufferUnique m_quadVertexBuffer{nullptr};
@@ -113,8 +104,6 @@ namespace toaster::render
 		std::vector<FullscreenQuadVertex> m_quadVertices;
 		std::vector<uint8>                m_quadIndices;
 
-		gpu::Texture2DHandle m_whiteTexture{nullptr};
-		gpu::Texture3DHandle m_whiteTexture3D{nullptr};
 		ImageHandle          m_whiteImage{nullptr};
 
 		ImageHandle m_debugImage{nullptr};

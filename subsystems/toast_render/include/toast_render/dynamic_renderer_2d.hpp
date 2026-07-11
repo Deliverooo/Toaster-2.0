@@ -3,11 +3,10 @@
 #include "graphics_state.hpp"
 #include "image.hpp"
 #include "render_attachment.hpp"
+#include "storage_buffer.hpp"
 #include "uniform_buffer.hpp"
 
 #include "toast_gpu/vk/vk_command_buffer.hpp"
-#include "toast_gpu/vk/vk_index_buffer.hpp"
-#include "toast_gpu/vk/vk_vertex_buffer.hpp"
 
 namespace toaster::render
 {
@@ -100,8 +99,8 @@ namespace toaster::render
 
 		uint32 m_quadIndexCount{0u};
 
-		gpu::VertexBufferUnique m_quadVertexBuffer{nullptr};
-		gpu::IndexBufferUnique  m_quadIndexBuffer{nullptr};
+		VertexBufferUnique m_quadVertexBuffer{nullptr};
+		gpu::BufferUnique  m_quadIndexBuffer{nullptr};
 
 		std::array<Dx::XMFLOAT4, 4u> m_quadVertexPositions{};
 		std::array<tsm::float2, 4u>  m_quadVertexTexCoords{};

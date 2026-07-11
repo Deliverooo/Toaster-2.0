@@ -144,15 +144,15 @@ namespace toaster::render
 	}
 
 	auto ShaderCompiler::compileToShaderFromString(const String &  p_source, EShaderStage p_stage, EShaderStage p_next_stage,
-												   EShaderLanguage p_shader_lang) const -> gpu::DynamicShaderHandle
+												   EShaderLanguage p_shader_lang) const -> gpu::ShaderHandle
 	{
 		gpu::ShaderBytecode      bytecode{compileToBytecodeFromString(p_source, p_stage, p_shader_lang)};
-		gpu::DynamicShaderHandle out_shader{m_renderCtx->createGPURef<gpu::DynamicShader>(bytecode, getVulkanShaderStage(p_stage), getVulkanShaderStage(p_next_stage))};
+		gpu::ShaderHandle out_shader{m_renderCtx->createGPURef<gpu::Shader>(bytecode, getVulkanShaderStage(p_stage), getVulkanShaderStage(p_next_stage))};
 		return out_shader;
 	}
 
 	auto ShaderCompiler::compileToShaderFromPath(const io::filesystem::Path &p_path, EShaderStage p_stage, EShaderStage p_next_stage,
-												 EShaderLanguage             p_shader_lang) const -> gpu::DynamicShaderHandle
+												 EShaderLanguage             p_shader_lang) const -> gpu::ShaderHandle
 	{
 		const String source{io::filesystem::readFile(p_path)};
 		return compileToShaderFromString(source, p_stage, p_next_stage, p_shader_lang);

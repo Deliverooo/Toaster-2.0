@@ -1,7 +1,6 @@
 #include "toast_render/globals.hpp"
 
 #include "toast_gpu/vk/vk_logical_device.hpp"
-#include "toast_gpu/vk/vk_shader_compiler.hpp"
 #include "toast_lib/io/filesystem.hpp"
 #include "toast_render/dynamic_material.hpp"
 #include "toast_render/render_context.hpp"
@@ -75,7 +74,7 @@ namespace toaster::render
 		gpu::BufferSpecInfo staging_buffer_spec{};
 		staging_buffer_spec.deviceLocal = false;
 		staging_buffer_spec.usageFlags  = vk::BufferUsageFlagBits2::eTransferSrc;
-		gpu::Buffer staging_buffer{m_renderCtx->getLogicalDevice(), index_buffer_size, staging_buffer_spec};
+		gpu::Buffer staging_buffer{*m_renderCtx->getGPUContext(), index_buffer_size, staging_buffer_spec};
 		staging_buffer.setData(m_quadIndices.data(), index_buffer_size);
 
 		gpu::BufferSpecInfo index_buffer_spec_info;
@@ -86,16 +85,6 @@ namespace toaster::render
 		m_quadIndexBuffer->copyFromBuffer(staging_buffer);
 
 		m_quadVertexBuffer = m_renderCtx->createUnique<StorageBuffer>(m_quadVertices, true);
-
-		gpu::TextureSpecInfo white_texture_spec_info{};
-		white_texture_spec_info.size   = {1u};
-		white_texture_spec_info.format = vk::Format::eR8G8B8A8Unorm;
-		uint32 white_texture_data{0xFFFFFFFF};
-		m_whiteTexture = make_reference<gpu::VKTexture2D>(m_renderCtx->getLogicalDevice(), white_texture_spec_info, &white_texture_data, sizeof(uint32));
-
-		uint32 texture_3d_data[6]{0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
-		m_whiteTexture3D = make_reference<gpu::VKTexture3D>(m_renderCtx->getLogicalDevice(), white_texture_spec_info,
-															toaster::Buffer{texture_3d_data, sizeof(uint32) * 6});
 
 		{
 			Buffer image_data{};
@@ -129,12 +118,12 @@ namespace toaster::render
 		m_BRDFLUT = m_renderCtx->createImageRef(m_specInfo.shaderBinaryDir / "../../resources/textures/BRDF_LUT.png");
 	}
 
-	auto Globals::getShader(const String &p_name) const -> const gpu::DynamicShaderHandle &
+	auto Globals::getShader(const String &p_name) const -> const gpu::ShaderHandle &
 	{
 		return m_shaders.at(p_name);
 	}
 
-	auto Globals::addShader(const String &p_name, const gpu::DynamicShaderHandle &p_shader) -> void
+	auto Globals::addShader(const String &p_name, const gpu::ShaderHandle &p_shader) -> void
 	{
 		TST_PERMA_ASSERT(!m_shaders.contains(p_name));
 		m_shaders[p_name] = p_shader;
@@ -173,16 +162,6 @@ namespace toaster::render
 	auto Globals::fullscreenQuadIndices() const -> const std::vector<uint8> &
 	{
 		return m_quadIndices;
-	}
-
-	auto Globals::whiteTexture() const -> const gpu::Texture2DHandle &
-	{
-		return m_whiteTexture;
-	}
-
-	auto Globals::whiteTexture3D() const -> const gpu::Texture3DHandle &
-	{
-		return m_whiteTexture3D;
 	}
 
 	auto Globals::whiteImage() const -> const ImageHandle &

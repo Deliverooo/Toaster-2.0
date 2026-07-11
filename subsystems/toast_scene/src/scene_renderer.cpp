@@ -11,8 +11,8 @@
 
 namespace toaster::scene
 {
-	SceneRenderer::SceneRenderer(Scene *p_scene, tsm::uint2 p_initial_viewport_size) : m_scene(p_scene), m_renderCtx(p_scene->getRenderCtx()),
-																									 m_viewportSize(p_initial_viewport_size)
+	SceneRenderer::SceneRenderer(Scene &p_scene, tsm::uint2 p_initial_viewport_size) : m_scene(&p_scene), m_renderCtx(p_scene.getRenderCtx()),
+																					   m_viewportSize(p_initial_viewport_size)
 	{
 		m_cameraUBOs    = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::CameraUB));
 		m_sceneDataUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(SceneDataUB));
@@ -269,12 +269,12 @@ namespace toaster::scene
 		mesh_draw_constants.BRDFLUT             = m_renderCtx->getGlobals()->BRDFLUT()->getAlignedShaderReadHeapID();
 
 		render::DynamicMeshHandle last_mesh{nullptr};
-		gpu::DynamicShaderHandle  last_ps{nullptr};
+		gpu::ShaderHandle         last_ps{nullptr};
 		for (const auto &draw_cmd: m_submeshDrawCommands)
 		{
 			const auto &material{draw_cmd.mesh->getMaterial(draw_cmd.materialIndex)};
 
-			const auto material_shader{draw_cmd.mesh->getMaterialShader(draw_cmd.mesh->getMaterialType(draw_cmd.materialIndex))};
+			const auto &material_shader{material->getShader()};
 			if (last_ps.get() != material_shader.get())
 			{
 				last_ps = material_shader;

@@ -27,7 +27,7 @@ namespace toaster::gpu
 		}
 
 		vk::ApplicationInfo app_info{};
-		app_info.pApplicationName = "Toaster - Vulkan"; // The app and engine name for this can be completely arbitrary
+		app_info.pApplicationName = m_specInfo.appName.c_str(); // The app and engine name for this can be completely arbitrary
 		app_info.pEngineName      = "Toaster";
 		// I want to use the latest vulkan version.
 		//		 However I don't know if the vk::raii stuff will work with them or not

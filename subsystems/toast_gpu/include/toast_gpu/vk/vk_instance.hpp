@@ -40,10 +40,10 @@ namespace toaster::gpu
 		operator vk::raii::Instance &() { return m_vulkanInstance; }
 
 	private:
+		VKInstanceSpecInfo m_specInfo;
+
 		vk::raii::Context  m_context;
 		vk::raii::Instance m_vulkanInstance{nullptr};
-
-		VKInstanceSpecInfo m_specInfo;
 
 		vk::raii::DebugUtilsMessengerEXT m_debugUtilsMessenger{nullptr};
 	};

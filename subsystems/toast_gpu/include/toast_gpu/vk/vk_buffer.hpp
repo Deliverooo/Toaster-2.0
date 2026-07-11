@@ -20,7 +20,7 @@ namespace toaster::gpu
 	public:
 		VKBuffer() = default;
 		auto operator=(VKBuffer &&p_other) noexcept -> VKBuffer &;
-		VKBuffer(VKLogicalDevice *p_device, vk::DeviceSize p_size, const BufferSpecInfo &p_spec_info);
+		VKBuffer(VKGPUContext& p_gpu_ctx, vk::DeviceSize p_size, const BufferSpecInfo &p_spec_info);
 		~VKBuffer();
 
 		[[nodiscard]] auto getSpecInfo() const -> const BufferSpecInfo &;

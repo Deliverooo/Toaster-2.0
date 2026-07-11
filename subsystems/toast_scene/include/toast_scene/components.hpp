@@ -3,7 +3,6 @@
 #include "scene_camera.hpp"
 
 #include "toast_lib/uuid.hpp"
-#include "toast_render/mesh.hpp"
 #include "toast_render/dynamic_mesh.hpp"
 #include "toast_script/script_object.hpp"
 
@@ -104,29 +103,9 @@ namespace toaster::scene
 			tilingFactor = 1.0f;
 		}
 
-		tsm::float4          colour{1.0f};
-		gpu::Texture2DHandle texture{nullptr};
-		float32              tilingFactor{1.0f};
-	};
-
-	DEFINE_COMPONENT(MeshComponent)
-	{
-		MeshComponent()  = default;
-		~MeshComponent() = default;
-
-		auto reset() -> void { mesh.reset(); }
-
-		render::MeshHandle mesh{nullptr};
-	};
-
-	DEFINE_COMPONENT(OldDynamicMeshComponent)
-	{
-		OldDynamicMeshComponent()  = default;
-		~OldDynamicMeshComponent() = default;
-
-		auto reset() -> void { mesh.reset(); }
-
-		render::DynamicMeshOLDHandle mesh{nullptr};
+		tsm::float4         colour{1.0f};
+		render::ImageHandle texture{nullptr};
+		float32             tilingFactor{1.0f};
 	};
 
 	DEFINE_COMPONENT(DynamicMeshComponent)
@@ -137,17 +116,6 @@ namespace toaster::scene
 		auto reset() -> void { mesh.reset(); }
 
 		render::DynamicMeshHandle mesh{nullptr};
-	};
-
-	DEFINE_COMPONENT(SubmeshComponent)
-	{
-		SubmeshComponent()  = default;
-		~SubmeshComponent() = default;
-
-		auto reset() -> void { mesh.reset(nullptr); }
-
-		render::MeshHandle mesh{nullptr};
-		uint32             submeshIndex{0u};
 	};
 
 	DEFINE_COMPONENT(CameraComponent)

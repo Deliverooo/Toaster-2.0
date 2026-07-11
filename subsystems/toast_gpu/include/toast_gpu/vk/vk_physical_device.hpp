@@ -8,14 +8,12 @@ namespace toaster::gpu
 		using ExtensionSet = std::unordered_set<String>;
 
 		ExtensionSet requiredExtensions;
-
-		bool printDebugInfo{true};
 	};
 
 	class TST_GPU_API VKPhysicalDevice
 	{
 	public:
-		VKPhysicalDevice(VKInstance *p_instance, const VKPhysicalDeviceSpecInfo &p_spec_info);
+		VKPhysicalDevice(VKInstance &p_instance, const VKPhysicalDeviceSpecInfo &p_spec_info);
 
 		[[nodiscard]] auto getInstance() const -> NonOwningPtr<VKInstance>;
 		[[nodiscard]] auto getSpecInfo() const -> const VKPhysicalDeviceSpecInfo &;

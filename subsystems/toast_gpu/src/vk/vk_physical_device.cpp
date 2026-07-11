@@ -2,7 +2,7 @@
 
 namespace toaster::gpu
 {
-	VKPhysicalDevice::VKPhysicalDevice(VKInstance *p_instance, const VKPhysicalDeviceSpecInfo &p_spec_info) : m_instance(p_instance), m_specInfo(p_spec_info)
+	VKPhysicalDevice::VKPhysicalDevice(VKInstance &p_instance, const VKPhysicalDeviceSpecInfo &p_spec_info) : m_instance(&p_instance), m_specInfo(p_spec_info)
 	{
 		auto physical_devices = m_instance->getVulkanInstance().enumeratePhysicalDevices();
 		if (physical_devices.empty())
@@ -47,7 +47,7 @@ namespace toaster::gpu
 		m_depthFormat = findSupportedFormat({vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint}, vk::ImageTiling::eOptimal,
 											vk::FormatFeatureFlagBits::eDepthStencilAttachment);
 
-		if (m_specInfo.printDebugInfo)
+		if (m_instance->getSpecInfo().printDebugInfo)
 		{
 			LOG_INFO("Using physical device: {} | Device ID: {}\n", props.deviceName.data(), props.deviceID);
 			LOG_INFO("Available device extensions:");
@@ -195,7 +195,7 @@ namespace toaster::gpu
 			});
 		});
 
-		if (m_specInfo.printDebugInfo)
+		if (m_instance->getSpecInfo().printDebugInfo)
 		{
 			for (const auto &ext: available_device_extensions)
 			{

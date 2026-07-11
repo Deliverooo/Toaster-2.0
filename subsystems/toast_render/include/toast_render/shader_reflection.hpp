@@ -25,5 +25,5 @@ namespace toaster::render::reflection
 		std::unordered_map<String, ReflectedStruct> structs;
 	};
 
-	[[nodiscard]] TST_RENDER_API auto reflectShader(const gpu::DynamicShader &p_shader) -> ReflectionData;
+	[[nodiscard]] TST_RENDER_API auto reflectShader(const gpu::Shader &p_shader) -> ReflectionData;
 }

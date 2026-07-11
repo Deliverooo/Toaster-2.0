@@ -14,12 +14,25 @@ namespace toaster::gpu
 		static auto getDefaultFeatures() -> vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features,
 			vk::PhysicalDeviceVulkan14Features, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT,
 			vk::PhysicalDeviceShaderObjectFeaturesEXT, vk::PhysicalDeviceDescriptorBufferFeaturesEXT, vk::PhysicalDeviceDescriptorHeapFeaturesEXT,
-			vk::PhysicalDeviceShaderUntypedPointersFeaturesKHR, vk::PhysicalDeviceMeshShaderFeaturesEXT>
+			vk::PhysicalDeviceShaderUntypedPointersFeaturesKHR, vk::PhysicalDeviceMeshShaderFeaturesEXT, vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>
 		{
 			vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceVulkan14Features,
 				vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT, vk::PhysicalDeviceCustomBorderColorFeaturesEXT, vk::PhysicalDeviceShaderObjectFeaturesEXT,
 				vk::PhysicalDeviceDescriptorBufferFeaturesEXT, vk::PhysicalDeviceDescriptorHeapFeaturesEXT, vk::PhysicalDeviceShaderUntypedPointersFeaturesKHR,
-				vk::PhysicalDeviceMeshShaderFeaturesEXT> feature_chain{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}};
+				vk::PhysicalDeviceMeshShaderFeaturesEXT, vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT> feature_chain{
+				{},
+				{},
+				{},
+				{},
+				{},
+				{},
+				{},
+				{},
+				{},
+				{},
+				{},
+				{}
+			};
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                   = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                   = true;
 			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                    = true;
@@ -46,7 +59,7 @@ namespace toaster::gpu
 			feature_chain.get<vk::PhysicalDeviceShaderUntypedPointersFeaturesKHR>().shaderUntypedPointers = true;
 			feature_chain.get<vk::PhysicalDeviceMeshShaderFeaturesEXT>().meshShader                       = true;
 			feature_chain.get<vk::PhysicalDeviceMeshShaderFeaturesEXT>().taskShader                       = true;
-			// feature_chain.get<vk::PhysicalDeviceFaultFeaturesKHR>().deviceFault                           = true;
+			// feature_chain.get<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>().fragmentShaderPixelInterlock = true;
 			return feature_chain;
 		}
 
@@ -54,14 +67,8 @@ namespace toaster::gpu
 
 		ExtensionSet requiredExtensions;
 
-		// Optional :)
-		bool usePresent{false};
-
 		// Goto vk_shader.cpp #define TST_SHADER_LOG_TRACE for usage... if true, prints shader reflection data
 		bool printShaderDebugInfo{true};
-		bool printDebugInfo{true};
-
-		uint32 maxFramesInFlight{3u};
 
 		// Use ts to set your logical device features using vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features...
 		void *pNext{nullptr};
@@ -77,20 +84,7 @@ namespace toaster::gpu
 			uint32 compute{UINT32_MAX};
 		};
 
-		VKLogicalDevice(VKPhysicalDevice *p_physical_device, const VKLogicalDeviceSpecInfo &p_spec_info);
-
-		template<typename TFunc>
-		auto deferDestruction(TFunc &&p_func) -> void
-		{
-			m_pendingDeletionCommandQueues[m_currentFrameIndex].enqueue(std::forward<TFunc>(p_func));
-		}
-
-		[[nodiscard]] auto getCurrentFrameIndex() const -> uint32;
-		auto               setCurrentFrameIndex(uint32 p_index) -> void;
-		auto               performGarbageCollection() -> void;
-
-		[[nodiscard]] auto getCurrentCommandBuffer() const -> VKCommandBuffer *;
-		auto               setCurrentCommandBuffer(VKCommandBuffer *p_cmd) -> void; // ONLY THE APPLICATION SHOULD USE TS...
+		VKLogicalDevice(VKPhysicalDevice &p_physical_device, const VKLogicalDeviceSpecInfo &p_spec_info);
 
 		[[nodiscard]] auto getPhysicalDevice() const -> NonOwningPtr<VKPhysicalDevice>;
 		[[nodiscard]] auto getSpecInfo() const -> const VKLogicalDeviceSpecInfo &;
@@ -125,6 +119,7 @@ namespace toaster::gpu
 		template<typename TVKObj>
 		auto destroyObject(TVKObj &p_obj) const -> void
 		{
+			(void) p_obj;
 			TST_PERMA_ASSERT(false);
 		}
 		#pragma endregion
@@ -151,37 +146,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto createSampler(vk::Filter             p_filter       = vk::Filter::eLinear,
 										 vk::SamplerAddressMode p_address_mode = vk::SamplerAddressMode::eRepeat) -> vk::Sampler;
 
-		auto copyBuffer(vk::raii::Buffer &p_src_buffer, vk::raii::Buffer &p_dst_buffer, vk::DeviceSize p_size) -> void;
-		auto copyBuffer(const vk::Buffer &p_src_buffer, const vk::Buffer &p_dst_buffer, vk::DeviceSize p_size) -> void;
 
-		auto copyBufferToImage(vk::raii::Buffer &p_src_buffer, vk::raii::Image &p_dst_image, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void;
-		auto copyBufferToImage(const vk::Buffer &p_src_buffer, const vk::Image &p_dst_image, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void;
-
-		auto copyImageToBuffer(vk::raii::Image &p_src_image, vk::raii::Buffer &p_dst_buffer, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void;
-		auto copyImageToBuffer(const vk::Image &p_src_image, const vk::Buffer &p_dst_buffer, const ImageExtent &p_image_extent, uint32 p_layer_count) -> void;
-
-		auto transitionImageLayout(vk::raii::Image &p_image, const ImageLayoutInfo &   p_src_layout_info, const ImageLayoutInfo &p_dst_layout_info, uint32 p_layer_count,
-								   uint32           p_mip_levels, vk::ImageAspectFlags p_aspect_flags, vk::CommandBuffer p_override_command_buffer = nullptr) -> void;
-		auto transitionImageLayout(vk::Image &p_image, const ImageLayoutInfo &   p_src_layout_info, const ImageLayoutInfo &p_dst_layout_info, uint32 p_layer_count,
-								   uint32     p_mip_levels, vk::ImageAspectFlags p_aspect_flags, vk::CommandBuffer         p_override_command_buffer = nullptr) -> void;
-
-		auto transitionImageLayout(vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
-								   vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask,
-								   uint32 p_layer_count, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void;
-		auto transitionImageLayout(vk::raii::CommandBuffer &p_cmd, vk::raii::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
-								   vk::AccessFlags2 p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-								   vk::PipelineStageFlags2 p_dst_stage_mask, uint32 p_layer_count, uint32 p_mip_levels,
-								   vk::ImageAspectFlags p_aspect_flags) const -> void;
-		auto transitionImageLayout(vk::Image &p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout, vk::AccessFlags2 p_src_access_mask,
-								   vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask, vk::PipelineStageFlags2 p_dst_stage_mask,
-								   uint32 p_layer_count, uint32 p_mip_levels, vk::ImageAspectFlags p_aspect_flags) -> void;
-		auto transitionImageLayout(vk::raii::CommandBuffer &p_cmd, vk::Image &                  p_image, vk::ImageLayout p_old_layout, vk::ImageLayout p_new_layout,
-								   vk::AccessFlags2         p_src_access_mask, vk::AccessFlags2 p_dst_access_mask, vk::PipelineStageFlags2 p_src_stage_mask,
-								   vk::PipelineStageFlags2  p_dst_stage_mask, uint32            p_layer_count, uint32 p_mip_levels,
-								   vk::ImageAspectFlags     p_aspect_flags) const -> void;
-
-		auto generateMipmaps(vk::raii::Image &p_src_image, const ImageExtent &p_image_extent, uint32 p_mip_levels) -> void;
-		auto generateMipmaps(vk::Image &p_src_image, const ImageExtent &p_image_extent, uint32 p_mip_levels) -> void;
 
 		template<typename TObj>
 		auto setDebugObjectName(const TObj &p_obj, const String &p_name) -> void
@@ -210,11 +175,6 @@ namespace toaster::gpu
 		vk::raii::CommandPool m_graphicsCommandPool{nullptr};
 		vk::raii::CommandPool m_transferCommandPool{nullptr};
 		vk::raii::CommandPool m_computeCommandPool{nullptr};
-
-		std::vector<CommandQueue> m_pendingDeletionCommandQueues;
-		uint32                    m_currentFrameIndex{0u};
-
-		VKCommandBuffer *m_currentCommandBuffer{nullptr};
 	};
 
 	#define TST_GPU_GET_VALID_CMD_BUFFER() auto cmd{p_command_buffer ? p_command_buffer : m_device->getCurrentCommandBuffer()}

@@ -1,25 +1,33 @@
 #include "toast_gpu/vk/vk_command_buffer.hpp"
 
 #include "toast_gpu/vk/vk_buffer.hpp"
+#include "toast_gpu/vk/vk_gpu_context.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 
 #include "toast_gpu/vk/vk_shader.hpp"
 
 namespace toaster::gpu
 {
-	VKCommandBuffer::VKCommandBuffer(VKLogicalDevice *p_device, vk::QueueFlagBits p_queue_type, bool p_fence_signaled) : m_device(p_device), m_queueType(p_queue_type)
+	VKCommandBuffer::VKCommandBuffer(VKGPUContext &p_gpu_ctx, vk::QueueFlagBits p_queue_type, bool p_fence_signaled) : m_gpuCtx(&p_gpu_ctx), m_queueType(p_queue_type)
 	{
 		vk::CommandBufferAllocateInfo alloc_info{};
 		alloc_info.commandBufferCount = 1;
-		alloc_info.commandPool        = m_device->getCommandPool(m_queueType);
+		alloc_info.commandPool        = m_gpuCtx->getLogicalDevice()->getCommandPool(m_queueType);
 		alloc_info.level              = vk::CommandBufferLevel::ePrimary;
 
-		m_commandBuffer = std::move(m_device->getVulkanLogicalDevice().allocateCommandBuffers(alloc_info).front());
+		m_commandBuffer = std::move(m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice().allocateCommandBuffers(alloc_info).front());
 
 		vk::FenceCreateInfo fence_create_info{};
 		fence_create_info.flags = p_fence_signaled ? vk::FenceCreateFlagBits::eSignaled : vk::FenceCreateFlagBits{};
-		m_waitFence             = {*m_device, fence_create_info};
+		m_waitFence             = {*m_gpuCtx->getLogicalDevice(), fence_create_info};
 	}
+
+	// VKCommandBuffer::~VKCommandBuffer()
+	// {
+	// 	m_gpuCtx->deferDestruction([fence = std::move(m_waitFence), cmd = std::move(m_commandBuffer)]() mutable -> void
+	// 	{
+	// 	});
+	// }
 
 	auto VKCommandBuffer::begin() -> void
 	{
@@ -67,7 +75,7 @@ namespace toaster::gpu
 		submit_info.pWaitSemaphoreInfos      = wait_semaphore_infos.data();
 		submit_info.signalSemaphoreInfoCount = signal_semaphore_infos.size();
 		submit_info.pSignalSemaphoreInfos    = signal_semaphore_infos.data();
-		m_device->getQueue(m_queueType).submit2(submit_info, m_waitFence);
+		m_gpuCtx->getLogicalDevice()->getQueue(m_queueType).submit2(submit_info, m_waitFence);
 	}
 
 	auto VKCommandBuffer::getVulkanCommandBuffer() -> vk::raii::CommandBuffer &
@@ -82,12 +90,12 @@ namespace toaster::gpu
 
 	auto VKCommandBuffer::waitForFence() -> void
 	{
-		m_device->waitForFences({*m_waitFence});
+		m_gpuCtx->getLogicalDevice()->waitForFences({*m_waitFence});
 	}
 
 	auto VKCommandBuffer::resetFence() -> void
 	{
-		m_device->getVulkanLogicalDevice().resetFences(*m_waitFence);
+		m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice().resetFences(*m_waitFence);
 	}
 
 	auto VKCommandBuffer::resetCommandBuffer() -> void
@@ -105,11 +113,12 @@ namespace toaster::gpu
 		m_commandBuffer.drawIndexed(p_index_count, p_instance_count, p_first_index, p_vertex_offset, p_first_instance);
 	}
 
-	auto VKCommandBuffer::bindShaders(const InitialiserList<const VKDynamicShader *> &p_shaders) -> void
+	auto VKCommandBuffer::bindShaders(const InitialiserList<const VKShader *> &p_shaders) -> void
 	{
 		// Apparently, if certain shader features are enabled, you have to specify all shader stages even if they are unused...
 		std::unordered_map<vk::ShaderStageFlagBits, vk::ShaderEXT> shader_stages_map{
 			{vk::ShaderStageFlagBits::eVertex, nullptr},
+			{vk::ShaderStageFlagBits::eCompute, nullptr},
 			// {vk::ShaderStageFlagBits::eTessellationControl, nullptr},
 			// {vk::ShaderStageFlagBits::eTessellationEvaluation, nullptr},
 			// {vk::ShaderStageFlagBits::eGeometry, nullptr},

@@ -29,7 +29,7 @@ namespace toaster::gpu
 	{
 		TST_GPU_OBJECT
 	public:
-		VKRawImage(VKLogicalDevice *p_ctx, const ImageSpecInfo &p_spec_info);
+		VKRawImage(VKGPUContext &p_gpu_ctx, const ImageSpecInfo &p_spec_info);
 		~VKRawImage();
 
 		[[nodiscard]] auto getImageViewCreateInfo() const -> const vk::ImageViewCreateInfo &;

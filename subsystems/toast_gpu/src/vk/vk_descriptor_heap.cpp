@@ -1,6 +1,7 @@
 #include "toast_gpu/vk/vk_descriptor_heap.hpp"
 
 #include "toast_gpu/vk/vk_command_buffer.hpp"
+#include "toast_gpu/vk/vk_gpu_context.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 
 namespace toaster::gpu
@@ -28,12 +29,12 @@ namespace toaster::gpu
 		m_freeSlots.push_back(p_slot);
 	}
 
-	VKDescriptorHeap::VKDescriptorHeap(VKLogicalDevice *p_device) : m_device(p_device)
+	VKDescriptorHeap::VKDescriptorHeap(VKGPUContext &p_gpu_ctx) : m_gpuCtx(&p_gpu_ctx)
 	{
 		// get the heap properties. Vulkan raii does not yet have a function for ts... :(
 		vk::PhysicalDeviceProperties2 device_props{};
 		device_props.pNext = &m_heapProperties;
-		m_device->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties2(&device_props);
+		m_gpuCtx->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties2(&device_props);
 
 		// create the resource heap
 		{
@@ -55,7 +56,7 @@ namespace toaster::gpu
 
 			BufferSpecInfo resource_heap_spec_info{};
 			resource_heap_spec_info.usageFlags = vk::BufferUsageFlagBits2::eDescriptorHeapEXT | vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
-			m_resourceHeap                     = toaster::make_unique<Buffer>(m_device, resource_heap_size, resource_heap_spec_info);
+			m_resourceHeap                     = toaster::make_unique<Buffer>(*m_gpuCtx, resource_heap_size, resource_heap_spec_info);
 
 			m_resourceHeapMemory = m_resourceHeap->mapMemory(resource_heap_size);
 		}
@@ -70,7 +71,7 @@ namespace toaster::gpu
 
 			BufferSpecInfo sampler_heap_spec_info{};
 			sampler_heap_spec_info.usageFlags = vk::BufferUsageFlagBits2::eDescriptorHeapEXT | vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
-			m_samplerHeap                     = toaster::make_unique<Buffer>(m_device, sampler_heap_size, sampler_heap_spec_info);
+			m_samplerHeap                     = toaster::make_unique<Buffer>(*m_gpuCtx, sampler_heap_size, sampler_heap_spec_info);
 
 			m_samplerHeapMemory = m_samplerHeap->mapMemory(sampler_heap_size);
 		}
@@ -160,7 +161,7 @@ namespace toaster::gpu
 		resource_info.type               = p_storage ? vk::DescriptorType::eStorageBuffer : vk::DescriptorType::eUniformBuffer;
 		resource_info.data.pAddressRange = &buffer_range;
 
-		m_device->getVulkanLogicalDevice().writeResourceDescriptorsEXT(resource_info, host_range);
+		m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice().writeResourceDescriptorsEXT(resource_info, host_range);
 	}
 
 	auto VKDescriptorHeap::setImage(DescriptorSlot p_slot, const RawImage &p_image, bool p_storage, uint32 p_mip_level) -> void
@@ -182,7 +183,7 @@ namespace toaster::gpu
 		resource_info.type        = (p_storage) ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eSampledImage;
 		resource_info.data.pImage = &image_info;
 
-		m_device->getVulkanLogicalDevice().writeResourceDescriptorsEXT(resource_info, host_range);
+		m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice().writeResourceDescriptorsEXT(resource_info, host_range);
 	}
 
 	auto VKDescriptorHeap::setSampler(DescriptorSlot p_slot, const vk::SamplerCreateInfo &p_sampler) -> void
@@ -193,7 +194,7 @@ namespace toaster::gpu
 		host_range.address = static_cast<uint8 *>(m_samplerHeapMemory) + (p_slot * sampler_descriptor_size);
 		host_range.size    = sampler_descriptor_size;
 
-		m_device->getVulkanLogicalDevice().writeSamplerDescriptorsEXT(p_sampler, host_range);
+		m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice().writeSamplerDescriptorsEXT(p_sampler, host_range);
 	}
 
 	auto VKDescriptorHeap::freeBuffer(DescriptorSlot p_slot) -> void
@@ -209,30 +210,5 @@ namespace toaster::gpu
 	auto VKDescriptorHeap::freeSampler(DescriptorSlot p_slot) -> void
 	{
 		m_samplerSlotManager.freeSlot(p_slot);
-	}
-
-	auto VKDescriptorHeap::bind(VKCommandBuffer *p_command_buffer) const -> void
-	{
-		TST_GPU_GET_VALID_CMD_BUFFER();
-
-		// bind the resource heap
-		{
-			vk::BindHeapInfoEXT resource_heap_bind_info{};
-			resource_heap_bind_info.heapRange           = m_resourceHeap->getDeviceAddressRange();
-			resource_heap_bind_info.reservedRangeOffset = m_resourceHeap->getSize() - m_heapProperties.minResourceHeapReservedRange;
-			resource_heap_bind_info.reservedRangeSize   = m_heapProperties.minResourceHeapReservedRange;
-
-			cmd->getVulkanCommandBuffer().bindResourceHeapEXT(resource_heap_bind_info);
-		}
-
-		// bind the sampler heap
-		{
-			vk::BindHeapInfoEXT sampler_heap_bind_info{};
-			sampler_heap_bind_info.heapRange           = m_samplerHeap->getDeviceAddressRange();
-			sampler_heap_bind_info.reservedRangeOffset = m_samplerHeap->getSize() - m_heapProperties.minSamplerHeapReservedRange;
-			sampler_heap_bind_info.reservedRangeSize   = m_heapProperties.minSamplerHeapReservedRange;
-
-			cmd->getVulkanCommandBuffer().bindSamplerHeapEXT(sampler_heap_bind_info);
-		}
 	}
 }

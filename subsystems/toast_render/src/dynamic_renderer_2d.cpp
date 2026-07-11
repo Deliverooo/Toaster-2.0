@@ -125,14 +125,14 @@ namespace toaster::render
 		if (size)
 		{
 			auto cmd{m_renderCtx->getCurrentCommandBuffer()};
-			m_quadVertexBuffer->setData(m_quadVertexBase, size, 0);
+			// m_quadVertexBuffer->setData(m_quadVertexBase, size, 0);
 
 			QuadConstants quad_constants{};
 			quad_constants.cameraAddress = m_cameraUBOs->getDeviceAddress();
 			cmd->pushData(quad_constants);
 
-			m_quadVertexBuffer->bind();
-			m_quadIndexBuffer->bind();
+			// m_quadVertexBuffer->bind();
+			// m_quadIndexBuffer->bind();
 
 			cmd->drawIndexed(m_quadIndexCount);
 		}
@@ -202,8 +202,8 @@ namespace toaster::render
 			offset += 4u;
 		}
 
-		m_quadVertexBuffer = m_renderCtx->createGPUUnique<gpu::VertexBuffer>(m_maxVertices * sizeof(QuadVertex));
-		m_quadIndexBuffer  = m_renderCtx->createGPUUnique<gpu::IndexBuffer>(quad_indices.data(), m_maxIndices * sizeof(uint32));
+		// m_quadVertexBuffer = m_renderCtx->createGPUUnique<gpu::VertexBuffer>(m_maxVertices * sizeof(QuadVertex));
+		// m_quadIndexBuffer  = m_renderCtx->createGPUUnique<gpu::IndexBuffer>(quad_indices.data(), m_maxIndices * sizeof(uint32));
 
 		m_quadVertexPositions[0] = {0.5f, 0.5f, 0.0f, 1.0f};
 		m_quadVertexPositions[1] = {0.5f, -0.5f, 0.0f, 1.0f};

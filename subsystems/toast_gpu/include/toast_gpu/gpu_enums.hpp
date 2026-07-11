@@ -1,5 +1,7 @@
 #pragma once
 
+#include "toast_lib/util_defines.hpp"
+
 namespace toaster::gpu
 {
 	enum class EPrimitiveTopology

@@ -31,13 +31,14 @@ public:
 		m_scene = toaster::make_unique<scene::Scene>(m_renderCtx);
 
 		m_scene->setSkyboxMap(m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/qwantani_dusk_2_puresky_2k.hdr"));
-		m_sceneRenderer = toaster::make_unique<scene::SceneRenderer>(m_scene.get(), m_viewportSize);
+		m_sceneRenderer = toaster::make_unique<scene::SceneRenderer>(*m_scene, m_viewportSize);
 
 		scene::Entity test_scene_entity{};
 		{
 			test_scene_entity = m_scene->createEntity("Test_Scene");
 			auto &mesh_comp{test_scene_entity.addComponent<scene::DynamicMeshComponent>()};
 			mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.gltf");
+			// mesh_comp.mesh = m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Transparency.gltf");
 
 			class LightController : public scene::ScriptableEntity
 			{
@@ -88,6 +89,9 @@ public:
 		}
 
 		m_scene->initNativeScripts();
+
+		auto features{gpu::VKLogicalDeviceSpecInfo::getDefaultFeatures()};
+		LOG_INFO("Features struct size: {}", sizeof(decltype(features)));
 	}
 
 	auto onDestroy() -> void override
@@ -101,6 +105,7 @@ public:
 
 		m_camera.onUpdate(p_dt);
 		m_scene->onUpdate(p_dt);
+
 		m_sceneRenderer->onRender(m_camera.getPosition(), m_camera.getViewMatrix(), m_camera.getProjectionMatrix());
 
 		auto       rendering_info{m_app->getWindow().getSwapchainRenderingInfo(false, {0.025f, 0.025f, 0.025f, 1.0f}, false)};
@@ -161,7 +166,7 @@ private:
 		uint32 texture;
 	};
 
-	UniquePtr<scene::Scene>                m_scene{nullptr};
+	UniquePtr<scene::Scene>         m_scene{nullptr};
 	UniquePtr<scene::SceneRenderer> m_sceneRenderer{nullptr};
 };
 

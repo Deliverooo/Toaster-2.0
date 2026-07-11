@@ -20,10 +20,19 @@ namespace toaster::render
 		return nullptr;
 	}
 
-	DynamicMaterial::DynamicMaterial(RenderContext &                    p_render_ctx, const String &p_name,
-									 const reflection::ReflectedStruct &p_material_struct_declaration) : m_renderCtx(&p_render_ctx), m_name(p_name),
-																										 m_materialDeclaration(p_material_struct_declaration)
+	DynamicMaterial::DynamicMaterial(RenderContext &                    p_render_ctx, const gpu::ShaderHandle &p_shader,
+									 const reflection::ReflectedStruct *p_material_struct_declaration, const String & p_name) : m_renderCtx(&p_render_ctx),
+																																m_shader(p_shader), m_name(p_name)
 	{
+		if (!p_material_struct_declaration)
+		{
+			auto reflection_data{reflection::reflectShader(*m_shader)};
+			auto material_decl{findMaterialDeclaration(reflection_data)};
+			TST_PERMA_ASSERT_MSG(material_decl, "Could not find a suitable material declaration in the provided shader!!");
+			m_materialDeclaration = *material_decl;
+		}
+
+		m_materialDeclaration = *p_material_struct_declaration;
 		TST_PERMA_ASSERT(!m_materialDeclaration.members.empty());
 
 		m_internalMaterialStructName = m_materialDeclaration.name.substr(std::strlen("TST__"));
@@ -37,6 +46,11 @@ namespace toaster::render
 	DynamicMaterial::~DynamicMaterial()
 	{
 		m_uniformData->getBuffer()->unmapMemory();
+	}
+
+	auto DynamicMaterial::getShader() const -> const gpu::ShaderHandle &
+	{
+		return m_shader;
 	}
 
 	auto DynamicMaterial::getDeviceAddress() const -> uintptr

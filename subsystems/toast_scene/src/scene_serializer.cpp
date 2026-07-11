@@ -356,15 +356,6 @@ namespace toaster::scene
 			p_out << YAML::EndMap;
 		}
 
-		if (p_entity.hasComponent<MeshComponent>())
-		{
-			const auto &mc{p_entity.getComponent<MeshComponent>()};
-
-			p_out << YAML::Key << "MeshComponent";
-			p_out << YAML::BeginMap;
-			p_out << YAML::Key << "MeshAssetID" << YAML::Value << mc.mesh;
-			p_out << YAML::EndMap;
-		}
 
 		if (p_entity.hasComponent<CameraComponent>())
 		{
@@ -446,24 +437,6 @@ namespace toaster::scene
 				tc.translation = transform_comp["Translation"].as<Dx::XMFLOAT3>();
 				tc.orientation = transform_comp["Rotation"].as<Dx::XMFLOAT4>();
 				tc.scale       = transform_comp["Scale"].as<Dx::XMFLOAT3>();
-			}
-
-			auto sprite_comp = entity["SpriteRendererComponent"];
-			if (sprite_comp)
-			{
-				auto &src        = out_entity.addComponent<SpriteRendererComponent>();
-				src.colour       = sprite_comp["Colour"].as<tsm::float4>();;
-				src.texture      = m_scene->m_renderCtx->createGPURef<gpu::VKTexture2D>(gpu::TextureSpecInfo{}, sprite_comp["TextureAssetID"].as<String>());
-				src.tilingFactor = sprite_comp["TilingFactor"].as<float32>();
-			}
-
-			auto mesh_comp{entity["MeshComponent"]};
-			if (mesh_comp)
-			{
-				auto &mc{out_entity.addComponent<MeshComponent>()};
-
-				String mesh_asset_path{mesh_comp["MeshAssetID"].as<String>()};
-				mc.mesh = m_scene->m_renderCtx->createRef<render::MeshData>(mesh_asset_path);
 			}
 
 			auto camera_comp = entity["CameraComponent"];

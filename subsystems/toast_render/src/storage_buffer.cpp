@@ -68,7 +68,7 @@ namespace toaster::render
 				gpu::BufferSpecInfo staging_buffer_spec_info{};
 				staging_buffer_spec_info.deviceLocal = false;
 				staging_buffer_spec_info.usageFlags  = vk::BufferUsageFlagBits2::eTransferSrc;
-				gpu::Buffer staging_buffer{m_renderCtx->getLogicalDevice(), p_size, staging_buffer_spec_info};
+				gpu::Buffer staging_buffer{*m_renderCtx->getGPUContext(), p_size, staging_buffer_spec_info};
 				staging_buffer.setData(p_data, p_size);
 
 				m_SSBO->copyFromBuffer(staging_buffer);

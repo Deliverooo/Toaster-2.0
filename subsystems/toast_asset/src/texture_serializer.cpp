@@ -33,7 +33,7 @@ namespace toaster::asset
 
 		vk::ImageLayout previous_layout{p_image.getCurrentImageLayout()};
 		gpu::util::transitionImageLayout(&p_image, previous_layout, vk::ImageLayout::eTransferSrcOptimal);
-		m_renderCtx->getLogicalDevice()->copyImageToBuffer(p_image.getImage(), staging_buffer, {image_spec_info.size.x, image_spec_info.size.y, 1u},
+		m_renderCtx->getGPUContext()->copyImageToBuffer(p_image.getImage(), staging_buffer, {image_spec_info.size.x, image_spec_info.size.y, 1u},
 														   image_spec_info.layerCount);
 		gpu::util::transitionImageLayout(&p_image, vk::ImageLayout::eTransferSrcOptimal, previous_layout);
 

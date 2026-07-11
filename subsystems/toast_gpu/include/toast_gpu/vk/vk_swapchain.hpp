@@ -38,7 +38,7 @@ namespace toaster::gpu
 		using HandleMinimisationCB      = std::function<void()>;
 		using GetWindowBackBufferSizeCB = std::function<std::pair<uint32, uint32>()>;
 
-		VKSwapchain(VKLogicalDevice *p_dev, vk::SurfaceKHR *p_surface);
+		VKSwapchain(VKGPUContext& p_gpu_ctx, vk::SurfaceKHR *p_surface);
 		~VKSwapchain();
 
 		auto beginFrame() -> void;

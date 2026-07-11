@@ -2,6 +2,7 @@
 
 #include <ranges>
 
+#include "toast_gpu/vk/vk_gpu_context.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 
 namespace toaster::gpu
@@ -10,7 +11,7 @@ namespace toaster::gpu
 	{
 		if (this != &p_other)
 		{
-			m_device       = p_other.m_device;
+			m_gpuCtx       = p_other.m_gpuCtx;
 			m_specInfo     = p_other.m_specInfo;
 			m_size         = p_other.m_size;;
 			m_buffer       = std::move(p_other.m_buffer);
@@ -19,25 +20,25 @@ namespace toaster::gpu
 		return *this;
 	}
 
-	VKBuffer::VKBuffer(VKLogicalDevice *p_device, uint64 p_size, const BufferSpecInfo &p_spec_info) : m_device(p_device), m_specInfo(p_spec_info), m_size(p_size)
+	VKBuffer::VKBuffer(VKGPUContext &p_gpu_ctx, uint64 p_size, const BufferSpecInfo &p_spec_info) : m_gpuCtx(&p_gpu_ctx), m_specInfo(p_spec_info), m_size(p_size)
 	{
 		m_specInfo.usageFlags |= vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
 
 		if (!m_specInfo.deviceLocal)
 		{
-			m_device->createBuffer(m_buffer, m_bufferMemory, p_size, m_specInfo.usageFlags,
-								   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, m_specInfo.queueAccessFlags);
+			m_gpuCtx->getLogicalDevice()->createBuffer(m_buffer, m_bufferMemory, p_size, m_specInfo.usageFlags,
+													   vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, m_specInfo.queueAccessFlags);
 		}
 		else
 		{
-			m_device->createBuffer(m_buffer, m_bufferMemory, p_size, vk::BufferUsageFlagBits2::eTransferDst | m_specInfo.usageFlags,
-								   vk::MemoryPropertyFlagBits::eDeviceLocal, m_specInfo.queueAccessFlags);
+			m_gpuCtx->getLogicalDevice()->createBuffer(m_buffer, m_bufferMemory, p_size, vk::BufferUsageFlagBits2::eTransferDst | m_specInfo.usageFlags,
+													   vk::MemoryPropertyFlagBits::eDeviceLocal, m_specInfo.queueAccessFlags);
 		}
 	}
 
 	VKBuffer::~VKBuffer()
 	{
-		m_device->deferDestruction([buffer = std::move(m_buffer), buffer_memory = std::move(m_bufferMemory)]() mutable -> void
+		m_gpuCtx->deferDestruction([buffer = std::move(m_buffer), buffer_memory = std::move(m_bufferMemory)]() mutable -> void
 		{
 		});
 	}
@@ -64,7 +65,7 @@ namespace toaster::gpu
 
 	auto VKBuffer::getDeviceAddress() const -> vk::DeviceAddress
 	{
-		return m_device->getVulkanLogicalDevice().getBufferAddressKHR({*m_buffer});
+		return m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice().getBufferAddressKHR({*m_buffer});
 	}
 
 	auto VKBuffer::getDeviceAddressRange() const -> vk::DeviceAddressRangeKHR
@@ -93,6 +94,6 @@ namespace toaster::gpu
 
 	auto VKBuffer::copyFromBuffer(VKBuffer &p_other) -> void
 	{
-		m_device->copyBuffer(p_other.m_buffer, m_buffer, m_size);
+		m_gpuCtx->copyBuffer(p_other.m_buffer, m_buffer, m_size);
 	}
 }

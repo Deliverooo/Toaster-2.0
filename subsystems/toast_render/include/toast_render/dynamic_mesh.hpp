@@ -82,8 +82,6 @@ namespace toaster::render
 
 		auto getMaterialType(uint32 p_index) const -> EMaterialType;
 
-		[[nodiscard]] auto getMaterialShader(EMaterialType p_material_type) const -> gpu::DynamicShaderHandle;
-
 	private:
 		auto _createMaterial(void *p_mat, uint32 p_mat_index, const io::filesystem::Path &p_parent_path) -> void;
 

@@ -119,7 +119,7 @@ namespace toaster::scene
 			REGISTER_COMPONENT_TYPE(TagComponent);
 			REGISTER_COMPONENT_TYPE(TransformComponent);
 			REGISTER_COMPONENT_TYPE(SpriteRendererComponent);
-			REGISTER_COMPONENT_TYPE(MeshComponent);
+			// REGISTER_COMPONENT_TYPE(MeshComponent);
 			REGISTER_COMPONENT_TYPE(CameraComponent);
 			REGISTER_COMPONENT_TYPE(DirectionalLightComponent);
 			REGISTER_COMPONENT_TYPE(PointLightComponent);
@@ -516,14 +516,14 @@ namespace toaster::scene
 		});
 		#pragma endregion
 
-		#pragma region Mesh Component
-		m_scriptEngine->registerMethod("Toaster.MeshComponent::HasMaterialInternal", +[](uint64 p_entity_id, uint32 p_index) -> bool
-		{
-			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
-			auto & mc{entity.getComponent<MeshComponent>()};
-			return mc.mesh->getMaterials().hasMaterial(p_index);
-		});
-		#pragma endregion
+		// #pragma region Mesh Component
+		// m_scriptEngine->registerMethod("Toaster.MeshComponent::HasMaterialInternal", +[](uint64 p_entity_id, uint32 p_index) -> bool
+		// {
+		// 	Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
+		// 	auto & mc{entity.getComponent<MeshComponent>()};
+		// 	return mc.mesh->getMaterials().hasMaterial(p_index);
+		// });
+		// #pragma endregion
 
 		#pragma region Camera Component
 		m_scriptEngine->registerMethod("Toaster.CameraComponent::GetPrimary", +[](uint64 p_entity_id) -> bool
@@ -701,23 +701,23 @@ namespace toaster::scene
 		});
 		#pragma endregion
 
-		#pragma region Material
-		m_scriptEngine->registerMethod("Toaster.Material::GetAlbedoColour", +[](uint64 p_entity_id, uint32 p_index, tsm::float3 *p_out_colour) -> void
-		{
-			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
-			auto & mc{entity.getComponent<MeshComponent>()};
-			auto & material{mc.mesh->getMaterials().getMaterial(p_index).material};
-			*p_out_colour = material->get<tsm::float3>("u_Material.albedoColour");
-		});
-
-		m_scriptEngine->registerMethod("Toaster.Material::SetAlbedoColour", +[](uint64 p_entity_id, uint32 p_index, tsm::float3 *p_colour) -> void
-		{
-			Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
-			auto & mc{entity.getComponent<MeshComponent>()};
-			auto & material{mc.mesh->getMaterials().getMaterial(p_index).material};
-			material->set("u_Material.albedoColour", *p_colour);
-		});
-		#pragma endregion
+		// #pragma region Material
+		// m_scriptEngine->registerMethod("Toaster.Material::GetAlbedoColour", +[](uint64 p_entity_id, uint32 p_index, tsm::float3 *p_out_colour) -> void
+		// {
+		// 	Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
+		// 	auto & mc{entity.getComponent<MeshComponent>()};
+		// 	auto & material{mc.mesh->getMaterials().getMaterial(p_index).material};
+		// 	*p_out_colour = material->get<tsm::float3>("u_Material.albedoColour");
+		// });
+		//
+		// m_scriptEngine->registerMethod("Toaster.Material::SetAlbedoColour", +[](uint64 p_entity_id, uint32 p_index, tsm::float3 *p_colour) -> void
+		// {
+		// 	Entity entity{s_activeScene->getEntityByUUID(p_entity_id)};
+		// 	auto & mc{entity.getComponent<MeshComponent>()};
+		// 	auto & material{mc.mesh->getMaterials().getMaterial(p_index).material};
+		// 	material->set("u_Material.albedoColour", *p_colour);
+		// });
+		// #pragma endregion
 	}
 
 	#define ON_COMPONENT_ADDED(__type)	template<>\

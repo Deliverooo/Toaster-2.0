@@ -6,7 +6,7 @@
 
 namespace toaster::render::reflection
 {
-	auto reflectShader(const gpu::DynamicShader &p_shader) -> ReflectionData
+	auto reflectShader(const gpu::Shader &p_shader) -> ReflectionData
 	{
 		spirv_cross::CompilerGLSL compiler{p_shader.getBytecode()};
 
@@ -34,7 +34,7 @@ namespace toaster::render::reflection
 					catch (const std::exception &e)
 					{
 						// I don't need to report the "error" every time
-						(void)e;
+						(void) e;
 					}
 
 					uint32 total_struct_members_size{0u};
