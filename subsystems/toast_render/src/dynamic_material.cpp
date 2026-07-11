@@ -1,4 +1,5 @@
 #include "toast_render/dynamic_material.hpp"
+#include "toast_render/render_context.hpp"
 
 namespace toaster::render
 {
@@ -20,9 +21,8 @@ namespace toaster::render
 		return nullptr;
 	}
 
-	DynamicMaterial::DynamicMaterial(RenderContext &                    p_render_ctx, const gpu::ShaderHandle &p_shader,
-									 const reflection::ReflectedStruct *p_material_struct_declaration, const String & p_name) : m_renderCtx(&p_render_ctx),
-																																m_shader(p_shader), m_name(p_name)
+	DynamicMaterial::DynamicMaterial(RenderContext &p_render_ctx, const gpu::ShaderHandle &p_shader, const reflection::ReflectedStruct *p_material_struct_declaration,
+									 const String & p_name) : m_renderCtx(&p_render_ctx), m_shader(p_shader), m_name(p_name)
 	{
 		if (!p_material_struct_declaration)
 		{
@@ -39,13 +39,13 @@ namespace toaster::render
 		LOG_INFO("Creating material: {} | Struct: {}", m_name, m_internalMaterialStructName);
 
 		const uint64 ubo_size{m_materialDeclaration.size};
-		m_uniformData       = m_renderCtx->createUnique<UniformBuffer>(ubo_size);
-		m_mappedUniformData = m_uniformData->getBuffer()->mapMemory(ubo_size);
+		m_uniformData       = m_renderCtx->createGPUUnique<gpu::UniformBuffer>(ubo_size);
+		m_mappedUniformData = m_uniformData->mapMemory(ubo_size);
 	}
 
 	DynamicMaterial::~DynamicMaterial()
 	{
-		m_uniformData->getBuffer()->unmapMemory();
+		m_uniformData->unmapMemory();
 	}
 
 	auto DynamicMaterial::getShader() const -> const gpu::ShaderHandle &
@@ -56,6 +56,11 @@ namespace toaster::render
 	auto DynamicMaterial::getDeviceAddress() const -> uintptr
 	{
 		return m_uniformData->getDeviceAddress();
+	}
+
+	auto DynamicMaterial::getHeapID() const -> uint32
+	{
+		return m_uniformData->getHeapID();
 	}
 
 	auto DynamicMaterial::getImage(const String &p_name) const -> const ImageHandle &

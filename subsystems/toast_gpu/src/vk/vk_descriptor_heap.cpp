@@ -41,6 +41,9 @@ namespace toaster::gpu
 			m_bufferDescriptorSize = ALIGN(m_heapProperties.bufferDescriptorSize, m_heapProperties.bufferDescriptorAlignment);
 			m_imageDescriptorSize  = ALIGN(m_heapProperties.imageDescriptorSize, m_heapProperties.imageDescriptorAlignment);
 
+			LOG_WARN("Buffer Descriptor size: {}", m_bufferDescriptorSize);
+			LOG_WARN("Image Descriptor size: {}", m_imageDescriptorSize);
+
 			m_bufferArrayOffset = 0u;
 			m_bufferArraySize   = (maxUBOs * m_bufferDescriptorSize);
 
@@ -154,12 +157,14 @@ namespace toaster::gpu
 		vk::DeviceAddressRangeEXT buffer_range{p_buffer.getDeviceAddressRange()};
 
 		vk::HostAddressRangeEXT host_range{};
-		host_range.address = (void *) (reinterpret_cast<uintptr_t>(m_resourceHeapMemory) + m_bufferArrayOffset + p_slot * m_bufferDescriptorSize);
+		host_range.address = static_cast<uint8 *>(m_resourceHeapMemory) + m_bufferArrayOffset + p_slot * m_bufferDescriptorSize;
 		host_range.size    = m_bufferDescriptorSize;
 
 		vk::ResourceDescriptorInfoEXT resource_info{};
 		resource_info.type               = p_storage ? vk::DescriptorType::eStorageBuffer : vk::DescriptorType::eUniformBuffer;
 		resource_info.data.pAddressRange = &buffer_range;
+
+		// LOG_INFO("Buffer | Slot: {} | Heap ID: {}", p_slot, p_slot + (m_bufferArrayOffset / m_bufferDescriptorSize));
 
 		m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice().writeResourceDescriptorsEXT(resource_info, host_range);
 	}
@@ -182,6 +187,8 @@ namespace toaster::gpu
 		vk::ResourceDescriptorInfoEXT resource_info{};
 		resource_info.type        = (p_storage) ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eSampledImage;
 		resource_info.data.pImage = &image_info;
+
+		// LOG_INFO("Image | Slot: {} | Heap ID: {}", p_slot, p_slot + (m_imageArrayOffset / m_imageDescriptorSize));
 
 		m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice().writeResourceDescriptorsEXT(resource_info, host_range);
 	}

@@ -2,6 +2,7 @@
 
 #include "scene.hpp"
 #include "toast_render/dynamic_mesh.hpp"
+#include "toast_render/uniform_buffer.hpp"
 
 namespace toaster::scene
 {
@@ -85,12 +86,12 @@ namespace toaster::scene
 			Dx::XMFLOAT4X4 meshTransform;
 
 			uintptr vertexBuffer;
-
-			uintptr material;
-
-			uintptr cameraPtr;
-			uintptr sceneDataPtr;
 			uintptr pointLightsPtr;
+
+			uint32 materialIndex;
+
+			uint32 cameraIndex;
+			uint32 sceneDataIndex;
 
 			uint32 samplerIndex;
 			uint32 diffuseIrradianceMapIndex;

@@ -6,7 +6,6 @@
 #include <random>
 
 #include "toast_lib/os/terminal.hpp"
-#include "toast_render/globals.hpp"
 #include "toast_scene/entity.hpp"
 
 namespace toaster::scene
@@ -16,6 +15,8 @@ namespace toaster::scene
 	{
 		m_cameraUBOs    = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(render::Globals::CameraUB));
 		m_sceneDataUBOs = m_renderCtx->createUnique<render::UniformBufferPFF>(sizeof(SceneDataUB));
+
+		LOG_INFO("Slot: {} | Heap ID: {}", m_sceneDataUBOs->getHeapID(), m_sceneDataUBOs->getAlignedHeapID());
 
 		m_pointLightSSBOs = m_renderCtx->createUnique<render::StorageBufferPFF>(sizeof(PointLightSSBO));
 
@@ -127,6 +128,7 @@ namespace toaster::scene
 		_setRequiredRenderState(cmd);
 		_renderDepthPrePass(cmd);
 		_renderSkyboxPass(cmd);
+
 		_renderGeometryPass(cmd);
 
 		m_submeshDrawCommands.clear();
@@ -257,8 +259,9 @@ namespace toaster::scene
 
 		MeshDrawConstants mesh_draw_constants{};
 
-		mesh_draw_constants.cameraPtr      = m_cameraUBOs->getDeviceAddress();
-		mesh_draw_constants.sceneDataPtr   = m_sceneDataUBOs->getDeviceAddress();
+		mesh_draw_constants.cameraIndex    = m_cameraUBOs->getAlignedHeapID();
+		mesh_draw_constants.sceneDataIndex = m_sceneDataUBOs->getAlignedHeapID();
+
 		mesh_draw_constants.pointLightsPtr = m_pointLightSSBOs->getDeviceAddress();
 
 		mesh_draw_constants.samplerIndex               = m_renderCtx->getSampler(render::ESamplerType::eIrradianceMap);
@@ -284,7 +287,7 @@ namespace toaster::scene
 			mesh_draw_constants.meshTransform = draw_cmd.transform;
 
 			mesh_draw_constants.vertexBuffer = draw_cmd.mesh->getVertexBufferAddress();
-			mesh_draw_constants.material     = material->getDeviceAddress();
+			mesh_draw_constants.materialIndex = material->getHeapID();
 
 			p_cmd.pushData(mesh_draw_constants);
 			if (draw_cmd.mesh.get() != last_mesh)
@@ -300,8 +303,6 @@ namespace toaster::scene
 				p_cmd.setPolygonMode(gpu::EPolygonMode::eLine);
 
 			p_cmd.drawIndexed(draw_cmd.indexCount, 1, draw_cmd.indexOffset, draw_cmd.vertexOffset, 0);
-
-			// p_cmd.getVulkanCommandBuffer().drawIndexedIndirect();
 
 			if (material->flags & render::EMaterialPropertyFlags::eTwoSided)
 				p_cmd.setCullMode(gpu::ECullMode::eBack);

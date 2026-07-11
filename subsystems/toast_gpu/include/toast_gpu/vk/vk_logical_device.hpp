@@ -33,32 +33,38 @@ namespace toaster::gpu
 				{},
 				{}
 			};
-			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                   = true;
-			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                   = true;
-			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                    = true;
-			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fragmentStoresAndAtomics            = true;
-			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.shaderInt16                         = true;
-			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.shaderInt64                         = true;
-			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.vertexPipelineStoresAndAtomics      = true;
-			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                     = true;
-			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().bufferDeviceAddress                   = true;
-			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().runtimeDescriptorArray                = true;
-			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().shaderInt8                            = true;
-			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().storagePushConstant8                  = true;
-			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().uniformAndStorageBuffer8BitAccess     = true;
-			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().storageBuffer8BitAccess               = true;
-			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                      = true;
-			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                      = true;
-			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().maintenance4                          = true;
-			feature_chain.get<vk::PhysicalDeviceVulkan14Features>().indexTypeUint8                        = true;
-			feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState   = true;
-			feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors        = true;
-			feature_chain.get<vk::PhysicalDeviceShaderObjectFeaturesEXT>().shaderObject                   = true;
-			feature_chain.get<vk::PhysicalDeviceDescriptorBufferFeaturesEXT>().descriptorBuffer           = true;
-			feature_chain.get<vk::PhysicalDeviceDescriptorHeapFeaturesEXT>().descriptorHeap               = true;
-			feature_chain.get<vk::PhysicalDeviceShaderUntypedPointersFeaturesKHR>().shaderUntypedPointers = true;
-			feature_chain.get<vk::PhysicalDeviceMeshShaderFeaturesEXT>().meshShader                       = true;
-			feature_chain.get<vk::PhysicalDeviceMeshShaderFeaturesEXT>().taskShader                       = true;
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.samplerAnisotropy                        = true;
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.sampleRateShading                        = true;
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fillModeNonSolid                         = true;
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.fragmentStoresAndAtomics                 = true;
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.shaderInt16                              = true;
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.shaderInt64                              = true;
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.vertexPipelineStoresAndAtomics           = true;
+			feature_chain.get<vk::PhysicalDeviceFeatures2>().features.multiDrawIndirect                        = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                          = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().bufferDeviceAddress                        = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().runtimeDescriptorArray                     = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().shaderInt8                                 = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().storagePushConstant8                       = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().uniformAndStorageBuffer8BitAccess          = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().storageBuffer8BitAccess                    = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().shaderStorageBufferArrayNonUniformIndexing = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().shaderUniformBufferArrayNonUniformIndexing = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().shaderSampledImageArrayNonUniformIndexing  = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().shaderUniformBufferArrayNonUniformIndexing = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan12Features>().shaderStorageImageArrayNonUniformIndexing  = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().dynamicRendering                           = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().synchronization2                           = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan13Features>().maintenance4                               = true;
+			feature_chain.get<vk::PhysicalDeviceVulkan14Features>().indexTypeUint8                             = true;
+			feature_chain.get<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>().extendedDynamicState        = true;
+			feature_chain.get<vk::PhysicalDeviceCustomBorderColorFeaturesEXT>().customBorderColors             = true;
+			feature_chain.get<vk::PhysicalDeviceShaderObjectFeaturesEXT>().shaderObject                        = true;
+			feature_chain.get<vk::PhysicalDeviceDescriptorBufferFeaturesEXT>().descriptorBuffer                = true;
+			feature_chain.get<vk::PhysicalDeviceDescriptorHeapFeaturesEXT>().descriptorHeap                    = true;
+			feature_chain.get<vk::PhysicalDeviceShaderUntypedPointersFeaturesKHR>().shaderUntypedPointers      = true;
+			feature_chain.get<vk::PhysicalDeviceMeshShaderFeaturesEXT>().meshShader                            = true;
+			feature_chain.get<vk::PhysicalDeviceMeshShaderFeaturesEXT>().taskShader                            = true;
 			// feature_chain.get<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>().fragmentShaderPixelInterlock = true;
 			return feature_chain;
 		}
@@ -145,8 +151,6 @@ namespace toaster::gpu
 											 vk::SamplerAddressMode p_address_mode = vk::SamplerAddressMode::eRepeat) -> vk::raii::Sampler;
 		[[nodiscard]] auto createSampler(vk::Filter             p_filter       = vk::Filter::eLinear,
 										 vk::SamplerAddressMode p_address_mode = vk::SamplerAddressMode::eRepeat) -> vk::Sampler;
-
-
 
 		template<typename TObj>
 		auto setDebugObjectName(const TObj &p_obj, const String &p_name) -> void

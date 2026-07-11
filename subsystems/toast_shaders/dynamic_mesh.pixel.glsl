@@ -9,18 +9,20 @@ layout (location = 3) in mat3 v_TBN;
 
 layout (location = 0) out vec4 o_Colour;
 
-struct Material
-{
-    uint textureSampler;
-    uint albedoMap;
+//struct TST__MaterialFairs
+//{
+//    uint textureSampler;
+//    uint albedoMap;
+//    uint hasNormalMap;
+//    uint normalMap;
+//
+//    float roughness;
+//    float metalness;
+//
+//    vec4 albedoColour;
+//};
 
-    float roughness;
-    float metalness;
-
-    vec4 albedoColour;
-};
-
-layout (std140, buffer_reference) readonly buffer TST__MaterialFairs
+layout (descriptor_heap) uniform TST__MaterialFairs
 {
     uint textureSampler;
     uint albedoMap;
@@ -31,10 +33,13 @@ layout (std140, buffer_reference) readonly buffer TST__MaterialFairs
     float metalness;
 
     vec4 albedoColour;
-};
+} materialHeap[];
 #define MaterialFairs TST__MaterialFairs
 
-layout (buffer_reference, std140) readonly buffer SceneData { vec4 cameraPosition; };
+layout (descriptor_heap) uniform SceneDataHeap
+{
+    vec4 cameraPosition;
+} sceneDataHeap[];
 
 struct PointLight
 {
@@ -49,11 +54,12 @@ layout (push_constant) uniform Constants
 
     uint64_t vbo;
 
-    MaterialFairs material;
-
-    uint64_t cameraPtr;
-    SceneData sceneDataPtr;
     PointLights pointLightsPtr;
+
+    uint materialIndex;
+
+    uint cameraIndex;
+    uint sceneDataIndex;
 
     uint samplerIndex;
     uint diffuseIrradianceMapIndex;
@@ -96,39 +102,39 @@ vec3 calcPointLights()
         result += (kd * glob.albedo.rgb / PI + specular) * radiance * nDotL;
     }
 
-
     return result;
 }
+
 
 void main()
 {
     glob.normal = normalize(m_Normal);
 
-    MaterialFairs material = pcs.material;
+    //    MaterialFairs material/***/ = materialHeap[nonuniformEXT(pcs.materialIndex)].data;
 
-    if (material.hasNormalMap != 0u)
+    if (materialHeap[nonuniformEXT(pcs.materialIndex)].hasNormalMap != 0u)
     {
-        vec3 normal = texture(sampler2D(texture2DHeap[material.normalMap], samplerHeap[material.textureSampler]), m_TexCoord).xyz;
+        vec3 normal = texture(sampler2D(texture2DHeap[materialHeap[nonuniformEXT(pcs.materialIndex)].normalMap], samplerHeap[materialHeap[nonuniformEXT(pcs.materialIndex)].textureSampler]), m_TexCoord).xyz;
         normal = normalize(normal * 2.0f - 1.0f);
         glob.normal = normalize(v_TBN * normal);
     }
 
-    vec3 cam_pos = pcs.sceneDataPtr.cameraPosition.xyz;
+    vec3 cam_pos = sceneDataHeap[nonuniformEXT(pcs.sceneDataIndex)].cameraPosition.xyz;
 
     glob.view = normalize(cam_pos - m_WorldPos); // Get the direction of the view from the camera to the frag pos
     glob.nDotV = max(dot(glob.normal, glob.view), 0.0001f); // Tells us how much the view direction is aligned with the surface normal
 
     glob.albedo = vec4(1.0f);
-    glob.albedo = texture(sampler2D(texture2DHeap[material.albedoMap], samplerHeap[material.textureSampler]), m_TexCoord);
-    glob.albedo.rgb *= material.albedoColour.rgb;
+    glob.albedo = texture(sampler2D(texture2DHeap[materialHeap[nonuniformEXT(pcs.materialIndex)].albedoMap], samplerHeap[materialHeap[nonuniformEXT(pcs.materialIndex)].textureSampler]), m_TexCoord);
+    glob.albedo.rgb *= materialHeap[nonuniformEXT(pcs.materialIndex)].albedoColour.rgb;
 
     if (glob.albedo.a < 1.0f)
     {
         glob.albedo = vec4(1.0f, 0.0f, 1.0f, 1.0f);
     }
 
-    glob.roughness = material.roughness;
-    glob.metalness = material.metalness;
+    glob.roughness = materialHeap[nonuniformEXT(pcs.materialIndex)].roughness;
+    glob.metalness = materialHeap[nonuniformEXT(pcs.materialIndex)].metalness;
 
     glob.f0 = vec3(0.04f);
     glob.f0 = mix(glob.f0, glob.albedo.rgb, glob.metalness);
@@ -158,5 +164,5 @@ void main()
 
     vec3 final_colour = ambient + lo;
 
-    o_Colour = vec4(final_colour , 1.0f);
+    o_Colour = vec4(final_colour, 1.0f);
 }

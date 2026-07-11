@@ -2,9 +2,9 @@
 
 #include "image.hpp"
 #include "toast_render.hpp"
-#include "uniform_buffer.hpp"
-
 #include "shader_reflection.hpp"
+
+#include "toast_gpu/vk/vk_uniform_buffer.hpp"
 
 namespace toaster::render
 {
@@ -31,6 +31,8 @@ namespace toaster::render
 
 		[[nodiscard]] auto getDeviceAddress() const -> uintptr;
 
+		auto getHeapID() const -> uint32;
+
 		template<typename Type>
 		auto set(const String &p_name, const Type &p_value) -> void
 		{
@@ -53,8 +55,8 @@ namespace toaster::render
 		std::unordered_map<String, ImageHandle> m_imageRefs;
 
 		// The buffer containing the data stored in the shader ubo
-		UniformBufferUnique m_uniformData{nullptr};
-		void *              m_mappedUniformData{nullptr};
+		gpu::UniformBufferUnique m_uniformData{nullptr};
+		void *                   m_mappedUniformData{nullptr};
 	};
 
 	template<>

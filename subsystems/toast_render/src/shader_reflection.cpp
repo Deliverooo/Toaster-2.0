@@ -26,6 +26,8 @@ namespace toaster::render::reflection
 					ReflectedStruct &reflected_struct{out_data.structs[name]};
 					reflected_struct.name = name;
 
+					LOG_WARN("{}", reflected_struct.name);
+
 					// Apparently for structs declared outside of uniform/storage buffers, the compiler cannot compute their size...
 					try
 					{

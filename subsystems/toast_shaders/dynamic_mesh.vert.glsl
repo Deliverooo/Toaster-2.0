@@ -1,7 +1,6 @@
 #version 460
-#extension GL_EXT_buffer_reference: require
-#extension GL_EXT_shader_8bit_storage: require
-#extension GL_EXT_shader_explicit_arithmetic_types_int64: require
+#extension GL_GOOGLE_include_directive: require
+#include "common.glslh"
 
 struct Vertex
 {
@@ -18,28 +17,38 @@ struct Vertex
 
 layout (std430, buffer_reference) readonly buffer VertexBuffer { Vertex vertices[]; };
 
-layout (buffer_reference, std140) readonly buffer Camera
+struct Camera
 {
     mat4 view;
     mat4 proj;
     mat4 invProj;
 };
 
+layout (descriptor_heap) uniform CameraHeap
+{
+    Camera data;
+} cameraHeap[];
+
 layout (push_constant) uniform Constants
 {
+
     mat4 meshTransform;
 
     VertexBuffer vbo;
 
-    uint64_t material;
-
-    Camera cameraPtr;
-    uint64_t sceneDataPtr;
     uint64_t pointLightsPtr;
+
+    uint materialIndex;
+
+    uint cameraIndex;
+    uint sceneDataIndex;
 
     uint samplerIndex;
     uint diffuseIrradianceMapIndex;
     uint specularIrradianceMapIndex;
+
+    uint BRDFLUTSamplerIndex;
+    uint BRDFLUT;
 } pcs;
 
 layout (location = 0) out vec3 o_WorldPos;
@@ -51,10 +60,12 @@ void main()
 {
     Vertex v_in = pcs.vbo.vertices[gl_VertexIndex];
 
-    vec4 world_pos = pcs.meshTransform * v_in.position;
-    vec4 view_pos = pcs.cameraPtr.view * world_pos;
+    Camera camera = cameraHeap[nonuniformEXT(pcs.cameraIndex)].data;
 
-    gl_Position = pcs.cameraPtr.proj * view_pos;
+    vec4 world_pos = pcs.meshTransform * v_in.position;
+    vec4 view_pos = camera.view * world_pos;
+
+    gl_Position = camera.proj * view_pos;
 
     o_WorldPos = world_pos.xyz;
 
