@@ -11,7 +11,6 @@
 #include "toast_lib/events/key_event.hpp"
 #include "toast_render/constant_buffer.hpp"
 #include "toast_render/dynamic_mesh.hpp"
-#include "toast_render/skybox_pass.hpp"
 
 #include "toast_render/dynamic_material.hpp"
 #include "toast_scene/scene_renderer.hpp"
@@ -46,7 +45,7 @@ public:
 																   m_renderCtx->getGlobals()->getShader("Default_Unlit_PS"), &material_struct, "Unlit_Outline");
 
 		body_mat->set("textureSampler", m_renderCtx->getSampler(render::ESamplerType::eNearest));
-		body_mat->set("albedoMap", m_globals->whiteImage()->getAlignedShaderReadHeapID());
+		body_mat->set("albedoMap", m_globals->whiteImage()->getShaderReadHeapID());
 		body_mat->set("albedoColour", tsm::float4{0.0f, 0.0f, 0.0f, 1.0f});
 
 		orbo_geo->getMaterial(0)->set("metalness", 0.0f);
@@ -71,7 +70,7 @@ public:
 
 				auto onUpdate(float32 p_dt) -> void override
 				{
-					Dx::XMVECTOR translation{Dx::XMLoadFloat3(&transform->translation)};
+					Dx::XMVECTOR translation{transform->getTranslation()};
 
 					if (m_inputCtx->isKeyDown(input::EKeyCode::eUp))
 						translation = Dx::XMVectorAdd(translation, Dx::XMVectorSet(0.0f, p_dt, 0.0f, 0.0f));
@@ -82,7 +81,7 @@ public:
 					if (m_inputCtx->isKeyDown(input::EKeyCode::eLeft))
 						translation = Dx::XMVectorAdd(translation, Dx::XMVectorSet(-p_dt, 0.0f, 0.0f, 0.0f));
 
-					Dx::XMStoreFloat3(&transform->translation, translation);
+					transform->setTranslation(translation);
 				}
 
 			private:
@@ -107,7 +106,7 @@ public:
 
 				auto &tc{entity.getComponent<scene::TransformComponent>()};
 				tc.translation = {(float32) i * 2.0f, 0.0f, (float32) j * 2.0f};
-			}
+			} 
 		}
 
 		{
@@ -121,9 +120,6 @@ public:
 		}
 
 		m_scene->initNativeScripts();
-
-		auto features{gpu::VKLogicalDeviceSpecInfo::getDefaultFeatures()};
-		LOG_INFO("Features struct size: {}", sizeof(decltype(features)));
 	}
 
 	auto onDestroy() -> void override
@@ -163,7 +159,7 @@ public:
 		m_renderCtx->beginRendering(rendering_info);
 
 		m_fullscreenConstants->set("vertexBuffer", m_globals->fullscreenQuadVertexBuffer().getDeviceAddress());
-		m_fullscreenConstants->set("textureIndex", m_sceneRenderer->getColourImage()->getAlignedShaderReadHeapID());
+		m_fullscreenConstants->set("textureIndex", m_sceneRenderer->getColourImage()->getShaderReadHeapID());
 
 		cmd->pushData(m_fullscreenConstants->getBuffer());
 

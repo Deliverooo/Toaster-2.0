@@ -71,7 +71,7 @@ namespace toaster::render
 		return m_uniformData->getHeapID();
 	}
 
-	auto DynamicMaterial::getImage(const String &p_name) const -> const ImageHandle &
+	auto DynamicMaterial::getImage(const String &p_name) const -> const gpu::ImageHandle &
 	{
 		return m_imageRefs.at(p_name);
 	}

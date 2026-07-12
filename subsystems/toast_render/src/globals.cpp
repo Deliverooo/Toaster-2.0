@@ -96,10 +96,10 @@ namespace toaster::render
 			image_data.allocate(sizeof(uint32));
 			image_data.writeType<uint32>(0xFFFFFFFF);
 
-			ImageSpecInfo image_spec_info{};
+			gpu::ImageSpecInfo image_spec_info{};
 			image_spec_info.size   = {1u, 1u};
 			image_spec_info.format = vk::Format::eR8G8B8A8Unorm;
-			m_whiteImage           = make_reference<Image>(*m_renderCtx, image_spec_info, image_data);
+			m_whiteImage           =  m_renderCtx->createGPURef<gpu::Image>(image_spec_info, image_data);
 
 			image_data.release();
 		}
@@ -112,10 +112,10 @@ namespace toaster::render
 			image_data.writeType<uint32>(0x00000000, sizeof(uint32) * 2u);
 			image_data.writeType<uint32>(0xFFFF00FF, sizeof(uint32) * 3u);
 
-			ImageSpecInfo image_spec_info{};
+			gpu::ImageSpecInfo image_spec_info{};
 			image_spec_info.size   = {2u, 2u};
 			image_spec_info.format = vk::Format::eR8G8B8A8Unorm;
-			m_debugImage           = make_reference<Image>(*m_renderCtx, image_spec_info, image_data);
+			m_debugImage           = m_renderCtx->createGPURef<gpu::Image>(image_spec_info, image_data);
 
 			image_data.release();
 		}
@@ -175,17 +175,17 @@ namespace toaster::render
 		return m_quadIndices;
 	}
 
-	auto Globals::whiteImage() const -> const ImageHandle &
+	auto Globals::whiteImage() const -> const gpu::ImageHandle &
 	{
 		return m_whiteImage;
 	}
 
-	auto Globals::debugImage() const -> const ImageHandle &
+	auto Globals::debugImage() const -> const gpu::ImageHandle &
 	{
 		return m_debugImage;
 	}
 
-	auto Globals::BRDFLUT() const -> const ImageHandle &
+	auto Globals::BRDFLUT() const -> const gpu::ImageHandle &
 	{
 		return m_BRDFLUT;
 	}

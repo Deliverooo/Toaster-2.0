@@ -37,7 +37,7 @@ namespace toaster::render
 			Dx::XMStoreFloat4(&m_quadVertexPtr->position, Dx::XMVector4Transform(Dx::XMLoadFloat4(&m_quadVertexPositions[i]), p_transform));
 			m_quadVertexPtr->colour       = p_colour;
 			m_quadVertexPtr->texCoord     = m_quadVertexTexCoords[i];
-			m_quadVertexPtr->texIndex     = static_cast<float32>(m_renderCtx->getGlobals()->debugImage()->getAlignedShaderReadHeapID());
+			m_quadVertexPtr->texIndex     = static_cast<float32>(m_renderCtx->getGlobals()->debugImage()->getShaderReadHeapID());
 			m_quadVertexPtr->samplerIndex = static_cast<float32>(m_renderCtx->getSampler(ESamplerType::eNearest));
 			m_quadVertexPtr++;
 		}
@@ -50,7 +50,7 @@ namespace toaster::render
 		submitQuad(transform, p_colour);
 	}
 
-	auto DynamicRenderer2D::submitQuad(Dx::FXMMATRIX       p_transform, const ImageHandle &p_image, float32 p_tiling_factor, const tsm::float3 &p_tint_colour,
+	auto DynamicRenderer2D::submitQuad(Dx::FXMMATRIX       p_transform, const gpu::ImageHandle &p_image, float32 p_tiling_factor, const tsm::float3 &p_tint_colour,
 									   gpu::DescriptorSlot p_sampler) -> void
 	{
 		if (m_quadIndexCount >= m_maxIndices)
@@ -70,7 +70,7 @@ namespace toaster::render
 			Dx::XMStoreFloat4(&m_quadVertexPtr->position, Dx::XMVector4Transform(Dx::XMLoadFloat4(&m_quadVertexPositions[i]), p_transform));
 			m_quadVertexPtr->colour       = p_tint_colour;
 			m_quadVertexPtr->texCoord     = m_quadVertexTexCoords[i];
-			m_quadVertexPtr->texIndex     = static_cast<float32>(p_image->getAlignedShaderReadHeapID());
+			m_quadVertexPtr->texIndex     = static_cast<float32>(p_image->getShaderReadHeapID());
 			m_quadVertexPtr->samplerIndex = static_cast<float32>(p_sampler);
 			m_quadVertexPtr->tilingFactor = p_tiling_factor;
 			m_quadVertexPtr++;
@@ -78,7 +78,7 @@ namespace toaster::render
 		m_quadIndexCount += 6u;
 	}
 
-	auto DynamicRenderer2D::submitQuad(Dx::FXMVECTOR      p_position, Dx::FXMVECTOR          p_scale, const ImageHandle &p_image, float32 p_tiling_factor,
+	auto DynamicRenderer2D::submitQuad(Dx::FXMVECTOR      p_position, Dx::FXMVECTOR          p_scale, const gpu::ImageHandle &p_image, float32 p_tiling_factor,
 									   const tsm::float3 &p_tint_colour, gpu::DescriptorSlot p_sampler) -> void
 	{
 		Dx::XMMATRIX transform{Dx::XMMatrixTransformation2D(Dx::XMVectorZero(), 0.0f, p_scale, Dx::XMVectorZero(), 0.0f, p_position)};

@@ -2,19 +2,18 @@
 
 #include "render_attachment.hpp"
 #include "shader_compiler.hpp"
-#include "toast_render.hpp"
 #include "toast_gpu/buffer_layout.hpp"
 #include "toast_lib/ptr.hpp"
 
 #include "toast_gpu/vk/vk_command_buffer.hpp"
 #include "toast_gpu/vk/vk_descriptor_heap.hpp"
 #include "toast_gpu/vk/vk_gpu_context.hpp"
+#include "toast_gpu/vk/vk_image.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 
 namespace toaster::render
 {
 	class Globals;
-	class Image;
 	class ShaderCompiler;
 	class DynamicMaterial;
 
@@ -121,8 +120,8 @@ namespace toaster::render
 
 		auto getSampler(ESamplerType p_type) const -> gpu::DescriptorSlot;
 
-		[[nodiscard]] auto createImageRef(const io::filesystem::Path &p_path) -> RefPtr<Image>;
-		[[nodiscard]] auto createImageUnique(const io::filesystem::Path &p_path) -> UniquePtr<Image>;
+		[[nodiscard]] auto createImageRef(const io::filesystem::Path &p_path) -> gpu::ImageHandle;
+		[[nodiscard]] auto createImageUnique(const io::filesystem::Path &p_path) -> gpu::ImageUnique;
 
 		[[nodiscard]] auto loadTextureIntoImage(const io::filesystem::Path &p_path) const -> gpu::RawImageHandle;
 
@@ -134,11 +133,11 @@ namespace toaster::render
 																  vk::Format p_format = vk::Format::eUndefined) const -> gpu::RawImageUnique;
 
 		[[nodiscard]] auto createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags,
-												 vk::Format p_format = vk::Format::eUndefined) -> RefPtr<Image>;
+												 vk::Format p_format = vk::Format::eUndefined) -> gpu::ImageHandle;
 
-		[[nodiscard]] auto createEnvironmentMapImage(const io::filesystem::Path &p_path) -> RefPtr<Image>;
-		[[nodiscard]] auto createDiffuseIrradianceMapImage(const RefPtr<Image> &p_environment_map) -> RefPtr<Image>;
-		[[nodiscard]] auto createSpecularIrradianceMapImage(const RefPtr<Image> &p_environment_map) -> RefPtr<Image>;
+		[[nodiscard]] auto createEnvironmentMapImage(const io::filesystem::Path &p_path) -> gpu::ImageHandle;
+		[[nodiscard]] auto createDiffuseIrradianceMapImage(const gpu::ImageHandle &p_environment_map) -> gpu::ImageHandle;
+		[[nodiscard]] auto createSpecularIrradianceMapImage(const gpu::ImageHandle &p_environment_map) -> gpu::ImageHandle;
 
 		[[nodiscard]] auto createShader(const io::filesystem::Path &p_path, EShaderStage p_stage, EShaderStage p_next_stage = EShaderStage::eNone,
 										EShaderLanguage             p_shader_lang = EShaderLanguage::eHLSL) const -> gpu::ShaderHandle;

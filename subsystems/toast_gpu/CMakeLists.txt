@@ -13,6 +13,7 @@ set(GPU_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_shader.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_common.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_raw_image.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_image.cpp
 )
 
 add_library(ToastGPU SHARED)

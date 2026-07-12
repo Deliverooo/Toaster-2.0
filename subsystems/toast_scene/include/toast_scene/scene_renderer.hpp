@@ -21,8 +21,8 @@ namespace toaster::scene
 
 		auto getViewportSize() const -> tsm::uint2 { return m_viewportSize; }
 
-		auto getColourImage() const -> const render::ImageHandle & { return m_colourRenderTarget; }
-		auto getDepthImage() const -> const render::ImageHandle & { return m_depthRenderTarget; }
+		auto getColourImage() const -> const gpu::ImageHandle & { return m_colourRenderTarget; }
+		auto getDepthImage() const -> const gpu::ImageHandle & { return m_depthRenderTarget; }
 
 		auto onResize(tsm::uint2 p_size) -> void;
 
@@ -62,8 +62,8 @@ namespace toaster::scene
 
 		render::StorageBufferPFFUnique m_pointLightSSBOs{nullptr};
 
-		render::ImageHandle m_colourRenderTarget{nullptr};
-		render::ImageHandle m_depthRenderTarget{nullptr};
+		gpu::ImageHandle m_colourRenderTarget{nullptr};
+		gpu::ImageHandle m_depthRenderTarget{nullptr};
 
 		TST_PUSH_CONSTANT_BLOCK(DepthPreConstants)
 		{

@@ -8,7 +8,7 @@
 
 namespace toaster::gpu
 {
-	VKRawImage::VKRawImage(VKGPUContext &p_gpu_ctx, const ImageSpecInfo &p_spec_info) : m_gpuCtx(&p_gpu_ctx), m_specInfo(p_spec_info)
+	VKRawImage::VKRawImage(VKGPUContext &p_gpu_ctx, const RawImageSpecInfo &p_spec_info) : m_gpuCtx(&p_gpu_ctx), m_specInfo(p_spec_info)
 	{
 		recreate();
 	}
@@ -67,7 +67,7 @@ namespace toaster::gpu
 		return m_imageView;
 	}
 
-	auto VKRawImage::getSpecInfo() const -> const ImageSpecInfo &
+	auto VKRawImage::getSpecInfo() const -> const RawImageSpecInfo &
 	{
 		return m_specInfo;
 	}

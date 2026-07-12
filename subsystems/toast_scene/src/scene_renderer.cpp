@@ -237,7 +237,7 @@ namespace toaster::scene
 		skybox_constants.vertexBufferBDA             = m_renderCtx->getGlobals()->fullscreenQuadVertexBuffer().getDeviceAddress();
 		skybox_constants.cameraBDA                   = m_cameraUBOs->getDeviceAddress();
 		skybox_constants.samplerAddressOffset        = m_renderCtx->getSampler(render::ESamplerType::eIrradianceMap);
-		skybox_constants.environmentMapAddressOffset = m_scene->getSkyboxMap()->getAlignedShaderReadHeapID();
+		skybox_constants.environmentMapAddressOffset = m_scene->getSkyboxMap()->getShaderReadHeapID();
 		p_cmd.pushData(skybox_constants);
 
 		m_renderCtx->renderFullscreenQuad();
@@ -269,11 +269,11 @@ namespace toaster::scene
 		mesh_draw_constants.pointLightsPtr = m_pointLightSSBOs->getDeviceAddress();
 
 		mesh_draw_constants.samplerIndex               = m_renderCtx->getSampler(render::ESamplerType::eIrradianceMap);
-		mesh_draw_constants.diffuseIrradianceMapIndex  = m_scene->getDiffuseIrradianceMap()->getAlignedShaderReadHeapID();
-		mesh_draw_constants.specularIrradianceMapIndex = m_scene->getSpecularIrradianceMap()->getAlignedShaderReadHeapID();
+		mesh_draw_constants.diffuseIrradianceMapIndex  = m_scene->getDiffuseIrradianceMap()->getShaderReadHeapID();
+		mesh_draw_constants.specularIrradianceMapIndex = m_scene->getSpecularIrradianceMap()->getShaderReadHeapID();
 
 		mesh_draw_constants.BRDFLUTSamplerIndex = m_renderCtx->getSampler(render::ESamplerType::eBRDFLUT);
-		mesh_draw_constants.BRDFLUT             = m_renderCtx->getGlobals()->BRDFLUT()->getAlignedShaderReadHeapID();
+		mesh_draw_constants.BRDFLUT             = m_renderCtx->getGlobals()->BRDFLUT()->getShaderReadHeapID();
 
 		render::DynamicMeshHandle last_mesh{nullptr};
 		gpu::ShaderHandle         last_vs{nullptr};

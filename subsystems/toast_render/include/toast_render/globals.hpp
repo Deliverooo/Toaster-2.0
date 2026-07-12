@@ -1,6 +1,5 @@
 #pragma once
 
-#include "image.hpp"
 #include "shader_library.hpp"
 #include "shader_reflection.hpp"
 #include "storage_buffer.hpp"
@@ -88,10 +87,10 @@ namespace toaster::render
 		auto fullscreenQuadVertices() const -> const std::vector<FullscreenQuadVertex> &;
 		auto fullscreenQuadIndices() const -> const std::vector<uint8> &;
 
-		auto whiteImage() const -> const ImageHandle &;
+		auto whiteImage() const -> const gpu::ImageHandle &;
 
-		auto debugImage() const -> const ImageHandle &;
-		auto BRDFLUT() const -> const ImageHandle &;
+		auto debugImage() const -> const gpu::ImageHandle &;
+		auto BRDFLUT() const -> const gpu::ImageHandle &;
 
 	private:
 		GlobalsSpecInfo m_specInfo{};
@@ -105,10 +104,10 @@ namespace toaster::render
 		std::vector<FullscreenQuadVertex> m_quadVertices;
 		std::vector<uint8>                m_quadIndices;
 
-		ImageHandle m_whiteImage{nullptr};
+		gpu::ImageHandle m_whiteImage{nullptr};
 
-		ImageHandle m_debugImage{nullptr};
+		gpu::ImageHandle m_debugImage{nullptr};
 
-		ImageHandle m_BRDFLUT{nullptr};
+		gpu::ImageHandle m_BRDFLUT{nullptr};
 	};
 }

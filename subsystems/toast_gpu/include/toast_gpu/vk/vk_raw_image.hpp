@@ -10,9 +10,7 @@
 
 namespace toaster::gpu
 {
-	class VKLogicalDevice;
-
-	struct TST_GPU_API ImageSpecInfo
+	struct TST_GPU_API RawImageSpecInfo
 	{
 		tsm::uint2              size{0u};
 		vk::Format              format{vk::Format::eUndefined};
@@ -29,7 +27,7 @@ namespace toaster::gpu
 	{
 		TST_GPU_OBJECT
 	public:
-		VKRawImage(VKGPUContext &p_gpu_ctx, const ImageSpecInfo &p_spec_info);
+		VKRawImage(VKGPUContext &p_gpu_ctx, const RawImageSpecInfo &p_spec_info);
 		~VKRawImage();
 
 		[[nodiscard]] auto getImageViewCreateInfo() const -> const vk::ImageViewCreateInfo &;
@@ -39,7 +37,7 @@ namespace toaster::gpu
 		auto getImageMemory() -> vk::DeviceMemory &;
 		auto getImageView() -> vk::ImageView &;
 
-		[[nodiscard]] auto getSpecInfo() const -> const ImageSpecInfo &;
+		[[nodiscard]] auto getSpecInfo() const -> const RawImageSpecInfo &;
 
 		[[nodiscard]] auto isMultisample() const -> bool;
 
@@ -55,7 +53,7 @@ namespace toaster::gpu
 		auto recreate() -> void;
 
 	private:
-		ImageSpecInfo m_specInfo{};
+		RawImageSpecInfo m_specInfo{};
 
 		vk::ImageViewCreateInfo m_imageViewCreateInfo{};
 

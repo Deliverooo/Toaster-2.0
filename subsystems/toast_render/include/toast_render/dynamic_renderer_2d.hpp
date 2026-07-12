@@ -1,7 +1,6 @@
 #pragma once
 
 #include "graphics_state.hpp"
-#include "image.hpp"
 #include "render_attachment.hpp"
 #include "storage_buffer.hpp"
 #include "uniform_buffer.hpp"
@@ -56,20 +55,20 @@ namespace toaster::render
 		~DynamicRenderer2D();
 
 		[[nodiscard]] auto getMSAAColourImage() const -> const gpu::RawImageHandle & { return m_MSAAColourImage; }
-		[[nodiscard]] auto getColourImage() const -> const ImageHandle & { return m_colourImage; }
+		[[nodiscard]] auto getColourImage() const -> const gpu::ImageHandle & { return m_colourImage; }
 
 		[[nodiscard]] auto getMSAADepthImage() const -> const gpu::RawImageHandle & { return m_MSAADepthImage; }
-		[[nodiscard]] auto getDepthImage() const -> const ImageHandle & { return m_depthImage; }
+		[[nodiscard]] auto getDepthImage() const -> const gpu::ImageHandle & { return m_depthImage; }
 
 		auto getQuadIndexCount() const -> uint32 { return m_quadIndexCount; }
 
 		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX p_transform, const tsm::float3 &p_colour) -> void;
 		auto XM_CALLCONV submitQuad(Dx::FXMVECTOR p_position, Dx::FXMVECTOR p_scale, const tsm::float3 &p_colour) -> void;
 
-		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX      p_transform, const ImageHandle &p_image, float32 p_tiling_factor = 1.0f,
+		auto XM_CALLCONV submitQuad(Dx::FXMMATRIX      p_transform, const gpu::ImageHandle &p_image, float32 p_tiling_factor = 1.0f,
 									const tsm::float3 &p_tint_colour = {1.0f, 1.0f, 1.0f}, gpu::DescriptorSlot p_sampler = UINT32_MAX) -> void;
 
-		auto XM_CALLCONV submitQuad(Dx::FXMVECTOR      p_position, Dx::FXMVECTOR p_scale, const ImageHandle &p_image, float32 p_tiling_factor = 1.0f,
+		auto XM_CALLCONV submitQuad(Dx::FXMVECTOR      p_position, Dx::FXMVECTOR p_scale, const gpu::ImageHandle &p_image, float32 p_tiling_factor = 1.0f,
 									const tsm::float3 &p_tint_colour = {1.0f, 1.0f, 1.0f}, gpu::DescriptorSlot p_sampler = UINT32_MAX) -> void;
 
 		auto XM_CALLCONV render(Dx::FXMMATRIX  p_view                    = Dx::XMMatrixIdentity(), Dx::CXMMATRIX p_projection = Dx::XMMatrixIdentity(),
@@ -85,10 +84,10 @@ namespace toaster::render
 		uint32                    m_maxIndices{0u};
 
 		gpu::RawImageHandle m_MSAAColourImage{nullptr};
-		ImageHandle         m_colourImage{nullptr};
+		gpu::ImageHandle         m_colourImage{nullptr};
 
 		gpu::RawImageHandle m_MSAADepthImage{nullptr};
-		ImageHandle         m_depthImage{nullptr};
+		gpu::ImageHandle         m_depthImage{nullptr};
 
 		UniformBufferPFFUnique m_cameraUBOs{nullptr};
 
@@ -105,7 +104,7 @@ namespace toaster::render
 		std::array<Dx::XMFLOAT4, 4u> m_quadVertexPositions{};
 		std::array<tsm::float2, 4u>  m_quadVertexTexCoords{};
 
-		std::array<ImageHandle, 32u> m_textureSlots;
+		std::array<gpu::ImageHandle, 32u> m_textureSlots;
 		uint32                       m_textureSlotIndex{1u};
 	};
 }

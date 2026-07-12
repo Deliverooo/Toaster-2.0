@@ -1,9 +1,9 @@
 #pragma once
 
-#include "image.hpp"
 #include "toast_render.hpp"
 #include "shader_reflection.hpp"
 
+#include "toast_gpu/vk/vk_image.hpp"
 #include "toast_gpu/vk/vk_uniform_buffer.hpp"
 
 namespace toaster::render
@@ -41,7 +41,7 @@ namespace toaster::render
 			_set(p_name, static_cast<const void *>(&p_value));
 		}
 
-		[[nodiscard]] auto getImage(const String &p_name) const -> const ImageHandle &;
+		[[nodiscard]] auto getImage(const String &p_name) const -> const gpu::ImageHandle &;
 
 		uint32 flags{EMaterialPropertyFlags::eNone};
 
@@ -55,7 +55,7 @@ namespace toaster::render
 		String m_name;
 		String m_internalMaterialStructName;
 
-		std::unordered_map<String, ImageHandle> m_imageRefs;
+		std::unordered_map<String, gpu::ImageHandle> m_imageRefs;
 
 		// The buffer containing the data stored in the shader ubo
 		gpu::UniformBufferUnique m_uniformData{nullptr};
@@ -63,9 +63,9 @@ namespace toaster::render
 	};
 
 	template<>
-	inline auto DynamicMaterial::set<ImageHandle>(const String &p_name, const ImageHandle &p_value) -> void
+	inline auto DynamicMaterial::set<gpu::ImageHandle>(const String &p_name, const gpu::ImageHandle &p_value) -> void
 	{
-		uint32 image_heap_id{p_value->getAlignedShaderReadHeapID()};
+		uint32 image_heap_id{p_value->getShaderReadHeapID()};
 		_set(p_name, &image_heap_id);
 		m_imageRefs[p_name] = p_value;
 	}

@@ -78,6 +78,36 @@ namespace toaster::scene
 			Dx::XMStoreFloat3(&scale, out_scale);
 		}
 
+		auto getOrientation() -> Dx::XMVECTOR
+		{
+			return Dx::XMLoadFloat4(&orientation);
+		}
+
+		auto XM_CALLCONV setOrientation(Dx::FXMVECTOR p_orientation) -> void
+		{
+			Dx::XMStoreFloat4(&orientation, p_orientation);
+		}
+
+		auto getTranslation() -> Dx::XMVECTOR
+		{
+			return Dx::XMLoadFloat3(&translation);
+		}
+
+		auto XM_CALLCONV setTranslation(Dx::FXMVECTOR p_translation) -> void
+		{
+			Dx::XMStoreFloat3(&translation, p_translation);
+		}
+
+		auto getScale() -> Dx::XMVECTOR
+		{
+			return Dx::XMLoadFloat3(&scale);
+		}
+
+		auto XM_CALLCONV setScale(Dx::FXMVECTOR p_scale) -> void
+		{
+			Dx::XMStoreFloat3(&scale, p_scale);
+		}
+
 		auto reset() -> void
 		{
 			orientation = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -89,6 +119,8 @@ namespace toaster::scene
 		Dx::XMFLOAT4 orientation{0.0f, 0.0f, 0.0f, 1.0f};
 		Dx::XMFLOAT3 translation{0.0f, 0.0f, 0.0f};
 		Dx::XMFLOAT3 scale{1.0f, 1.0f, 1.0f};
+
+		// bool32 dirty{false};
 	};
 
 	DEFINE_COMPONENT(SpriteRendererComponent)
@@ -103,9 +135,9 @@ namespace toaster::scene
 			tilingFactor = 1.0f;
 		}
 
-		tsm::float4         colour{1.0f};
-		render::ImageHandle texture{nullptr};
-		float32             tilingFactor{1.0f};
+		tsm::float4      colour{1.0f};
+		gpu::ImageHandle texture{nullptr};
+		float32          tilingFactor{1.0f};
 	};
 
 	DEFINE_COMPONENT(DynamicMeshComponent)

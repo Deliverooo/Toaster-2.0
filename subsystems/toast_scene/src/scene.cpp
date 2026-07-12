@@ -330,22 +330,22 @@ namespace toaster::scene
 		return m_name;
 	}
 
-	auto Scene::getSkyboxMap() const -> const render::ImageHandle &
+	auto Scene::getSkyboxMap() const -> const gpu::ImageHandle &
 	{
 		return m_environment.skyboxMap;
 	}
 
-	auto Scene::getDiffuseIrradianceMap() const -> const render::ImageHandle &
+	auto Scene::getDiffuseIrradianceMap() const -> const gpu::ImageHandle &
 	{
 		return m_environment.diffuseIrradianceMap;
 	}
 
-	auto Scene::getSpecularIrradianceMap() const -> const render::ImageHandle &
+	auto Scene::getSpecularIrradianceMap() const -> const gpu::ImageHandle &
 	{
 		return m_environment.specularIrradianceMap;
 	}
 
-	auto Scene::setSkyboxMap(const render::ImageHandle &p_skybox_map) -> void
+	auto Scene::setSkyboxMap(const gpu::ImageHandle &p_skybox_map) -> void
 	{
 		m_environment.skyboxMap             = p_skybox_map;
 		m_environment.diffuseIrradianceMap  = m_renderCtx->createDiffuseIrradianceMapImage(m_environment.skyboxMap);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "dynamic_material.hpp"
-#include "image.hpp"
 #include "storage_buffer.hpp"
 #include "toast_render.hpp"
 

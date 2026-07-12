@@ -68,10 +68,10 @@ namespace toaster::scene
 		auto               setName(const String &p_name) -> void;
 		[[nodiscard]] auto getName() const -> String;
 
-		auto getSkyboxMap() const -> const render::ImageHandle &;
-		auto getDiffuseIrradianceMap() const -> const render::ImageHandle &;
-		auto getSpecularIrradianceMap() const -> const render::ImageHandle &;
-		auto setSkyboxMap(const render::ImageHandle &p_skybox_map) -> void;
+		auto getSkyboxMap() const -> const gpu::ImageHandle &;
+		auto getDiffuseIrradianceMap() const -> const gpu::ImageHandle &;
+		auto getSpecularIrradianceMap() const -> const gpu::ImageHandle &;
+		auto setSkyboxMap(const gpu::ImageHandle &p_skybox_map) -> void;
 
 		auto submitPointLight(const PointLight &p_point_light) -> void; // Ts has to be called every frame, because the environment gets cleared
 		auto getLightEnvironment() const -> const LightEnvironment &;
@@ -113,9 +113,9 @@ namespace toaster::scene
 
 		struct
 		{
-			render::ImageHandle skyboxMap{nullptr};
-			render::ImageHandle diffuseIrradianceMap{nullptr};
-			render::ImageHandle specularIrradianceMap{nullptr};
+			gpu::ImageHandle skyboxMap{nullptr};
+			gpu::ImageHandle diffuseIrradianceMap{nullptr};
+			gpu::ImageHandle specularIrradianceMap{nullptr};
 		} m_environment;
 
 		LightEnvironment m_lightEnvironment;

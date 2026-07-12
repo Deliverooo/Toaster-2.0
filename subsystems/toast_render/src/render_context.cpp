@@ -4,7 +4,6 @@
 #include "toast_gpu/vk/vk_command_buffer.hpp"
 #include "toast_gpu/vk/vk_logical_device.hpp"
 #include "toast_lib/os/terminal.hpp"
-#include "toast_render/image.hpp"
 
 #include "toast_render/shader_compiler.hpp"
 #include "toast_render/shader_reflection.hpp"
@@ -196,10 +195,10 @@ namespace toaster::render
 		return m_samplers.at(p_type);
 	}
 
-	auto RenderContext::createImageRef(const io::filesystem::Path &p_path) -> RefPtr<Image>
+	auto RenderContext::createImageRef(const io::filesystem::Path &p_path) -> gpu::ImageHandle
 	{
-		ImageSpecInfo image_spec_info{};
-		image_spec_info.generateMipmaps = true;
+		gpu::ImageSpecInfo image_spec_info{};
+		image_spec_info.mipLevels = gpu::ImageSpecInfo::eComputeMipLevels;
 		Buffer image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
 		if (!image_data)
 		{
@@ -207,30 +206,30 @@ namespace toaster::render
 			return m_globals->debugImage();
 		}
 
-		auto out_image{createRef<Image>(image_spec_info, image_data)}; // The image takes ownership of the image data from here...
+		auto out_image{createGPURef<gpu::Image>(image_spec_info, image_data)}; // The image takes ownership of the image data from here...
 		out_image->generateMipmaps();
 		return out_image;
 	}
 
-	auto RenderContext::createImageUnique(const io::filesystem::Path &p_path) -> UniquePtr<Image>
+	auto RenderContext::createImageUnique(const io::filesystem::Path &p_path) -> gpu::ImageUnique
 	{
-		ImageSpecInfo image_spec_info{};
-		image_spec_info.generateMipmaps = true;
+		gpu::ImageSpecInfo image_spec_info{};
+		image_spec_info.mipLevels = gpu::ImageSpecInfo::eComputeMipLevels;
 		Buffer image_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
 		if (!image_data)
 		{
 			LOG_ERROR("Failed to load image: {}", p_path);
 			return nullptr;
 		}
-		auto out_image{createUnique<Image>(image_spec_info, image_data)}; // The image takes ownership of the image data from here...
+		auto out_image{createGPUUnique<gpu::Image>(image_spec_info, image_data)}; // The image takes ownership of the image data from here...
 		out_image->generateMipmaps();
 		return std::move(out_image);
 	}
 
 	auto RenderContext::loadTextureIntoImage(const io::filesystem::Path &p_path) const -> gpu::RawImageHandle
 	{
-		gpu::ImageSpecInfo image_spec_info{};
-		Buffer             texture_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
+		gpu::RawImageSpecInfo image_spec_info{};
+		Buffer                texture_data{gpu::util::loadTextureIntoBuffer(p_path, image_spec_info.format, image_spec_info.size.x, image_spec_info.size.y)};
 		if (!texture_data)
 		{
 			TST_ASSERT(false);
@@ -257,7 +256,7 @@ namespace toaster::render
 		if (p_format == vk::Format::eUndefined)
 			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
 
-		gpu::ImageSpecInfo attachment_image_spec_info{};
+		gpu::RawImageSpecInfo attachment_image_spec_info{};
 		attachment_image_spec_info.size   = p_size;
 		attachment_image_spec_info.format = p_format;
 		attachment_image_spec_info.usage  = gpu::util::getImageUsageFlags(p_image_aspect_flags);
@@ -269,7 +268,7 @@ namespace toaster::render
 		if (p_format == vk::Format::eUndefined)
 			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
 
-		gpu::ImageSpecInfo attachment_image_spec_info{};
+		gpu::RawImageSpecInfo attachment_image_spec_info{};
 		attachment_image_spec_info.size        = p_size;
 		attachment_image_spec_info.format      = p_format;
 		attachment_image_spec_info.sampleCount = m_gpuCtx->getPhysicalDevice()->getMaxUsableSampleCount();
@@ -283,7 +282,7 @@ namespace toaster::render
 		if (p_format == vk::Format::eUndefined)
 			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
 
-		gpu::ImageSpecInfo attachment_image_spec_info{};
+		gpu::RawImageSpecInfo attachment_image_spec_info{};
 		attachment_image_spec_info.size        = p_size;
 		attachment_image_spec_info.format      = p_format;
 		attachment_image_spec_info.sampleCount = m_gpuCtx->getPhysicalDevice()->getMaxUsableSampleCount();
@@ -291,33 +290,33 @@ namespace toaster::render
 		return createGPUUnique<gpu::RawImage>(attachment_image_spec_info);
 	}
 
-	auto RenderContext::createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) -> RefPtr<Image>
+	auto RenderContext::createAttachmentImage(tsm::uint2 p_size, vk::ImageAspectFlags p_image_aspect_flags, vk::Format p_format) -> gpu::ImageHandle
 	{
 		if (p_format == vk::Format::eUndefined)
 			p_format = gpu::util::getDefaultFormat(p_image_aspect_flags);
 
-		gpu::ImageSpecInfo image_spec_info{};
+		gpu::RawImageSpecInfo image_spec_info{};
 		image_spec_info.size  = p_size;
 		image_spec_info.usage = gpu::util::getImageUsageFlags(p_image_aspect_flags);
 		image_spec_info.usage |= vk::ImageUsageFlagBits::eSampled; // An attachment image is only used if it needs to be sampled from, else just create a raw image.
 
 		image_spec_info.format = p_format;
-		return createRef<Image>(createGPURef<gpu::RawImage>(image_spec_info));
+		return createGPURef<gpu::Image>(createGPURef<gpu::RawImage>(image_spec_info));
 	}
 
-	auto RenderContext::createEnvironmentMapImage(const io::filesystem::Path &p_path) -> RefPtr<Image>
+	auto RenderContext::createEnvironmentMapImage(const io::filesystem::Path &p_path) -> gpu::ImageHandle
 	{
 		auto env_input{createImageRef(p_path)};
 
 		constexpr uint32 skybox_resolution{2048};
 
-		ImageSpecInfo env_output_spec_info{};
+		gpu::ImageSpecInfo env_output_spec_info{};
 		env_output_spec_info.size       = {skybox_resolution};
 		env_output_spec_info.format     = vk::Format::eR16G16B16A16Sfloat;
 		env_output_spec_info.layerCount = 6u;
 		env_output_spec_info.storage    = true;
 
-		auto env_output{createRef<Image>(env_output_spec_info)};
+		auto env_output{createGPURef<gpu::Image>(env_output_spec_info)};
 
 		gpu::CommandBuffer command_buffer{*m_gpuCtx, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
@@ -327,8 +326,8 @@ namespace toaster::render
 		command_buffer.bindShaders({m_globals->getShader("Equirectangular_To_Cube_Map")});
 
 		Globals::EquirectangularToCubeMapConstants equirectangular_to_cube_map_constants{};
-		equirectangular_to_cube_map_constants.equirectangularMapId = env_input->getAlignedShaderReadHeapID();
-		equirectangular_to_cube_map_constants.cubeMapId            = env_output->getAlignedStorageHeapID();
+		equirectangular_to_cube_map_constants.equirectangularMapId = env_input->getShaderReadHeapID();
+		equirectangular_to_cube_map_constants.cubeMapId            = env_output->getStorageHeapID();
 		equirectangular_to_cube_map_constants.samplerId            = m_samplers.at(ESamplerType::eDefault);
 
 		command_buffer.pushData(equirectangular_to_cube_map_constants);
@@ -340,17 +339,17 @@ namespace toaster::render
 		return env_output;
 	}
 
-	auto RenderContext::createDiffuseIrradianceMapImage(const RefPtr<Image> &p_environment_map) -> RefPtr<Image>
+	auto RenderContext::createDiffuseIrradianceMapImage(const gpu::ImageHandle &p_environment_map) -> gpu::ImageHandle
 	{
 		static constexpr uint32 c_diffuse_irradiance_resolution{32u};
 
-		ImageSpecInfo env_output_spec_info{};
+		gpu::ImageSpecInfo env_output_spec_info{};
 		env_output_spec_info.size       = {c_diffuse_irradiance_resolution};
 		env_output_spec_info.format     = vk::Format::eR16G16B16A16Sfloat;
-		env_output_spec_info.layerCount = 6u;
+		env_output_spec_info.layerCount = gpu::ImageSpecInfo::eCubeMap;
 		env_output_spec_info.storage    = true;
 
-		auto out_irradiance_map{createRef<Image>(env_output_spec_info)};
+		auto out_irradiance_map{createGPURef<gpu::Image>(env_output_spec_info)};
 
 		gpu::CommandBuffer command_buffer{*m_gpuCtx, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
@@ -360,8 +359,8 @@ namespace toaster::render
 		command_buffer.bindShaders({m_globals->getShader("Diffuse_Irradiance_Convolution")});
 
 		Globals::DiffuseIrradianceConvolutionConstants diffuse_irradiance_convolution_constants{};
-		diffuse_irradiance_convolution_constants.environmentMapId       = p_environment_map->getAlignedShaderReadHeapID();
-		diffuse_irradiance_convolution_constants.diffuseIrradianceMapId = out_irradiance_map->getAlignedStorageHeapID();
+		diffuse_irradiance_convolution_constants.environmentMapId       = p_environment_map->getShaderReadHeapID();
+		diffuse_irradiance_convolution_constants.diffuseIrradianceMapId = out_irradiance_map->getStorageHeapID();
 		diffuse_irradiance_convolution_constants.samplerId              = m_samplers.at(ESamplerType::eIrradianceMap);
 
 		command_buffer.pushData(diffuse_irradiance_convolution_constants);
@@ -373,18 +372,18 @@ namespace toaster::render
 		return out_irradiance_map;
 	}
 
-	auto RenderContext::createSpecularIrradianceMapImage(const RefPtr<Image> &p_environment_map) -> RefPtr<Image>
+	auto RenderContext::createSpecularIrradianceMapImage(const gpu::ImageHandle &p_environment_map) -> gpu::ImageHandle
 	{
 		static constexpr uint32 c_specular_irradiance_resolution{512u};
 
-		ImageSpecInfo env_output_spec_info{};
-		env_output_spec_info.size            = {c_specular_irradiance_resolution};
-		env_output_spec_info.format          = vk::Format::eR16G16B16A16Sfloat;
-		env_output_spec_info.layerCount      = 6u;
-		env_output_spec_info.storage         = true;
-		env_output_spec_info.generateMipmaps = true;
+		gpu::ImageSpecInfo env_output_spec_info{};
+		env_output_spec_info.size       = {c_specular_irradiance_resolution};
+		env_output_spec_info.format     = vk::Format::eR16G16B16A16Sfloat;
+		env_output_spec_info.layerCount = gpu::ImageSpecInfo::eCubeMap;
+		env_output_spec_info.storage    = true;
+		env_output_spec_info.mipLevels  = gpu::ImageSpecInfo::eComputeMipLevels;
 
-		auto out_irradiance_map{createRef<Image>(env_output_spec_info)};
+		auto out_irradiance_map{createGPURef<gpu::Image>(env_output_spec_info)};
 
 		gpu::CommandBuffer command_buffer{*m_gpuCtx, vk::QueueFlagBits::eCompute};
 		command_buffer.begin();
@@ -394,15 +393,15 @@ namespace toaster::render
 		command_buffer.bindShaders({m_globals->getShader("Specular_Irradiance_Convolution")});
 
 		Globals::SpecularIrradianceConvolutionConstants specular_irradiance_convolution_constants{};
-		specular_irradiance_convolution_constants.environmentMapId = p_environment_map->getAlignedShaderReadHeapID();
+		specular_irradiance_convolution_constants.environmentMapId = p_environment_map->getShaderReadHeapID();
 		specular_irradiance_convolution_constants.samplerId        = m_samplers.at(ESamplerType::eIrradianceMap);
 		specular_irradiance_convolution_constants.numSamples       = 1028u;
 
 		for (uint32 i{0u}; i < out_irradiance_map->getImage()->getSpecInfo().mipCount; ++i)
 		{
-			out_irradiance_map->createMipHeapID(i);
+			out_irradiance_map->createMipDescriptorSlot(i);
 
-			specular_irradiance_convolution_constants.specularIrradianceMapId = out_irradiance_map->getMipAlignedStorageHeapID(i);
+			specular_irradiance_convolution_constants.specularIrradianceMapId = out_irradiance_map->getMipStorageHeapID(i);
 			specular_irradiance_convolution_constants.roughness               = (float32) i / (float32) (out_irradiance_map->getImage()->getSpecInfo().mipCount - 1u);
 
 			command_buffer.pushData(specular_irradiance_convolution_constants);
