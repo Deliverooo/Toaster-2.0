@@ -116,6 +116,7 @@ INT APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 		TST_PERMA_ASSERT_MSG(false, "Dondé está Toaster? If you just installed the SDK, please restart your computer to apply the environment variable settings.");
 
 	tst::ApplicationSpecInfo app_spec{{}};
+	app_spec.sdkDir						   = toaster_sdk_dir;
 	app_spec.printGPUDebugInfo             = false;
 	app_spec.windowSpecInfo.title          = "{0}";
 	app_spec.windowSpecInfo.startMaximized = true;
@@ -138,7 +139,9 @@ INT APIENTRY WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
 #include <toast_kernel/application.hpp>
 
 #include <toast_scene/entity.hpp>
-#include <toast_scene/dynamic_scene_renderer.hpp>
+#include <toast_scene/scene_renderer.hpp>
+#include <toast_lib/events/key_event.hpp>
+#include <toast_render/constant_buffer.hpp>
 
 namespace tst = toaster;
 
@@ -154,24 +157,19 @@ namespace {0}
 		auto onResize(tsm::uint2 p_size) -> void override;
 
 	private:
+		auto _onKeyPressEvent(tst::KeyPressEvent &p_key_press_event) -> bool;
+
 		// It is good practice to store the viewport's current size
 		tsm::uint2 m_viewportSize{{0u}};
 
-		tst::UniquePtr<tst::render::GraphicsState> m_graphicsState{{nullptr}};
-		tst::render::ImageHandle                   m_image{{nullptr}};
+		tst::gpu::ImageHandle                   m_image{{nullptr}};
 
-		TST_PUSH_CONSTANT_BLOCK(FullscreenQuadConstants)
-		{{
-			uint32 samplerIndex;
-			uint32 textureIndex;
+		tst::render::ConstantBufferUnique		m_fullscreenConstants{{nullptr}};
 
-			char _padd[8];
-		}};
+		tst::UniquePtr<tst::scene::Scene>              m_scene{{nullptr}};
+		tst::UniquePtr<tst::scene::SceneRenderer>		m_sceneRenderer{{nullptr}};
 
-		tst::UniquePtr<tst::Scene>                m_scene{{nullptr}};
-		tst::UniquePtr<tst::DynamicSceneRenderer> m_sceneRenderer{{nullptr}};
-
-		tst::Entity m_cameraEntity;
+		tst::scene::Entity m_cameraEntity;
 	}};
 }}
 )"
@@ -182,11 +180,8 @@ namespace {0}
 #include "{0}/new_layer.hpp"
 
 #include <toast_kernel/fp_camera.hpp>
-
 #include <toast_math/colours.hpp>
-
 #include <toast_lib/os/terminal.hpp>
-
 #include <toast_render/globals.hpp>
 #include <toast_render/render_context.hpp>
 
@@ -201,24 +196,21 @@ namespace {0}
 		auto binary_dir{{tst::os::getBinaryDirectory()}};
 		auto resources_dir{{binary_dir / "../resources"}};
 
-		m_graphicsState = m_renderCtx->createUnique<tst::render::GraphicsState>();
-		m_graphicsState->setShaders({{m_globals->dynamicShaderLibrary().get("Fullscreen_Quad_VS"), m_globals->dynamicShaderLibrary().get("Fullscreen_Quad_PS")}}).
-				setVertexBufferLayout(tst::render::RenderContext::fullscreenQuadVbl).setAttachmentCount(1u).setCullMode(vk::CullModeFlagBits::eNone).
-				setEnableDepthTest(false).setEnableDepthWrite(false);
+		m_fullscreenConstants = tst::make_unique<tst::render::ConstantBuffer>(m_globals->getShaderReflectionData("Fullscreen_Quad_PS").constantBufferStruct);
+		m_fullscreenConstants->set("samplerIndex", m_renderCtx->getSampler(tst::render::ESamplerType::eDefault));
 
 		// Create both the scene and scene renderer
 		m_scene         = m_app->createScene("New_Scene");
-		m_sceneRenderer = tst::make_unique<toaster::DynamicSceneRenderer>(m_scene.get(), m_viewportSize);
+		m_sceneRenderer = tst::make_unique<tst::scene::SceneRenderer>(*m_scene, m_viewportSize);;
 
 		// Set the scene environment to a skybox thingy
-		const tst::io::filesystem::Path environment_map_path{{resources_dir / "environments/overcast_soil_puresky_2k.hdr"}};
-		m_scene->setSceneEnvironmentImage(m_renderCtx->createEnvironmentMapImage(environment_map_path));
+		m_scene->setSkyboxMap(m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/overcast_soil_puresky_2k.hdr"));
 
 
 		// Create the main camera entity
 		m_cameraEntity = m_scene->createEntity("Main_Camera");
 		tst::FirstPersonCameraEntityCreateParams params{{m_inputCtx, 90.0f, m_viewportSize.aspect(), 0.1f, 1000.0f}};
-		m_cameraEntity.addComponent<tst::NativeScriptComponent>().bind<tst::FirstPersonCameraEntity>(&params);
+		m_cameraEntity.addComponent<tst::scene::NativeScriptComponent>().bind<tst::FirstPersonCameraEntity>(&params);
 		m_scene->initNativeScripts(); // I have to call ts
 	}}
 
@@ -229,24 +221,36 @@ namespace {0}
 
 	auto NewLayer::onUpdate(float32 p_dt) -> void
 	{{
-		// Get the swapchain's rendering info from the window and set the clear colour to white, while using no depth because the scene renderer provides that.
-		auto rendering_info{{m_app->getWindow().getSwapchainRenderingInfo({{0.0f, 1.0f, 1.0f, 1.0f}}, false)}};
-		auto cmd{{m_renderCtx->getCurrentSwapchainCommandBuffer()}};
-
-		// Bind the render context's descriptor heap. TODO: Probably don't expose ts to the client
-		m_renderCtx->getDescriptorHeap()->bind();
-
 		// Update and render the scene
 		m_scene->onUpdate(p_dt);
 		m_sceneRenderer->onRender();
 
-		m_graphicsState->bind();
+		// Get the swapchain's rendering info from the window and set the clear colour to white, while using no depth because the scene renderer provides that.
+		auto       rendering_info{{m_app->getWindow().getSwapchainRenderingInfo(false, {{0.025f, 0.025f, 0.025f, 1.0f}}, false)}};
+		const auto cmd{{m_renderCtx->getCurrentCommandBuffer()}};
+
+		cmd->bindShaders({{m_globals->getShader("Fullscreen_Quad_VS"), m_globals->getShader("Fullscreen_Quad_PS")}});
+		cmd->setPrimitiveTopology(tst::gpu::EPrimitiveTopology::eTriangleList);
+		cmd->setPrimitiveRestartEnable(false);
+		cmd->setDepthClampEnable(false);
+		cmd->setDepthBiasEnable(false);
+		cmd->setRasterizerDiscardEnable(false);
+		cmd->setPolygonMode(tst::gpu::EPolygonMode::eFill);
+		cmd->setCullMode(tst::gpu::ECullMode::eNone);
+		cmd->setFrontFace(tst::gpu::EFrontFace::eCCW);
+		cmd->setLineWidth(1.0f);
+		cmd->setColourBlendEnable({{false}});
+		cmd->setColourWriteMask({{vk::FlagTraits<vk::ColorComponentFlagBits>::allFlags}});
+		cmd->setDepthTestEnable(false);
+		cmd->setStencilTestEnable(false);
+		cmd->setRasterizationSamples(tst::gpu::ESampleCount::e1);
+		cmd->setAlphaToCoverageEnable(false);
+
 		m_renderCtx->beginRendering(rendering_info);
 
-		FullscreenQuadConstants quad_constants{{}};
-		quad_constants.samplerIndex = m_renderCtx->getSampler(tst::render::ESamplerType::eDefault);
-		quad_constants.textureIndex = m_sceneRenderer->getColourImage()->getAlignedShaderReadHeapID();
-		cmd->pushData(quad_constants);
+		m_fullscreenConstants->set("vertexBuffer", m_globals->fullscreenQuadVertexBuffer().getDeviceAddress());
+		m_fullscreenConstants->set("textureIndex", m_sceneRenderer->getColourImage()->getShaderReadHeapID());
+		cmd->pushData(m_fullscreenConstants->getBuffer());
 
 		// Render a fullscreen quad with the scene renderer's output as the texture
 		m_renderCtx->renderFullscreenQuad();
@@ -257,6 +261,9 @@ namespace {0}
 	{{
 		// Handle events here
 		m_scene->onEvent(p_event);
+
+		tst::EventDispatcher event_dispatcher{{p_event}};
+		event_dispatcher.dispatch<tst::KeyPressEvent>(TST_BIND_EVENT_FN(NewLayer::_onKeyPressEvent));
 	}}
 
 	auto NewLayer::onResize(tsm::uint2 p_size) -> void
@@ -265,6 +272,29 @@ namespace {0}
 
 		m_scene->onResize(p_size);
 		m_sceneRenderer->onResize(p_size);
+	}}
+
+	auto NewLayer::_onKeyPressEvent(tst::KeyPressEvent& p_key_press_event) -> bool
+	{{
+		auto &window{{m_app->getWindow()}};
+
+		switch (p_key_press_event.getKeyCode())
+		{{
+			case tst::input::EKeyCode::eF11:
+			{{
+				if (window.isFullscreen())
+				{{
+					window.setWindowed();
+					window.maximize();
+				}}
+				else
+					window.setFullscreen();
+				break;
+			}}
+			default: break;
+		}}
+
+		return false;
 	}}
 }}
 )"
