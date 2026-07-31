@@ -29,12 +29,12 @@ public:
 		const auto binary_dir{os::getBinaryDirectory()};
 		const auto resources_dir{binary_dir / "../resources"};
 
-		m_scene = toaster::make_unique<scene::Scene>(m_renderCtx);
+		m_scene = toaster::makeUnique<scene::Scene>(m_renderCtx);
 
 		m_scene->setSkyboxMap(m_renderCtx->createEnvironmentMapImage(resources_dir / "environments/qwantani_dusk_2_puresky_2k.hdr"));
-		m_sceneRenderer = toaster::make_unique<scene::SceneRenderer>(*m_scene, m_viewportSize);;
+		m_sceneRenderer = toaster::makeUnique<scene::SceneRenderer>(*m_scene, m_viewportSize);;
 
-		m_fullscreenConstants = toaster::make_unique<render::ConstantBuffer>(m_globals->getShaderReflectionData("Fullscreen_Quad_PS").constantBufferStruct);
+		m_fullscreenConstants = toaster::makeUnique<render::ConstantBuffer>(m_globals->getShaderReflectionData("Fullscreen_Quad_PS").constantBufferStruct);
 		m_fullscreenConstants->set("samplerIndex", m_renderCtx->getSampler(render::ESamplerType::eDefault));
 
 		auto orbo_geo{m_renderCtx->createRef<render::DynamicMesh>(resources_dir / "meshes/Orbo_Geo.fbx")};

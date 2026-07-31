@@ -172,13 +172,13 @@ namespace toaster
 	};
 
 	template<typename Type, typename... TArgs>
-	auto make_reference(TArgs &&... p_args) -> RefPtr<Type>
+	auto makeReference(TArgs &&... p_args) -> RefPtr<Type>
 	{
 		return RefPtr<Type>(new Type(std::forward<TArgs>(p_args)...));
 	}
 
 	template<typename Type, typename... TArgs>
-	auto allocate_reference(typename RefPtr<Type>::DeleterFn &&p_deleter, TArgs &&... p_args) -> RefPtr<Type>
+	auto allocateReference(typename RefPtr<Type>::DeleterFn &&p_deleter, TArgs &&... p_args) -> RefPtr<Type>
 	{
 		return RefPtr<Type>(new Type(std::forward<TArgs>(p_args)...), std::move(p_deleter));
 	}
@@ -187,7 +187,7 @@ namespace toaster
 	using UniquePtr = std::unique_ptr<Type>;
 
 	template<typename Type, typename... TArgs>
-	auto make_unique(TArgs &&... p_args) -> UniquePtr<Type>
+	auto makeUnique(TArgs &&... p_args) -> UniquePtr<Type>
 	{
 		return std::make_unique<Type>(std::forward<TArgs>(p_args)...);
 	}

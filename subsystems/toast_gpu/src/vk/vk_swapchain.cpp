@@ -45,7 +45,8 @@ namespace toaster::gpu
 			_recreateSwapchain();
 			return;
 		}
-		if (res != vk::Result::eSuccess) TST_ASSERT_MSG(false, "Failed to acquire swapchain image!");
+		if (res != vk::Result::eSuccess)
+			TST_ASSERT_MSG(false, "Failed to acquire swapchain image!");
 
 		current_command_buffer.resetCommandBuffer();
 		current_command_buffer.begin();

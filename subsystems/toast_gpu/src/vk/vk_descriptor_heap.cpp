@@ -59,7 +59,7 @@ namespace toaster::gpu
 
 			BufferSpecInfo resource_heap_spec_info{};
 			resource_heap_spec_info.usageFlags = vk::BufferUsageFlagBits2::eDescriptorHeapEXT | vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
-			m_resourceHeap                     = toaster::make_unique<Buffer>(*m_gpuCtx, resource_heap_size, resource_heap_spec_info);
+			m_resourceHeap                     = toaster::makeUnique<Buffer>(*m_gpuCtx, resource_heap_size, resource_heap_spec_info);
 
 			m_resourceHeapMemory = m_resourceHeap->mapMemory(resource_heap_size);
 		}
@@ -74,7 +74,7 @@ namespace toaster::gpu
 
 			BufferSpecInfo sampler_heap_spec_info{};
 			sampler_heap_spec_info.usageFlags = vk::BufferUsageFlagBits2::eDescriptorHeapEXT | vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
-			m_samplerHeap                     = toaster::make_unique<Buffer>(*m_gpuCtx, sampler_heap_size, sampler_heap_spec_info);
+			m_samplerHeap                     = toaster::makeUnique<Buffer>(*m_gpuCtx, sampler_heap_size, sampler_heap_spec_info);
 
 			m_samplerHeapMemory = m_samplerHeap->mapMemory(sampler_heap_size);
 		}

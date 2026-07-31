@@ -94,28 +94,28 @@ namespace toaster::render
 		template<typename TObj, typename... TArgs>
 		[[nodiscard]] auto createRef(TArgs &&... p_args) -> RefPtr<TObj>
 		{
-			return make_reference<TObj>(*this, std::forward<TArgs>(p_args)...);
+			return makeReference<TObj>(*this, std::forward<TArgs>(p_args)...);
 		}
 
 		// Use for objects that take the render context into their constructor
 		template<typename TObj, typename... TArgs>
 		[[nodiscard]] auto createUnique(TArgs &&... p_args) -> UniquePtr<TObj>
 		{
-			return toaster::make_unique<TObj>(*this, std::forward<TArgs>(p_args)...);
+			return makeUnique<TObj>(*this, std::forward<TArgs>(p_args)...);
 		}
 
 		// Use for objects that take the logical device into their constructor
 		template<typename TObj, typename... TArgs>
 		[[nodiscard]] auto createGPURef(TArgs &&... p_args) const -> RefPtr<TObj>
 		{
-			return make_reference<TObj>(*m_gpuCtx, std::forward<TArgs>(p_args)...);
+			return makeReference<TObj>(*m_gpuCtx, std::forward<TArgs>(p_args)...);
 		}
 
 		// Use for objects that take the render context into their constructor
 		template<typename TObj, typename... TArgs>
 		[[nodiscard]] auto createGPUUnique(TArgs &&... p_args) const -> UniquePtr<TObj>
 		{
-			return toaster::make_unique<TObj>(*m_gpuCtx, std::forward<TArgs>(p_args)...);
+			return makeUnique<TObj>(*m_gpuCtx, std::forward<TArgs>(p_args)...);
 		}
 
 		auto getSampler(ESamplerType p_type) const -> gpu::DescriptorSlot;

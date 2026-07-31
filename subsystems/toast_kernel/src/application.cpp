@@ -115,7 +115,7 @@ namespace toaster
 
 	auto Application::createScene(const String &p_name) const -> UniquePtr<scene::Scene>
 	{
-		return toaster::make_unique<scene::Scene>(m_renderContext, nullptr, p_name);
+		return toaster::makeUnique<scene::Scene>(m_renderContext, nullptr, p_name);
 	}
 
 	auto Application::onWindowCloseEvent([[maybe_unused]] WindowCloseEvent &p_event) -> bool

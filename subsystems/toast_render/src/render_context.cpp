@@ -19,7 +19,7 @@ namespace toaster::render
 		gpu::GPUContextSpecInfo gpu_context_spec_info{};
 		gpu_context_spec_info.printDebugInfo     = m_specInfo.printDebugInfo;
 		gpu_context_spec_info.instanceExtensions = m_specInfo.instanceExtensions;
-		m_gpuCtx                                 = toaster::make_unique<gpu::VKGPUContext>(gpu_context_spec_info);
+		m_gpuCtx                                 = toaster::makeUnique<gpu::VKGPUContext>(gpu_context_spec_info);
 
 		const auto physical_device_props = m_gpuCtx->getPhysicalDevice()->getVulkanPhysicalDevice().getProperties();
 		{
@@ -108,7 +108,7 @@ namespace toaster::render
 			m_samplers[ESamplerType::eBRDFLUT] = m_gpuCtx->getDescriptorHeap()->allocSampler(brdf_lut_sampler_create_info);
 		}
 
-		m_shaderCompiler = toaster::make_unique<ShaderCompiler>(*this);
+		m_shaderCompiler = toaster::makeUnique<ShaderCompiler>(*this);
 
 		if (m_specInfo.createGlobals)
 		{

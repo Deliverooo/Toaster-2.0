@@ -82,10 +82,10 @@ namespace toaster::scene
 		{
 			MonoImage *          image{m_scriptEngine->getAppImage()};
 			const MonoTableInfo *type_definitions{mono_image_get_table_info(image, MONO_TABLE_TYPEDEF)};
-			m_baseEntityClass = make_reference<script::Class>(m_scriptEngine, "Toaster", "Entity", script::EClassScope::eCore);
+			m_baseEntityClass = makeReference<script::Class>(m_scriptEngine, "Toaster", "Entity", script::EClassScope::eCore);
 
 			// Register the default classes from the core library
-			m_entityClassMap["Toaster.CameraController"] = make_reference<script::Class>(m_scriptEngine, "Toaster", "CameraController", script::EClassScope::eCore);
+			m_entityClassMap["Toaster.CameraController"] = makeReference<script::Class>(m_scriptEngine, "Toaster", "CameraController", script::EClassScope::eCore);
 
 			for (uint32 row{0u}; row < mono_table_info_get_rows(type_definitions); ++row)
 			{
@@ -102,7 +102,7 @@ namespace toaster::scene
 				MonoClass *script_class{mono_class_from_name(image, name_space, type_name)};
 				if (script_class && mono_class_is_subclass_of(script_class, m_baseEntityClass->getClass(), false))
 				{
-					m_entityClassMap[full_name] = toaster::make_reference<script::Class>(m_scriptEngine, script_class);
+					m_entityClassMap[full_name] = toaster::makeReference<script::Class>(m_scriptEngine, script_class);
 				}
 			}
 
@@ -165,7 +165,7 @@ namespace toaster::scene
 			{
 				if (m_entityClassMap.contains(class_name))
 				{
-					m_entityScriptMap[uuid] = make_reference<ScriptableEntityCS>(*m_entityClassMap[class_name].get(), this, e);
+					m_entityScriptMap[uuid] = makeReference<ScriptableEntityCS>(*m_entityClassMap[class_name].get(), this, e);
 					m_entityScriptMap[uuid]->onCreate();
 				}
 				else

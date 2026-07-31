@@ -21,7 +21,7 @@ namespace toaster::gpu
 		image_spec_info.hostAccess = m_specInfo.hostAccess;
 
 		// You will only use this constructor if you are going to set the data
-		m_image = make_reference<VKRawImage>(*m_gpuCtx, image_spec_info);
+		m_image = makeReference<VKRawImage>(*m_gpuCtx, image_spec_info);
 
 		if (m_specInfo.storage)
 			m_storageDescriptorSlot = m_gpuCtx->getDescriptorHeap()->allocImage(*m_image, true);
@@ -44,7 +44,7 @@ namespace toaster::gpu
 			image_spec_info.mipCount = m_specInfo.mipLevels;
 		image_spec_info.layerCount = m_specInfo.layerCount;
 		image_spec_info.hostAccess = m_specInfo.hostAccess;
-		m_image                    = make_reference<VKRawImage>(*m_gpuCtx, image_spec_info);
+		m_image                    = makeReference<VKRawImage>(*m_gpuCtx, image_spec_info);
 
 		util::toTransferDst(m_image.get());
 		m_image->setData(p_data);
