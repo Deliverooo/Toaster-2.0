@@ -1,28 +1,35 @@
-#include "toast_gpu/vk/vk_instance.hpp"
-
-#include <vulkan/vulkan.hpp>
-
-#include "toast_lib/os/terminal.hpp"
+#include "toast_gpu/instance.hpp"
 
 namespace toaster::gpu
 {
-	static VKAPI_ATTR auto VKAPI_CALL _debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,
-													 const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, void *p_user_data) -> vk::Bool32;
-
-	VKInstance::VKInstance(const VKInstanceSpecInfo &p_spec_info)
+	static auto defaultDebugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,
+									 const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, [[maybe_unused]] void *              p_user_data) -> vk::Bool32
 	{
-		auto required_extensions_vec{
-			p_spec_info.requiredExtensions | std::views::transform([](const String &p_str) -> CString { return p_str.c_str(); }) | std::ranges::to<std::vector<
-				CString> >()
-		};
+		switch (p_message_severity)
+		{
+			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose: LOG_TRACE("[Verbose] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
+																			   p_callback_data->pMessage);
+				break;
+			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo: LOG_INFO("[Info] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
+																		   p_callback_data->pMessage);
+				break;
+			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning: LOG_WARN("[Warning] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
+																			  p_callback_data->pMessage);
+				break;
+			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError: LOG_ERROR("[Error] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
+																			 p_callback_data->pMessage);
+				break;
+			default: break;
+		}
+		return vk::False;
+	}
+
+	Instance::Instance(const InstanceSpecInfo &p_spec_info)
+	{
+		auto required_extensions_vec{p_spec_info.requiredExtensions | std::ranges::to<std::vector>()};
 
 		if (p_spec_info.enableValidationLayers)
 			required_extensions_vec.emplace_back(vk::EXTDebugUtilsExtensionName);
-
-		vk::ApplicationInfo app_info{};
-		app_info.pApplicationName = p_spec_info.appName.c_str(); // The app and engine name for this can be completely arbitrary
-		app_info.pEngineName      = "Toaster";
-		app_info.apiVersion       = vk::ApiVersion14;
 
 		auto extension_props{m_context.enumerateInstanceExtensionProperties()};
 
@@ -49,16 +56,6 @@ namespace toaster::gpu
 		if (p_spec_info.enableValidationLayers)
 		{
 			required_validation_layers.emplace_back("VK_LAYER_KHRONOS_validation");
-			// required_validation_layers.emplace_back("VK_LAYER_LUNARG_crash_diagnostic");
-
-			// auto output_path{os::getBinaryDirectory().string()};
-			// auto output_path_str{output_path.c_str()};
-
-			// _putenv_s("VK_LUNARG_CRASH_DIAGNOSTIC_OUTPUT_PATH", output_path_str);
-			// _putenv_s("VK_LUNARG_CRASH_DIAGNOSTIC_DUMP_SHADERS", "all");
-
-			_putenv_s("VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES", "true");
-			_putenv_s("VK_KHRONOS_VALIDATION_VALIDATE_BEST_PRACTICES_NVIDIA", "true");
 		}
 
 		auto layer_props{m_context.enumerateInstanceLayerProperties()};
@@ -94,11 +91,18 @@ namespace toaster::gpu
 			};
 			debug_messenger_create_info.messageSeverity = severity_flags;
 			debug_messenger_create_info.messageType     = message_type_flags;
-			debug_messenger_create_info.pfnUserCallback = &_debugCallback;
+			debug_messenger_create_info.pfnUserCallback = &defaultDebugCallback;
 		}
 
+		vk::ApplicationInfo application_info{};
+		application_info.pApplicationName   = "TODO: App name";
+		application_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+		application_info.pEngineName        = "Toaster";
+		application_info.engineVersion      = VK_MAKE_VERSION(2, 1, 0);
+		application_info.apiVersion         = vk::ApiVersion14;
+
 		vk::InstanceCreateInfo instance_create_info{};
-		instance_create_info.pApplicationInfo        = &app_info;
+		instance_create_info.pApplicationInfo        = &application_info;
 		instance_create_info.enabledExtensionCount   = required_extensions_vec.size();
 		instance_create_info.ppEnabledExtensionNames = required_extensions_vec.data();
 
@@ -110,32 +114,7 @@ namespace toaster::gpu
 		}
 
 		m_vulkanInstance = vk::raii::Instance{m_context, instance_create_info};
-	}
 
-	auto VKInstance::getVulkanInstance() -> vk::raii::Instance &
-	{
-		return m_vulkanInstance;
-	}
-
-	auto _debugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,
-						const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, [[maybe_unused]] void *              p_user_data) -> vk::Bool32
-	{
-		switch (p_message_severity)
-		{
-			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose: LOG_TRACE("[Verbose] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
-																			   p_callback_data->pMessage);
-				break;
-			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo: LOG_INFO("[Info] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
-																		   p_callback_data->pMessage);
-				break;
-			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning: LOG_WARN("[Warning] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
-																			  p_callback_data->pMessage);
-				break;
-			case vk::DebugUtilsMessageSeverityFlagBitsEXT::eError: LOG_ERROR("[Error] | Validation layer: {} | Message: {}", vk::to_string(p_message_type),
-																			 p_callback_data->pMessage);
-				break;
-			default: break;
-		}
-		return vk::False;
+		TST_PERMA_ASSERT(m_vulkanInstance.getDispatcher()->vkCreateWin32SurfaceKHR);
 	}
 }

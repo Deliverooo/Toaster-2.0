@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vk_instance.hpp"
 #include "vk_logical_device.hpp"
 
 namespace toaster::gpu

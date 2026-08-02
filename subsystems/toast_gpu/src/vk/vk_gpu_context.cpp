@@ -12,7 +12,6 @@ namespace toaster::gpu
 		VKInstanceSpecInfo vk_instance_spec_info{};
 		vk_instance_spec_info.appName            = "Toaster-2.0 -> Vulkan";
 		vk_instance_spec_info.requiredExtensions = p_spec_info.instanceExtensions;
-		vk_instance_spec_info.printDebugInfo     = p_spec_info.printDebugInfo;
 		m_backendInstance                        = new VKInstance{vk_instance_spec_info};
 
 		std::unordered_set<String> required_device_extensions{

@@ -1,22 +1,27 @@
 #pragma once
-#include "vk_instance.hpp"
+
+#include "../toast_gpu.hpp"
+
+#include <unordered_set>
+#include <vulkan/vulkan_raii.hpp>
 
 namespace toaster::gpu
 {
+	using DeviceSuitabilityFn = bool(*)(vk::PhysicalDevice);
+	// Checks the physical device against the baseline required suitability standards and optionally a custom function
+	TST_GPU_API auto isDeviceSuitable(vk::PhysicalDevice  p_physical_device, const std::unordered_set<String> &p_required_extensions,
+									  DeviceSuitabilityFn p_extra_suitability_check = nullptr) -> bool;
+
 	struct TST_GPU_API VKPhysicalDeviceSpecInfo
 	{
-		using ExtensionSet = std::unordered_set<String>;
-
-		ExtensionSet requiredExtensions;
+		std::unordered_set<String> requiredExtensions;                // These are DEVICE extensions
+		DeviceSuitabilityFn        deviceSuitabilityCheckFn{nullptr}; // Optional, but I would recomend that you provide this
 	};
 
 	class TST_GPU_API VKPhysicalDevice
 	{
 	public:
-		VKPhysicalDevice(VKInstance &p_instance, const VKPhysicalDeviceSpecInfo &p_spec_info);
-
-		[[nodiscard]] auto getInstance() const -> NonOwningPtr<VKInstance>;
-		[[nodiscard]] auto getSpecInfo() const -> const VKPhysicalDeviceSpecInfo &;
+		VKPhysicalDevice(vk::raii::Instance& p_instance, const VKPhysicalDeviceSpecInfo &p_spec_info);
 
 		[[nodiscard]] auto getVulkanPhysicalDevice() -> vk::raii::PhysicalDevice &;
 
@@ -36,11 +41,7 @@ namespace toaster::gpu
 		operator vk::raii::PhysicalDevice &() { return m_physicalDevice; }
 
 	private:
-		[[nodiscard]] auto _isDeviceSuitable(const vk::raii::PhysicalDevice &p_physical_device) const -> bool;
-
-		NonOwningPtr<VKInstance> m_instance{nullptr};
-
-		VKPhysicalDeviceSpecInfo m_specInfo;
+		auto _init(vk::raii::Instance& p_instance, const VKPhysicalDeviceSpecInfo &p_spec_info) -> void;
 
 		vk::raii::PhysicalDevice m_physicalDevice{nullptr};
 

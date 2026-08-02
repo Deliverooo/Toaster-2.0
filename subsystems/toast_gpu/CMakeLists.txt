@@ -1,4 +1,8 @@
 set(GPU_SRC
+		${CMAKE_CURRENT_SOURCE_DIR}/src/instance.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/physical_device.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/logical_device.cpp
+
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_instance.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_physical_device.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vk/vk_logical_device.cpp

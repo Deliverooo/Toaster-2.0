@@ -107,20 +107,18 @@ namespace toaster::gpu
 
 		m_logicalDevice = {m_physicalDevice->getVulkanPhysicalDevice(), device_create_info};
 
-		m_physicalDevice->getInstance()->initDispatcher(*m_logicalDevice);
-
 		// Create the queues
 		m_graphicsQueue = {m_logicalDevice, m_queueFamilyIndices.graphics, 0};
 		m_transferQueue = {m_logicalDevice, m_queueFamilyIndices.transfer, 0};
 		if (m_queueFamilyIndices.graphics == m_queueFamilyIndices.compute)
 			m_computeQueue = {m_logicalDevice, m_queueFamilyIndices.compute, 1};
 
-		if (m_physicalDevice->getInstance()->getSpecInfo().printDebugInfo)
-		{
-			LOG_TRACE("Graphics queue family index {}", m_queueFamilyIndices.graphics);
-			LOG_TRACE("Transfer queue family index {}", m_queueFamilyIndices.transfer);
-			LOG_TRACE("Compute queue family index {}", m_queueFamilyIndices.compute);
-		}
+		// if (m_physicalDevice->getInstance()->().printDebugInfo)
+		// {
+		// LOG_TRACE("Graphics queue family index {}", m_queueFamilyIndices.graphics);
+		// LOG_TRACE("Transfer queue family index {}", m_queueFamilyIndices.transfer);
+		// LOG_TRACE("Compute queue family index {}", m_queueFamilyIndices.compute);
+		// }
 		#pragma region create command pools
 		// Graphics
 		vk::CommandPoolCreateInfo graphics_command_pool_create_info{};
