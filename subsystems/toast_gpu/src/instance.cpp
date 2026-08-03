@@ -31,7 +31,7 @@ namespace toaster::gpu
 		if (p_spec_info.enableValidationLayers)
 			required_extensions_vec.emplace_back(vk::EXTDebugUtilsExtensionName);
 
-		auto extension_props{m_context.enumerateInstanceExtensionProperties()};
+		std::vector extension_props{vk::enumerateInstanceExtensionProperties()};
 
 		// Make sure that all the required extensions are present in the extension_props vector
 		const auto unsupported_extension{
@@ -58,7 +58,7 @@ namespace toaster::gpu
 			required_validation_layers.emplace_back("VK_LAYER_KHRONOS_validation");
 		}
 
-		auto layer_props{m_context.enumerateInstanceLayerProperties()};
+		std::vector layer_props{vk::enumerateInstanceLayerProperties()};
 
 		// Finds any layer in required_validation_layers, such that it is also not present in the actual layer_props vector
 		const auto unsupported_layer_it{
@@ -113,8 +113,12 @@ namespace toaster::gpu
 			instance_create_info.pNext               = &debug_messenger_create_info;
 		}
 
-		m_vulkanInstance = vk::raii::Instance{m_context, instance_create_info};
+		m_vulkanInstance = vk::createInstance(instance_create_info);
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(m_vulkanInstance);
+	}
 
-		TST_PERMA_ASSERT(m_vulkanInstance.getDispatcher()->vkCreateWin32SurfaceKHR);
+	Instance::~Instance()
+	{
+		m_vulkanInstance.destroy();
 	}
 }

@@ -1,11 +1,15 @@
 #pragma once
 
-#define VK_USE_PLATFORM_WIN32_KHR
 #include "toast_gpu.hpp"
 
 #include <unordered_set>
-#include <vulkan/vulkan_raii.hpp>
 
+#define VK_NO_PROTOTYPES
+#define VK_USE_PLATFORM_WIN32_KHR
+#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
+#include <vulkan/vulkan.hpp>
+
+#include <Windows.h>
 #undef min
 #undef max
 
@@ -24,14 +28,15 @@ namespace toaster::gpu
 	{
 	public:
 		Instance(const InstanceSpecInfo &p_spec_info);
+		~Instance();
 
-		auto getVulkanInstance() const -> const vk::raii::Instance & { return m_vulkanInstance; }
-		auto operator *() const -> const vk::raii::Instance & { return m_vulkanInstance; }
+		auto getVulkanInstance() const -> const vk::Instance & { return m_vulkanInstance; }
+		auto operator *() const -> const vk::Instance & { return m_vulkanInstance; }
 
 	private:
-		vk::raii::Context  m_context;
-		vk::raii::Instance m_vulkanInstance{nullptr};
+		// vk::raii::Context  m_context;
+		vk::Instance m_vulkanInstance{nullptr};
 
-		vk::raii::DebugUtilsMessengerEXT m_debugUtilsMessenger{nullptr};
+		vk::DebugUtilsMessengerEXT m_debugUtilsMessenger{nullptr};
 	};
 }

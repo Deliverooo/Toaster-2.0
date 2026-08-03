@@ -1,8 +1,5 @@
 #include "toast_gpu/logical_device.hpp"
 
-#include <Windows.h>
-#include <vulkan/vulkan_win32.h>
-
 namespace toaster::gpu
 {
 	auto selectQueueFamilyIndices(vk::PhysicalDevice p_physical_device, bool p_use_present) -> QueueFamilyIndices
@@ -15,8 +12,7 @@ namespace toaster::gpu
 		{
 			const auto queue_flags{queue_family_props[i].queueFlags};
 			if (queue_flags & vk::QueueFlagBits::eGraphics && queue_flags & vk::QueueFlagBits::eCompute && (p_use_present
-																												? vkGetPhysicalDeviceWin32PresentationSupportKHR(p_physical_device,
-																																								 i)
+																												? p_physical_device.getWin32PresentationSupportKHR(i)
 																												: true))
 			{
 				queue_family_indices.graphics = i;
@@ -55,7 +51,7 @@ namespace toaster::gpu
 		logical_device_create_info.ppEnabledExtensionNames = enabled_extensions_vec.data();
 		logical_device_create_info.pNext                   = p_spec_info.pNextDeviceFeatures;
 
-		m_logicalDevice = {**m_physicalDevice, logical_device_create_info};
+		m_logicalDevice = (**m_physicalDevice).createDevice(logical_device_create_info);
 
 		m_graphicsQueue = m_logicalDevice.getQueue(m_queueFamilyIndices.graphics, 0u);
 
@@ -63,5 +59,12 @@ namespace toaster::gpu
 		graphics_command_pool_create_info.queueFamilyIndex = m_queueFamilyIndices.graphics;
 		graphics_command_pool_create_info.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
 		m_graphicsCommandPool                              = m_logicalDevice.createCommandPool(graphics_command_pool_create_info);
+	}
+
+	LogicalDevice::~LogicalDevice()
+	{
+		m_logicalDevice.destroyCommandPool(m_graphicsCommandPool);
+
+		m_logicalDevice.destroy();
 	}
 }

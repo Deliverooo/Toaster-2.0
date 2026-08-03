@@ -24,8 +24,8 @@ namespace toaster::gpu
 		// You cannot modify an instance, so it is always const
 		auto getInstance() const -> const Instance & { return *m_instance; }
 
-		auto getVulkanPhysicalDevice() const -> const vk::raii::PhysicalDevice & { return m_physicalDevice; }
-		auto operator *() const -> const vk::raii::PhysicalDevice & { return m_physicalDevice; }
+		auto getVulkanPhysicalDevice() const -> const vk::PhysicalDevice & { return m_physicalDevice; }
+		auto operator *() const -> const vk::PhysicalDevice & { return m_physicalDevice; }
 
 		// Utility functions
 		auto chooseSwapchainSurfaceFormat(vk::SurfaceKHR p_surface) const -> vk::SurfaceFormatKHR;
@@ -37,6 +37,6 @@ namespace toaster::gpu
 		// A physical device should know what instance it is associated with
 		Instance *m_instance{nullptr};
 
-		vk::raii::PhysicalDevice m_physicalDevice{nullptr};
+		vk::PhysicalDevice m_physicalDevice{nullptr};
 	};
 }
