@@ -114,7 +114,6 @@ namespace toaster::gpu
 		}
 
 		m_vulkanInstance = vk::createInstance(instance_create_info);
-		VULKAN_HPP_DEFAULT_DISPATCHER.init(m_vulkanInstance);
 	}
 
 	Instance::~Instance()

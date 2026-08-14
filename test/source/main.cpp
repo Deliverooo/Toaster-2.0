@@ -106,7 +106,7 @@ public:
 
 				auto &tc{entity.getComponent<scene::TransformComponent>()};
 				tc.translation = {(float32) i * 2.0f, 0.0f, (float32) j * 2.0f};
-			} 
+			}
 		}
 
 		{

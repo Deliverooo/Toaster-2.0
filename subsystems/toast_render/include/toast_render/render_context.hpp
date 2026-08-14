@@ -160,18 +160,10 @@ namespace toaster::render
 
 		UniquePtr<gpu::VKGPUContext> m_gpuCtx{nullptr};
 
-		// OwningPtr<gpu::VKInstance>       m_backendInstance{nullptr};
-		// OwningPtr<gpu::VKPhysicalDevice> m_physicalDevice{nullptr};
-		// OwningPtr<gpu::VKLogicalDevice>  m_logicalDevice{nullptr};
-
-		// OwningPtr<gpu::VKDescriptorHeap>                      m_descriptorHeap{nullptr};
 		std::unordered_map<ESamplerType, gpu::DescriptorSlot> m_samplers;
 
 		UniquePtr<ShaderCompiler> m_shaderCompiler{nullptr};
 
 		OwningPtr<Globals> m_globals{nullptr};
-
-		// Doing this means that we don't have to pass the current command buffer into every function, making it easier to use for the client API
-		NonOwningPtr<gpu::VKCommandBuffer> m_currentSwapchainCommandBuffer{nullptr};
 	};
 }

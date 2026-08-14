@@ -4,9 +4,7 @@
 
 #include <unordered_set>
 
-#define VK_NO_PROTOTYPES
 #define VK_USE_PLATFORM_WIN32_KHR
-#define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>
 
 #include <Windows.h>

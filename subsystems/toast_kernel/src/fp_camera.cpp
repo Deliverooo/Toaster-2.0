@@ -3,7 +3,7 @@
 
 namespace toaster
 {
-	FPCamera::FPCamera(InputContext *p_ctx, float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far) : m_ctx(p_ctx), m_fov(p_fov),
+	FPCamera::	FPCamera(InputContext *p_ctx, float32 p_fov, float32 p_aspectRatio, float32 p_near, float32 p_far) : m_ctx(p_ctx), m_fov(p_fov),
 																												   m_aspectRatio(p_aspectRatio), m_zNear(p_near),
 																												   m_zFar(p_far)
 	{

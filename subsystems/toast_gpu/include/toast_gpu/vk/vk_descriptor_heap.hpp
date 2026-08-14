@@ -2,6 +2,7 @@
 
 #include "vk_buffer.hpp"
 #include "vk_raw_image.hpp"
+#include "toast_lib/freelist_allocator.hpp"
 
 namespace toaster::gpu
 {
@@ -9,18 +10,18 @@ namespace toaster::gpu
 
 	using DescriptorSlot = uint32;
 
-	class DescriptorSlotManager
-	{
-	public:
-		DescriptorSlotManager() = default;
-		DescriptorSlotManager(uint32 p_capacity);
-
-		[[nodiscard]] auto allocSlot() -> DescriptorSlot;
-		auto               freeSlot(DescriptorSlot p_slot) -> void;
-
-	private:
-		std::vector<DescriptorSlot> m_freeSlots;
-	};
+	// class DescriptorSlotManager
+	// {
+	// public:
+	// 	DescriptorSlotManager() = default;
+	// 	DescriptorSlotManager(uint32 p_capacity);
+	//
+	// 	[[nodiscard]] auto allocSlot() -> DescriptorSlot;
+	// 	auto               freeSlot(DescriptorSlot p_slot) -> void;
+	//
+	// private:
+	// 	std::vector<DescriptorSlot> m_freeSlots;
+	// };
 
 	class TST_GPU_API VKDescriptorHeap
 	{
@@ -77,10 +78,9 @@ namespace toaster::gpu
 		uintptr_t      m_imageArrayOffset{0u};
 		vk::DeviceSize m_imageArraySize{0u};
 
-		DescriptorSlotManager m_bufferSlotManager;
-		DescriptorSlotManager m_imageSlotManager;
-
-		DescriptorSlotManager m_samplerSlotManager;
+		FreelistAllocator<uint32> m_bufferSlotManager;
+		FreelistAllocator<uint32> m_imageSlotManager;
+		FreelistAllocator<uint32> m_samplerSlotManager;
 	};
 
 	TST_GPU_DEFINE_HANDLE(VKDescriptorHeap, DescriptorHeap)

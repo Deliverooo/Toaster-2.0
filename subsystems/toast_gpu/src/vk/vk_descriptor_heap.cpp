@@ -6,29 +6,6 @@
 
 namespace toaster::gpu
 {
-	DescriptorSlotManager::DescriptorSlotManager(uint32 p_capacity)
-	{
-		m_freeSlots.reserve(p_capacity);
-		for (int32 i{static_cast<int32>(p_capacity) - 1}; i >= 0; --i)
-			m_freeSlots.push_back(static_cast<uint32>(i));
-	}
-
-	auto DescriptorSlotManager::allocSlot() -> DescriptorSlot
-	{
-		if (m_freeSlots.empty())
-		{
-			TST_PERMA_ASSERT(false);
-		}
-		DescriptorSlot allocated{m_freeSlots.back()};
-		m_freeSlots.pop_back();
-		return allocated;
-	}
-
-	auto DescriptorSlotManager::freeSlot(DescriptorSlot p_slot) -> void
-	{
-		m_freeSlots.push_back(p_slot);
-	}
-
 	VKDescriptorHeap::VKDescriptorHeap(VKGPUContext &p_gpu_ctx) : m_gpuCtx(&p_gpu_ctx)
 	{
 		// get the heap properties. Vulkan raii does not yet have a function for ts... :(
@@ -54,8 +31,8 @@ namespace toaster::gpu
 				ALIGN(m_bufferArraySize + m_imageArraySize + m_heapProperties.minResourceHeapReservedRange, m_heapProperties.resourceHeapAlignment)
 			};
 
-			m_bufferSlotManager = DescriptorSlotManager{static_cast<uint32>(maxUBOs)};
-			m_imageSlotManager  = DescriptorSlotManager{static_cast<uint32>(maxImages)};
+			m_bufferSlotManager = FreelistAllocator<uint32>{maxUBOs};
+			m_imageSlotManager  = FreelistAllocator<uint32>{maxImages};
 
 			BufferSpecInfo resource_heap_spec_info{};
 			resource_heap_spec_info.usageFlags = vk::BufferUsageFlagBits2::eDescriptorHeapEXT | vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
@@ -70,7 +47,7 @@ namespace toaster::gpu
 				ALIGN((maxSamplers * m_heapProperties.samplerDescriptorSize) + m_heapProperties.minSamplerHeapReservedRange, m_heapProperties.samplerHeapAlignment)
 			};
 
-			m_samplerSlotManager = DescriptorSlotManager{static_cast<uint32>(maxSamplers * m_heapProperties.samplerDescriptorSize)};
+			m_samplerSlotManager = FreelistAllocator<uint32>{static_cast<uint32>(maxSamplers * m_heapProperties.samplerDescriptorSize)};
 
 			BufferSpecInfo sampler_heap_spec_info{};
 			sampler_heap_spec_info.usageFlags = vk::BufferUsageFlagBits2::eDescriptorHeapEXT | vk::BufferUsageFlagBits2::eShaderDeviceAddressKHR;
@@ -164,8 +141,6 @@ namespace toaster::gpu
 		resource_info.type               = p_storage ? vk::DescriptorType::eStorageBuffer : vk::DescriptorType::eUniformBuffer;
 		resource_info.data.pAddressRange = &buffer_range;
 
-		// LOG_INFO("Buffer | Slot: {} | Heap ID: {}", p_slot, p_slot + (m_bufferArrayOffset / m_bufferDescriptorSize));
-
 		m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice().writeResourceDescriptorsEXT(resource_info, host_range);
 	}
 
@@ -187,8 +162,6 @@ namespace toaster::gpu
 		vk::ResourceDescriptorInfoEXT resource_info{};
 		resource_info.type        = (p_storage) ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eSampledImage;
 		resource_info.data.pImage = &image_info;
-
-		// LOG_INFO("Image | Slot: {} | Heap ID: {}", p_slot, p_slot + (m_imageArrayOffset / m_imageDescriptorSize));
 
 		m_gpuCtx->getLogicalDevice()->getVulkanLogicalDevice().writeResourceDescriptorsEXT(resource_info, host_range);
 	}
