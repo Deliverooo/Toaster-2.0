@@ -32,7 +32,6 @@ namespace toaster::gpu
 		auto operator *() const -> const vk::Instance & { return m_vulkanInstance; }
 
 	private:
-		// vk::raii::Context  m_context;
 		vk::Instance m_vulkanInstance{nullptr};
 
 		vk::DebugUtilsMessengerEXT m_debugUtilsMessenger{nullptr};
