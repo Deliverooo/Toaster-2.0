@@ -1,0 +1,45 @@
+.vs/
+.idea/
+.vscode/
+*.log
+out/
+cmake-build-debug-visual-studio/
+cmake-build-release-visual-studio/
+bin/
+lib/
+
+build/
+
+*.DotSettings.User
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# CMake
+CMakeCache.txt
