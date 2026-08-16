@@ -2,7 +2,7 @@
 
 A toasty and orbicular graphics engine with even more very cool stuff...
 
-<p float="left" width=75%> 
+<p float="left" width=100%> 
 	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/3.0/github/images/Maclaurin_3T.png" width=25%>
 </p>
 
