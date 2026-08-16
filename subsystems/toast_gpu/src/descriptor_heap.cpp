@@ -36,6 +36,13 @@ namespace toaster::gpu
 						reinterpret_cast<VkBuffer *>(&m_heapBuffer), &m_heapAllocation, nullptr);
 
 		vmaMapMemory(m_allocator->getAllocator(), m_heapAllocation, &m_mappedHeapMemory);
+
+		vk::DeviceAddressRangeKHR device_address_range{};
+		device_address_range.address   = p_logical_device.getDevice().getBufferAddress({m_heapBuffer});
+		device_address_range.size      = resource_heap_size;
+		m_bindInfo.heapRange           = device_address_range;
+		m_bindInfo.reservedRangeOffset = resource_heap_size - heap_props.minResourceHeapReservedRange;
+		m_bindInfo.reservedRangeSize   = heap_props.minResourceHeapReservedRange;
 	}
 
 	ResourceDescriptorHeap::~ResourceDescriptorHeap()
@@ -44,39 +51,62 @@ namespace toaster::gpu
 		vmaDestroyBuffer(m_allocator->getAllocator(), m_heapBuffer, m_heapAllocation);
 	}
 
-	auto ResourceDescriptorHeap::setBuffer(uint32 p_slot, const vk::DeviceAddressRangeKHR &p_address_range, vk::DescriptorType p_descriptor_type) -> void
+	auto ResourceDescriptorHeap::setBuffer(DescriptorSlot p_slot, const vk::DeviceAddressRangeKHR &p_address_range, vk::DescriptorType p_descriptor_type) -> void
 	{
-		vk::HostAddressRangeEXT &host_range{m_hostAddressRanges.emplace_back()};
+		m_bufferDeviceAddressRanges.push_back(p_address_range);
+
+		vk::HostAddressRangeEXT &host_range{m_bufferHostAddressRanges.emplace_back()};
 		host_range.address = reinterpret_cast<void *>(reinterpret_cast<uint64>(m_mappedHeapMemory) + static_cast<uint64>(p_slot) * m_bufferDescriptorSize);
 		host_range.size    = m_bufferDescriptorSize;
 
-		vk::ResourceDescriptorInfoEXT &resource_info{m_resourceInfos.emplace_back()};
-		resource_info.type               = p_descriptor_type;
-		resource_info.data.pAddressRange = &p_address_range;
+		vk::ResourceDescriptorInfoEXT &resource_info{m_bufferResourceInfos.emplace_back()};
+		resource_info.type = p_descriptor_type;
 	}
 
-	auto ResourceDescriptorHeap::setImage(uint32             p_slot, const vk::ImageViewCreateInfo &p_image_view_create_info, vk::ImageLayout p_image_layout,
+	auto ResourceDescriptorHeap::setImage(DescriptorSlot     p_slot, const vk::ImageViewCreateInfo &p_image_view_create_info, vk::ImageLayout p_image_layout,
 										  vk::DescriptorType p_descriptor_type) -> void
 	{
-		vk::HostAddressRangeEXT &host_range{m_hostAddressRanges.emplace_back()};
+		m_imageViewCreateInfos.push_back(p_image_view_create_info);
+
+		vk::HostAddressRangeEXT &host_range{m_imageHostAddressRanges.emplace_back()};
 		host_range.address = reinterpret_cast<void *>(reinterpret_cast<uint64>(m_mappedHeapMemory) + m_imageSegmentOffset + static_cast<uint64>(p_slot) *
 													  m_imageDescriptorSize);
 		host_range.size = m_imageDescriptorSize;
 
-		vk::ImageDescriptorInfoEXT image_info{};
-		image_info.pView  = &p_image_view_create_info;
+		vk::ImageDescriptorInfoEXT image_info{m_imageDescriptorInfos.emplace_back()};
 		image_info.layout = p_image_layout;
 
-		vk::ResourceDescriptorInfoEXT &resource_info{m_resourceInfos.emplace_back()};
-		resource_info.type        = p_descriptor_type;
-		resource_info.data.pImage = &image_info;
+		vk::ResourceDescriptorInfoEXT &resource_info{m_imageResourceInfos.emplace_back()};
+		resource_info.type = p_descriptor_type;
 	}
 
 	auto ResourceDescriptorHeap::writeDescriptors() -> void
 	{
-		m_logicalDevice->getDevice().writeResourceDescriptorsEXT(m_resourceInfos, m_hostAddressRanges);
-		m_resourceInfos.clear();
-		m_hostAddressRanges.clear();
+		for (uint32 i{0u}; i < m_bufferResourceInfos.size(); ++i)
+			m_bufferResourceInfos[i].data.pAddressRange = &m_bufferDeviceAddressRanges[i];
+
+		for (uint32 i{0u}; i < m_imageResourceInfos.size(); ++i)
+		{
+			m_imageDescriptorInfos[i].pView     = &m_imageViewCreateInfos[i];
+			m_imageResourceInfos[i].data.pImage = &m_imageDescriptorInfos[i];
+		}
+
+		if (!m_bufferResourceInfos.empty())
+		{
+			m_logicalDevice->getDevice().writeResourceDescriptorsEXT(m_bufferResourceInfos, m_bufferHostAddressRanges);
+			m_bufferResourceInfos.clear();
+			m_bufferHostAddressRanges.clear();
+			m_bufferDeviceAddressRanges.clear();
+		}
+
+		if (!m_imageResourceInfos.empty())
+		{
+			m_logicalDevice->getDevice().writeResourceDescriptorsEXT(m_imageResourceInfos, m_imageHostAddressRanges);
+			m_imageHostAddressRanges.clear();
+			m_imageViewCreateInfos.clear();
+			m_imageDescriptorInfos.clear();
+			m_imageResourceInfos.clear();
+		}
 	}
 
 	SamplerDescriptorHeap::SamplerDescriptorHeap(LogicalDevice &p_logical_device, PhysicalDevice &p_physical_device, Allocator &p_allocator,
@@ -104,6 +134,13 @@ namespace toaster::gpu
 						reinterpret_cast<VkBuffer *>(&m_heapBuffer), &m_heapAllocation, nullptr);
 
 		vmaMapMemory(m_allocator->getAllocator(), m_heapAllocation, &m_mappedHeapMemory);
+
+		vk::DeviceAddressRangeKHR device_address_range{};
+		device_address_range.address   = p_logical_device.getDevice().getBufferAddress({m_heapBuffer});
+		device_address_range.size      = sampler_heap_size;
+		m_bindInfo.heapRange           = device_address_range;
+		m_bindInfo.reservedRangeOffset = sampler_heap_size - heap_props.minSamplerHeapReservedRange;
+		m_bindInfo.reservedRangeSize   = heap_props.minSamplerHeapReservedRange;
 	}
 
 	SamplerDescriptorHeap::~SamplerDescriptorHeap()
@@ -112,7 +149,7 @@ namespace toaster::gpu
 		vmaDestroyBuffer(m_allocator->getAllocator(), m_heapBuffer, m_heapAllocation);
 	}
 
-	auto SamplerDescriptorHeap::setSampler(uint32 p_slot, const vk::SamplerCreateInfo &p_sampler_create_info) -> void
+	auto SamplerDescriptorHeap::setSampler(DescriptorSlot p_slot, const vk::SamplerCreateInfo &p_sampler_create_info) -> void
 	{
 		m_samplerCreateInfos.push_back(p_sampler_create_info);
 

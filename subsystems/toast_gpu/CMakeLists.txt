@@ -5,6 +5,7 @@ set(GPU_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/descriptor_heap.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/allocator.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vma_impl.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/material.cpp
 )
 
 

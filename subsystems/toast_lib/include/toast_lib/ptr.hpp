@@ -1,24 +1,23 @@
 #pragma once
 
-#include <atomic> // I am atomic
-#include <functional>
+#include "system_types.h"
+
+#include <atomic> // I am... atomic
 #include <memory>
 
 namespace toaster
 {
-	// Literally a better std::shared_ptr
-	template<typename Type>
+	// Literally a better std::shared_ptr without virtual dispatch in the control block
+	// If you only plan on using a single thread, you don't need to use atomic types.
+	template<typename Type, typename TRefCountType = std::atomic_uint32_t>
 	class RefPtr
 	{
 	public:
-		using DeleterFn = std::function<void(Type *)>;
-
-		RefPtr(std::nullptr_t) : m_ptr(nullptr), m_controlBlock(nullptr)
+		RefPtr(nulltype) : m_ptr(nullptr), m_controlBlock(nullptr)
 		{
 		}
 
-		RefPtr(Type *p_ptr = nullptr, DeleterFn p_deleter = [](Type *p) { delete p; }) : m_ptr(p_ptr),
-																						 m_controlBlock(p_ptr ? new ControlBlock(1, std::move(p_deleter)) : nullptr)
+		RefPtr(Type *p_ptr = nullptr) : m_ptr(p_ptr), m_controlBlock(p_ptr ? new ControlBlock(1) : nullptr)
 		{
 		}
 
@@ -97,13 +96,13 @@ namespace toaster
 		auto get() -> Type * { return m_ptr; }
 		auto get() const -> const Type * { return m_ptr; }
 
-		auto reset(Type *p_ptr = nullptr, DeleterFn p_deleter = [](Type *p) { delete p; }) -> void
+		auto reset(Type *p_ptr = nullptr) -> void
 		{
 			if (m_ptr == p_ptr)
 				return;
 			_release();
 			m_ptr          = p_ptr;
-			m_controlBlock = p_ptr ? new ControlBlock(1, std::move(p_deleter)) : nullptr;
+			m_controlBlock = p_ptr ? new ControlBlock(1) : nullptr;
 		}
 
 		template<typename TOther>
@@ -146,7 +145,7 @@ namespace toaster
 			{
 				if (--(m_controlBlock->refCount) == 0)
 				{
-					m_controlBlock->deleter(m_ptr);
+					delete m_ptr;
 					delete m_controlBlock;
 				}
 				m_ptr          = nullptr;
@@ -156,10 +155,9 @@ namespace toaster
 
 		struct ControlBlock
 		{
-			std::atomic_int32_t refCount;
-			DeleterFn           deleter;
+			TRefCountType refCount;
 
-			ControlBlock(int32_t p_count, DeleterFn p_deleter) : refCount(p_count), deleter(std::move(p_deleter))
+			ControlBlock(int32_t p_count) : refCount(p_count)
 			{
 			}
 		};
@@ -167,7 +165,7 @@ namespace toaster
 		mutable Type *        m_ptr{nullptr};
 		mutable ControlBlock *m_controlBlock{nullptr};
 
-		template<typename TOther>
+		template<typename TOther, typename TOtherRefCountType>
 		friend class RefPtr;
 	};
 
@@ -175,12 +173,6 @@ namespace toaster
 	auto makeReference(TArgs &&... p_args) -> RefPtr<Type>
 	{
 		return RefPtr<Type>(new Type(std::forward<TArgs>(p_args)...));
-	}
-
-	template<typename Type, typename... TArgs>
-	auto allocateReference(typename RefPtr<Type>::DeleterFn &&p_deleter, TArgs &&... p_args) -> RefPtr<Type>
-	{
-		return RefPtr<Type>(new Type(std::forward<TArgs>(p_args)...), std::move(p_deleter));
 	}
 
 	template<typename Type>
@@ -191,6 +183,9 @@ namespace toaster
 	{
 		return std::make_unique<Type>(std::forward<TArgs>(p_args)...);
 	}
+
+	template<typename Type>
+	using HeapPtr = Type *;
 
 	template<typename Type>
 	using OwningPtr = Type *;
