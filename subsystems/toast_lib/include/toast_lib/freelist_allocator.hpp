@@ -26,7 +26,7 @@ namespace toaster
 				return slot;
 			}
 
-			TST_PERMA_ASSERT(m_nextFreeIndex < m_capacity);
+			TST_PERMA_ASSERT_MSG(m_nextFreeIndex < m_capacity, "Allocation capacity reached!");
 			return m_nextFreeIndex++;
 		}
 
