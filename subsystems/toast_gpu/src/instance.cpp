@@ -1,5 +1,7 @@
 #include "toast_gpu/instance.hpp"
 
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+
 namespace toaster::gpu
 {
 	static auto defaultDebugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,
@@ -24,11 +26,26 @@ namespace toaster::gpu
 		return vk::False;
 	}
 
-	Instance::Instance(const InstanceSpecInfo &p_spec_info)
+	auto initBaseFunctions() -> void
 	{
-		auto required_extensions_vec{p_spec_info.requiredExtensions | std::ranges::to<std::vector>()};
+		VULKAN_HPP_DEFAULT_DISPATCHER.init();
+	}
 
-		if (p_spec_info.enableValidationLayers)
+	auto initInstanceFunctions(vk::Instance p_instance) -> void
+	{
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(p_instance);
+	}
+
+	auto initDeviceFunctions(vk::Device p_device) -> void
+	{
+		VULKAN_HPP_DEFAULT_DISPATCHER.init(p_device);
+	}
+
+	Instance::Instance(const InstanceDesc &p_desc)
+	{
+		auto required_extensions_vec{p_desc.requiredExtensions | std::ranges::to<std::vector>()};
+
+		if (p_desc.enableValidationLayers)
 			required_extensions_vec.emplace_back(vk::EXTDebugUtilsExtensionName);
 
 		std::vector extension_props{vk::enumerateInstanceExtensionProperties()};
@@ -53,7 +70,7 @@ namespace toaster::gpu
 		}
 
 		std::vector<CString> required_validation_layers;
-		if (p_spec_info.enableValidationLayers)
+		if (p_desc.enableValidationLayers)
 		{
 			required_validation_layers.emplace_back("VK_LAYER_KHRONOS_validation");
 		}
@@ -80,7 +97,7 @@ namespace toaster::gpu
 		}
 
 		vk::DebugUtilsMessengerCreateInfoEXT debug_messenger_create_info{};
-		if (p_spec_info.enableValidationLayers)
+		if (p_desc.enableValidationLayers)
 		{
 			constexpr vk::DebugUtilsMessageSeverityFlagsEXT severity_flags{
 				vk::DebugUtilsMessageSeverityFlagBitsEXT::eError | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
@@ -95,7 +112,7 @@ namespace toaster::gpu
 		}
 
 		vk::ApplicationInfo application_info{};
-		application_info.pApplicationName   = "TODO: App name";
+		application_info.pApplicationName   = p_desc.applicationName;
 		application_info.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 		application_info.pEngineName        = "Toaster";
 		application_info.engineVersion      = VK_MAKE_VERSION(2, 1, 0);
@@ -106,7 +123,7 @@ namespace toaster::gpu
 		instance_create_info.enabledExtensionCount   = required_extensions_vec.size();
 		instance_create_info.ppEnabledExtensionNames = required_extensions_vec.data();
 
-		if (p_spec_info.enableValidationLayers)
+		if (p_desc.enableValidationLayers)
 		{
 			instance_create_info.enabledLayerCount   = required_validation_layers.size();
 			instance_create_info.ppEnabledLayerNames = required_validation_layers.data();

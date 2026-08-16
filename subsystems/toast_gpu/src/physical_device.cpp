@@ -40,9 +40,9 @@ namespace toaster::gpu
 		return vulkan_1_4_support && supports_graphics && supports_compute && supports_all_required_device_extensions && passes_additional_check;
 	}
 
-	PhysicalDevice::PhysicalDevice(Instance &p_instance, const PhysicalDeviceSpecInfo &p_spec_info) : m_instance(&p_instance)
+	PhysicalDevice::PhysicalDevice(Instance &p_instance, const PhysicalDeviceDesc &p_desc)
 	{
-		auto physical_devices{(**m_instance).enumeratePhysicalDevices()};
+		auto physical_devices{p_instance.getInstance().enumeratePhysicalDevices()};
 		if (physical_devices.empty())
 		{
 			// If your gpu does not have Vulkan support, we can't use Vulkan
@@ -51,7 +51,7 @@ namespace toaster::gpu
 
 		// I don't expect users to provide ts when they create a physical device, however depending on what you are doing, you will have different requirements.
 		DeviceSuitabilityFn device_suitability_check_fn{nullptr};
-		if (!p_spec_info.deviceSuitabilityCheckFn)
+		if (!p_desc.deviceSuitabilityCheckFn)
 		{
 			device_suitability_check_fn = +[](vk::PhysicalDevice p_physical_device) -> bool
 			{
@@ -72,12 +72,12 @@ namespace toaster::gpu
 			};
 		}
 		else
-			device_suitability_check_fn = p_spec_info.deviceSuitabilityCheckFn;
+			device_suitability_check_fn = p_desc.deviceSuitabilityCheckFn;
 
 		const auto device_it{
 			std::ranges::find_if(physical_devices, [&](const auto &device)
 			{
-				return isDeviceSuitable(device, p_spec_info.requiredExtensions, device_suitability_check_fn);
+				return isDeviceSuitable(device, p_desc.requiredExtensions, device_suitability_check_fn);
 			})
 		};
 
@@ -87,6 +87,9 @@ namespace toaster::gpu
 		}
 
 		m_physicalDevice = *device_it;
+
+		m_deviceProperties.pNext = &m_descriptorHeapProperties;
+		m_physicalDevice.getProperties2(&m_deviceProperties);
 	}
 
 	auto PhysicalDevice::chooseSwapchainSurfaceFormat(vk::SurfaceKHR p_surface) const -> vk::SurfaceFormatKHR

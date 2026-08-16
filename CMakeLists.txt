@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.30)
 
+set(CMAKE_DEBUG_POSTFIX "d")
+
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -78,14 +80,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_C_FLAGS "${C_WARNINGS} ${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "${CXX_WARNINGS} ${CMAKE_CXX_FLAGS}")
 
-option(TOASTER_INSTALL "Generate install targets for toaster" OFF)
-option(TOASTER_BUILD_SHARED_LIBS "Generate install targets for toaster" OFF)
-
-if (TOASTER_BUILD_SHARED_LIBS)
-	set(TOAST_LIB_BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
-	set(TOAST_OS_BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
-	set(TOAST_GPU_BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
-endif ()
+option(TOASTER_INSTALL "Generate install targets for toaster" ON)
+option(TOASTER_BUILD_SHARED_LIBS "Generate install targets for toaster" ON)
 
 add_subdirectory(extern)
 add_subdirectory(subsystems)

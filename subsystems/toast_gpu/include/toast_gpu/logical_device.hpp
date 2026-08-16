@@ -4,7 +4,7 @@
 
 namespace toaster::gpu
 {
-	struct TST_GPU_API LogicalDeviceSpecInfo
+	struct TST_GPU_API LogicalDeviceDesc
 	{
 		ExtensionSet enabledExtensions; // These are DEVICE extensions
 
@@ -23,16 +23,10 @@ namespace toaster::gpu
 	class TST_GPU_API LogicalDevice
 	{
 	public:
-		LogicalDevice(PhysicalDevice &p_physical_device, const LogicalDeviceSpecInfo &p_spec_info);
+		LogicalDevice(PhysicalDevice &p_physical_device, const LogicalDeviceDesc &p_desc);
 		~LogicalDevice();
 
-		// You cannot modify a physical device, so it is always const
-		auto getPhysicalDevice() const -> const PhysicalDevice & { return *m_physicalDevice; }
-
-		auto getVulkanLogicalDevice() const -> const vk::Device & { return m_logicalDevice; }
-		auto getVulkanLogicalDevice() -> vk::Device & { return m_logicalDevice; }
-		auto operator *() const -> const vk::Device & { return m_logicalDevice; }
-		auto operator *() -> vk::Device & { return m_logicalDevice; }
+		auto getDevice() const -> vk::Device { return m_logicalDevice; }
 
 		auto getQueueFamilyIndices() const -> const QueueFamilyIndices & { return m_queueFamilyIndices; }
 
@@ -42,13 +36,10 @@ namespace toaster::gpu
 		auto getGraphicsCommandPool() -> vk::CommandPool & { return m_graphicsCommandPool; }
 
 	private:
-		// A logical device should know what physical device it is associated with
-		PhysicalDevice *m_physicalDevice{nullptr};
-
 		vk::Device m_logicalDevice{nullptr};
 
 		QueueFamilyIndices m_queueFamilyIndices{};
-		vk::Queue    m_graphicsQueue{nullptr};
+		vk::Queue          m_graphicsQueue{nullptr};
 
 		vk::CommandPool m_graphicsCommandPool{nullptr};
 	};

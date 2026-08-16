@@ -9,7 +9,7 @@ namespace toaster::gpu
 	TST_GPU_API auto isDeviceSuitable(vk::PhysicalDevice  p_physical_device, const ExtensionSet &p_required_extensions,
 									  DeviceSuitabilityFn p_extra_suitability_check = nullptr) -> bool;
 
-	struct TST_GPU_API PhysicalDeviceSpecInfo
+	struct TST_GPU_API PhysicalDeviceDesc
 	{
 		ExtensionSet requiredExtensions; // These are DEVICE extensions
 
@@ -19,13 +19,12 @@ namespace toaster::gpu
 	class TST_GPU_API PhysicalDevice
 	{
 	public:
-		PhysicalDevice(Instance &p_instance, const PhysicalDeviceSpecInfo &p_spec_info);
+		PhysicalDevice(Instance &p_instance, const PhysicalDeviceDesc &p_desc);
 
-		// You cannot modify an instance, so it is always const
-		auto getInstance() const -> const Instance & { return *m_instance; }
+		auto getPhysicalDevice() const -> vk::PhysicalDevice { return m_physicalDevice; }
 
-		auto getVulkanPhysicalDevice() const -> const vk::PhysicalDevice & { return m_physicalDevice; }
-		auto operator *() const -> const vk::PhysicalDevice & { return m_physicalDevice; }
+		[[nodiscard]] auto getProperties() const -> const vk::PhysicalDeviceProperties2 & { return m_deviceProperties; }
+		[[nodiscard]] auto getDescriptorHeapProperties() const -> const vk::PhysicalDeviceDescriptorHeapPropertiesEXT & { return m_descriptorHeapProperties; }
 
 		// Utility functions
 		auto chooseSwapchainSurfaceFormat(vk::SurfaceKHR p_surface) const -> vk::SurfaceFormatKHR;
@@ -34,9 +33,9 @@ namespace toaster::gpu
 		auto chooseSwapchainMinImageCount(vk::SurfaceKHR p_surface) const -> uint32;
 
 	private:
-		// A physical device should know what instance it is associated with
-		Instance *m_instance{nullptr};
-
 		vk::PhysicalDevice m_physicalDevice{nullptr};
+
+		vk::PhysicalDeviceProperties2                 m_deviceProperties;
+		vk::PhysicalDeviceDescriptorHeapPropertiesEXT m_descriptorHeapProperties;
 	};
 }

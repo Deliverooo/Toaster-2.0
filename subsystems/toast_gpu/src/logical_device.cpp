@@ -26,11 +26,11 @@ namespace toaster::gpu
 		return queue_family_indices;
 	}
 
-	LogicalDevice::LogicalDevice(PhysicalDevice &p_physical_device, const LogicalDeviceSpecInfo &p_spec_info) : m_physicalDevice(&p_physical_device)
+	LogicalDevice::LogicalDevice(PhysicalDevice &p_physical_device, const LogicalDeviceDesc &p_desc)
 	{
-		const bool use_present{p_spec_info.enabledExtensions.contains(vk::KHRSwapchainExtensionName)};
+		const bool use_present{p_desc.enabledExtensions.contains(vk::KHRSwapchainExtensionName)};
 
-		m_queueFamilyIndices = selectQueueFamilyIndices(**m_physicalDevice, use_present);
+		m_queueFamilyIndices = selectQueueFamilyIndices(p_physical_device.getPhysicalDevice(), use_present);
 
 		if (m_queueFamilyIndices.graphics == UINT32_MAX)
 			TST_PERMA_ASSERT_MSG(false, "Failed to find a graphics queue family");
@@ -42,16 +42,16 @@ namespace toaster::gpu
 		queue_create_infos[0].queueCount       = 1u;
 		queue_create_infos[0].pQueuePriorities = &default_queue_priority;
 
-		const auto enabled_extensions_vec{p_spec_info.enabledExtensions | std::ranges::to<std::vector>()};
+		const auto enabled_extensions_vec{p_desc.enabledExtensions | std::ranges::to<std::vector>()};
 
 		vk::DeviceCreateInfo logical_device_create_info{};
 		logical_device_create_info.queueCreateInfoCount    = queue_create_infos.size();
 		logical_device_create_info.pQueueCreateInfos       = queue_create_infos.data();
 		logical_device_create_info.enabledExtensionCount   = enabled_extensions_vec.size();
 		logical_device_create_info.ppEnabledExtensionNames = enabled_extensions_vec.data();
-		logical_device_create_info.pNext                   = p_spec_info.pNextDeviceFeatures;
+		logical_device_create_info.pNext                   = p_desc.pNextDeviceFeatures;
 
-		m_logicalDevice = (**m_physicalDevice).createDevice(logical_device_create_info);
+		m_logicalDevice = p_physical_device.getPhysicalDevice().createDevice(logical_device_create_info);
 
 		m_graphicsQueue = m_logicalDevice.getQueue(m_queueFamilyIndices.graphics, 0u);
 
@@ -64,7 +64,6 @@ namespace toaster::gpu
 	LogicalDevice::~LogicalDevice()
 	{
 		m_logicalDevice.destroyCommandPool(m_graphicsCommandPool);
-
 		m_logicalDevice.destroy();
 	}
 }
