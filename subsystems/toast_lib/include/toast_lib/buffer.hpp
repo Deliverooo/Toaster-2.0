@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "system_types.h"
 #include "toast_assert.h"
 
