@@ -2,7 +2,10 @@
 
 #include <unordered_map>
 
-#include "descriptor_heap.hpp"
+#include "allocator.hpp"
+#include "toast_lib/pool.hpp"
+
+#include <DirectXMath.h>
 
 namespace toaster::gpu
 {
@@ -13,44 +16,74 @@ namespace toaster::gpu
 		uint32 size{0u};
 	};
 
+	// This could be thought of as the material version of vertex attributes... :)
 	struct MaterialStructMapping
 	{
 		uint32                                           size{0u};
 		std::unordered_map<String, MaterialStructMember> members;
 	};
 
-	class TST_GPU_API Material
+	TST_DECLARE_HANDLE(Material);
+
+	// Manages a pool of materials from an arbitrary struct declaration. Ideally you would obtain this from shader reflection,
+	// but it can easily be specified manually
+	class TST_GPU_API MaterialManager // TODO: Specify frame in flight count
 	{
 	public:
-		Material(LogicalDevice &p_device, Allocator &p_allocator, ResourceDescriptorHeap &p_resource_heap, const RefPtr<MaterialStructMapping> &p_struct_mapping);
-		~Material();
+		MaterialManager(const LogicalDevice &p_device, Allocator &p_allocator, const RefPtr<MaterialStructMapping> &p_struct_mapping, uint32 p_max_materials);
+		~MaterialManager();
 
-		auto getHeapID(uint32 p_frame_index) const -> uint32 { return m_materialHeapIDs[p_frame_index]; }
+		[[nodiscard]] auto createMaterial() -> MaterialHandle;
+		auto               destroyMaterial(MaterialHandle p_handle) -> void;
+
+		auto isValid(MaterialHandle p_handle) const -> bool;
+		auto getData(MaterialHandle p_handle) -> void *;
 
 		template<typename Type>
-		auto set(const String &p_name, const Type &p_value) -> void
+		auto set(MaterialHandle p_handle, const String &p_name, const Type &p_data) -> void
 		{
-			_set(p_name, static_cast<const void *>(&p_value));
+			_set(p_handle, p_name, &p_data);
 		}
+
+		// Silly DirectX...
+		auto XM_CALLCONV set(TST_UNUSED MaterialHandle p_handle, TST_UNUSED const String &p_name, TST_UNUSED DirectX::XMVECTOR p_data) -> void
+		{
+			TST_PERMA_ASSERT_MSG(false, "XMMATRIX is an ambiguous type. Store in a XMFLOATXXX to get the actual size of the required type");
+		}
+
+		auto XM_CALLCONV set(TST_UNUSED MaterialHandle p_handle,TST_UNUSED const String &p_name,TST_UNUSED DirectX::XMMATRIX p_data) -> void
+		{
+			TST_PERMA_ASSERT_MSG(false, "XMVECTOR is an ambiguous type. Store in a XMFLOATX to get the actual size of the required type");
+		}
+
+		// I don't know why you would call this, but you can... Maybe if you manually memcpy outside this system ? :)
+		auto markMaterialDirty(MaterialHandle p_handle) -> void;
 
 		auto update(uint32 p_frame_index) -> void;
 
-	private:
-		auto _set(const String &p_name, const void *p_value) -> void;
+		auto getSystemDeviceAddress(uint32 p_frame_index) const -> vk::DeviceAddress { return m_materialBufferDeviceAddresses[p_frame_index]; }
 
-		NonOwningPtr<Allocator>              m_allocator{nullptr};
-		NonOwningPtr<ResourceDescriptorHeap> m_resourceDescriptorHeap{nullptr};
+	private:
+		auto _set(MaterialHandle p_handle, const String &p_name, const void *p_data) -> void;
+
+		NonOwningPtr<Allocator> m_allocator{nullptr};
 
 		RefPtr<MaterialStructMapping> m_structMapping{nullptr};
 
-		uint8 *m_materialData{nullptr};
+		struct Entry
+		{
+			uint8 *data{nullptr};
+			uint32 framesDirty{0u};
+		};
 
-		std::vector<vk::Buffer>    m_materialBuffers;
-		std::vector<VmaAllocation> m_materialBufferAllocations;
-		std::vector<void *>        m_mappedMaterialBuffers;
+		Pool<MaterialTag, Entry> m_pool;
 
-		std::vector<uint32> m_materialHeapIDs;
+		// All ts is PFF
+		std::vector<vk::Buffer>        m_materialBuffers;
+		std::vector<VmaAllocation>     m_materialBufferAllocations;
+		std::vector<uint8 *>           m_mappedMaterialBuffers;
+		std::vector<vk::DeviceAddress> m_materialBufferDeviceAddresses;
 
-		uint32 m_numFramesDirty{0u};
+		uint32 m_maxMaterials{0u};
 	};
 }
