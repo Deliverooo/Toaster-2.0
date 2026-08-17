@@ -1,12 +1,9 @@
-/*!
- * @file system_types.h
- */
 #pragma once
 
 #include <cstddef> // (C++) std::nullptr_t
 #include <cstdint> // _t typedefs
 
-using bool32 = uint32_t; // I am sorry
+using bool32 = uint32_t; // You could use this instead of bool inside of a vector... IFYKYK
 
 using nulltype = nullptr_t;
 

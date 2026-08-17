@@ -1,6 +1,3 @@
-/*!
- * @file buffer.hpp
- */
 #pragma once
 
 #include "system_types.h"
