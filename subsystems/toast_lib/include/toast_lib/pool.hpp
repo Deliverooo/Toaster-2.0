@@ -75,7 +75,7 @@ namespace toaster
 			if (!isValid(p_handle))
 				return nullptr;
 			#endif
-			return &_data[p_handle.id];
+			return std::addressof(_data[p_handle.id]);
 		}
 
 		auto getSize() const -> uint32 { return _data.size(); }

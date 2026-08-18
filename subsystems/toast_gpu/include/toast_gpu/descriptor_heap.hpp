@@ -6,7 +6,12 @@
 
 namespace toaster::gpu
 {
+	// Very important note: a descriptor slot with the value of UINT32_MAX is a special value and considered invalid, this makes knowing what to destroy easier.
 	using DescriptorSlot = uint32;
+	constexpr DescriptorSlot invalidDescriptorSlot{UINT32_MAX};
+	constexpr DescriptorSlot invalidBufferDescriptorSlot{invalidDescriptorSlot};
+	constexpr DescriptorSlot invalidImageDescriptorSlot{invalidDescriptorSlot};
+	constexpr DescriptorSlot invalidSamplerDescriptorSlot{invalidDescriptorSlot};
 
 	class TST_GPU_API ResourceDescriptorHeap
 	{

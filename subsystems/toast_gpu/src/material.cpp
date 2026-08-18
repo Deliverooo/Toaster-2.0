@@ -34,6 +34,12 @@ namespace toaster::gpu
 
 	MaterialManager::~MaterialManager()
 	{
+		for (auto &mat: m_pool._data)
+		{
+			if (mat.data)
+				delete[] mat.data;
+		}
+
 		for (uint32 i{0u}; i < 3u; ++i)
 		{
 			vmaUnmapMemory(m_allocator->getAllocator(), m_materialBufferAllocations[i]);
@@ -50,10 +56,9 @@ namespace toaster::gpu
 
 	auto MaterialManager::destroyMaterial(MaterialHandle p_handle) -> void
 	{
-		if (!isValid(p_handle))
-			TST_PERMA_ASSERT(false);
 		m_pool.destroy(p_handle);
 		delete[] m_pool._data[p_handle.id].data;
+		m_pool._data[p_handle.id].data = nullptr;
 	}
 
 	auto MaterialManager::isValid(MaterialHandle p_handle) const -> bool
