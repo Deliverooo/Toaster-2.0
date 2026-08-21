@@ -16,6 +16,7 @@ namespace toaster::gpu
 		uint32 graphics{UINT32_MAX};
 		uint32 present{UINT32_MAX};
 		uint32 compute{UINT32_MAX};
+		uint32 transfer{UINT32_MAX}; // Dedicated transfer queue
 	};
 
 	TST_GPU_API auto selectQueueFamilyIndices(vk::PhysicalDevice p_physical_device, bool p_use_present) -> QueueFamilyIndices;
@@ -30,10 +31,11 @@ namespace toaster::gpu
 
 		auto getQueueFamilyIndices() const -> const QueueFamilyIndices & { return m_queueFamilyIndices; }
 
-		// For now this is also the present and compute queue as well
-		auto getGraphicsQueue() -> vk::Queue & { return m_graphicsQueue; }
+		auto getGraphicsQueue() -> vk::Queue & { return m_graphicsQueue; } // For now this is also the present and compute queue as well
+		auto getTransferQueue() -> vk::Queue & { return m_transferQueue; }
 
 		auto getGraphicsCommandPool() -> vk::CommandPool & { return m_graphicsCommandPool; }
+		auto getTransferCommandPool() -> vk::CommandPool & { return m_transferCommandPool; }
 
 		auto createTimelineSemaphore(uint64 p_initial_value = 0u) const -> vk::Semaphore;
 		auto waitForTimelineSemaphores(const InitialiserList<const vk::Semaphore> &p_semaphores, const InitialiserList<const uint64> &p_target_values) const -> void;
@@ -43,7 +45,9 @@ namespace toaster::gpu
 
 		QueueFamilyIndices m_queueFamilyIndices{};
 		vk::Queue          m_graphicsQueue{nullptr};
+		vk::Queue          m_transferQueue{nullptr};
 
 		vk::CommandPool m_graphicsCommandPool{nullptr};
+		vk::CommandPool m_transferCommandPool{nullptr};
 	};
 }

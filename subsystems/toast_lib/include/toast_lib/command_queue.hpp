@@ -49,7 +49,7 @@ namespace toaster
 	public:
 		using CommandFunc = void(*)(void *);
 
-		CommandQueue(const uint64 p_size = 10485760u /*10 MB*/) : m_allocator(p_size)
+		CommandQueue(const uint64 p_size = 10u * 1028u * 1028u /*10 MB*/) : m_allocator(p_size)
 		{
 		}
 

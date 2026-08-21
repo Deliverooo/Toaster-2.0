@@ -3,6 +3,7 @@
 #include <toast_lib/freelist_allocator.hpp>
 
 #include "allocator.hpp"
+#include "gpu_common.hpp"
 
 namespace toaster::gpu
 {
@@ -15,8 +16,10 @@ namespace toaster::gpu
 
 	class TST_GPU_API ResourceDescriptorHeap
 	{
+		TST_REGISTER_DEPENDENCY(LogicalDevice, device)
+		TST_REGISTER_DEPENDENCY(Allocator, allocator)
 	public:
-		ResourceDescriptorHeap(LogicalDevice &p_logical_device, PhysicalDevice &p_physical_device, Allocator &p_allocator, uint32 p_max_buffers, uint32 p_max_images);
+		ResourceDescriptorHeap(LogicalDevice &p_device, PhysicalDevice &p_physical_device, Allocator &p_allocator, uint32 p_max_buffers, uint32 p_max_images);
 		~ResourceDescriptorHeap();
 
 		[[nodiscard]] auto allocBufferSlot() -> DescriptorSlot { return m_bufferSlotAllocator.allocSlot(); }
@@ -32,12 +35,16 @@ namespace toaster::gpu
 		// When you want to set all your resources, call writeDescriptors() to perform the writeResourceDescriptorsEXT function call
 		auto writeDescriptors() -> void;
 
-		auto getBindInfo() const -> const vk::BindHeapInfoEXT & { return m_bindInfo; }
+		[[nodiscard]] auto getBindInfo() const -> const vk::BindHeapInfoEXT & { return m_bindInfo; }
+
+		auto getBufferDescriptorSize() const -> vk::DeviceSize { return m_bufferDescriptorSize; }
+		auto getImageDescriptorSize() const -> vk::DeviceSize { return m_imageDescriptorSize; }
+
+		auto getBufferSegmentSize() const -> vk::DeviceSize { return m_bufferSegmentSize; }
+		auto getImageSegmentSize() const -> vk::DeviceSize { return m_imageSegmentSize; }
+		auto getImageSegmentOffset() const -> uint64 { return m_imageSegmentOffset; }
 
 	private:
-		NonOwningPtr<LogicalDevice> m_logicalDevice{nullptr};
-		NonOwningPtr<Allocator>     m_allocator{nullptr};
-
 		vk::BindHeapInfoEXT m_bindInfo{};
 
 		// The pending queue of resources to set. Will be cleared when writeDescriptors() is called.
@@ -68,8 +75,10 @@ namespace toaster::gpu
 
 	class TST_GPU_API SamplerDescriptorHeap
 	{
+		TST_REGISTER_DEPENDENCY(LogicalDevice, device)
+		TST_REGISTER_DEPENDENCY(Allocator, allocator)
 	public:
-		SamplerDescriptorHeap(LogicalDevice &p_logical_device, PhysicalDevice &p_physical_device, Allocator &p_allocator, uint32 p_max_samplers);
+		SamplerDescriptorHeap(LogicalDevice &p_device, PhysicalDevice &p_physical_device, Allocator &p_allocator, uint32 p_max_samplers);
 		~SamplerDescriptorHeap();
 
 		[[nodiscard]] auto allocSamplerSlot() -> DescriptorSlot { return m_samplerSlotAllocator.allocSlot(); }
@@ -83,9 +92,6 @@ namespace toaster::gpu
 		auto getBindInfo() const -> const vk::BindHeapInfoEXT & { return m_bindInfo; }
 
 	private:
-		NonOwningPtr<LogicalDevice> m_logicalDevice{nullptr};
-		NonOwningPtr<Allocator>     m_allocator{nullptr};
-
 		vk::BindHeapInfoEXT m_bindInfo{};
 
 		// The pending queue of samplers to set. Will be cleared when writeDescriptors() is called.

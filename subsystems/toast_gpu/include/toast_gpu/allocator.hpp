@@ -32,7 +32,7 @@ namespace toaster::gpu
 
 		[[nodiscard]] auto createBuffer(uint64 p_size, vk::BufferUsageFlags p_usage_flags, VmaAllocationCreateFlags p_allocation_flags) -> GPUBuffer;
 		auto               createBuffer(uint64         p_size, vk::BufferUsageFlags p_usage_flags, VmaAllocationCreateFlags p_allocation_flags, vk::Buffer &p_out_buffer,
-										VmaAllocation &p_out_allocation) -> void;
+										VmaAllocation &p_out_allocation, void **     p_out_mapped = nullptr) -> void;
 		auto destroyBuffer(GPUBuffer &p_buffer) const -> void;
 		auto destroyBuffer(vk::Buffer &p_buffer, VmaAllocation &p_allocation) const -> void;
 

@@ -2,8 +2,8 @@
 
 namespace toaster::gpu
 {
-	ResourceDescriptorHeap::ResourceDescriptorHeap(LogicalDevice &p_logical_device, PhysicalDevice &p_physical_device, Allocator &p_allocator, uint32 p_max_buffers,
-												   uint32         p_max_images) : m_logicalDevice(&p_logical_device), m_allocator(&p_allocator)
+	ResourceDescriptorHeap::ResourceDescriptorHeap(LogicalDevice &p_device, PhysicalDevice &p_physical_device, Allocator &p_allocator, uint32 p_max_buffers,
+												   uint32         p_max_images) : m_device(&p_device), m_allocator(&p_allocator)
 	{
 		m_bufferSlotAllocator = {p_max_buffers};
 		m_imageSlotAllocator  = {p_max_buffers};
@@ -26,7 +26,7 @@ namespace toaster::gpu
 		resource_heap_create_info.usage       = vk::BufferUsageFlagBits::eDescriptorHeapEXT | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR;
 		resource_heap_create_info.sharingMode = vk::SharingMode::eExclusive;
 		resource_heap_create_info.size        = resource_heap_size;
-		resource_heap_create_info.setQueueFamilyIndices(p_logical_device.getQueueFamilyIndices().graphics);
+		resource_heap_create_info.setQueueFamilyIndices(m_device->getQueueFamilyIndices().graphics);
 
 		VmaAllocationCreateInfo heap_allocation_create_info{};
 		heap_allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
@@ -38,7 +38,7 @@ namespace toaster::gpu
 		vmaMapMemory(m_allocator->getAllocator(), m_heapAllocation, &m_mappedHeapMemory);
 
 		vk::DeviceAddressRangeKHR device_address_range{};
-		device_address_range.address   = p_logical_device.getDevice().getBufferAddress({m_heapBuffer});
+		device_address_range.address   = m_device->getDevice().getBufferAddress({m_heapBuffer});
 		device_address_range.size      = resource_heap_size;
 		m_bindInfo.heapRange           = device_address_range;
 		m_bindInfo.reservedRangeOffset = resource_heap_size - heap_props.minResourceHeapReservedRange;
@@ -73,7 +73,7 @@ namespace toaster::gpu
 													  m_imageDescriptorSize);
 		host_range.size = m_imageDescriptorSize;
 
-		vk::ImageDescriptorInfoEXT image_info{m_imageDescriptorInfos.emplace_back()};
+		vk::ImageDescriptorInfoEXT &image_info{m_imageDescriptorInfos.emplace_back()};
 		image_info.layout = p_image_layout;
 
 		vk::ResourceDescriptorInfoEXT &resource_info{m_imageResourceInfos.emplace_back()};
@@ -88,12 +88,13 @@ namespace toaster::gpu
 		for (uint32 i{0u}; i < m_imageResourceInfos.size(); ++i)
 		{
 			m_imageDescriptorInfos[i].pView     = &m_imageViewCreateInfos[i];
+			TST_PERMA_ASSERT(m_imageDescriptorInfos[i].layout != vk::ImageLayout::eUndefined);
 			m_imageResourceInfos[i].data.pImage = &m_imageDescriptorInfos[i];
 		}
 
 		if (!m_bufferResourceInfos.empty())
 		{
-			m_logicalDevice->getDevice().writeResourceDescriptorsEXT(m_bufferResourceInfos, m_bufferHostAddressRanges);
+			m_device->getDevice().writeResourceDescriptorsEXT(m_bufferResourceInfos, m_bufferHostAddressRanges);
 			m_bufferResourceInfos.clear();
 			m_bufferHostAddressRanges.clear();
 			m_bufferDeviceAddressRanges.clear();
@@ -101,7 +102,7 @@ namespace toaster::gpu
 
 		if (!m_imageResourceInfos.empty())
 		{
-			m_logicalDevice->getDevice().writeResourceDescriptorsEXT(m_imageResourceInfos, m_imageHostAddressRanges);
+			m_device->getDevice().writeResourceDescriptorsEXT(m_imageResourceInfos, m_imageHostAddressRanges);
 			m_imageHostAddressRanges.clear();
 			m_imageViewCreateInfos.clear();
 			m_imageDescriptorInfos.clear();
@@ -109,8 +110,8 @@ namespace toaster::gpu
 		}
 	}
 
-	SamplerDescriptorHeap::SamplerDescriptorHeap(LogicalDevice &p_logical_device, PhysicalDevice &p_physical_device, Allocator &p_allocator,
-												 uint32         p_max_samplers) : m_logicalDevice(&p_logical_device), m_allocator(&p_allocator)
+	SamplerDescriptorHeap::SamplerDescriptorHeap(LogicalDevice &p_device, PhysicalDevice &p_physical_device, Allocator &p_allocator,
+												 uint32         p_max_samplers) : m_device(&p_device), m_allocator(&p_allocator)
 	{
 		m_samplerSlotAllocator = {p_max_samplers};
 
@@ -124,7 +125,7 @@ namespace toaster::gpu
 		sampler_heap_create_info.usage       = vk::BufferUsageFlagBits::eDescriptorHeapEXT | vk::BufferUsageFlagBits::eShaderDeviceAddressKHR;
 		sampler_heap_create_info.sharingMode = vk::SharingMode::eExclusive;
 		sampler_heap_create_info.size        = sampler_heap_size;
-		sampler_heap_create_info.setQueueFamilyIndices(p_logical_device.getQueueFamilyIndices().graphics);
+		sampler_heap_create_info.setQueueFamilyIndices(m_device->getQueueFamilyIndices().graphics);
 
 		VmaAllocationCreateInfo heap_allocation_create_info{};
 		heap_allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
@@ -136,7 +137,7 @@ namespace toaster::gpu
 		vmaMapMemory(m_allocator->getAllocator(), m_heapAllocation, &m_mappedHeapMemory);
 
 		vk::DeviceAddressRangeKHR device_address_range{};
-		device_address_range.address   = p_logical_device.getDevice().getBufferAddress({m_heapBuffer});
+		device_address_range.address   = m_device->getDevice().getBufferAddress({m_heapBuffer});
 		device_address_range.size      = sampler_heap_size;
 		m_bindInfo.heapRange           = device_address_range;
 		m_bindInfo.reservedRangeOffset = sampler_heap_size - heap_props.minSamplerHeapReservedRange;
@@ -153,14 +154,16 @@ namespace toaster::gpu
 	{
 		m_samplerCreateInfos.push_back(p_sampler_create_info);
 
-		vk::HostAddressRangeEXT host_range{m_hostAddressRanges.emplace_back()};
+		vk::HostAddressRangeEXT& host_range{m_hostAddressRanges.emplace_back()};
 		host_range.address = reinterpret_cast<void *>(reinterpret_cast<uint64>(m_mappedHeapMemory) + static_cast<uint64>(p_slot) * m_samplerDescriptorSize);
 		host_range.size    = m_samplerDescriptorSize;
 	}
 
 	auto SamplerDescriptorHeap::writeDescriptors() -> void
 	{
-		m_logicalDevice->getDevice().writeSamplerDescriptorsEXT(m_samplerCreateInfos, m_hostAddressRanges);
+		if (m_samplerCreateInfos.empty())
+			return;
+		m_device->getDevice().writeSamplerDescriptorsEXT(m_samplerCreateInfos, m_hostAddressRanges);
 		m_samplerCreateInfos.clear();
 		m_hostAddressRanges.clear();
 	}

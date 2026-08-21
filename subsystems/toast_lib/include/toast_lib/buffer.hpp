@@ -7,33 +7,33 @@
 
 namespace toaster
 {
-	class TST_LIB_API Buffer
+	class TST_LIB_API DataBuffer
 	{
 	public:
-		Buffer() = default;
+		DataBuffer() = default;
 
-		Buffer(const void *p_data, const uint64 p_size)
+		DataBuffer(const void *p_data, const uint64 p_size)
 			: m_data(const_cast<void *>(p_data)), m_size(p_size)
 		{
 		}
 
 		template<typename Type>
-		Buffer()
+		DataBuffer()
 		{
 			allocate<Type>();
 		}
 
-		static auto copy(const Buffer &p_other) -> Buffer
+		static auto copy(const DataBuffer &p_other) -> DataBuffer
 		{
-			Buffer buffer;
+			DataBuffer buffer;
 			buffer.allocate(p_other.m_size);
 			std::memcpy(buffer.m_data, p_other.m_data, p_other.m_size);
 			return buffer;
 		}
 
-		static auto copy(const void *p_data, uint64 p_size) -> Buffer
+		static auto copy(const void *p_data, uint64 p_size) -> DataBuffer
 		{
-			Buffer buffer;
+			DataBuffer buffer;
 			buffer.allocate(p_size);
 			if (p_size)
 				std::memcpy(buffer.m_data, p_data, p_size);
@@ -109,7 +109,7 @@ namespace toaster
 			std::memcpy(static_cast<uint8 *>(m_data) + p_offset, reinterpret_cast<const void *>(&p_data), sizeof(Type));
 		}
 
-		auto write(Buffer p_buffer, uint64 p_offset = 0u) -> void
+		auto write(DataBuffer p_buffer, uint64 p_offset = 0u) -> void
 		{
 			TST_ASSERT_MSG(p_offset + p_buffer.m_size <= m_size, "Buffer overflow!");
 			std::memcpy(static_cast<uint8 *>(m_data) + p_offset, p_buffer.m_data, p_buffer.m_size);
@@ -117,7 +117,7 @@ namespace toaster
 
 		auto write(const void *p_data, uint64 p_size, uint64 p_offset = 0u) -> void
 		{
-			write(Buffer(p_data, p_size), p_offset);
+			write(DataBuffer(p_data, p_size), p_offset);
 		}
 
 		operator bool() const

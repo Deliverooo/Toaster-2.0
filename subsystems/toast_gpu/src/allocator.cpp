@@ -36,7 +36,7 @@ namespace toaster::gpu
 	}
 
 	auto Allocator::createBuffer(uint64         p_size, vk::BufferUsageFlags p_usage_flags, VmaAllocationCreateFlags p_allocation_flags, vk::Buffer &p_out_buffer,
-								 VmaAllocation &p_out_allocation) -> void
+								 VmaAllocation &p_out_allocation, void **    p_out_mapped) -> void
 	{
 		vk::BufferCreateInfo buffer_create_info{};
 		buffer_create_info.size        = p_size;
@@ -47,8 +47,12 @@ namespace toaster::gpu
 		buffer_allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
 		buffer_allocation_create_info.flags = p_allocation_flags;
 
+		VmaAllocationInfo allocation_info{};
 		vmaCreateBuffer(m_allocator, reinterpret_cast<VkBufferCreateInfo *>(&buffer_create_info), &buffer_allocation_create_info,
-						reinterpret_cast<VkBuffer *>(&p_out_buffer), &p_out_allocation, nullptr);
+						reinterpret_cast<VkBuffer *>(&p_out_buffer), &p_out_allocation, &allocation_info);
+
+		if (p_out_mapped)
+			*p_out_mapped = allocation_info.pMappedData;
 	}
 
 	auto Allocator::destroyBuffer(GPUBuffer &p_buffer) const -> void

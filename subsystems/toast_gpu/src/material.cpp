@@ -2,34 +2,27 @@
 
 namespace toaster::gpu
 {
-	MaterialManager::MaterialManager(const LogicalDevice &p_device, Allocator &p_allocator, const RefPtr<MaterialStructMapping> &p_struct_mapping,
-									 uint32               p_max_materials) : m_allocator(&p_allocator), m_structMapping(p_struct_mapping), m_maxMaterials(p_max_materials)
+	MaterialManager::MaterialManager(BufferManager &p_buffer_manager, TextureManager &p_texture_manager, const RefPtr<MaterialStructMapping> &p_struct_mapping,
+									 uint32         p_max_materials) : m_bufferManager(&p_buffer_manager), m_textureManager(&p_texture_manager),
+																	   m_structMapping(p_struct_mapping), m_maxMaterials(p_max_materials)
 	{
 		m_pool.reserve(p_max_materials);
+		m_pool.setUserData(this);
+		m_pool.setDestroyCallback(+[](void *p_user_data, MaterialHandle p_handle) -> void
+		{
+			auto ts{static_cast<MaterialManager *>(p_user_data)};
+			delete[] ts->m_pool._data[p_handle.id].data;
+			ts->m_pool._data[p_handle.id].data = nullptr;
+		});
+
+		BufferDesc buffer_desc{};
+		buffer_desc.size             = m_maxMaterials * m_structMapping->size;
+		buffer_desc.usageFlags       = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+		buffer_desc.memoryProperties = EMemoryProperties::eHostVisibleCoherent;
 
 		m_materialBuffers.resize(3u);
-		m_materialBufferAllocations.resize(3u);
-		m_mappedMaterialBuffers.resize(3u);
-		m_materialBufferDeviceAddresses.resize(3u);
-
-		vk::BufferCreateInfo material_buffer_create_info{};
-		material_buffer_create_info.size        = m_maxMaterials * m_structMapping->size;
-		material_buffer_create_info.usage       = vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
-		material_buffer_create_info.sharingMode = vk::SharingMode::eExclusive;
-
-		VmaAllocationCreateInfo material_buffer_allocation_create_info{};
-		material_buffer_allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
-		material_buffer_allocation_create_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
-
-		for (uint32 i{0u}; i < 3u; ++i)
-		{
-			vmaCreateBuffer(m_allocator->getAllocator(), reinterpret_cast<VkBufferCreateInfo *>(&material_buffer_create_info), &material_buffer_allocation_create_info,
-							reinterpret_cast<VkBuffer *>(&m_materialBuffers[i]), &m_materialBufferAllocations[i], nullptr);
-
-			vmaMapMemory(m_allocator->getAllocator(), m_materialBufferAllocations[i], reinterpret_cast<void **>(&m_mappedMaterialBuffers[i]));
-
-			m_materialBufferDeviceAddresses[i] = p_device.getDevice().getBufferAddress({m_materialBuffers[i]});
-		}
+		for (auto &buffer: m_materialBuffers)
+			buffer = m_bufferManager->createBuffer(buffer_desc);
 	}
 
 	MaterialManager::~MaterialManager()
@@ -40,11 +33,8 @@ namespace toaster::gpu
 				delete[] mat.data;
 		}
 
-		for (uint32 i{0u}; i < 3u; ++i)
-		{
-			vmaUnmapMemory(m_allocator->getAllocator(), m_materialBufferAllocations[i]);
-			vmaDestroyBuffer(m_allocator->getAllocator(), m_materialBuffers[i], m_materialBufferAllocations[i]);
-		}
+		for (auto &buffer: m_materialBuffers)
+			m_bufferManager->destroyBuffer(buffer);
 	}
 
 	auto MaterialManager::createMaterial() -> MaterialHandle
@@ -54,26 +44,16 @@ namespace toaster::gpu
 		return out_handle;
 	}
 
-	auto MaterialManager::destroyMaterial(MaterialHandle p_handle) -> void
+	auto MaterialManager::getImage(MaterialHandle p_handle, const String &p_name) -> SharedTexture
 	{
-		m_pool.destroy(p_handle);
-		delete[] m_pool._data[p_handle.id].data;
-		m_pool._data[p_handle.id].data = nullptr;
-	}
-
-	auto MaterialManager::isValid(MaterialHandle p_handle) const -> bool
-	{
-		return m_pool.isValid(p_handle);
-	}
-
-	auto MaterialManager::getData(MaterialHandle p_handle) -> void *
-	{
-		return &m_pool.getData(p_handle)->data;
+		if (!m_pool.isValid(p_handle))
+			return {};
+		return m_pool._data[p_handle.id].imageRefs.at(p_name);
 	}
 
 	auto MaterialManager::markMaterialDirty(MaterialHandle p_handle) -> void
 	{
-		if (!isValid(p_handle))
+		if (!m_pool.isValid(p_handle))
 			TST_PERMA_ASSERT(false);
 
 		m_pool._data[p_handle.id].framesDirty = 3u;
@@ -88,7 +68,7 @@ namespace toaster::gpu
 			if (m_pool._alive[i] && entry.framesDirty > 0)
 			{
 				--entry.framesDirty;
-				std::memcpy(&m_mappedMaterialBuffers[p_frame_index][i], entry.data, m_structMapping->size);
+				m_bufferManager->uploadDirect(m_materialBuffers[p_frame_index], entry.data, m_structMapping->size, m_structMapping->size * i);
 			}
 		}
 	}
