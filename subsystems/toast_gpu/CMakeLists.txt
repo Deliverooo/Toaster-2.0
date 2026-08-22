@@ -9,6 +9,7 @@ set(GPU_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/buffer.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/texture.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/swapchain.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/shader.cpp
 )
 
 

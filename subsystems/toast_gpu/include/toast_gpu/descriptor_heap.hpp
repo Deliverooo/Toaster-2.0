@@ -16,8 +16,8 @@ namespace toaster::gpu
 
 	class TST_GPU_API ResourceDescriptorHeap
 	{
-		TST_REGISTER_DEPENDENCY(LogicalDevice, device)
-		TST_REGISTER_DEPENDENCY(Allocator, allocator)
+		TST_REGISTER_DEPENDENCY(LogicalDevice, Device, device)
+		TST_REGISTER_DEPENDENCY(Allocator, Allocator, allocator)
 	public:
 		ResourceDescriptorHeap(LogicalDevice &p_device, PhysicalDevice &p_physical_device, Allocator &p_allocator, uint32 p_max_buffers, uint32 p_max_images);
 		~ResourceDescriptorHeap();
@@ -75,8 +75,8 @@ namespace toaster::gpu
 
 	class TST_GPU_API SamplerDescriptorHeap
 	{
-		TST_REGISTER_DEPENDENCY(LogicalDevice, device)
-		TST_REGISTER_DEPENDENCY(Allocator, allocator)
+		TST_REGISTER_DEPENDENCY(LogicalDevice, Device, device)
+		TST_REGISTER_DEPENDENCY(Allocator, Allocator, allocator)
 	public:
 		SamplerDescriptorHeap(LogicalDevice &p_device, PhysicalDevice &p_physical_device, Allocator &p_allocator, uint32 p_max_samplers);
 		~SamplerDescriptorHeap();

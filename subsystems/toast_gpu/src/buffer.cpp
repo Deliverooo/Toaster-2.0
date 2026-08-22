@@ -76,4 +76,25 @@ namespace toaster::gpu
 
 		std::memcpy(reinterpret_cast<void *>(reinterpret_cast<uint64>(dst_buffer->mapped) + p_offset), p_data, p_size);
 	}
+
+	auto BufferManager::copyBuffer(BufferHandle p_src_handle, BufferHandle p_dst_handle, vk::CommandBuffer p_cmd, uint64 p_size, uint64 p_src_offset,
+								   uint64       p_dst_offset) -> void
+	{
+		BufferData *src_data{getData(p_src_handle)};
+		BufferData *dst_data{getData(p_dst_handle)};
+		TST_PERMA_ASSERT(src_data && dst_data);
+		TST_PERMA_ASSERT_MSG(src_data->usageFlags & vk::BufferUsageFlagBits::eTransferSrc, "Src buffer is not a transfer src");
+		TST_PERMA_ASSERT_MSG(dst_data->usageFlags & vk::BufferUsageFlagBits::eTransferDst, "Dst buffer is not a transfer dst");
+
+		vk::BufferCopy2 copy_region{};
+		copy_region.srcOffset = p_src_offset;
+		copy_region.dstOffset = p_dst_offset;
+		copy_region.size      = p_size;
+
+		vk::CopyBufferInfo2 copy_buffer_info{};
+		copy_buffer_info.srcBuffer = src_data->buffer;
+		copy_buffer_info.dstBuffer = dst_data->buffer;
+		copy_buffer_info.setRegions(copy_region);
+		p_cmd.copyBuffer2(copy_buffer_info);
+	}
 }

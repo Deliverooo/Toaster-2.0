@@ -49,10 +49,10 @@ namespace toaster::gpu
 
 	class TST_GPU_API TextureManager
 	{
-		TST_REGISTER_DEPENDENCY(LogicalDevice, device)
-		TST_REGISTER_DEPENDENCY(Allocator, allocator)
-		TST_REGISTER_DEPENDENCY(ResourceDescriptorHeap, resourceHeap)
-		TST_REGISTER_DEPENDENCY(BufferManager, bufferManager)
+		TST_REGISTER_DEPENDENCY(LogicalDevice, Device, device)
+		TST_REGISTER_DEPENDENCY(Allocator, Allocator, allocator)
+		TST_REGISTER_DEPENDENCY(ResourceDescriptorHeap, ResourceHeap, resourceHeap)
+		TST_REGISTER_DEPENDENCY(BufferManager, BufferManager, bufferManager)
 	public:
 		using DestroyCallback = void(*)(void *, TextureHandle);
 		using PoolType        = Pool<TextureTag, TextureData>;

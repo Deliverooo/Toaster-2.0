@@ -29,8 +29,8 @@ namespace toaster::gpu
 
 	class TST_GPU_API BufferManager
 	{
-		TST_REGISTER_DEPENDENCY(LogicalDevice, device)
-		TST_REGISTER_DEPENDENCY(Allocator, allocator)
+		TST_REGISTER_DEPENDENCY(LogicalDevice, Device, device)
+		TST_REGISTER_DEPENDENCY(Allocator, Allocator, allocator)
 	public:
 		using DestroyCallback = void(*)(void *, BufferHandle);
 		using PoolType        = Pool<BufferTag, BufferData>;
@@ -59,6 +59,8 @@ namespace toaster::gpu
 		auto getBufferMappedPtr(BufferHandle p_handle) -> void * { return getData(p_handle)->mapped; }
 
 		auto uploadDirect(BufferHandle p_handle, const void *p_data, uint64 p_size, uint64 p_offset = 0u) -> void; // Uploads data to a host-visible buffer
+		auto copyBuffer(BufferHandle p_src_handle, BufferHandle p_dst_handle, vk::CommandBuffer p_cmd, uint64 p_size, uint64 p_src_offset = 0u,
+						uint64       p_dst_offset                                                                                         = 0u) -> void;
 
 		auto getPoolData(uint32 p_id) -> BufferData * { return &m_pool._data[p_id]; }
 		auto getPoolData(uint32 p_id) const -> const BufferData * { return &m_pool._data[p_id]; }

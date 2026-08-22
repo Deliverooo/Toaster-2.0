@@ -1,8 +1,6 @@
 #include "toast_gpu/instance.hpp"
 
-VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
-
-namespace toaster::gpu
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE namespace toaster::gpu
 {
 	static auto defaultDebugCallback(vk::DebugUtilsMessageSeverityFlagBitsEXT      p_message_severity, vk::DebugUtilsMessageTypeFlagsEXT p_message_type,
 									 const vk::DebugUtilsMessengerCallbackDataEXT *p_callback_data, [[maybe_unused]] void *              p_user_data) -> vk::Bool32
@@ -26,19 +24,26 @@ namespace toaster::gpu
 		return vk::False;
 	}
 
-	auto initBaseFunctions() -> void
+	vk::detail::DispatchLoaderDynamic FunctionDispatcher::s_dldy{};
+
+	auto FunctionDispatcher::initBaseFunctions() -> void
 	{
-		VULKAN_HPP_DEFAULT_DISPATCHER.init();
+		s_dldy.init();
 	}
 
-	auto initInstanceFunctions(vk::Instance p_instance) -> void
+	auto FunctionDispatcher::initInstanceFunctions(vk::Instance p_instance) -> void
 	{
-		VULKAN_HPP_DEFAULT_DISPATCHER.init(p_instance);
+		s_dldy.init(p_instance);
 	}
 
-	auto initDeviceFunctions(vk::Device p_device) -> void
+	auto FunctionDispatcher::initDeviceFunctions(vk::Device p_device) -> void
 	{
-		VULKAN_HPP_DEFAULT_DISPATCHER.init(p_device);
+		s_dldy.init(p_device);
+	}
+
+	auto FunctionDispatcher::get() -> const vk::detail::DispatchLoaderDynamic &
+	{
+		return s_dldy;
 	}
 
 	Instance::Instance(const InstanceDesc &p_desc)

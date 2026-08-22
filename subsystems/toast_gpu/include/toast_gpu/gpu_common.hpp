@@ -6,7 +6,7 @@
 
 namespace toaster::gpu
 {
-	#define TST_REGISTER_DEPENDENCY(__class, __membername) private: ::toaster::NonOwningPtr<__class> m_##__membername{nullptr}; public: auto get##__class () const -> __class* { return m_##__membername; } private:
+	#define TST_REGISTER_DEPENDENCY(__class, __getname, __membername) private: ::toaster::NonOwningPtr<__class> m_##__membername{nullptr}; public: auto get##__getname () const -> __class* { return m_##__membername; } private:
 
 	enum class EMemoryProperties : uint8
 	{

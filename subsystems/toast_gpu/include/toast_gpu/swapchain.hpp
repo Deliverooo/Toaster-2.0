@@ -7,9 +7,9 @@ namespace toaster::gpu
 {
 	class TST_GPU_API Swapchain
 	{
-		TST_REGISTER_DEPENDENCY(PhysicalDevice, physicalDevice)
-		TST_REGISTER_DEPENDENCY(LogicalDevice, device)
-		TST_REGISTER_DEPENDENCY(Allocator, allocator)
+		TST_REGISTER_DEPENDENCY(PhysicalDevice,PhysicalDevice, physicalDevice)
+		TST_REGISTER_DEPENDENCY(LogicalDevice,Device, device)
+		TST_REGISTER_DEPENDENCY(Allocator, Allocator, allocator)
 	public:
 		Swapchain(PhysicalDevice &p_physical_device, LogicalDevice &p_device, Allocator &p_allocator, vk::SurfaceKHR p_surface, uint32 p_max_frames_in_flight,
 				  uint32          p_initial_width, uint32           p_initial_height);

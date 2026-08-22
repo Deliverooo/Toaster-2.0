@@ -94,7 +94,7 @@ namespace toaster::gpu
 
 		if (!m_bufferResourceInfos.empty())
 		{
-			m_device->getDevice().writeResourceDescriptorsEXT(m_bufferResourceInfos, m_bufferHostAddressRanges);
+			m_device->getDevice().writeResourceDescriptorsEXT(m_bufferResourceInfos, m_bufferHostAddressRanges, FunctionDispatcher::get());
 			m_bufferResourceInfos.clear();
 			m_bufferHostAddressRanges.clear();
 			m_bufferDeviceAddressRanges.clear();
@@ -102,7 +102,7 @@ namespace toaster::gpu
 
 		if (!m_imageResourceInfos.empty())
 		{
-			m_device->getDevice().writeResourceDescriptorsEXT(m_imageResourceInfos, m_imageHostAddressRanges);
+			m_device->getDevice().writeResourceDescriptorsEXT(m_imageResourceInfos, m_imageHostAddressRanges, FunctionDispatcher::get());
 			m_imageHostAddressRanges.clear();
 			m_imageViewCreateInfos.clear();
 			m_imageDescriptorInfos.clear();
@@ -163,7 +163,7 @@ namespace toaster::gpu
 	{
 		if (m_samplerCreateInfos.empty())
 			return;
-		m_device->getDevice().writeSamplerDescriptorsEXT(m_samplerCreateInfos, m_hostAddressRanges);
+		m_device->getDevice().writeSamplerDescriptorsEXT(m_samplerCreateInfos, m_hostAddressRanges, FunctionDispatcher::get());
 		m_samplerCreateInfos.clear();
 		m_hostAddressRanges.clear();
 	}
