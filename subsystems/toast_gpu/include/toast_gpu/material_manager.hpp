@@ -1,11 +1,11 @@
 #pragma once
 
 #include <DirectXMath.h>
+
+#include "device.hpp"
 using namespace DirectX;
 
-#include "buffer_manager.hpp"
 #include "shader_manager.hpp"
-#include "texture_manager.hpp"
 
 namespace toaster::gpu
 {
@@ -40,12 +40,11 @@ namespace toaster::gpu
 
 	class TST_GPU_API MaterialManager
 	{
-		TST_REGISTER_DEPENDENCY(Device, Device, gpuCtx)
-		TST_REGISTER_DEPENDENCY(BufferManager, BufferManager, bufferManager)
+		TST_REGISTER_DEPENDENCY(Device, Device, device)
 	public:
 		using PoolType = Pool<MaterialTag, MaterialData>;
 
-		MaterialManager(Device &p_gpu_ctx, BufferManager &p_buffer_manager, uint32 p_max_pool_size_bytes);
+		MaterialManager(Device &p_device, uint32 p_max_pool_size_bytes);
 		~MaterialManager();
 
 		MaterialManager(const MaterialManager &)            = delete;

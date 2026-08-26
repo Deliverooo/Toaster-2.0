@@ -15,8 +15,8 @@ namespace toaster::gpu
 
 		// This is the order you should call these in a frame loop
 		auto acquireImage(vk::Semaphore p_signal_semaphore) -> void;
-		auto beginFrame(vk::CommandBuffer p_cmd) -> void;
-		auto endFrame(vk::CommandBuffer p_cmd) -> void;
+		auto beginFrame(CommandList& p_cmd) -> void;
+		auto endFrame(CommandList& p_cmd) -> void;
 		auto getSignalSemaphoreInfo() const -> vk::SemaphoreSubmitInfo;
 		auto present() -> void;
 

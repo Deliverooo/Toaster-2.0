@@ -1,5 +1,7 @@
 #include "toast_gpu/swapchain.hpp"
 
+#include "toast_gpu/command_list.hpp"
+
 namespace toaster::gpu
 {
 	Swapchain::Swapchain(Device &p_gpu_ctx, vk::SurfaceKHR p_surface, uint32 p_max_frames_in_flight, uint32 p_initial_width,
@@ -41,10 +43,8 @@ namespace toaster::gpu
 			TST_PERMA_ASSERT_MSG(false, "Failed to acquire swapchain image!");
 	}
 
-	auto Swapchain::beginFrame(vk::CommandBuffer p_cmd) -> void
+	auto Swapchain::beginFrame(CommandList &p_cmd) -> void
 	{
-		TST_ASSERT(p_cmd);
-
 		vk::ImageMemoryBarrier2 undefined_to_colour_attachment_optimal{};
 		undefined_to_colour_attachment_optimal.image               = m_images[m_imageIndex];
 		undefined_to_colour_attachment_optimal.srcAccessMask       = vk::AccessFlagBits2::eNone;
@@ -72,13 +72,11 @@ namespace toaster::gpu
 		vk::DependencyInfo      dependency_info{};
 		vk::ImageMemoryBarrier2 barriers[]{undefined_to_colour_attachment_optimal, undefined_to_depth_attachment_optimal};
 		dependency_info.setImageMemoryBarriers(barriers);
-		p_cmd.pipelineBarrier2(dependency_info);
+		p_cmd.getCommandBuffer().pipelineBarrier2(dependency_info);
 	}
 
-	auto Swapchain::endFrame(vk::CommandBuffer p_cmd) -> void
+	auto Swapchain::endFrame(CommandList &p_cmd) -> void
 	{
-		TST_ASSERT(p_cmd);
-
 		vk::ImageMemoryBarrier2 colour_attachment_optimal_to_present_src{};
 		colour_attachment_optimal_to_present_src.image               = m_images[m_imageIndex];
 		colour_attachment_optimal_to_present_src.srcAccessMask       = vk::AccessFlagBits2::eColorAttachmentWrite;
@@ -93,7 +91,7 @@ namespace toaster::gpu
 
 		vk::DependencyInfo dependency_info{};
 		dependency_info.setImageMemoryBarriers(colour_attachment_optimal_to_present_src);
-		p_cmd.pipelineBarrier2(dependency_info);
+		p_cmd.getCommandBuffer().pipelineBarrier2(dependency_info);
 	}
 
 	auto Swapchain::getSignalSemaphoreInfo() const -> vk::SemaphoreSubmitInfo

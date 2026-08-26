@@ -2,8 +2,9 @@
 
 #include <toast_lib/freelist_allocator.hpp>
 
+#include "allocator.hpp"
 #include "gpu_common.hpp"
-#include "device.hpp"
+#include "logical_device.hpp"
 
 namespace toaster::gpu
 {
@@ -16,15 +17,22 @@ namespace toaster::gpu
 
 	class TST_GPU_API ResourceDescriptorHeap
 	{
-		TST_REGISTER_DEPENDENCY(Device, Device, gpuCtx)
+		TST_REGISTER_DEPENDENCY(LogicalDevice, Device, device)
+		TST_REGISTER_DEPENDENCY(Allocator, Allocator, allocator)
 	public:
-		ResourceDescriptorHeap(Device &p_gpu_ctx, uint32 p_max_buffers, uint32 p_max_images);
+		ResourceDescriptorHeap(LogicalDevice &p_device, PhysicalDevice &p_physical_device, Allocator &p_allocator, uint32 p_max_buffers, uint32 p_max_images);
 		~ResourceDescriptorHeap();
+
+		ResourceDescriptorHeap(const ResourceDescriptorHeap &)            = delete;
+		ResourceDescriptorHeap(ResourceDescriptorHeap &&)                 = delete;
+		ResourceDescriptorHeap &operator=(const ResourceDescriptorHeap &) = delete;
+		ResourceDescriptorHeap &operator=(ResourceDescriptorHeap &&)      = delete;
 
 		[[nodiscard]] auto allocBufferSlot() -> DescriptorSlot { return m_bufferSlotAllocator.allocSlot(); }
 		[[nodiscard]] auto allocImageSlot() -> DescriptorSlot { return m_imageSlotAllocator.allocSlot(); }
 		auto               freeBufferSlot(DescriptorSlot p_slot) -> void { m_bufferSlotAllocator.freeSlot(p_slot); }
 		auto               freeImageSlot(DescriptorSlot p_slot) -> void { m_imageSlotAllocator.freeSlot(p_slot); }
+		auto               getImageAbsoluteHeapSlot(DescriptorSlot p_slot) const -> uint32;
 
 		// Basically, to improve performance, when this is called, it will 'queue' the resource to be set.
 		auto setBuffer(DescriptorSlot p_slot, const vk::DeviceAddressRangeKHR &p_address_range, vk::DescriptorType p_descriptor_type) -> void;
@@ -74,10 +82,16 @@ namespace toaster::gpu
 
 	class TST_GPU_API SamplerDescriptorHeap
 	{
-		TST_REGISTER_DEPENDENCY(Device, GPUContext, gpuCtx)
+		TST_REGISTER_DEPENDENCY(LogicalDevice, Device, device)
+		TST_REGISTER_DEPENDENCY(Allocator, Allocator, allocator)
 	public:
-		SamplerDescriptorHeap(Device &p_gpu_ctx, uint32 p_max_samplers);
+		SamplerDescriptorHeap(LogicalDevice &p_device, PhysicalDevice &p_physical_device, Allocator &p_allocator, uint32 p_max_samplers);
 		~SamplerDescriptorHeap();
+
+		SamplerDescriptorHeap(const SamplerDescriptorHeap &)            = delete;
+		SamplerDescriptorHeap(SamplerDescriptorHeap &&)                 = delete;
+		SamplerDescriptorHeap &operator=(const SamplerDescriptorHeap &) = delete;
+		SamplerDescriptorHeap &operator=(SamplerDescriptorHeap &&)      = delete;
 
 		[[nodiscard]] auto allocSamplerSlot() -> DescriptorSlot { return m_samplerSlotAllocator.allocSlot(); }
 		auto               freeSamplerSlot(DescriptorSlot p_slot) -> void { m_samplerSlotAllocator.freeSlot(p_slot); }

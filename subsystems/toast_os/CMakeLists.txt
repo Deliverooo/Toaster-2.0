@@ -1,5 +1,6 @@
 set(SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/window.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/console.cpp
 )
 
 

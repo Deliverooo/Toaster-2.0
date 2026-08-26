@@ -2,9 +2,7 @@
 
 namespace toaster::gpu
 {
-	MaterialManager::MaterialManager(Device &p_gpu_ctx, BufferManager &p_buffer_manager, uint32 p_max_pool_size_bytes) : m_gpuCtx(&p_gpu_ctx),
-																															 m_bufferManager(&p_buffer_manager),
-																															 m_maxPoolSize(p_max_pool_size_bytes)
+	MaterialManager::MaterialManager(Device &p_device, uint32 p_max_pool_size_bytes) : m_device(&p_device), m_maxPoolSize(p_max_pool_size_bytes)
 	{
 		VmaVirtualBlockCreateInfo block_create_info{};
 		block_create_info.size = m_maxPoolSize;
@@ -18,7 +16,7 @@ namespace toaster::gpu
 		m_materialBuffers.resize(3u);
 
 		for (auto &buffer: m_materialBuffers)
-			buffer = m_bufferManager->createBuffer(material_buffer_desc);
+			buffer = m_device->createBuffer(material_buffer_desc);
 
 		m_pool.setUserData(this);
 		m_pool.setDestroyCallback(+[](void *p_user_data, MaterialHandle p_handle) -> void
@@ -29,7 +27,7 @@ namespace toaster::gpu
 			material_data->data.clear();         // We don't need to defer this
 			material_data->textureRefs.fill({}); // Texture destruction is already queued
 
-			ts->m_gpuCtx->submitDeletion([data = *material_data, virtual_block = ts->m_virtualBlock]() mutable noexcept -> void // Copy
+			ts->m_device->submitDeletion([data = *material_data, virtual_block = ts->m_virtualBlock]() mutable noexcept -> void // Copy
 			{
 				_destroyMaterialData(data, virtual_block);
 			});
@@ -39,7 +37,7 @@ namespace toaster::gpu
 	MaterialManager::~MaterialManager()
 	{
 		for (auto &buffer: m_materialBuffers)
-			m_bufferManager->destroyBuffer(buffer);
+			m_device->destroyBuffer(buffer);
 
 		// For safety...
 		for (uint32 i{0u}; i < m_pool.getSize(); ++i)
@@ -50,14 +48,14 @@ namespace toaster::gpu
 				material_data->data.clear();         // We don't need to defer this
 				material_data->textureRefs.fill({}); // Texture destruction is already queued
 
-				m_gpuCtx->submitDeletion([data = *material_data, virtual_block = m_virtualBlock]() mutable noexcept -> void // Copy
+				m_device->submitDeletion([data = *material_data, virtual_block = m_virtualBlock]() mutable noexcept -> void // Copy
 				{
 					_destroyMaterialData(data, virtual_block);
 				});
 			}
 		}
 
-		m_gpuCtx->submitDeletion([virtual_block = m_virtualBlock] mutable noexcept -> void
+		m_device->submitDeletion([virtual_block = m_virtualBlock] mutable noexcept -> void
 		{
 			vmaDestroyVirtualBlock(virtual_block);
 		});
@@ -91,7 +89,7 @@ namespace toaster::gpu
 		const MaterialData *data{getData(p_handle)};
 		TST_PERMA_ASSERT(data);
 
-		vk::DeviceAddress base_address{m_bufferManager->getBufferDeviceAddress(m_materialBuffers[p_frame_index])};
+		vk::DeviceAddress base_address{m_device->getBufferData(m_materialBuffers[p_frame_index])->address};
 		return base_address + data->allocationOffset;
 	}
 
@@ -111,7 +109,7 @@ namespace toaster::gpu
 			if (m_pool._alive[i] && data.framesDirty > 0)
 			{
 				--data.framesDirty;
-				m_bufferManager->uploadDirect(m_materialBuffers[p_frame_index], data.data.data(), data.allocationSize, data.allocationOffset);
+				m_device->uploadBufferData(m_materialBuffers[p_frame_index], data.data.data(), data.allocationSize, data.allocationOffset);
 			}
 		}
 	}
