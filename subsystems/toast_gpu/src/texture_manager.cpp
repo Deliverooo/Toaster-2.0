@@ -1,4 +1,4 @@
-#include "toast_gpu/texture.hpp"
+#include "toast_gpu/texture_manager.hpp"
 
 namespace toaster::gpu
 {
@@ -13,23 +13,21 @@ namespace toaster::gpu
 		return vk::ImageViewType::e2D;
 	}
 
-	TextureManager::TextureManager(LogicalDevice &p_device, Allocator &p_allocator, ResourceDescriptorHeap &p_resource_heap, BufferManager &p_buffer_manager,
-								   void *         p_user_data, const DestroyCallback &p_destroy_callback) : m_device(&p_device), m_allocator(&p_allocator),
-																											m_resourceHeap(&p_resource_heap),
-																											m_bufferManager(&p_buffer_manager),
-																											m_userData(p_user_data), m_destroyCallback(p_destroy_callback)
+	TextureManager::TextureManager(Device &p_gpu_ctx, ResourceDescriptorHeap &p_resource_heap, BufferManager &p_buffer_manager) : m_gpuCtx(&p_gpu_ctx),
+																																  m_resourceHeap(&p_resource_heap),
+																																  m_bufferManager(&p_buffer_manager)
 	{
 		m_pool.setUserData(this);
 		m_pool.setDestroyCallback(+[](void *p_user_data, TextureHandle p_handle) -> void
 		{
 			auto ts{static_cast<TextureManager *>(p_user_data)};
 
-			TextureData *texture_data{&ts->m_pool._data[p_handle.id]};
+			TextureData texture_data{ts->m_pool._data[p_handle.id]};
 
-			if (ts->m_destroyCallback)
-				ts->m_destroyCallback(ts->m_userData, p_handle);
-			else
-				ts->destroyData(texture_data);
+			ts->m_gpuCtx->submitDeletion([data = texture_data, gpu_ctx = ts->m_gpuCtx, resource_heap = ts->m_resourceHeap]() mutable noexcept -> void
+			{
+				_destroyTextureData(data, *gpu_ctx, *resource_heap);
+			});
 		});
 	}
 
@@ -39,7 +37,14 @@ namespace toaster::gpu
 		for (uint32 i{0u}; i < m_pool.getSize(); ++i)
 		{
 			if (m_pool._alive[i])
-				destroyData(&m_pool._data[i]);
+			{
+				TextureData texture_data{m_pool._data[i]};
+
+				m_gpuCtx->submitDeletion([texture_data, gpu_ctx = m_gpuCtx, resource_heap = m_resourceHeap]() mutable noexcept -> void
+				{
+					_destroyTextureData(texture_data, *gpu_ctx, *resource_heap);
+				});
+			}
 		}
 	}
 
@@ -70,10 +75,10 @@ namespace toaster::gpu
 		image_create_info.usage         = texture_data.usageFlags;
 		image_create_info.sharingMode   = vk::SharingMode::eExclusive;
 		image_create_info.initialLayout = vk::ImageLayout::eUndefined;
-		m_allocator->createImage(image_create_info, allocation_create_flags, texture_data.image, texture_data.allocation);
+		m_gpuCtx->getAllocator().createImage(image_create_info, allocation_create_flags, texture_data.image, texture_data.allocation);
 
 		if (texture_data.memoryProperties == EMemoryProperties::eHostVisibleCoherent)
-			vmaMapMemory(m_allocator->getAllocator(), texture_data.allocation, &texture_data.mapped);
+			vmaMapMemory(m_gpuCtx->getAllocator().getAllocator(), texture_data.allocation, &texture_data.mapped);
 
 		vk::ImageViewCreateInfo image_view_create_info{};
 		image_view_create_info.image      = texture_data.image;
@@ -110,27 +115,6 @@ namespace toaster::gpu
 	auto TextureManager::createSharedTexture(const TextureDesc &p_desc) -> SharedHandle<TextureTag, TextureData>
 	{
 		return {createTexture(p_desc), &m_pool};
-	}
-
-	auto TextureManager::destroyData(TextureData *p_data) -> void
-	{
-		// Unmap the buffer's memory
-		if (p_data->mapped && p_data->memoryProperties == EMemoryProperties::eHostVisibleCoherent)
-			vmaUnmapMemory(m_allocator->getAllocator(), p_data->allocation);
-
-		if (p_data->imageView)
-			m_device->getDevice().destroyImageView(p_data->imageView);
-		if (p_data->image && p_data->allocation)
-		{
-			vmaDestroyImage(m_allocator->getAllocator(), p_data->image, p_data->allocation);
-			p_data->image      = nullptr;
-			p_data->allocation = nullptr;
-		}
-
-		if (p_data->shaderReadHeapID != invalidImageDescriptorSlot)
-			m_resourceHeap->freeImageSlot(p_data->shaderReadHeapID);
-		if (p_data->storageHeapID != invalidImageDescriptorSlot)
-			m_resourceHeap->freeImageSlot(p_data->storageHeapID);
 	}
 
 	auto TextureManager::getTextureShaderReadHeapSlot(TextureHandle p_handle) const -> DescriptorSlot
@@ -229,5 +213,22 @@ namespace toaster::gpu
 		p_cmd.pipelineBarrier2(dependency_info);
 
 		p_data->layout = p_dst_layout;
+	}
+
+	auto TextureManager::_destroyTextureData(const TextureData &p_texture_data, const Device &p_gpu_ctx, ResourceDescriptorHeap &p_resource_heap) -> void
+	{
+		// Unmap the buffer's memory
+		if (p_texture_data.mapped && p_texture_data.memoryProperties == EMemoryProperties::eHostVisibleCoherent)
+			vmaUnmapMemory(p_gpu_ctx.getAllocator().getAllocator(), p_texture_data.allocation);
+
+		if (p_texture_data.imageView)
+			p_gpu_ctx.getDevice().getDevice().destroyImageView(p_texture_data.imageView);
+		if (p_texture_data.image && p_texture_data.allocation)
+			vmaDestroyImage(p_gpu_ctx.getAllocator().getAllocator(), p_texture_data.image, p_texture_data.allocation);
+
+		if (p_texture_data.shaderReadHeapID != invalidImageDescriptorSlot)
+			p_resource_heap.freeImageSlot(p_texture_data.shaderReadHeapID);
+		if (p_texture_data.storageHeapID != invalidImageDescriptorSlot)
+			p_resource_heap.freeImageSlot(p_texture_data.storageHeapID);
 	}
 }

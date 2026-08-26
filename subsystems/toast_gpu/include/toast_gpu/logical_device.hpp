@@ -37,9 +37,6 @@ namespace toaster::gpu
 		auto getGraphicsCommandPool() -> vk::CommandPool & { return m_graphicsCommandPool; }
 		auto getTransferCommandPool() -> vk::CommandPool & { return m_transferCommandPool; }
 
-		auto createTimelineSemaphore(uint64 p_initial_value = 0u) const -> vk::Semaphore;
-		auto waitForTimelineSemaphores(const InitialiserList<const vk::Semaphore> &p_semaphores, const InitialiserList<const uint64> &p_target_values) const -> void;
-
 	private:
 		vk::Device m_logicalDevice{nullptr};
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "buffer.hpp"
+#include "buffer_manager.hpp"
 #include "descriptor_heap.hpp"
 #include "toast_lib/pool.hpp"
 
@@ -49,27 +49,23 @@ namespace toaster::gpu
 
 	class TST_GPU_API TextureManager
 	{
-		TST_REGISTER_DEPENDENCY(LogicalDevice, Device, device)
-		TST_REGISTER_DEPENDENCY(Allocator, Allocator, allocator)
+		TST_REGISTER_DEPENDENCY(Device, Device, gpuCtx)
 		TST_REGISTER_DEPENDENCY(ResourceDescriptorHeap, ResourceHeap, resourceHeap)
 		TST_REGISTER_DEPENDENCY(BufferManager, BufferManager, bufferManager)
 	public:
-		using DestroyCallback = void(*)(void *, TextureHandle);
-		using PoolType        = Pool<TextureTag, TextureData>;
+		using PoolType = Pool<TextureTag, TextureData>;
 
-		TextureManager(LogicalDevice &p_device, Allocator &                         p_allocator, ResourceDescriptorHeap &p_resource_heap, BufferManager &p_buffer_manager,
-					   void *         p_user_data = nullptr, const DestroyCallback &p_destroy_callback = nullptr);
+		TextureManager(Device &p_gpu_ctx, ResourceDescriptorHeap &p_resource_heap, BufferManager &p_buffer_manager);
 		~TextureManager();
 
-		auto setUserData(void *p_user_data) -> void { m_userData = p_user_data; }
-		auto setDestroyCallback(const DestroyCallback &p_destroy_callback) -> void { m_destroyCallback = p_destroy_callback; }
+		TextureManager(const TextureManager &)            = delete;
+		TextureManager(TextureManager &&)                 = delete;
+		TextureManager &operator=(const TextureManager &) = delete;
+		TextureManager &operator=(TextureManager &&)      = delete;
 
 		[[nodiscard]] auto createTexture(const TextureDesc &p_desc) -> TextureHandle;
 		auto               createSharedTexture(const TextureDesc &p_desc) -> SharedHandle<TextureTag, TextureData>;
 		auto               destroyTexture(TextureHandle p_handle) -> void { m_pool.destroy(p_handle); } // Secretly defers it...
-
-		// Used for external callers to fall back to the default destruction logic, so DON'T use outside of callbacks
-		auto destroyData(TextureData *p_data) -> void;
 
 		// This is actually different from TextureData::shaderReadHeapID.
 		// Because TextureData::shaderReadHeapID is relative to the start of the image descriptor block and not the resource heap as a whole
@@ -90,10 +86,10 @@ namespace toaster::gpu
 	private:
 		auto _transitionTextureLayout(TextureData *p_data, vk::CommandBuffer p_cmd, vk::ImageLayout p_dst_layout) -> void;
 
-		PoolType m_pool;
+		// All the required dependencies to destroy a texture. May be called after this class is destroyed due to the deletion queue
+		static auto _destroyTextureData(const TextureData &p_texture_data, const Device &p_gpu_ctx, ResourceDescriptorHeap &p_resource_heap) -> void;
 
-		void *          m_userData{nullptr};
-		DestroyCallback m_destroyCallback{nullptr}; // Yes... There are two destroy callbacks going on here, but it allows for per frame deferred deletion
+		PoolType m_pool;
 	};
 
 	using SharedTexture = SharedHandle<TextureTag, TextureData>;

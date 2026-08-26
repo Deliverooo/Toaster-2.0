@@ -1,3 +1,4 @@
 add_subdirectory(toast_os)
 add_subdirectory(toast_lib)
 add_subdirectory(toast_gpu)
+add_subdirectory(toast_render)

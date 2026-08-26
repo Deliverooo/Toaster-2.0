@@ -1,7 +1,7 @@
 #pragma once
 
-#include "descriptor_heap.hpp"
 #include "gpu_common.hpp"
+#include "device.hpp"
 #include "toast_lib/pool.hpp"
 
 namespace toaster::gpu
@@ -29,24 +29,21 @@ namespace toaster::gpu
 
 	class TST_GPU_API BufferManager
 	{
-		TST_REGISTER_DEPENDENCY(LogicalDevice, Device, device)
-		TST_REGISTER_DEPENDENCY(Allocator, Allocator, allocator)
+		TST_REGISTER_DEPENDENCY(Device, Device, gpuCtx)
 	public:
-		using DestroyCallback = void(*)(void *, BufferHandle);
-		using PoolType        = Pool<BufferTag, BufferData>;
+		using PoolType = Pool<BufferTag, BufferData>;
 
-		BufferManager(LogicalDevice &p_device, Allocator &p_allocator, void *p_user_data = nullptr, const DestroyCallback &p_destroy_callback = nullptr);
+		BufferManager(Device &p_gpu_ctx);
 		~BufferManager();
 
-		auto setUserData(void *p_user_data) -> void { m_userData = p_user_data; }
-		auto setDestroyCallback(const DestroyCallback &p_destroy_callback) -> void { m_destroyCallback = p_destroy_callback; }
+		BufferManager(const BufferManager &)            = delete;
+		BufferManager(BufferManager &&)                 = delete;
+		BufferManager &operator=(const BufferManager &) = delete;
+		BufferManager &operator=(BufferManager &&)      = delete;
 
 		[[nodiscard]] auto createBuffer(const BufferDesc &p_desc) -> BufferHandle;
 		auto               createSharedBuffer(const BufferDesc &p_desc) -> SharedHandle<BufferTag, BufferData>;
 		auto               destroyBuffer(BufferHandle p_handle) -> void { m_pool.destroy(p_handle); } // Secretly defers it...
-
-		// Used for external callers to fall back to the default destruction logic, so DON'T use outside of callbacks
-		auto destroyData(BufferData *p_data) -> void;
 
 		auto getData(BufferHandle p_handle) const -> const BufferData * { return m_pool.getData(p_handle); }
 		auto getData(BufferHandle p_handle) -> BufferData * { return m_pool.getData(p_handle); }
@@ -68,8 +65,7 @@ namespace toaster::gpu
 	private:
 		PoolType m_pool;
 
-		void *          m_userData{nullptr};
-		DestroyCallback m_destroyCallback{nullptr}; // Yes... There are two destroy callbacks going on here, but it allows for per frame deferred deletion
+		const char*datathing{"Orbo Stetson!!"};
 	};
 
 	using SharedBuffer = SharedHandle<BufferTag, BufferData>;

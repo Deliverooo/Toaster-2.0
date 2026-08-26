@@ -2,8 +2,8 @@
 
 #include <toast_lib/freelist_allocator.hpp>
 
-#include "allocator.hpp"
 #include "gpu_common.hpp"
+#include "device.hpp"
 
 namespace toaster::gpu
 {
@@ -16,10 +16,9 @@ namespace toaster::gpu
 
 	class TST_GPU_API ResourceDescriptorHeap
 	{
-		TST_REGISTER_DEPENDENCY(LogicalDevice, Device, device)
-		TST_REGISTER_DEPENDENCY(Allocator, Allocator, allocator)
+		TST_REGISTER_DEPENDENCY(Device, Device, gpuCtx)
 	public:
-		ResourceDescriptorHeap(LogicalDevice &p_device, PhysicalDevice &p_physical_device, Allocator &p_allocator, uint32 p_max_buffers, uint32 p_max_images);
+		ResourceDescriptorHeap(Device &p_gpu_ctx, uint32 p_max_buffers, uint32 p_max_images);
 		~ResourceDescriptorHeap();
 
 		[[nodiscard]] auto allocBufferSlot() -> DescriptorSlot { return m_bufferSlotAllocator.allocSlot(); }
@@ -75,10 +74,9 @@ namespace toaster::gpu
 
 	class TST_GPU_API SamplerDescriptorHeap
 	{
-		TST_REGISTER_DEPENDENCY(LogicalDevice, Device, device)
-		TST_REGISTER_DEPENDENCY(Allocator, Allocator, allocator)
+		TST_REGISTER_DEPENDENCY(Device, GPUContext, gpuCtx)
 	public:
-		SamplerDescriptorHeap(LogicalDevice &p_device, PhysicalDevice &p_physical_device, Allocator &p_allocator, uint32 p_max_samplers);
+		SamplerDescriptorHeap(Device &p_gpu_ctx, uint32 p_max_samplers);
 		~SamplerDescriptorHeap();
 
 		[[nodiscard]] auto allocSamplerSlot() -> DescriptorSlot { return m_samplerSlotAllocator.allocSlot(); }

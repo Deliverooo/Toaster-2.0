@@ -2,14 +2,16 @@ set(GPU_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/instance.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/physical_device.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/logical_device.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/descriptor_heap.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/allocator.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/device.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/descriptor_heap.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vma_impl.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/material.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/buffer.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/texture.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/material_manager.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/buffer_manager.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/texture_manager.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/swapchain.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/shader.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/shader_manager.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/mesh_manager.cpp
 )
 
 

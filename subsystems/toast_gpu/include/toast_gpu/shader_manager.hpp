@@ -21,6 +21,11 @@ namespace toaster::gpu
 		ShaderManager(LogicalDevice &p_device);
 		~ShaderManager();
 
+		ShaderManager(const ShaderManager &)            = delete;
+		ShaderManager(ShaderManager &&)                 = delete;
+		ShaderManager &operator=(const ShaderManager &) = delete;
+		ShaderManager &operator=(ShaderManager &&)      = delete;
+
 		[[nodiscard]] auto createShader(const vk::ShaderCreateInfoEXT &p_create_info) -> ShaderHandle;
 		auto               destroyShader(ShaderHandle p_handle) -> void;
 

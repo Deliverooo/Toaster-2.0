@@ -27,10 +27,10 @@ namespace toaster::gpu
 		[[nodiscard]] auto getDescriptorHeapProperties() const -> const vk::PhysicalDeviceDescriptorHeapPropertiesEXT & { return m_descriptorHeapProperties; }
 
 		// Utility functions
-		auto chooseSwapchainSurfaceFormat(vk::SurfaceKHR p_surface) const -> vk::SurfaceFormatKHR;
-		auto chooseSwapchainPresentMode(vk::SurfaceKHR p_surface) const -> vk::PresentModeKHR;
-		auto chooseSwapchainExtent(vk::SurfaceKHR p_surface, uint32 p_fallback_width, uint32 p_fallback_height) const -> vk::Extent2D;
-		auto chooseSwapchainMinImageCount(vk::SurfaceKHR p_surface) const -> uint32;
+		[[nodiscard]] auto chooseSwapchainSurfaceFormat(vk::SurfaceKHR p_surface) const -> vk::SurfaceFormatKHR;
+		[[nodiscard]] auto chooseSwapchainPresentMode(vk::SurfaceKHR p_surface) const -> vk::PresentModeKHR;
+		[[nodiscard]] auto chooseSwapchainExtent(vk::SurfaceKHR p_surface, uint32 p_fallback_width, uint32 p_fallback_height) const -> vk::Extent2D;
+		[[nodiscard]] auto chooseSwapchainMinImageCount(vk::SurfaceKHR p_surface) const -> uint32;
 
 	private:
 		vk::PhysicalDevice m_physicalDevice{nullptr};

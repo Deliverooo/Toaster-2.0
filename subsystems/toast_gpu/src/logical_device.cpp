@@ -73,8 +73,7 @@ namespace toaster::gpu
 
 		vk::CommandPoolCreateInfo transfer_command_pool_create_info{};
 		transfer_command_pool_create_info.queueFamilyIndex = m_queueFamilyIndices.transfer;
-		// transfer_command_pool_create_info.flags            = vk::CommandPoolCreateFlagBits::eTransient;
-		m_transferCommandPool = m_logicalDevice.createCommandPool(transfer_command_pool_create_info);
+		m_transferCommandPool                              = m_logicalDevice.createCommandPool(transfer_command_pool_create_info);
 	}
 
 	LogicalDevice::~LogicalDevice()
@@ -82,27 +81,5 @@ namespace toaster::gpu
 		m_logicalDevice.destroyCommandPool(m_graphicsCommandPool);
 		m_logicalDevice.destroyCommandPool(m_transferCommandPool);
 		m_logicalDevice.destroy();
-	}
-
-	auto LogicalDevice::createTimelineSemaphore(uint64 p_initial_value) const -> vk::Semaphore
-	{
-		vk::SemaphoreTypeCreateInfo timeline_semaphore_create_info{};
-		timeline_semaphore_create_info.initialValue  = p_initial_value;
-		timeline_semaphore_create_info.semaphoreType = vk::SemaphoreType::eTimeline;
-
-		vk::SemaphoreCreateInfo create_info{};
-		create_info.pNext = &timeline_semaphore_create_info;
-
-		return m_logicalDevice.createSemaphore(create_info);
-	}
-
-	auto LogicalDevice::waitForTimelineSemaphores(const InitialiserList<const vk::Semaphore> &p_semaphores,
-												  const InitialiserList<const uint64> &       p_target_values) const -> void
-	{
-		vk::SemaphoreWaitInfo semaphore_wait_info{};
-		semaphore_wait_info.setSemaphores(p_semaphores);
-		semaphore_wait_info.setValues(p_target_values);
-		if (m_logicalDevice.waitSemaphores(semaphore_wait_info, INFINITE) != vk::Result::eSuccess)
-			TST_PERMA_ASSERT_MSG(false, "Failed to wait for timeline semaphores");
 	}
 }

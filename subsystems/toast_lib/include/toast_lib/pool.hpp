@@ -15,6 +15,11 @@ namespace toaster
 		Pool()  = default;
 		~Pool() = default;
 
+		Pool(const Pool &) = delete;
+		Pool(Pool &&)      = delete;
+		Pool& operator=(const Pool&) = delete;
+		Pool& operator=(Pool&&) = delete;
+
 		using DestroyCB = void(*)(void *, Handle<Tag>);
 
 		explicit Pool(uint32 p_reserved_size, const DestroyCB &p_callback = nullptr, void *p_user_data = nullptr) : m_destroyCallback(p_callback), m_userData(p_user_data)
@@ -40,6 +45,38 @@ namespace toaster
 			m_refCounts.reserve(p_reserved_size);
 		}
 
+		template<typename... TArgs>
+		auto emplace(TArgs &&... p_args) -> Handle<Tag>
+		{
+			uint32 index{0u};
+			if (!m_freeIndices.empty())
+			{
+				index = m_freeIndices.back();
+				m_freeIndices.pop_back();
+
+				if constexpr (std::is_move_assignable_v<TData>)
+					_data[index] = TData{std::forward<TArgs>(p_args)...};
+				else
+				{
+					_data[index].~TData();
+					::new(std::addressof(_data[index])) TData{std::forward<TArgs>(p_args)...};
+				}
+			}
+			else
+			{
+				index = static_cast<uint32>(_data.size());
+				_data.emplace_back(std::forward<TArgs>(p_args)...);
+				_alive.emplace_back();
+				m_magic.emplace_back();
+				m_refCounts.emplace_back(0u);
+			}
+
+			_alive[index]      = true;
+			m_refCounts[index] = 0u;
+
+			return Handle<Tag>{index, m_magic[index]};
+		}
+
 		auto create(const TData &p_object) -> Handle<Tag>
 		{
 			uint32 index{0u};
@@ -62,6 +99,11 @@ namespace toaster
 			m_refCounts[index] = 0u;
 
 			return Handle<Tag>{index, m_magic[index]};
+		}
+
+		auto create(TData &&p_data) -> Handle<Tag>
+		{
+			return emplace(std::move(p_data));
 		}
 
 		auto destroy(Handle<Tag> p_handle) -> void
