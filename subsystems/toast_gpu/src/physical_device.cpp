@@ -119,13 +119,13 @@ namespace toaster::gpu
 				   : vk::PresentModeKHR::eFifo;
 	}
 
-	auto PhysicalDevice::chooseSwapchainExtent(vk::SurfaceKHR p_surface, uint32 p_fallback_width, uint32 p_fallback_height) const -> vk::Extent2D
+	auto PhysicalDevice::chooseSwapchainExtent(vk::SurfaceKHR p_surface, uint32 p_fallback_width, uint32 p_fallback_height) const -> tsm::Extent2D
 	{
 		const auto surface_caps{m_physicalDevice.getSurfaceCapabilitiesKHR(p_surface)};
 
 		// If the current extent is UINT32_MAX, it means that we can choose our own custom extent
 		if (surface_caps.currentExtent.width != UINT32_MAX)
-			return surface_caps.currentExtent;
+			return {surface_caps.currentExtent.width, surface_caps.currentExtent.height};
 
 		// But we still have to make sure that we clamp the extent between the min and max.
 		// I think this probably has to do with certain displays (Apple Retina) having a very high pixel density (DPI).

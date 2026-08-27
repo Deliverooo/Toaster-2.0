@@ -24,7 +24,7 @@ target_include_directories(ToastGPU PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOU
 		$<INSTALL_INTERFACE:include>)
 
 target_sources(ToastGPU PRIVATE ${GPU_SRC})
-target_link_libraries(ToastGPU PUBLIC Toaster::ToastLib Vulkan::Vulkan)
+target_link_libraries(ToastGPU PUBLIC Toaster::ToastLib Toaster::ToastMath Vulkan::Vulkan)
 
 target_include_directories(ToastGPU PUBLIC "$ENV{VULKAN_SDK}/Include")
 

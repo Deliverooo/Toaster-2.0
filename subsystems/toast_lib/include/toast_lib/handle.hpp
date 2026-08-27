@@ -16,7 +16,7 @@ namespace toaster
 		uint32 id   : 20;
 		uint32 magic: 12;
 
-		constexpr auto valid() const -> bool { return magic != 0u; }
+		constexpr auto valid() const -> bool { return magic != 0u; } // Only checks if the handle itself is valid, not that the pool thinks it is
 	};
 }
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "instance.hpp"
+#include "toast_math/math_vector.hpp"
 
 namespace toaster::gpu
 {
@@ -29,7 +30,7 @@ namespace toaster::gpu
 		// Utility functions
 		[[nodiscard]] auto chooseSwapchainSurfaceFormat(vk::SurfaceKHR p_surface) const -> vk::SurfaceFormatKHR;
 		[[nodiscard]] auto chooseSwapchainPresentMode(vk::SurfaceKHR p_surface) const -> vk::PresentModeKHR;
-		[[nodiscard]] auto chooseSwapchainExtent(vk::SurfaceKHR p_surface, uint32 p_fallback_width, uint32 p_fallback_height) const -> vk::Extent2D;
+		[[nodiscard]] auto chooseSwapchainExtent(vk::SurfaceKHR p_surface, uint32 p_fallback_width, uint32 p_fallback_height) const -> tsm::Extent2D;
 		[[nodiscard]] auto chooseSwapchainMinImageCount(vk::SurfaceKHR p_surface) const -> uint32;
 
 	private:

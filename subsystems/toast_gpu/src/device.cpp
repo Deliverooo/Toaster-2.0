@@ -2,6 +2,8 @@
 
 #include "toast_gpu/command_list.hpp"
 
+#include <d3d12.h>
+
 namespace toaster::gpu
 {
 	auto getImageViewType(vk::ImageType p_type) -> vk::ImageViewType
@@ -112,10 +114,6 @@ namespace toaster::gpu
 
 			ts->submitDeletion([ts, texture_data]() mutable noexcept -> void
 			{
-				// Unmap the buffer's memory
-				if (texture_data.mapped && texture_data.memoryProperties == EMemoryProperties::eHostVisibleCoherent)
-					vmaUnmapMemory(ts->m_allocator->getAllocator(), texture_data.allocation);
-
 				if (texture_data.imageView)
 					ts->m_device->getDevice().destroyImageView(texture_data.imageView);
 				if (texture_data.image && texture_data.allocation)
@@ -127,10 +125,64 @@ namespace toaster::gpu
 					ts->m_resourceHeap->freeImageSlot(texture_data.storageHeapID);
 			});
 		});
+
+		m_samplerPool.setUserData(this);
+		m_samplerPool.setDestroyCallback(+[](void *p_user_data, SamplerHandle p_handle) -> void
+		{
+			auto        ts{static_cast<Device *>(p_user_data)};
+			SamplerData sampler_data{ts->m_samplerPool._data[p_handle.id]};
+
+			ts->submitDeletion([ts, sampler_data]() mutable noexcept -> void
+			{
+				ts->m_samplerHeap->freeSamplerSlot(sampler_data.heapID);
+			});
+		});
+
+		m_shaderPool.setUserData(this);
+		m_shaderPool.setDestroyCallback(+[](void *p_user_data, ShaderHandle p_handle) -> void
+		{
+			auto       ts{static_cast<Device *>(p_user_data)};
+			ShaderData shader_data{ts->m_shaderPool._data[p_handle.id]};
+
+			ts->submitDeletion([ts, shader_data]() mutable noexcept -> void
+			{
+				if (shader_data.shader)
+					ts->m_device->getDevice().destroyShaderEXT(shader_data.shader, nullptr, FunctionDispatcher::get());
+			});
+		});
 	}
 
 	Device::~Device()
 	{
+		// Delete all remaining shaders
+		for (uint32 i{0u}; i < m_shaderPool.getSize(); ++i)
+		{
+			if (m_shaderPool._alive[i])
+			{
+				ShaderData shader_data{m_shaderPool._data[i]};
+
+				m_deletionQueue->submit([this, shader_data]() mutable noexcept -> void
+				{
+					if (shader_data.shader)
+						m_device->getDevice().destroyShaderEXT(shader_data.shader, nullptr, FunctionDispatcher::get());
+				});
+			}
+		}
+
+		// Delete all remaining samplers
+		for (uint32 i{0u}; i < m_samplerPool.getSize(); ++i)
+		{
+			if (m_samplerPool._alive[i])
+			{
+				SamplerData sampler_data{m_samplerPool._data[i]};
+
+				m_deletionQueue->submit([this, sampler_data]() mutable noexcept -> void
+				{
+					m_samplerHeap->freeSamplerSlot(sampler_data.heapID);
+				});
+			}
+		}
+
 		// Delete all remaining textures
 		for (uint32 i{0u}; i < m_texturePool.getSize(); ++i)
 		{
@@ -140,10 +192,6 @@ namespace toaster::gpu
 
 				m_deletionQueue->submit([this, texture_data]() mutable noexcept -> void
 				{
-					// Unmap the buffer's memory
-					if (texture_data.mapped && texture_data.memoryProperties == EMemoryProperties::eHostVisibleCoherent)
-						vmaUnmapMemory(m_allocator->getAllocator(), texture_data.allocation);
-
 					if (texture_data.imageView)
 						m_device->getDevice().destroyImageView(texture_data.imageView);
 					if (texture_data.image && texture_data.allocation)
@@ -240,34 +288,34 @@ namespace toaster::gpu
 	auto Device::createTexture(const TextureDesc &p_desc) -> TextureHandle
 	{
 		TextureData texture_data{};
-		texture_data.extent           = p_desc.extent;
-		texture_data.usageFlags       = p_desc.usageFlags;
-		texture_data.layerCount       = p_desc.layerCount;
-		texture_data.mipLevels        = p_desc.mipLevels;
-		texture_data.format           = p_desc.format;
-		texture_data.layout           = vk::ImageLayout::eUndefined;
-		texture_data.type             = p_desc.type;
-		texture_data.memoryProperties = p_desc.memoryProperties;
+		texture_data.extent     = p_desc.extent;
+		texture_data.usageFlags = p_desc.usageFlags;
+		texture_data.layerCount = p_desc.layerCount;
+		texture_data.mipLevels  = p_desc.mipLevels;
+		texture_data.format     = p_desc.format;
+		texture_data.layout     = vk::ImageLayout::eUndefined;
+		texture_data.type       = p_desc.type;
 
-		VmaAllocationCreateFlags allocation_create_flags{
-			(texture_data.memoryProperties == EMemoryProperties::eHostVisibleCoherent) ? VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT : 0u
-		};
-
-		vk::ImageCreateInfo image_create_info{};
-		image_create_info.imageType     = texture_data.type;
-		image_create_info.format        = texture_data.format;
-		image_create_info.extent        = texture_data.extent;
-		image_create_info.mipLevels     = texture_data.mipLevels;
-		image_create_info.arrayLayers   = texture_data.layerCount;
-		image_create_info.samples       = vk::SampleCountFlagBits::e1;
-		image_create_info.tiling        = vk::ImageTiling::eOptimal;
-		image_create_info.usage         = texture_data.usageFlags;
-		image_create_info.sharingMode   = vk::SharingMode::eExclusive;
-		image_create_info.initialLayout = vk::ImageLayout::eUndefined;
-		m_allocator->createImage(image_create_info, allocation_create_flags, texture_data.image, texture_data.allocation);
-
-		if (texture_data.memoryProperties == EMemoryProperties::eHostVisibleCoherent)
-			vmaMapMemory(m_allocator->getAllocator(), texture_data.allocation, &texture_data.mapped);
+		if (p_desc.existingImage)
+		{
+			texture_data.image      = p_desc.existingImage;
+			texture_data.allocation = nullptr;
+		}
+		else
+		{
+			vk::ImageCreateInfo image_create_info{};
+			image_create_info.imageType     = texture_data.type;
+			image_create_info.format        = texture_data.format;
+			image_create_info.extent        = texture_data.extent;
+			image_create_info.mipLevels     = texture_data.mipLevels;
+			image_create_info.arrayLayers   = texture_data.layerCount;
+			image_create_info.samples       = vk::SampleCountFlagBits::e1;
+			image_create_info.tiling        = vk::ImageTiling::eOptimal;
+			image_create_info.usage         = texture_data.usageFlags;
+			image_create_info.sharingMode   = vk::SharingMode::eExclusive;
+			image_create_info.initialLayout = vk::ImageLayout::eUndefined;
+			m_allocator->createImage(image_create_info, 0u, texture_data.image, texture_data.allocation);
+		}
 
 		vk::ImageViewCreateInfo image_view_create_info{};
 		image_view_create_info.image      = texture_data.image;
@@ -286,6 +334,11 @@ namespace toaster::gpu
 			texture_data.layerCount
 		};
 		image_view_create_info.format = texture_data.format;
+
+		if (isRenderTarget(p_desc.usageFlags))
+		{
+			texture_data.imageView = m_device->getDevice().createImageView(image_view_create_info);
+		}
 
 		if (p_desc.usageFlags & vk::ImageUsageFlagBits::eSampled && p_desc.createDescriptors)
 		{
@@ -311,6 +364,70 @@ namespace toaster::gpu
 	{
 		const TextureData *data{getTextureData(p_handle)};
 		return m_resourceHeap->getImageAbsoluteHeapSlot(data->storageHeapID);
+	}
+
+	auto Device::createSampler(const SamplerDesc &p_desc) -> SamplerHandle
+	{
+		constexpr auto getAddressMode{
+			+[](ESamplerAddressMode p_address_mode) -> vk::SamplerAddressMode
+			{
+				switch (p_address_mode)
+				{
+					case ESamplerAddressMode::eRepeat: return vk::SamplerAddressMode::eRepeat;
+					case ESamplerAddressMode::eMirroredRepeat: return vk::SamplerAddressMode::eMirroredRepeat;
+					case ESamplerAddressMode::eClampToEdge: return vk::SamplerAddressMode::eClampToEdge;
+					case ESamplerAddressMode::eClampToBorder: return vk::SamplerAddressMode::eClampToBorder;
+				}
+				return vk::SamplerAddressMode::eRepeat;
+			}
+		};
+		SamplerData sampler_data{};
+		sampler_data.minFilter  = p_desc.minFilter;
+		sampler_data.magFilter  = p_desc.magFilter;
+		sampler_data.mipmapMode = p_desc.mipmapMode;
+
+		vk::SamplerCreateInfo sampler_create_info{};
+		sampler_create_info.minFilter = sampler_data.minFilter == EFilter::eLinear ? vk::Filter::eLinear : vk::Filter::eNearest;
+		sampler_create_info.magFilter = sampler_data.magFilter == EFilter::eLinear ? vk::Filter::eLinear : vk::Filter::eNearest;
+		sampler_create_info.mipmapMode = sampler_data.mipmapMode == ESamplerMipmapMode::eLinear ? vk::SamplerMipmapMode::eLinear : vk::SamplerMipmapMode::eNearest;
+		sampler_create_info.addressModeU = getAddressMode(sampler_data.addressModeU);
+		sampler_create_info.addressModeV = getAddressMode(sampler_data.addressModeV);
+		sampler_create_info.addressModeW = getAddressMode(sampler_data.addressModeW);
+		sampler_create_info.mipLodBias = 0.0f;
+		sampler_create_info.anisotropyEnable = true;
+		sampler_create_info.maxAnisotropy = m_physicalDevice->getProperties().properties.limits.maxSamplerAnisotropy;
+		sampler_create_info.compareEnable = false;
+		sampler_create_info.compareOp = vk::CompareOp::eAlways;
+		sampler_create_info.minLod = 0.0f;
+		sampler_create_info.maxLod = vk::LodClampNone;
+		sampler_create_info.borderColor = vk::BorderColor::eFloatOpaqueWhite;
+		sampler_create_info.unnormalizedCoordinates = false;
+
+		sampler_data.heapID = m_samplerHeap->allocSamplerSlot();
+		m_samplerHeap->setSampler(sampler_data.heapID, sampler_create_info);
+
+		return m_samplerPool.create(sampler_data);
+	}
+
+	auto Device::createShader(const ShaderDesc &p_desc) -> ShaderHandle
+	{
+		ShaderData shader_data{};
+		shader_data.stage     = p_desc.stage;
+		shader_data.nextStage = p_desc.nextStage;
+
+		vk::ShaderCreateInfoEXT shader_create_info{};
+		shader_create_info.flags     = vk::ShaderCreateFlagBitsEXT::eDescriptorHeap;
+		shader_create_info.stage     = (vk::ShaderStageFlags::BitsType) ((vk::ShaderStageFlags::MaskType) getVulkanShaderStages(shader_data.stage));
+		shader_create_info.nextStage = getVulkanShaderStages(shader_data.nextStage);
+		shader_create_info.codeType  = vk::ShaderCodeTypeEXT::eSpirv;
+		shader_create_info.codeSize  = p_desc.codeSize;
+		shader_create_info.pCode     = p_desc.code;
+		shader_create_info.pName     = "main";
+
+		shader_data.shader = m_device->getDevice().createShaderEXT(shader_create_info, nullptr, FunctionDispatcher::get()).value;
+		TST_ASSERT(shader_data.shader);
+
+		return m_shaderPool.create(shader_data);
 	}
 
 	auto Device::createCommandList() -> CommandList
@@ -340,13 +457,13 @@ namespace toaster::gpu
 		return out_lists;
 	}
 
-	auto Device::executeCommandLists(const std::initializer_list<const CommandList *> &          p_command_lists,
-									 const std::initializer_list<const vk::SemaphoreSubmitInfo> &p_wait_semaphores,
-									 const std::initializer_list<const vk::SemaphoreSubmitInfo> &p_signal_semaphores, vk::Fence p_signal_fence) const -> void
+	auto Device::executeCommandLists(const InitialiserList<const CommandList> &            p_command_lists,
+									 const InitialiserList<const vk::SemaphoreSubmitInfo> &p_wait_semaphores,
+									 const InitialiserList<const vk::SemaphoreSubmitInfo> &p_signal_semaphores, vk::Fence p_signal_fence) const -> void
 	{
 		std::vector<vk::CommandBufferSubmitInfo> command_buffer_infos;
 		for (const auto cmd: p_command_lists)
-			command_buffer_infos.emplace_back(vk::CommandBufferSubmitInfo{cmd->getCommandBuffer()});
+			command_buffer_infos.emplace_back(vk::CommandBufferSubmitInfo{cmd.getCommandBuffer()});
 
 		vk::SubmitInfo2 submit_info{};
 		submit_info.setCommandBufferInfos(command_buffer_infos);
@@ -375,5 +492,28 @@ namespace toaster::gpu
 		semaphore_wait_info.setValues(p_target_values);
 		if (m_device->getDevice().waitSemaphores(semaphore_wait_info, INFINITE) != vk::Result::eSuccess)
 			TST_PERMA_ASSERT_MSG(false, "Failed to wait for timeline semaphores");
+	}
+
+	auto Device::getVulkanShaderStages(ShaderStageFlags p_stages) -> vk::ShaderStageFlags
+	{
+		vk::ShaderStageFlags out_flags{0u};
+		if (p_stages & EShaderStage::eVertex)
+			out_flags |= vk::ShaderStageFlagBits::eVertex;
+		if (p_stages & EShaderStage::ePixel)
+			out_flags |= vk::ShaderStageFlagBits::eFragment;
+		if (p_stages & EShaderStage::eCompute)
+			out_flags |= vk::ShaderStageFlagBits::eCompute;
+		if (p_stages & EShaderStage::eGeometry)
+			out_flags |= vk::ShaderStageFlagBits::eGeometry;
+		if (p_stages & EShaderStage::eTessellationControl)
+			out_flags |= vk::ShaderStageFlagBits::eTessellationControl;
+		if (p_stages & EShaderStage::eTessellationEvaluation)
+			out_flags |= vk::ShaderStageFlagBits::eTessellationEvaluation;
+		if (p_stages & EShaderStage::eMesh)
+			out_flags |= vk::ShaderStageFlagBits::eMeshEXT;
+		if (p_stages & EShaderStage::eTask)
+			out_flags |= vk::ShaderStageFlagBits::eTaskEXT;
+
+		return out_flags;
 	}
 }

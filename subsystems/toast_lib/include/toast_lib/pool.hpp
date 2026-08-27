@@ -67,7 +67,7 @@ namespace toaster
 				index = static_cast<uint32>(_data.size());
 				_data.emplace_back(std::forward<TArgs>(p_args)...);
 				_alive.emplace_back();
-				m_magic.emplace_back();
+				m_magic.emplace_back(1u);
 				m_refCounts.emplace_back(0u);
 			}
 
@@ -90,7 +90,7 @@ namespace toaster
 				index = static_cast<uint32>(_data.size());
 				_data.emplace_back();
 				_alive.emplace_back();
-				m_magic.emplace_back();
+				m_magic.emplace_back(1u);
 				m_refCounts.emplace_back(0u);
 			}
 

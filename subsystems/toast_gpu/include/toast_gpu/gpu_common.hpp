@@ -31,6 +31,11 @@ namespace toaster::gpu
 		return aspect_mask;
 	}
 
+	constexpr auto isRenderTarget(vk::ImageUsageFlags p_usage_flags) -> bool
+	{
+		return (p_usage_flags & vk::ImageUsageFlagBits::eColorAttachment) || (p_usage_flags & vk::ImageUsageFlagBits::eDepthStencilAttachment);
+	}
+
 	constexpr auto getImageAccessFlagsAndStageMask(vk::ImageLayout p_layout, vk::AccessFlags2 &p_out_access_flags, vk::PipelineStageFlags2 &p_out_stage_mask) -> void
 	{
 		switch (p_layout)

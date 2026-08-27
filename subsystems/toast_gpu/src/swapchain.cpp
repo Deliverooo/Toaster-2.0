@@ -4,27 +4,26 @@
 
 namespace toaster::gpu
 {
-	Swapchain::Swapchain(Device &p_gpu_ctx, vk::SurfaceKHR p_surface, uint32 p_max_frames_in_flight, uint32 p_initial_width,
-						 uint32  p_initial_height) : m_gpuCtx(&p_gpu_ctx), m_maxFramesInFlight(p_max_frames_in_flight), m_windowSurface(p_surface)
+	Swapchain::Swapchain(Device &p_device, vk::SurfaceKHR p_surface, uint32 p_max_frames_in_flight, uint32 p_initial_width,
+						 uint32  p_initial_height) : m_device(&p_device), m_maxFramesInFlight(p_max_frames_in_flight), m_windowSurface(p_surface)
 	{
-		m_swapchainSurfaceFormat = m_gpuCtx->getPhysicalDevice().chooseSwapchainSurfaceFormat(m_windowSurface);
+		m_swapchainSurfaceFormat = m_device->getPhysicalDevice().chooseSwapchainSurfaceFormat(m_windowSurface);
 		m_depthFormat            = vk::Format::eD32Sfloat;
-		m_minImageCount          = m_gpuCtx->getPhysicalDevice().chooseSwapchainMinImageCount(m_windowSurface);
+		m_minImageCount          = m_device->getPhysicalDevice().chooseSwapchainMinImageCount(m_windowSurface);
 		_create(p_initial_width, p_initial_height);
 
 		for (uint32 i{0u}; i < m_images.size(); ++i)
-			m_renderFinishedSemaphores.emplace_back(m_gpuCtx->getDevice().getDevice().createSemaphore(vk::SemaphoreCreateInfo{}));
+			m_renderFinishedSemaphores.emplace_back(m_device->getDevice().getDevice().createSemaphore(vk::SemaphoreCreateInfo{}));
 	}
 
 	Swapchain::~Swapchain()
 	{
-		auto &device{m_gpuCtx->getDevice()};
+		auto &device{m_device->getDevice()};
 
-		device.getDevice().destroyImageView(m_depthImageView);
-		m_gpuCtx->getAllocator().destroyImage(m_depthImage, m_depthImageAllocation);
+		m_device->destroyTexture(m_depthTexture);
 
-		for (auto &image_view: m_imageViews)
-			device.getDevice().destroyImageView(image_view);
+		for (auto &tex: m_colourTextures)
+			m_device->destroyTexture(tex);
 
 		for (auto &semaphore: m_renderFinishedSemaphores)
 			device.getDevice().destroySemaphore(semaphore);
@@ -34,7 +33,7 @@ namespace toaster::gpu
 
 	auto Swapchain::acquireImage(vk::Semaphore p_signal_semaphore) -> void
 	{
-		auto [res, image_index] = m_gpuCtx->getDevice().getDevice().acquireNextImageKHR(m_swapchain,UINT64_MAX, p_signal_semaphore, nullptr);
+		auto [res, image_index] = m_device->getDevice().getDevice().acquireNextImageKHR(m_swapchain,UINT64_MAX, p_signal_semaphore, nullptr);
 		m_imageIndex            = image_index;
 
 		if (res == vk::Result::eErrorOutOfDateKHR)
@@ -56,9 +55,11 @@ namespace toaster::gpu
 		undefined_to_colour_attachment_optimal.oldLayout           = vk::ImageLayout::eUndefined;
 		undefined_to_colour_attachment_optimal.newLayout           = vk::ImageLayout::eColorAttachmentOptimal;
 		undefined_to_colour_attachment_optimal.subresourceRange    = vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0u, 1u, 0u, 1u};
+		TextureData *colour_texture_data{m_device->getTextureData(m_colourTextures[m_imageIndex])};
 
+		TextureData *           depth_texture_data{m_device->getTextureData(m_depthTexture)};
 		vk::ImageMemoryBarrier2 undefined_to_depth_attachment_optimal{};
-		undefined_to_depth_attachment_optimal.image               = m_depthImage;
+		undefined_to_depth_attachment_optimal.image               = depth_texture_data->image;
 		undefined_to_depth_attachment_optimal.srcAccessMask       = vk::AccessFlagBits2::eNone;
 		undefined_to_depth_attachment_optimal.dstAccessMask       = vk::AccessFlagBits2::eDepthStencilAttachmentWrite;
 		undefined_to_depth_attachment_optimal.srcStageMask        = vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests;
@@ -73,6 +74,9 @@ namespace toaster::gpu
 		vk::ImageMemoryBarrier2 barriers[]{undefined_to_colour_attachment_optimal, undefined_to_depth_attachment_optimal};
 		dependency_info.setImageMemoryBarriers(barriers);
 		p_cmd.getCommandBuffer().pipelineBarrier2(dependency_info);
+
+		colour_texture_data->layout = vk::ImageLayout::eColorAttachmentOptimal;
+		depth_texture_data->layout  = vk::ImageLayout::eDepthAttachmentOptimal;
 	}
 
 	auto Swapchain::endFrame(CommandList &p_cmd) -> void
@@ -88,10 +92,13 @@ namespace toaster::gpu
 		colour_attachment_optimal_to_present_src.oldLayout           = vk::ImageLayout::eColorAttachmentOptimal;
 		colour_attachment_optimal_to_present_src.newLayout           = vk::ImageLayout::ePresentSrcKHR;
 		colour_attachment_optimal_to_present_src.subresourceRange    = vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0u, 1u, 0u, 1u};
+		TextureData *colour_texture_data{m_device->getTextureData(m_colourTextures[m_imageIndex])};
 
 		vk::DependencyInfo dependency_info{};
 		dependency_info.setImageMemoryBarriers(colour_attachment_optimal_to_present_src);
 		p_cmd.getCommandBuffer().pipelineBarrier2(dependency_info);
+
+		colour_texture_data->layout = vk::ImageLayout::ePresentSrcKHR;
 	}
 
 	auto Swapchain::getSignalSemaphoreInfo() const -> vk::SemaphoreSubmitInfo
@@ -107,7 +114,7 @@ namespace toaster::gpu
 		present_info.setSwapchains(m_swapchain);
 		present_info.setImageIndices(m_imageIndex);
 		present_info.setWaitSemaphores(m_renderFinishedSemaphores[m_imageIndex]);
-		vk::Result res{m_gpuCtx->getDevice().getGraphicsQueue().presentKHR(present_info)};
+		vk::Result res{m_device->getDevice().getGraphicsQueue().presentKHR(present_info)};
 
 		if (res == vk::Result::eErrorOutOfDateKHR || res == vk::Result::eSuboptimalKHR)
 			TST_PERMA_ASSERT(false);
@@ -117,14 +124,14 @@ namespace toaster::gpu
 
 	auto Swapchain::onResize(uint32 p_width, uint32 p_height) -> void
 	{
-		m_gpuCtx->getDevice().getDevice().waitIdle();
+		m_device->getDevice().getDevice().waitIdle();
 		_create(p_width, p_height);
 	}
 
 	auto Swapchain::getColourAttachmentInfo(const vk::ClearColorValue &p_clear_colour) const -> vk::RenderingAttachmentInfo
 	{
 		vk::RenderingAttachmentInfo info{};
-		info.imageView   = m_imageViews[m_imageIndex];
+		info.imageView   = m_device->getTextureData(m_colourTextures[m_imageIndex])->imageView;
 		info.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
 		info.loadOp      = vk::AttachmentLoadOp::eClear;
 		info.storeOp     = vk::AttachmentStoreOp::eStore;
@@ -135,7 +142,7 @@ namespace toaster::gpu
 	auto Swapchain::getDepthAttachmentInfo(vk::ClearDepthStencilValue p_clear_value) const -> vk::RenderingAttachmentInfo
 	{
 		vk::RenderingAttachmentInfo info{};
-		info.imageView   = m_depthImageView;
+		info.imageView   = m_device->getTextureData(m_depthTexture)->imageView;
 		info.imageLayout = vk::ImageLayout::eDepthAttachmentOptimal;
 		info.loadOp      = vk::AttachmentLoadOp::eClear;
 		info.storeOp     = vk::AttachmentStoreOp::eStore;
@@ -145,30 +152,27 @@ namespace toaster::gpu
 
 	auto Swapchain::_create(uint32 p_width, uint32 p_height) -> void
 	{
-		for (auto &image_view: m_imageViews)
-			m_gpuCtx->getDevice().getDevice().destroyImageView(image_view);
-		m_imageViews.clear();
+		for (auto &tex: m_colourTextures)
+			m_device->destroyTexture(tex);
+		m_colourTextures.clear();
 
-		if (m_depthImage)
-		{
-			m_gpuCtx->getDevice().getDevice().destroyImageView(m_depthImageView);
-			m_gpuCtx->getAllocator().destroyImage(m_depthImage, m_depthImageAllocation);
-		}
+		if (m_device->isTextureValid(m_depthTexture))
+			m_device->destroyTexture(m_depthTexture);
 
-		m_swapchainExtent = m_gpuCtx->getPhysicalDevice().chooseSwapchainExtent(m_windowSurface, p_width, p_height);
+		m_swapchainExtent = m_device->getPhysicalDevice().chooseSwapchainExtent(m_windowSurface, p_width, p_height);
 
 		vk::SwapchainCreateInfoKHR swapchain_create_info{};
 		swapchain_create_info.surface          = m_windowSurface;
 		swapchain_create_info.minImageCount    = m_minImageCount;
 		swapchain_create_info.imageFormat      = m_swapchainSurfaceFormat.format;
 		swapchain_create_info.imageColorSpace  = m_swapchainSurfaceFormat.colorSpace;
-		swapchain_create_info.imageExtent      = m_swapchainExtent;
+		swapchain_create_info.imageExtent      = vk::Extent2D{m_swapchainExtent.x, m_swapchainExtent.y};
 		swapchain_create_info.imageArrayLayers = 1;
 		swapchain_create_info.imageUsage       = vk::ImageUsageFlagBits::eColorAttachment;
 		swapchain_create_info.imageSharingMode = vk::SharingMode::eExclusive;
-		swapchain_create_info.preTransform     = m_gpuCtx->getPhysicalDevice().getPhysicalDevice().getSurfaceCapabilitiesKHR(m_windowSurface).currentTransform;
+		swapchain_create_info.preTransform     = m_device->getPhysicalDevice().getPhysicalDevice().getSurfaceCapabilitiesKHR(m_windowSurface).currentTransform;
 		swapchain_create_info.compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque;
-		swapchain_create_info.presentMode      = m_gpuCtx->getPhysicalDevice().chooseSwapchainPresentMode(m_windowSurface);
+		swapchain_create_info.presentMode      = m_device->getPhysicalDevice().chooseSwapchainPresentMode(m_windowSurface);
 		swapchain_create_info.clipped          = true;
 
 		vk::SwapchainKHR old_swapchain{nullptr};
@@ -176,55 +180,35 @@ namespace toaster::gpu
 			old_swapchain = m_swapchain;
 		swapchain_create_info.oldSwapchain = old_swapchain;
 
-		m_swapchain = m_gpuCtx->getDevice().getDevice().createSwapchainKHR(swapchain_create_info);
+		m_swapchain = m_device->getDevice().getDevice().createSwapchainKHR(swapchain_create_info);
 
 		if (old_swapchain)
-			m_gpuCtx->getDevice().getDevice().destroySwapchainKHR(old_swapchain);
+			m_device->getDevice().getDevice().destroySwapchainKHR(old_swapchain);
 
-		m_images = m_gpuCtx->getDevice().getDevice().getSwapchainImagesKHR(m_swapchain);
+		m_images = m_device->getDevice().getDevice().getSwapchainImagesKHR(m_swapchain);
 
+		TextureDesc colour_texture_desc{};
+		colour_texture_desc.extent            = vk::Extent3D{vk::Extent2D{m_swapchainExtent.x, m_swapchainExtent.y}, 1u};
+		colour_texture_desc.usageFlags        = vk::ImageUsageFlagBits::eColorAttachment;
+		colour_texture_desc.format            = m_swapchainSurfaceFormat.format;
+		colour_texture_desc.layerCount        = 1u;
+		colour_texture_desc.mipLevels         = 1u;
+		colour_texture_desc.createDescriptors = false;
+		colour_texture_desc.type              = vk::ImageType::e2D;
 		for (auto &img: m_images)
 		{
-			auto &                  view{m_imageViews.emplace_back()};
-			vk::ImageViewCreateInfo image_view_create_info{};
-			image_view_create_info.image      = img;
-			image_view_create_info.viewType   = vk::ImageViewType::e2D;
-			image_view_create_info.components = {
-				vk::ComponentSwizzle::eIdentity,
-				vk::ComponentSwizzle::eIdentity,
-				vk::ComponentSwizzle::eIdentity,
-				vk::ComponentSwizzle::eIdentity
-			};
-			image_view_create_info.subresourceRange = vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eColor, 0, 1u, 0, 1u};
-			image_view_create_info.format           = m_swapchainSurfaceFormat.format;
-			view                                    = m_gpuCtx->getDevice().getDevice().createImageView(image_view_create_info);
+			colour_texture_desc.existingImage = img;
+			m_colourTextures.emplace_back(m_device->createTexture(colour_texture_desc));
 		}
 
-		vk::ImageCreateInfo depth_image_create_info{};
-		depth_image_create_info.usage         = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-		depth_image_create_info.format        = m_depthFormat;
-		depth_image_create_info.sharingMode   = vk::SharingMode::eExclusive;
-		depth_image_create_info.arrayLayers   = 1u;
-		depth_image_create_info.mipLevels     = 1u;
-		depth_image_create_info.extent        = vk::Extent3D{m_swapchainExtent, 1u};
-		depth_image_create_info.imageType     = vk::ImageType::e2D;
-		depth_image_create_info.samples       = vk::SampleCountFlagBits::e1;
-		depth_image_create_info.initialLayout = vk::ImageLayout::eUndefined;
-		depth_image_create_info.tiling        = vk::ImageTiling::eOptimal;
-
-		m_gpuCtx->getAllocator().createImage(depth_image_create_info, 0u, m_depthImage, m_depthImageAllocation);
-
-		vk::ImageViewCreateInfo depth_image_view_create_info{};
-		depth_image_view_create_info.image      = m_depthImage;
-		depth_image_view_create_info.components = vk::ComponentMapping{
-			vk::ComponentSwizzle::eIdentity,
-			vk::ComponentSwizzle::eIdentity,
-			vk::ComponentSwizzle::eIdentity,
-			vk::ComponentSwizzle::eIdentity
-		};
-		depth_image_view_create_info.format           = m_depthFormat;
-		depth_image_view_create_info.subresourceRange = vk::ImageSubresourceRange{vk::ImageAspectFlagBits::eDepth, 0u, 1u, 0u, 1u};
-		depth_image_view_create_info.viewType         = vk::ImageViewType::e2D;
-		m_depthImageView                              = m_gpuCtx->getDevice().getDevice().createImageView(depth_image_view_create_info);
+		TextureDesc depth_texture_desc{};
+		depth_texture_desc.extent            = vk::Extent3D{vk::Extent2D{m_swapchainExtent.x, m_swapchainExtent.y}, 1u};
+		depth_texture_desc.usageFlags        = vk::ImageUsageFlagBits::eDepthStencilAttachment;
+		depth_texture_desc.format            = m_depthFormat;
+		depth_texture_desc.layerCount        = 1u;
+		depth_texture_desc.mipLevels         = 1u;
+		depth_texture_desc.createDescriptors = false;
+		depth_texture_desc.type              = vk::ImageType::e2D;
+		m_depthTexture                       = m_device->createTexture(depth_texture_desc);
 	}
 }

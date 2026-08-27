@@ -4,10 +4,14 @@
 #include "deletion_queue.hpp"
 #include "descriptor_heap.hpp"
 
+#include "toast_lib/enum_flags.hpp"
 #include "toast_lib/pool.hpp"
 
 namespace toaster::gpu
 {
+	TST_DECLARE_FLAGS_FOR_NAMESPACE()
+
+	#pragma region buffer
 	struct TST_GPU_API BufferData
 	{
 		vk::Buffer        buffer{nullptr};
@@ -35,7 +39,9 @@ namespace toaster::gpu
 		vk::BufferUsageFlags usageFlags{};
 		EMemoryProperties    memoryProperties{EMemoryProperties::eDeviceLocal};
 	};
+	#pragma endregion
 
+	#pragma region texture
 	struct TST_GPU_API TextureData
 	{
 		vk::Extent3D extent;
@@ -52,9 +58,6 @@ namespace toaster::gpu
 		vk::ImageLayout layout{vk::ImageLayout::eUndefined};
 		vk::ImageType   type{vk::ImageType::e2D};
 
-		void *            mapped{nullptr}; // I guess you can have mapped image memory...
-		EMemoryProperties memoryProperties{EMemoryProperties::eDeviceLocal};
-
 		DescriptorSlot shaderReadHeapID{invalidImageDescriptorSlot};
 		DescriptorSlot storageHeapID{invalidImageDescriptorSlot};
 	};
@@ -66,17 +69,103 @@ namespace toaster::gpu
 	{
 		vk::Extent3D extent;
 
-		vk::ImageUsageFlags usageFlags{};
+		vk::Image existingImage{nullptr}; // Use for swapchain images
+
+		vk::ImageUsageFlags usageFlags{}; // Determines if the device should create image views for render attachments
 		uint32              layerCount{1u};
 		uint32              mipLevels{1u};
 
 		vk::Format    format{vk::Format::eUndefined};
 		vk::ImageType type{vk::ImageType::e2D};
 
-		EMemoryProperties memoryProperties{EMemoryProperties::eDeviceLocal};
-
 		bool createDescriptors{false}; // Creates the heap id's depending on the image's usage flags
 	};
+	#pragma endregion
+
+	#pragma region sampler
+	enum class EFilter : uint8
+	{
+		eNearest, eLinear
+	};
+
+	enum class ESamplerMipmapMode : uint8
+	{
+		eNearest, eLinear
+	};
+
+	enum class ESamplerAddressMode :uint8
+	{
+		eRepeat,
+		eMirroredRepeat,
+		eClampToEdge,
+		eClampToBorder
+	};
+
+	struct TST_GPU_API SamplerData
+	{
+		EFilter             minFilter{EFilter::eLinear};
+		EFilter             magFilter{EFilter::eLinear};
+		ESamplerMipmapMode  mipmapMode{ESamplerMipmapMode::eLinear};
+		ESamplerAddressMode addressModeU{ESamplerAddressMode::eRepeat};
+		ESamplerAddressMode addressModeV{ESamplerAddressMode::eRepeat};
+		ESamplerAddressMode addressModeW{ESamplerAddressMode::eRepeat};
+
+		DescriptorSlot heapID{invalidSamplerDescriptorSlot};
+	};
+
+	TST_DECLARE_HANDLE(Sampler);
+	using SharedSampler = SharedHandle<SamplerTag, SamplerData>;
+
+	struct TST_GPU_API SamplerDesc
+	{
+		EFilter             minFilter{EFilter::eLinear};
+		EFilter             magFilter{EFilter::eLinear};
+		ESamplerMipmapMode  mipmapMode{ESamplerMipmapMode::eLinear};
+		ESamplerAddressMode addressModeU{ESamplerAddressMode::eRepeat};
+		ESamplerAddressMode addressModeV{ESamplerAddressMode::eRepeat};
+		ESamplerAddressMode addressModeW{ESamplerAddressMode::eRepeat};
+	};
+	#pragma endregion
+
+	#pragma region shader
+
+	enum class EShaderStage : uint8
+	{
+		eVertex                 = TST_BIT(0u),
+		ePixel                  = TST_BIT(1u),
+		eCompute                = TST_BIT(2u),
+		eGeometry               = TST_BIT(3u),
+		eTessellationControl    = TST_BIT(4u),
+		eTessellationEvaluation = TST_BIT(5u),
+		eMesh                   = TST_BIT(6u),
+		eTask                   = TST_BIT(7u)
+	};
+
+	TST_SPECIALISE_FLAGS(EShaderStage, ShaderStage);
+
+	static_assert(std::is_same_v<Flags<EShaderStage>::MaskType, uint8>);
+
+	struct TST_GPU_API ShaderData
+	{
+		vk::ShaderEXT shader{nullptr};
+
+		EShaderStage     stage{EShaderStage::eVertex};
+		ShaderStageFlags nextStage{0u}; // The set of valid stages that could be next
+	};
+
+	TST_DECLARE_HANDLE(Shader);
+	using SharedShader = SharedHandle<ShaderTag, ShaderData>;
+
+	struct TST_GPU_API ShaderDesc
+	{
+		const void *code{nullptr};
+		uint64      codeSize{0u};
+
+		EShaderStage     stage{EShaderStage::eVertex};
+		ShaderStageFlags nextStage{0u}; // The set of valid stages that could be next
+	};
+
+	#pragma endregion
 
 	struct TST_GPU_API DeviceDesc
 	{
@@ -152,6 +241,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto createBuffer(const BufferDesc &p_desc) -> BufferHandle;
 		[[nodiscard]] auto createSharedBuffer(const BufferDesc &p_desc) -> SharedBuffer { return {createBuffer(p_desc), &m_bufferPool}; }
 		auto               destroyBuffer(BufferHandle p_handle) -> void { m_bufferPool.destroy(p_handle); } // Invokes pool callback to defer deletion
+		auto               isBufferValid(BufferHandle p_handle) const -> bool { return m_bufferPool.isValid(p_handle); }
 
 		auto getBufferData(BufferHandle p_handle) const -> const BufferData * { return m_bufferPool.getData(p_handle); }
 		auto getBufferData(BufferHandle p_handle) -> BufferData * { return m_bufferPool.getData(p_handle); }
@@ -165,6 +255,7 @@ namespace toaster::gpu
 		[[nodiscard]] auto createTexture(const TextureDesc &p_desc) -> TextureHandle;
 		[[nodiscard]] auto createSharedTexture(const TextureDesc &p_desc) -> SharedTexture { return {createTexture(p_desc), &m_texturePool}; }
 		auto               destroyTexture(TextureHandle p_handle) -> void { m_texturePool.destroy(p_handle); } // Invokes pool callback to defer deletion
+		auto               isTextureValid(TextureHandle p_handle) const -> bool { return m_texturePool.isValid(p_handle); }
 
 		auto getTextureData(TextureHandle p_handle) const -> const TextureData * { return m_texturePool.getData(p_handle); }
 		auto getTextureData(TextureHandle p_handle) -> TextureData * { return m_texturePool.getData(p_handle); }
@@ -176,12 +267,36 @@ namespace toaster::gpu
 
 		#pragma endregion
 
+		#pragma region samplers
+
+		[[nodiscard]] auto createSampler(const SamplerDesc &p_desc) -> SamplerHandle;
+		[[nodiscard]] auto createSharedSampler(const SamplerDesc &p_desc) -> SharedSampler { return {createSampler(p_desc), &m_samplerPool}; }
+		auto               destroySampler(SamplerHandle p_handle) -> void { m_samplerPool.destroy(p_handle); } // Invokes pool callback to defer deletion
+		auto               isSamplerValid(SamplerHandle p_handle) const -> bool { return m_samplerPool.isValid(p_handle); }
+
+		auto getSamplerData(SamplerHandle p_handle) const -> const SamplerData * { return m_samplerPool.getData(p_handle); }
+		auto getSamplerData(SamplerHandle p_handle) -> SamplerData * { return m_samplerPool.getData(p_handle); }
+
+		#pragma endregion
+
+		#pragma region shaders
+
+		[[nodiscard]] auto createShader(const ShaderDesc &p_desc) -> ShaderHandle;
+		[[nodiscard]] auto createSharedShader(const ShaderDesc &p_desc) -> SharedShader { return {createShader(p_desc), &m_shaderPool}; }
+		auto               destroyShader(ShaderHandle p_handle) -> void { m_shaderPool.destroy(p_handle); } // Invokes pool callback to defer deletion
+		auto               isShaderValid(ShaderHandle p_handle) const -> bool { return m_shaderPool.isValid(p_handle); }
+
+		auto getShaderData(ShaderHandle p_handle) const -> const ShaderData * { return m_shaderPool.getData(p_handle); }
+		auto getShaderData(ShaderHandle p_handle) -> ShaderData * { return m_shaderPool.getData(p_handle); }
+
+		#pragma endregion
+
 		auto createCommandList() -> CommandList;
 		auto createCommandLists(/*EQueueType p_queue_type,*/ uint32 p_count) -> std::vector<CommandList>;
 
-		auto executeCommandLists(const std::initializer_list<const CommandList *> &          p_command_lists,
-								 const std::initializer_list<const vk::SemaphoreSubmitInfo> &p_wait_semaphores   = {},
-								 const std::initializer_list<const vk::SemaphoreSubmitInfo> &p_signal_semaphores = {}, vk::Fence p_signal_fence = nullptr) const -> void;
+		auto executeCommandLists(const InitialiserList<const CommandList> &            p_command_lists,
+								 const InitialiserList<const vk::SemaphoreSubmitInfo> &p_wait_semaphores   = {},
+								 const InitialiserList<const vk::SemaphoreSubmitInfo> &p_signal_semaphores = {}, vk::Fence p_signal_fence = nullptr) const -> void;
 
 		auto createTimelineSemaphore(uint64 p_initial_value = 0u) const -> vk::Semaphore;
 		auto waitForTimelineSemaphores(const InitialiserList<const vk::Semaphore> &p_semaphores, const InitialiserList<const uint64> &p_target_values) const -> void;
@@ -189,8 +304,12 @@ namespace toaster::gpu
 		auto getBufferAddress(vk::Buffer p_buffer) const -> vk::DeviceAddress { return m_device->getDevice().getBufferAddress({p_buffer}); }
 
 	private:
+		static auto getVulkanShaderStages(ShaderStageFlags p_stages) -> vk::ShaderStageFlags;
+
 		Pool<BufferTag, BufferData>   m_bufferPool;
 		Pool<TextureTag, TextureData> m_texturePool;
+		Pool<SamplerTag, SamplerData> m_samplerPool;
+		Pool<ShaderTag, ShaderData>   m_shaderPool;
 
 		UniquePtr<Instance>       m_instance{nullptr};
 		UniquePtr<PhysicalDevice> m_physicalDevice{nullptr};

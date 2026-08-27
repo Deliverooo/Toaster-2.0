@@ -2,6 +2,66 @@
 
 namespace toaster::gpu
 {
+	auto getLoadOp(EAttachmentUsageOP p_usage_op) -> vk::AttachmentLoadOp
+	{
+		switch (p_usage_op)
+		{
+			case EAttachmentUsageOP::eClearStore:
+			case EAttachmentUsageOP::eClearNone:
+			case EAttachmentUsageOP::eClearDontCare:
+				return vk::AttachmentLoadOp::eClear;
+			case EAttachmentUsageOP::eLoadStore:
+			case EAttachmentUsageOP::eLoadNone:
+			case EAttachmentUsageOP::eLoadDontCare:
+				return vk::AttachmentLoadOp::eLoad;
+			case EAttachmentUsageOP::eNoneStore:
+			case EAttachmentUsageOP::eNoneNone:
+			case EAttachmentUsageOP::eNoneDontCare:
+				return vk::AttachmentLoadOp::eNone;
+			case EAttachmentUsageOP::eDontCareStore:
+			case EAttachmentUsageOP::eDontCareNone:
+			case EAttachmentUsageOP::eDontCareDontCare:
+				return vk::AttachmentLoadOp::eDontCare;
+		}
+		return vk::AttachmentLoadOp::eNone;
+	}
+
+	auto getStoreOp(EAttachmentUsageOP p_usage_op) -> vk::AttachmentStoreOp
+	{
+		switch (p_usage_op)
+		{
+			case EAttachmentUsageOP::eClearStore:
+			case EAttachmentUsageOP::eLoadStore:
+			case EAttachmentUsageOP::eNoneStore:
+			case EAttachmentUsageOP::eDontCareStore:
+				return vk::AttachmentStoreOp::eStore;
+			case EAttachmentUsageOP::eClearNone:
+			case EAttachmentUsageOP::eLoadNone:
+			case EAttachmentUsageOP::eNoneNone:
+			case EAttachmentUsageOP::eDontCareNone:
+				return vk::AttachmentStoreOp::eNone;
+			case EAttachmentUsageOP::eClearDontCare:
+			case EAttachmentUsageOP::eLoadDontCare:
+			case EAttachmentUsageOP::eNoneDontCare:
+			case EAttachmentUsageOP::eDontCareDontCare:
+				return vk::AttachmentStoreOp::eDontCare;
+		}
+		return vk::AttachmentStoreOp::eNone;
+	}
+
+	auto getResolveMode(EAttachmentResolveMode p_resolve_mode) -> vk::ResolveModeFlagBits
+	{
+		switch (p_resolve_mode)
+		{
+			case EAttachmentResolveMode::eNone: return vk::ResolveModeFlagBits::eNone;
+			case EAttachmentResolveMode::eZero: return vk::ResolveModeFlagBits::eSampleZero;
+			case EAttachmentResolveMode::eAverage: return vk::ResolveModeFlagBits::eAverage;
+			case EAttachmentResolveMode::eMin: return vk::ResolveModeFlagBits::eMin;
+			case EAttachmentResolveMode::eMax: return vk::ResolveModeFlagBits::eMax;
+		}
+		return vk::ResolveModeFlagBits::eNone;
+	}
+
 	CommandList::CommandList(Device &p_device, vk::CommandBuffer p_cmd) : m_device(&p_device), m_cmd(p_cmd)
 	{
 	}
@@ -58,6 +118,135 @@ namespace toaster::gpu
 		m_cmd.end();
 	}
 
+	auto CommandList::beginRendering(const RenderingInfo &p_rendering_info) -> void
+	{
+		std::vector<vk::RenderingAttachmentInfo> colour_attachments(p_rendering_info.colourAttachments.size());
+		for (uint32 i{0u}; i < p_rendering_info.colourAttachments.size(); ++i)
+		{
+			auto &src_attachment{p_rendering_info.colourAttachments[i]};
+			auto &dst_attachment{colour_attachments[i]};
+
+			const TextureData *render_target_data{m_device->getTextureData(src_attachment.renderTarget)};
+			TST_ASSERT(render_target_data);
+			dst_attachment.imageView   = render_target_data->imageView;
+			dst_attachment.imageLayout = render_target_data->layout;
+
+			dst_attachment.loadOp     = getLoadOp(src_attachment.usageOp);
+			dst_attachment.storeOp    = getStoreOp(src_attachment.usageOp);
+			dst_attachment.clearValue = *reinterpret_cast<const vk::ClearValue *>(&src_attachment.clearValue); // They should have the same memory layout
+
+			const TextureData *resolve_render_target_data{m_device->getTextureData(src_attachment.resolveTarget)};
+			if (resolve_render_target_data)
+			{
+				dst_attachment.resolveImageView   = resolve_render_target_data->imageView;
+				dst_attachment.resolveImageLayout = resolve_render_target_data->layout;
+				dst_attachment.resolveMode        = getResolveMode(src_attachment.resolveMode);
+			}
+			else
+			{
+				dst_attachment.resolveMode        = vk::ResolveModeFlagBits::eNone;
+				dst_attachment.resolveImageView   = nullptr;
+				dst_attachment.resolveImageLayout = vk::ImageLayout::eUndefined;
+			}
+		}
+
+		vk::RenderingAttachmentInfo depth_attachment{};
+		if (p_rendering_info.depthAttachment.has_value())
+		{
+			auto &             src_attachment{p_rendering_info.depthAttachment.value()};
+			const TextureData *render_target_data{m_device->getTextureData(src_attachment.renderTarget)};
+			TST_ASSERT(render_target_data);
+
+			depth_attachment.imageView   = render_target_data->imageView;
+			depth_attachment.imageLayout = render_target_data->layout;
+
+			depth_attachment.loadOp     = getLoadOp(src_attachment.usageOp);
+			depth_attachment.storeOp    = getStoreOp(src_attachment.usageOp);
+			depth_attachment.clearValue = *reinterpret_cast<const vk::ClearValue *>(&src_attachment.clearValue); // They should have the same memory layout
+
+			const TextureData *resolve_render_target_data{m_device->getTextureData(src_attachment.resolveTarget)};
+			if (resolve_render_target_data)
+			{
+				depth_attachment.resolveImageView   = resolve_render_target_data->imageView;
+				depth_attachment.resolveImageLayout = resolve_render_target_data->layout;
+				depth_attachment.resolveMode        = getResolveMode(src_attachment.resolveMode);
+			}
+			else
+			{
+				depth_attachment.resolveMode        = vk::ResolveModeFlagBits::eNone;
+				depth_attachment.resolveImageView   = nullptr;
+				depth_attachment.resolveImageLayout = vk::ImageLayout::eUndefined;
+			}
+		}
+
+		vk::RenderingAttachmentInfo stencil_attachment{};
+		if (p_rendering_info.stencilAttachment.has_value())
+		{
+			auto &             src_attachment{p_rendering_info.stencilAttachment.value()};
+			const TextureData *render_target_data{m_device->getTextureData(src_attachment.renderTarget)};
+			TST_ASSERT(render_target_data);
+
+			stencil_attachment.imageView   = render_target_data->imageView;
+			stencil_attachment.imageLayout = render_target_data->layout;
+
+			stencil_attachment.loadOp     = getLoadOp(src_attachment.usageOp);
+			stencil_attachment.storeOp    = getStoreOp(src_attachment.usageOp);
+			stencil_attachment.clearValue = *reinterpret_cast<const vk::ClearValue *>(&src_attachment.clearValue); // They should have the same memory layout
+
+			const TextureData *resolve_render_target_data{m_device->getTextureData(src_attachment.resolveTarget)};
+			if (resolve_render_target_data)
+			{
+				stencil_attachment.resolveImageView   = resolve_render_target_data->imageView;
+				stencil_attachment.resolveImageLayout = resolve_render_target_data->layout;
+				stencil_attachment.resolveMode        = getResolveMode(src_attachment.resolveMode);
+			}
+			else
+			{
+				stencil_attachment.resolveMode        = vk::ResolveModeFlagBits::eNone;
+				stencil_attachment.resolveImageView   = nullptr;
+				stencil_attachment.resolveImageLayout = vk::ImageLayout::eUndefined;
+			}
+		}
+
+		vk::RenderingInfo rendering_info{};
+		rendering_info.renderArea = vk::Rect2D{
+			vk::Offset2D{p_rendering_info.renderArea.offset.x, p_rendering_info.renderArea.offset.y},
+			vk::Extent2D{p_rendering_info.renderArea.size.x, p_rendering_info.renderArea.size.y}
+		};
+		rendering_info.layerCount           = 1u;
+		rendering_info.viewMask             = 0u;
+		rendering_info.colorAttachmentCount = colour_attachments.size();
+		rendering_info.pColorAttachments    = colour_attachments.data();
+		rendering_info.pDepthAttachment     = p_rendering_info.depthAttachment.has_value() ? &depth_attachment : nullptr;
+		rendering_info.pStencilAttachment   = p_rendering_info.stencilAttachment.has_value() ? &stencil_attachment : nullptr;
+
+		m_cmd.beginRendering(rendering_info, FunctionDispatcher::get());
+	}
+
+	auto CommandList::endRendering() -> void
+	{
+		m_cmd.endRendering();
+	}
+
+	auto CommandList::setViewport(const tsm::Viewport &p_viewport) -> void
+	{
+		const vk::Viewport vk_viewport{
+			p_viewport.offset.x,
+			p_viewport.offset.y,
+			p_viewport.size.x,
+			p_viewport.size.y,
+			p_viewport.depthBounds.x,
+			p_viewport.depthBounds.y
+		};
+		m_cmd.setViewportWithCountEXT(vk_viewport, FunctionDispatcher::get());
+	}
+
+	auto CommandList::setScissor(const tsm::Rect &p_scissor) -> void
+	{
+		const vk::Rect2D vk_scissor{{p_scissor.offset.x, p_scissor.offset.y}, {p_scissor.size.x, p_scissor.size.y}};
+		m_cmd.setScissorWithCountEXT(vk_scissor, FunctionDispatcher::get());
+	}
+
 	auto CommandList::bindResourceHeap(const ResourceDescriptorHeap &p_resource_heap) -> void
 	{
 		m_cmd.bindResourceHeapEXT(p_resource_heap.getBindInfo(), FunctionDispatcher::get());
@@ -66,6 +255,26 @@ namespace toaster::gpu
 	auto CommandList::bindSamplerHeap(const SamplerDescriptorHeap &p_sampler_heap) -> void
 	{
 		m_cmd.bindSamplerHeapEXT(p_sampler_heap.getBindInfo(), FunctionDispatcher::get());
+	}
+
+	auto CommandList::bindShaders(const InitialiserList<const ShaderHandle> &p_shaders) -> void
+	{
+		std::vector<vk::ShaderStageFlagBits> stages(p_shaders.size());
+		std::vector<vk::ShaderEXT>           shaders(p_shaders.size());
+
+		uint32 i{0u};
+		for (const auto &shader: p_shaders)
+		{
+			const ShaderData *shader_data{m_device->getShaderData(shader)};
+			TST_ASSERT(shader_data);
+
+			const auto stage{static_cast<vk::ShaderStageFlagBits>(static_cast<vk::ShaderStageFlags::MaskType>(Device::getVulkanShaderStages(shader_data->stage)))};
+			stages[i]  = stage;
+			shaders[i] = shader_data->shader;
+			++i;
+		}
+
+		m_cmd.bindShadersEXT(stages, shaders, FunctionDispatcher::get());
 	}
 
 	auto CommandList::copyBuffer(BufferHandle p_src_buffer, BufferHandle p_dst_buffer, uint64 p_size, uint64 p_src_offset, uint64 p_dst_offset) -> void
