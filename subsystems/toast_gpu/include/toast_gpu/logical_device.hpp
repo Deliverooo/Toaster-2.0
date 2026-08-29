@@ -34,17 +34,11 @@ namespace toaster::gpu
 		auto getGraphicsQueue() -> vk::Queue & { return m_graphicsQueue; } // For now this is also the present and compute queue as well
 		auto getTransferQueue() -> vk::Queue & { return m_transferQueue; }
 
-		auto getGraphicsCommandPool() -> vk::CommandPool & { return m_graphicsCommandPool; }
-		auto getTransferCommandPool() -> vk::CommandPool & { return m_transferCommandPool; }
-
 	private:
 		vk::Device m_logicalDevice{nullptr};
 
 		QueueFamilyIndices m_queueFamilyIndices{};
 		vk::Queue          m_graphicsQueue{nullptr};
 		vk::Queue          m_transferQueue{nullptr};
-
-		vk::CommandPool m_graphicsCommandPool{nullptr};
-		vk::CommandPool m_transferCommandPool{nullptr};
 	};
 }

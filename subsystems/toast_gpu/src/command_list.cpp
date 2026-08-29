@@ -1,5 +1,7 @@
 #include "toast_gpu/command_list.hpp"
 
+#include "toast_gpu/command_pool.hpp"
+
 namespace toaster::gpu
 {
 	auto getLoadOp(EAttachmentUsageOP p_usage_op) -> vk::AttachmentLoadOp
@@ -62,64 +64,60 @@ namespace toaster::gpu
 		return vk::ResolveModeFlagBits::eNone;
 	}
 
-	CommandList::CommandList(Device &p_device, vk::CommandBuffer p_cmd) : m_device(&p_device), m_cmd(p_cmd)
+	CommandList::CommandList(CommandPool& p_command_pool, Device& p_device, vk::CommandBuffer p_cmd) :
+	m_commandPool(&p_command_pool),	m_device(&p_device), m_cmd(p_cmd)
 	{
 	}
 
-	CommandList::~CommandList()
+	CommandList::CommandList(CommandList &&p_other) noexcept : m_commandPool(p_other.m_commandPool),
+	m_device(p_other.m_device),
+	m_cmd(p_other.m_cmd)
 	{
-		// if (m_cmd)
-		// m_device->m_device->getDevice().freeCommandBuffers(m_device->m_device->getGraphicsCommandPool(), {m_cmd});
-	}
-
-	CommandList::CommandList(const CommandList &p_other) : m_device(p_other.m_device), m_cmd(p_other.m_cmd)
-	{
-	}
-
-	CommandList::CommandList(CommandList &&p_other) noexcept : m_device(p_other.m_device), m_cmd(p_other.m_cmd)
-	{
+		p_other.m_commandPool = nullptr;
 		p_other.m_device = nullptr;
-		p_other.m_cmd    = nullptr;
-	}
-
-	CommandList &CommandList::operator=(const CommandList &p_other)
-	{
-		if (this != &p_other)
-		{
-			m_device = p_other.m_device;
-			m_cmd    = p_other.m_cmd;
-		}
-		return *this;
+		p_other.m_cmd = nullptr;
 	}
 
 	CommandList &CommandList::operator=(CommandList &&p_other) noexcept
 	{
-		m_device = p_other.m_device;
-		m_cmd    = p_other.m_cmd;
+		if (this != &p_other)
+		{
+			m_commandPool = p_other.m_commandPool;
+			m_device = p_other.m_device;
+			m_cmd = p_other.m_cmd;
 
-		p_other.m_device = nullptr;
-		p_other.m_cmd    = nullptr;
-
+			p_other.m_commandPool = nullptr;
+			p_other.m_device = nullptr;
+			p_other.m_cmd = nullptr;
+		}
 		return *this;
 	}
 
 	auto CommandList::reset() -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
+		if (!(m_commandPool->m_commandPoolFlags & ECommandPoolBits::eReset))
+		{
+			TST_ASSERT_MSG(false,"Command pool was not created with the reset bit");
+		}
 		m_cmd.reset();
 	}
 
 	auto CommandList::begin() -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
 		m_cmd.begin({vk::CommandBufferUsageFlagBits::eOneTimeSubmit});
 	}
 
 	auto CommandList::end() -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
 		m_cmd.end();
 	}
 
 	auto CommandList::beginRendering(const RenderingInfo &p_rendering_info) -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
 		std::vector<vk::RenderingAttachmentInfo> colour_attachments(p_rendering_info.colourAttachments.size());
 		for (uint32 i{0u}; i < p_rendering_info.colourAttachments.size(); ++i)
 		{
@@ -225,11 +223,13 @@ namespace toaster::gpu
 
 	auto CommandList::endRendering() -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
 		m_cmd.endRendering();
 	}
 
 	auto CommandList::setViewport(const tsm::Viewport &p_viewport) -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
 		const vk::Viewport vk_viewport{
 			p_viewport.offset.x,
 			p_viewport.offset.y,
@@ -243,22 +243,26 @@ namespace toaster::gpu
 
 	auto CommandList::setScissor(const tsm::Rect &p_scissor) -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
 		const vk::Rect2D vk_scissor{{p_scissor.offset.x, p_scissor.offset.y}, {p_scissor.size.x, p_scissor.size.y}};
 		m_cmd.setScissorWithCountEXT(vk_scissor, FunctionDispatcher::get());
 	}
 
 	auto CommandList::bindResourceHeap(const ResourceDescriptorHeap &p_resource_heap) -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
 		m_cmd.bindResourceHeapEXT(p_resource_heap.getBindInfo(), FunctionDispatcher::get());
 	}
 
 	auto CommandList::bindSamplerHeap(const SamplerDescriptorHeap &p_sampler_heap) -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
 		m_cmd.bindSamplerHeapEXT(p_sampler_heap.getBindInfo(), FunctionDispatcher::get());
 	}
 
 	auto CommandList::bindShaders(const InitialiserList<const ShaderHandle> &p_shaders) -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
 		std::vector<vk::ShaderStageFlagBits> stages(p_shaders.size());
 		std::vector<vk::ShaderEXT>           shaders(p_shaders.size());
 
@@ -279,6 +283,7 @@ namespace toaster::gpu
 
 	auto CommandList::copyBuffer(BufferHandle p_src_buffer, BufferHandle p_dst_buffer, uint64 p_size, uint64 p_src_offset, uint64 p_dst_offset) -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
 		const BufferData *src_data{m_device->getBufferData(p_src_buffer)};
 		BufferData *      dst_data{m_device->getBufferData(p_dst_buffer)};
 
@@ -300,6 +305,7 @@ namespace toaster::gpu
 
 	auto CommandList::copyBufferToTexture(BufferHandle p_src_buffer, TextureHandle p_dst_texture) -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
 		const BufferData *src_data{m_device->getBufferData(p_src_buffer)};
 		TextureData *     dst_data{m_device->getTextureData(p_dst_texture)};
 		TST_ASSERT(src_data && dst_data);
@@ -325,6 +331,7 @@ namespace toaster::gpu
 
 	auto CommandList::transitionTextureLayout(TextureHandle p_texture, vk::ImageLayout p_dst_layout) -> void
 	{
+		[[unlikely]]TST_ASSERT(m_cmd);
 		TextureData *texture_data{m_device->getTextureData(p_texture)};
 		TST_ASSERT(texture_data);
 

@@ -83,8 +83,6 @@ namespace toaster::gpu
 
 	struct TST_GPU_API RenderingAttachmentInfo
 	{
-		RenderingAttachmentInfo() = default;
-
 		ClearValue clearValue{ClearColourValue{}};
 
 		TextureHandle renderTarget;
@@ -103,23 +101,28 @@ namespace toaster::gpu
 		std::optional<RenderingAttachmentInfo> stencilAttachment{std::nullopt};
 	};
 
-	// To create this, go to Device::createCommandList
-	class TST_GPU_API CommandList // You can copy this just like any other object
+	// Like DirectX 12, I would like a command list to be a non-owning handle to a command buffer.
+	// This means that the pool is responsible for allocation and the backing memory of the buffer.
+	// Apparently this is good because is it generally good practice to reset the entire pool and not individual buffers
+	class TST_GPU_API CommandList
 	{
 	public:
-		// Easier than managing it in the class itself
-		CommandList(Device &p_device, vk::CommandBuffer p_cmd);
-		~CommandList();
+		CommandList() = default;
+		~CommandList() = default; // There is no manual freeing of command buffers here
 
-		CommandList(const CommandList &p_other);
+		// Create using the command pool
+		CommandList(CommandPool& p_command_pool, Device& p_device, vk::CommandBuffer p_cmd);
+
 		CommandList(CommandList &&p_other) noexcept;
-		CommandList &operator=(const CommandList &p_other);
 		CommandList &operator=(CommandList &&p_other) noexcept;
+
+		CommandList(const CommandList&) = delete;
+		CommandList& operator=(const CommandList&) = delete;
 
 		auto getCommandBuffer() const -> vk::CommandBuffer { return m_cmd; }
 
-		// Only works if the pool was created with the reset bit enabled
-		auto reset() -> void;
+		// You shouldn't really ever call this, even for swapchain cmds, just have a pool per list and reset that instead.
+		[[deprecated("You should be resetting the whole pool instead!")]] /* Attributes... :)*/ auto reset() -> void;
 
 		auto begin() -> void;
 		auto end() -> void;
@@ -141,7 +144,10 @@ namespace toaster::gpu
 		auto transitionTextureLayout(TextureHandle p_texture, vk::ImageLayout p_dst_layout) -> void;
 
 	private:
-		NonOwningPtr<Device> m_device{nullptr};
-		vk::CommandBuffer    m_cmd{nullptr};
+		NonOwningPtr<CommandPool> m_commandPool{nullptr};
+		NonOwningPtr<Device>	  m_device{nullptr};
+		vk::CommandBuffer	      m_cmd{nullptr};
+
+		friend class CommandPool;
 	};
 }

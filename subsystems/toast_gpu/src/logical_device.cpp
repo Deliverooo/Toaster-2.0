@@ -65,21 +65,10 @@ namespace toaster::gpu
 
 		m_graphicsQueue = m_logicalDevice.getQueue(m_queueFamilyIndices.graphics, 0u);
 		m_transferQueue = m_logicalDevice.getQueue(m_queueFamilyIndices.transfer, (m_queueFamilyIndices.transfer == m_queueFamilyIndices.graphics) ? 1u : 0u);
-
-		vk::CommandPoolCreateInfo graphics_command_pool_create_info{};
-		graphics_command_pool_create_info.queueFamilyIndex = m_queueFamilyIndices.graphics;
-		graphics_command_pool_create_info.flags            = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-		m_graphicsCommandPool                              = m_logicalDevice.createCommandPool(graphics_command_pool_create_info);
-
-		vk::CommandPoolCreateInfo transfer_command_pool_create_info{};
-		transfer_command_pool_create_info.queueFamilyIndex = m_queueFamilyIndices.transfer;
-		m_transferCommandPool                              = m_logicalDevice.createCommandPool(transfer_command_pool_create_info);
 	}
 
 	LogicalDevice::~LogicalDevice()
 	{
-		m_logicalDevice.destroyCommandPool(m_graphicsCommandPool);
-		m_logicalDevice.destroyCommandPool(m_transferCommandPool);
 		m_logicalDevice.destroy();
 	}
 }

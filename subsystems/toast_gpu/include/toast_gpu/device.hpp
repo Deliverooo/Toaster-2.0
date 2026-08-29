@@ -4,13 +4,11 @@
 #include "deletion_queue.hpp"
 #include "descriptor_heap.hpp"
 
-#include "toast_lib/enum_flags.hpp"
 #include "toast_lib/pool.hpp"
+#include "gpu_enums.hpp"
 
 namespace toaster::gpu
 {
-	TST_DECLARE_FLAGS_FOR_NAMESPACE()
-
 	#pragma region buffer
 	struct TST_GPU_API BufferData
 	{
@@ -126,28 +124,14 @@ namespace toaster::gpu
 
 	#pragma region shader
 
-	enum class EShaderStage : uint8
-	{
-		eVertex                 = TST_BIT(0u),
-		ePixel                  = TST_BIT(1u),
-		eCompute                = TST_BIT(2u),
-		eGeometry               = TST_BIT(3u),
-		eTessellationControl    = TST_BIT(4u),
-		eTessellationEvaluation = TST_BIT(5u),
-		eMesh                   = TST_BIT(6u),
-		eTask                   = TST_BIT(7u)
-	};
-
-	TST_SPECIALISE_FLAGS(EShaderStage, ShaderStage);
-
-	static_assert(std::is_same_v<Flags<EShaderStage>::MaskType, uint8>);
+	static_assert(std::is_same_v<Flags<EShaderStageBits>::MaskType, uint8>);
 
 	struct TST_GPU_API ShaderData
 	{
 		vk::ShaderEXT shader{nullptr};
 
-		EShaderStage     stage{EShaderStage::eVertex};
-		ShaderStageFlags nextStage{0u}; // The set of valid stages that could be next
+		EShaderStageBits     stage{EShaderStageBits::eVertex};
+		EShaderStageFlags nextStage{0u}; // The set of valid stages that could be next
 	};
 
 	TST_DECLARE_HANDLE(Shader);
@@ -157,8 +141,8 @@ namespace toaster::gpu
 		const void *code{nullptr};
 		uint64      codeSize{0u};
 
-		EShaderStage     stage{EShaderStage::eVertex};
-		ShaderStageFlags nextStage{0u}; // The set of valid stages that could be next
+		EShaderStageBits     stage{EShaderStageBits::eVertex};
+		EShaderStageFlags nextStage{0u}; // The set of valid stages that could be next
 	};
 
 	#pragma endregion
@@ -175,6 +159,7 @@ namespace toaster::gpu
 		uint32 maxSamplerDescriptors{8u}; // You probably don't need that many samplers (Don't have one per image!)
 	};
 
+	class CommandPool;
 	class CommandList;
 
 	// Represents the absolute minimum required to set up a Vulkan 'context' and create other objects. And a deletion queue
@@ -299,8 +284,7 @@ namespace toaster::gpu
 
 		#pragma endregion
 
-		auto createCommandList() -> CommandList;
-		auto createCommandLists(/*EQueueType p_queue_type,*/ uint32 p_count) -> std::vector<CommandList>;
+		auto createCommandPool(EQueueType p_queue_type, ECommandPoolFlags p_pool_flags) -> CommandPool;
 
 		auto executeCommandLists(const InitialiserList<const CommandList> &            p_command_lists,
 								 const InitialiserList<const vk::SemaphoreSubmitInfo> &p_wait_semaphores   = {},
@@ -309,13 +293,15 @@ namespace toaster::gpu
 		[[nodiscard]] auto createTimelineSemaphore(uint64 p_initial_value = 0u) const -> vk::Semaphore;
 		auto waitForTimelineSemaphores(const InitialiserList<const vk::Semaphore> &p_semaphores, const InitialiserList<const uint64> &p_target_values) const -> void;
 
+		auto waitIdle() const -> void;
+
 	private:
 		auto _destroyBuffer(BufferData* p_data) -> void;
 		auto _destroyTexture(TextureData* p_data) -> void;
 		auto _destroySampler(SamplerData* p_data) -> void;
 		auto _destroyShader(ShaderData* p_data) -> void;
 
-		static auto getVulkanShaderStages(ShaderStageFlags p_stages) -> vk::ShaderStageFlags;
+		static auto getVulkanShaderStages(EShaderStageFlags p_stages) -> vk::ShaderStageFlags;
 
 		Pool<BufferTag, BufferData>   m_bufferPool;
 		Pool<TextureTag, TextureData> m_texturePool;

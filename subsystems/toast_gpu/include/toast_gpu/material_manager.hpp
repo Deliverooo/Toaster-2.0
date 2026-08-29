@@ -64,8 +64,8 @@ namespace toaster::gpu
 		auto setMaterialParameter(MaterialHandle p_handle, uint32 p_byte_offset, const Type &p_data) -> void
 		{
 			MaterialData *data{getMaterialData(p_handle)};
-			TST_PERMA_ASSERT(data);
-			TST_PERMA_ASSERT(p_byte_offset + sizeof(Type) <= data->data.size());
+			TST_ASSERT(data);
+			TST_ASSERT(p_byte_offset + sizeof(Type) <= data->data.size());
 
 			std::memcpy(data->data.data() + p_byte_offset, &p_data, sizeof(Type));
 			data->framesDirty = 3u;

@@ -1,8 +1,10 @@
 #include "toast_gpu/device.hpp"
 
-#include "toast_gpu/command_list.hpp"
+#include "toast_gpu/command_pool.hpp"
 
 #include <d3d12.h>
+
+#include "toast_gpu/command_list.hpp"
 
 namespace toaster::gpu
 {
@@ -332,31 +334,29 @@ namespace toaster::gpu
 		return out_handle;
 	}
 
-	auto Device::createCommandList() -> CommandList
+	auto Device::createCommandPool(EQueueType p_queue_type, ECommandPoolFlags p_pool_flags) -> CommandPool
 	{
-		vk::CommandBufferAllocateInfo cmd_alloc_info{};
-		cmd_alloc_info.commandPool        = m_device->getGraphicsCommandPool();
-		cmd_alloc_info.commandBufferCount = 1u;
-		cmd_alloc_info.level              = vk::CommandBufferLevel::ePrimary;
+		uint32 queue_family_index{UINT32_MAX};
+		switch (p_queue_type)
+		{
+			case EQueueType::eGraphics: queue_family_index = m_device->getQueueFamilyIndices().graphics; break;
+			case EQueueType::eCompute: queue_family_index = m_device->getQueueFamilyIndices().compute;break;
+			case EQueueType::eTransfer: queue_family_index = m_device->getQueueFamilyIndices().transfer;break;
+		}
 
-		vk::CommandBuffer cmd{m_device->getDevice().allocateCommandBuffers(cmd_alloc_info).front()};
+		vk::CommandPoolCreateFlags flags{0u};
+		if (p_pool_flags & ECommandPoolBits::eReset)
+			flags |= vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+		if (p_pool_flags & ECommandPoolBits::eTransient)
+			flags |= vk::CommandPoolCreateFlagBits::eTransient;
 
-		return {*this, cmd};
-	}
+		vk::CommandPoolCreateInfo command_pool_create_info{};
+		command_pool_create_info.queueFamilyIndex = queue_family_index;
+		command_pool_create_info.flags = flags;
 
-	auto Device::createCommandLists(const uint32 p_count) -> std::vector<CommandList>
-	{
-		vk::CommandBufferAllocateInfo cmd_alloc_info{};
-		cmd_alloc_info.commandPool        = m_device->getGraphicsCommandPool();
-		cmd_alloc_info.commandBufferCount = p_count;
-		cmd_alloc_info.level              = vk::CommandBufferLevel::ePrimary;
+		vk::CommandPool command_pool{m_device->getDevice().createCommandPool(command_pool_create_info)};
 
-		const std::vector<vk::CommandBuffer> command_buffers{m_device->getDevice().allocateCommandBuffers(cmd_alloc_info)};
-
-		std::vector<CommandList> out_lists;
-		for (const auto cmd: command_buffers)
-			out_lists.emplace_back(*this, cmd);
-		return out_lists;
+		return CommandPool{*this, command_pool, p_pool_flags};
 	}
 
 	auto Device::executeCommandLists(const InitialiserList<const CommandList> &            p_command_lists,
@@ -394,6 +394,11 @@ namespace toaster::gpu
 		semaphore_wait_info.setValues(p_target_values);
 		if (m_device->getDevice().waitSemaphores(semaphore_wait_info, INFINITE) != vk::Result::eSuccess)
 			TST_PERMA_ASSERT_MSG(false, "Failed to wait for timeline semaphores");
+	}
+
+	auto Device::waitIdle() const -> void
+	{
+		m_device->getDevice().waitIdle();
 	}
 
 	auto Device::_destroyBuffer(BufferData *p_data) -> void
@@ -454,24 +459,24 @@ namespace toaster::gpu
 		});
 	}
 
-	auto Device::getVulkanShaderStages(ShaderStageFlags p_stages) -> vk::ShaderStageFlags
+	auto Device::getVulkanShaderStages(EShaderStageFlags p_stages) -> vk::ShaderStageFlags
 	{
 		vk::ShaderStageFlags out_flags{0u};
-		if (p_stages & EShaderStage::eVertex)
+		if (p_stages & EShaderStageBits::eVertex)
 			out_flags |= vk::ShaderStageFlagBits::eVertex;
-		if (p_stages & EShaderStage::ePixel)
+		if (p_stages & EShaderStageBits::ePixel)
 			out_flags |= vk::ShaderStageFlagBits::eFragment;
-		if (p_stages & EShaderStage::eCompute)
+		if (p_stages & EShaderStageBits::eCompute)
 			out_flags |= vk::ShaderStageFlagBits::eCompute;
-		if (p_stages & EShaderStage::eGeometry)
+		if (p_stages & EShaderStageBits::eGeometry)
 			out_flags |= vk::ShaderStageFlagBits::eGeometry;
-		if (p_stages & EShaderStage::eTessellationControl)
+		if (p_stages & EShaderStageBits::eTessellationControl)
 			out_flags |= vk::ShaderStageFlagBits::eTessellationControl;
-		if (p_stages & EShaderStage::eTessellationEvaluation)
+		if (p_stages & EShaderStageBits::eTessellationEvaluation)
 			out_flags |= vk::ShaderStageFlagBits::eTessellationEvaluation;
-		if (p_stages & EShaderStage::eMesh)
+		if (p_stages & EShaderStageBits::eMesh)
 			out_flags |= vk::ShaderStageFlagBits::eMeshEXT;
-		if (p_stages & EShaderStage::eTask)
+		if (p_stages & EShaderStageBits::eTask)
 			out_flags |= vk::ShaderStageFlagBits::eTaskEXT;
 
 		return out_flags;
