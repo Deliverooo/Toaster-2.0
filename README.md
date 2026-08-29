@@ -41,7 +41,7 @@ executable. From there, you can do whatever you want to do... Ts is a game engin
 ## Examples
 
 <p float="left" width=25%> 
-	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/master/examples/github_images/Orbo_Backrooms.png" width=25%>
-	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/master/examples/github_images/Sigeon.png" width=25%>
-	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/master/examples/github_images/Brick.png" width=25%>
+	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/2.0/examples/github_images/Orbo_Backrooms.png" width=25%>
+	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/2.0/examples/github_images/Sigeon.png" width=25%>
+	<img src="https://github.com/Deliverooo/Toaster-2.0/blob/2.0/examples/github_images/Brick.png" width=25%>
 </p>
