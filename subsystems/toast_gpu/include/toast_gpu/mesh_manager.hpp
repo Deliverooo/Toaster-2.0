@@ -37,7 +37,7 @@ namespace toaster::gpu
 		vk::DeviceSize indexBufferOffset{0u};
 
 		std::vector<SubmeshData>    submeshes;
-		std::vector<SharedMaterial> materials;
+		std::vector<MaterialHandle> materials;
 	};
 
 	struct TST_GPU_API DynamicMeshData
@@ -64,9 +64,12 @@ namespace toaster::gpu
 		MeshManager &operator=(const MeshManager &) = delete;
 		MeshManager &operator=(MeshManager &&)      = delete;
 
+		// The mesh will acquire the materials
 		[[nodiscard]] auto createStaticMesh(CommandList& p_cmd, const std::vector<StaticMeshVertex> &p_vertices, const std::vector<uint32> &p_indices,
-											const std::vector<SubmeshData> &p_submeshes, const std::vector<SharedMaterial> &p_materials) -> StaticMeshHandle;
-		auto destroyStaticMesh(StaticMeshHandle p_handle) -> void { m_staticMeshPool.destroy(p_handle); }
+									const std::vector<SubmeshData> &p_submeshes, const std::vector<MaterialHandle> &p_materials) -> StaticMeshHandle;
+		auto			   acquireStaticMesh(StaticMeshHandle p_handle) -> void { m_staticMeshPool.incRef(p_handle);}
+		auto               releaseStaticMesh(StaticMeshHandle p_handle) -> void { _destroyStaticMesh(m_staticMeshPool.decRef(p_handle)); }
+		auto               isStaticMeshValid(StaticMeshHandle p_handle) const -> bool { return m_staticMeshPool.isValid(p_handle); }
 
 		auto getStaticMeshData(StaticMeshHandle p_handle) const -> const StaticMeshData * { return m_staticMeshPool.getData(p_handle); }
 		auto getStaticMeshData(StaticMeshHandle p_handle) -> StaticMeshData * { return m_staticMeshPool.getData(p_handle); }
@@ -76,7 +79,7 @@ namespace toaster::gpu
 
 	private:
 		// All the required dependencies to destroy a static mesh. May be called after this class is destroyed due to the deletion queue
-		static auto _destroyStaticMeshData(const StaticMeshData &p_static_mesh_data, VmaVirtualBlock p_vertex_buffer_block, VmaVirtualBlock p_index_buffer_block) -> void;
+		auto _destroyStaticMesh(StaticMeshData *p_data) -> void;
 
 		StaticMeshPoolType m_staticMeshPool;
 

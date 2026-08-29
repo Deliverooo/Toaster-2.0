@@ -26,7 +26,6 @@ namespace toaster::gpu
 	};
 
 	TST_DECLARE_HANDLE(Buffer);
-	using SharedBuffer = SharedHandle<BufferTag, BufferData>;
 
 	struct TST_GPU_API BufferDesc
 	{
@@ -63,7 +62,6 @@ namespace toaster::gpu
 	};
 
 	TST_DECLARE_HANDLE(Texture);
-	using SharedTexture = SharedHandle<TextureTag, TextureData>;
 
 	struct TST_GPU_API TextureDesc
 	{
@@ -114,7 +112,6 @@ namespace toaster::gpu
 	};
 
 	TST_DECLARE_HANDLE(Sampler);
-	using SharedSampler = SharedHandle<SamplerTag, SamplerData>;
 
 	struct TST_GPU_API SamplerDesc
 	{
@@ -154,7 +151,6 @@ namespace toaster::gpu
 	};
 
 	TST_DECLARE_HANDLE(Shader);
-	using SharedShader = SharedHandle<ShaderTag, ShaderData>;
 
 	struct TST_GPU_API ShaderDesc
 	{
@@ -238,9 +234,12 @@ namespace toaster::gpu
 
 		#pragma region buffers
 
+		// There is no automatic reference counting system. All buffers start with a reference count of 1 and when
+		// releaseBuffer is called, it conditionally destroys the buffer if the new decremented reference count is 0.
+		// If you want to externally add references to a buffer, call acquire then release when appropriate.
 		[[nodiscard]] auto createBuffer(const BufferDesc &p_desc) -> BufferHandle;
-		[[nodiscard]] auto createSharedBuffer(const BufferDesc &p_desc) -> SharedBuffer { return {createBuffer(p_desc), &m_bufferPool}; }
-		auto               destroyBuffer(BufferHandle p_handle) -> void { m_bufferPool.destroy(p_handle); } // Invokes pool callback to defer deletion
+		auto			   acquireBuffer(BufferHandle p_handle) -> void { m_bufferPool.incRef(p_handle);}
+		auto               releaseBuffer(BufferHandle p_handle) -> void { _destroyBuffer(m_bufferPool.decRef(p_handle)); }
 		auto               isBufferValid(BufferHandle p_handle) const -> bool { return m_bufferPool.isValid(p_handle); }
 
 		auto getBufferData(BufferHandle p_handle) const -> const BufferData * { return m_bufferPool.getData(p_handle); }
@@ -252,9 +251,12 @@ namespace toaster::gpu
 
 		#pragma region textures
 
+		// There is no automatic reference counting system. All texture start with a reference count of 1 and when
+		// releaseTexture is called, it conditionally destroys the texture if the new decremented reference count is 0.
+		// If you want to externally add references to a texture, call acquire then release when appropriate.
 		[[nodiscard]] auto createTexture(const TextureDesc &p_desc) -> TextureHandle;
-		[[nodiscard]] auto createSharedTexture(const TextureDesc &p_desc) -> SharedTexture { return {createTexture(p_desc), &m_texturePool}; }
-		auto               destroyTexture(TextureHandle p_handle) -> void { m_texturePool.destroy(p_handle); } // Invokes pool callback to defer deletion
+		auto			   acquireTexture(TextureHandle p_handle) -> void { m_texturePool.incRef(p_handle);}
+		auto               releaseTexture(TextureHandle p_handle) -> void { _destroyTexture(m_texturePool.decRef(p_handle)); }
 		auto               isTextureValid(TextureHandle p_handle) const -> bool { return m_texturePool.isValid(p_handle); }
 
 		auto getTextureData(TextureHandle p_handle) const -> const TextureData * { return m_texturePool.getData(p_handle); }
@@ -269,9 +271,12 @@ namespace toaster::gpu
 
 		#pragma region samplers
 
+		// There is no automatic reference counting system. All samplers start with a reference count of 1 and when
+		// releaseSampler is called, it conditionally destroys the sampler if the new decremented reference count is 0.
+		// If you want to externally add references to a sampler, call acquire then release when appropriate.
 		[[nodiscard]] auto createSampler(const SamplerDesc &p_desc) -> SamplerHandle;
-		[[nodiscard]] auto createSharedSampler(const SamplerDesc &p_desc) -> SharedSampler { return {createSampler(p_desc), &m_samplerPool}; }
-		auto               destroySampler(SamplerHandle p_handle) -> void { m_samplerPool.destroy(p_handle); } // Invokes pool callback to defer deletion
+		auto			   acquireSampler(SamplerHandle p_handle) -> void { m_samplerPool.incRef(p_handle);}
+		auto               releaseSampler(SamplerHandle p_handle) -> void { _destroySampler(m_samplerPool.decRef(p_handle)); }
 		auto               isSamplerValid(SamplerHandle p_handle) const -> bool { return m_samplerPool.isValid(p_handle); }
 
 		auto getSamplerData(SamplerHandle p_handle) const -> const SamplerData * { return m_samplerPool.getData(p_handle); }
@@ -281,9 +286,12 @@ namespace toaster::gpu
 
 		#pragma region shaders
 
+		// There is no automatic reference counting system. All shaders start with a reference count of 1 and when
+		// releaseShader is called, it conditionally destroys the shader if the new decremented reference count is 0.
+		// If you want to externally add references to a shader, call acquire then release when appropriate.
 		[[nodiscard]] auto createShader(const ShaderDesc &p_desc) -> ShaderHandle;
-		[[nodiscard]] auto createSharedShader(const ShaderDesc &p_desc) -> SharedShader { return {createShader(p_desc), &m_shaderPool}; }
-		auto               destroyShader(ShaderHandle p_handle) -> void { m_shaderPool.destroy(p_handle); } // Invokes pool callback to defer deletion
+		auto			   acquireShader(ShaderHandle p_handle) -> void { m_shaderPool.incRef(p_handle);}
+		auto               releaseShader(ShaderHandle p_handle) -> void { _destroyShader(m_shaderPool.decRef(p_handle)); }
 		auto               isShaderValid(ShaderHandle p_handle) const -> bool { return m_shaderPool.isValid(p_handle); }
 
 		auto getShaderData(ShaderHandle p_handle) const -> const ShaderData * { return m_shaderPool.getData(p_handle); }
@@ -298,12 +306,15 @@ namespace toaster::gpu
 								 const InitialiserList<const vk::SemaphoreSubmitInfo> &p_wait_semaphores   = {},
 								 const InitialiserList<const vk::SemaphoreSubmitInfo> &p_signal_semaphores = {}, vk::Fence p_signal_fence = nullptr) const -> void;
 
-		auto createTimelineSemaphore(uint64 p_initial_value = 0u) const -> vk::Semaphore;
+		[[nodiscard]] auto createTimelineSemaphore(uint64 p_initial_value = 0u) const -> vk::Semaphore;
 		auto waitForTimelineSemaphores(const InitialiserList<const vk::Semaphore> &p_semaphores, const InitialiserList<const uint64> &p_target_values) const -> void;
 
-		auto getBufferAddress(vk::Buffer p_buffer) const -> vk::DeviceAddress { return m_device->getDevice().getBufferAddress({p_buffer}); }
-
 	private:
+		auto _destroyBuffer(BufferData* p_data) -> void;
+		auto _destroyTexture(TextureData* p_data) -> void;
+		auto _destroySampler(SamplerData* p_data) -> void;
+		auto _destroyShader(ShaderData* p_data) -> void;
+
 		static auto getVulkanShaderStages(ShaderStageFlags p_stages) -> vk::ShaderStageFlags;
 
 		Pool<BufferTag, BufferData>   m_bufferPool;

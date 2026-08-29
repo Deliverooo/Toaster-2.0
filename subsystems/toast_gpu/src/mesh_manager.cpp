@@ -7,21 +7,6 @@ namespace toaster::gpu
 	MeshManager::MeshManager(Device &p_gpu_ctx, MaterialManager &p_material_manager, uint64 p_static_mesh_vertex_buffer_size_bytes,
 							 uint64  p_static_mesh_index_buffer_size_bytes) : m_device(&p_gpu_ctx), m_materialManager(&p_material_manager)
 	{
-		m_staticMeshPool.setUserData(this);
-		m_staticMeshPool.setDestroyCallback(+[](void *p_user_data, StaticMeshHandle p_handle) -> void
-		{
-			auto ts{static_cast<MeshManager *>(p_user_data)};
-
-			StaticMeshData *mesh_data{&ts->m_staticMeshPool._data[p_handle.id]};
-			mesh_data->materials.clear(); // Material destruction is already queued
-
-			ts->m_device->submitDeletion([data = *mesh_data, vertex_block = ts->m_staticMeshVertexBufferBlock, index_block = ts->m_staticMeshIndexBufferBlock
-										 ]() mutable noexcept -> void // Copy
-										 {
-											 _destroyStaticMeshData(data, vertex_block, index_block);
-										 });
-		});
-
 		BufferDesc vertex_buffer_desc{};
 		vertex_buffer_desc.size             = p_static_mesh_vertex_buffer_size_bytes;
 		vertex_buffer_desc.usageFlags       = vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer;
@@ -45,21 +30,9 @@ namespace toaster::gpu
 
 	MeshManager::~MeshManager()
 	{
-		// For safety...
-		for (uint32 i{0u}; i < m_staticMeshPool.getSize(); ++i)
-		{
-			if (m_staticMeshPool._alive[i])
-			{
-				StaticMeshData *mesh_data{&m_staticMeshPool._data[i]};
-				mesh_data->materials.clear(); // Material destruction is already queued
-
-				m_device->submitDeletion([data = *mesh_data, vertex_block = m_staticMeshVertexBufferBlock, index_block = m_staticMeshIndexBufferBlock
-										 ]() mutable noexcept -> void // Copy
-										 {
-											 _destroyStaticMeshData(data, vertex_block, index_block);
-										 });
-			}
-		}
+		// Delete all remaining static meshes
+		// for (auto static_mesh : m_staticMeshPool.getAlive())
+		// 	_destroyStaticMesh(static_mesh);
 
 		m_device->submitDeletion([ vertex_block = m_staticMeshVertexBufferBlock, index_block = m_staticMeshIndexBufferBlock]() mutable noexcept -> void
 		{
@@ -68,16 +41,21 @@ namespace toaster::gpu
 		});
 
 		// Already deferred
-		m_device->destroyBuffer(m_staticMeshIndexBuffer);
-		m_device->destroyBuffer(m_staticMeshVertexBuffer);
+		m_device->releaseBuffer(m_staticMeshIndexBuffer);
+		m_device->releaseBuffer(m_staticMeshVertexBuffer);
+
+		m_device->flushDeletionQueue();  // The previous calls to release static mesh will reference this
 	}
 
 	auto MeshManager::createStaticMesh(CommandList &                   p_cmd, const std::vector<StaticMeshVertex> &    p_vertices, const std::vector<uint32> &p_indices,
-									   const std::vector<SubmeshData> &p_submeshes, const std::vector<SharedMaterial> &p_materials) -> StaticMeshHandle
+									   const std::vector<SubmeshData> &p_submeshes, const std::vector<MaterialHandle> &p_materials) -> StaticMeshHandle
 	{
 		StaticMeshData out_data{};
 		out_data.submeshes = p_submeshes;
 		out_data.materials = p_materials;
+
+		for (const auto mat : out_data.materials)
+			m_materialManager->acquireMaterial(mat); // Increment the material's ref count
 
 		const uint64 vertex_buffer_size{p_vertices.size() * sizeof(StaticMeshVertex)};
 		const uint64 index_buffer_size{p_indices.size() * sizeof(uint32)};
@@ -100,15 +78,26 @@ namespace toaster::gpu
 		p_cmd.copyBuffer(staging_buffer, m_staticMeshVertexBuffer, vertex_buffer_size, 0u, out_data.vertexBufferOffset);
 		p_cmd.copyBuffer(staging_buffer, m_staticMeshIndexBuffer, index_buffer_size, vertex_buffer_size, out_data.indexBufferOffset);
 
-		m_device->destroyBuffer(staging_buffer);
+		m_device->releaseBuffer(staging_buffer);
 
-		return m_staticMeshPool.create(out_data);
+		StaticMeshHandle out_handle{m_staticMeshPool.create(out_data)};
+		m_staticMeshPool.incRef(out_handle); // Initial ref count must be 1
+		return out_handle;
 	}
 
-	auto MeshManager::_destroyStaticMeshData(const StaticMeshData &p_static_mesh_data, VmaVirtualBlock p_vertex_buffer_block,
-											 VmaVirtualBlock       p_index_buffer_block) -> void
+	auto MeshManager::_destroyStaticMesh(StaticMeshData *p_data) -> void
 	{
-		vmaVirtualFree(p_vertex_buffer_block, p_static_mesh_data.vertexBufferAllocation);
-		vmaVirtualFree(p_index_buffer_block, p_static_mesh_data.indexBufferAllocation);
+		if (!p_data)
+			return;
+
+		for (const auto mat : p_data->materials)
+			m_materialManager->releaseMaterial(mat); // Decrement or destroy the material's ref count
+
+		// I have to copy the data because the data pointer is only (technically) valid for the scope of the deletion.
+		m_device->submitDeletion([this, data = *p_data]() mutable noexcept -> void
+		{
+			vmaVirtualFree(m_staticMeshVertexBufferBlock, data.vertexBufferAllocation);
+			vmaVirtualFree(m_staticMeshIndexBufferBlock, data.indexBufferAllocation);
+		});
 	}
 }

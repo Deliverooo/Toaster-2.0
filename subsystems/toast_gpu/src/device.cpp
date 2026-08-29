@@ -91,134 +91,28 @@ namespace toaster::gpu
 		m_samplerHeap  = makeUnique<SamplerDescriptorHeap>(*m_device, *m_physicalDevice, *m_allocator, p_desc.maxSamplerDescriptors);
 
 		m_deletionQueue = makeUnique<DeletionQueue>(p_desc.numDeletionQueues);
-
-		m_bufferPool.setUserData(this);
-		m_bufferPool.setDestroyCallback(+[](void *p_user_data, BufferHandle p_handle) -> void
-		{
-			auto       ts{static_cast<Device *>(p_user_data)};
-			BufferData buffer_data{ts->m_bufferPool._data[p_handle.id]};
-
-			ts->submitDeletion([allocator = ts->m_allocator->getAllocator(), buffer_data]() mutable noexcept -> void
-			{
-				TST_ASSERT(buffer_data.buffer && buffer_data.allocation);
-				vmaDestroyBuffer(allocator, buffer_data.buffer, buffer_data.allocation);
-			});
-		});
-
-		m_texturePool.setUserData(this);
-		m_texturePool.setDestroyCallback(+[](void *p_user_data, TextureHandle p_handle) -> void
-		{
-			auto ts{static_cast<Device *>(p_user_data)};
-
-			TextureData texture_data{ts->m_texturePool._data[p_handle.id]};
-
-			ts->submitDeletion([ts, texture_data]() mutable noexcept -> void
-			{
-				if (texture_data.imageView)
-					ts->m_device->getDevice().destroyImageView(texture_data.imageView);
-				if (texture_data.image && texture_data.allocation)
-					vmaDestroyImage(ts->m_allocator->getAllocator(), texture_data.image, texture_data.allocation);
-
-				if (texture_data.shaderReadHeapID != invalidImageDescriptorSlot)
-					ts->m_resourceHeap->freeImageSlot(texture_data.shaderReadHeapID);
-				if (texture_data.storageHeapID != invalidImageDescriptorSlot)
-					ts->m_resourceHeap->freeImageSlot(texture_data.storageHeapID);
-			});
-		});
-
-		m_samplerPool.setUserData(this);
-		m_samplerPool.setDestroyCallback(+[](void *p_user_data, SamplerHandle p_handle) -> void
-		{
-			auto        ts{static_cast<Device *>(p_user_data)};
-			SamplerData sampler_data{ts->m_samplerPool._data[p_handle.id]};
-
-			ts->submitDeletion([ts, sampler_data]() mutable noexcept -> void
-			{
-				ts->m_samplerHeap->freeSamplerSlot(sampler_data.heapID);
-			});
-		});
-
-		m_shaderPool.setUserData(this);
-		m_shaderPool.setDestroyCallback(+[](void *p_user_data, ShaderHandle p_handle) -> void
-		{
-			auto       ts{static_cast<Device *>(p_user_data)};
-			ShaderData shader_data{ts->m_shaderPool._data[p_handle.id]};
-
-			ts->submitDeletion([ts, shader_data]() mutable noexcept -> void
-			{
-				if (shader_data.shader)
-					ts->m_device->getDevice().destroyShaderEXT(shader_data.shader, nullptr, FunctionDispatcher::get());
-			});
-		});
 	}
 
 	Device::~Device()
 	{
-		// Delete all remaining shaders
-		for (uint32 i{0u}; i < m_shaderPool.getSize(); ++i)
-		{
-			if (m_shaderPool._alive[i])
-			{
-				ShaderData shader_data{m_shaderPool._data[i]};
+		 // I don't think I should be responsible for cleaning up your poor lifetime management...
 
-				m_deletionQueue->submit([this, shader_data]() mutable noexcept -> void
-				{
-					if (shader_data.shader)
-						m_device->getDevice().destroyShaderEXT(shader_data.shader, nullptr, FunctionDispatcher::get());
-				});
-			}
-		}
+		// // Delete all remaining shaders
+		// for (auto shader : m_shaderPool.getAlive())
+		// 	_destroyShader(shader);
+		//
+		// // Delete all remaining samplers
+		// for (auto sampler : m_samplerPool.getAlive())
+		// 	_destroySampler(sampler);
+		//
+		// // Delete all remaining textures
+		// for (auto texture : m_texturePool.getAlive())
+		// 	_destroyTexture(texture);
+		//
+		// // Delete all remaining buffers
+		// for (auto buffer : m_bufferPool.getAlive())
+		// 	_destroyBuffer(buffer);
 
-		// Delete all remaining samplers
-		for (uint32 i{0u}; i < m_samplerPool.getSize(); ++i)
-		{
-			if (m_samplerPool._alive[i])
-			{
-				SamplerData sampler_data{m_samplerPool._data[i]};
-
-				m_deletionQueue->submit([this, sampler_data]() mutable noexcept -> void
-				{
-					m_samplerHeap->freeSamplerSlot(sampler_data.heapID);
-				});
-			}
-		}
-
-		// Delete all remaining textures
-		for (uint32 i{0u}; i < m_texturePool.getSize(); ++i)
-		{
-			if (m_texturePool._alive[i])
-			{
-				TextureData texture_data{m_texturePool._data[i]};
-
-				m_deletionQueue->submit([this, texture_data]() mutable noexcept -> void
-				{
-					if (texture_data.imageView)
-						m_device->getDevice().destroyImageView(texture_data.imageView);
-					if (texture_data.image && texture_data.allocation)
-						vmaDestroyImage(m_allocator->getAllocator(), texture_data.image, texture_data.allocation);
-
-					if (texture_data.shaderReadHeapID != invalidImageDescriptorSlot)
-						m_resourceHeap->freeImageSlot(texture_data.shaderReadHeapID);
-					if (texture_data.storageHeapID != invalidImageDescriptorSlot)
-						m_resourceHeap->freeImageSlot(texture_data.storageHeapID);
-				});
-			}
-		}
-
-		// Delete all remaining buffers
-		for (uint32 i{0u}; i < m_bufferPool.getSize(); ++i)
-		{
-			if (m_bufferPool._alive[i])
-			{
-				BufferData buffer_data{m_bufferPool._data[i]}; // Copy
-				TST_PERMA_ASSERT(buffer_data.buffer && buffer_data.allocation);
-				m_deletionQueue->submit([this, buffer_data]() mutable noexcept -> void // The allocator must be destroyed after the deletion queue is executed
-				{
-					if (buffer_data.buffer && buffer_data.allocation)
-						vmaDestroyBuffer(m_allocator->getAllocator(), buffer_data.buffer, buffer_data.allocation);
-				});
-			}
-		}
 
 		m_deletionQueue->executeAll();
 		m_deletionQueue.reset();
@@ -272,9 +166,11 @@ namespace toaster::gpu
 			TST_PERMA_ASSERT_MSG(false, "What is dis?");
 
 		if (p_desc.usageFlags & vk::BufferUsageFlagBits::eShaderDeviceAddress)
-			buffer_data.address = getBufferAddress(buffer_data.buffer);
+			buffer_data.address = m_device->getDevice().getBufferAddress(buffer_data.buffer);
 
-		return m_bufferPool.create(buffer_data);
+		BufferHandle out_handle{m_bufferPool.create(buffer_data)};
+		m_bufferPool.incRef(out_handle); // Initial ref count must be 1
+		return out_handle;
 	}
 
 	auto Device::uploadBufferData(BufferHandle p_handle, const void *p_data, uint64 p_size, uint64 p_offset) -> void
@@ -351,7 +247,9 @@ namespace toaster::gpu
 			m_resourceHeap->setImage(texture_data.storageHeapID, image_view_create_info, vk::ImageLayout::eGeneral, vk::DescriptorType::eStorageImage);
 		}
 
-		return m_texturePool.create(texture_data);
+		TextureHandle out_handle{m_texturePool.create(texture_data)};
+		m_texturePool.incRef(out_handle); // Initial ref count must be 1
+		return out_handle;
 	}
 
 	auto Device::getTextureShaderReadHeapSlot(TextureHandle p_handle) const -> uint32
@@ -406,7 +304,9 @@ namespace toaster::gpu
 		sampler_data.heapID = m_samplerHeap->allocSamplerSlot();
 		m_samplerHeap->setSampler(sampler_data.heapID, sampler_create_info);
 
-		return m_samplerPool.create(sampler_data);
+		SamplerHandle out_handle{m_samplerPool.create(sampler_data)};
+		m_samplerPool.incRef(out_handle); // Initial ref count must be 1
+		return out_handle;
 	}
 
 	auto Device::createShader(const ShaderDesc &p_desc) -> ShaderHandle
@@ -427,7 +327,9 @@ namespace toaster::gpu
 		shader_data.shader = m_device->getDevice().createShaderEXT(shader_create_info, nullptr, FunctionDispatcher::get()).value;
 		TST_ASSERT(shader_data.shader);
 
-		return m_shaderPool.create(shader_data);
+		ShaderHandle out_handle{m_shaderPool.create(shader_data)};
+		m_shaderPool.incRef(out_handle); // Initial ref count must be 1
+		return out_handle;
 	}
 
 	auto Device::createCommandList() -> CommandList
@@ -453,7 +355,7 @@ namespace toaster::gpu
 
 		std::vector<CommandList> out_lists;
 		for (const auto cmd: command_buffers)
-			out_lists.emplace_back(CommandList{*this, cmd});
+			out_lists.emplace_back(*this, cmd);
 		return out_lists;
 	}
 
@@ -462,8 +364,8 @@ namespace toaster::gpu
 									 const InitialiserList<const vk::SemaphoreSubmitInfo> &p_signal_semaphores, vk::Fence p_signal_fence) const -> void
 	{
 		std::vector<vk::CommandBufferSubmitInfo> command_buffer_infos;
-		for (const auto cmd: p_command_lists)
-			command_buffer_infos.emplace_back(vk::CommandBufferSubmitInfo{cmd.getCommandBuffer()});
+		for (const auto& cmd: p_command_lists)
+			command_buffer_infos.emplace_back(cmd.getCommandBuffer());
 
 		vk::SubmitInfo2 submit_info{};
 		submit_info.setCommandBufferInfos(command_buffer_infos);
@@ -492,6 +394,64 @@ namespace toaster::gpu
 		semaphore_wait_info.setValues(p_target_values);
 		if (m_device->getDevice().waitSemaphores(semaphore_wait_info, INFINITE) != vk::Result::eSuccess)
 			TST_PERMA_ASSERT_MSG(false, "Failed to wait for timeline semaphores");
+	}
+
+	auto Device::_destroyBuffer(BufferData *p_data) -> void
+	{
+		if (!p_data)
+			return;
+
+		// I have to copy the data because the data pointer is only (technically) valid for the scope of the deletion.
+		submitDeletion([this, data = *p_data]() mutable noexcept -> void
+		{
+			TST_ASSERT(data.buffer && data.allocation);
+			vmaDestroyBuffer(m_allocator->getAllocator(), data.buffer, data.allocation);
+		});
+	}
+
+	auto Device::_destroyTexture(TextureData *p_data) -> void
+	{
+		if (!p_data)
+			return;
+
+		// I have to copy the data because the data pointer is only (technically) valid for the scope of the deletion.
+		submitDeletion([this, data = *p_data]() mutable noexcept -> void
+		{
+			if (data.imageView)
+				m_device->getDevice().destroyImageView(data.imageView);
+			if (data.image && data.allocation)
+				vmaDestroyImage(m_allocator->getAllocator(), data.image, data.allocation);
+
+			if (data.shaderReadHeapID != invalidImageDescriptorSlot)
+				m_resourceHeap->freeImageSlot(data.shaderReadHeapID);
+			if (data.storageHeapID != invalidImageDescriptorSlot)
+				m_resourceHeap->freeImageSlot(data.storageHeapID);
+		});
+	}
+
+	auto Device::_destroySampler(SamplerData *p_data) -> void
+	{
+		if (!p_data)
+			return;
+
+		// I have to copy the data because the data pointer is only (technically) valid for the scope of the deletion.
+		submitDeletion([this, data = *p_data]() mutable noexcept -> void
+		{
+			m_samplerHeap->freeSamplerSlot(data.heapID);
+		});
+	}
+
+	auto Device::_destroyShader(ShaderData *p_data) -> void
+	{
+		if (!p_data)
+			return;
+
+		// I have to copy the data because the data pointer is only (technically) valid for the scope of the deletion.
+		submitDeletion([this, data = *p_data]() mutable noexcept -> void
+		{
+			if (data.shader)
+				m_device->getDevice().destroyShaderEXT(data.shader, nullptr, FunctionDispatcher::get());
+		});
 	}
 
 	auto Device::getVulkanShaderStages(ShaderStageFlags p_stages) -> vk::ShaderStageFlags

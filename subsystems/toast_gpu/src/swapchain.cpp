@@ -20,10 +20,10 @@ namespace toaster::gpu
 	{
 		auto &device{m_device->getDevice()};
 
-		m_device->destroyTexture(m_depthTexture);
+		m_device->releaseTexture(m_depthTexture);
 
 		for (auto &tex: m_colourTextures)
-			m_device->destroyTexture(tex);
+			m_device->releaseTexture(tex);
 
 		for (auto &semaphore: m_renderFinishedSemaphores)
 			device.getDevice().destroySemaphore(semaphore);
@@ -153,11 +153,11 @@ namespace toaster::gpu
 	auto Swapchain::_create(uint32 p_width, uint32 p_height) -> void
 	{
 		for (auto &tex: m_colourTextures)
-			m_device->destroyTexture(tex);
+			m_device->releaseTexture(tex);
 		m_colourTextures.clear();
 
 		if (m_device->isTextureValid(m_depthTexture))
-			m_device->destroyTexture(m_depthTexture);
+			m_device->releaseTexture(m_depthTexture);
 
 		m_swapchainExtent = m_device->getPhysicalDevice().chooseSwapchainExtent(m_windowSurface, p_width, p_height);
 

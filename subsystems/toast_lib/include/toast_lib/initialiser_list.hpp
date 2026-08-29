@@ -34,7 +34,7 @@ namespace toaster
 		{
 		}
 
-		constexpr InitialiserList(const std::initializer_list<Type> &p_initialiser_list) noexcept : m_ptr(p_initialiser_list.data()), m_count(p_initialiser_list.size())
+		constexpr InitialiserList(const std::initializer_list<Type> &p_initialiser_list) noexcept : m_ptr(p_initialiser_list.begin()), m_count(p_initialiser_list.size())
 		{
 		}
 

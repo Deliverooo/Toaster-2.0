@@ -17,48 +17,23 @@ namespace toaster::gpu
 
 		for (auto &buffer: m_materialBuffers)
 			buffer = m_device->createBuffer(material_buffer_desc);
-
-		m_pool.setUserData(this);
-		m_pool.setDestroyCallback(+[](void *p_user_data, MaterialHandle p_handle) -> void
-		{
-			auto ts{static_cast<MaterialManager *>(p_user_data)};
-
-			MaterialData *material_data{&ts->m_pool._data[p_handle.id]};
-			material_data->data.clear();         // We don't need to defer this
-			material_data->textureRefs.fill({}); // Texture destruction is already queued
-
-			ts->m_device->submitDeletion([data = *material_data, virtual_block = ts->m_virtualBlock]() mutable noexcept -> void // Copy
-			{
-				_destroyMaterialData(data, virtual_block);
-			});
-		});
 	}
 
 	MaterialManager::~MaterialManager()
 	{
 		for (auto &buffer: m_materialBuffers)
-			m_device->destroyBuffer(buffer);
+			m_device->releaseBuffer(buffer);
 
-		// For safety...
-		for (uint32 i{0u}; i < m_pool.getSize(); ++i)
-		{
-			if (m_pool._alive[i])
-			{
-				MaterialData *material_data{&m_pool._data[i]};
-				material_data->data.clear();         // We don't need to defer this
-				material_data->textureRefs.fill({}); // Texture destruction is already queued
-
-				m_device->submitDeletion([data = *material_data, virtual_block = m_virtualBlock]() mutable noexcept -> void // Copy
-				{
-					_destroyMaterialData(data, virtual_block);
-				});
-			}
-		}
+		// // Delete all remaining materials
+		// for (auto material : m_materialPool.getAlive())
+		// 	_destroyMaterial(material);
 
 		m_device->submitDeletion([virtual_block = m_virtualBlock] mutable noexcept -> void
 		{
 			vmaDestroyVirtualBlock(virtual_block);
 		});
+
+		m_device->flushDeletionQueue(); // The previous calls to release material will reference this
 	}
 
 	auto MaterialManager::createMaterial(uint32 p_size_bytes) -> MaterialHandle
@@ -76,37 +51,37 @@ namespace toaster::gpu
 		out_data.allocationSize = p_size_bytes;
 		out_data.framesDirty    = 3u;
 
-		return m_pool.create(out_data);
+		MaterialHandle out_handle{m_materialPool.create(out_data)};
+		m_materialPool.incRef(out_handle); // Initial ref count must be 1
+		return out_handle;
 	}
 
-	auto MaterialManager::createSharedMaterial(uint32 p_size_bytes) -> SharedMaterial
-	{
-		return SharedMaterial{createMaterial(p_size_bytes), &m_pool};
-	}
 
 	auto MaterialManager::getMaterialDeviceAddress(MaterialHandle p_handle, uint32 p_frame_index) const -> vk::DeviceAddress
 	{
-		const MaterialData *data{getData(p_handle)};
-		TST_PERMA_ASSERT(data);
+		const MaterialData *data{getMaterialData(p_handle)};
+		TST_ASSERT(data);
 
 		vk::DeviceAddress base_address{m_device->getBufferData(m_materialBuffers[p_frame_index])->address};
 		return base_address + data->allocationOffset;
 	}
 
-	auto MaterialManager::setTextureRef(MaterialHandle p_handle, uint32 p_index, const SharedTexture &p_texture) -> void
+	auto MaterialManager::setTextureRef(MaterialHandle p_handle, uint32 p_index, TextureHandle p_texture) -> void
 	{
-		MaterialData *data{getData(p_handle)};
-		TST_PERMA_ASSERT(data);
+		MaterialData *data{getMaterialData(p_handle)};
+		TST_ASSERT(data);
+
+		m_device->acquireTexture(p_texture);
 		data->textureRefs[p_index] = p_texture;
 	}
 
 	auto MaterialManager::update(uint32 p_frame_index) -> void
 	{
-		for (uint32 i{0u}; i < m_pool.getSize(); ++i)
+		for (uint32 i{0u}; i < m_materialPool.getSize(); ++i)
 		{
-			auto &data{m_pool._data[i]};
+			auto &data{m_materialPool._data[i]};
 
-			if (m_pool._alive[i] && data.framesDirty > 0)
+			if (m_materialPool._alive[i] && data.framesDirty > 0)
 			{
 				--data.framesDirty;
 				m_device->uploadBufferData(m_materialBuffers[p_frame_index], data.data.data(), data.allocationSize, data.allocationOffset);
@@ -114,9 +89,25 @@ namespace toaster::gpu
 		}
 	}
 
-	auto MaterialManager::_destroyMaterialData(const MaterialData &p_material_data, VmaVirtualBlock p_virtual_block) -> void
+	auto MaterialManager::_destroyMaterial(MaterialData *p_data) -> void
 	{
-		if (p_material_data.virtualAllocation)
-			vmaVirtualFree(p_virtual_block, p_material_data.virtualAllocation);
+		if (!p_data)
+			return;
+
+		p_data->data.clear();         // We don't need to defer this
+
+		for (const auto tex: p_data->textureRefs)
+		{
+			if (m_device->isTextureValid(tex))
+				m_device->releaseTexture(tex);
+		}
+
+		// I have to copy the data because the data pointer is only (technically) valid for the scope of the deletion.
+		m_device->submitDeletion([this, data = *p_data]() mutable noexcept -> void
+		{
+			if (data.virtualAllocation)
+				vmaVirtualFree(m_virtualBlock, data.virtualAllocation);
+		});
+
 	}
 }
