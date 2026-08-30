@@ -138,6 +138,14 @@ namespace toaster::gpu
 
 		auto bindShaders(const InitialiserList<const ShaderHandle> &p_shaders) -> void;
 
+		auto pushData(const void* p_data, uint32 p_size, uint32 p_offset = 0u) -> void;
+
+		template<typename Type>
+		auto pushData(const Type &p_data, uint32 p_offset = 0u) -> void
+		{
+			pushData(&p_data, sizeof(Type), p_offset);
+		}
+
 		auto copyBuffer(BufferHandle p_src_buffer, BufferHandle p_dst_buffer, uint64 p_size, uint64 p_src_offset = 0u, uint64 p_dst_offset = 0u) -> void;
 		auto copyBufferToTexture(BufferHandle p_src_buffer, TextureHandle p_dst_texture) -> void;
 

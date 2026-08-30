@@ -113,9 +113,5 @@ if (TOASTER_INSTALL)
 			DESTINATION lib/cmake/Toaster
 	)
 endif ()
-#install(DIRECTORY
-#		"${CMAKE_CURRENT_SOURCE_DIR}/resources/"
-#		DESTINATION "resources"
-#)
 
 add_subdirectory(test)

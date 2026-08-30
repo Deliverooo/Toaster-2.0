@@ -59,6 +59,7 @@ namespace toaster::gpu
 		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.shaderInt64                              = true;
 		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.vertexPipelineStoresAndAtomics           = true;
 		feature_chain.get<vk::PhysicalDeviceFeatures2>().features.multiDrawIndirect                        = true;
+		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().scalarBlockLayout                          = true;
 		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().timelineSemaphore                          = true;
 		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().bufferDeviceAddress                        = true;
 		feature_chain.get<vk::PhysicalDeviceVulkan12Features>().runtimeDescriptorArray                     = true;

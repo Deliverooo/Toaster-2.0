@@ -15,14 +15,13 @@ namespace toaster::gpu
 	{
 		static constexpr uint32 maxTextureRefs{4u};
 
-		// TODO: Render state / pipeline thing...
 		std::vector<uint8> data;
 
 		std::array<TextureHandle, maxTextureRefs> textureRefs;
 
 		VmaVirtualAllocation virtualAllocation{nullptr};
-		vk::DeviceSize       allocationOffset{0u};
-		vk::DeviceSize       allocationSize{0u};
+		uint64       allocationOffset{0u};
+		uint64       allocationSize{0u};
 
 		uint32 framesDirty{0u};
 

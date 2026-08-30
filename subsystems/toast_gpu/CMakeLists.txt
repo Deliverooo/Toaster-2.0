@@ -11,9 +11,7 @@ set(GPU_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/material_manager.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/swapchain.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/shader_manager.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/mesh_manager.cpp
 )
-
 
 if (TOASTER_BUILD_SHARED_LIBS)
 	add_library(ToastGPU SHARED)

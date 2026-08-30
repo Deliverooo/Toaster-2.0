@@ -1,7 +1,6 @@
 set(RENDER_SRC
-		${CMAKE_CURRENT_SOURCE_DIR}/src/render_context.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.cpp
 )
-
 
 if (TOASTER_BUILD_SHARED_LIBS)
 	add_library(ToastRender SHARED)
@@ -13,7 +12,7 @@ target_include_directories(ToastRender PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_
 		$<INSTALL_INTERFACE:include>)
 
 target_sources(ToastRender PRIVATE ${RENDER_SRC})
-target_link_libraries(ToastRender PUBLIC Toaster::ToastGPU)
+target_link_libraries(ToastRender PUBLIC Toaster::ToastGPU stb)
 
 target_include_directories(ToastRender PUBLIC "$ENV{VULKAN_SDK}/Include")
 

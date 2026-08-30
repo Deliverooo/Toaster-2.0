@@ -23,3 +23,12 @@ namespace toaster
 #define TST_DECLARE_HANDLE(__tag) \
 	struct __tag##Tag;\
 	using __tag##Handle = ::toaster::Handle<__tag##Tag>
+
+template<typename Tag>
+struct std::hash<toaster::Handle<Tag>>
+{
+	auto operator()(const toaster::Handle<Tag>& p_handle) const noexcept -> std::size_t
+	{
+		return hash<uint32>{}(p_handle.id);
+	}
+};

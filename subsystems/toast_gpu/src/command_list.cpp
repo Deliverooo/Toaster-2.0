@@ -281,6 +281,17 @@ namespace toaster::gpu
 		m_cmd.bindShadersEXT(stages, shaders, FunctionDispatcher::get());
 	}
 
+	auto CommandList::pushData(const void *p_data, uint32 p_size, uint32 p_offset) -> void
+	{
+		[[unlikely]]TST_ASSERT(m_cmd);
+
+		vk::PushDataInfoEXT push_data_info{};
+		push_data_info.data.address	= p_data;
+		push_data_info.data.size	= static_cast<uint64>(p_size);
+		push_data_info.offset		= p_offset;
+		m_cmd.pushDataEXT(push_data_info, FunctionDispatcher::get());
+	}
+
 	auto CommandList::copyBuffer(BufferHandle p_src_buffer, BufferHandle p_dst_buffer, uint64 p_size, uint64 p_src_offset, uint64 p_dst_offset) -> void
 	{
 		[[unlikely]]TST_ASSERT(m_cmd);
