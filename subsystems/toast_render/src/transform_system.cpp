@@ -19,8 +19,6 @@ namespace toaster::rd
 	TransformSystem::~TransformSystem()
 	{
 		m_transformSSBOs.clear();
-		// for (auto &ssbo: m_transformSSBOs)
-			// m_device->releaseBuffer(ssbo);
 	}
 
 	auto TransformSystem::createTransform() -> uint32
@@ -38,7 +36,7 @@ namespace toaster::rd
 	{
 		TST_ASSERT(p_transform_id < m_maxTransforms);
 		// More efficient
-		gpu::BufferData *buffer_data{m_device->getBufferData(m_transformSSBOs[p_frame_index].get())};
+		gpu::BufferData *buffer_data{m_transformSSBOs[p_frame_index].operator->()};
 		XMFLOAT4X4 *     mapped{static_cast<XMFLOAT4X4 *>(reinterpret_cast<void *>(reinterpret_cast<uint64>(buffer_data->mapped) + p_transform_id * sizeof(XMFLOAT4X4)))};
 		XMStoreFloat4x4(mapped, p_transform);
 	}

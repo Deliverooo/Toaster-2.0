@@ -2,153 +2,16 @@
 
 #include "allocator.hpp"
 #include "deletion_queue.hpp"
-#include "descriptor_heap.hpp"
 
-#include "toast_lib/pool.hpp"
 #include "gpu_enums.hpp"
+
+#include "buffer.hpp"
+#include "texture.hpp"
+#include "sampler.hpp"
+#include "shader.hpp"
 
 namespace toaster::gpu
 {
-	class Device;
-
-	#pragma region buffer
-	struct TST_GPU_API BufferData
-	{
-		vk::Buffer        buffer{nullptr};
-		VmaAllocation     allocation{nullptr};
-		vk::DeviceSize    size{0u};
-		vk::DeviceAddress address{0u};
-
-		void *mapped{nullptr}; // nullptr if the buffer is not host visible / coherent
-
-		vk::BufferUsageFlags usageFlags{};
-		EMemoryProperties    memoryProperties{EMemoryProperties::eDeviceLocal};
-	};
-
-	TST_DECLARE_HANDLE(Buffer);
-
-	struct TST_GPU_API BufferDesc
-	{
-		static BufferDesc staging(vk::DeviceSize p_size)
-		{
-			return BufferDesc{p_size, vk::BufferUsageFlagBits::eTransferSrc, EMemoryProperties::eHostVisibleCoherent};
-		}
-
-		vk::DeviceSize       size{0u};
-		vk::BufferUsageFlags usageFlags{};
-		EMemoryProperties    memoryProperties{EMemoryProperties::eDeviceLocal};
-	};
-	#pragma endregion
-
-	#pragma region texture
-	struct TST_GPU_API TextureData
-	{
-		vk::Extent3D extent;
-
-		vk::Image     image{nullptr};
-		vk::ImageView imageView{nullptr}; // Completely optional unless you are creating a render target
-		VmaAllocation allocation{nullptr};
-
-		vk::ImageUsageFlags usageFlags{};
-		uint32              layerCount{1u};
-		uint32              mipLevels{1u};
-
-		vk::Format      format{vk::Format::eUndefined};
-		vk::ImageLayout layout{vk::ImageLayout::eUndefined};
-		vk::ImageType   type{vk::ImageType::e2D};
-
-		DescriptorSlot shaderReadHeapID{invalidImageDescriptorSlot};
-		DescriptorSlot storageHeapID{invalidImageDescriptorSlot};
-	};
-
-	TST_DECLARE_HANDLE(Texture);
-
-	struct TST_GPU_API TextureDesc
-	{
-		vk::Extent3D extent;
-
-		vk::Image existingImage{nullptr}; // Use for swapchain images
-
-		vk::ImageUsageFlags usageFlags{}; // Determines if the device should create image views for render attachments
-		uint32              layerCount{1u};
-		uint32              mipLevels{1u};
-
-		vk::Format    format{vk::Format::eUndefined};
-		vk::ImageType type{vk::ImageType::e2D};
-
-		bool createDescriptors{false}; // Creates the heap id's depending on the image's usage flags
-	};
-	#pragma endregion
-
-	#pragma region sampler
-	enum class EFilter : uint8
-	{
-		eNearest, eLinear
-	};
-
-	enum class ESamplerMipmapMode : uint8
-	{
-		eNearest, eLinear
-	};
-
-	enum class ESamplerAddressMode :uint8
-	{
-		eRepeat,
-		eMirroredRepeat,
-		eClampToEdge,
-		eClampToBorder
-	};
-
-	struct TST_GPU_API SamplerData
-	{
-		EFilter             minFilter{EFilter::eLinear};
-		EFilter             magFilter{EFilter::eLinear};
-		ESamplerMipmapMode  mipmapMode{ESamplerMipmapMode::eLinear};
-		ESamplerAddressMode addressModeU{ESamplerAddressMode::eRepeat};
-		ESamplerAddressMode addressModeV{ESamplerAddressMode::eRepeat};
-		ESamplerAddressMode addressModeW{ESamplerAddressMode::eRepeat};
-
-		DescriptorSlot heapID{invalidSamplerDescriptorSlot};
-	};
-
-	TST_DECLARE_HANDLE(Sampler);
-
-	struct TST_GPU_API SamplerDesc
-	{
-		EFilter             minFilter{EFilter::eLinear};
-		EFilter             magFilter{EFilter::eLinear};
-		ESamplerMipmapMode  mipmapMode{ESamplerMipmapMode::eLinear};
-		ESamplerAddressMode addressModeU{ESamplerAddressMode::eRepeat};
-		ESamplerAddressMode addressModeV{ESamplerAddressMode::eRepeat};
-		ESamplerAddressMode addressModeW{ESamplerAddressMode::eRepeat};
-	};
-	#pragma endregion
-
-	#pragma region shader
-
-	static_assert(std::is_same_v<Flags<EShaderStageBits>::MaskType, uint8>);
-
-	struct TST_GPU_API ShaderData
-	{
-		vk::ShaderEXT shader{nullptr};
-
-		EShaderStageBits  stage{EShaderStageBits::eVertex};
-		EShaderStageFlags nextStage{0u}; // The set of valid stages that could be next
-	};
-
-	TST_DECLARE_HANDLE(Shader);
-
-	struct TST_GPU_API ShaderDesc
-	{
-		const void *code{nullptr};
-		uint64      codeSize{0u};
-
-		EShaderStageBits  stage{EShaderStageBits::eVertex};
-		EShaderStageFlags nextStage{0u}; // The set of valid stages that could be next
-	};
-
-	#pragma endregion
-
 	struct TST_GPU_API DeviceDesc
 	{
 		bool  enableDebugInfo{true}; // Translates directly to whether validation layers are enabled.
@@ -219,71 +82,24 @@ namespace toaster::gpu
 
 		#pragma endregion
 
-		auto acquire(BufferHandle p_handle) -> void { _acquireBuffer(p_handle); }
-		auto release(BufferHandle p_handle) -> void { _releaseBuffer(p_handle); }
-		auto isValid(BufferHandle p_handle) const -> bool { return _isBufferValid(p_handle); }
-		auto getData(BufferHandle p_handle) const -> const BufferData * { return getBufferData(p_handle); }
-		auto getData(BufferHandle p_handle) -> BufferData * { return getBufferData(p_handle); }
+		#define TST_REGISTER_RESOURCE_GETTERS(__tag, __tag2) auto get##__tag##Data(__tag##Handle p_handle) -> __tag##Data* { return m_##__tag2##Manager.getData(p_handle); }\
+		auto get##__tag##Data(__tag##Handle p_handle) const -> const __tag##Data* { return m_##__tag2##Manager.getData(p_handle); }
 
-		auto acquire(TextureHandle p_handle) -> void { _acquireTexture(p_handle); }
-		auto release(TextureHandle p_handle) -> void { _releaseTexture(p_handle); }
-		auto isValid(TextureHandle p_handle) const -> bool { return _isTextureValid(p_handle); }
-		auto getData(TextureHandle p_handle) const -> const TextureData * { return getTextureData(p_handle); }
-		auto getData(TextureHandle p_handle) -> TextureData * { return getTextureData(p_handle); }
+		[[nodiscard]] auto createBuffer(const BufferDesc &p_desc) -> BufferRef;
+		TST_REGISTER_RESOURCE_GETTERS(Buffer, buffer)
 
-		auto acquire(SamplerHandle p_handle) -> void { _acquireSampler(p_handle); }
-		auto release(SamplerHandle p_handle) -> void { _releaseSampler(p_handle); }
-		auto isValid(SamplerHandle p_handle) const -> bool { return _isSamplerValid(p_handle); }
-		auto getData(SamplerHandle p_handle) const -> const SamplerData * { return getSamplerData(p_handle); }
-		auto getData(SamplerHandle p_handle) -> SamplerData * { return getSamplerData(p_handle); }
-
-		auto acquire(ShaderHandle p_handle) -> void { _acquireShader(p_handle); }
-		auto release(ShaderHandle p_handle) -> void { _releaseShader(p_handle); }
-		auto isValid(ShaderHandle p_handle) const -> bool { return _isShaderValid(p_handle); }
-		auto getData(ShaderHandle p_handle) const -> const ShaderData * { return getShaderData(p_handle); }
-		auto getData(ShaderHandle p_handle) -> ShaderData * { return getShaderData(p_handle); }
-
-		#pragma region buffers
-
-		[[nodiscard]] auto createBuffer(const BufferDesc &p_desc) -> Ref<Device, BufferHandle>;
-
-		auto getBufferData(BufferHandle p_handle) const -> const BufferData * { return m_bufferPool.getData(p_handle); }
-		auto getBufferData(BufferHandle p_handle) -> BufferData * { return m_bufferPool.getData(p_handle); }
 		auto uploadBufferData(BufferHandle p_handle, const void *p_data, uint64 p_size, uint64 p_offset = 0u) -> void; // Uploads data to a host-visible buffer
 
-		#pragma endregion
+		[[nodiscard]] auto createTexture(const TextureDesc &p_desc) -> TextureRef;
+		TST_REGISTER_RESOURCE_GETTERS(Texture, texture)
 
-		#pragma region textures
+		[[nodiscard]] auto createSampler(const SamplerDesc &p_desc) -> SamplerRef;
+		TST_REGISTER_RESOURCE_GETTERS(Sampler, sampler)
 
-		[[nodiscard]] auto createTexture(const TextureDesc &p_desc) -> Ref<Device, TextureHandle>;
+		[[nodiscard]] auto createShader(const ShaderDesc &p_desc) -> ShaderRef;
+		TST_REGISTER_RESOURCE_GETTERS(Shader, shader)
 
-		auto getTextureData(TextureHandle p_handle) const -> const TextureData * { return m_texturePool.getData(p_handle); }
-		auto getTextureData(TextureHandle p_handle) -> TextureData * { return m_texturePool.getData(p_handle); }
-
-		// This is actually different from TextureData::shaderReadHeapID.
-		// Because TextureData::shaderReadHeapID is relative to the start of the image descriptor block and not the resource heap as a whole
-		auto getTextureShaderReadHeapSlot(TextureHandle p_handle) const -> uint32;
-		auto getTextureStorageHeapSlot(TextureHandle p_handle) const -> uint32;
-
-		#pragma endregion
-
-		#pragma region samplers
-
-		[[nodiscard]] auto createSampler(const SamplerDesc &p_desc) -> Ref<Device, SamplerHandle>;
-
-		auto getSamplerData(SamplerHandle p_handle) const -> const SamplerData * { return m_samplerPool.getData(p_handle); }
-		auto getSamplerData(SamplerHandle p_handle) -> SamplerData * { return m_samplerPool.getData(p_handle); }
-
-		#pragma endregion
-
-		#pragma region shaders
-
-		[[nodiscard]] auto createShader(const ShaderDesc &p_desc) -> Ref<Device, ShaderHandle>;
-
-		auto getShaderData(ShaderHandle p_handle) const -> const ShaderData * { return m_shaderPool.getData(p_handle); }
-		auto getShaderData(ShaderHandle p_handle) -> ShaderData * { return m_shaderPool.getData(p_handle); }
-
-		#pragma endregion
+		#undef TST_REGISTER_RESOURCE_GETTERS
 
 		auto createCommandPool(EQueueType p_queue_type, ECommandPoolFlags p_pool_flags) -> CommandPool;
 
@@ -301,28 +117,13 @@ namespace toaster::gpu
 		auto _destroySampler(SamplerData *p_data) -> void;
 		auto _destroyShader(ShaderData *p_data) -> void;
 
-		auto _acquireBuffer(BufferHandle p_handle) -> void { m_bufferPool.incRef(p_handle); }
-		auto _releaseBuffer(BufferHandle p_handle) -> void { _destroyBuffer(m_bufferPool.decRef(p_handle)); }
-		auto _isBufferValid(BufferHandle p_handle) const -> bool { return m_bufferPool.isValid(p_handle); }
-
-		auto _acquireTexture(TextureHandle p_handle) -> void { m_texturePool.incRef(p_handle); }
-		auto _releaseTexture(TextureHandle p_handle) -> void { _destroyTexture(m_texturePool.decRef(p_handle)); }
-		auto _isTextureValid(TextureHandle p_handle) const -> bool { return m_texturePool.isValid(p_handle); }
-
-		auto _acquireSampler(SamplerHandle p_handle) -> void { m_samplerPool.incRef(p_handle); }
-		auto _releaseSampler(SamplerHandle p_handle) -> void { _destroySampler(m_samplerPool.decRef(p_handle)); }
-		auto _isSamplerValid(SamplerHandle p_handle) const -> bool { return m_samplerPool.isValid(p_handle); }
-
-		auto _acquireShader(ShaderHandle p_handle) -> void { m_shaderPool.incRef(p_handle); }
-		auto _releaseShader(ShaderHandle p_handle) -> void { _destroyShader(m_shaderPool.decRef(p_handle)); }
-		auto _isShaderValid(ShaderHandle p_handle) const -> bool { return m_shaderPool.isValid(p_handle); }
-
 		static auto getVulkanShaderStages(EShaderStageFlags p_stages) -> vk::ShaderStageFlags;
 
-		Pool<BufferTag, BufferData>   m_bufferPool;
-		Pool<TextureTag, TextureData> m_texturePool;
-		Pool<SamplerTag, SamplerData> m_samplerPool;
-		Pool<ShaderTag, ShaderData>   m_shaderPool;
+		ResourceManager<BufferTag, BufferData> m_bufferManager;
+
+		ResourceManager<TextureTag, TextureData> m_textureManager;
+		ResourceManager<SamplerTag, SamplerData> m_samplerManager;
+		ResourceManager<ShaderTag, ShaderData>   m_shaderManager;
 
 		UniquePtr<Instance>       m_instance{nullptr};
 		UniquePtr<PhysicalDevice> m_physicalDevice{nullptr};
@@ -336,9 +137,4 @@ namespace toaster::gpu
 
 		friend class CommandList;
 	};
-
-	using BufferRef  = Ref<Device, BufferHandle>;
-	using TextureRef = Ref<Device, TextureHandle>;
-	using SamplerRef = Ref<Device, SamplerHandle>;
-	using ShaderRef  = Ref<Device, ShaderHandle>;
 }

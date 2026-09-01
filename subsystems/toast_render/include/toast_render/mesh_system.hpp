@@ -44,6 +44,7 @@ namespace toaster::rd
 	};
 
 	TST_DECLARE_HANDLE(StaticMesh);
+	TST_DECLARE_REF(StaticMesh);
 
 	struct TST_RENDER_API MeshSystemDesc
 	{
@@ -66,13 +67,7 @@ namespace toaster::rd
 		MeshSystem &operator=(MeshSystem &&)      = delete;
 
 		[[nodiscard]] auto createStaticMesh(gpu::CommandList &              p_cmd, const std::vector<StaticMeshVertex> &p_vertices, const std::vector<uint32> &p_indices,
-											const std::vector<SubmeshData> &p_submeshes) -> Ref<MeshSystem, StaticMeshHandle>;
-
-		auto acquire(StaticMeshHandle p_handle) -> void { _acquireStaticMesh(p_handle); }
-		auto release(StaticMeshHandle p_handle) -> void { _releaseStaticMesh(p_handle); }
-		auto isValid(StaticMeshHandle p_handle) const -> bool { return _isStaticMeshValid(p_handle); }
-		auto getData(StaticMeshHandle p_handle) const -> const StaticMeshData * { return _getStaticMeshData(p_handle); }
-		auto getData(StaticMeshHandle p_handle) -> StaticMeshData * { return _getStaticMeshData(p_handle); }
+											const std::vector<SubmeshData> &p_submeshes) -> StaticMeshRef;
 
 		auto getStaticMeshGlobalVertexBuffer() const -> gpu::BufferHandle { return m_staticMeshVertexBuffer.get(); }
 		auto getStaticMeshGlobalIndexBuffer() const -> gpu::BufferHandle { return m_staticMeshIndexBuffer.get(); }
@@ -81,13 +76,7 @@ namespace toaster::rd
 		// All the required dependencies to destroy a static mesh. May be called after this class is destroyed due to the deletion queue
 		auto _destroyStaticMesh(StaticMeshData *p_data) -> void;
 
-		auto _acquireStaticMesh(StaticMeshHandle p_handle) -> void { m_staticMeshPool.incRef(p_handle); }
-		auto _releaseStaticMesh(StaticMeshHandle p_handle) -> void { _destroyStaticMesh(m_staticMeshPool.decRef(p_handle)); }
-		auto _isStaticMeshValid(StaticMeshHandle p_handle) const -> bool { return m_staticMeshPool.isValid(p_handle); }
-		auto _getStaticMeshData(StaticMeshHandle p_handle) const -> const StaticMeshData * { return m_staticMeshPool.getData(p_handle); }
-		auto _getStaticMeshData(StaticMeshHandle p_handle) -> StaticMeshData * { return m_staticMeshPool.getData(p_handle); }
-
-		Pool<StaticMeshTag, StaticMeshData> m_staticMeshPool;
+		ResourceManager<StaticMeshTag, StaticMeshData> m_staticMeshResourceManager;
 
 		gpu::BufferRef m_staticMeshVertexBuffer;
 		gpu::BufferRef m_staticMeshIndexBuffer;
@@ -95,6 +84,4 @@ namespace toaster::rd
 		VmaVirtualBlock m_staticMeshVertexBufferBlock{nullptr};
 		VmaVirtualBlock m_staticMeshIndexBufferBlock{nullptr};
 	};
-
-	using StaticMeshRef = Ref<MeshSystem, StaticMeshHandle>;
 }

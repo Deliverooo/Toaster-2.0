@@ -27,9 +27,9 @@ namespace toaster
 
 		auto reserve(uint32 p_reserved_size) -> void
 		{
-			_data.reserve(p_reserved_size);
+			m_data.reserve(p_reserved_size);
 			m_magic.reserve(p_reserved_size);
-			_alive.reserve(p_reserved_size);
+			m_alive.reserve(p_reserved_size);
 			m_refCounts.reserve(p_reserved_size);
 		}
 
@@ -43,23 +43,23 @@ namespace toaster
 				m_freeIndices.pop_back();
 
 				if constexpr (std::is_move_assignable_v<TData>)
-					_data[index] = TData{std::forward<TArgs>(p_args)...};
+					m_data[index] = TData{std::forward<TArgs>(p_args)...};
 				else
 				{
-					_data[index].~TData();
-					::new(std::addressof(_data[index])) TData{std::forward<TArgs>(p_args)...};
+					m_data[index].~TData();
+					::new(std::addressof(m_data[index])) TData{std::forward<TArgs>(p_args)...};
 				}
 			}
 			else
 			{
-				index = static_cast<uint32>(_data.size());
-				_data.emplace_back(std::forward<TArgs>(p_args)...);
-				_alive.emplace_back();
+				index = static_cast<uint32>(m_data.size());
+				m_data.emplace_back(std::forward<TArgs>(p_args)...);
+				m_alive.emplace_back();
 				m_magic.emplace_back(1u);
 				m_refCounts.emplace_back(0u);
 			}
 
-			_alive[index]      = true;
+			m_alive[index]     = true;
 			m_refCounts[index] = 0u;
 
 			return Handle<Tag>{index, m_magic[index]};
@@ -75,15 +75,15 @@ namespace toaster
 			}
 			else
 			{
-				index = static_cast<uint32>(_data.size());
-				_data.emplace_back();
-				_alive.emplace_back();
+				index = static_cast<uint32>(m_data.size());
+				m_data.emplace_back();
+				m_alive.emplace_back();
 				m_magic.emplace_back(1u);
 				m_refCounts.emplace_back(0u);
 			}
 
-			_alive[index]      = true;
-			_data[index]       = p_object;
+			m_alive[index]     = true;
+			m_data[index]      = p_object;
 			m_refCounts[index] = 0u;
 
 			return Handle<Tag>{index, m_magic[index]};
@@ -102,21 +102,21 @@ namespace toaster
 				TST_PERMA_ASSERT_MSG(false, "Your handle is not valid... :(");
 			#endif
 
-			_alive[p_handle.id] = false;
+			m_alive[p_handle.id] = false;
 			++m_magic[p_handle.id];
 			m_refCounts[p_handle.id] = 0u;
 
 			m_freeIndices.push_back(p_handle.id);
 
-			return &_data[p_handle.id];
+			return &m_data[p_handle.id];
 		}
 
 		auto isValid(Handle<Tag> p_handle) const -> bool
 		{
-			if (p_handle.id >= _data.size())
+			if (p_handle.id >= m_data.size())
 				return false;
 
-			return _alive[p_handle.id] && (m_magic[p_handle.id] == p_handle.magic);
+			return m_alive[p_handle.id] && (m_magic[p_handle.id] == p_handle.magic);
 		}
 
 		auto incRef(Handle<Tag> p_handle) -> void
@@ -150,7 +150,7 @@ namespace toaster
 			if (!isValid(p_handle))
 				return nullptr;
 			#endif
-			return std::addressof(_data[p_handle.id]);
+			return std::addressof(m_data[p_handle.id]);
 		}
 
 		auto getData(Handle<Tag> p_handle) const -> const TData *
@@ -159,52 +159,100 @@ namespace toaster
 			if (!isValid(p_handle))
 				return nullptr;
 			#endif
-			return std::addressof(_data[p_handle.id]);
+			return std::addressof(m_data[p_handle.id]);
 		}
 
-		auto getSize() const -> uint32 { return _data.size(); }
-		auto getCapacity() const -> uint32 { return _data.capacity(); }
+		auto getSize() const -> uint32 { return m_data.size(); }
+		auto getCapacity() const -> uint32 { return m_data.capacity(); }
 
-		auto getAlive() -> std::vector<TData *>
+		// Only use for explicit lookup from a specific index.
+		auto dataAt(uint32 p_index) -> TData & { return m_data[p_index]; }
+		auto isAliveAt(uint32 p_index) const -> bool { return m_alive[p_index]; }
+
+		template<typename TFunc>
+		auto forEachAlive(TFunc &&p_func) -> void
 		{
-			std::vector<TData *> alive;
-			for (uint32 i{0u}; i < _data.size(); ++i)
-			{
-				if (_alive[i])
-					alive.emplace_back(&_data[i]);
-			}
-			return alive;
+			for (uint32 i{0u}; i < m_data.size(); ++i)
+				if (m_alive[i])
+					p_func(m_data[i]);
 		}
 
-		std::vector<TData> _data;
-		// Maybe you will want to access this directly, to prevent accidents, I prefix it with _
-		std::vector<uint8> _alive;
-		// I know this is a vector of bools, but it doesn't matter because I won't be taking the addresses
 	private:
+		std::vector<TData>  m_data;
+		std::vector<uint8>  m_alive;
 		std::vector<uint32> m_magic;
 		std::vector<uint32> m_freeIndices;
 		std::vector<uint32> m_refCounts;
 	};
 
-	// template<typename TManager, typename THandleType> requires requires(TManager p_manager, THandleType p_handle)
-	// {
-	// 	p_manager.acquire(p_handle); p_manager.release(p_handle); { p_manager.isValid(p_handle) } -> std::same_as<bool>;
-	// }
-	template<typename TManager, typename THandleType>
+	template<typename Tag, typename TData>
+	class Ref;
+
+	template<typename Tag, typename TData>
+	class ResourceManager
+	{
+	public:
+		using HandleType = Handle<Tag>;
+		using RefType    = Ref<Tag, TData>;
+		using Deleter    = void(*)(void *, TData *);
+
+		ResourceManager() = default;
+
+		ResourceManager(Deleter p_deleter, void *p_deleter_user_data) : m_deleter(p_deleter), m_deleterUserData(p_deleter_user_data)
+		{
+			TST_ASSERT(m_deleter);
+		}
+
+		auto setDeleter(Deleter p_deleter) { m_deleter = p_deleter; }
+		auto setDeleterUserData(void *p_deleter_user_data) { m_deleterUserData = p_deleter_user_data; }
+
+		template<typename... TArgs>
+		[[nodiscard]] auto create(TArgs &&... p_args) -> RefType
+		{
+			HandleType handle{m_pool.emplace(std::forward<TArgs>(p_args)...)};
+			m_pool.incRef(handle);
+			return RefType{this, handle};
+		}
+
+		auto acquire(HandleType p_handle) -> void { m_pool.incRef(p_handle); }
+
+		auto release(HandleType p_handle) -> void
+		{
+			if (TData *data{m_pool.decRef(p_handle)})
+				m_deleter(m_deleterUserData, data);
+		}
+
+		auto isValid(HandleType p_handle) const -> bool { return m_pool.isValid(p_handle); }
+		auto getData(HandleType p_handle) const -> const TData * { return m_pool.getData(p_handle); }
+		auto getData(HandleType p_handle) -> TData * { return m_pool.getData(p_handle); }
+
+		template<typename TFunc>
+		auto forEachAlive(TFunc &&p_func) -> void
+		{
+			m_pool.forEachAlive(std::forward<TFunc>(p_func));
+		}
+
+	private:
+		Pool<Tag, TData> m_pool;
+
+		Deleter m_deleter{nullptr};
+		void *  m_deleterUserData{nullptr};
+	};
+
+	template<typename Tag, typename TData>
 	class Ref
 	{
 	public:
+		using ManagerType = ResourceManager<Tag, TData>;
+		using HandleType  = Handle<Tag>;
+
 		Ref() noexcept = default;
 
-		Ref(TManager *p_manager, THandleType p_handle) noexcept
-			: m_manager(p_manager), m_handle(p_handle)
+		Ref(ManagerType *p_manager, HandleType p_handle) noexcept : m_manager(p_manager), m_handle(p_handle)
 		{
 		}
 
-		~Ref()
-		{
-			reset();
-		}
+		~Ref() { reset(); }
 
 		Ref(const Ref &p_other) noexcept : m_manager(p_other.m_manager), m_handle(p_other.m_handle)
 		{
@@ -257,48 +305,25 @@ namespace toaster
 			m_handle  = {};
 		}
 
-		[[nodiscard]] THandleType get() const noexcept
-		{
-			return m_handle;
-		}
+		[[nodiscard]] HandleType get() const noexcept { return m_handle; }
 
-		[[nodiscard]] bool valid() const noexcept
-		{
-			return m_manager && m_handle.valid() && m_manager->isValid(m_handle);
-		}
+		[[nodiscard]] bool valid() const noexcept { return m_manager && m_handle.valid() && m_manager->isValid(m_handle); }
 
-		[[nodiscard]] auto operator->() const -> auto
-		{
-			return m_manager->getData(m_handle);
-		}
+		[[nodiscard]] auto operator->() const -> auto { return m_manager->getData(m_handle); }
+		[[nodiscard]] auto operator->() -> auto { return m_manager->getData(m_handle); }
 
-		[[nodiscard]] auto operator->() -> auto
-		{
-			return m_manager->getData(m_handle);
-		}
+		[[nodiscard]] auto manager() -> ManagerType * { return m_manager; }
+		[[nodiscard]] auto manager() const -> const ManagerType * { return m_manager; }
 
-		[[nodiscard]] auto manager() -> TManager *
-		{
-			return m_manager;
-		}
+		explicit operator bool() const noexcept { return valid(); }
 
-		[[nodiscard]] auto manager() const -> const TManager *
-		{
-			return m_manager;
-		}
-
-		explicit operator bool() const noexcept
-		{
-			return valid();
-		}
-
-		THandleType operator*() const noexcept
-		{
-			return m_handle;
-		}
+		HandleType operator*() const noexcept { return m_handle; }
 
 	private:
-		TManager *  m_manager{nullptr};
-		THandleType m_handle{};
+		ManagerType *m_manager{nullptr};
+		HandleType   m_handle{};
 	};
+
+	#define TST_DECLARE_REF(__tag) \
+	using __tag##Ref = ::toaster::Ref<__tag##Tag, __tag##Data>
 }

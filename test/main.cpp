@@ -24,7 +24,7 @@ TST_WINMAIN()
 		rd::MaterialSystem material_system{device, 10u * 1028u * 1028u};
 		rd::MeshSystem     mesh_system{device, material_system, rd::MeshSystemDesc{}};
 
-		Ref<gpu::Device, gpu::BufferHandle> buffer{device.createBuffer(gpu::BufferDesc::staging(sizeof(uint32)))};
+		auto buffer{device.createBuffer(gpu::BufferDesc::staging(sizeof(uint32)))};
 	}
 
 	os::destroyOutputConsole();

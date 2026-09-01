@@ -26,23 +26,26 @@ namespace toaster::rd
 		VmaVirtualBlockCreateInfo index_buffer_virtual_block_create_info{};
 		index_buffer_virtual_block_create_info.size = p_desc.staticMeshIndexBufferSize;
 		vmaCreateVirtualBlock(&index_buffer_virtual_block_create_info, &m_staticMeshIndexBufferBlock);
+
+		m_staticMeshResourceManager.setDeleterUserData(this);
+		m_staticMeshResourceManager.setDeleter(+[](void *p_user_data, StaticMeshData *p_data) mutable noexcept -> void
+		{
+			auto ts{static_cast<MeshSystem *>(p_user_data)};
+			ts->_destroyStaticMesh(p_data);
+		});
 	}
 
 	MeshSystem::~MeshSystem()
 	{
-		m_device->submitDeletion([ vertex_block = m_staticMeshVertexBufferBlock, index_block = m_staticMeshIndexBufferBlock]() mutable noexcept -> void
+		m_device->submitDeletion([ vertex_block = m_staticMeshVertexBufferBlock, index_block = m_staticMeshIndexBufferBlock] mutable noexcept -> void
 		{
 			vmaDestroyVirtualBlock(vertex_block);
 			vmaDestroyVirtualBlock(index_block);
 		});
-
-		// Already deferred
-		// m_device->releaseBuffer(m_staticMeshIndexBuffer);
-		// m_device->releaseBuffer(m_staticMeshVertexBuffer);
 	}
 
 	auto MeshSystem::createStaticMesh(gpu::CommandList &              p_cmd, const std::vector<StaticMeshVertex> &p_vertices, const std::vector<uint32> &p_indices,
-									  const std::vector<SubmeshData> &p_submeshes) -> Ref<MeshSystem, StaticMeshHandle>
+									  const std::vector<SubmeshData> &p_submeshes) -> StaticMeshRef
 	{
 		StaticMeshData out_data{};
 		out_data.submeshes = p_submeshes;
@@ -68,22 +71,15 @@ namespace toaster::rd
 		p_cmd.copyBuffer(staging_buffer.get(), m_staticMeshVertexBuffer.get(), vertex_buffer_size, 0u, out_data.vertexBufferByteOffset);
 		p_cmd.copyBuffer(staging_buffer.get(), m_staticMeshIndexBuffer.get(), index_buffer_size, vertex_buffer_size, out_data.indexBufferByteOffset);
 
-		// m_device->releaseBuffer(staging_buffer);
-
-		StaticMeshHandle out_handle{m_staticMeshPool.create(out_data)};
-		m_staticMeshPool.incRef(out_handle); // Initial ref count must be 1
-		return Ref<MeshSystem, StaticMeshHandle>{this, out_handle};
+		return m_staticMeshResourceManager.create(out_data);
 	}
 
 	auto MeshSystem::_destroyStaticMesh(StaticMeshData *p_data) -> void
 	{
-		if (!p_data)
-			return;
-
 		p_data->submeshes.clear();
 
 		// I have to copy the data because the data pointer is only (technically) valid for the scope of the deletion.
-		m_device->submitDeletion([vertex_block = m_staticMeshVertexBufferBlock, index_block = m_staticMeshIndexBufferBlock, data = *p_data]() mutable noexcept -> void
+		m_device->submitDeletion([vertex_block = m_staticMeshVertexBufferBlock, index_block = m_staticMeshIndexBufferBlock, data = *p_data] mutable noexcept -> void
 		{
 			vmaVirtualFree(vertex_block, data.vertexBufferAllocation);
 			vmaVirtualFree(index_block, data.indexBufferAllocation);
