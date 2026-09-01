@@ -4,7 +4,6 @@
 #include <vector>
 
 #include "handle.hpp"
-#include "ptr.hpp"
 #include "toast_assert.h"
 
 namespace toaster
@@ -13,13 +12,13 @@ namespace toaster
 	template<typename Tag, typename TData> /*requires std::is_default_constructible_v<TData>*/
 	struct Pool
 	{
-		Pool() = default;
+		Pool()  = default;
 		~Pool() = default;
 
-		Pool(const Pool &) = delete;
-		Pool(Pool &&) = delete;
+		Pool(const Pool &)            = delete;
+		Pool(Pool &&)                 = delete;
 		Pool &operator=(const Pool &) = delete;
-		Pool &operator=(Pool &&) = delete;
+		Pool &operator=(Pool &&)      = delete;
 
 		explicit Pool(uint32 p_reserved_size)
 		{
@@ -60,7 +59,7 @@ namespace toaster
 				m_refCounts.emplace_back(0u);
 			}
 
-			_alive[index] = true;
+			_alive[index]      = true;
 			m_refCounts[index] = 0u;
 
 			return Handle<Tag>{index, m_magic[index]};
@@ -83,8 +82,8 @@ namespace toaster
 				m_refCounts.emplace_back(0u);
 			}
 
-			_alive[index] = true;
-			_data[index] = p_object;
+			_alive[index]      = true;
+			_data[index]       = p_object;
 			m_refCounts[index] = 0u;
 
 			return Handle<Tag>{index, m_magic[index]};
@@ -98,10 +97,10 @@ namespace toaster
 		// The return value should only be used to perform destruction logic on the data and is not meant to be stored
 		auto destroy(Handle<Tag> p_handle) -> TData *
 		{
-#ifndef TST_DISABLE_POOL_VALIDATION
+			#ifndef TST_DISABLE_POOL_VALIDATION
 			if (!isValid(p_handle))
 				TST_PERMA_ASSERT_MSG(false, "Your handle is not valid... :(");
-#endif
+			#endif
 
 			_alive[p_handle.id] = false;
 			++m_magic[p_handle.id];
@@ -122,17 +121,17 @@ namespace toaster
 
 		auto incRef(Handle<Tag> p_handle) -> void
 		{
-#ifndef TST_DISABLE_POOL_VALIDATION
+			#ifndef TST_DISABLE_POOL_VALIDATION
 			if (isValid(p_handle))
 				++m_refCounts[p_handle.id];
 			else
 				TST_PERMA_ASSERT_MSG(false, "Handle is not valid");
-#else
+			#else
 			++m_refCounts[p_handle.id];
-#endif
+			#endif
 		}
 
-		auto decRef(Handle<Tag> p_handle) -> TData*
+		auto decRef(Handle<Tag> p_handle) -> TData *
 		{
 			if (isValid(p_handle))
 			{
@@ -147,19 +146,19 @@ namespace toaster
 
 		auto getData(Handle<Tag> p_handle) -> TData *
 		{
-#ifndef TST_DISABLE_POOL_VALIDATION
+			#ifndef TST_DISABLE_POOL_VALIDATION
 			if (!isValid(p_handle))
 				return nullptr;
-#endif
+			#endif
 			return std::addressof(_data[p_handle.id]);
 		}
 
 		auto getData(Handle<Tag> p_handle) const -> const TData *
 		{
-#ifndef TST_DISABLE_POOL_VALIDATION
+			#ifndef TST_DISABLE_POOL_VALIDATION
 			if (!isValid(p_handle))
 				return nullptr;
-#endif
+			#endif
 			return std::addressof(_data[p_handle.id]);
 		}
 
@@ -179,7 +178,7 @@ namespace toaster
 
 		std::vector<TData> _data;
 		// Maybe you will want to access this directly, to prevent accidents, I prefix it with _
-		std::vector<bool> _alive;
+		std::vector<uint8> _alive;
 		// I know this is a vector of bools, but it doesn't matter because I won't be taking the addresses
 	private:
 		std::vector<uint32> m_magic;
@@ -187,79 +186,119 @@ namespace toaster
 		std::vector<uint32> m_refCounts;
 	};
 
-	// template<typename Tag, typename TData>
-	// class SharedHandle
+	// template<typename TManager, typename THandleType> requires requires(TManager p_manager, THandleType p_handle)
 	// {
-	// public:
-	// 	SharedHandle() : m_pool(nullptr)
-	// 	{
-	// 	}
-	//
-	// 	SharedHandle(Handle<Tag> p_handle, Pool<Tag, TData> *p_pool) : m_pool(p_pool), m_handle(p_handle)
-	// 	{
-	// 		if (m_pool)
-	// 			m_pool->incRef(m_handle);
-	// 	}
-	//
-	// 	~SharedHandle()
-	// 	{
-	// 		if (m_pool)
-	// 			m_pool->decRef(m_handle);
-	// 	}
-	//
-	// 	SharedHandle(const SharedHandle &p_other) : m_pool(p_other.m_pool), m_handle(p_other.m_handle)
-	// 	{
-	// 		if (m_pool)
-	// 			m_pool->incRef(m_handle);
-	// 	}
-	//
-	// 	SharedHandle(SharedHandle &&p_other) noexcept : m_pool(p_other.m_pool), m_handle(p_other.m_handle)
-	// 	{
-	// 		p_other.m_pool = nullptr;
-	// 	}
-	//
-	// 	auto operator=(const SharedHandle &p_other) -> SharedHandle &
-	// 	{
-	// 		if (this != &p_other)
-	// 		{
-	// 			if (m_pool)
-	// 				m_pool->decRef(m_handle);
-	// 			m_handle = p_other.m_handle;
-	// 			m_pool = p_other.m_pool;
-	// 			if (m_pool)
-	// 				m_pool->incRef(m_handle);
-	// 		}
-	// 		return *this;
-	// 	}
-	//
-	// 	auto operator=(SharedHandle &&p_other) noexcept -> SharedHandle &
-	// 	{
-	// 		if (this != &p_other)
-	// 		{
-	// 			if (m_pool)
-	// 				m_pool->decRef(m_handle);
-	// 			m_handle = p_other.m_handle;
-	// 			m_pool = p_other.m_pool;
-	//
-	// 			p_other.m_handle = {};
-	// 			p_other.m_pool = nullptr;
-	// 		}
-	// 		return *this;
-	// 	}
-	//
-	// 	auto operator*() -> TData & { return *m_pool->getData(m_handle); }
-	// 	auto operator->() -> TData * { return m_pool ? m_pool->getData(m_handle) : nullptr; }
-	//
-	// 	auto operator*() const -> const TData & { return *m_pool->getData(m_handle); }
-	// 	auto operator->() const -> const TData * { return m_pool ? m_pool->getData(m_handle) : nullptr; }
-	//
-	// 	auto get() const -> Handle<Tag> { return m_handle; }
-	// 	auto isValid() const -> bool { return m_pool && m_pool->isValid(m_handle); }
-	//
-	// 	operator bool() const { return isValid(); }
-	//
-	// private:
-	// 	NonOwningPtr<Pool<Tag, TData> > m_pool{nullptr};
-	// 	Handle<Tag> m_handle{};
-	// };
+	// 	p_manager.acquire(p_handle); p_manager.release(p_handle); { p_manager.isValid(p_handle) } -> std::same_as<bool>;
+	// }
+	template<typename TManager, typename THandleType>
+	class Ref
+	{
+	public:
+		Ref() noexcept = default;
+
+		Ref(TManager *p_manager, THandleType p_handle) noexcept
+			: m_manager(p_manager), m_handle(p_handle)
+		{
+		}
+
+		~Ref()
+		{
+			reset();
+		}
+
+		Ref(const Ref &p_other) noexcept : m_manager(p_other.m_manager), m_handle(p_other.m_handle)
+		{
+			if (m_manager && m_handle.valid())
+				m_manager->acquire(m_handle);
+		}
+
+		Ref(Ref &&p_other) noexcept : m_manager(p_other.m_manager), m_handle(p_other.m_handle)
+		{
+			p_other.m_manager = nullptr;
+			p_other.m_handle  = {};
+		}
+
+		Ref &operator=(const Ref &p_other) noexcept
+		{
+			if (this != &p_other)
+			{
+				reset();
+
+				m_manager = p_other.m_manager;
+				m_handle  = p_other.m_handle;
+
+				if (m_manager && m_handle.valid())
+					m_manager->acquire(m_handle);
+			}
+			return *this;
+		}
+
+		Ref &operator=(Ref &&p_other) noexcept
+		{
+			if (this != &p_other)
+			{
+				reset();
+
+				m_manager = p_other.m_manager;
+				m_handle  = p_other.m_handle;
+
+				p_other.m_manager = nullptr;
+				p_other.m_handle  = {};
+			}
+			return *this;
+		}
+
+		void reset() noexcept
+		{
+			if (m_manager && m_handle.valid())
+				m_manager->release(m_handle);
+
+			m_manager = nullptr;
+			m_handle  = {};
+		}
+
+		[[nodiscard]] THandleType get() const noexcept
+		{
+			return m_handle;
+		}
+
+		[[nodiscard]] bool valid() const noexcept
+		{
+			return m_manager && m_handle.valid() && m_manager->isValid(m_handle);
+		}
+
+		[[nodiscard]] auto operator->() const -> auto
+		{
+			return m_manager->getData(m_handle);
+		}
+
+		[[nodiscard]] auto operator->() -> auto
+		{
+			return m_manager->getData(m_handle);
+		}
+
+		[[nodiscard]] auto manager() -> TManager *
+		{
+			return m_manager;
+		}
+
+		[[nodiscard]] auto manager() const -> const TManager *
+		{
+			return m_manager;
+		}
+
+		explicit operator bool() const noexcept
+		{
+			return valid();
+		}
+
+		THandleType operator*() const noexcept
+		{
+			return m_handle;
+		}
+
+	private:
+		TManager *  m_manager{nullptr};
+		THandleType m_handle{};
+	};
 }

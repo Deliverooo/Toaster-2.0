@@ -32,9 +32,9 @@ namespace toaster::gpu
 		auto getImageIndex() const -> uint32 { return m_imageIndex; }
 
 		auto getCurrentImage() const -> vk::Image { return m_images[m_imageIndex]; }
-		auto getCurrentColourTexture() const -> TextureHandle { return m_colourTextures[m_imageIndex]; }
+		auto getCurrentColourTexture() const -> TextureHandle { return m_colourTextures[m_imageIndex].get(); }
 
-		auto getDepthTexture() const -> TextureHandle { return m_depthTexture; }
+		auto getDepthTexture() const -> TextureHandle { return m_depthTexture.get(); }
 
 		auto getColourAttachmentInfo(const vk::ClearColorValue &p_clear_colour = vk::ClearColorValue{1.0f, 1.0f, 1.0f, 1.0f}) const -> vk::RenderingAttachmentInfo;
 		auto getDepthAttachmentInfo(vk::ClearDepthStencilValue p_clear_value = vk::ClearDepthStencilValue{1.0f, 0u}) const -> vk::RenderingAttachmentInfo;
@@ -53,9 +53,9 @@ namespace toaster::gpu
 
 		// PFF = Per frame in flight. PSI = Per swapchain image
 		std::vector<vk::Image>     m_images;         // PSI
-		std::vector<TextureHandle> m_colourTextures; // PSI
+		std::vector<TextureRef> m_colourTextures; // PSI
 
-		TextureHandle m_depthTexture;
+		TextureRef m_depthTexture;
 
 		std::vector<vk::Semaphore> m_renderFinishedSemaphores; // PSI
 

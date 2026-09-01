@@ -21,9 +21,15 @@ namespace toaster
 		~CommandBuffer()
 		{
 			// Only call the destructors on the remaining functions
-			uint8 *buffer{m_buffer};
+			uint8 *          buffer{m_buffer};
+			constexpr uint64 alignment{alignof(std::max_align_t)};
 			for (uint32 i{0u}; i < m_commandCount; ++i)
 			{
+				uint64 space{static_cast<uintptr>(m_bufferCapacity - (buffer - m_buffer))};
+				void * aligned_ptr{buffer};
+				std::align(alignment, sizeof(Invoker), aligned_ptr, space);
+				buffer = static_cast<uint8 *>(aligned_ptr);
+
 				buffer += sizeof(Invoker);
 
 				Destructor destructor{nullptr};

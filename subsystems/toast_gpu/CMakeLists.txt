@@ -8,9 +8,7 @@ set(GPU_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vma_impl.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/command_list.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/command_pool.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/material_manager.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/swapchain.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/shader_manager.cpp
 )
 
 if (TOASTER_BUILD_SHARED_LIBS)

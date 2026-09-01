@@ -1,5 +1,7 @@
 set(RENDER_SRC
-		${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/material_system.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/mesh_system.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/transform_system.cpp
 )
 
 if (TOASTER_BUILD_SHARED_LIBS)
@@ -12,9 +14,7 @@ target_include_directories(ToastRender PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_
 		$<INSTALL_INTERFACE:include>)
 
 target_sources(ToastRender PRIVATE ${RENDER_SRC})
-target_link_libraries(ToastRender PUBLIC Toaster::ToastGPU stb)
-
-target_include_directories(ToastRender PUBLIC "$ENV{VULKAN_SDK}/Include")
+target_link_libraries(ToastRender PUBLIC Toaster::ToastGPU)
 
 add_library(Toaster::ToastRender ALIAS ToastRender)
 

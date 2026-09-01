@@ -13,7 +13,8 @@ namespace toaster
 	{
 		FreelistAllocator() = default;
 
-		FreelistAllocator(TSlotType p_capacity) : m_capacity(p_capacity)
+		// You can change the first slot. E.g. make 0 an invalid slot...
+		FreelistAllocator(TSlotType p_capacity, TSlotType p_first_slot = TSlotType{0}) : m_capacity(p_capacity + p_first_slot), m_nextFreeIndex(p_first_slot)
 		{
 		}
 

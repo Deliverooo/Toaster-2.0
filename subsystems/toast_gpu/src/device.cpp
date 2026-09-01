@@ -98,7 +98,7 @@ namespace toaster::gpu
 
 	Device::~Device()
 	{
-		 // I don't think I should be responsible for cleaning up your poor lifetime management...
+		// I don't think I should be responsible for cleaning up your poor lifetime management...
 
 		// // Delete all remaining shaders
 		// for (auto shader : m_shaderPool.getAlive())
@@ -115,7 +115,6 @@ namespace toaster::gpu
 		// // Delete all remaining buffers
 		// for (auto buffer : m_bufferPool.getAlive())
 		// 	_destroyBuffer(buffer);
-
 
 		m_deletionQueue->executeAll();
 		m_deletionQueue.reset();
@@ -151,7 +150,7 @@ namespace toaster::gpu
 		m_samplerHeap->writeDescriptors();
 	}
 
-	auto Device::createBuffer(const BufferDesc &p_desc) -> BufferHandle
+	auto Device::createBuffer(const BufferDesc &p_desc) -> Ref<Device, BufferHandle>
 	{
 		BufferData buffer_data{};
 		buffer_data.usageFlags       = p_desc.usageFlags;
@@ -173,7 +172,9 @@ namespace toaster::gpu
 
 		BufferHandle out_handle{m_bufferPool.create(buffer_data)};
 		m_bufferPool.incRef(out_handle); // Initial ref count must be 1
-		return out_handle;
+
+		return Ref<Device, BufferHandle>{this, out_handle};
+		// return out_handle;
 	}
 
 	auto Device::uploadBufferData(BufferHandle p_handle, const void *p_data, uint64 p_size, uint64 p_offset) -> void
@@ -184,7 +185,7 @@ namespace toaster::gpu
 		std::memcpy(reinterpret_cast<void *>(reinterpret_cast<uint64>(dst_buffer->mapped) + p_offset), p_data, p_size);
 	}
 
-	auto Device::createTexture(const TextureDesc &p_desc) -> TextureHandle
+	auto Device::createTexture(const TextureDesc &p_desc) -> Ref<Device, TextureHandle>
 	{
 		TextureData texture_data{};
 		texture_data.extent     = p_desc.extent;
@@ -252,7 +253,8 @@ namespace toaster::gpu
 
 		TextureHandle out_handle{m_texturePool.create(texture_data)};
 		m_texturePool.incRef(out_handle); // Initial ref count must be 1
-		return out_handle;
+
+		return Ref<Device, TextureHandle>{this, out_handle};
 	}
 
 	auto Device::getTextureShaderReadHeapSlot(TextureHandle p_handle) const -> uint32
@@ -267,7 +269,7 @@ namespace toaster::gpu
 		return m_resourceHeap->getImageAbsoluteHeapSlot(data->storageHeapID);
 	}
 
-	auto Device::createSampler(const SamplerDesc &p_desc) -> SamplerHandle
+	auto Device::createSampler(const SamplerDesc &p_desc) -> Ref<Device, SamplerHandle>
 	{
 		constexpr auto getAddressMode{
 			+[](ESamplerAddressMode p_address_mode) -> vk::SamplerAddressMode
@@ -309,10 +311,10 @@ namespace toaster::gpu
 
 		SamplerHandle out_handle{m_samplerPool.create(sampler_data)};
 		m_samplerPool.incRef(out_handle); // Initial ref count must be 1
-		return out_handle;
+		return Ref<Device, SamplerHandle>{this, out_handle};
 	}
 
-	auto Device::createShader(const ShaderDesc &p_desc) -> ShaderHandle
+	auto Device::createShader(const ShaderDesc &p_desc) -> Ref<Device, ShaderHandle>
 	{
 		ShaderData shader_data{};
 		shader_data.stage     = p_desc.stage;
@@ -332,7 +334,7 @@ namespace toaster::gpu
 
 		ShaderHandle out_handle{m_shaderPool.create(shader_data)};
 		m_shaderPool.incRef(out_handle); // Initial ref count must be 1
-		return out_handle;
+		return Ref<Device, ShaderHandle>{this, out_handle};
 	}
 
 	auto Device::createCommandPool(EQueueType p_queue_type, ECommandPoolFlags p_pool_flags) -> CommandPool
@@ -340,9 +342,12 @@ namespace toaster::gpu
 		uint32 queue_family_index{UINT32_MAX};
 		switch (p_queue_type)
 		{
-			case EQueueType::eGraphics: queue_family_index = m_device->getQueueFamilyIndices().graphics; break;
-			case EQueueType::eCompute: queue_family_index = m_device->getQueueFamilyIndices().compute;break;
-			case EQueueType::eTransfer: queue_family_index = m_device->getQueueFamilyIndices().transfer;break;
+			case EQueueType::eGraphics: queue_family_index = m_device->getQueueFamilyIndices().graphics;
+				break;
+			case EQueueType::eCompute: queue_family_index = m_device->getQueueFamilyIndices().compute;
+				break;
+			case EQueueType::eTransfer: queue_family_index = m_device->getQueueFamilyIndices().transfer;
+				break;
 		}
 
 		vk::CommandPoolCreateFlags flags{0u};
@@ -353,19 +358,18 @@ namespace toaster::gpu
 
 		vk::CommandPoolCreateInfo command_pool_create_info{};
 		command_pool_create_info.queueFamilyIndex = queue_family_index;
-		command_pool_create_info.flags = flags;
+		command_pool_create_info.flags            = flags;
 
 		vk::CommandPool command_pool{m_device->getDevice().createCommandPool(command_pool_create_info)};
 
 		return CommandPool{*this, command_pool, p_pool_flags};
 	}
 
-	auto Device::executeCommandLists(const InitialiserList<const CommandList> &            p_command_lists,
-									 const InitialiserList<const vk::SemaphoreSubmitInfo> &p_wait_semaphores,
+	auto Device::executeCommandLists(const InitialiserList<const CommandList> &p_command_lists, const InitialiserList<const vk::SemaphoreSubmitInfo> &p_wait_semaphores,
 									 const InitialiserList<const vk::SemaphoreSubmitInfo> &p_signal_semaphores, vk::Fence p_signal_fence) const -> void
 	{
 		std::vector<vk::CommandBufferSubmitInfo> command_buffer_infos;
-		for (const auto& cmd: p_command_lists)
+		for (const auto &cmd: p_command_lists)
 			command_buffer_infos.emplace_back(cmd.getCommandBuffer());
 
 		vk::SubmitInfo2 submit_info{};

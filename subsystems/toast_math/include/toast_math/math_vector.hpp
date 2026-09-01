@@ -52,7 +52,7 @@ namespace tsm
 		float2 depthBounds{0.0f, 1.0f}; // Min depth and max depth
 	};
 
-	const Dx::XMVECTORI32 vulkanUpDir{.v{0.0f, -1.0f, 0.0f, 1.0f}};
+	const XMVECTORI32 vulkanUpDir{.v{0.0f, -1.0f, 0.0f, 1.0f}};
 }
 
 // Incredibly useful for cameras where you want to normalize the change in position without it being infinity... :)

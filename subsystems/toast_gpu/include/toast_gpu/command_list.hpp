@@ -107,17 +107,17 @@ namespace toaster::gpu
 	class TST_GPU_API CommandList
 	{
 	public:
-		CommandList() = default;
+		CommandList()  = default;
 		~CommandList() = default; // There is no manual freeing of command buffers here
 
 		// Create using the command pool
-		CommandList(CommandPool& p_command_pool, Device& p_device, vk::CommandBuffer p_cmd);
+		CommandList(CommandPool &p_command_pool, Device &p_device, vk::CommandBuffer p_cmd);
 
 		CommandList(CommandList &&p_other) noexcept;
 		CommandList &operator=(CommandList &&p_other) noexcept;
 
-		CommandList(const CommandList&) = delete;
-		CommandList& operator=(const CommandList&) = delete;
+		CommandList(const CommandList &)            = delete;
+		CommandList &operator=(const CommandList &) = delete;
 
 		auto getCommandBuffer() const -> vk::CommandBuffer { return m_cmd; }
 
@@ -138,7 +138,7 @@ namespace toaster::gpu
 
 		auto bindShaders(const InitialiserList<const ShaderHandle> &p_shaders) -> void;
 
-		auto pushData(const void* p_data, uint32 p_size, uint32 p_offset = 0u) -> void;
+		auto pushData(const void *p_data, uint32 p_size, uint32 p_offset = 0u) -> void;
 
 		template<typename Type>
 		auto pushData(const Type &p_data, uint32 p_offset = 0u) -> void
@@ -153,8 +153,10 @@ namespace toaster::gpu
 
 	private:
 		NonOwningPtr<CommandPool> m_commandPool{nullptr};
-		NonOwningPtr<Device>	  m_device{nullptr};
-		vk::CommandBuffer	      m_cmd{nullptr};
+		NonOwningPtr<Device>      m_device{nullptr};
+		vk::CommandBuffer         m_cmd{nullptr};
+
+		// ECommandListState m_currentState{ECommandListState::eNone};
 
 		friend class CommandPool;
 	};

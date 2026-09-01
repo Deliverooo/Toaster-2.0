@@ -6,56 +6,56 @@
 #include <format>
 
 template<>
-struct std::formatter<Dx::XMFLOAT2>
+struct std::formatter<XMFLOAT2>
 {
 	constexpr auto parse(format_parse_context &p_ctx)
 	{
 		return p_ctx.begin();
 	}
 
-	auto format(const Dx::XMFLOAT2 &v, format_context &p_ctx) const
+	auto format(const XMFLOAT2 &v, format_context &p_ctx) const
 	{
 		return format_to(p_ctx.out(), "({}, {})", v.x, v.y);
 	}
 };
 
 template<>
-struct std::formatter<Dx::XMFLOAT3>
+struct std::formatter<XMFLOAT3>
 {
 	constexpr auto parse(format_parse_context &p_ctx)
 	{
 		return p_ctx.begin();
 	}
 
-	auto format(const Dx::XMFLOAT3 &v, format_context &p_ctx) const
+	auto format(const XMFLOAT3 &v, format_context &p_ctx) const
 	{
 		return format_to(p_ctx.out(), "({}, {}, {})", v.x, v.y, v.z);
 	}
 };
 
 template<>
-struct std::formatter<Dx::XMFLOAT4>
+struct std::formatter<XMFLOAT4>
 {
 	constexpr auto parse(format_parse_context &p_ctx)
 	{
 		return p_ctx.begin();
 	}
 
-	auto format(const Dx::XMFLOAT4 &v, format_context &p_ctx) const
+	auto format(const XMFLOAT4 &v, format_context &p_ctx) const
 	{
 		return format_to(p_ctx.out(), "({}, {}, {}, {})", v.x, v.y, v.z, v.w);
 	}
 };
 
 template<>
-struct std::formatter<Dx::XMFLOAT4X4>
+struct std::formatter<XMFLOAT4X4>
 {
 	constexpr auto parse(format_parse_context &p_ctx)
 	{
 		return p_ctx.begin();
 	}
 
-	auto format(const Dx::XMFLOAT4X4 &m, format_context &p_ctx) const
+	auto format(const XMFLOAT4X4 &m, format_context &p_ctx) const
 	{
 		return format_to(p_ctx.out(), "[{:.2f}, {:.2f}, {:.2f}, {:.2f}\n{:.2f}, {:.2f}, {:.2f}, {:.2f}\n{:.2f}, {:.2f}, {:.2f}, {:.2f}\n{:.2f}, {:.2f}, {:.2f}, {:.2f}]",
 						 m._11, m._12, m._13, m._14, m._21, m._22, m._23, m._24, m._31, m._32, m._33, m._34, m._41, m._42, m._43, m._44);

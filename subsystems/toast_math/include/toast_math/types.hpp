@@ -28,4 +28,4 @@ namespace tsm
 #define TSM_ASSERT_LENGTH(__length, __max) assert ((__length) >= 0 && (__length) < (__max))
 
 #include <DirectXMath.h>
-namespace Dx = DirectX;
+using namespace DirectX;
