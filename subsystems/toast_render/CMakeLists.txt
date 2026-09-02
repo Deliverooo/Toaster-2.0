@@ -1,6 +1,4 @@
 set(RENDER_SRC
-		${CMAKE_CURRENT_SOURCE_DIR}/src/material_system.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/mesh_system.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/transform_system.cpp
 )
 

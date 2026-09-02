@@ -1,6 +1,7 @@
 set(RENDER_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/texture.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/mesh.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/asset_manager.cpp
 )
 
 if (TOASTER_BUILD_SHARED_LIBS)

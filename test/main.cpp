@@ -21,10 +21,11 @@ TST_WINMAIN()
 		device_desc.numDeletionQueues = 3u;
 		gpu::Device device{device_desc};
 
-		rd::MaterialSystem material_system{device, 10u * 1028u * 1028u};
-		rd::MeshSystem     mesh_system{device, material_system, rd::MeshSystemDesc{}};
+		gpu::ResourceManager resource_manager{device, gpu::ResourceManagerDesc{}};
 
-		auto buffer{device.createBuffer(gpu::BufferDesc::staging(sizeof(uint32)))};
+		gpu::BufferHandle buffer{resource_manager.createBuffer(gpu::BufferDesc::staging(sizeof(uint32)))};
+
+		resource_manager.destroyBuffer(buffer);
 	}
 
 	os::destroyOutputConsole();

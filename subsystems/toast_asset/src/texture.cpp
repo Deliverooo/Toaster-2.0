@@ -54,7 +54,7 @@ namespace toaster::asset
 		return image_data;
 	}
 
-	auto createSampledTexture(gpu::Device &p_device, gpu::CommandList &p_cmd, CString p_filepath) -> gpu::TextureRef
+	auto createSampledTexture(gpu::ResourceManager &p_resource_manager,gpu::CommandList &p_cmd, CString p_filepath) -> gpu::TextureHandle
 	{
 		gpu::TextureDesc texture_desc{};
 		texture_desc.layerCount        = 1u;
@@ -65,16 +65,16 @@ namespace toaster::asset
 		texture_desc.extent.depth      = 1u;
 		DataBuffer texture_data{loadTextureIntoBuffer(p_filepath, texture_desc.format, texture_desc.extent.width, texture_desc.extent.height)};
 
-		auto tex{p_device.createTexture(texture_desc)};
-		p_cmd.transitionTextureLayout(tex.get(), vk::ImageLayout::eTransferDstOptimal);
+		gpu::TextureHandle tex{p_resource_manager.createTexture(texture_desc)};
+		p_cmd.transitionTextureLayout(p_resource_manager, tex, vk::ImageLayout::eTransferDstOptimal);
 
-		auto buff{p_device.createBuffer(gpu::BufferDesc::staging(texture_data.size()))};
-		p_device.uploadBufferData(buff.get(), texture_data.data(), texture_data.size());
-		p_cmd.copyBufferToTexture(buff.get(), tex.get());
-		// p_device.releaseBuffer(buff.get());
+		gpu::BufferHandle buff{p_resource_manager.createBuffer(gpu::BufferDesc::staging(texture_data.size()))};
+		p_resource_manager.uploadBufferData(buff, texture_data.data(), texture_data.size());
+		p_cmd.copyBufferToTexture(p_resource_manager, buff, tex);
+		p_resource_manager.destroyBuffer(buff);
 		texture_data.release();
 
-		p_cmd.transitionTextureLayout(tex.get(), vk::ImageLayout::eShaderReadOnlyOptimal);
+		p_cmd.transitionTextureLayout(p_resource_manager, tex, vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		return tex;
 	}

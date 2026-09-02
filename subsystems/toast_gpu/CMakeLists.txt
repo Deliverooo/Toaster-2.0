@@ -4,6 +4,7 @@ set(GPU_SRC
 		${CMAKE_CURRENT_SOURCE_DIR}/src/logical_device.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/allocator.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/device.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/resource_manager.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/descriptor_heap.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vma_impl.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/command_list.cpp

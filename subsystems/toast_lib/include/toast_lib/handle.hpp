@@ -19,6 +19,8 @@ namespace toaster
 		uint32 magic: 12;
 
 		constexpr auto valid() const -> bool { return magic != 0u; } // Only checks if the handle itself is valid, not that the pool thinks it is
+
+		auto operator<=>(const Handle &) const = default; // I need to be able to run algorithms on ts
 	};
 }
 

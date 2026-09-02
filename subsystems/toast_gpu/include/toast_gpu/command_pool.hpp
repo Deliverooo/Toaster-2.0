@@ -36,6 +36,4 @@ namespace toaster::gpu
 
 		friend class CommandList;
 	};
-
-
 }

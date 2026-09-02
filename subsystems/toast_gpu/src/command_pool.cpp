@@ -58,7 +58,7 @@ namespace toaster::gpu
 
 		vk::CommandBuffer cmd{m_device->getDevice().getDevice().allocateCommandBuffers(cmd_alloc_info).front()};
 
-		return {*this,*m_device, cmd};
+		return {cmd};
 	}
 
 	auto CommandPool::createCommandLists(uint32 p_count) -> std::vector<CommandList>
@@ -74,7 +74,7 @@ namespace toaster::gpu
 
 		std::vector<CommandList> out_lists;
 		for (const auto cmd: command_buffers)
-			out_lists.emplace_back(*this,*m_device, cmd);
+			out_lists.emplace_back(cmd);
 		return out_lists;
 	}
 

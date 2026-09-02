@@ -1,8 +1,8 @@
 #pragma once
 
-#include "toast_lib/ptr.hpp"
-
 #include <vulkan/vulkan.hpp>
+
+#include "gpu_enums.hpp"
 
 namespace toaster::gpu
 {
@@ -108,5 +108,39 @@ namespace toaster::gpu
 				p_out_stage_mask   = vk::PipelineStageFlagBits2::eAllCommands;
 			}
 		}
+	}
+
+	constexpr auto getVulkanShaderStages(EShaderStageFlags p_stages) -> vk::ShaderStageFlags
+	{
+		vk::ShaderStageFlags out_flags{0u};
+		if (p_stages & EShaderStageBits::eVertex)
+			out_flags |= vk::ShaderStageFlagBits::eVertex;
+		if (p_stages & EShaderStageBits::ePixel)
+			out_flags |= vk::ShaderStageFlagBits::eFragment;
+		if (p_stages & EShaderStageBits::eCompute)
+			out_flags |= vk::ShaderStageFlagBits::eCompute;
+		if (p_stages & EShaderStageBits::eGeometry)
+			out_flags |= vk::ShaderStageFlagBits::eGeometry;
+		if (p_stages & EShaderStageBits::eTessellationControl)
+			out_flags |= vk::ShaderStageFlagBits::eTessellationControl;
+		if (p_stages & EShaderStageBits::eTessellationEvaluation)
+			out_flags |= vk::ShaderStageFlagBits::eTessellationEvaluation;
+		if (p_stages & EShaderStageBits::eMesh)
+			out_flags |= vk::ShaderStageFlagBits::eMeshEXT;
+		if (p_stages & EShaderStageBits::eTask)
+			out_flags |= vk::ShaderStageFlagBits::eTaskEXT;
+
+		return out_flags;
+	}
+
+	constexpr auto getVulkanImageViewType(vk::ImageType p_type) -> vk::ImageViewType
+	{
+		switch (p_type)
+		{
+			case vk::ImageType::e1D: return vk::ImageViewType::e1D;
+			case vk::ImageType::e2D: return vk::ImageViewType::e2D;
+			case vk::ImageType::e3D: return vk::ImageViewType::e3D;
+		}
+		return vk::ImageViewType::e2D;
 	}
 }

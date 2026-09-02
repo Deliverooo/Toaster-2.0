@@ -1,7 +1,7 @@
 #pragma once
 
 #include "toast_render.hpp"
-#include "toast_gpu/device.hpp"
+#include "toast_gpu/resource_manager.hpp"
 
 #include "toast_math/math_matrix.hpp"
 
@@ -13,9 +13,9 @@ namespace toaster::rd
 	// To see how this could potentially be used in an ecs, goto toast_scene/components.hpp
 	class TST_RENDER_API TransformSystem
 	{
-		TST_REGISTER_DEPENDENCY(gpu::Device, Device, device)
+		TST_REGISTER_DEPENDENCY(gpu::ResourceManager, ResourceManager, resourceManager)
 	public:
-		TransformSystem(gpu::Device &p_device, uint32 p_max_transforms = 128u, uint32 p_frames_in_flight = 3u);
+		TransformSystem(gpu::ResourceManager &p_resource_manager, uint32 p_max_transforms = 128u, uint32 p_frames_in_flight = 3u);
 		~TransformSystem();
 
 		auto createTransform() -> uint32;
@@ -24,11 +24,11 @@ namespace toaster::rd
 		// Directly sets the transform into the requested slot.
 		auto XM_CALLCONV updateTransform(uint32 p_transform_id, uint32 p_frame_index, XMMATRIX p_transform) -> void;
 
-		auto getTransformBuffer(uint32 p_frame_index) const -> gpu::BufferHandle { return m_transformSSBOs[p_frame_index].get(); }
+		auto getTransformBuffer(uint32 p_frame_index) const -> gpu::BufferHandle { return m_transformSSBOs[p_frame_index]; }
 
 	private:
-		FreelistAllocator<uint32>   m_freeTransformList;
-		std::vector<gpu::BufferRef> m_transformSSBOs;
-		uint32                      m_maxTransforms{128u};
+		FreelistAllocator<uint32>      m_freeTransformList;
+		std::vector<gpu::BufferHandle> m_transformSSBOs;
+		uint32                         m_maxTransforms{128u};
 	};
 }

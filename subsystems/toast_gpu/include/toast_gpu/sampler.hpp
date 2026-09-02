@@ -36,7 +36,6 @@ namespace toaster::gpu
 	};
 
 	TST_DECLARE_HANDLE(Sampler);
-	TST_DECLARE_REF(Sampler);
 
 	struct TST_GPU_API SamplerDesc
 	{

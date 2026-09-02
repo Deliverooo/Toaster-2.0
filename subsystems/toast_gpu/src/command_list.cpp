@@ -64,17 +64,12 @@ namespace toaster::gpu
 		return vk::ResolveModeFlagBits::eNone;
 	}
 
-	CommandList::CommandList(CommandPool& p_command_pool, Device& p_device, vk::CommandBuffer p_cmd) :
-	m_commandPool(&p_command_pool),	m_device(&p_device), m_cmd(p_cmd)
+	CommandList::CommandList(vk::CommandBuffer p_cmd) : m_cmd(p_cmd)
 	{
 	}
 
-	CommandList::CommandList(CommandList &&p_other) noexcept : m_commandPool(p_other.m_commandPool),
-	m_device(p_other.m_device),
-	m_cmd(p_other.m_cmd)
+	CommandList::CommandList(CommandList &&p_other) noexcept : m_cmd(p_other.m_cmd)
 	{
-		p_other.m_commandPool = nullptr;
-		p_other.m_device = nullptr;
 		p_other.m_cmd = nullptr;
 	}
 
@@ -82,25 +77,11 @@ namespace toaster::gpu
 	{
 		if (this != &p_other)
 		{
-			m_commandPool = p_other.m_commandPool;
-			m_device = p_other.m_device;
 			m_cmd = p_other.m_cmd;
 
-			p_other.m_commandPool = nullptr;
-			p_other.m_device = nullptr;
 			p_other.m_cmd = nullptr;
 		}
 		return *this;
-	}
-
-	auto CommandList::reset() -> void
-	{
-		[[unlikely]]TST_ASSERT(m_cmd);
-		if (!(m_commandPool->m_commandPoolFlags & ECommandPoolBits::eReset))
-		{
-			TST_ASSERT_MSG(false,"Command pool was not created with the reset bit");
-		}
-		m_cmd.reset();
 	}
 
 	auto CommandList::begin() -> void
@@ -115,7 +96,7 @@ namespace toaster::gpu
 		m_cmd.end();
 	}
 
-	auto CommandList::beginRendering(const RenderingInfo &p_rendering_info) -> void
+	auto CommandList::beginRendering(ResourceManager &p_resource_manager, const RenderingInfo &p_rendering_info) -> void
 	{
 		[[unlikely]]TST_ASSERT(m_cmd);
 		std::vector<vk::RenderingAttachmentInfo> colour_attachments(p_rendering_info.colourAttachments.size());
@@ -124,7 +105,7 @@ namespace toaster::gpu
 			auto &src_attachment{p_rendering_info.colourAttachments[i]};
 			auto &dst_attachment{colour_attachments[i]};
 
-			const TextureData *render_target_data{m_device->getTextureData(src_attachment.renderTarget)};
+			const TextureData *render_target_data{p_resource_manager.getTextureData(src_attachment.renderTarget)};
 			TST_ASSERT(render_target_data);
 			dst_attachment.imageView   = render_target_data->imageView;
 			dst_attachment.imageLayout = render_target_data->layout;
@@ -133,7 +114,7 @@ namespace toaster::gpu
 			dst_attachment.storeOp    = getStoreOp(src_attachment.usageOp);
 			dst_attachment.clearValue = *reinterpret_cast<const vk::ClearValue *>(&src_attachment.clearValue); // They should have the same memory layout
 
-			const TextureData *resolve_render_target_data{m_device->getTextureData(src_attachment.resolveTarget)};
+			const TextureData *resolve_render_target_data{p_resource_manager.getTextureData(src_attachment.resolveTarget)};
 			if (resolve_render_target_data)
 			{
 				dst_attachment.resolveImageView   = resolve_render_target_data->imageView;
@@ -152,7 +133,7 @@ namespace toaster::gpu
 		if (p_rendering_info.depthAttachment.has_value())
 		{
 			auto &             src_attachment{p_rendering_info.depthAttachment.value()};
-			const TextureData *render_target_data{m_device->getTextureData(src_attachment.renderTarget)};
+			const TextureData *render_target_data{p_resource_manager.getTextureData(src_attachment.renderTarget)};
 			TST_ASSERT(render_target_data);
 
 			depth_attachment.imageView   = render_target_data->imageView;
@@ -162,7 +143,7 @@ namespace toaster::gpu
 			depth_attachment.storeOp    = getStoreOp(src_attachment.usageOp);
 			depth_attachment.clearValue = *reinterpret_cast<const vk::ClearValue *>(&src_attachment.clearValue); // They should have the same memory layout
 
-			const TextureData *resolve_render_target_data{m_device->getTextureData(src_attachment.resolveTarget)};
+			const TextureData *resolve_render_target_data{p_resource_manager.getTextureData(src_attachment.resolveTarget)};
 			if (resolve_render_target_data)
 			{
 				depth_attachment.resolveImageView   = resolve_render_target_data->imageView;
@@ -181,7 +162,7 @@ namespace toaster::gpu
 		if (p_rendering_info.stencilAttachment.has_value())
 		{
 			auto &             src_attachment{p_rendering_info.stencilAttachment.value()};
-			const TextureData *render_target_data{m_device->getTextureData(src_attachment.renderTarget)};
+			const TextureData *render_target_data{p_resource_manager.getTextureData(src_attachment.renderTarget)};
 			TST_ASSERT(render_target_data);
 
 			stencil_attachment.imageView   = render_target_data->imageView;
@@ -191,7 +172,7 @@ namespace toaster::gpu
 			stencil_attachment.storeOp    = getStoreOp(src_attachment.usageOp);
 			stencil_attachment.clearValue = *reinterpret_cast<const vk::ClearValue *>(&src_attachment.clearValue); // They should have the same memory layout
 
-			const TextureData *resolve_render_target_data{m_device->getTextureData(src_attachment.resolveTarget)};
+			const TextureData *resolve_render_target_data{p_resource_manager.getTextureData(src_attachment.resolveTarget)};
 			if (resolve_render_target_data)
 			{
 				stencil_attachment.resolveImageView   = resolve_render_target_data->imageView;
@@ -260,7 +241,7 @@ namespace toaster::gpu
 		m_cmd.bindSamplerHeapEXT(p_sampler_heap.getBindInfo(), FunctionDispatcher::get());
 	}
 
-	auto CommandList::bindShaders(const InitialiserList<const ShaderHandle> &p_shaders) -> void
+	auto CommandList::bindShaders(ResourceManager &p_resource_manager, const InitialiserList<const ShaderHandle> &p_shaders) -> void
 	{
 		[[unlikely]]TST_ASSERT(m_cmd);
 		std::vector<vk::ShaderStageFlagBits> stages(p_shaders.size());
@@ -269,10 +250,10 @@ namespace toaster::gpu
 		uint32 i{0u};
 		for (const auto &shader: p_shaders)
 		{
-			const ShaderData *shader_data{m_device->getShaderData(shader)};
+			const ShaderData *shader_data{p_resource_manager.getShaderData(shader)};
 			TST_ASSERT(shader_data);
 
-			const auto stage{static_cast<vk::ShaderStageFlagBits>(static_cast<vk::ShaderStageFlags::MaskType>(Device::getVulkanShaderStages(shader_data->stage)))};
+			const auto stage{static_cast<vk::ShaderStageFlagBits>(static_cast<vk::ShaderStageFlags::MaskType>(getVulkanShaderStages(shader_data->stage)))};
 			stages[i]  = stage;
 			shaders[i] = shader_data->shader;
 			++i;
@@ -286,17 +267,18 @@ namespace toaster::gpu
 		[[unlikely]]TST_ASSERT(m_cmd);
 
 		vk::PushDataInfoEXT push_data_info{};
-		push_data_info.data.address	= p_data;
-		push_data_info.data.size	= static_cast<uint64>(p_size);
-		push_data_info.offset		= p_offset;
+		push_data_info.data.address = p_data;
+		push_data_info.data.size    = static_cast<uint64>(p_size);
+		push_data_info.offset       = p_offset;
 		m_cmd.pushDataEXT(push_data_info, FunctionDispatcher::get());
 	}
 
-	auto CommandList::copyBuffer(BufferHandle p_src_buffer, BufferHandle p_dst_buffer, uint64 p_size, uint64 p_src_offset, uint64 p_dst_offset) -> void
+	auto CommandList::copyBuffer(ResourceManager &p_resource_manager, BufferHandle p_src_buffer, BufferHandle p_dst_buffer, uint64 p_size, uint64 p_src_offset,
+								 uint64           p_dst_offset) -> void
 	{
 		[[unlikely]]TST_ASSERT(m_cmd);
-		const BufferData *src_data{m_device->getBufferData(p_src_buffer)};
-		BufferData *      dst_data{m_device->getBufferData(p_dst_buffer)};
+		const BufferData *src_data{p_resource_manager.getBufferData(p_src_buffer)};
+		BufferData *      dst_data{p_resource_manager.getBufferData(p_dst_buffer)};
 
 		TST_ASSERT(src_data && dst_data);
 		TST_ASSERT_MSG(src_data->usageFlags & vk::BufferUsageFlagBits::eTransferSrc, "Src buffer is not a transfer src");
@@ -314,11 +296,11 @@ namespace toaster::gpu
 		m_cmd.copyBuffer2(copy_buffer_info);
 	}
 
-	auto CommandList::copyBufferToTexture(BufferHandle p_src_buffer, TextureHandle p_dst_texture) -> void
+	auto CommandList::copyBufferToTexture(ResourceManager &p_resource_manager, BufferHandle p_src_buffer, TextureHandle p_dst_texture) -> void
 	{
 		[[unlikely]]TST_ASSERT(m_cmd);
-		const BufferData *src_data{m_device->getBufferData(p_src_buffer)};
-		TextureData *     dst_data{m_device->getTextureData(p_dst_texture)};
+		const BufferData *src_data{p_resource_manager.getBufferData(p_src_buffer)};
+		TextureData *     dst_data{p_resource_manager.getTextureData(p_dst_texture)};
 		TST_ASSERT(src_data && dst_data);
 		TST_ASSERT_MSG(src_data->usageFlags & vk::BufferUsageFlagBits::eTransferSrc, "Src buffer is not a transfer src");
 		TST_ASSERT_MSG(dst_data->layout == vk::ImageLayout::eTransferDstOptimal, "Dst texture is not in the transfer dst layout");
@@ -340,10 +322,10 @@ namespace toaster::gpu
 		m_cmd.copyBufferToImage2(copy_buffer_to_image_info);
 	}
 
-	auto CommandList::transitionTextureLayout(TextureHandle p_texture, vk::ImageLayout p_dst_layout) -> void
+	auto CommandList::transitionTextureLayout(ResourceManager &p_resource_manager, TextureHandle p_texture, vk::ImageLayout p_dst_layout) -> void
 	{
 		[[unlikely]]TST_ASSERT(m_cmd);
-		TextureData *texture_data{m_device->getTextureData(p_texture)};
+		TextureData *texture_data{p_resource_manager.getTextureData(p_texture)};
 		TST_ASSERT(texture_data);
 
 		TST_ASSERT(p_dst_layout != vk::ImageLayout::eUndefined);

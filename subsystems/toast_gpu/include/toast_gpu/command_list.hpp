@@ -1,6 +1,7 @@
 #pragma once
 
 #include "device.hpp"
+#include "resource_manager.hpp"
 #include "toast_math/math_vector.hpp"
 
 namespace toaster::gpu
@@ -111,7 +112,7 @@ namespace toaster::gpu
 		~CommandList() = default; // There is no manual freeing of command buffers here
 
 		// Create using the command pool
-		CommandList(CommandPool &p_command_pool, Device &p_device, vk::CommandBuffer p_cmd);
+		CommandList(vk::CommandBuffer p_cmd);
 
 		CommandList(CommandList &&p_other) noexcept;
 		CommandList &operator=(CommandList &&p_other) noexcept;
@@ -121,13 +122,10 @@ namespace toaster::gpu
 
 		auto getCommandBuffer() const -> vk::CommandBuffer { return m_cmd; }
 
-		// You shouldn't really ever call this, even for swapchain cmds, just have a pool per list and reset that instead.
-		[[deprecated("You should be resetting the whole pool instead!")]] /* Attributes... :)*/ auto reset() -> void;
-
 		auto begin() -> void;
 		auto end() -> void;
 
-		auto beginRendering(const RenderingInfo &p_rendering_info) -> void;
+		auto beginRendering(ResourceManager &p_resource_manager, const RenderingInfo &p_rendering_info) -> void;
 		auto endRendering() -> void;
 
 		auto setViewport(const tsm::Viewport &p_viewport) -> void;
@@ -136,7 +134,7 @@ namespace toaster::gpu
 		auto bindResourceHeap(const ResourceDescriptorHeap &p_resource_heap) -> void;
 		auto bindSamplerHeap(const SamplerDescriptorHeap &p_sampler_heap) -> void;
 
-		auto bindShaders(const InitialiserList<const ShaderHandle> &p_shaders) -> void;
+		auto bindShaders(ResourceManager &p_resource_manager, const InitialiserList<const ShaderHandle> &p_shaders) -> void;
 
 		auto pushData(const void *p_data, uint32 p_size, uint32 p_offset = 0u) -> void;
 
@@ -146,17 +144,14 @@ namespace toaster::gpu
 			pushData(&p_data, sizeof(Type), p_offset);
 		}
 
-		auto copyBuffer(BufferHandle p_src_buffer, BufferHandle p_dst_buffer, uint64 p_size, uint64 p_src_offset = 0u, uint64 p_dst_offset = 0u) -> void;
-		auto copyBufferToTexture(BufferHandle p_src_buffer, TextureHandle p_dst_texture) -> void;
+		auto copyBuffer(ResourceManager &p_resource_manager, BufferHandle p_src_buffer, BufferHandle p_dst_buffer, uint64 p_size, uint64 p_src_offset = 0u,
+						uint64           p_dst_offset                                                                                                 = 0u) -> void;
+		auto copyBufferToTexture(ResourceManager &p_resource_manager, BufferHandle p_src_buffer, TextureHandle p_dst_texture) -> void;
 
-		auto transitionTextureLayout(TextureHandle p_texture, vk::ImageLayout p_dst_layout) -> void;
+		auto transitionTextureLayout(ResourceManager &p_resource_manager, TextureHandle p_texture, vk::ImageLayout p_dst_layout) -> void;
 
 	private:
-		NonOwningPtr<CommandPool> m_commandPool{nullptr};
-		NonOwningPtr<Device>      m_device{nullptr};
-		vk::CommandBuffer         m_cmd{nullptr};
-
-		// ECommandListState m_currentState{ECommandListState::eNone};
+		vk::CommandBuffer m_cmd{nullptr};
 
 		friend class CommandPool;
 	};

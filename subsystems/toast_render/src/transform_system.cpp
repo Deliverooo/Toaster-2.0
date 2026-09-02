@@ -2,7 +2,7 @@
 
 namespace toaster::rd
 {
-	TransformSystem::TransformSystem(gpu::Device &p_device, uint32 p_max_transforms, uint32 p_frames_in_flight) : m_device(&p_device), m_maxTransforms(p_max_transforms)
+	TransformSystem::TransformSystem(gpu::ResourceManager &p_resource_manager,  uint32 p_max_transforms, uint32 p_frames_in_flight) : m_resourceManager(&p_resource_manager), m_maxTransforms(p_max_transforms)
 	{
 		m_freeTransformList = FreelistAllocator<uint32>{m_maxTransforms};
 
@@ -13,7 +13,7 @@ namespace toaster::rd
 
 		m_transformSSBOs.resize(p_frames_in_flight);
 		for (auto &ssbo: m_transformSSBOs)
-			ssbo = m_device->createBuffer(transform_buffer_desc);
+			ssbo = m_resourceManager->createBuffer(transform_buffer_desc);
 	}
 
 	TransformSystem::~TransformSystem()
@@ -36,7 +36,7 @@ namespace toaster::rd
 	{
 		TST_ASSERT(p_transform_id < m_maxTransforms);
 		// More efficient
-		gpu::BufferData *buffer_data{m_transformSSBOs[p_frame_index].operator->()};
+		gpu::BufferData *buffer_data{m_resourceManager->getBufferData(m_transformSSBOs[p_frame_index])};
 		XMFLOAT4X4 *     mapped{static_cast<XMFLOAT4X4 *>(reinterpret_cast<void *>(reinterpret_cast<uint64>(buffer_data->mapped) + p_transform_id * sizeof(XMFLOAT4X4)))};
 		XMStoreFloat4x4(mapped, p_transform);
 	}

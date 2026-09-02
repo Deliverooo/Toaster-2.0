@@ -11,3 +11,8 @@
 #endif
 
 #include <toast_lib/core_basic.hpp>
+
+namespace toaster::asset
+{
+	using URI = std::string;
+}

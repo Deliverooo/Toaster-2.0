@@ -14,7 +14,6 @@ namespace toaster::gpu
 	};
 
 	TST_DECLARE_HANDLE(Shader);
-	TST_DECLARE_REF(Shader);
 
 	struct TST_GPU_API ShaderDesc
 	{
