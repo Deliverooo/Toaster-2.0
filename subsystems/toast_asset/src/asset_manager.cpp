@@ -162,7 +162,7 @@ namespace toaster::asset
 		}
 	}
 
-	auto AssetManager::setTextureRef(MaterialAssetHandle p_handle, uint32 p_index, gpu::TextureHandle p_texture) -> void
+	auto AssetManager::setTextureRef(MaterialAssetHandle p_handle, uint32 p_index, TextureAssetHandle p_texture) -> void
 	{
 		MaterialAssetData *data{m_materialAssetPool.getData(p_handle)};
 		TST_ASSERT(data);

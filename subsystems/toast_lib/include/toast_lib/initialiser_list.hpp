@@ -55,8 +55,7 @@ namespace toaster
 		auto size() const -> uint32 { return m_count; }
 		auto data() const -> const Type * { return m_ptr; }
 
-		auto operator[](uint32 p_index) -> Type & { return *(m_ptr + p_index * sizeof(Type)); }
-		auto operator[](uint32 p_index) const -> const Type & { return *(m_ptr + p_index * sizeof(Type)); }
+		auto operator[](uint32 p_index) const -> const Type & { return m_ptr[p_index]; }
 
 	private:
 		Type * m_ptr{nullptr};

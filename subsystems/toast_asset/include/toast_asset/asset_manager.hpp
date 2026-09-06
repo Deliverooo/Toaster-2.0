@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <unordered_map>
 
 #include "toast_gpu/resource_manager.hpp"
 
@@ -63,7 +64,7 @@ namespace toaster::asset
 			markMaterialDirty(p_handle);
 		}
 
-		auto setTextureRef(MaterialAssetHandle p_handle, uint32 p_index,  gpu::TextureHandle p_texture) -> void;
+		auto setTextureRef(MaterialAssetHandle p_handle, uint32 p_index, TextureAssetHandle p_texture) -> void;
 
 		#pragma endregion
 

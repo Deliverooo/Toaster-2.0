@@ -10,5 +10,11 @@
 #define TST_GPU_API
 #endif
 
-#include <toast_lib/core_basic.hpp>
-#include <print>
+#include "toast_lib/core_basic.hpp"
+#include "toast_lib/handle.hpp"
+
+namespace toaster::gpu
+{
+	#define TST_DECLARE_GPU_HANDLE(__type) struct __type;\
+		using __type##Handle = Handle2<__type>
+}

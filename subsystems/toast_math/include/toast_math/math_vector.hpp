@@ -47,6 +47,10 @@ namespace tsm
 		{
 		}
 
+		constexpr Viewport(const Rect &p_rect, float2 p_depth_bounds = float2{0.0f, 1.0f}) : offset(p_rect.offset), size(p_rect.size), depthBounds(p_depth_bounds)
+		{
+		}
+
 		float2 offset{float2::zero};
 		float2 size{float2::zero};
 		float2 depthBounds{0.0f, 1.0f}; // Min depth and max depth

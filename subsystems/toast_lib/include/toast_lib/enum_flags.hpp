@@ -55,4 +55,4 @@
 
 
 #define TST_SPECIALISE_FLAGS(__bit_type, __name) template<> struct FlagOperations<__bit_type> { static constexpr bool defined{true}; };\
-	using __name##Flags = Flags<__bit_type>
+	using __name = Flags<__bit_type>

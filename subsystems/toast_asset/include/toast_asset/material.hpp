@@ -7,14 +7,13 @@ namespace toaster::asset
 {
 	struct TST_ASSET_API MaterialAssetData
 	{
-		URI uri{};
-;
+		URI                     uri{};;
 		static constexpr uint32 maxTextureRefs{4u};
 
 		std::vector<uint8> data;
 
 		// TODO: VFS/URI For memory only textures
-		std::array<gpu::TextureHandle, maxTextureRefs> textureRefs;
+		std::array<TextureAssetHandle, maxTextureRefs> textureRefs;
 
 		VmaVirtualAllocation virtualAllocation{nullptr};
 		uint64               allocationOffset{0u};

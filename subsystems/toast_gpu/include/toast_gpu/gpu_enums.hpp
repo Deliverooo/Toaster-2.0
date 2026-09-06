@@ -4,34 +4,94 @@
 #include "toast_lib/util_defines.hpp"
 #include "toast_lib/enum_flags.hpp"
 
+#include <compare>
+
 namespace toaster::gpu
 {
 	TST_DECLARE_FLAGS_FOR_NAMESPACE()
 
-	enum class EShaderStageBits : uint8
+	enum class EFormat : uint8 // Taken directly from vulkan.hpp
 	{
-		eVertex                 = TST_BIT(0u),
-		ePixel                  = TST_BIT(1u),
-		eCompute                = TST_BIT(2u),
-		eGeometry               = TST_BIT(3u),
-		eTessellationControl    = TST_BIT(4u),
-		eTessellationEvaluation = TST_BIT(5u),
-		eMesh                   = TST_BIT(6u),
-		eTask                   = TST_BIT(7u)
+		eUndefined,
+		eR8Unorm,
+		eR8Snorm,
+		eR8Uint,
+		eR8Sint,
+		eR8Srgb,
+		eR8G8Unorm,
+		eR8G8Snorm,
+		eR8G8Uint,
+		eR8G8Sint,
+		eR8G8Srgb,
+		eR8G8B8Unorm,
+		eR8G8B8Snorm,
+		eR8G8B8Uint,
+		eR8G8B8Sint,
+		eR8G8B8Srgb,
+		eB8G8R8Unorm,
+		eB8G8R8Snorm,
+		eB8G8R8Uint,
+		eB8G8R8Sint,
+		eB8G8R8Srgb,
+		eR8G8B8A8Unorm,
+		eR8G8B8A8Snorm,
+		eR8G8B8A8Uint,
+		eR8G8B8A8Sint,
+		eR8G8B8A8Srgb,
+		eB8G8R8A8Unorm,
+		eB8G8R8A8Snorm,
+		eB8G8R8A8Uint,
+		eB8G8R8A8Sint,
+		eB8G8R8A8Srgb,
+		eR16Unorm,
+		eR16Snorm,
+		eR16Uint,
+		eR16Sint,
+		eR16Sfloat,
+		eR16G16Unorm,
+		eR16G16Snorm,
+		eR16G16Uint,
+		eR16G16Sint,
+		eR16G16Sfloat,
+		eR16G16B16Unorm,
+		eR16G16B16Snorm,
+		eR16G16B16Uint,
+		eR16G16B16Sint,
+		eR16G16B16Sfloat,
+		eR16G16B16A16Unorm,
+		eR16G16B16A16Snorm,
+		eR16G16B16A16Uint,
+		eR16G16B16A16Sint,
+		eR16G16B16A16Sfloat,
+		eR32Uint,
+		eR32Sint,
+		eR32Sfloat,
+		eR32G32Uint,
+		eR32G32Sint,
+		eR32G32Sfloat,
+		eR32G32B32Uint,
+		eR32G32B32Sint,
+		eR32G32B32Sfloat,
+		eR32G32B32A32Uint,
+		eR32G32B32A32Sint,
+		eR32G32B32A32Sfloat,
+		eR64Uint,
+		eR64Sint,
+		eR64Sfloat,
+		eR64G64Uint,
+		eR64G64Sint,
+		eR64G64Sfloat,
+		eR64G64B64Uint,
+		eR64G64B64Sint,
+		eR64G64B64Sfloat,
+		eR64G64B64A64Uint,
+		eR64G64B64A64Sint,
+		eR64G64B64A64Sfloat,
+		eD16Unorm,
+		eD32Sfloat,
+		eS8Uint,
+		eD16UnormS8Uint,
+		eD24UnormS8Uint,
+		eD32SfloatS8Uint
 	};
-
-	TST_SPECIALISE_FLAGS(EShaderStageBits, EShaderStage);
-
-	enum class EQueueType : uint8
-	{
-		eGraphics, eCompute, eTransfer
-	};
-
-	enum class ECommandPoolBits : uint8
-	{
-		eReset = TST_BIT(0u), // You should be resetting the whole pool instead!
-		eTransient = TST_BIT(1u)
-	};
-
-	TST_SPECIALISE_FLAGS(ECommandPoolBits, ECommandPool);
 }

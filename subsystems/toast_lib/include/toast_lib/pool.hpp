@@ -184,4 +184,109 @@ namespace toaster
 		std::vector<uint32> m_freeIndices;
 		std::vector<uint32> m_refCounts;
 	};
+
+	template<typename TData>
+	class Pool2
+	{
+	public:
+		using DestructorFn = void(*)(TData *);
+		using HandleType   = Handle2<TData>;
+
+		Pool2() = default;
+
+		explicit Pool2(DestructorFn p_destructor_fn) : m_destructorFn(p_destructor_fn)
+		{
+		}
+
+		auto setDestructorFn(DestructorFn p_destructor_fn) { m_destructorFn = p_destructor_fn; }
+
+		template<typename... TArgs>
+		auto emplace(TArgs &&... p_args) -> HandleType
+		{
+			uint32 id{0u};
+			uint32 magic{1u};
+
+			if (!m_freeIndices.empty())
+			{
+				id = m_freeIndices.back();
+				m_freeIndices.pop_back();
+				magic = m_entries[id].magic + 1;
+			}
+			else
+			{
+				id = m_entries.size();
+				m_entries.resize(id + 1u);
+			}
+
+			m_entries[id].data  = TData{std::forward<TArgs>(p_args)...};
+			m_entries[id].magic = magic;
+			m_entries[id].alive = true;
+
+			return HandleType{id, magic};
+		}
+
+		auto destroy(HandleType p_handle) -> void
+		{
+			if (!isValid(p_handle))
+				TST_PERMA_ASSERT(false);
+				// return;
+
+			m_entries[p_handle.id].alive = false;
+			++m_entries[p_handle.id].magic;
+			m_freeIndices.push_back(p_handle.id);
+
+			if (m_destructorFn)
+				m_destructorFn(std::addressof(m_entries[p_handle.id].data));
+		}
+
+		auto clear() -> void
+		{
+			if (m_destructorFn)
+			{
+				for (auto &entry: m_entries)
+					if (entry.alive)
+						m_destructorFn(&entry.data);
+			}
+			m_entries.clear();
+			m_freeIndices.clear();
+		}
+
+		auto tryGet(HandleType p_handle) -> TData *
+		{
+			if (!isValid(p_handle))
+				return nullptr;
+			return std::addressof(m_entries[p_handle.id].data);
+		}
+
+		auto tryGet(HandleType p_handle) const -> const TData *
+		{
+			if (!isValid(p_handle))
+				return nullptr;
+			return std::addressof(m_entries[p_handle.id].data);
+		}
+
+		auto operator[](HandleType p_handle) -> TData & { return m_entries[p_handle.id].data; }
+		auto operator[](HandleType p_handle) const -> const TData & { return m_entries[p_handle.id].data; }
+
+		auto isValid(HandleType p_handle) -> bool
+		{
+			if (p_handle.id >= m_entries.size())
+				return false;
+
+			return m_entries[p_handle.id].alive && (m_entries[p_handle.id].magic == p_handle.magic);
+		}
+
+	private:
+		struct Entry
+		{
+			TData  data;
+			uint32 magic{0u};
+			bool   alive{false};
+		};
+
+		std::vector<Entry>  m_entries;
+		std::vector<uint32> m_freeIndices;
+
+		DestructorFn m_destructorFn{nullptr};
+	};
 }

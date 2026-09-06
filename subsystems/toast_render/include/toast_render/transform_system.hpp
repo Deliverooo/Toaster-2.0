@@ -1,8 +1,8 @@
 #pragma once
 
 #include "toast_render.hpp"
-#include "toast_gpu/resource_manager.hpp"
-
+#include "toast_gpu/api.hpp"
+#include "toast_lib/freelist_allocator.hpp"
 #include "toast_math/math_matrix.hpp"
 
 namespace toaster::rd
@@ -13,9 +13,8 @@ namespace toaster::rd
 	// To see how this could potentially be used in an ecs, goto toast_scene/components.hpp
 	class TST_RENDER_API TransformSystem
 	{
-		TST_REGISTER_DEPENDENCY(gpu::ResourceManager, ResourceManager, resourceManager)
 	public:
-		TransformSystem(gpu::ResourceManager &p_resource_manager, uint32 p_max_transforms = 128u, uint32 p_frames_in_flight = 3u);
+		TransformSystem(uint32 p_max_transforms = 128u, uint32 p_frames_in_flight = 3u);
 		~TransformSystem();
 
 		auto createTransform() -> uint32;

@@ -1,15 +1,8 @@
 set(GPU_SRC
-		${CMAKE_CURRENT_SOURCE_DIR}/src/instance.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/physical_device.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/logical_device.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/allocator.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/device.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/resource_manager.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/descriptor_heap.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/api.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/frame.cpp
+		${CMAKE_CURRENT_SOURCE_DIR}/src/upload.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/src/vma_impl.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/command_list.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/command_pool.cpp
-		${CMAKE_CURRENT_SOURCE_DIR}/src/swapchain.cpp
 )
 
 if (TOASTER_BUILD_SHARED_LIBS)
@@ -24,7 +17,7 @@ target_include_directories(ToastGPU PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOU
 target_sources(ToastGPU PRIVATE ${GPU_SRC})
 target_link_libraries(ToastGPU PUBLIC Toaster::ToastLib Toaster::ToastMath Vulkan::Vulkan)
 
-target_include_directories(ToastGPU PUBLIC "$ENV{VULKAN_SDK}/Include")
+target_include_directories(ToastGPU PRIVATE "$ENV{VULKAN_SDK}/Include")
 
 add_library(Toaster::ToastGPU ALIAS ToastGPU)
 
